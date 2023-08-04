@@ -258,6 +258,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="18-TiDE-examples.html">
+   TimeSeries Deep Encoder
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="10-Kalman-filter-examples.html">
    Filtering and predicting using the darts filters
   </a>
@@ -651,7 +658,7 @@ div.rendered_html tbody tr:hover {
 </style>
 <section id="Dynamic-Time-Warping-(DTW)">
 <h1>Dynamic Time Warping (DTW)<a class="headerlink" href="#Dynamic-Time-Warping-(DTW)" title="Permalink to this headline">¶</a></h1>
-<p>The following offers a demonstration of the capabalities of the DTW module within darts. Dynamic Time Warping allows you to compare two time series of different lengths and time axese. The algorithm will determine the optimal alignment between elements in the two series, such that the pair-wise distance between them is minimized.</p>
+<p>The following offers a demonstration of the capabalities of the DTW module within darts. Dynamic Time Warping allows you to compare two time series of different lengths and time axes. The algorithm will determine the optimal alignment between elements in the two series, such that the pair-wise distance between them is minimized.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -734,7 +741,7 @@ div.rendered_html tbody tr:hover {
 </section>
 <section id="Determine-the-Number-of-Peaks">
 <h2>Determine the Number of Peaks<a class="headerlink" href="#Determine-the-Number-of-Peaks" title="Permalink to this headline">¶</a></h2>
-<p>We observe that the series is composed of a series of sharp peaks and troughs. Let’s quickly determine the number of periods to consider. We begin by applying a moving average filter to the series, to eliminate false local maxima. Then we simply count the number of local maxima returned by argrelextrema.</p>
+<p>We observe that the series is composed of a series of sharp peaks and troughs. Let’s quickly determine the number of periods to consider. We begin by applying a moving average filter to the series, to eliminate false local maxima. Then we simply count the number of local maxima returned by <code class="docutils literal notranslate"><span class="pre">argrelextrema</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -867,7 +874,7 @@ div.rendered_html tbody tr:hover {
 <section id="Multi-Grid">
 <h2>Multi-Grid<a class="headerlink" href="#Multi-Grid" title="Permalink to this headline">¶</a></h2>
 <p>Computing all possible alignment quickly becomes computationally expensive on large datasets (quadratic complexity).</p>
-<p>Instead we can use the multi grid solver, which runs in near linear-time. The solver determine the optimal path first on a smaller grid, and then recursively reprojects and refines the path, each time doubling the resolution. Simply enabling the multi-grid solver (linear complexity) will usually result in a large speed-up, without much loss of accuracy.</p>
+<p>Instead we can use the multi grid solver, which runs in near linear-time. The solver determines the optimal path first on a smaller grid, and then recursively reprojects and refines the path, each time doubling the resolution. Simply enabling the multi-grid solver (linear complexity) will usually result in a large speed-up, without much loss of accuracy.</p>
 <p>The parameter <code class="docutils literal notranslate"><span class="pre">multi_grid_radius</span></code> controls how much to extend the search window by from the path found at a lower resolution. In other words, you gain accuracy at the cost of performance by increasing it.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
@@ -885,7 +892,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_18_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_18_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_19_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_19_0.png" />
 </div>
 </div>
 </section>
@@ -906,7 +913,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_20_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_20_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_21_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_21_0.png" />
 </div>
 </div>
 </section>
@@ -927,7 +934,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_22_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_22_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_23_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_23_0.png" />
 </div>
 </div>
 </section>
@@ -959,7 +966,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_24_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_24_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_25_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_25_0.png" />
 </div>
 </div>
 </section>
@@ -979,7 +986,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_26_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_26_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_27_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_27_0.png" />
 </div>
 </div>
 <section id="Warped-Time-Series">
@@ -1001,7 +1008,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_28_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_28_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_29_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_29_0.png" />
 </div>
 </div>
 </section>
@@ -1014,8 +1021,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">warped_mae0</span> <span class="o">=</span> <span class="n">dtw_metric</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">mae</span><span class="p">,</span> <span class="n">multi_grid_radius</span><span class="o">=</span><span class="n">multi_grid_radius</span><span class="p">)</span>
-<span class="n">warped_mae1</span> <span class="o">=</span> <span class="n">mae</span><span class="p">(</span><span class="n">warped_ts</span><span class="p">,</span> <span class="n">warped_ts_shape</span><span class="p">)</span>
+<span></span><span class="n">warped_mae0</span> <span class="o">=</span> <span class="n">mae</span><span class="p">(</span><span class="n">warped_ts</span><span class="p">,</span> <span class="n">warped_ts_shape</span><span class="p">)</span>
+<span class="n">warped_mae1</span> <span class="o">=</span> <span class="n">dtw_metric</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">mae</span><span class="p">,</span> <span class="n">multi_grid_radius</span><span class="o">=</span><span class="n">multi_grid_radius</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">([</span><span class="s2">&quot;Original&quot;</span><span class="p">,</span> <span class="s2">&quot;Warped&quot;</span><span class="p">,</span> <span class="s2">&quot;DTW Metric&quot;</span><span class="p">],</span> <span class="p">[</span><span class="n">original_mae</span><span class="p">,</span> <span class="n">warped_mae0</span><span class="p">,</span> <span class="n">warped_mae1</span><span class="p">])</span>
 </pre></div>
@@ -1025,7 +1032,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_30_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_30_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_31_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_31_0.png" />
 </div>
 </div>
 </section>
@@ -1099,7 +1106,7 @@ div.rendered_html tbody tr:hover {
 </section>
 <section id="Visualizing-the-Matching-Subsequences">
 <h2>Visualizing the Matching Subsequences<a class="headerlink" href="#Visualizing-the-Matching-Subsequences" title="Permalink to this headline">¶</a></h2>
-<p>We can simply index the warped shape series by the RangeIndex to extract the subsequence. Moreover we must shift the series by r.start, to ensure the series begin at the right time. Without this they would all bunch up around time 0.</p>
+<p>We can simply slice the warped shape series by the RangeIndex to extract the subsequence.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
@@ -1108,8 +1115,7 @@ div.rendered_html tbody tr:hover {
 <span></span><span class="n">warped_ts</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 
 <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">matched_ranges</span><span class="p">:</span>
-    <span class="n">ts_shape_match</span> <span class="o">=</span> <span class="n">warped_ts_shape</span><span class="p">[</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
-    <span class="n">ts_shape_match</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+    <span class="n">warped_ts_shape</span><span class="p">[</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_legend</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
 </pre></div>
@@ -1119,7 +1125,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-Dynamic-Time-Warping-example_34_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_34_0.png" />
+<img alt="../_images/examples_12-Dynamic-Time-Warping-example_35_0.png" src="../_images/examples_12-Dynamic-Time-Warping-example_35_0.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">

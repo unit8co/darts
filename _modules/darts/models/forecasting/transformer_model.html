@@ -444,7 +444,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
-            <span class="n">d_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
+            <span class="n">d_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_create_transformer_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
@@ -708,6 +708,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">norm_type</span> <span class="o">=</span> <span class="n">norm_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">custom_encoder</span> <span class="o">=</span> <span class="n">custom_encoder</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">custom_decoder</span> <span class="o">=</span> <span class="n">custom_decoder</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>

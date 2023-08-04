@@ -176,10 +176,10 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.ensemble_model</span> <span class="kn">import</span> <span class="n">EnsembleModel</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">GlobalForecastingModel</span><span class="p">,</span>
+    <span class="n">ForecastingModel</span><span class="p">,</span>
     <span class="n">LocalForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -197,13 +197,22 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mean_val</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
 <div class="viewcode-block" id="NaiveMean.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mean_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="NaiveMean.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="NaiveMean.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
         <span class="n">forecast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean_val</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span></div></div>
@@ -227,6 +236,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">K</span> <span class="o">=</span> <span class="n">K</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">K</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 
@@ -241,7 +254,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">last_k_vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">K</span> <span class="p">:,</span> <span class="p">:]</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="NaiveSeasonal.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="NaiveSeasonal.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
         <span class="n">forecast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">last_k_vals</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">K</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)])</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span></div></div>
@@ -258,6 +276,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
 <div class="viewcode-block" id="NaiveDrift.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;This model expects deterministic time series&quot;</span>
@@ -265,7 +287,12 @@
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="NaiveDrift.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="NaiveDrift.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
         <span class="n">first</span><span class="p">,</span> <span class="n">last</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">first_values</span><span class="p">(),</span>
@@ -293,6 +320,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rolling_window</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
 
@@ -310,7 +341,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rolling_window</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="p">:]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="NaiveMovingAverage.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="NaiveMovingAverage.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
 
         <span class="n">predictions_with_observations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
@@ -330,14 +366,31 @@
 
 <div class="viewcode-block" id="NaiveEnsembleModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">[docs]</a><span class="k">class</span> <span class="nc">NaiveEnsembleModel</span><span class="p">(</span><span class="n">EnsembleModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">LocalForecastingModel</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">GlobalForecastingModel</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Naive combination model</span>
 
 <span class="sd">        Naive implementation of `EnsembleModel`</span>
 <span class="sd">        Returns the average of all predictions of the constituent models</span>
+
+<span class="sd">        If `future_covariates` or `past_covariates` are provided at training or inference time,</span>
+<span class="sd">        they will be passed only to the models supporting them.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        models</span>
+<span class="sd">            List of forecasting models whose predictions to ensemble</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            Whether to show warnings related to models covariates support.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span>
+            <span class="n">train_num_samples</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">train_samples_reduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="NaiveEnsembleModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -351,32 +404,108 @@
             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span><span class="p">:</span>
-                <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span><span class="p">:</span>
-                    <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;past_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">past_covariates</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span><span class="p">:</span>
-                    <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;future_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">future_covariates</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">)</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;past_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">past_covariates</span>
+            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;future_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">future_covariates</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="NaiveEnsembleModel.ensemble"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel.ensemble">[docs]</a>    <span class="k">def</span> <span class="nf">ensemble</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">predictions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="k">def</span> <span class="nf">take_average</span><span class="p">(</span><span class="n">prediction</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-            <span class="n">series</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Average the `forecasting_models` predictions, component-wise&quot;&quot;&quot;</span>
+        <span class="n">raise_if</span><span class="p">(</span>
+            <span class="n">predict_likelihood_parameters</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span><span class="p">,</span>
+            <span class="s2">&quot;`predict_likelihood_parameters=True` is supported only if all the `forecasting_models` &quot;</span>
+            <span class="s2">&quot;are probabilistic and fitting the same likelihood.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">take_average</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_target_average</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">predict_likelihood_parameters</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_average</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+            <span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">take_average</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span></div></div>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_target_average</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">predict_likelihood_parameters</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_average</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+            <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_target_average</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Average across the components, keep n_samples, rename components&quot;&quot;&quot;</span>
+        <span class="n">n_forecasting_models</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span>
+        <span class="n">n_components</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span>
+        <span class="n">prediction_values</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">target_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">prediction</span><span class="o">.</span><span class="n">n_timesteps</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">prediction</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx_target</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_components</span><span class="p">):</span>
+            <span class="n">target_values</span><span class="p">[:,</span> <span class="n">idx_target</span><span class="p">]</span> <span class="o">=</span> <span class="n">prediction_values</span><span class="p">[</span>
+                <span class="p">:,</span>
+                <span class="nb">range</span><span class="p">(</span>
+                    <span class="n">idx_target</span><span class="p">,</span>
+                    <span class="n">n_forecasting_models</span> <span class="o">*</span> <span class="n">n_components</span><span class="p">,</span>
+                    <span class="n">n_components</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">target_values</span><span class="p">,</span>
+            <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+            <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_params_average</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Average across the components after grouping by likelihood parameter, rename components&quot;&quot;&quot;</span>
+        <span class="c1"># str or torch Likelihood</span>
+        <span class="n">likelihood</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;likelihood&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">likelihood_n_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">num_parameters</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Likelihood</span>
+            <span class="n">likelihood_n_params</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
+        <span class="n">n_forecasting_models</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span>
+        <span class="n">n_components</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span>
+        <span class="c1"># aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]</span>
+        <span class="n">prediction_values</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">params_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">prediction</span><span class="o">.</span><span class="n">n_timesteps</span><span class="p">,</span> <span class="n">likelihood_n_params</span> <span class="o">*</span> <span class="n">n_components</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx_param</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">likelihood_n_params</span> <span class="o">*</span> <span class="n">n_components</span><span class="p">):</span>
+            <span class="n">params_values</span><span class="p">[:,</span> <span class="n">idx_param</span><span class="p">]</span> <span class="o">=</span> <span class="n">prediction_values</span><span class="p">[</span>
+                <span class="p">:,</span>
+                <span class="nb">range</span><span class="p">(</span>
+                    <span class="n">idx_param</span><span class="p">,</span>
+                    <span class="n">likelihood_n_params</span> <span class="o">*</span> <span class="n">n_forecasting_models</span> <span class="o">*</span> <span class="n">n_components</span><span class="p">,</span>
+                    <span class="n">likelihood_n_params</span> <span class="o">*</span> <span class="n">n_components</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">params_values</span><span class="p">,</span>
+            <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">components</span><span class="p">[:</span> <span class="n">likelihood_n_params</span> <span class="o">*</span> <span class="n">n_components</span><span class="p">],</span>
+            <span class="n">static_covariates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">hierarchy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

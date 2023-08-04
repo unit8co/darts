@@ -144,7 +144,7 @@ LFMs are models that can be trained on a single target series only. In Darts mos
 Global Forecasting Models (GFMs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-GFMs are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models as well as RegressionModels. Global models can all be trained on multiple ``target`` (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data.
+GFMs are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models, RegressionModels, as well EnsembleModels (depending on their ensemble model and / or the forecasting models they ensemble). Global models can all be trained on multiple ``target`` (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data.
 
 ----
 
@@ -159,105 +159,131 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
      - 
      - 
      - 
-   * - ``ExponentialSmoothing``
+   * - Naive Baselines (a)
      - 
      - 
      - 
-   * - ``BATS`` and ``TBATS``
-     - 
-     - 
-     - 
-   * - ``Theta`` and ``FourTheta``
-     - 
-     - 
-     - 
-   * - ``FFT``
-     - 
-     - 
-     - 
-   * - ``Croston method``
-     - 
-     - 
-     - 
-   * - ``ARIMA``
+   * - `ARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA>`_
      - 
      - ✅
      - 
-   * - ``VARIMA``
+   * - `VARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA>`_
      - 
      - ✅
      - 
-   * - ``AutoARIMA``
+   * - `AutoARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA>`_
      - 
      - ✅
      - 
-   * - ``StatsForecastAutoARIMA``
+   * - `StatsForecastAutoArima <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA>`_
      - 
      - ✅
      - 
-   * - ``KalmanForecaster``
+   * - `ExponentialSmoothing <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing>`_
+     - 
+     - 
+     - 
+   * - `StatsforecastAutoETS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS>`_
      - 
      - ✅
      - 
-   * - ``Prophet``
+   * - `StatsforecastAutoCES <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES>`_
+     - 
+     - 
+     - 
+   * - `BATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS>`_ and `TBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS>`_
+     - 
+     - 
+     - 
+   * - `Theta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta>`_ and `FourTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta>`_
+     - 
+     - 
+     - 
+   * - `StatsForecastAutoTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta>`_
+     - 
+     - 
+     - 
+   * - `Prophet <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet>`_
      - 
      - ✅
+     - 
+   * - `FFT <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT>`_ (Fast Fourier Transform)
+     - 
+     - 
+     - 
+   * - `KalmanForecaster <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster>`_
+     - 
+     - ✅
+     - 
+   * - `Croston <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston>`_ method
+     - 
+     - 
      - 
    * - **Global Forecasting Models (GFMs)**
      - 
      - 
      - 
-   * - ``RegressionModel``\ *
+   * - Regression Models (b)
      - ✅
      - ✅
-     - 
-   * - ``RNNModel``\ **
+     - ✅
+   * - `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ (c)
      - 
      - ✅
      - 
-   * - ``BlockRNNModel``\ ***
-     - ✅
-     - 
-     - 
-   * - ``NBEATSModel``
+   * - `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ (d)
      - ✅
      - 
      - 
-   * - ``NHiTSModel``
+   * - `NBEATSModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel>`_
      - ✅
      - 
      - 
-   * - ``TCNModel``
+   * - `NHiTSModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel>`_
      - ✅
      - 
      - 
-   * - ``TransformerModel``
+   * - `TCNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tcn_model.html#darts.models.forecasting.tcn_model.TCNModel>`_
      - ✅
      - 
      - 
-   * - ``TFTModel``
+   * - `TransformerModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel>`_
+     - ✅
+     - 
+     - 
+   * - `TFTModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel>`_
      - ✅
      - ✅
-     - ✅ 
-   * - ``DLinearModel``
+     - ✅
+   * - `DLinearModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel>`_
      - ✅
      - ✅
-     - ✅ 
-   * - ``NLinearModel``
+     - ✅
+   * - `NLinearModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel>`_
      - ✅
      - ✅
-     - ✅ 
+     - ✅
+   * - `TiDEModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel>`_
+     - ✅
+     - ✅
+     - ✅
+   * - Ensemble Models (e)
+     - ✅
+     - ✅
+     - ✅
 
 
 **Table 1: Darts' forecasting models and their covariate support**
 
-``*`` ``RegressionModel`` including ``RandomForest``\ , ``LinearRegressionModel`` and ``LightGBMModel``. ``RegressionModel`` is a
-special kind of GFM which can use arbitrary lags on covariates (past and/or future)
-and past targets to do predictions.
+(a) Naive Baselines including `NaiveMean <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean>`_\ , `NaiveSeasonal <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal>`_\ , `NaiveDrift <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift>`_\ , and `NaiveMovingAverage <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage>`_.
 
-``**`` ``RNNModel`` including ``LSTM`` and ``GRU``\ ; equivalent to DeepAR in its probabilistic version
+(b) Regression Models including `RegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#regression-model>`_\ , `LinearRegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel>`_\ , `RandomForest <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest>`_\ , `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel>`_\ , `XGBModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel>`_\ , and `CatBoostModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel>`_. RegressionModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to do predictions.
 
-``***`` ``BlockRNNModel`` including ``LSTM`` and ``GRU``
+(c) `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ including ``LSTM`` and ``GRU``\ ; equivalent to DeepAR in its probabilistic version
+
+(d) `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ including ``LSTM`` and ``GRU``
+
+(e) Ensemble Model including `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_\ , and `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_. The covariate support is given by the covariate support of the ensembled forecasting models.
 
 ----
 

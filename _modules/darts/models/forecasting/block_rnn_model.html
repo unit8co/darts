@@ -263,9 +263,7 @@
         <span class="c1"># to the output of desired length</span>
         <span class="n">last</span> <span class="o">=</span> <span class="n">hidden_dim</span>
         <span class="n">feats</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="n">target_size</span> <span class="o">*</span> <span class="n">nr_params</span>
-        <span class="p">]:</span>
+        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">*</span> <span class="n">target_size</span> <span class="o">*</span> <span class="n">nr_params</span><span class="p">]:</span>
             <span class="n">feats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">feature</span><span class="p">))</span>
             <span class="n">last</span> <span class="o">=</span> <span class="n">feature</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">feats</span><span class="p">)</span>
@@ -487,6 +485,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span> <span class="o">=</span> <span class="n">n_rnn_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>

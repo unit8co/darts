@@ -166,50 +166,239 @@
                 
   <h1>Source code for darts.explainability.explainability_result</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">ExplainabilityResult</span>
+<span class="sd">Explainability Result</span>
 <span class="sd">--------------------</span>
 
-<span class="sd">Contains the explainability results obtained from :func:`ForecastingModelExplainer.explain()`.</span>
+<span class="sd">Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()</span>
+<span class="sd">&lt;darts.explainability.explainability._ForecastingModelExplainer.explain&gt;`.</span>
+
+<span class="sd">- :class:`ShapExplainabilityResult &lt;ShapExplainabilityResult&gt;` for :class:`ShapExplainer</span>
+<span class="sd">  &lt;darts.explainability.shap_explainer.ShapExplainer&gt;`</span>
+<span class="sd">- :class:`TFTExplainabilityResult &lt;TFTExplainabilityResult&gt;` for :class:`TFTExplainer</span>
+<span class="sd">  &lt;darts.explainability.tft_explainer.TFTExplainer&gt;`</span>
+<span class="sd">- :class:`ComponentBasedExplainabilityResult &lt;ComponentBasedExplainabilityResult&gt;` for component based explainability</span>
+<span class="sd">  results</span>
+<span class="sd">- :class:`HorizonBasedExplainabilityResult &lt;HorizonBasedExplainabilityResult&gt;` for horizon based explainability results</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">shap</span>
-<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">integer</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ExplainabilityResult"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ExplainabilityResult">[docs]</a><span class="k">class</span> <span class="nc">ExplainabilityResult</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">_ExplainabilityResult</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Stores the explainability results of a :class:`ForecastingModelExplainer`</span>
-<span class="sd">    with convenient access to the results.</span>
+<span class="sd">    Abstract class for explainability results of a :class:`_ForecastingModelExplainer`.</span>
+<span class="sd">    The subclasses should implement convenient access to explanations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_explanation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns one or multiple explanations based on some input parameters.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="ComponentBasedExplainabilityResult"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ComponentBasedExplainabilityResult">[docs]</a><span class="k">class</span> <span class="nc">ComponentBasedExplainabilityResult</span><span class="p">(</span><span class="n">_ExplainabilityResult</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Explainability result for general component objects.</span>
+<span class="sd">    The explained components can describe anything.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; explainer = SomeComponentBasedExplainer(model)</span>
+<span class="sd">    &gt;&gt;&gt; explain_results = explainer.explain()</span>
+<span class="sd">    &gt;&gt;&gt; output = explain_results.get_explanation(component=&quot;some_component&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">explained_components</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">explained_components</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">comps_available</span> <span class="o">=</span> <span class="n">explained_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">comp</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">==</span> <span class="n">comps_available</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">explained_components</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;When giving a list of explained component dicts, the dict keys must match.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">comps_available</span> <span class="o">=</span> <span class="n">explained_components</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">explained_components</span> <span class="o">=</span> <span class="n">explained_components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span> <span class="o">=</span> <span class="n">comps_available</span>
+
+<div class="viewcode-block" id="ComponentBasedExplainabilityResult.get_explanation"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ComponentBasedExplainabilityResult.get_explanation">[docs]</a>    <span class="k">def</span> <span class="nf">get_explanation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns one or several explanations for a given component.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        component</span>
+<span class="sd">            The component for which to return the explanation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_explainability_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_components</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_query_explainability_result</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">attr</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+        <span class="n">component</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper that extracts and returns the explainability result attribute for a given component.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attr</span>
+<span class="sd">            An explainability result attribute from which to extract the component.</span>
+<span class="sd">        component</span>
+<span class="sd">            The component for which to return the content of the attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_input_for_querying_explainability_result</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">attr_</span><span class="p">[</span><span class="n">component</span><span class="p">]</span> <span class="k">for</span> <span class="n">attr_</span> <span class="ow">in</span> <span class="n">attr</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">attr</span><span class="p">[</span><span class="n">component</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_validate_input_for_querying_explainability_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper that validates the input parameters of a method that queries the `ComponentBasedExplainabilityResult`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        component</span>
+<span class="sd">            The component for which to return the explanation. Does not</span>
+<span class="sd">            need to be specified for univariate series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># validate component argument</span>
+        <span class="n">raise_if</span><span class="p">(</span>
+            <span class="n">component</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;The component parameter is required when the `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` has more than one component.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Component </span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2"> is not available. Available components are: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">component</span></div>
+
+
+<div class="viewcode-block" id="HorizonBasedExplainabilityResult"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.HorizonBasedExplainabilityResult">[docs]</a><span class="k">class</span> <span class="nc">HorizonBasedExplainabilityResult</span><span class="p">(</span><span class="n">_ExplainabilityResult</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores the explainability results of a :class:`_ForecastingModelExplainer</span>
+<span class="sd">    &lt;darts.explainability.explainability._ForecastingModelExplainer&gt;` with convenient access to the horizon</span>
+<span class="sd">    based results.</span>
+
+<span class="sd">    The result is a multivariate `TimeSeries` instance containing the &#39;explanation&#39; for the (horizon, target_component)</span>
+<span class="sd">    forecast at any timestamp forecastable corresponding to the foreground `TimeSeries` input.</span>
+
+<span class="sd">    The component name convention of this multivariate `TimeSeries` is:</span>
+<span class="sd">    ``&quot;{name}_{type_of_cov}_lag_{idx}&quot;``, where:</span>
+
+<span class="sd">    - ``{name}`` is the component name from the original foreground series (target, past, or future).</span>
+<span class="sd">    - ``{type_of_cov}`` is the covariates type. It can take 3 different values:</span>
+<span class="sd">      ``&quot;target&quot;``, ``&quot;past_cov&quot;`` or ``&quot;future_cov&quot;``.</span>
+<span class="sd">    - ``{idx}`` is the lag index.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    Say we have a model with 2 target components named ``&quot;T_0&quot;`` and ``&quot;T_1&quot;``,</span>
+<span class="sd">    3 past covariates with default component names ``&quot;0&quot;``, ``&quot;1&quot;``, and ``&quot;2&quot;``,</span>
+<span class="sd">    and one future covariate with default component name ``&quot;0&quot;``.</span>
+<span class="sd">    Also, ``horizons = [1, 2]``.</span>
+<span class="sd">    The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,</span>
+<span class="sd">    ``lags_future_covariates = [0]``.</span>
+
+<span class="sd">    We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.</span>
+
+<span class="sd">    &gt;&gt;&gt; explainer = SomeHorizonBasedExplainer(model)</span>
+<span class="sd">    &gt;&gt;&gt; explain_results = explainer.explain(</span>
+<span class="sd">    &gt;&gt;&gt;     foreground_series=foreground_series,</span>
+<span class="sd">    &gt;&gt;&gt;     foreground_past_covariates=foreground_past_covariates,</span>
+<span class="sd">    &gt;&gt;&gt;     foreground_future_covariates=foreground_future_covariates,</span>
+<span class="sd">    &gt;&gt;&gt;     horizons=[1, 2],</span>
+<span class="sd">    &gt;&gt;&gt;     target_names=[&quot;T_0&quot;, &quot;T_1&quot;]</span>
+<span class="sd">    &gt;&gt;&gt; )</span>
+<span class="sd">    &gt;&gt;&gt; output = explain_results.get_explanation(horizon=1, target=&quot;T_1&quot;)</span>
+
+<span class="sd">    Then the method returns a multivariate TimeSeries containing the *explanations* of</span>
+<span class="sd">    the corresponding `_ForecastingModelExplainer`, with the following component names:</span>
+
+<span class="sd">         - T_0_target_lag-1</span>
+<span class="sd">         - T_0_target_lag-2</span>
+<span class="sd">         - T_0_target_lag-3</span>
+<span class="sd">         - T_1_target_lag-1</span>
+<span class="sd">         - T_1_target_lag-2</span>
+<span class="sd">         - T_1_target_lag-3</span>
+<span class="sd">         - 0_past_cov_lag-1</span>
+<span class="sd">         - 0_past_cov_lag-3</span>
+<span class="sd">         - 1_past_cov_lag-1</span>
+<span class="sd">         - 1_past_cov_lag-3</span>
+<span class="sd">         - 2_past_cov_lag-1</span>
+<span class="sd">         - 2_past_cov_lag-3</span>
+<span class="sd">         - 0_fut_cov_lag_0</span>
+
+<span class="sd">    This series has length 3, as the model can explain 5-3+1 forecasts</span>
+<span class="sd">    (timestamp indexes 4, 5, and 6)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">explained_forecasts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
-            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
-            <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
+            <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="p">],</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span> <span class="o">=</span> <span class="n">explained_forecasts</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">dict</span><span class="p">),</span>
+                <span class="s2">&quot;The explained_forecasts list must consist of dicts.&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                <span class="s2">&quot;The explained_forecasts dict list must have all integer keys.&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="n">h_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">h_0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="n">h_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="n">h_0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;The explained_forecasts dictionary must have all integer keys.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-            <span class="n">h_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="n">h_0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The explained_forecasts must be a dictionary or a list of dictionaries.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
-<div class="viewcode-block" id="ExplainabilityResult.get_explanation"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ExplainabilityResult.get_explanation">[docs]</a>    <span class="k">def</span> <span class="nf">get_explanation</span><span class="p">(</span>
+<div class="viewcode-block" id="HorizonBasedExplainabilityResult.get_explanation"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.HorizonBasedExplainabilityResult.get_explanation">[docs]</a>    <span class="k">def</span> <span class="nf">get_explanation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns one or several `TimeSeries` representing the explanations</span>
 <span class="sd">        for a given horizon and component.</span>
@@ -228,9 +417,7 @@
 
     <span class="k">def</span> <span class="nf">_query_explainability_result</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">attr</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
-            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span>
-        <span class="p">],</span>
+        <span class="n">attr</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]],</span>
         <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -248,19 +435,27 @@
 <span class="sd">            The component for which to return the content of the attribute. Does not</span>
 <span class="sd">            need to be specified for univariate series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_input_for_querying_explainability_result</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_input_for_querying_explainability_result</span><span class="p">(</span>
+            <span class="n">horizon</span><span class="p">,</span> <span class="n">component</span>
+        <span class="p">)</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="k">return</span> <span class="p">[</span><span class="n">attr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">horizon</span><span class="p">][</span><span class="n">component</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">attr</span><span class="p">))]</span>
-        <span class="k">else</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">attr</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="k">return</span> <span class="n">attr</span><span class="p">[</span><span class="n">horizon</span><span class="p">][</span><span class="n">component</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Something went wrong. </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> got instantiated with an unexpected type.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_validate_input_for_querying_explainability_result</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Helper that validates the input parameters of a method that queries the ExplainabilityResult.</span>
+<span class="sd">        Helper that validates the input parameters of a method that queries the `HorizonBasedExplainabilityResult`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -270,11 +465,10 @@
 <span class="sd">            The component for which to return the explanation. Does not</span>
 <span class="sd">            need to be specified for univariate series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># validate component argument</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">component</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;The component parameter is required when the model has more than one component.&quot;</span>
-            <span class="p">),</span>
+            <span class="s2">&quot;The component parameter is required when the model has more than one component.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -282,42 +476,57 @@
             <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">horizon</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span><span class="p">,</span>
-            <span class="s2">&quot;Horizon </span><span class="si">{}</span><span class="s2"> is not available. Available horizons are: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">horizon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span>
-            <span class="p">),</span>
+            <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Component </span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2"> is not available. Available components are: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">,</span>
-            <span class="s2">&quot;Component </span><span class="si">{}</span><span class="s2"> is not available. Available components are: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">component</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span>
-            <span class="p">),</span>
-        <span class="p">)</span></div>
+            <span class="n">horizon</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Horizon </span><span class="si">{</span><span class="n">horizon</span><span class="si">}</span><span class="s2"> is not available. Available horizons are: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">component</span></div>
 
 
-<div class="viewcode-block" id="ShapExplainabilityResult"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ShapExplainabilityResult">[docs]</a><span class="k">class</span> <span class="nc">ShapExplainabilityResult</span><span class="p">(</span><span class="n">ExplainabilityResult</span><span class="p">):</span>
+<div class="viewcode-block" id="ShapExplainabilityResult"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ShapExplainabilityResult">[docs]</a><span class="k">class</span> <span class="nc">ShapExplainabilityResult</span><span class="p">(</span><span class="n">HorizonBasedExplainabilityResult</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Stores the explainability results of a :class:`ShapExplainer`</span>
-<span class="sd">    with convenient access to the results. It extends the :class:`ExplainabilityResult` and carries additional</span>
-<span class="sd">    information specific to the Shap explainers. In particular, in addition to the `explained_forecasts` (which in</span>
-<span class="sd">    the case of the :class:`ShapExplainer` are the shap values), it also provides access to the corresponding</span>
-<span class="sd">    `feature_values` and the underlying `shap.Explanation` object.</span>
+<span class="sd">    Stores the explainability results of a :class:`ShapExplainer &lt;darts.explainability.shap_explainer.ShapExplainer&gt;`</span>
+<span class="sd">    with convenient access to the results. It extends the :class:`HorizonBasedExplainabilityResult</span>
+<span class="sd">    &lt;HorizonBasedExplainabilityResult&gt;` and carries additional information specific to the Shap explainers.</span>
+<span class="sd">    In particular, in addition to the `explained_forecasts` (which in the case of the `ShapExplainer` are the</span>
+<span class="sd">    shap values), it also provides access to the corresponding `feature_values` and the underlying `shap.Explanation`</span>
+<span class="sd">    object.</span>
+
+<span class="sd">    - :func:`get_explanation() &lt;ShapExplainabilityResult.get_explanation&gt;`: explained forecast for a given horizon</span>
+<span class="sd">      (and target component)</span>
+<span class="sd">    - :func:`get_feature_values() &lt;ShapExplainabilityResult.get_feature_values&gt;`: feature values for a given horizon</span>
+<span class="sd">      (and target component).</span>
+<span class="sd">    - :func:`get_shap_explanation_object() &lt;ShapExplainabilityResult.get_shap_explanation_object&gt;`: `shap.Explanation`</span>
+<span class="sd">      object for a given horizon (and target component).</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; explainer = ShapExplainer(model)  # requires `background` if model was trained on multiple series</span>
+<span class="sd">    &gt;&gt;&gt; explain_results = explainer.explain()</span>
+<span class="sd">    &gt;&gt;&gt; exlained_fc = explain_results.get_explanation(horizon=1)</span>
+<span class="sd">    &gt;&gt;&gt; feature_values = explain_results.get_feature_values(horizon=1)</span>
+<span class="sd">    &gt;&gt;&gt; shap_objects = explain_results.get_shap_explanation_objects(horizon=1)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">explained_forecasts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
-            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
-            <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
+            <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="p">],</span>
         <span class="n">feature_values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
-            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
-            <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
+            <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="p">],</span>
         <span class="n">shap_explanation_object</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
-            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]],</span>
-            <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]],</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]],</span>
+            <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]],</span>
         <span class="p">],</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">explained_forecasts</span><span class="p">)</span>
@@ -326,7 +535,7 @@
 
 <div class="viewcode-block" id="ShapExplainabilityResult.get_feature_values"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ShapExplainabilityResult.get_feature_values">[docs]</a>    <span class="k">def</span> <span class="nf">get_feature_values</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns one or several `TimeSeries` representing the feature values</span>
 <span class="sd">        for a given horizon and component.</span>
@@ -345,7 +554,7 @@
 
 <div class="viewcode-block" id="ShapExplainabilityResult.get_shap_explanation_object"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ShapExplainabilityResult.get_shap_explanation_object">[docs]</a>    <span class="k">def</span> <span class="nf">get_shap_explanation_object</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the underlying `shap.Explanation` object for a given horizon and component.</span>
 
@@ -360,6 +569,95 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_explainability_result</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">shap_explanation_object</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">component</span>
         <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TFTExplainabilityResult"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult">[docs]</a><span class="k">class</span> <span class="nc">TFTExplainabilityResult</span><span class="p">(</span><span class="n">ComponentBasedExplainabilityResult</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores the explainability results of a :class:`TFTExplainer &lt;darts.explainability.tft_explainer.TFTExplainer&gt;`</span>
+<span class="sd">    with convenient access to the results. It extends the :class:`ComponentBasedExplainabilityResult` and carries</span>
+<span class="sd">    information specific to the TFT explainer.</span>
+
+<span class="sd">    - :func:`get_attention() &lt;TFTExplainabilityResult.get_attention&gt;`: self attention over the encoder and decoder</span>
+<span class="sd">    - :func:`get_encoder_importance() &lt;TFTExplainabilityResult.get_encoder_importance&gt;`: encoder feature importances</span>
+<span class="sd">      including past target, past covariates, and historic part of future covariates.</span>
+<span class="sd">    - :func:`get_decoder_importance() &lt;TFTExplainabilityResult.get_decoder_importance&gt;`: decoder feature importances</span>
+<span class="sd">      including future part of future covariates.</span>
+<span class="sd">    - :func:`get_static_covariates_importance() &lt;TFTExplainabilityResult.get_static_covariates_importance&gt;`: static</span>
+<span class="sd">      covariates importances.</span>
+<span class="sd">    - :func:`get_feature_importances() &lt;TFTExplainabilityResult.get_feature_importances&gt;`: get all feature importances</span>
+<span class="sd">      at once.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; explainer = TFTExplainer(model)  # requires `background` if model was trained on multiple series</span>
+<span class="sd">    &gt;&gt;&gt; explain_results = explainer.explain()</span>
+<span class="sd">    &gt;&gt;&gt; attention = explain_results.get_attention()</span>
+<span class="sd">    &gt;&gt;&gt; importances = explain_results.get_feature_importances()</span>
+<span class="sd">    &gt;&gt;&gt; encoder_importance = explain_results.get_encoder_importance()</span>
+<span class="sd">    &gt;&gt;&gt; decoder_importance = explain_results.get_decoder_importance()</span>
+<span class="sd">    &gt;&gt;&gt; static_covariates_importance = explain_results.get_static_covariates_importance()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">explanations</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+            <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="p">],</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">explanations</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_importances</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;encoder_importance&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;decoder_importance&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;static_covariates_importance&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+<div class="viewcode-block" id="TFTExplainabilityResult.get_attention"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult.get_attention">[docs]</a>    <span class="k">def</span> <span class="nf">get_attention</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,</span>
+<span class="sd">        `output_chunk_length`). The time index ranges from the prediction series&#39; start time - input_chunk_length and</span>
+<span class="sd">        ends at the prediction series&#39; end time. If multiple series were used when calling</span>
+<span class="sd">        :func:`TFTExplainer.explain() &lt;darts.explainability.tft_explainer.TFTExplainer.explain&gt;`, returns a list of</span>
+<span class="sd">        TimeSeries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">attention</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_explanation</span><span class="p">(</span><span class="s2">&quot;attention&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">attention</span></div>
+
+<div class="viewcode-block" id="TFTExplainabilityResult.get_feature_importances"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult.get_feature_importances">[docs]</a>    <span class="k">def</span> <span class="nf">get_feature_importances</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the feature importances for the encoder, decoder and static covariates as pd.DataFrames.</span>
+<span class="sd">        If multiple series were used in :func:`TFTExplainer.explain()</span>
+<span class="sd">        &lt;darts.explainability.tft_explainer.TFTExplainer.explain&gt;`, returns a list of pd.DataFrames per importance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">comp</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_explanation</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_importances</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="TFTExplainabilityResult.get_encoder_importance"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult.get_encoder_importance">[docs]</a>    <span class="k">def</span> <span class="nf">get_encoder_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the time-dependent encoder importances as a pd.DataFrames.</span>
+<span class="sd">        If multiple series were used in :func:`TFTExplainer.explain()</span>
+<span class="sd">        &lt;darts.explainability.tft_explainer.TFTExplainer.explain&gt;`, returns a list of pd.DataFrames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_explanation</span><span class="p">(</span><span class="s2">&quot;encoder_importance&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TFTExplainabilityResult.get_decoder_importance"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult.get_decoder_importance">[docs]</a>    <span class="k">def</span> <span class="nf">get_decoder_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the time-dependent decoder importances as a pd.DataFrames.</span>
+<span class="sd">        If multiple series were used in :func:`TFTExplainer.explain()</span>
+<span class="sd">        &lt;darts.explainability.tft_explainer.TFTExplainer.explain&gt;`, returns a list of pd.DataFrames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_explanation</span><span class="p">(</span><span class="s2">&quot;decoder_importance&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TFTExplainabilityResult.get_static_covariates_importance"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult.get_static_covariates_importance">[docs]</a>    <span class="k">def</span> <span class="nf">get_static_covariates_importance</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the numeric and categorical static covariates importances as a pd.DataFrames.</span>
+<span class="sd">        If multiple series were used in :func:`TFTExplainer.explain()</span>
+<span class="sd">        &lt;darts.explainability.tft_explainer.TFTExplainer.explain&gt;`, returns a list of pd.DataFrames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_explanation</span><span class="p">(</span><span class="s2">&quot;static_covariates_importance&quot;</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

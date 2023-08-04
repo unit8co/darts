@@ -865,6 +865,10 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">layer_widths</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_prepare_pooling_downsampling</span><span class="p">(</span>
         <span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="n">n_freq_downsample</span><span class="p">,</span> <span class="n">in_len</span><span class="p">,</span> <span class="n">out_len</span><span class="p">,</span> <span class="n">num_blocks</span><span class="p">,</span> <span class="n">num_stacks</span>

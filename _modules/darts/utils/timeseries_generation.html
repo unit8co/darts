@@ -187,7 +187,7 @@
     <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">freq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">freq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency</span>
@@ -917,10 +917,30 @@
 <span class="k">def</span> <span class="nf">_build_forecast_series</span><span class="p">(</span>
     <span class="n">points_preds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
     <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">custom_columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">with_static_covs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">with_hierarchy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Builds a forecast time series starting after the end of an input time series, with the</span>
 <span class="sd">    correct time index (or after the end of the input series, if specified).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    points_preds</span>
+<span class="sd">        Forecasted values, can be either the target(s) or parameters of the likelihood model</span>
+<span class="sd">    input_series</span>
+<span class="sd">        TimeSeries used as input for the prediction</span>
+<span class="sd">    custom_columns</span>
+<span class="sd">        New names for the forecast TimeSeries, used when the number of components changes</span>
+<span class="sd">    with_static_covs</span>
+<span class="sd">        If set to False, do not copy the input_series `static_covariates` attribute</span>
+<span class="sd">    with_hierarchy</span>
+<span class="sd">        If set to False, do not copy the input_series `hierarchy` attribute</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    TimeSeries</span>
+<span class="sd">        New TimeSeries instance starting after the input series</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">time_index_length</span> <span class="o">=</span> <span class="p">(</span>
         <span class="nb">len</span><span class="p">(</span><span class="n">points_preds</span><span class="p">)</span>
@@ -938,9 +958,9 @@
         <span class="n">time_index</span><span class="p">,</span>
         <span class="n">values</span><span class="p">,</span>
         <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
-        <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
-        <span class="n">static_covariates</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
-        <span class="n">hierarchy</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">custom_columns</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">custom_columns</span><span class="p">,</span>
+        <span class="n">static_covariates</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">static_covariates</span> <span class="k">if</span> <span class="n">with_static_covs</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">hierarchy</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">hierarchy</span> <span class="k">if</span> <span class="n">with_hierarchy</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
 
 

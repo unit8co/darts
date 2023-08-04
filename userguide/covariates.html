@@ -244,12 +244,12 @@
   </a>
   <ul class="nav section-nav flex-column">
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id5">
+    <a class="reference internal nav-link" href="#id3">
      Local Forecasting Models (LFMs):
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id6">
+    <a class="reference internal nav-link" href="#id4">
      Global Forecasting Models (GFMs):
     </a>
    </li>
@@ -400,7 +400,7 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </section>
 <section id="global-forecasting-models-gfms">
 <h3>Global Forecasting Models (GFMs)<a class="headerlink" href="#global-forecasting-models-gfms" title="Permalink to this headline">¶</a></h3>
-<p>GFMs are broadly speaking “machine learning based” models, which denote PyTorch-based (deep learning) models as well as RegressionModels. Global models can all be trained on multiple <code class="docutils literal notranslate"><span class="pre">target</span></code> (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data.</p>
+<p>GFMs are broadly speaking “machine learning based” models, which denote PyTorch-based (deep learning) models, RegressionModels, as well EnsembleModels (depending on their ensemble model and / or the forecasting models they ensemble). Global models can all be trained on multiple <code class="docutils literal notranslate"><span class="pre">target</span></code> (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data.</p>
 <hr class="docutils" />
 <table class="table">
 <colgroup>
@@ -422,59 +422,79 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
+<tr class="row-odd"><td><p>Naive Baselines (a)</p></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Croston</span> <span class="pre">method</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ARIMA</span></code></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA">ARIMA</a></p></td>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARIMA</span></code></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA">VARIMA</a></p></td>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AutoARIMA</span></code></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA">AutoARIMA</a></p></td>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoARIMA</span></code></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA">StatsForecastAutoArima</a></p></td>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing">ExponentialSmoothing</a></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS">StatsforecastAutoETS</a></p></td>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES">StatsforecastAutoCES</a></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS">BATS</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS">TBATS</a></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta">Theta</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta">FourTheta</a></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta">StatsForecastAutoTheta</a></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet">Prophet</a></p></td>
 <td></td>
 <td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT">FFT</a> (Fast Fourier Transform)</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster">KalmanForecaster</a></p></td>
+<td></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston">Croston</a> method</p></td>
+<td></td>
+<td></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><strong>Global Forecasting Models (GFMs)</strong></p></td>
@@ -482,52 +502,62 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>*</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>**</p></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code><a href="#id1"><span class="problematic" id="id2">**</span></a><a href="#id3"><span class="problematic" id="id4">*</span></a></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code></p></td>
+<tr class="row-odd"><td><p>Regression Models (b)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DLinearModel</span></code></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel">RNNModel</a> (c)</p></td>
+<td></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">BlockRNNModel</a> (d)</p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel">NBEATSModel</a></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel">NHiTSModel</a></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tcn_model.html#darts.models.forecasting.tcn_model.TCNModel">TCNModel</a></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel">TransformerModel</a></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel">TFTModel</a></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NLinearModel</span></code></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel">DLinearModel</a></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel">NLinearModel</a></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel">TiDEModel</a></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p>Ensemble Models (e)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -535,11 +565,13 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </tbody>
 </table>
 <p><strong>Table 1: Darts’ forecasting models and their covariate support</strong></p>
-<p><code class="docutils literal notranslate"><span class="pre">*</span></code> <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> including <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>, <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>. <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> is a
-special kind of GFM which can use arbitrary lags on covariates (past and/or future)
-and past targets to do predictions.</p>
-<p><code class="docutils literal notranslate"><span class="pre">**</span></code> <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code>; equivalent to DeepAR in its probabilistic version</p>
-<p><code class="docutils literal notranslate"><span class="pre">***</span></code> <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code></p>
+<ol class="loweralpha simple">
+<li><p>Naive Baselines including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean">NaiveMean</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal">NaiveSeasonal</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift">NaiveDrift</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage">NaiveMovingAverage</a>.</p></li>
+<li><p>Regression Models including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#regression-model">RegressionModel</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">LinearRegressionModel</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest">RandomForest</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">LightGBMModel</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel">XGBModel</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel">CatBoostModel</a>. RegressionModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to do predictions.</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel">RNNModel</a> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code>; equivalent to DeepAR in its probabilistic version</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">BlockRNNModel</a> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code></p></li>
+<li><p>Ensemble Model including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a>. The covariate support is given by the covariate support of the ensembled forecasting models.</p></li>
+</ol>
 </section>
 </section>
 <hr class="docutils" />
@@ -595,16 +627,16 @@ and past targets to do predictions.</p>
 <h2>Covariate time span requirements for Local and Global Forecasting Models<a class="headerlink" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models" title="Permalink to this headline">¶</a></h2>
 <p>There are differences in how Darts’ “Local” and “Global” Forecasting Models perform training and prediction. Specifically, how they extract/work with the data supplied during fit() and predict().</p>
 <p>Depending on the model you use and how long your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> is, there might be different time span requirements for your covariates.</p>
-<section id="id5">
-<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<section id="id3">
+<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>LFMs usually train on the entire <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> series (if supported) you supplied when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> at once. They can also predict in one go for forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> after the end of the <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
 <p><em>Time span requirements to use the same future covariates series for both ``fit()`` and ``predict()``:</em></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>: <strong>at least</strong> the same time span as <code class="docutils literal notranslate"><span class="pre">target</span></code> plus the next <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps after the end of <code class="docutils literal notranslate"><span class="pre">target</span></code></p></li>
 </ul>
 </section>
-<section id="id6">
-<h3>Global Forecasting Models (GFMs):<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<section id="id4">
+<h3>Global Forecasting Models (GFMs):<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <p>GFMs train and predict on fixed-length chunks (sub-samples) of the <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> series (if supported). Each chunk contains an input chunk - representing the sample’s past - and an output chunk - the sample’s future. The length of these chunks has to be specified at model creation with parameters <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (one notable exception is <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> which always uses an <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> of 1).</p>
 <p>Depending on your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>, the model can either predict in one go, or auto-regressively, by predicting on multiple chunks in the future. That is the reason why when predicting with <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> you have to supply additional “future values of your <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>“.</p>
 <p><strong>Time span requirements to use the same past and / or future covariates series for both ``fit()`` and ``predict()``:</strong></p>

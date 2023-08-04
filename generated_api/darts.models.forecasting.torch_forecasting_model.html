@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>TorchForecastingModel &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Transformer Model" href="darts.models.forecasting.transformer_model.html" />
-    <link rel="prev" title="Theta Method" href="darts.models.forecasting.theta.html" />
+    <link rel="prev" title="Time-series Dense Encoder (TiDE)" href="darts.models.forecasting.tide_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -93,7 +93,7 @@
  </a>
 </li>
 
-<li class="toctree-l1 nav-item">
+<li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
  </a>
@@ -146,7 +146,7 @@
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
+    <ul class="current nav bd-sidenav">
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="darts.ad.html">
    Anomaly Detection
@@ -313,11 +313,33 @@
   </label>
   <ul>
    <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.encoders.html">
-     Time Axis Encoders
+    <a class="reference internal" href="darts.dataprocessing.dtw.html">
+     Dynamic Time Warping (DTW)
     </a>
     <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
     <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
+       Dynamic Time Warping (DTW)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
+       DTW Windows
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.encoders.html">
+     Time Axis Encoders
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -338,8 +360,8 @@
     <a class="reference internal" href="darts.dataprocessing.transformers.html">
      Data Transformers
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-    <label for="toctree-checkbox-8">
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -412,8 +434,8 @@
   <a class="reference internal" href="darts.datasets.html">
    Datasets
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-  <label for="toctree-checkbox-9">
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -424,20 +446,25 @@
   <a class="reference internal" href="darts.explainability.html">
    Explainability
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
-  <label for="toctree-checkbox-10">
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
    <i class="fas fa-chevron-down">
    </i>
   </label>
   <ul>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.explainability_result.html">
-     ExplainabilityResult
+     Explainability Result
     </a>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
      Shap Explainer for RegressionModels
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.tft_explainer.html">
+     TFT Explainer for Temporal Fusion Transformer (TFTModel)
     </a>
    </li>
   </ul>
@@ -446,8 +473,8 @@
   <a class="reference internal" href="darts.metrics.html">
    Metrics
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
-  <label for="toctree-checkbox-11">
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -459,16 +486,16 @@
    </li>
   </ul>
  </li>
- <li class="toctree-l1 has-children">
+ <li class="toctree-l1 current active has-children">
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
-  <label for="toctree-checkbox-12">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+  <label for="toctree-checkbox-13">
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul>
+  <ul class="current">
    <li class="toctree-l2">
     <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
      StatsForecast utils
@@ -478,8 +505,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
-    <label for="toctree-checkbox-13">
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -501,16 +528,16 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2 has-children">
+   <li class="toctree-l2 current active has-children">
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
-    <label for="toctree-checkbox-14">
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+    <label for="toctree-checkbox-15">
      <i class="fas fa-chevron-down">
      </i>
     </label>
-    <ul>
+    <ul class="current">
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.arima.html">
        ARIMA
@@ -529,11 +556,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
        Block Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost model
       </a>
      </li>
      <li class="toctree-l3">
@@ -562,11 +584,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -584,11 +601,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nlinear.html">
        N-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -652,6 +664,16 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
+       Time-series Dense Encoder (TiDE)
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       TorchForecastingModel
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
        Transformer Model
       </a>
@@ -674,8 +696,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
-  <label for="toctree-checkbox-15">
+  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <label for="toctree-checkbox-16">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -684,8 +706,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
-    <label for="toctree-checkbox-16">
+    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <label for="toctree-checkbox-17">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -778,14 +800,9 @@
               
               <div class="toc-item">
                 
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
-</div>
 
 <nav id="bd-toc-nav">
-    <ul class="simple visible nav section-nav flex-column">
-</ul>
-
+    
 </nav>
               </div>
               
@@ -805,7 +822,9 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.torch_forecasting_model"></span><p>This file contains several abstract classes:</p>
+  <span class="target" id="module-darts.models.forecasting.torch_forecasting_model"></span><section id="torchforecastingmodel">
+<h1>TorchForecastingModel<a class="headerlink" href="#torchforecastingmodel" title="Permalink to this headline">¶</a></h1>
+<p>This file contains several abstract classes:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.</p></li>
@@ -822,6 +841,7 @@ values of some future covariates.</p></li>
 forecasting models.</p></li>
 </ul>
 </div></blockquote>
+</section>
 
 
               </div>
@@ -829,11 +849,11 @@ forecasting models.</p></li>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.models.forecasting.theta.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.models.forecasting.tide_model.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Theta Method</p>
+            <p class="prev-next-title">Time-series Dense Encoder (TiDE)</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.models.forecasting.transformer_model.html" title="next page">

@@ -391,32 +391,32 @@
 <span class="sd">    If the input type is single TimeSeries, then only splitting over time axis is available, thus `input_size` and</span>
 <span class="sd">    `horizon` have to be provided.</span>
 
-<span class="sd">    When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of</span>
+<span class="sd">    When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e., when one of</span>
 <span class="sd">    the timeseries in the sequence is too small, all samples will go to the test set and the exception will be raised.</span>
 
-<span class="sd">    Time axis split with ``&#39;model-aware&#39;`` split type enabled tries to reclaim as much datapoints for training as</span>
-<span class="sd">    possible by partially overlapping test set with training set. This is possible because only the forecasted part of</span>
-<span class="sd">    the test set cannot be used for training. The formula to calculate last available timestep for training set is</span>
-<span class="sd">    following:</span>
+<span class="sd">    Time axis split with ``&#39;model-aware&#39;`` split type enabled tries to reclaim as many datapoints for training as</span>
+<span class="sd">    possible by partially overlapping test and training set. This is possible because only the forecasted part of</span>
+<span class="sd">    the test set cannot be used for training. The formula to calculate the last available timestep for the training</span>
+<span class="sd">    set is the following:</span>
 
-<span class="sd">        ``train end index = ts_length - self.horizon - test_size``</span>
+<span class="sd">        ``train end index = ts_length - horizon - test_size``</span>
 
-<span class="sd">    And the formula to calculate the first timestep of test dataset is following:</span>
+<span class="sd">    And the formula to calculate the first timestep of the test dataset is:</span>
 
-<span class="sd">        ``test start index = timeseries length - horizon - input_size - test_size + 1``</span>
+<span class="sd">        ``test start index = ts_length - horizon - test_size - input_size + 1``</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    data</span>
 <span class="sd">        original dataset to split into training and test</span>
 <span class="sd">    test_size</span>
-<span class="sd">        size of the test set. If the value is between 0 and 1, parameter is treated as a split proportion. Otherwise</span>
-<span class="sd">        it is treated as a absolute number of samples from each timeseries that will be in the test set.</span>
+<span class="sd">        size of the test set. If the value is between 0 and 1, parameter is treated as a split proportion. Otherwise,</span>
+<span class="sd">        it is treated as an absolute number of samples from each timeseries that will be in the test set.</span>
 <span class="sd">        [default = 0.25]</span>
 <span class="sd">    axis</span>
-<span class="sd">        Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if `axis = 1`,</span>
-<span class="sd">        timeseries are split along time axis. Note that for single timeseries the default option is 1 (0 makes</span>
-<span class="sd">        no sense). [default: 0 for sequence of timeseries, 1 for timeseries]</span>
+<span class="sd">        Axis to split the dataset on. When 0 (default), it is split on samples. Otherwise, if `axis = 1`,</span>
+<span class="sd">        timeseries are split along the time axis. Note that for single timeseries the default option is 1</span>
+<span class="sd">        (0 makes no sense). [default: 0 for sequence of timeseries, 1 for timeseries]</span>
 <span class="sd">    input_size</span>
 <span class="sd">        size of the input. Only valid with ``vertical_split_type == &#39;model-aware&#39;``. [default: None]</span>
 <span class="sd">    horizon</span>
@@ -424,11 +424,11 @@
 <span class="sd">    vertical_split_type</span>
 <span class="sd">        can be either ``&#39;simple&#39;``, where the exact number from test size will be deducted from timeseries for test set</span>
 <span class="sd">        and remaining will go to training set; or ``&#39;model-aware&#39;``, where you have to provide `input_size` and</span>
-<span class="sd">        `horizon` as well. Note, that second option is more efficient timestep-wise, since training and test sets will</span>
-<span class="sd">        be partially overlapping. [default: ``&#39;simple&#39;``]</span>
+<span class="sd">        `horizon` as well. Note, that the second option is more efficient timestep-wise, since training and test sets</span>
+<span class="sd">        will partially overlap. [default: ``&#39;simple&#39;``]</span>
 <span class="sd">    lazy</span>
 <span class="sd">        by default, train and test datasets are returned as a list of timeseries. This may be memory</span>
-<span class="sd">        inefficient if dataset is large, so setting this flag allows instead to return a ``Sequence`` object</span>
+<span class="sd">        inefficient if the dataset is large, so setting this flag instead allows to return a ``Sequence`` object</span>
 <span class="sd">        loading the data lazily. Warning: turning ``lazy`` on disables some sanity checks for the datasets</span>
 <span class="sd">        that may result in exceptions during sample generation. [default: False]</span>
 

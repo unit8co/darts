@@ -165,8 +165,13 @@
               <div>
                 
   <h1>Source code for darts.dataprocessing.dtw.dtw</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Dynamic Time Warping (DTW)</span>
+<span class="sd">--------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -188,7 +193,7 @@
 <span class="c1"># CORE ALGORITHM</span>
 <span class="k">def</span> <span class="nf">_dtw_cost_matrix</span><span class="p">(</span>
     <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="n">DistanceFunc</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">Window</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CostMatrix</span><span class="p">:</span>
 
     <span class="n">dtw</span> <span class="o">=</span> <span class="n">CostMatrix</span><span class="o">.</span><span class="n">_from_window</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
 
@@ -305,8 +310,33 @@
     <span class="k">return</span> <span class="n">cost</span>
 
 
+<span class="k">def</span> <span class="nf">_default_distance_multi</span><span class="p">(</span><span class="n">x_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x_values</span> <span class="o">-</span> <span class="n">y_values</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_default_distance_uni</span><span class="p">(</span><span class="n">x_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x_value</span> <span class="o">-</span> <span class="n">y_value</span><span class="p">)</span>
+
+
 <span class="c1"># Public API Functions</span>
 <div class="viewcode-block" id="DTWAlignment"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.DTWAlignment">[docs]</a><span class="k">class</span> <span class="nc">DTWAlignment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dynamic Time Warping (DTW) Alignment.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n</span>
+<span class="sd">        The length of `series1`</span>
+<span class="sd">    m</span>
+<span class="sd">        The length of `series2`</span>
+<span class="sd">    series1</span>
+<span class="sd">        A `TimeSeries` to align with `series2`.</span>
+<span class="sd">    series2</span>
+<span class="sd">        A `TimeSeries` to align with `series1`.</span>
+<span class="sd">    cost</span>
+<span class="sd">        The `CostMatrix` for DTW.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">n</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">m</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span>
@@ -314,7 +344,6 @@
     <span class="n">cost</span><span class="p">:</span> <span class="n">CostMatrix</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">cost</span><span class="p">:</span> <span class="n">CostMatrix</span><span class="p">):</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">=</span> <span class="n">series1</span>
@@ -324,7 +353,8 @@
     <span class="kn">from</span> <span class="nn">._plot</span> <span class="kn">import</span> <span class="n">plot</span><span class="p">,</span> <span class="n">plot_alignment</span>
 
 <div class="viewcode-block" id="DTWAlignment.path"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.DTWAlignment.path">[docs]</a>    <span class="k">def</span> <span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gives the index paths from `series1` to `series2`.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        np.ndarray of shape `(len(path), 2)`</span>
@@ -339,7 +369,8 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span></div>
 
 <div class="viewcode-block" id="DTWAlignment.distance"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.DTWAlignment.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gives the total distance between pair-wise elements in the two series after warping.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        float</span>
@@ -348,7 +379,8 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">)]</span></div>
 
 <div class="viewcode-block" id="DTWAlignment.mean_distance"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.DTWAlignment.mean_distance">[docs]</a>    <span class="k">def</span> <span class="nf">mean_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gives the mean distance between pair-wise elements in the two series after warping.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        float</span>
@@ -362,9 +394,8 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_distance</span></div>
 
 <div class="viewcode-block" id="DTWAlignment.warped"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.DTWAlignment.warped">[docs]</a>    <span class="k">def</span> <span class="nf">warped</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Warps the two time series according to the warp path returned by .path(), which minimizes</span>
-<span class="sd">        the pair-wise distance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Warps the two time series according to the warp path returned by `DTWAlignment.path()`, which minimizes the</span>
+<span class="sd">        pair-wise distance.</span>
 <span class="sd">        This will bring two time series that are out-of-phase back into phase.</span>
 
 <span class="sd">        Returns</span>
@@ -421,24 +452,16 @@
         <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="default_distance_multi"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.default_distance_multi">[docs]</a><span class="k">def</span> <span class="nf">default_distance_multi</span><span class="p">(</span><span class="n">x_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x_values</span> <span class="o">-</span> <span class="n">y_values</span><span class="p">))</span></div>
-
-
-<div class="viewcode-block" id="default_distance_uni"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.default_distance_uni">[docs]</a><span class="k">def</span> <span class="nf">default_distance_uni</span><span class="p">(</span><span class="n">x_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x_value</span> <span class="o">-</span> <span class="n">y_value</span><span class="p">)</span></div>
-
-
 <div class="viewcode-block" id="dtw"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.dtw">[docs]</a><span class="k">def</span> <span class="nf">dtw</span><span class="p">(</span>
     <span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">window</span><span class="p">:</span> <span class="n">Window</span> <span class="o">=</span> <span class="n">NoWindow</span><span class="p">(),</span>
+    <span class="n">window</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Window</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">distance</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DistanceFunc</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">multi_grid_radius</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DTWAlignment</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Determines the optimal alignment between two time series series1 and series2,</span>
-<span class="sd">    according to the Dynamic Time Warping algorithm.</span>
+<span class="sd">    Determines the optimal alignment between two time series `series1` and `series2`, according to the Dynamic Time</span>
+<span class="sd">    Warping algorithm.</span>
 <span class="sd">    The alignment minimizes the distance between pair-wise elements after warping.</span>
 <span class="sd">    All elements in the two series are matched and are in strictly monotonically increasing order.</span>
 <span class="sd">    Considers only the values in the series, ignoring the time axis.</span>
@@ -449,12 +472,12 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    series1</span>
-<span class="sd">        `TimeSeries`</span>
+<span class="sd">        A `TimeSeries` to align with `series2`.</span>
 <span class="sd">    series2</span>
-<span class="sd">        A `TimeSeries`</span>
+<span class="sd">        A `TimeSeries` to align with `series1`.</span>
 <span class="sd">    window</span>
-<span class="sd">        Used to constrain the search for the optimal alignment: see SakoeChiba and Itakura.</span>
-<span class="sd">        Default considers all possible alignments.</span>
+<span class="sd">        Optionally, a `Window` used to constrain the search for the optimal alignment: see `SakoeChiba` and `Itakura`.</span>
+<span class="sd">        Default considers all possible alignments (`NoWindow`).</span>
 <span class="sd">    distance</span>
 <span class="sd">        Function taking as input either two `floats` for univariate series or two `np.ndarray`,</span>
 <span class="sd">        and returning the distance between them.</span>
@@ -462,11 +485,11 @@
 <span class="sd">        Defaults to the abs difference for univariate-data and the</span>
 <span class="sd">        sum of the abs difference for multi-variate series.</span>
 <span class="sd">    multi_grid_radius</span>
-<span class="sd">        Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.</span>
+<span class="sd">        Default radius of `-1` results in an exact evaluation of the dynamic time warping algorithm.</span>
 <span class="sd">        Without constraints DTW runs in O(nxm) time where n,m are the size of the series.</span>
 <span class="sd">        Exact evaluation with no constraints, will result in a performance warning on large datasets.</span>
 
-<span class="sd">        Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,</span>
+<span class="sd">        Setting `multi_grid_radius` to a value other than `-1`, will enable the approximate multi-grid solver,</span>
 <span class="sd">        which executes in linear time, vs quadratic time for exact evaluation.</span>
 <span class="sd">        Increasing radius trades solution accuracy for performance.</span>
 
@@ -475,6 +498,8 @@
 <span class="sd">    DTWAlignment</span>
 <span class="sd">        Helper object for getting warp path, mean_distance, distance and warped time series</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">NoWindow</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="p">(</span>
         <span class="n">multi_grid_radius</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
@@ -495,7 +520,7 @@
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">distance</span> <span class="o">=</span> <span class="n">default_distance_uni</span> <span class="k">if</span> <span class="n">both_univariate</span> <span class="k">else</span> <span class="n">default_distance_multi</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">_default_distance_uni</span> <span class="k">if</span> <span class="n">both_univariate</span> <span class="k">else</span> <span class="n">_default_distance_multi</span>
 
     <span class="k">if</span> <span class="n">both_univariate</span><span class="p">:</span>
         <span class="n">values_x</span> <span class="o">=</span> <span class="n">series1</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>

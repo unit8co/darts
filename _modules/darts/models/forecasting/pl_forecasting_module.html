@@ -255,7 +255,6 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="c1"># save hyper parameters for saving/loading</span>
-        <span class="c1"># do not save type nn.Module params</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_hyperparameters</span><span class="p">(</span><span class="n">ignore</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;loss_fn&quot;</span><span class="p">,</span> <span class="s2">&quot;torch_metrics&quot;</span><span class="p">])</span>
 
         <span class="n">raise_if</span><span class="p">(</span>
@@ -265,7 +264,8 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="c1"># output_chunk_length is a property</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
 
         <span class="c1"># define the loss function</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span> <span class="o">=</span> <span class="n">loss_fn</span>
@@ -283,19 +283,8 @@
             <span class="nb">dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">lr_scheduler_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">lr_scheduler_kwargs</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">torch_metrics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">([])</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">torch_metrics</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">):</span>
-            <span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">([</span><span class="n">torch_metrics</span><span class="p">])</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">torch_metrics</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">):</span>
-            <span class="k">pass</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">AttributeError</span><span class="p">(</span>
-                    <span class="s2">&quot;`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="c1"># convert torch_metrics to torchmetrics.MetricCollection</span>
+        <span class="n">torch_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configure_torch_metrics</span><span class="p">(</span><span class="n">torch_metrics</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span> <span class="o">=</span> <span class="n">torch_metrics</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;train_&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span> <span class="o">=</span> <span class="n">torch_metrics</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;val_&quot;</span><span class="p">)</span>
 
@@ -419,20 +408,32 @@
             <span class="n">delayed</span><span class="p">(</span><span class="n">_build_forecast_series</span><span class="p">)(</span>
                 <span class="p">[</span><span class="n">batch_prediction</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">batch_prediction</span> <span class="ow">in</span> <span class="n">batch_predictions</span><span class="p">],</span>
                 <span class="n">input_series</span><span class="p">,</span>
+                <span class="n">custom_columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">likelihood_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span>
+                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">with_static_covs</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="n">with_hierarchy</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="n">input_series</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batch_input_series</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">ts_forecasts</span></div>
 
 <div class="viewcode-block" id="PLForecastingModule.set_predict_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_predict_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">set_predict_parameters</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">roll_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">roll_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pred_n</span> <span class="o">=</span> <span class="n">n</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pred_num_samples</span> <span class="o">=</span> <span class="n">num_samples</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pred_roll_size</span> <span class="o">=</span> <span class="n">roll_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pred_batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pred_n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred_n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span></div>
 
     <span class="k">def</span> <span class="nf">_compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
         <span class="c1"># output is of shape (batch_size, n_timesteps, n_components, n_params)</span>
@@ -544,13 +545,17 @@
         <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_mc_dropout_modules</span><span class="p">():</span>
             <span class="n">module</span><span class="o">.</span><span class="n">mc_dropout_enabled</span> <span class="o">=</span> <span class="n">active</span></div>
 
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_mc_dropout_modules</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
             <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
@@ -558,13 +563,34 @@
         <span class="c1"># we must save the dtype for correct parameter precision at loading time</span>
         <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;model_dtype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span>
         <span class="c1"># we must save the shape of the input to be able to instanciate the model without calling fit_from_dataset</span>
-        <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;train_sample_shape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_sample_shape</span></div>
+        <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;train_sample_shape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_sample_shape</span>
+        <span class="c1"># we must save the loss to properly restore it when resuming training</span>
+        <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;loss_fn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span>
+        <span class="c1"># we must save the metrics to continue outputing them when resuming training</span>
+        <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;torch_metrics_train&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span>
+        <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;torch_metrics_val&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span></div>
 
 <div class="viewcode-block" id="PLForecastingModule.on_load_checkpoint"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_load_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">on_load_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision</span>
         <span class="c1"># before parameters are loaded by PyTorch-Lightning</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;model_dtype&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="c1"># restoring attributes necessary to resume from training properly</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="s2">&quot;loss_fn&quot;</span> <span class="ow">in</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="s2">&quot;torch_metrics_train&quot;</span> <span class="ow">in</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;loss_fn&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;torch_metrics_train&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;torch_metrics_val&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># explicitly indicate to the user that there is a bug</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;This checkpoint was generated with darts &lt;= 0.24.0, if a custom loss &quot;</span>
+                <span class="s2">&quot;was used to train the model, it won&#39;t be properly loaded. Similarly, &quot;</span>
+                <span class="s2">&quot;the torch metrics won&#39;t be restored from the checkpoint.&quot;</span>
+            <span class="p">)</span></div>
 
 <div class="viewcode-block" id="PLForecastingModule.to_dtype"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.to_dtype">[docs]</a>    <span class="k">def</span> <span class="nf">to_dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Cast module precision (float32 by default) to another precision.&quot;&quot;&quot;</span>
@@ -590,7 +616,34 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">pl_160_or_above</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_step</span><span class="p">):</span>
             <span class="n">current_epoch</span> <span class="o">+=</span> <span class="mi">1</span>
 
-        <span class="k">return</span> <span class="n">current_epoch</span></div>
+        <span class="k">return</span> <span class="n">current_epoch</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_chunk_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Number of time steps predicted at once by the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_chunk_length</span>
+
+<div class="viewcode-block" id="PLForecastingModule.configure_torch_metrics"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_torch_metrics">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">configure_torch_metrics</span><span class="p">(</span>
+        <span class="n">torch_metrics</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torchmetrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;process the torch_metrics parameter.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">torch_metrics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">([])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">torch_metrics</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">):</span>
+            <span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">([</span><span class="n">torch_metrics</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">torch_metrics</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">AttributeError</span><span class="p">(</span>
+                    <span class="s2">&quot;`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch_metrics</span></div></div>
 
 
 <div class="viewcode-block" id="PLPastCovariatesModule"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule">[docs]</a><span class="k">class</span> <span class="nc">PLPastCovariatesModule</span><span class="p">(</span><span class="n">PLForecastingModule</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
@@ -649,7 +702,7 @@
             <span class="n">dim</span><span class="o">=</span><span class="n">dim_component</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">((</span><span class="n">input_past</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">))[</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">input_past</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">))[</span>
             <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span> <span class="p">:,</span> <span class="p">:</span>
         <span class="p">]</span>
 
@@ -698,9 +751,10 @@
                 <span class="p">]</span> <span class="o">=</span> <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
 
             <span class="c1"># take only last part of the output sequence where needed</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">((</span><span class="n">input_past</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">))[</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">input_past</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">))[</span>
                 <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span> <span class="p">:,</span> <span class="p">:</span>
             <span class="p">]</span>
+
             <span class="n">batch_prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
             <span class="n">prediction_length</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
 

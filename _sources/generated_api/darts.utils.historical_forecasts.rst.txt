@@ -1,0 +1,11 @@
+
+
+
+.. automodule:: darts.utils.historical_forecasts
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.utils.historical_forecasts.optimized_historical_forecasts
+        darts.utils.historical_forecasts.utils

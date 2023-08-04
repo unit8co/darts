@@ -436,7 +436,7 @@
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
-<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
 <span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
@@ -620,8 +620,20 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span></div>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_weights</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_weights</span></div>
 </pre></div>
 
               </div>

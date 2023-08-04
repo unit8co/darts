@@ -196,13 +196,20 @@
     <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">last_static_covariates_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">multi_models</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">check_inputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">use_moving_windows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">is_training</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">concatenate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ArrayOrArraySequence</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">ArrayOrArraySequence</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="n">ArrayOrArraySequence</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">ArrayOrArraySequence</span><span class="p">],</span>
+    <span class="n">Sequence</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">],</span>
+    <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+<span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an</span>
 <span class="sd">    `sklearn` model) when `is_training = True`; alternatively, creates the features array `X` to produce a series</span>
@@ -321,6 +328,12 @@
 <span class="sd">        `lags_past_covariates`, `lags_future_covariates` values can be positive (i.e. use values *after* time `t`</span>
 <span class="sd">        to predict target at time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or</span>
 <span class="sd">        negative (i.e. use values *before* time `t` to predict target at time `t`).</span>
+<span class="sd">    uses_static_covariates</span>
+<span class="sd">        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must</span>
+<span class="sd">        have identical shapes across all target series.</span>
+<span class="sd">    last_static_covariates_shape</span>
+<span class="sd">        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when</span>
+<span class="sd">        `uses_static_covariates` is ``False``.</span>
 <span class="sd">    max_samples_per_ts</span>
 <span class="sd">        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent</span>
 <span class="sd">        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,</span>
@@ -374,6 +387,10 @@
 <span class="sd">        gives the times of those observations formed using the `i`th `TimeSeries` object in each</span>
 <span class="sd">        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only</span>
 <span class="sd">        element is the times of those observations formed from the lone `TimeSeries` inputs.</span>
+<span class="sd">    last_static_covariates_shape</span>
+<span class="sd">        The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`</span>
+<span class="sd">        is ``False``.</span>
+
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -455,6 +472,12 @@
                 <span class="n">check_inputs</span><span class="p">,</span>
                 <span class="n">is_training</span><span class="p">,</span>
             <span class="p">)</span>
+        <span class="n">X_i</span><span class="p">,</span> <span class="n">last_static_covariates_shape</span> <span class="o">=</span> <span class="n">add_static_covariates_to_lagged_data</span><span class="p">(</span>
+            <span class="n">features</span><span class="o">=</span><span class="n">X_i</span><span class="p">,</span>
+            <span class="n">target_series</span><span class="o">=</span><span class="n">target_i</span><span class="p">,</span>
+            <span class="n">uses_static_covariates</span><span class="o">=</span><span class="n">uses_static_covariates</span><span class="p">,</span>
+            <span class="n">last_shape</span><span class="o">=</span><span class="n">last_static_covariates_shape</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X_i</span><span class="p">)</span>
         <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_i</span><span class="p">)</span>
         <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">times_i</span><span class="p">)</span>
@@ -465,7 +488,7 @@
         <span class="n">y</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">elif</span> <span class="n">concatenate</span><span class="p">:</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span></div>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">last_static_covariates_shape</span></div>
 
 
 <div class="viewcode-block" id="create_lagged_training_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_training_data">[docs]</a><span class="k">def</span> <span class="nf">create_lagged_training_data</span><span class="p">(</span>
@@ -476,12 +499,19 @@
     <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">last_static_covariates_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">multi_models</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">check_inputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">use_moving_windows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">concatenate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ArrayOrArraySequence</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">ArrayOrArraySequence</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="n">ArrayOrArraySequence</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">ArrayOrArraySequence</span><span class="p">],</span>
+    <span class="n">Sequence</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">],</span>
+    <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+<span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an</span>
 <span class="sd">    `sklearn` model); the time index values of each observation is also returned.</span>
@@ -516,6 +546,12 @@
 <span class="sd">        `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at</span>
 <span class="sd">        time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use values</span>
 <span class="sd">        *before* time `t` to predict target at time `t`).</span>
+<span class="sd">    uses_static_covariates</span>
+<span class="sd">        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must</span>
+<span class="sd">        have identical shapes across all target series.</span>
+<span class="sd">    last_static_covariates_shape</span>
+<span class="sd">        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when</span>
+<span class="sd">        `uses_static_covariates` is ``False``.</span>
 <span class="sd">    max_samples_per_ts</span>
 <span class="sd">        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent</span>
 <span class="sd">        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,</span>
@@ -583,6 +619,8 @@
         <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
         <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+        <span class="n">uses_static_covariates</span><span class="o">=</span><span class="n">uses_static_covariates</span><span class="p">,</span>
+        <span class="n">last_static_covariates_shape</span><span class="o">=</span><span class="n">last_static_covariates_shape</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
         <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
         <span class="n">check_inputs</span><span class="o">=</span><span class="n">check_inputs</span><span class="p">,</span>
@@ -599,6 +637,8 @@
     <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">last_static_covariates_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">check_inputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">use_moving_windows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -636,6 +676,12 @@
 <span class="sd">        `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at</span>
 <span class="sd">        time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use</span>
 <span class="sd">        values *before* time `t` to predict target at time `t`).</span>
+<span class="sd">    uses_static_covariates</span>
+<span class="sd">        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must</span>
+<span class="sd">        have identical shapes across all target series.</span>
+<span class="sd">    last_static_covariates_shape</span>
+<span class="sd">        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when</span>
+<span class="sd">        `uses_static_covariates` is ``False``.</span>
 <span class="sd">    max_samples_per_ts</span>
 <span class="sd">        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent</span>
 <span class="sd">        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,</span>
@@ -684,13 +730,15 @@
 <span class="sd">        If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a</span>
 <span class="sd">        pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">X</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="n">create_lagged_data</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_lagged_data</span><span class="p">(</span>
         <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
         <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
         <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
         <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
         <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+        <span class="n">uses_static_covariates</span><span class="o">=</span><span class="n">uses_static_covariates</span><span class="p">,</span>
+        <span class="n">last_static_covariates_shape</span><span class="o">=</span><span class="n">last_static_covariates_shape</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
         <span class="n">check_inputs</span><span class="o">=</span><span class="n">check_inputs</span><span class="p">,</span>
         <span class="n">use_moving_windows</span><span class="o">=</span><span class="n">use_moving_windows</span><span class="p">,</span>
@@ -774,12 +822,15 @@
             <span class="n">static_covs</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
             <span class="c1"># we stack the static covariates to the right of lagged features</span>
             <span class="c1"># the broadcasting repeats the static covariates along axis=0 to match the number of feature rows</span>
+            <span class="n">shape_out</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">static_covs</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+                <span class="k">else</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">static_covs</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span>
             <span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
                 <span class="p">[</span>
                     <span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
-                        <span class="n">static_covs</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">static_covs</span><span class="p">))</span>
-                    <span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">static_covs</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape_out</span><span class="p">),</span>
                 <span class="p">]</span>
             <span class="p">)</span>
 

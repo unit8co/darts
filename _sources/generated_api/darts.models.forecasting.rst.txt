@@ -39,6 +39,7 @@
         darts.models.forecasting.tft_model
         darts.models.forecasting.tft_submodels
         darts.models.forecasting.theta
+        darts.models.forecasting.tide_model
         darts.models.forecasting.torch_forecasting_model
         darts.models.forecasting.transformer_model
         darts.models.forecasting.varima

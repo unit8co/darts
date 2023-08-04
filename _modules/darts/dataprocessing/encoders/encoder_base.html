@@ -181,9 +181,34 @@
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">generate_index</span>
 
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
 <span class="n">SupportedIndex</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]</span>
 <span class="n">EncoderOutputType</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span>
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_EncoderMethod</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Connects the encoder stage to the corresponding methods&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;inference&quot;</span><span class="p">,</span> <span class="s2">&quot;train_inference&quot;</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="s2">&quot;train&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;encode_train&quot;</span>
+        <span class="k">elif</span> <span class="n">stage</span> <span class="o">==</span> <span class="s2">&quot;inference&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;encode_inference&quot;</span>
+        <span class="k">elif</span> <span class="n">stage</span> <span class="o">==</span> <span class="s2">&quot;train_inference&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;encode_train_inference&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Unknown encoder `stage=</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">`. Must be on of `(&#39;train&#39;, &#39;inference&#39;, &#39;train_inference&#39;)`&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
 
 <div class="viewcode-block" id="CovariatesIndexGenerator"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator">[docs]</a><span class="k">class</span> <span class="nc">CovariatesIndexGenerator</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
@@ -294,6 +319,40 @@
 <span class="sd">            creation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="CovariatesIndexGenerator.generate_train_inference_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_train_inference_idx">[docs]</a>    <span class="k">def</span> <span class="nf">generate_train_inference_idx</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates/extracts time index (or integer index) for covariates for training and inference / prediction.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            The forecasting horizon.</span>
+<span class="sd">        target</span>
+<span class="sd">            The target TimeSeries used for training and inference / prediction as `series`.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, the covariates used for training and inference / prediction.</span>
+<span class="sd">            If given, the returned time index is equal to the `covariates` time index. Else, the returned time index</span>
+<span class="sd">            covers the minimum required covariate time spans for performing training and inference / prediction with a</span>
+<span class="sd">            specific forecasting model. These requirements are derived from parameters set at</span>
+<span class="sd">            :class:`CovariatesIndexGenerator` creation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">train_idx</span><span class="p">,</span> <span class="n">target_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_train_idx</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span>
+        <span class="p">)</span>
+        <span class="n">inference_idx</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_inference_idx</span><span class="p">(</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span>
+        <span class="p">)</span>
+        <span class="c1"># generate index end is inclusive, should not be a problem when taking union</span>
+        <span class="n">gap</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">train_idx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="n">inference_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">target</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">freq</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">train_idx</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">train_idx</span><span class="p">,</span> <span class="n">gap</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">inference_idx</span><span class="p">),</span>
+            <span class="n">target_end</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
@@ -611,7 +670,7 @@
 <span class="sd">        covariates</span>
 <span class="sd">            Optionally, the past or future covariates used for training.</span>
 <span class="sd">        merge_covariates</span>
-<span class="sd">            Whether or not to merge the encoded TimeSeries with `covariates`.</span>
+<span class="sd">            Whether to merge the encoded TimeSeries with `covariates`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
@@ -635,8 +694,32 @@
 <span class="sd">        covariates</span>
 <span class="sd">            Optionally, the past or future covariates used for prediction.</span>
 <span class="sd">        merge_covariates</span>
-<span class="sd">            Whether or not to merge the encoded TimeSeries with `covariates`.</span>
+<span class="sd">            Whether to merge the encoded TimeSeries with `covariates`.</span>
 
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Encoder.encode_train_inference"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.Encoder.encode_train_inference">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">encode_train_inference</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">merge_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Each subclass must implement a method to encode the covariates index for training and prediction.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            The forecast horizon</span>
+<span class="sd">        target</span>
+<span class="sd">            The target TimeSeries used during training and prediction.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, the past or future covariates used for training and prediction.</span>
+<span class="sd">        merge_covariates</span>
+<span class="sd">            Whether to merge the encoded TimeSeries with `covariates`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
@@ -756,7 +839,7 @@
 <span class="sd">            `PastCovariatesIndexGenerator`, future covariates if `self.index_generator` is a</span>
 <span class="sd">            `FutureCovariatesIndexGenerator`</span>
 <span class="sd">        merge_covariates</span>
-<span class="sd">            Whether or not to merge the encoded TimeSeries with `covariates`.</span>
+<span class="sd">            Whether to merge the encoded TimeSeries with `covariates`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># exclude encoded components from covariates to add the newly encoded components later</span>
         <span class="n">covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_drop_encoded_components</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
@@ -803,7 +886,7 @@
 <span class="sd">            `PastCovariatesIndexGenerator`, future covariates if `self.index_generator` is a</span>
 <span class="sd">            `FutureCovariatesIndexGenerator`</span>
 <span class="sd">        merge_covariates</span>
-<span class="sd">            Whether or not to merge the encoded TimeSeries with `covariates`.</span>
+<span class="sd">            Whether to merge the encoded TimeSeries with `covariates`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># some encoders must be fit before `encode_inference()`</span>
         <span class="n">raise_if</span><span class="p">(</span>
@@ -838,10 +921,65 @@
 
         <span class="k">return</span> <span class="n">encoded</span></div>
 
+<div class="viewcode-block" id="SingleEncoder.encode_train_inference"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder.encode_train_inference">[docs]</a>    <span class="k">def</span> <span class="nf">encode_train_inference</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">merge_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns encoded index for inference/prediction.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            The forecast horizon</span>
+<span class="sd">        target</span>
+<span class="sd">            The target TimeSeries used during training and prediction.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, the covariates used for training and prediction: past covariates if `self.index_generator` is a</span>
+<span class="sd">            `PastCovariatesIndexGenerator`, future covariates if `self.index_generator` is a</span>
+<span class="sd">            `FutureCovariatesIndexGenerator`</span>
+<span class="sd">        merge_covariates</span>
+<span class="sd">            Whether to merge the encoded TimeSeries with `covariates`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># exclude encoded components from covariates to add the newly encoded components later</span>
+        <span class="n">covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_drop_encoded_components</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
+
+        <span class="c1"># generate index and encodings</span>
+        <span class="n">index</span><span class="p">,</span> <span class="n">target_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_generator</span><span class="o">.</span><span class="n">generate_train_inference_idx</span><span class="p">(</span>
+            <span class="n">n</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">covariates</span>
+        <span class="p">)</span>
+        <span class="n">encoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">target_end</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="c1"># optionally, merge encodings with original `covariates` series</span>
+        <span class="n">encoded</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_covariates</span><span class="p">(</span><span class="n">encoded</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">merge_covariates</span>
+            <span class="k">else</span> <span class="n">encoded</span>
+        <span class="p">)</span>
+
+        <span class="c1"># save encoded component names</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">components</span> <span class="o">=</span> <span class="n">encoded</span><span class="o">.</span><span class="n">components</span>
+            <span class="k">if</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">components</span> <span class="o">=</span> <span class="n">components</span><span class="p">[</span><span class="o">~</span><span class="n">components</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">covariates</span><span class="o">.</span><span class="n">components</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_components</span> <span class="o">=</span> <span class="n">components</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">encoded</span></div>
+
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the `SingleEncoder` sub class accepts to be transformed.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The number of components in the `SingleEncoder` output.&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
     <span class="nd">@property</span>
@@ -943,7 +1081,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">fit_called</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return whether or not the transformer has been fitted.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return whether the transformer has been fitted.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span></div>
 
 

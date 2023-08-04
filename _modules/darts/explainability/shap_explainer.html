@@ -171,12 +171,10 @@
 <span class="sd">A `shap explainer &lt;https://github.com/slundberg/shap&gt;`_ specifically for time series</span>
 <span class="sd">forecasting models.</span>
 
-<span class="sd">This class is (currently) limited to Darts&#39; `RegressionModel` instances of forecasting models.</span>
-<span class="sd">It uses shap values to provide &quot;explanations&quot; of each input features.</span>
-<span class="sd">The input features are the different past lags (of the target and/or past covariates),</span>
-<span class="sd">as well as potential future lags of future covariates used as inputs by the forecasting</span>
-<span class="sd">model to produce its forecasts.</span>
-<span class="sd">Furthermore, in the case of multivariate series, the features contain each dimension of</span>
+<span class="sd">This class is (currently) limited to Darts&#39; `RegressionModel` instances of forecasting models. It uses shap values to</span>
+<span class="sd">provide &quot;explanations&quot; of each input features. The input features are the different past lags (of the target and/or</span>
+<span class="sd">past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to</span>
+<span class="sd">produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of</span>
 <span class="sd">each of the (lagged) series.</span>
 
 <span class="sd">.. note::</span>
@@ -184,24 +182,29 @@
 <span class="sd">   This means that it does not capture potential indirect influence that some lags</span>
 <span class="sd">   may have on the target by influencing other lags.</span>
 
+<span class="sd">- :func:`explain() &lt;ShapExplainer.explain&gt;` generates the explanations for a given foreground series (or</span>
+<span class="sd">  background series, if foreground is not provided).</span>
+<span class="sd">- :func:`summary_plot() &lt;ShapExplainer.summary_plot&gt;` displays a shap plot summary for each horizon and each</span>
+<span class="sd">  component dimension of the target series.</span>
+<span class="sd">- :func:`force_plot_from_ts() &lt;ShapExplainer.force_plot_from_ts&gt;` displays a shap force_plot for one target</span>
+<span class="sd">  and one horizon, for a given target series. It displays shap values of each lag/covariate with an additive force</span>
+<span class="sd">   layout.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">shap</span>
-<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">integer</span>
 <span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.explainability.explainability</span> <span class="kn">import</span> <span class="n">ForecastingModelExplainer</span>
+<span class="kn">from</span> <span class="nn">darts.explainability.explainability</span> <span class="kn">import</span> <span class="n">_ForecastingModelExplainer</span>
 <span class="kn">from</span> <span class="nn">darts.explainability.explainability_result</span> <span class="kn">import</span> <span class="n">ShapExplainabilityResult</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.data.tabularization</span> <span class="kn">import</span> <span class="n">create_lagged_prediction_data</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -223,7 +226,9 @@
 <span class="n">ShapMethod</span> <span class="o">=</span> <span class="n">NewType</span><span class="p">(</span><span class="s2">&quot;ShapMethod&quot;</span><span class="p">,</span> <span class="n">_ShapMethod</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ShapExplainer"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer">[docs]</a><span class="k">class</span> <span class="nc">ShapExplainer</span><span class="p">(</span><span class="n">ForecastingModelExplainer</span><span class="p">):</span>
+<div class="viewcode-block" id="ShapExplainer"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer">[docs]</a><span class="k">class</span> <span class="nc">ShapExplainer</span><span class="p">(</span><span class="n">_ForecastingModelExplainer</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">RegressionModel</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">RegressionModel</span><span class="p">,</span>
@@ -245,20 +250,18 @@
 <span class="sd">        - A background series is a `TimeSeries` used to train the shap explainer.</span>
 <span class="sd">        - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.</span>
 
-<span class="sd">        Currently, ShapExplainer only works with `RegressionModel` forecasting models.</span>
+<span class="sd">        Currently, `ShapExplainer` only works with `RegressionModel` forecasting models.</span>
 <span class="sd">        The number of explained horizons (t+1, t+2, ...) can be at most equal to `output_chunk_length` of `model`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        model</span>
-<span class="sd">            A `ForecastingModel` to be explained. It must be fitted first.</span>
+<span class="sd">            A `RegressionModel` to be explained. It must be fitted first.</span>
 <span class="sd">        background_series</span>
-<span class="sd">            One or several series to *train* the `ForecastingModelExplainer` along with any foreground series.</span>
-<span class="sd">            Consider using a reduced well-chosen backgroundto to reduce computation time.</span>
-<span class="sd">                - optional if `model` was fit on a single target series. By default,</span>
-<span class="sd">                  it is the `series` used at fitting time.</span>
-
-<span class="sd">                - mandatory if `model` was fit on multiple (list of) target series.</span>
+<span class="sd">            One or several series to *train* the `ShapExplainer` along with any foreground series.</span>
+<span class="sd">            Consider using a reduced well-chosen background to reduce computation time.</span>
+<span class="sd">            Optional if `model` was fit on a single target series. By default, it is the `series` used at fitting time.</span>
+<span class="sd">            Mandatory if `model` was fit on multiple (list of) target series.</span>
 <span class="sd">        background_past_covariates</span>
 <span class="sd">            A past covariates series or list of series that the model needs once fitted.</span>
 <span class="sd">        background_future_covariates</span>
@@ -278,13 +281,16 @@
 <span class="sd">            Optionally, additional keyword arguments passed to `shap_method`.</span>
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
 <span class="sd">        &gt;&gt;&gt; from darts.explainability.shap_explainer import ShapExplainer</span>
 <span class="sd">        &gt;&gt;&gt; from darts.models import LinearRegressionModel</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
 <span class="sd">        &gt;&gt;&gt; model = LinearRegressionModel(lags=12)</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(series[:-36])</span>
 <span class="sd">        &gt;&gt;&gt; shap_explain = ShapExplainer(model)</span>
+<span class="sd">        &gt;&gt;&gt; results = shap_explain.explain()</span>
 <span class="sd">        &gt;&gt;&gt; shap_explain.summary_plot()</span>
+<span class="sd">        &gt;&gt;&gt; shap_explain.force_plot_from_ts()</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># TODO</span>
@@ -313,15 +319,20 @@
             <span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">model</span><span class="p">,</span>
-            <span class="n">background_series</span><span class="p">,</span>
-            <span class="n">background_past_covariates</span><span class="p">,</span>
-            <span class="n">background_future_covariates</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">background_series</span><span class="o">=</span><span class="n">background_series</span><span class="p">,</span>
+            <span class="n">background_past_covariates</span><span class="o">=</span><span class="n">background_past_covariates</span><span class="p">,</span>
+            <span class="n">background_future_covariates</span><span class="o">=</span><span class="n">background_future_covariates</span><span class="p">,</span>
+            <span class="n">requires_background</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">requires_covariates_encoding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_component_names</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">test_stationarity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># As we only use RegressionModel, we fix the forecast n step ahead we want to explain as</span>
-        <span class="c1"># output_chunk_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">output_chunk_length</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">_is_probabilistic</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;The model is probabilistic, but num_samples=1 will be used for explainability.&quot;</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">shap_method</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">shap_method</span> <span class="o">=</span> <span class="n">shap_method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
@@ -363,31 +374,104 @@
         <span class="n">horizons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">target_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ShapExplainabilityResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Explains a foreground time series and returns a :class:`ShapExplainabilityResult</span>
+<span class="sd">        &lt;darts.explainability.explainability_result.ShapExplainabilityResult&gt;`.</span>
+<span class="sd">        The results can be retrieved with method :func:`get_explanation()</span>
+<span class="sd">        &lt;darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation&gt;`.</span>
+<span class="sd">        The result is a multivariate `TimeSeries` instance containing the &#39;explanation&#39;</span>
+<span class="sd">        for the (horizon, target_component) forecast at any timestamp forecastable corresponding to</span>
+<span class="sd">        the foreground `TimeSeries` input.</span>
+
+<span class="sd">        The component name convention of this multivariate `TimeSeries` is:</span>
+<span class="sd">        ``&quot;{name}_{type_of_cov}_lag_{idx}&quot;``, where:</span>
+
+<span class="sd">        - ``{name}`` is the component name from the original foreground series (target, past, or future).</span>
+<span class="sd">        - ``{type_of_cov}`` is the covariates type. It can take 3 different values:</span>
+<span class="sd">          ``&quot;target&quot;``, ``&quot;past_cov&quot;`` or ``&quot;future_cov&quot;``.</span>
+<span class="sd">        - ``{idx}`` is the lag index.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        foreground_series</span>
+<span class="sd">            Optionally, one or a sequence of target `TimeSeries` to be explained. Can be multivariate.</span>
+<span class="sd">            If not provided, the background `TimeSeries` will be explained instead.</span>
+<span class="sd">        foreground_past_covariates</span>
+<span class="sd">            Optionally, one or a sequence of past covariates `TimeSeries` if required by the forecasting model.</span>
+<span class="sd">        foreground_future_covariates</span>
+<span class="sd">            Optionally, one or a sequence of future covariates `TimeSeries` if required by the forecasting model.</span>
+<span class="sd">        horizons</span>
+<span class="sd">            Optionally, an integer or sequence of integers representing the future time steps to be explained.</span>
+<span class="sd">            `1` corresponds to the first timestamp being forecasted.</span>
+<span class="sd">            All values must be `&lt;=output_chunk_length` of the explained forecasting model.</span>
+<span class="sd">        target_components</span>
+<span class="sd">            Optionally, a string or sequence of strings with the target components to explain.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ShapExplainabilityResult</span>
+<span class="sd">            The forecast explanations</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Say we have a model with 2 target components named ``&quot;T_0&quot;`` and ``&quot;T_1&quot;``,</span>
+<span class="sd">        3 past covariates with default component names ``&quot;0&quot;``, ``&quot;1&quot;``, and ``&quot;2&quot;``,</span>
+<span class="sd">        and one future covariate with default component name ``&quot;0&quot;``.</span>
+<span class="sd">        Also, ``horizons = [1, 2]``.</span>
+<span class="sd">        The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,</span>
+<span class="sd">        ``lags_future_covariates = [0]``.</span>
+
+<span class="sd">        We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.</span>
+
+<span class="sd">        &gt;&gt;&gt; explain_results = explainer.explain(</span>
+<span class="sd">        &gt;&gt;&gt;     foreground_series=foreground_series,</span>
+<span class="sd">        &gt;&gt;&gt;     foreground_past_covariates=foreground_past_covariates,</span>
+<span class="sd">        &gt;&gt;&gt;     foreground_future_covariates=foreground_future_covariates,</span>
+<span class="sd">        &gt;&gt;&gt;     horizons=[1, 2],</span>
+<span class="sd">        &gt;&gt;&gt;     target_names=[&quot;T_0&quot;, &quot;T_1&quot;])</span>
+<span class="sd">        &gt;&gt;&gt; output = explain_results.get_explanation(horizon=1, component=&quot;T_1&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; feature_values = explain_results.get_feature_values(horizon=1, component=&quot;T_1&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; shap_objects = explain_results.get_shap_explanation_objects(horizon=1, component=&quot;T_1&quot;)</span>
+
+<span class="sd">        Then the method returns a multivariate TimeSeries containing the *explanations* of</span>
+<span class="sd">        the `ShapExplainer`, with the following component names:</span>
+
+<span class="sd">             - T_0_target_lag-1</span>
+<span class="sd">             - T_0_target_lag-2</span>
+<span class="sd">             - T_0_target_lag-3</span>
+<span class="sd">             - T_1_target_lag-1</span>
+<span class="sd">             - T_1_target_lag-2</span>
+<span class="sd">             - T_1_target_lag-3</span>
+<span class="sd">             - 0_past_cov_lag-1</span>
+<span class="sd">             - 0_past_cov_lag-3</span>
+<span class="sd">             - 1_past_cov_lag-1</span>
+<span class="sd">             - 1_past_cov_lag-3</span>
+<span class="sd">             - 2_past_cov_lag-1</span>
+<span class="sd">             - 2_past_cov_lag-3</span>
+<span class="sd">             - 0_fut_cov_lag_0</span>
+
+<span class="sd">        This series has length 3, as the model can explain 5-3+1 forecasts</span>
+<span class="sd">        (timestamp indexes 4, 5, and 6)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">explain</span><span class="p">(</span>
             <span class="n">foreground_series</span><span class="p">,</span> <span class="n">foreground_past_covariates</span><span class="p">,</span> <span class="n">foreground_future_covariates</span>
         <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">foreground_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">foreground_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_series</span>
-            <span class="n">foreground_past_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_past_covariates</span>
-            <span class="n">foreground_future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_future_covariates</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">foreground_series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">foreground_series</span><span class="p">)</span>
-            <span class="n">foreground_past_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">foreground_past_covariates</span><span class="p">)</span>
-            <span class="n">foreground_future_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">foreground_future_covariates</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
-                <span class="p">(</span>
-                    <span class="n">foreground_past_covariates</span><span class="p">,</span>
-                    <span class="n">foreground_future_covariates</span><span class="p">,</span>
-                <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_fit_encodings</span><span class="p">(</span>
-                    <span class="n">series</span><span class="o">=</span><span class="n">foreground_series</span><span class="p">,</span>
-                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">foreground_past_covariates</span><span class="p">,</span>
-                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">foreground_future_covariates</span><span class="p">,</span>
-                <span class="p">)</span>
-
-        <span class="n">horizons</span><span class="p">,</span> <span class="n">target_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_horizons_and_targets</span><span class="p">(</span>
-            <span class="n">horizons</span><span class="p">,</span> <span class="n">target_components</span>
+        <span class="p">(</span>
+            <span class="n">foreground_series</span><span class="p">,</span>
+            <span class="n">foreground_past_covariates</span><span class="p">,</span>
+            <span class="n">foreground_future_covariates</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_foreground</span><span class="p">(</span>
+            <span class="n">foreground_series</span><span class="p">,</span>
+            <span class="n">foreground_past_covariates</span><span class="p">,</span>
+            <span class="n">foreground_future_covariates</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">horizons</span><span class="p">,</span> <span class="n">target_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_horizons_and_targets</span><span class="p">(</span>
+            <span class="n">horizons</span><span class="p">,</span>
+            <span class="n">target_components</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">shap_values_list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -453,8 +537,8 @@
 
 <div class="viewcode-block" id="ShapExplainer.summary_plot"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.summary_plot">[docs]</a>    <span class="k">def</span> <span class="nf">summary_plot</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">horizons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">target_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">horizons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">target_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">plot_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dot&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -468,21 +552,19 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        horizons</span>
-<span class="sd">            Optionally, a list of integers representing which points/steps in the future to explain,</span>
-<span class="sd">            starting from the first prediction step at 1. `horizons` must not be larger than</span>
-<span class="sd">            `output_chunk_length`.</span>
+<span class="sd">            Optionally, an integer or sequence of integers representing which points/steps in the future to explain,</span>
+<span class="sd">            starting from the first prediction step at 1. `horizons` must `&lt;=output_chunk_length` of the forecasting</span>
+<span class="sd">            model.</span>
 <span class="sd">        target_components</span>
-<span class="sd">            Optionally, a list of strings with the target components to be explained.</span>
+<span class="sd">            Optionally, a string or sequence of strings with the target components to explain.</span>
 <span class="sd">        num_samples</span>
-<span class="sd">            Optionally, an integer for sampling the foreground series (based on the backgound),</span>
+<span class="sd">            Optionally, an integer for sampling the foreground series (based on the background),</span>
 <span class="sd">            for the sake of performance.</span>
 <span class="sd">        plot_type</span>
-<span class="sd">            Optionally, specify which of the propres shap library plot type to use. Can be one of</span>
-<span class="sd">            ``&#39;dot&#39;, &#39;bar&#39;, &#39;violin&#39;``.</span>
-
+<span class="sd">            Optionally, specify which of the shap library plot type to use. Can be one of ``&#39;dot&#39;, &#39;bar&#39;, &#39;violin&#39;``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">horizons</span><span class="p">,</span> <span class="n">target_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_horizons_and_targets</span><span class="p">(</span>
+        <span class="n">horizons</span><span class="p">,</span> <span class="n">target_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_horizons_and_targets</span><span class="p">(</span>
             <span class="n">horizons</span><span class="p">,</span> <span class="n">target_components</span>
         <span class="p">)</span>
 
@@ -509,7 +591,7 @@
 
 <div class="viewcode-block" id="ShapExplainer.force_plot_from_ts"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.force_plot_from_ts">[docs]</a>    <span class="k">def</span> <span class="nf">force_plot_from_ts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">foreground_series</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">foreground_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">foreground_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">foreground_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">horizon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -526,19 +608,19 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        foreground_series</span>
-<span class="sd">            The target series to explain. Can be multivariate.</span>
+<span class="sd">            Optionally, the target series to explain. Can be multivariate. If `None`, will use the `background_series`.</span>
 <span class="sd">        foreground_past_covariates</span>
-<span class="sd">            Optionally, a past covariate series if required by the forecasting model.</span>
+<span class="sd">            Optionally, a past covariate series if required by the forecasting model. If `None`, will use the</span>
+<span class="sd">            `background_past_covariates`.</span>
 <span class="sd">        foreground_future_covariates</span>
-<span class="sd">            Optionally, a future covariate series if required by the forecasting model.</span>
+<span class="sd">            Optionally, a future covariate series if required by the forecasting model. If `None`, will use the</span>
+<span class="sd">            `background_future_covariates`.</span>
 <span class="sd">        horizon</span>
-<span class="sd">            Optionally, an integer for the point/step in the future to explain,</span>
-<span class="sd">            starting from the first</span>
-<span class="sd">            prediction step at 1. `horizons` must not be larger than `output_chunk_length`.</span>
-<span class="sd">            by default, horizon = 1.</span>
+<span class="sd">            Optionally, an integer for the point/step in the future to explain, starting from the first prediction</span>
+<span class="sd">            step at 1. `horizons` must not be larger than `output_chunk_length`.</span>
 <span class="sd">        target_component</span>
-<span class="sd">            Optionally, the target component to plot. If the target series is multivariate,</span>
-<span class="sd">            the target component must be specified.</span>
+<span class="sd">            Optionally, the target component to plot. If the target series is multivariate, the target component</span>
+<span class="sd">            must be specified.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optionally, additional keyword arguments passed to `shap.force_plot()`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -551,21 +633,24 @@
         <span class="k">if</span> <span class="n">target_component</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">target_component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">horizon</span><span class="p">,</span> <span class="n">target_component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_horizons_and_targets</span><span class="p">(</span>
-            <span class="n">horizon</span><span class="p">,</span> <span class="n">target_component</span>
+        <span class="p">(</span>
+            <span class="n">foreground_series</span><span class="p">,</span>
+            <span class="n">foreground_past_covariates</span><span class="p">,</span>
+            <span class="n">foreground_future_covariates</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_foreground</span><span class="p">(</span>
+            <span class="n">foreground_series</span><span class="p">,</span>
+            <span class="n">foreground_past_covariates</span><span class="p">,</span>
+            <span class="n">foreground_future_covariates</span><span class="p">,</span>
         <span class="p">)</span>
-
-        <span class="n">horizon</span><span class="p">,</span> <span class="n">target_component</span> <span class="o">=</span> <span class="n">horizon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target_component</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
-            <span class="p">(</span>
-                <span class="n">foreground_past_covariates</span><span class="p">,</span>
-                <span class="n">foreground_future_covariates</span><span class="p">,</span>
-            <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_fit_encodings</span><span class="p">(</span>
-                <span class="n">series</span><span class="o">=</span><span class="n">foreground_series</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="o">=</span><span class="n">foreground_past_covariates</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="o">=</span><span class="n">foreground_future_covariates</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">horizons</span><span class="p">,</span> <span class="n">target_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_horizons_and_targets</span><span class="p">(</span>
+            <span class="n">horizon</span><span class="p">,</span>
+            <span class="n">target_component</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">horizon</span><span class="p">,</span> <span class="n">target_component</span> <span class="o">=</span> <span class="n">horizons</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">foreground_X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explainers</span><span class="o">.</span><span class="n">_create_regression_model_shap_X</span><span class="p">(</span>
             <span class="n">foreground_series</span><span class="p">,</span> <span class="n">foreground_past_covariates</span><span class="p">,</span> <span class="n">foreground_future_covariates</span>
@@ -580,39 +665,7 @@
             <span class="n">features</span><span class="o">=</span><span class="n">foreground_X</span><span class="p">,</span>
             <span class="n">out_names</span><span class="o">=</span><span class="n">target_component</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
-    <span class="k">def</span> <span class="nf">_check_horizons_and_targets</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">horizons</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
-        <span class="n">target_components</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-
-        <span class="k">if</span> <span class="n">target_components</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_components</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="n">target_components</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_components</span><span class="p">]</span>
-            <span class="n">raise_if</span><span class="p">(</span>
-                <span class="nb">any</span><span class="p">(</span>
-                    <span class="p">[</span>
-                        <span class="n">target_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_components</span>
-                        <span class="k">for</span> <span class="n">target_name</span> <span class="ow">in</span> <span class="n">target_components</span>
-                    <span class="p">]</span>
-                <span class="p">),</span>
-                <span class="s2">&quot;One of the target names doesn&#39;t exist. Please review your target_names input&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">target_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_components</span>
-
-        <span class="k">if</span> <span class="n">horizons</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">horizons</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-                <span class="n">horizons</span> <span class="o">=</span> <span class="p">[</span><span class="n">horizons</span><span class="p">]</span>
-
-            <span class="n">raise_if</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">horizons</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;One of the horizons is too large.&quot;</span><span class="p">)</span>
-            <span class="n">raise_if</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">horizons</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;One of the horizons is too small.&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">horizons</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">horizons</span><span class="p">,</span> <span class="n">target_components</span></div>
+        <span class="p">)</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">_RegressionShapExplainers</span><span class="p">:</span>
@@ -676,7 +729,7 @@
         <span class="n">background_series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">background_past_covariates</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">background_future_covariates</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">shap_method</span><span class="p">:</span> <span class="n">ShapMethod</span><span class="p">,</span>
+        <span class="n">shap_method</span><span class="p">:</span> <span class="n">_ShapMethod</span><span class="p">,</span>
         <span class="n">background_num_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -730,7 +783,7 @@
         <span class="n">foreground_X</span><span class="p">,</span>
         <span class="n">horizons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">target_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]:</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a dictionary of dictionaries of shap.Explanation instances:</span>
@@ -744,7 +797,7 @@
 <span class="sd">            Optionally, a list of integers representing which points/steps in the future we want to explain,</span>
 <span class="sd">            starting from the first prediction step at 1. Currently, only forecasting models are supported which</span>
 <span class="sd">            provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.</span>
-<span class="sd">        target_names</span>
+<span class="sd">        target_components</span>
 <span class="sd">            Optionally, a list of strings with the target components we want to explain.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -756,7 +809,9 @@
 
             <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">horizons</span><span class="p">:</span>
                 <span class="n">tmp_n</span> <span class="o">=</span> <span class="p">{}</span>
-                <span class="k">for</span> <span class="n">t_idx</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">target_components</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">t_idx</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_components</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_components</span><span class="p">:</span>
+                        <span class="k">continue</span>
                     <span class="n">explainer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explainers</span><span class="p">[</span><span class="n">h</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">t_idx</span><span class="p">](</span><span class="n">foreground_X</span><span class="p">)</span>
                     <span class="n">explainer</span><span class="o">.</span><span class="n">base_values</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">base_values</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
                     <span class="n">explainer</span><span class="o">.</span><span class="n">time_index</span> <span class="o">=</span> <span class="n">foreground_X</span><span class="o">.</span><span class="n">index</span>
@@ -768,6 +823,8 @@
             <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">horizons</span><span class="p">:</span>
                 <span class="n">tmp_n</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">for</span> <span class="n">t_idx</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">target_components</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_components</span><span class="p">:</span>
+                        <span class="k">continue</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_output</span><span class="p">:</span>
                         <span class="n">tmp_t</span> <span class="o">=</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">(</span>
                             <span class="n">shap_explanation_tmp</span><span class="o">.</span><span class="n">values</span><span class="p">[</span>
@@ -861,14 +918,18 @@
         <span class="n">lags_future_covariates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;future&quot;</span><span class="p">)</span>
 
         <span class="n">X</span><span class="p">,</span> <span class="n">indexes</span> <span class="o">=</span> <span class="n">create_lagged_prediction_data</span><span class="p">(</span>
-            <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span> <span class="k">if</span> <span class="n">lags_list</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span> <span class="k">if</span> <span class="n">lags_past_covariates_list</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
+            <span class="k">if</span> <span class="n">lags_future_covariates_list</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags_list</span><span class="p">,</span>
             <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates_list</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates_list</span>
             <span class="k">if</span> <span class="n">future_covariates</span>
             <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">uses_static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">uses_static_covariates</span><span class="p">,</span>
+            <span class="n">last_static_covariates_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_static_covariates_shape</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Remove sample axis:</span>
         <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
@@ -887,28 +948,13 @@
         <span class="k">if</span> <span class="n">n_samples</span><span class="p">:</span>
             <span class="n">X</span> <span class="o">=</span> <span class="n">shap</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
 
-        <span class="c1"># We keep the creation order of the different lags/features in create_lagged_data</span>
-        <span class="n">lags_names_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">lags_list</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags_list</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">t_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_components</span><span class="p">:</span>
-                    <span class="n">lags_names_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_name</span> <span class="o">+</span> <span class="s2">&quot;_target_lag&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">lag</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">lags_past_covariates_list</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags_past_covariates_list</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">t_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_covariates_components</span><span class="p">:</span>
-                    <span class="n">lags_names_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_name</span> <span class="o">+</span> <span class="s2">&quot;_past_cov_lag&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">lag</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">lags_future_covariates_list</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags_future_covariates_list</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">t_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_covariates_components</span><span class="p">:</span>
-                    <span class="n">lags_names_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_name</span> <span class="o">+</span> <span class="s2">&quot;_fut_cov_lag&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">lag</span><span class="p">))</span>
-
+        <span class="c1"># rename output columns to the matching lagged features names</span>
         <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
             <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
-                <span class="n">name</span><span class="p">:</span> <span class="n">lags_names_list</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lagged_feature_names</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">())</span>
             <span class="p">}</span>
         <span class="p">)</span>
-
         <span class="k">return</span> <span class="n">X</span>
 </pre></div>
 

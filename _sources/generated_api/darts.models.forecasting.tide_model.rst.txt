@@ -1,0 +1,4 @@
+
+.. automodule:: darts.models.forecasting.tide_model
+   :members:
+   :undoc-members:

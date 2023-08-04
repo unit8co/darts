@@ -193,7 +193,6 @@
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.data</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">MixedCovariatesInferenceDataset</span><span class="p">,</span>
     <span class="n">MixedCovariatesSequentialDataset</span><span class="p">,</span>
     <span class="n">MixedCovariatesTrainingDataset</span><span class="p">,</span>
     <span class="n">TrainingDataset</span><span class="p">,</span>
@@ -492,6 +491,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_size</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_attn_out_weights</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_static_covariate_var</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoder_sparse_weights</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decoder_sparse_weights</span> <span class="o">=</span> <span class="kc">None</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">reals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -573,18 +577,30 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_attention_mask_future</span><span class="p">(</span>
-        <span class="n">encoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">decoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="n">encoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">decoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">full_attention</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns causal mask to apply for self-attention layer that acts on future input only.</span>
+<span class="sd">        The model will attend to all `False` values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># indices to which is attended</span>
-        <span class="n">attend_step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">decoder_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-        <span class="c1"># indices for which is predicted</span>
-        <span class="n">predict_step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">decoder_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-        <span class="c1"># do not attend to steps to self or after prediction</span>
-        <span class="n">decoder_mask</span> <span class="o">=</span> <span class="n">attend_step</span> <span class="o">&gt;=</span> <span class="n">predict_step</span>
-        <span class="c1"># do not attend to past input</span>
+        <span class="k">if</span> <span class="n">full_attention</span><span class="p">:</span>
+            <span class="c1"># attend to entire past and future input</span>
+            <span class="n">decoder_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">decoder_length</span><span class="p">,</span> <span class="n">decoder_length</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># attend only to past steps relative to forecasting step in the future</span>
+            <span class="c1"># indices to which is attended</span>
+            <span class="n">attend_step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">decoder_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+            <span class="c1"># indices for which is predicted</span>
+            <span class="n">predict_step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">decoder_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="c1"># do not attend to steps to self or after prediction</span>
+            <span class="n">decoder_mask</span> <span class="o">=</span> <span class="n">attend_step</span> <span class="o">&gt;=</span> <span class="n">predict_step</span>
+        <span class="c1"># attend to all past input</span>
         <span class="n">encoder_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
             <span class="n">batch_size</span><span class="p">,</span> <span class="n">encoder_length</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span>
         <span class="p">)</span>
@@ -626,20 +642,13 @@
 
         <span class="c1"># avoid unnecessary regeneration of attention mask</span>
         <span class="k">if</span> <span class="n">batch_size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size_last</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attention_mask_full</span><span class="p">(</span>
-                    <span class="n">time_steps</span><span class="o">=</span><span class="n">time_steps</span><span class="p">,</span>
-                    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-                    <span class="n">dtype</span><span class="o">=</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attention_mask_future</span><span class="p">(</span>
-                    <span class="n">encoder_length</span><span class="o">=</span><span class="n">encoder_length</span><span class="p">,</span>
-                    <span class="n">decoder_length</span><span class="o">=</span><span class="n">decoder_length</span><span class="p">,</span>
-                    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-                    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
-                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attention_mask_future</span><span class="p">(</span>
+                <span class="n">encoder_length</span><span class="o">=</span><span class="n">encoder_length</span><span class="p">,</span>
+                <span class="n">decoder_length</span><span class="o">=</span><span class="n">decoder_length</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+                <span class="n">full_attention</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">relative_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_relative_index</span><span class="p">(</span>
                     <span class="n">encoder_length</span><span class="o">=</span><span class="n">encoder_length</span><span class="p">,</span>
@@ -711,6 +720,7 @@
                 <span class="n">dtype</span><span class="o">=</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="n">static_covariate_var</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">static_context_expanded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expand_static_context</span><span class="p">(</span>
             <span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_context_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">),</span> <span class="n">time_steps</span><span class="o">=</span><span class="n">time_steps</span>
@@ -774,7 +784,7 @@
 
         <span class="c1"># multi-head attention</span>
         <span class="n">attn_out</span><span class="p">,</span> <span class="n">attn_out_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multihead_attn</span><span class="p">(</span>
-            <span class="n">q</span><span class="o">=</span><span class="n">attn_input</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="k">else</span> <span class="n">attn_input</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
+            <span class="n">q</span><span class="o">=</span><span class="n">attn_input</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
             <span class="n">k</span><span class="o">=</span><span class="n">attn_input</span><span class="p">,</span>
             <span class="n">v</span><span class="o">=</span><span class="n">attn_input</span><span class="p">,</span>
             <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span><span class="p">,</span>
@@ -783,7 +793,7 @@
         <span class="c1"># skip connection over attention</span>
         <span class="n">attn_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_attn_gan</span><span class="p">(</span>
             <span class="n">x</span><span class="o">=</span><span class="n">attn_out</span><span class="p">,</span>
-            <span class="n">skip</span><span class="o">=</span><span class="n">attn_input</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="k">else</span> <span class="n">attn_input</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
+            <span class="n">skip</span><span class="o">=</span><span class="n">attn_input</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
         <span class="p">)</span>
 
         <span class="c1"># feed-forward</span>
@@ -792,26 +802,18 @@
         <span class="c1"># skip connection over temporal fusion decoder from LSTM post _GateAddNorm</span>
         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_output_gan</span><span class="p">(</span>
             <span class="n">x</span><span class="o">=</span><span class="n">out</span><span class="p">,</span>
-            <span class="n">skip</span><span class="o">=</span><span class="n">lstm_out</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="k">else</span> <span class="n">lstm_out</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
+            <span class="n">skip</span><span class="o">=</span><span class="n">lstm_out</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
         <span class="p">)</span>
 
         <span class="c1"># generate output for n_targets and loss_size elements for loss evaluation</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="k">else</span> <span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
             <span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_size</span>
         <span class="p">)</span>
-
-        <span class="c1"># TODO: (Darts) remember this in case we want to output interpretation</span>
-        <span class="c1"># return self.to_network_output(</span>
-        <span class="c1">#     prediction=self.transform_output(out, target_scale=x[&quot;target_scale&quot;]),</span>
-        <span class="c1">#     attention=attn_out_weights,</span>
-        <span class="c1">#     static_variables=static_covariate_var,</span>
-        <span class="c1">#     encoder_variables=encoder_sparse_weights,</span>
-        <span class="c1">#     decoder_variables=decoder_sparse_weights,</span>
-        <span class="c1">#     decoder_lengths=decoder_lengths,</span>
-        <span class="c1">#     encoder_lengths=encoder_lengths,</span>
-        <span class="c1"># )</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">_attn_out_weights</span> <span class="o">=</span> <span class="n">attn_out_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_static_covariate_var</span> <span class="o">=</span> <span class="n">static_covariate_var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoder_sparse_weights</span> <span class="o">=</span> <span class="n">encoder_sparse_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decoder_sparse_weights</span> <span class="o">=</span> <span class="n">decoder_sparse_weights</span>
         <span class="k">return</span> <span class="n">out</span>
 
 
@@ -869,8 +871,8 @@
 <span class="sd">        num_attention_heads</span>
 <span class="sd">            Number of attention heads (4 is a good default)</span>
 <span class="sd">        full_attention</span>
-<span class="sd">            If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,</span>
-<span class="sd">            only queries on future part. Defaults to ``False``.</span>
+<span class="sd">            If ``False``, only attends to previous time steps in the decoder. If ``True`` attends to previous,</span>
+<span class="sd">            current, and future time steps. Defaults to ``False``.</span>
 <span class="sd">        feed_forward</span>
 <span class="sd">            A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant&#39;s</span>
 <span class="sd">            FeedForward Network (FFN)[2]. The glu variant&#39;s FeedForward Network are a series of FFNs designed to work</span>
@@ -910,7 +912,7 @@
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
-<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
 <span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
@@ -1289,23 +1291,9 @@
             <span class="s2">&quot;TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_build_inference_dataset</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MixedCovariatesInferenceDataset</span><span class="p">:</span>
-
-        <span class="k">return</span> <span class="n">MixedCovariatesInferenceDataset</span><span class="p">(</span>
-            <span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-            <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
-            <span class="n">use_static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uses_static_covariates</span><span class="p">,</span>
-        <span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

@@ -468,7 +468,11 @@
                     <span class="n">col_map_cat_i</span> <span class="o">=</span> <span class="p">[]</span>
                     <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
                         <span class="n">col_map_cat_i</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
-                        <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">categories</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">cat_col_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+                            <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="n">cat_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
                     <span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">col_map_cat_i</span>
         <span class="c1"># If we don&#39;t have any categorical static covariates, don&#39;t need to generate mapping:</span>
         <span class="k">else</span><span class="p">:</span>
@@ -621,6 +625,8 @@
             <span class="k">elif</span> <span class="n">is_cat</span><span class="p">:</span>  <span class="c1"># categorical transformed column</span>
                 <span class="c1"># covers one to one feature map (ordinal/label encoding) and one to multi feature (one hot encoding)</span>
                 <span class="k">for</span> <span class="n">col_name</span> <span class="ow">in</span> <span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">col_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">col_name</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">static_cov_columns</span><span class="p">:</span>
                         <span class="n">data</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals_cat</span><span class="p">[:,</span> <span class="n">idx_cat</span><span class="p">]</span>
                         <span class="n">static_cov_columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col_name</span><span class="p">)</span>

@@ -180,25 +180,36 @@
 <span class="c1"># Author: James Ashton Nichols &lt;james.ashton.nichols@gmail.com&gt;</span>
 <span class="c1">#</span>
 <span class="c1"># License: BSD 3 clause</span>
+
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span> <span class="nn">numbers</span> <span class="kn">import</span> <span class="n">Integral</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="k">as</span> <span class="nn">sp</span>
 
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">clone</span><span class="p">,</span> <span class="n">MetaEstimatorMixin</span>
-<span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">RegressorMixin</span><span class="p">,</span> <span class="n">ClassifierMixin</span><span class="p">,</span> <span class="n">is_classifier</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BaseEstimator</span><span class="p">,</span>
+    <span class="n">ClassifierMixin</span><span class="p">,</span>
+    <span class="n">MetaEstimatorMixin</span><span class="p">,</span>
+    <span class="n">RegressorMixin</span><span class="p">,</span>
+    <span class="n">_fit_context</span><span class="p">,</span>
+    <span class="n">clone</span><span class="p">,</span>
+    <span class="n">is_classifier</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.model_selection</span> <span class="kn">import</span> <span class="n">cross_val_predict</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span><span class="p">,</span> <span class="n">_print_elapsed_time</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">Bunch</span><span class="p">,</span> <span class="n">_print_elapsed_time</span><span class="p">,</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">.utils._param_validation</span> <span class="kn">import</span> <span class="n">HasMethods</span><span class="p">,</span> <span class="n">StrOptions</span>
+<span class="kn">from</span> <span class="nn">.utils.metadata_routing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MetadataRouter</span><span class="p">,</span>
+    <span class="n">MethodMapping</span><span class="p">,</span>
+    <span class="n">_routing_enabled</span><span class="p">,</span>
+    <span class="n">process_routing</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.utils.metaestimators</span> <span class="kn">import</span> <span class="n">available_if</span>
 <span class="kn">from</span> <span class="nn">.utils.multiclass</span> <span class="kn">import</span> <span class="n">check_classification_targets</span>
-<span class="kn">from</span> <span class="nn">.utils.validation</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">check_is_fitted</span><span class="p">,</span>
-    <span class="n">has_fit_parameter</span><span class="p">,</span>
-    <span class="n">_check_fit_params</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.utils.parallel</span> <span class="kn">import</span> <span class="n">delayed</span><span class="p">,</span> <span class="n">Parallel</span>
-<span class="kn">from</span> <span class="nn">.utils._param_validation</span> <span class="kn">import</span> <span class="n">HasMethods</span><span class="p">,</span> <span class="n">StrOptions</span>
+<span class="kn">from</span> <span class="nn">.utils.parallel</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+<span class="kn">from</span> <span class="nn">.utils.validation</span> <span class="kn">import</span> <span class="n">_check_fit_params</span><span class="p">,</span> <span class="n">check_is_fitted</span><span class="p">,</span> <span class="n">has_fit_parameter</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;MultiOutputRegressor&quot;</span><span class="p">,</span>
@@ -218,40 +229,38 @@
 
 
 <span class="k">def</span> <span class="nf">_partial_fit_estimator</span><span class="p">(</span>
-    <span class="n">estimator</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">first_time</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">estimator</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">partial_fit_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">first_time</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">):</span>
+    <span class="n">partial_fit_params</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">partial_fit_params</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">partial_fit_params</span>
     <span class="k">if</span> <span class="n">first_time</span><span class="p">:</span>
         <span class="n">estimator</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">classes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">estimator</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">estimator</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">classes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">estimator</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span> <span class="o">**</span><span class="n">partial_fit_params</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">classes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">estimator</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">classes</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">estimator</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">estimator</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">partial_fit_params</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">estimator</span>
 
 
 <span class="k">def</span> <span class="nf">_available_if_estimator_has</span><span class="p">(</span><span class="n">attr</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a function to check if `estimator` or `estimators_` has `attr`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a function to check if the sub-estimator(s) has(have) `attr`.</span>
 
 <span class="sd">    Helper for Chain implementations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">all</span><span class="p">(</span>
-            <span class="nb">hasattr</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="k">for</span> <span class="n">est</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;estimators_&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="k">for</span> <span class="n">est</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">return</span> <span class="n">available_if</span><span class="p">(</span><span class="n">_check</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">_MultiOutputEstimator</span><span class="p">(</span><span class="n">MetaEstimatorMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
-
     <span class="n">_parameter_constraints</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;estimator&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">HasMethods</span><span class="p">([</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">])],</span>
         <span class="s2">&quot;n_jobs&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">Integral</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
@@ -263,7 +272,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
 
     <span class="nd">@_available_if_estimator_has</span><span class="p">(</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">partial_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="nd">@_fit_context</span><span class="p">(</span>
+        <span class="c1"># MultiOutput*.estimator is not validated yet</span>
+        <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">partial_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">partial_fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Incrementally fit a separate model for each class output.</span>
 
 <span class="sd">        Parameters</span>
@@ -288,15 +301,27 @@
 <span class="sd">            Only supported if the underlying regressor supports sample</span>
 <span class="sd">            weights.</span>
 
+<span class="sd">        **partial_fit_params : dict of str -&gt; object</span>
+<span class="sd">            Parameters passed to the ``estimator.partial_fit`` method of each</span>
+<span class="sd">            sub-estimator.</span>
+
+<span class="sd">            Only available if `enable_metadata_routing=True`. See the</span>
+<span class="sd">            :ref:`User Guide &lt;metadata_routing&gt;`.</span>
+
+<span class="sd">            .. versionadded:: 1.3</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        self : object</span>
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">first_time</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;estimators_&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">partial_fit_params</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_routing_enabled</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;partial_fit_params is only supported if enable_metadata_routing=True.&quot;</span>
+                <span class="s2">&quot; See the User Guide for more information.&quot;</span>
+            <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">first_time</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
+        <span class="n">first_time</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;estimators_&quot;</span><span class="p">)</span>
 
         <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_data</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="s2">&quot;no_validation&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">multi_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -306,10 +331,27 @@
                 <span class="s2">&quot;multi-output regression but has only one.&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_fit_parameter</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;sample_weight&quot;</span>
-        <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Underlying estimator does not support sample weights.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_routing_enabled</span><span class="p">():</span>
+            <span class="n">routed_params</span> <span class="o">=</span> <span class="n">process_routing</span><span class="p">(</span>
+                <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">,</span>
+                <span class="n">other_params</span><span class="o">=</span><span class="n">partial_fit_params</span><span class="p">,</span>
+                <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_fit_parameter</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;sample_weight&quot;</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Underlying estimator does not support sample weights.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">routed_params</span> <span class="o">=</span> <span class="n">Bunch</span><span class="p">(</span>
+                    <span class="n">estimator</span><span class="o">=</span><span class="n">Bunch</span><span class="p">(</span><span class="n">partial_fit</span><span class="o">=</span><span class="n">Bunch</span><span class="p">(</span><span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">))</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">routed_params</span> <span class="o">=</span> <span class="n">Bunch</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">Bunch</span><span class="p">(</span><span class="n">partial_fit</span><span class="o">=</span><span class="n">Bunch</span><span class="p">()))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)(</span>
             <span class="n">delayed</span><span class="p">(</span><span class="n">_partial_fit_estimator</span><span class="p">)(</span>
@@ -317,8 +359,8 @@
                 <span class="n">X</span><span class="p">,</span>
                 <span class="n">y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span>
                 <span class="n">classes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">classes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">sample_weight</span><span class="p">,</span>
-                <span class="n">first_time</span><span class="p">,</span>
+                <span class="n">partial_fit_params</span><span class="o">=</span><span class="n">routed_params</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">,</span>
+                <span class="n">first_time</span><span class="o">=</span><span class="n">first_time</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="p">)</span>
@@ -330,6 +372,10 @@
 
         <span class="k">return</span> <span class="bp">self</span>
 
+    <span class="nd">@_fit_context</span><span class="p">(</span>
+        <span class="c1"># MultiOutput*.estimator is not validated yet</span>
+        <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the model to data, separately for each output variable.</span>
 
@@ -357,8 +403,6 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
-
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The base estimator should implement a fit method&quot;</span><span class="p">)</span>
 
@@ -373,16 +417,29 @@
                 <span class="s2">&quot;multi-output regression but has only one.&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_fit_parameter</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;sample_weight&quot;</span>
-        <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Underlying estimator does not support sample weights.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_routing_enabled</span><span class="p">():</span>
+            <span class="n">routed_params</span> <span class="o">=</span> <span class="n">process_routing</span><span class="p">(</span>
+                <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span>
+                <span class="n">other_params</span><span class="o">=</span><span class="n">fit_params</span><span class="p">,</span>
+                <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_fit_parameter</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;sample_weight&quot;</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Underlying estimator does not support sample weights.&quot;</span>
+                <span class="p">)</span>
 
-        <span class="n">fit_params_validated</span> <span class="o">=</span> <span class="n">_check_fit_params</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">fit_params</span><span class="p">)</span>
+            <span class="n">fit_params_validated</span> <span class="o">=</span> <span class="n">_check_fit_params</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">fit_params</span><span class="p">)</span>
+            <span class="n">routed_params</span> <span class="o">=</span> <span class="n">Bunch</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">Bunch</span><span class="p">(</span><span class="n">fit</span><span class="o">=</span><span class="n">fit_params_validated</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">routed_params</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">[</span><span class="s2">&quot;sample_weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_weight</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)(</span>
             <span class="n">delayed</span><span class="p">(</span><span class="n">_fit_estimator</span><span class="p">)(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">sample_weight</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params_validated</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="o">**</span><span class="n">routed_params</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">fit</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="p">)</span>
@@ -420,6 +477,28 @@
 
     <span class="k">def</span> <span class="nf">_more_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;multioutput_only&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">get_metadata_routing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get metadata routing of this object.</span>
+
+<span class="sd">        Please check :ref:`User Guide &lt;metadata_routing&gt;` on how the routing</span>
+<span class="sd">        mechanism works.</span>
+
+<span class="sd">        .. versionadded:: 1.3</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        routing : MetadataRouter</span>
+<span class="sd">            A :class:`~utils.metadata_routing.MetadataRouter` encapsulating</span>
+<span class="sd">            routing information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span>
+            <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">router</span>
 
 
 <span class="k">class</span> <span class="nc">MultiOutputRegressor</span><span class="p">(</span><span class="n">RegressorMixin</span><span class="p">,</span> <span class="n">_MultiOutputEstimator</span><span class="p">):</span>
@@ -492,7 +571,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MultiOutputRegressor.partial_fit"><a class="viewcode-back" href="../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputRegressor.partial_fit">[docs]</a>    <span class="nd">@_available_if_estimator_has</span><span class="p">(</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">partial_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">partial_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">partial_fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Incrementally fit the model to data, for each output variable.</span>
 
 <span class="sd">        Parameters</span>
@@ -508,12 +587,21 @@
 <span class="sd">            Only supported if the underlying regressor supports sample</span>
 <span class="sd">            weights.</span>
 
+<span class="sd">        **partial_fit_params : dict of str -&gt; object</span>
+<span class="sd">            Parameters passed to the ``estimator.partial_fit`` method of each</span>
+<span class="sd">            sub-estimator.</span>
+
+<span class="sd">            Only available if `enable_metadata_routing=True`. See the</span>
+<span class="sd">            :ref:`User Guide &lt;metadata_routing&gt;`.</span>
+
+<span class="sd">            .. versionadded:: 1.3</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        self : object</span>
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">)</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span> <span class="o">**</span><span class="n">partial_fit_params</span><span class="p">)</span></div>
 
 
 <span class="k">class</span> <span class="nc">MultiOutputClassifier</span><span class="p">(</span><span class="n">ClassifierMixin</span><span class="p">,</span> <span class="n">_MultiOutputEstimator</span><span class="p">):</span>
@@ -614,7 +702,7 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">classes_</span> <span class="o">=</span> <span class="p">[</span><span class="n">estimator</span><span class="o">.</span><span class="n">classes_</span> <span class="k">for</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">]</span>
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -708,7 +796,6 @@
 
 
 <span class="k">class</span> <span class="nc">_BaseChain</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
-
     <span class="n">_parameter_constraints</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;base_estimator&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">HasMethods</span><span class="p">([</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">])],</span>
         <span class="s2">&quot;order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="n">StrOptions</span><span class="p">({</span><span class="s2">&quot;random&quot;</span><span class="p">}),</span> <span class="kc">None</span><span class="p">],</span>
@@ -788,6 +875,13 @@
 
         <span class="k">del</span> <span class="n">Y_pred_chain</span>
 
+        <span class="k">if</span> <span class="n">_routing_enabled</span><span class="p">():</span>
+            <span class="n">routed_params</span> <span class="o">=</span> <span class="n">process_routing</span><span class="p">(</span>
+                <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">other_params</span><span class="o">=</span><span class="n">fit_params</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">routed_params</span> <span class="o">=</span> <span class="n">Bunch</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">Bunch</span><span class="p">(</span><span class="n">fit</span><span class="o">=</span><span class="n">fit_params</span><span class="p">))</span>
+
         <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">):</span>
             <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_message</span><span class="p">(</span>
                 <span class="n">estimator_idx</span><span class="o">=</span><span class="n">chain_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
@@ -796,7 +890,12 @@
             <span class="p">)</span>
             <span class="n">y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">[</span><span class="n">chain_idx</span><span class="p">]]</span>
             <span class="k">with</span> <span class="n">_print_elapsed_time</span><span class="p">(</span><span class="s2">&quot;Chain&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
-                <span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_aug</span><span class="p">[:,</span> <span class="p">:</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chain_idx</span><span class="p">)],</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
+                <span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                    <span class="n">X_aug</span><span class="p">[:,</span> <span class="p">:</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chain_idx</span><span class="p">)],</span>
+                    <span class="n">y</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">routed_params</span><span class="o">.</span><span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span>
+                <span class="p">)</span>
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">chain_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">col_idx</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chain_idx</span>
                 <span class="n">cv_result</span> <span class="o">=</span> <span class="n">cross_val_predict</span><span class="p">(</span>
@@ -959,7 +1058,11 @@
 <span class="sd">           [0.0321..., 0.9935..., 0.0625...]])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+    <span class="nd">@_fit_context</span><span class="p">(</span>
+        <span class="c1"># ClassifierChain.base_estimator is not validated yet</span>
+        <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the model to data matrix X and targets Y.</span>
 
 <span class="sd">        Parameters</span>
@@ -970,14 +1073,26 @@
 <span class="sd">        Y : array-like of shape (n_samples, n_classes)</span>
 <span class="sd">            The target values.</span>
 
+<span class="sd">        **fit_params : dict of string -&gt; object</span>
+<span class="sd">            Parameters passed to the `fit` method of each step.</span>
+
+<span class="sd">            Only available if `enable_metadata_routing=True`. See the</span>
+<span class="sd">            :ref:`User Guide &lt;metadata_routing&gt;`.</span>
+
+<span class="sd">            .. versionadded:: 1.3</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        self : object</span>
 <span class="sd">            Class instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">fit_params</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_routing_enabled</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;fit_params is only supported if enable_metadata_routing=True. &quot;</span>
+                <span class="s2">&quot;See the User Guide for more information.&quot;</span>
+            <span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">classes_</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">estimator</span><span class="o">.</span><span class="n">classes_</span> <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)</span>
         <span class="p">]</span>
@@ -1046,6 +1161,26 @@
         <span class="n">Y_decision</span> <span class="o">=</span> <span class="n">Y_decision_chain</span><span class="p">[:,</span> <span class="n">inv_order</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">Y_decision</span>
+
+    <span class="k">def</span> <span class="nf">get_metadata_routing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get metadata routing of this object.</span>
+
+<span class="sd">        Please check :ref:`User Guide &lt;metadata_routing&gt;` on how the routing</span>
+<span class="sd">        mechanism works.</span>
+
+<span class="sd">        .. versionadded:: 1.3</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        routing : MetadataRouter</span>
+<span class="sd">            A :class:`~utils.metadata_routing.MetadataRouter` encapsulating</span>
+<span class="sd">            routing information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span>
+            <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">router</span>
 
     <span class="k">def</span> <span class="nf">_more_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;_skip_test&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;multioutput_only&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
@@ -1147,6 +1282,10 @@
 <span class="sd">           [2., 0.]])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="nd">@_fit_context</span><span class="p">(</span>
+        <span class="c1"># RegressorChain.base_estimator is not validated yet</span>
+        <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the model to data matrix X and targets Y.</span>
 
@@ -1169,10 +1308,28 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
-
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">get_metadata_routing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get metadata routing of this object.</span>
+
+<span class="sd">        Please check :ref:`User Guide &lt;metadata_routing&gt;` on how the routing</span>
+<span class="sd">        mechanism works.</span>
+
+<span class="sd">        .. versionadded:: 1.3</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        routing : MetadataRouter</span>
+<span class="sd">            A :class:`~utils.metadata_routing.MetadataRouter` encapsulating</span>
+<span class="sd">            routing information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span>
+            <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">router</span>
 
     <span class="k">def</span> <span class="nf">_more_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;multioutput_only&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>

@@ -10,3 +10,5 @@
         darts.explainability.explainability
         darts.explainability.explainability_result
         darts.explainability.shap_explainer
+        darts.explainability.tft_explainer
+        darts.explainability.utils

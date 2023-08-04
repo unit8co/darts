@@ -427,6 +427,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">=</span> <span class="n">trend</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">trend_poly_degree</span> <span class="o">=</span> <span class="n">trend_poly_degree</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
     <span class="k">def</span> <span class="nf">_exp_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function, used to make FFT model pickable.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>DTW Windows &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Time Axis Encoders" href="darts.dataprocessing.encoders.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="darts.dataprocessing.dtw.dtw.html" />
+    <link rel="prev" title="Dynamic Time Warping (DTW)" href="darts.dataprocessing.dtw.dtw.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -93,7 +93,7 @@
  </a>
 </li>
 
-<li class="toctree-l1 nav-item">
+<li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
  </a>
@@ -146,7 +146,7 @@
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
+    <ul class="current nav bd-sidenav">
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="darts.ad.html">
    Anomaly Detection
@@ -302,22 +302,44 @@
    </li>
   </ul>
  </li>
- <li class="toctree-l1 has-children">
+ <li class="toctree-l1 current active has-children">
   <a class="reference internal" href="darts.dataprocessing.html">
    Data Processing
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
   <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul>
+  <ul class="current">
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.dataprocessing.dtw.html">
+     Dynamic Time Warping (DTW)
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
+       Dynamic Time Warping (DTW)
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       DTW Windows
+      </a>
+     </li>
+    </ul>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.dataprocessing.encoders.html">
      Time Axis Encoders
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -338,8 +360,8 @@
     <a class="reference internal" href="darts.dataprocessing.transformers.html">
      Data Transformers
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-    <label for="toctree-checkbox-8">
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -412,8 +434,8 @@
   <a class="reference internal" href="darts.datasets.html">
    Datasets
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-  <label for="toctree-checkbox-9">
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -424,20 +446,25 @@
   <a class="reference internal" href="darts.explainability.html">
    Explainability
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
-  <label for="toctree-checkbox-10">
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
    <i class="fas fa-chevron-down">
    </i>
   </label>
   <ul>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.explainability_result.html">
-     ExplainabilityResult
+     Explainability Result
     </a>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
      Shap Explainer for RegressionModels
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.tft_explainer.html">
+     TFT Explainer for Temporal Fusion Transformer (TFTModel)
     </a>
    </li>
   </ul>
@@ -446,8 +473,8 @@
   <a class="reference internal" href="darts.metrics.html">
    Metrics
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
-  <label for="toctree-checkbox-11">
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -463,8 +490,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
-  <label for="toctree-checkbox-12">
+  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+  <label for="toctree-checkbox-13">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -478,8 +505,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
-    <label for="toctree-checkbox-13">
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -505,8 +532,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
-    <label for="toctree-checkbox-14">
+    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+    <label for="toctree-checkbox-15">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -529,11 +556,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
        Block Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost model
       </a>
      </li>
      <li class="toctree-l3">
@@ -562,11 +584,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -584,11 +601,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nlinear.html">
        N-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -652,6 +664,16 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
+       Time-series Dense Encoder (TiDE)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
+       TorchForecastingModel
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
        Transformer Model
       </a>
@@ -674,8 +696,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
-  <label for="toctree-checkbox-15">
+  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <label for="toctree-checkbox-16">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -684,8 +706,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
-    <label for="toctree-checkbox-16">
+    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <label for="toctree-checkbox-17">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -778,14 +800,9 @@
               
               <div class="toc-item">
                 
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
-</div>
 
 <nav id="bd-toc-nav">
-    <ul class="simple visible nav section-nav flex-column">
-</ul>
-
+    
 </nav>
               </div>
               
@@ -805,13 +822,15 @@
               
               <div>
                 
-  <span class="target" id="module-darts.dataprocessing.dtw.window"></span><dl class="py class">
+  <span class="target" id="module-darts.dataprocessing.dtw.window"></span><section id="dtw-windows">
+<h1>DTW Windows<a class="headerlink" href="#dtw-windows" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">CRWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ranges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#CRWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.Window" title="darts.dataprocessing.dtw.window.Window"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.window.Window</span></code></a></p>
 <p>Compressed row representation window.
 Stores the range of active grid cells in each column.
-Any window with contiguous columns can be expressed as an CRWindow.
+Any window with contiguous columns can be expressed as a CRWindow.
 Supports efficient iterative construction and updates.</p>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
@@ -821,36 +840,31 @@ Supports efficient iterative construction and updates.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.add" title="darts.dataprocessing.dtw.window.CRWindow.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(elem)</p></td>
-<td><p>Mark grid cell as active.</p></td>
+<td><p>Marks a grid cell as active.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.add_range" title="darts.dataprocessing.dtw.window.CRWindow.add_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_range</span></code></a>(column, start, end)</p></td>
 <td><p>Extends the active cells in the column by the range (start,end).</p></td>
 </tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>column_index</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.column_index" title="darts.dataprocessing.dtw.window.CRWindow.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>column_length</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.column_length" title="darts.dataprocessing.dtw.window.CRWindow.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>column_lengths</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.column_lengths" title="darts.dataprocessing.dtw.window.CRWindow.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.init_size" title="darts.dataprocessing.dtw.window.CRWindow.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
+<td><p>Called by dtw to initialize the window to a certain size.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of series1</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of series2</p></li>
-<li><p><strong>ranges</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Ranges of active cells within a column [[start_column0, end_column0], …]
+<li><p><strong>n</strong> (<em>int</em>) – The width of the window, must be equal to the length of series1</p></li>
+<li><p><strong>m</strong> (<em>int</em>) – The height of the window, must be equal to the length of series2</p></li>
+<li><p><strong>ranges</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – The ranges of active cells within a column [[start_column0, end_column0], …]
 with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 </ul>
 </dd>
@@ -863,37 +877,32 @@ with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.add" title="darts.dataprocessing.dtw.window.CRWindow.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(elem)</p></td>
-<td><p>Mark grid cell as active.</p></td>
+<td><p>Marks a grid cell as active.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.add_range" title="darts.dataprocessing.dtw.window.CRWindow.add_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_range</span></code></a>(column, start, end)</p></td>
 <td><p>Extends the active cells in the column by the range (start,end).</p></td>
 </tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>column_index</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.column_index" title="darts.dataprocessing.dtw.window.CRWindow.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>column_length</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.column_length" title="darts.dataprocessing.dtw.window.CRWindow.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>column_lengths</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.column_lengths" title="darts.dataprocessing.dtw.window.CRWindow.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow.init_size" title="darts.dataprocessing.dtw.window.CRWindow.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
+<td><p>Called by dtw to initialize the window to a certain size.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#CRWindow.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark grid cell as active.</p>
+<dd><p>Marks a grid cell as active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<em>(</em><em>&lt;class 'int'&gt;</em><em>, </em><em>&lt;class 'int'&gt;</em><em>)</em>) – Tuple of grid cell index (column, row)</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -918,9 +927,17 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.column_index">
 <span class="sig-name descname"><span class="pre">column_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#CRWindow.column_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.column_index" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells before row element j, in column i.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The number of active grid cells before row element j, in column i,
+If (i,j) is not an active grid cell returns -1</p>
+</dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -928,9 +945,16 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.column_length">
 <span class="sig-name descname"><span class="pre">column_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#CRWindow.column_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.column_length" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells in a column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>column</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A column in the window, must be within 0 &lt; column &lt; n+1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The number of active grid cells in a column.</p>
+</dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -938,9 +962,13 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.column_lengths">
 <span class="sig-name descname"><span class="pre">column_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#CRWindow.column_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.column_lengths" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+<dd><p>Gives the number of activate grid cells in each column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The number of active grid cells in each column.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray of shape (n+1,)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -950,9 +978,33 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <span class="sig-name descname"><span class="pre">column_ranges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">array.array</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.column_ranges" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.init_size">
+<span class="sig-name descname"><span class="pre">init_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.init_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called by dtw to initialize the window to a certain size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of <cite>series1</cite> used for DTW</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of <cite>series2</cite> used for DTW</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.length">
 <span class="sig-name descname"><span class="pre">length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.m">
+<span class="sig-name descname"><span class="pre">m</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.n">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -962,60 +1014,29 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">Itakura</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_slope</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#Itakura"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow" title="darts.dataprocessing.dtw.window.CRWindow"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.window.CRWindow</span></code></a></p>
 <p>Forms the Itakura parallelogram, where max_slope determines the slope of the steeper side.</p>
-<blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><blockquote>
-<div><p>x</p>
-</div></blockquote>
-<p>xxxx</p>
-</div></blockquote>
-<dl>
-<dt>B           xxxxxx</dt><dd><blockquote>
-<div><p>xxxxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxxxxxxxxxx</p>
-</dd>
-</dl>
-</div></blockquote>
-<p>xxxxxxxxxxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxxxxxxxxxxxxxxxx     C</p>
-</div></blockquote>
-<p>xxxxxxxxxxxxxxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxxxxxxxxxxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxxxxxxxxxxxxxxxxx</p>
-</div></blockquote>
-<dl>
-<dt>A   xxxxxxxxxxxxxxxxxxxxx</dt><dd><blockquote>
-<div><blockquote>
-<div><p>xxxxxxxxxxxxxxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxxxxxxxxxxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxxxxxxxxxxxxxxxx</p>
-</dd>
-</dl>
-<p>xxxxxxxxxxxxxxxx       D
-xxxxxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxxxxx</p>
-</div></blockquote>
-<p>xxxxxx</p>
-</div></blockquote>
-<p>xxx</p>
-</div></blockquote>
-<p>x</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>                                     <span class="n">x</span>
+<span class="gp">&gt;&gt;&gt; </span>                                 <span class="n">xxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>                  <span class="n">B</span>           <span class="n">xxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>                        <span class="n">xxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">xxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>                <span class="n">xxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>             <span class="n">xxxxxxxxxxxxxxxxxxxx</span>     <span class="n">C</span>
+<span class="gp">&gt;&gt;&gt; </span>           <span class="n">xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>          <span class="n">xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>         <span class="n">xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">A</span>   <span class="n">xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>       <span class="n">xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>      <span class="n">xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>     <span class="n">xxxxxxxxxxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">xxxxxxxxxxxxxxxx</span>       <span class="n">D</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">xxxxxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">xxxxxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span>  <span class="n">xxxxxx</span>
+<span class="gp">&gt;&gt;&gt; </span> <span class="n">xxx</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+</pre></div>
+</div>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -1024,41 +1045,28 @@ xxxxxxxxxxxx</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.add" title="darts.dataprocessing.dtw.window.Itakura.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(elem)</p></td>
-<td><p>Mark grid cell as active.</p></td>
+<td><p>Marks a grid cell as active.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.add_range" title="darts.dataprocessing.dtw.window.Itakura.add_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_range</span></code></a>(column, start, end)</p></td>
 <td><p>Extends the active cells in the column by the range (start,end).</p></td>
 </tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>column_index</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.column_index" title="darts.dataprocessing.dtw.window.Itakura.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>column_length</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.column_length" title="darts.dataprocessing.dtw.window.Itakura.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>column_lengths</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.column_lengths" title="darts.dataprocessing.dtw.window.Itakura.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>init_size</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.init_size" title="darts.dataprocessing.dtw.window.Itakura.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
+<td><p>Called by dtw to initialize the window to a certain size.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> – The width of the window, must be equal to the length of series1</p></li>
-<li><p><strong>m</strong> – The height of the window, must be equal to the length of series2</p></li>
-<li><p><strong>ranges</strong> – Ranges of active cells within a column [[start_column0, end_column0], …]
-with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>max_slope</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The slope of the steeper parallelogram side.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
@@ -1069,40 +1077,32 @@ with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.add" title="darts.dataprocessing.dtw.window.Itakura.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(elem)</p></td>
-<td><p>Mark grid cell as active.</p></td>
+<td><p>Marks a grid cell as active.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.add_range" title="darts.dataprocessing.dtw.window.Itakura.add_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_range</span></code></a>(column, start, end)</p></td>
 <td><p>Extends the active cells in the column by the range (start,end).</p></td>
 </tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>column_index</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.column_index" title="darts.dataprocessing.dtw.window.Itakura.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>column_length</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.column_length" title="darts.dataprocessing.dtw.window.Itakura.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>column_lengths</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.column_lengths" title="darts.dataprocessing.dtw.window.Itakura.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>init_size</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Itakura.init_size" title="darts.dataprocessing.dtw.window.Itakura.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
+<td><p>Called by dtw to initialize the window to a certain size.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark grid cell as active.</p>
+<dd><p>Marks a grid cell as active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<em>(</em><em>&lt;class 'int'&gt;</em><em>, </em><em>&lt;class 'int'&gt;</em><em>)</em>) – Tuple of grid cell index (column, row)</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1127,9 +1127,17 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.column_index">
 <span class="sig-name descname"><span class="pre">column_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.column_index" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells before row element j, in column i.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The number of active grid cells before row element j, in column i,
+If (i,j) is not an active grid cell returns -1</p>
+</dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1137,9 +1145,16 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.column_length">
 <span class="sig-name descname"><span class="pre">column_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.column_length" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells in a column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>column</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A column in the window, must be within 0 &lt; column &lt; n+1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The number of active grid cells in a column.</p>
+</dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1147,9 +1162,13 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.column_lengths">
 <span class="sig-name descname"><span class="pre">column_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.column_lengths" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+<dd><p>Gives the number of activate grid cells in each column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The number of active grid cells in each column.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray of shape (n+1,)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1162,11 +1181,30 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.init_size">
 <span class="sig-name descname"><span class="pre">init_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#Itakura.init_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.init_size" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Called by dtw to initialize the window to a certain size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of <cite>series1</cite> used for DTW</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of <cite>series2</cite> used for DTW</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.length">
 <span class="sig-name descname"><span class="pre">length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.m">
+<span class="sig-name descname"><span class="pre">m</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.n">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1185,27 +1223,13 @@ meaning every possible alignment between series1 and series2 is considered.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.NoWindow.column_index" title="darts.dataprocessing.dtw.window.NoWindow.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">type elem</dt>
-<dd class="field-odd"><p>(&lt;class 'int'&gt;, &lt;class 'int'&gt;)</p>
-</dd>
-</dl>
-</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.NoWindow.column_length" title="darts.dataprocessing.dtw.window.NoWindow.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">type column</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd>
-</dl>
-</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.NoWindow.column_lengths" title="darts.dataprocessing.dtw.window.NoWindow.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">param self</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.NoWindow.init_size" title="darts.dataprocessing.dtw.window.NoWindow.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
 <td><p>Called by dtw to initialize the window to a certain size.</p></td>
@@ -1215,9 +1239,10 @@ meaning every possible alignment between series1 and series2 is considered.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.NoWindow.column_index">
 <span class="sig-name descname"><span class="pre">column_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#NoWindow.column_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.NoWindow.column_index" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells before row element j, in column i.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<em>(</em><em>&lt;class 'int'&gt;</em><em>, </em><em>&lt;class 'int'&gt;</em><em>)</em>) – (i,j) index, where i indexes columns and j rows</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The number of active grid cells before row element j, in column i,
@@ -1232,7 +1257,8 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.NoWindow.column_length">
 <span class="sig-name descname"><span class="pre">column_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#NoWindow.column_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.NoWindow.column_length" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells in a column.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>column</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A column in the window, must be within 0 &lt; column &lt; n+1</p>
 </dd>
@@ -1248,15 +1274,13 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.NoWindow.column_lengths">
 <span class="sig-name descname"><span class="pre">column_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#NoWindow.column_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.NoWindow.column_lengths" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>self</strong> – </p>
+<dd><p>Gives the number of activate grid cells in each column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The number of active grid cells in each column.</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Containing The number of active grid cells in each column.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>np.ndarray of shape (n+1,)</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray of shape (n+1,)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1268,8 +1292,8 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of series1</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of series2</p></li>
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of <cite>series1</cite> used for DTW</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of <cite>series2</cite> used for DTW</p></li>
 </ul>
 </dd>
 </dl>
@@ -1301,41 +1325,28 @@ If both time-series have the same time axis, window_size corresponds to the maxi
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.add" title="darts.dataprocessing.dtw.window.SakoeChiba.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(elem)</p></td>
-<td><p>Mark grid cell as active.</p></td>
+<td><p>Marks a grid cell as active.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.add_range" title="darts.dataprocessing.dtw.window.SakoeChiba.add_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_range</span></code></a>(column, start, end)</p></td>
 <td><p>Extends the active cells in the column by the range (start,end).</p></td>
 </tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>column_index</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_index" title="darts.dataprocessing.dtw.window.SakoeChiba.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>column_length</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_length" title="darts.dataprocessing.dtw.window.SakoeChiba.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>column_lengths</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_lengths" title="darts.dataprocessing.dtw.window.SakoeChiba.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>init_size</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.init_size" title="darts.dataprocessing.dtw.window.SakoeChiba.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
+<td><p>Called by dtw to initialize the window to a certain size.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> – The width of the window, must be equal to the length of series1</p></li>
-<li><p><strong>m</strong> – The height of the window, must be equal to the length of series2</p></li>
-<li><p><strong>ranges</strong> – Ranges of active cells within a column [[start_column0, end_column0], …]
-with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>window_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum allowed shift between the two series used in DTW.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
@@ -1346,40 +1357,32 @@ with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.add" title="darts.dataprocessing.dtw.window.SakoeChiba.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(elem)</p></td>
-<td><p>Mark grid cell as active.</p></td>
+<td><p>Marks a grid cell as active.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.add_range" title="darts.dataprocessing.dtw.window.SakoeChiba.add_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_range</span></code></a>(column, start, end)</p></td>
 <td><p>Extends the active cells in the column by the range (start,end).</p></td>
 </tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>column_index</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_index" title="darts.dataprocessing.dtw.window.SakoeChiba.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>column_length</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_length" title="darts.dataprocessing.dtw.window.SakoeChiba.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>column_lengths</strong></p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_lengths" title="darts.dataprocessing.dtw.window.SakoeChiba.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>init_size</strong></p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.SakoeChiba.init_size" title="darts.dataprocessing.dtw.window.SakoeChiba.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
+<td><p>Called by dtw to initialize the window to a certain size.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.add">
 <span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark grid cell as active.</p>
+<dd><p>Marks a grid cell as active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<em>(</em><em>&lt;class 'int'&gt;</em><em>, </em><em>&lt;class 'int'&gt;</em><em>)</em>) – Tuple of grid cell index (column, row)</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1404,9 +1407,17 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.column_index">
 <span class="sig-name descname"><span class="pre">column_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_index" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells before row element j, in column i.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The number of active grid cells before row element j, in column i,
+If (i,j) is not an active grid cell returns -1</p>
+</dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1414,9 +1425,16 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.column_length">
 <span class="sig-name descname"><span class="pre">column_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_length" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells in a column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>column</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A column in the window, must be within 0 &lt; column &lt; n+1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The number of active grid cells in a column.</p>
+</dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1424,9 +1442,13 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.column_lengths">
 <span class="sig-name descname"><span class="pre">column_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_lengths" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+<dd><p>Gives the number of activate grid cells in each column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The number of active grid cells in each column.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray of shape (n+1,)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1439,11 +1461,30 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.init_size">
 <span class="sig-name descname"><span class="pre">init_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#SakoeChiba.init_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.init_size" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Called by dtw to initialize the window to a certain size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of <cite>series1</cite> used for DTW</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of <cite>series2</cite> used for DTW</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.length">
 <span class="sig-name descname"><span class="pre">length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.m">
+<span class="sig-name descname"><span class="pre">m</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.n">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1460,27 +1501,13 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Window.column_index" title="darts.dataprocessing.dtw.window.Window.column_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_index</span></code></a>(elem)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">type elem</dt>
-<dd class="field-odd"><p>(&lt;class 'int'&gt;, &lt;class 'int'&gt;)</p>
-</dd>
-</dl>
-</p></td>
+<td><p>Gives the number of active grid cells before row element j, in column i.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Window.column_length" title="darts.dataprocessing.dtw.window.Window.column_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_length</span></code></a>(column)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">type column</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd>
-</dl>
-</p></td>
+<td><p>Gives the number of active grid cells in a column.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Window.column_lengths" title="darts.dataprocessing.dtw.window.Window.column_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_lengths</span></code></a>()</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">param self</dt>
-<dd class="field-odd"><p></p></dd>
-</dl>
-</p></td>
+<td><p>Gives the number of activate grid cells in each column.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.window.Window.init_size" title="darts.dataprocessing.dtw.window.Window.init_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_size</span></code></a>(n, m)</p></td>
 <td><p>Called by dtw to initialize the window to a certain size.</p></td>
@@ -1490,9 +1517,10 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Window.column_index">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">column_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elem</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#Window.column_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.Window.column_index" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells before row element j, in column i.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<em>(</em><em>&lt;class 'int'&gt;</em><em>, </em><em>&lt;class 'int'&gt;</em><em>)</em>) – (i,j) index, where i indexes columns and j rows</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The number of active grid cells before row element j, in column i,
@@ -1507,7 +1535,8 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Window.column_length">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">column_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#Window.column_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.Window.column_length" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Gives the number of active grid cells in a column.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>column</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A column in the window, must be within 0 &lt; column &lt; n+1</p>
 </dd>
@@ -1523,15 +1552,13 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Window.column_lengths">
 <span class="sig-name descname"><span class="pre">column_lengths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#Window.column_lengths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.Window.column_lengths" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>self</strong> – </p>
+<dd><p>Gives the number of activate grid cells in each column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The number of active grid cells in each column.</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Containing The number of active grid cells in each column.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>np.ndarray of shape (n+1,)</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray of shape (n+1,)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1543,8 +1570,8 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of series1</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of series2</p></li>
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The width of the window, must be equal to the length of <cite>series1</cite> used for DTW</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The height of the window, must be equal to the length of <cite>series2</cite> used for DTW</p></li>
 </ul>
 </dd>
 </dl>
@@ -1567,6 +1594,7 @@ If (i,j) is not an active grid cell returns -1</p>
 <span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">gtz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#gtz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.gtz" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+</section>
 
 
               </div>
@@ -1578,7 +1606,7 @@ If (i,j) is not an active grid cell returns -1</p>
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">&lt;no title&gt;</p>
+            <p class="prev-next-title">Dynamic Time Warping (DTW)</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.dataprocessing.encoders.html" title="next page">

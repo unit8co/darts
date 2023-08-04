@@ -37,7 +37,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="darts.models.forecasting.torch_forecasting_model.html" />
+    <link rel="next" title="Time-series Dense Encoder (TiDE)" href="darts.models.forecasting.tide_model.html" />
     <link rel="prev" title="&lt;no title&gt;" href="darts.models.forecasting.tft_submodels.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -313,11 +313,33 @@
   </label>
   <ul>
    <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.encoders.html">
-     Time Axis Encoders
+    <a class="reference internal" href="darts.dataprocessing.dtw.html">
+     Dynamic Time Warping (DTW)
     </a>
     <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
     <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
+       Dynamic Time Warping (DTW)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
+       DTW Windows
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.encoders.html">
+     Time Axis Encoders
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -338,8 +360,8 @@
     <a class="reference internal" href="darts.dataprocessing.transformers.html">
      Data Transformers
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-    <label for="toctree-checkbox-8">
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -412,8 +434,8 @@
   <a class="reference internal" href="darts.datasets.html">
    Datasets
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-  <label for="toctree-checkbox-9">
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -424,20 +446,25 @@
   <a class="reference internal" href="darts.explainability.html">
    Explainability
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
-  <label for="toctree-checkbox-10">
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
    <i class="fas fa-chevron-down">
    </i>
   </label>
   <ul>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.explainability_result.html">
-     ExplainabilityResult
+     Explainability Result
     </a>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
      Shap Explainer for RegressionModels
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.tft_explainer.html">
+     TFT Explainer for Temporal Fusion Transformer (TFTModel)
     </a>
    </li>
   </ul>
@@ -446,8 +473,8 @@
   <a class="reference internal" href="darts.metrics.html">
    Metrics
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
-  <label for="toctree-checkbox-11">
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -463,8 +490,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
-  <label for="toctree-checkbox-12">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+  <label for="toctree-checkbox-13">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -478,8 +505,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
-    <label for="toctree-checkbox-13">
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -505,8 +532,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
-    <label for="toctree-checkbox-14">
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+    <label for="toctree-checkbox-15">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -529,11 +556,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
        Block Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost model
       </a>
      </li>
      <li class="toctree-l3">
@@ -562,11 +584,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -584,11 +601,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nlinear.html">
        N-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -652,6 +664,16 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
+       Time-series Dense Encoder (TiDE)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
+       TorchForecastingModel
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
        Transformer Model
       </a>
@@ -674,8 +696,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
-  <label for="toctree-checkbox-15">
+  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <label for="toctree-checkbox-16">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -684,8 +706,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
-    <label for="toctree-checkbox-16">
+    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <label for="toctree-checkbox-17">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -854,8 +876,20 @@ implementation of the algorithm, which can potentially be slower.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.min_train_samples" title="darts.models.forecasting.theta.FourTheta.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.supports_future_covariates" title="darts.models.forecasting.theta.FourTheta.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.output_chunk_length" title="darts.models.forecasting.theta.FourTheta.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.supports_future_covariates" title="darts.models.forecasting.theta.FourTheta.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.supports_likelihood_parameter_prediction" title="darts.models.forecasting.theta.FourTheta.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.supports_multivariate" title="darts.models.forecasting.theta.FourTheta.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<td><p>Whether the model considers more than one variate in the time series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.supports_optimized_historical_forecasts" title="darts.models.forecasting.theta.FourTheta.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.supports_past_covariates" title="darts.models.forecasting.theta.FourTheta.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
@@ -901,28 +935,31 @@ implementation of the algorithm, which can potentially be slower.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.generate_fit_encodings" title="darts.models.forecasting.theta.FourTheta.generate_fit_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_encodings</span></code></a>(series[, ...])</p></td>
 <td><p>Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.generate_predict_encodings" title="darts.models.forecasting.theta.FourTheta.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.generate_fit_predict_encodings" title="darts.models.forecasting.theta.FourTheta.generate_fit_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<td><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.generate_predict_encodings" title="darts.models.forecasting.theta.FourTheta.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.gridsearch" title="darts.models.forecasting.theta.FourTheta.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.gridsearch" title="darts.models.forecasting.theta.FourTheta.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.historical_forecasts" title="darts.models.forecasting.theta.FourTheta.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.historical_forecasts" title="darts.models.forecasting.theta.FourTheta.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.load" title="darts.models.forecasting.theta.FourTheta.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.load" title="darts.models.forecasting.theta.FourTheta.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
 <td><p>Loads the model from a given path or file handle.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.predict" title="darts.models.forecasting.theta.FourTheta.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.predict" title="darts.models.forecasting.theta.FourTheta.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.residuals" title="darts.models.forecasting.theta.FourTheta.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.residuals" title="darts.models.forecasting.theta.FourTheta.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals produced by this model on a (or sequence of) univariate  time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.save" title="darts.models.forecasting.theta.FourTheta.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.save" title="darts.models.forecasting.theta.FourTheta.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.select_best_model" title="darts.models.forecasting.theta.FourTheta.select_best_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_best_model</span></code></a>(ts[, thetas, m, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.select_best_model" title="darts.models.forecasting.theta.FourTheta.select_best_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_best_model</span></code></a>(ts[, thetas, m, ...])</p></td>
 <td><p>Performs a grid search over all hyper parameters to select the best model, using the fitted values on the training series <cite>ts</cite>.</p></td>
 </tr>
 </tbody>
@@ -1037,8 +1074,13 @@ provided series and each sample.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.considers_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model considers static covariates, if there are any.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -1121,6 +1163,34 @@ generated by the encoders defined at model creation with parameter <cite>add_enc
 <li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The series or sequence of series with the target values used when fitting the model.</p></li>
 <li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the series or sequence of series with the past-observed covariates used when fitting the model.</p></li>
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the series or sequence of series with the future-known covariates used when fitting the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
+encoded covariates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]], Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.generate_fit_predict_encodings">
+<span class="sig-name descname"><span class="pre">generate_fit_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.generate_fit_predict_encodings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
+covariates series with the original and encoded covariates stacked together. The encodings are generated by the
+encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>, <cite>past_covariates</cite>,
+and <cite>future_covariates</cite> that you intend to use for training and prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of prediction time steps after the end of <cite>series</cite> intended to be used for prediction.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The series or sequence of series with target values intended to be used for training and prediction.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the past-observed covariates series intended to be used for training and prediction. The
+dimensions must match those of the covariates used for training.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future-known covariates series intended to be used for prediction. The dimensions must
+match those of the covariates used for training.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1245,7 +1315,7 @@ and metric score for the best hyper-parameters.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the historical forecasts that would have been obtained by this model on
 (potentially multiple) <cite>series</cite>.</p>
 <p>This method repeatedly builds a training set: either expanding from the beginning of <cite>series</cite> or moving with
@@ -1283,19 +1353,13 @@ If an <code class="docutils literal notranslate"><span class="pre">int</span></c
 If a <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>, the time stamp will be used to determine the first prediction time
 directly.
 If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the first prediction time will automatically be set to:</p>
-<blockquote>
-<div><ul>
-<li><p>the first predictable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, or <cite>retrain</cite> is a Callable and the first</p></li>
-</ul>
-<p>predictable point is earlier than the first trainable point.</p>
 <ul>
-<li><p>the first trainable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">int</span></code> (given <cite>train_length</cite>),</p></li>
-</ul>
-<p>or <cite>retrain</cite> is a Callable and the first trainable point is earlier than the first predictable point.</p>
-<ul>
+<li><p>the first predictable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, or <cite>retrain</cite> is a Callable and the first
+predictable point is earlier than the first trainable point.</p></li>
+<li><p>the first trainable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">int</span></code> (given <cite>train_length</cite>),
+or <cite>retrain</cite> is a Callable and the first trainable point is earlier than the first predictable point.</p></li>
 <li><p>the first trainable point (given <cite>train_length</cite>) otherwise</p></li>
 </ul>
-</div></blockquote>
 <p>Note: Raises a ValueError if <cite>start</cite> yields a time outside the time index of <cite>series</cite>.
 Note: If <cite>start</cite> is outside the possible historical forecasting times, will ignore the parameter
 (default behavior with <code class="docutils literal notranslate"><span class="pre">None</span></code>) and start at the first trainable/predictable point.</p>
@@ -1309,8 +1373,7 @@ In the case of <code class="docutils literal notranslate"><span class="pre">bool
 In the case of <code class="docutils literal notranslate"><span class="pre">int</span></code>: the model is retrained every <cite>retrain</cite> iterations.
 In the case of <code class="docutils literal notranslate"><span class="pre">Callable</span></code>: the model is retrained whenever callable returns <cite>True</cite>.
 The callable must have the following positional arguments:</p>
-<blockquote>
-<div><ul>
+<ul>
 <li><p><cite>counter</cite> (int): current <cite>retrain</cite> iteration</p></li>
 <li><p><cite>pred_time</cite> (pd.Timestamp or int): timestamp of forecast time (end of the training series)</p></li>
 <li><p><cite>train_series</cite> (TimeSeries): train series up to <cite>pred_time</cite></p></li>
@@ -1318,7 +1381,6 @@ The callable must have the following positional arguments:</p>
 <li><p><cite>future_covariates</cite> (TimeSeries): future_covariates series up
 to <cite>min(pred_time + series.freq * forecast_horizon, series.end_time())</cite></p></li>
 </ul>
-</div></blockquote>
 <p>Note: if any optional <cite>*_covariates</cite> are not passed to <cite>historical_forecast</cite>, <code class="docutils literal notranslate"><span class="pre">None</span></code> will be passed
 to the corresponding retrain function argument.
 Note: some models do require being retrained every time and do not support anything other
@@ -1329,13 +1391,17 @@ than <cite>retrain=True</cite>.</p>
 If set to True, the method returns a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the successive point forecasts.
 Otherwise, returns a list of historical <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> forecasts.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
-<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to parameters <cite>start</cite>, and <cite>train_length</cite>.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to historical forecasts optimization, or parameters <cite>start</cite> and
+<cite>train_length</cite>.</p></li>
+<li><p><strong>predict_likelihood_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the model predict the parameters of its Likelihood parameters instead of the target. Only
+supported for probabilistic models with a likelihood, <cite>num_samples = 1</cite> and <cite>n&lt;=output_chunk_length</cite>.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p>If <cite>last_points_only</cite> is set to True and a single series is provided in input,
-a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is returned, which contains the the historical forecast
-at the desired horizon.</p>
+<dd class="field-even"><p><p>If <cite>last_points_only</cite> is set to True and a single series is provided in input, a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+is returned, which contains the historical forecast at the desired horizon.</p>
 <p>A <code class="docutils literal notranslate"><span class="pre">List[TimeSeries]</span></code> is returned if either <cite>series</cite> is a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>,
 or if <cite>last_points_only</cite> is set to False. A list of lists is returned if both conditions are met.
 In this last case, the outer list is over the series provided in the input sequence,
@@ -1354,7 +1420,7 @@ and the inner lists contain the different historical forecasts.</p>
 <dd><p>Loads the model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
+<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ForecastingModel</span></code></p>
@@ -1379,6 +1445,17 @@ and the inner lists contain the different historical forecasts.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.output_chunk_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.output_chunk_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of time steps predicted at once by the model, not defined for statistical models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1456,7 +1533,7 @@ If False, the model is not trained at all. Default: True</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path or file handle under which to save the model at its current state. If no path is specified, the model
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path or file handle under which to save the model at its current state. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;</span></code>.
 E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RegressionModel_2020-01-01_12_00_00.pkl&quot;</span></code>.</p></li>
 <li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
@@ -1497,14 +1574,57 @@ Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.supports_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports future covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.supports_likelihood_parameter_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether model instance supports direct prediction of likelihood parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.supports_multivariate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_multivariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.supports_multivariate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model considers more than one variate in the time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.supports_optimized_historical_forecasts">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_optimized_historical_forecasts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.supports_optimized_historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model supports optimized historical forecasts</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.supports_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports past covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -1520,20 +1640,35 @@ Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.uses_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses future covariates, once fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.uses_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses past covariates, once fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.uses_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses static covariates, once fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -1546,7 +1681,7 @@ Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite
 <p>The training time series is de-seasonalized according to <cite>seasonality_period</cite>,
 or an inferred seasonality period.</p>
 <p><cite>season_mode</cite> must be a <code class="docutils literal notranslate"><span class="pre">SeasonalityMode</span></code> Enum member.</p>
-<p>You can access the Enum with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">SeasonalityMode</span></code>.</p>
+<p>You can access the Enum with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.utils</span> <span class="pre">import</span> <span class="pre">SeasonalityMode</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1582,8 +1717,20 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">Seasona
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.min_train_samples" title="darts.models.forecasting.theta.Theta.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.supports_future_covariates" title="darts.models.forecasting.theta.Theta.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.output_chunk_length" title="darts.models.forecasting.theta.Theta.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.supports_future_covariates" title="darts.models.forecasting.theta.Theta.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.supports_likelihood_parameter_prediction" title="darts.models.forecasting.theta.Theta.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.supports_multivariate" title="darts.models.forecasting.theta.Theta.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<td><p>Whether the model considers more than one variate in the time series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.supports_optimized_historical_forecasts" title="darts.models.forecasting.theta.Theta.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.supports_past_covariates" title="darts.models.forecasting.theta.Theta.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
@@ -1629,25 +1776,28 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">Seasona
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.generate_fit_encodings" title="darts.models.forecasting.theta.Theta.generate_fit_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_encodings</span></code></a>(series[, ...])</p></td>
 <td><p>Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.generate_predict_encodings" title="darts.models.forecasting.theta.Theta.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.generate_fit_predict_encodings" title="darts.models.forecasting.theta.Theta.generate_fit_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<td><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.generate_predict_encodings" title="darts.models.forecasting.theta.Theta.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.gridsearch" title="darts.models.forecasting.theta.Theta.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.gridsearch" title="darts.models.forecasting.theta.Theta.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.historical_forecasts" title="darts.models.forecasting.theta.Theta.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.historical_forecasts" title="darts.models.forecasting.theta.Theta.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.load" title="darts.models.forecasting.theta.Theta.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.load" title="darts.models.forecasting.theta.Theta.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
 <td><p>Loads the model from a given path or file handle.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.predict" title="darts.models.forecasting.theta.Theta.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.predict" title="darts.models.forecasting.theta.Theta.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.residuals" title="darts.models.forecasting.theta.Theta.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.residuals" title="darts.models.forecasting.theta.Theta.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals produced by this model on a (or sequence of) univariate  time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.save" title="darts.models.forecasting.theta.Theta.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.save" title="darts.models.forecasting.theta.Theta.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
 </tr>
 </tbody>
@@ -1762,8 +1912,13 @@ provided series and each sample.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.considers_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model considers static covariates, if there are any.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -1846,6 +2001,34 @@ generated by the encoders defined at model creation with parameter <cite>add_enc
 <li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The series or sequence of series with the target values used when fitting the model.</p></li>
 <li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the series or sequence of series with the past-observed covariates used when fitting the model.</p></li>
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the series or sequence of series with the future-known covariates used when fitting the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
+encoded covariates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]], Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.generate_fit_predict_encodings">
+<span class="sig-name descname"><span class="pre">generate_fit_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.generate_fit_predict_encodings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
+covariates series with the original and encoded covariates stacked together. The encodings are generated by the
+encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>, <cite>past_covariates</cite>,
+and <cite>future_covariates</cite> that you intend to use for training and prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of prediction time steps after the end of <cite>series</cite> intended to be used for prediction.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The series or sequence of series with target values intended to be used for training and prediction.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the past-observed covariates series intended to be used for training and prediction. The
+dimensions must match those of the covariates used for training.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future-known covariates series intended to be used for prediction. The dimensions must
+match those of the covariates used for training.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1970,7 +2153,7 @@ and metric score for the best hyper-parameters.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the historical forecasts that would have been obtained by this model on
 (potentially multiple) <cite>series</cite>.</p>
 <p>This method repeatedly builds a training set: either expanding from the beginning of <cite>series</cite> or moving with
@@ -2008,19 +2191,13 @@ If an <code class="docutils literal notranslate"><span class="pre">int</span></c
 If a <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>, the time stamp will be used to determine the first prediction time
 directly.
 If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the first prediction time will automatically be set to:</p>
-<blockquote>
-<div><ul>
-<li><p>the first predictable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, or <cite>retrain</cite> is a Callable and the first</p></li>
-</ul>
-<p>predictable point is earlier than the first trainable point.</p>
 <ul>
-<li><p>the first trainable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">int</span></code> (given <cite>train_length</cite>),</p></li>
-</ul>
-<p>or <cite>retrain</cite> is a Callable and the first trainable point is earlier than the first predictable point.</p>
-<ul>
+<li><p>the first predictable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, or <cite>retrain</cite> is a Callable and the first
+predictable point is earlier than the first trainable point.</p></li>
+<li><p>the first trainable point if <cite>retrain</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">int</span></code> (given <cite>train_length</cite>),
+or <cite>retrain</cite> is a Callable and the first trainable point is earlier than the first predictable point.</p></li>
 <li><p>the first trainable point (given <cite>train_length</cite>) otherwise</p></li>
 </ul>
-</div></blockquote>
 <p>Note: Raises a ValueError if <cite>start</cite> yields a time outside the time index of <cite>series</cite>.
 Note: If <cite>start</cite> is outside the possible historical forecasting times, will ignore the parameter
 (default behavior with <code class="docutils literal notranslate"><span class="pre">None</span></code>) and start at the first trainable/predictable point.</p>
@@ -2034,8 +2211,7 @@ In the case of <code class="docutils literal notranslate"><span class="pre">bool
 In the case of <code class="docutils literal notranslate"><span class="pre">int</span></code>: the model is retrained every <cite>retrain</cite> iterations.
 In the case of <code class="docutils literal notranslate"><span class="pre">Callable</span></code>: the model is retrained whenever callable returns <cite>True</cite>.
 The callable must have the following positional arguments:</p>
-<blockquote>
-<div><ul>
+<ul>
 <li><p><cite>counter</cite> (int): current <cite>retrain</cite> iteration</p></li>
 <li><p><cite>pred_time</cite> (pd.Timestamp or int): timestamp of forecast time (end of the training series)</p></li>
 <li><p><cite>train_series</cite> (TimeSeries): train series up to <cite>pred_time</cite></p></li>
@@ -2043,7 +2219,6 @@ The callable must have the following positional arguments:</p>
 <li><p><cite>future_covariates</cite> (TimeSeries): future_covariates series up
 to <cite>min(pred_time + series.freq * forecast_horizon, series.end_time())</cite></p></li>
 </ul>
-</div></blockquote>
 <p>Note: if any optional <cite>*_covariates</cite> are not passed to <cite>historical_forecast</cite>, <code class="docutils literal notranslate"><span class="pre">None</span></code> will be passed
 to the corresponding retrain function argument.
 Note: some models do require being retrained every time and do not support anything other
@@ -2054,13 +2229,17 @@ than <cite>retrain=True</cite>.</p>
 If set to True, the method returns a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the successive point forecasts.
 Otherwise, returns a list of historical <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> forecasts.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
-<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to parameters <cite>start</cite>, and <cite>train_length</cite>.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to historical forecasts optimization, or parameters <cite>start</cite> and
+<cite>train_length</cite>.</p></li>
+<li><p><strong>predict_likelihood_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the model predict the parameters of its Likelihood parameters instead of the target. Only
+supported for probabilistic models with a likelihood, <cite>num_samples = 1</cite> and <cite>n&lt;=output_chunk_length</cite>.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p>If <cite>last_points_only</cite> is set to True and a single series is provided in input,
-a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is returned, which contains the the historical forecast
-at the desired horizon.</p>
+<dd class="field-even"><p><p>If <cite>last_points_only</cite> is set to True and a single series is provided in input, a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+is returned, which contains the historical forecast at the desired horizon.</p>
 <p>A <code class="docutils literal notranslate"><span class="pre">List[TimeSeries]</span></code> is returned if either <cite>series</cite> is a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>,
 or if <cite>last_points_only</cite> is set to False. A list of lists is returned if both conditions are met.
 In this last case, the outer list is over the series provided in the input sequence,
@@ -2079,7 +2258,7 @@ and the inner lists contain the different historical forecasts.</p>
 <dd><p>Loads the model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
+<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ForecastingModel</span></code></p>
@@ -2104,6 +2283,17 @@ and the inner lists contain the different historical forecasts.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.output_chunk_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.output_chunk_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of time steps predicted at once by the model, not defined for statistical models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2181,7 +2371,7 @@ If False, the model is not trained at all. Default: True</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path or file handle under which to save the model at its current state. If no path is specified, the model
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path or file handle under which to save the model at its current state. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;</span></code>.
 E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RegressionModel_2020-01-01_12_00_00.pkl&quot;</span></code>.</p></li>
 <li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
@@ -2195,14 +2385,57 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.supports_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports future covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.supports_likelihood_parameter_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether model instance supports direct prediction of likelihood parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.supports_multivariate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_multivariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.supports_multivariate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model considers more than one variate in the time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.supports_optimized_historical_forecasts">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_optimized_historical_forecasts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.supports_optimized_historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model supports optimized historical forecasts</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.supports_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports past covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -2218,20 +2451,35 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.uses_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses future covariates, once fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.uses_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses past covariates, once fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.uses_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses static covariates, once fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -2251,10 +2499,10 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
             <p class="prev-next-title">&lt;no title&gt;</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.forecasting.torch_forecasting_model.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.models.forecasting.tide_model.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">&lt;no title&gt;</p>
+        <p class="prev-next-title">Time-series Dense Encoder (TiDE)</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

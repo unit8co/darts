@@ -260,7 +260,9 @@ using PyTorch Lightning callbacks for pruning experiments.
 For the sake of the example, we train a <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> on a single series, and optimize (probably overfitting) its hyperparameters by minimizing the prediction error on a validation set.
 You can also have a look at <a class="reference external" href="https://github.com/unit8co/darts/blob/master/examples/17-hyperparameter-optimization.ipynb">this notebook</a>
 for a more complete example.</p>
-<p><em>Note (2023-19-02): Optuna’s ``PyTorchLightningPruningCallback`` raises an error with pytorch-lightning&gt;=1.8. Until this fixed, a workaround is proposed `here &lt;https://github.com/optuna/optuna-examples/issues/166#issuecomment-1403112861&gt;`_.</em></p>
+<blockquote>
+<div><p><strong>NOTE</strong> (2023-19-02): Optuna’s <code class="docutils literal notranslate"><span class="pre">PyTorchLightningPruningCallback</span></code> raises an error with pytorch-lightning&gt;=1.8. Until this fixed, a workaround is proposed <a class="reference external" href="https://github.com/optuna/optuna-examples/issues/166#issuecomment-1403112861">here</a>.</p>
+</div></blockquote>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">optuna</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -268,8 +270,8 @@ for a more complete example.</p>
 <span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
 <span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MaxAbsScaler</span>
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scale</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDatasetr</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">smape</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">GaussianLikelihood</span>
@@ -308,16 +310,14 @@ for a more complete example.</p>
 
     <span class="c1"># detect if a GPU is available</span>
     <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
-        <span class="n">pl_trainer_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;gpus&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;auto_select_gpus&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="n">callbacks</span><span class="p">,</span>
-        <span class="p">}</span>
         <span class="n">num_workers</span> <span class="o">=</span> <span class="mi">4</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">pl_trainer_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="n">callbacks</span><span class="p">}</span>
         <span class="n">num_workers</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">pl_trainer_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="n">callbacks</span><span class="p">,</span>
+    <span class="p">}</span>
 
     <span class="c1"># optionally also add the (scaled) year value as a past covariate</span>
     <span class="k">if</span> <span class="n">include_year</span><span class="p">:</span>
@@ -366,7 +366,7 @@ for a more complete example.</p>
     <span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="s2">&quot;tcn_model&quot;</span><span class="p">)</span>
 
     <span class="c1"># Evaluate how good it is on the validation set, using sMAPE</span>
-    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">val_len</span><span class="p">)</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">VAL_LEN</span><span class="p">)</span>
     <span class="n">smapes</span> <span class="o">=</span> <span class="n">smape</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">smape_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">smapes</span><span class="p">)</span>
 
@@ -380,8 +380,9 @@ for a more complete example.</p>
 
 
 <span class="c1"># optimize hyperparameters by minimizing the sMAPE on the validation set</span>
-<span class="n">study</span> <span class="o">=</span> <span class="n">optuna</span><span class="o">.</span><span class="n">create_study</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="s2">&quot;minimize&quot;</span><span class="p">)</span>
-<span class="n">study</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">n_trials</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">print_callback</span><span class="p">])</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">study</span> <span class="o">=</span> <span class="n">optuna</span><span class="o">.</span><span class="n">create_study</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="s2">&quot;minimize&quot;</span><span class="p">)</span>
+    <span class="n">study</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">n_trials</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">print_callback</span><span class="p">])</span>
 </pre></div>
 </div>
 </section>
@@ -440,7 +441,7 @@ for a more complete example.</p>
 <span class="c1"># set up ray tune callback</span>
 <span class="n">tune_callback</span> <span class="o">=</span> <span class="n">TuneReportCallback</span><span class="p">(</span>
     <span class="p">{</span>
-        <span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="s2">&quot;val_Loss&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="s2">&quot;val_loss&quot;</span><span class="p">,</span>
         <span class="s2">&quot;MAPE&quot;</span><span class="p">:</span> <span class="s2">&quot;val_MeanAbsolutePercentageError&quot;</span><span class="p">,</span>
     <span class="p">},</span>
     <span class="n">on</span><span class="o">=</span><span class="s2">&quot;validation_end&quot;</span><span class="p">,</span>

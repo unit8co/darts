@@ -175,10 +175,7 @@
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.ensemble_model</span> <span class="kn">import</span> <span class="n">EnsembleModel</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">GlobalForecastingModel</span><span class="p">,</span>
-    <span class="n">LocalForecastingModel</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.linear_regression_model</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -190,20 +187,26 @@
 <div class="viewcode-block" id="RegressionEnsembleModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">[docs]</a><span class="k">class</span> <span class="nc">RegressionEnsembleModel</span><span class="p">(</span><span class="n">EnsembleModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">forecasting_models</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
-            <span class="n">List</span><span class="p">[</span><span class="n">LocalForecastingModel</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">GlobalForecastingModel</span><span class="p">]</span>
-        <span class="p">],</span>
+        <span class="n">forecasting_models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
         <span class="n">regression_train_n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">regression_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">regression_train_num_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">regression_train_samples_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;median&quot;</span><span class="p">,</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Use a regression model for ensembling individual models&#39; predictions.</span>
+<span class="sd">        Use a regression model for ensembling individual models&#39; predictions using the stacking technique [1]_.</span>
 
 <span class="sd">        The provided regression model must implement ``fit()`` and ``predict()`` methods</span>
 <span class="sd">        (e.g. scikit-learn regression models). Note that here the regression model is used to learn how to</span>
 <span class="sd">        best ensemble the individual forecasting models&#39; forecasts. It is not the same usage of regression</span>
 <span class="sd">        as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the</span>
 <span class="sd">        lagged series.</span>
+
+<span class="sd">        If `future_covariates` or `past_covariates` are provided at training or inference time,</span>
+<span class="sd">        they will be passed only to the forecasting models supporting them.</span>
+
+<span class="sd">        The regression model does not leverage the covariates passed to ``fit()`` and ``predict()``.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -214,8 +217,35 @@
 <span class="sd">        regression_model</span>
 <span class="sd">            Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)</span>
 <span class="sd">            Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``</span>
+
+<span class="sd">            .. note::</span>
+<span class="sd">                if `regression_model` is probabilistic, the `RegressionEnsembleModel` will also be probabilistic.</span>
+<span class="sd">            ..</span>
+<span class="sd">        regression_train_num_samples</span>
+<span class="sd">            Number of prediction samples from each forecasting model to train the regression model (samples are</span>
+<span class="sd">            averaged). Should be set to 1 for deterministic models. Default: 1.</span>
+
+<span class="sd">            .. note::</span>
+<span class="sd">                if `forecasting_models` contains a mix of probabilistic and deterministic models,</span>
+<span class="sd">                `regression_train_num_samples will be passed only to the probabilistic ones.</span>
+<span class="sd">            ..</span>
+<span class="sd">        regression_train_samples_reduction</span>
+<span class="sd">            If `forecasting models` are probabilistic and `regression_train_num_samples` &gt; 1, method used to</span>
+<span class="sd">            reduce the samples before passing them to the regression model. Possible values: &quot;mean&quot;, &quot;median&quot;</span>
+<span class="sd">            or float value corresponding to the desired quantile. Default: &quot;median&quot;</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            Whether to show warnings related to forecasting_models covariates support.</span>
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">forecasting_models</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">models</span><span class="o">=</span><span class="n">forecasting_models</span><span class="p">,</span>
+            <span class="n">train_num_samples</span><span class="o">=</span><span class="n">regression_train_num_samples</span><span class="p">,</span>
+            <span class="n">train_samples_reduction</span><span class="o">=</span><span class="n">regression_train_samples_reduction</span><span class="p">,</span>
+            <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+        <span class="p">)</span>
+
         <span class="k">if</span> <span class="n">regression_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">regression_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
                 <span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span>
@@ -236,7 +266,7 @@
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span> <span class="o">=</span> <span class="n">regression_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="p">:</span> <span class="n">RegressionModel</span> <span class="o">=</span> <span class="n">regression_model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span> <span class="o">=</span> <span class="n">regression_train_n_points</span>
 
     <span class="k">def</span> <span class="nf">_split_multi_ts_sequence</span><span class="p">(</span>
@@ -252,7 +282,6 @@
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
             <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
         <span class="p">)</span>
@@ -268,7 +297,7 @@
 
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">train_n_points_too_big</span><span class="p">,</span>
-            <span class="s2">&quot;regression_train_n_points parameter too big (must be smaller or &quot;</span>
+            <span class="s2">&quot;`regression_train_n_points` parameter too big (must be smaller or &quot;</span>
             <span class="s2">&quot;equal to the number of points in training_series)&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
@@ -282,10 +311,15 @@
             <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="c1"># maximize covariate usage</span>
             <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">forecast_training</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
+                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
+                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
+                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
+                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_multiple_predictions</span><span class="p">(</span>
@@ -293,7 +327,7 @@
             <span class="n">series</span><span class="o">=</span><span class="n">forecast_training</span><span class="p">,</span>
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">train_num_samples</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># train the regression model on the individual models&#39; predictions</span>
@@ -318,16 +352,21 @@
 <div class="viewcode-block" id="RegressionEnsembleModel.ensemble"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble">[docs]</a>    <span class="k">def</span> <span class="nf">ensemble</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">predictions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-
         <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">or</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="n">predictions</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
 
         <span class="n">ensembled</span> <span class="o">=</span> <span class="p">[</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-                <span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">prediction</span><span class="p">),</span> <span class="n">series</span><span class="o">=</span><span class="n">serie</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">prediction</span>
+                <span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">prediction</span><span class="p">),</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">serie</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">prediction</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+                <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">serie</span><span class="p">,</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
         <span class="p">]</span>
@@ -345,7 +384,32 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
         <span class="n">extreme_lags_</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">extreme_lags</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">extreme_lags_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">,)</span> <span class="o">+</span> <span class="n">extreme_lags_</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">extreme_lags_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">,)</span> <span class="o">+</span> <span class="n">extreme_lags_</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_chunk_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the `output_chunk_length` of the regression model (ensembling layer)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">output_chunk_length</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_likelihood_parameter_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;RegressionEnsembleModel supports likelihood parameters predictions if its regression model does&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">supports_multivariate</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">supports_multivariate</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A RegressionEnsembleModel is probabilistic if its regression</span>
+<span class="sd">        model is probabilistic (ensembling layer)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">_is_probabilistic</span></div>
 </pre></div>
 
               </div>

@@ -257,12 +257,12 @@
 <hr class="docutils" />
 <a class="reference external image-reference" href="https://badge.fury.io/py/darts"><img alt="PyPI version" src="https://badge.fury.io/py/u8darts.svg" /></a>
 <a class="reference external image-reference" href="https://anaconda.org/conda-forge/u8darts-all"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" /></a>
-<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.7+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.7+-blue.svg" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.8+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.8+-blue.svg" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date"><img alt="Docker Image Version (latest by date)" src="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/github/release-date/unit8co/darts"><img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/unit8co/darts" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master" /></a>
-<a class="reference external image-reference" href="https://pepy.tech/project/u8darts"><img alt="Downloads" src="https://pepy.tech/badge/u8darts" /></a>
 <a class="reference external image-reference" href="https://pepy.tech/project/darts"><img alt="Downloads" src="https://pepy.tech/badge/darts" /></a>
+<a class="reference external image-reference" href="https://pepy.tech/project/u8darts"><img alt="Downloads" src="https://pepy.tech/badge/u8darts" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/unit8co/darts"><img alt="codecov" src="https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW" /></a>
 <a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
 <a class="reference external image-reference" href="https://gitter.im/u8darts/darts?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img alt="Join the chat at https://gitter.im/u8darts/darts" src="https://badges.gitter.im/u8darts/darts.svg" /></a>
@@ -308,7 +308,7 @@ fledged anomaly detection models.</p>
 </section>
 <section id="quick-install">
 <h2>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this headline">¶</a></h2>
-<p>We recommend to first setup a clean Python environment for your project with Python 3.7+ using your favorite tool
+<p>We recommend to first setup a clean Python environment for your project with Python 3.8+ using your favorite tool
 (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>,
 <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with
 or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
@@ -437,339 +437,318 @@ and reproducible experimentation.</p></li>
 on bringing more models and features.</p>
 <table class="table">
 <colgroup>
-<col style="width: 11%" />
-<col style="width: 11%" />
-<col style="width: 11%" />
-<col style="width: 11%" />
-<col style="width: 11%" />
-<col style="width: 11%" />
-<col style="width: 11%" />
-<col style="width: 11%" />
-<col style="width: 11%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
-<th class="head"><p>Univariate</p></th>
-<th class="head"><p>Multivariate</p></th>
-<th class="head"><p>Probabilistic</p></th>
-<th class="head"><p>Multiple series (global)</p></th>
-<th class="head"><p>Past-observed covariates</p></th>
-<th class="head"><p>Future-known covariates</p></th>
-<th class="head"><p>Static covariates</p></th>
-<th class="head"><p>Reference</p></th>
+<th class="head"><p>Sources</p></th>
+<th class="head"><p>Target Series Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Univariate/<span class="raw-html-m2r"><br/></span>Multivariate</p></th>
+<th class="head"><p>Covariates Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Past-observed/<span class="raw-html-m2r"><br/></span>Future-known/<span class="raw-html-m2r"><br/></span>Static</p></th>
+<th class="head"><p>Probabilistic Forecasting:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Sampled/<span class="raw-html-m2r"><br/></span>Distribution Parameters</p></th>
+<th class="head"><p>Training &amp; Forecasting on Multiple Series</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ARIMA</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARIMA</span></code></p></td>
-<td></td>
-<td><p>✅</p></td>
+<tr class="row-even"><td><p><strong>Baseline Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms">LocalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
 <td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AutoARIMA</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoARIMA</span></code> (faster AutoARIMA)</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean">NaiveMean</a></p></td>
 <td></td>
-<td><p>✅</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal">NaiveSeasonal</a></p></td>
+<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift">NaiveDrift</a></p></td>
+<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage">NaiveMovingAverage</a></p></td>
+<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Statistical / Classic Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms">LocalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
-<td><p>✅</p></td>
 <td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA">ARIMA</a></p></td>
+<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA">VARIMA</a></p></td>
+<td></td>
+<td><p>🟥 🟩</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA">AutoARIMA</a></p></td>
+<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA">StatsForecastAutoArima</a> (faster AutoARIMA)</p></td>
 <td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
-<td><p>✅</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing">ExponentialSmoothing</a></p></td>
 <td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastETS</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS">StatsforecastAutoETS</a></p></td>
 <td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoCES</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES">StatsforecastAutoCES</a></p></td>
 <td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS">BATS</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS">TBATS</a></p></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta">Theta</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta">FourTheta</a></p></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoTheta</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta">StatsForecastAutoTheta</a></p></td>
 <td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code> (see <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet">install notes</a>)</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference external" href="file:///Users/dennisbader/projects/unit8/darts/docs/build/html/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet">Prophet</a> (see <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet">install notes</a>)</p></td>
 <td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="file:///Users/dennisbader/projects/unit8/darts/docs/build/html/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT">FFT</a> (Fast Fourier Transform)</p></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> using the Kalman filter and N4SID for system identification</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster">KalmanForecaster</a> using the Kalman filter and N4SID for system identification</p></td>
 <td><p><a class="reference external" href="https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf">N4SID paper</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Croston</span></code> method</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston">Croston</a> method</p></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td><p>🟩 🟥</p></td>
+<td><p>🟥 🟥 🟥</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟥</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>; generic wrapper around any sklearn regression model</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-even"><td><p><strong>Regression Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
 <td></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RandomForest</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel">RegressionModel</a>: generic wrapper around any sklearn regression model</p></td>
 <td></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">LinearRegressionModel</a></p></td>
+<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest">RandomForest</a></p></td>
+<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟥 🟥</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">LightGBMModel</a>,</p></td>
+<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel">XGBModel</a></p></td>
+<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel">CatBoostModel</a></p></td>
+<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>PyTorch (Lightning)-based Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CatBoostModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">XGBModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel">RNNModel</a> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1704.04110">DeepAR paper</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟥 🟩 🟥</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">BlockRNNModel</a> (incl. LSTM and GRU)</p></td>
 <td></td>
-<td></td>
-<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟥 🟥</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel">NBEATSModel</a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟥 🟥</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel">NHiTSModel</a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2201.12886">N-HiTS paper</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟥 🟥</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tcn_model.html#darts.models.forecasting.tcn_model.TCNModel">TCNModel</a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟥 🟥</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel">TransformerModel</a></p></td>
 <td></td>
-<td></td>
-<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟥 🟥</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel">TFTModel</a> (Temporal Fusion Transformer)</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">TFT paper</a>, <a class="reference external" href="https://pytorch-forecasting.readthedocs.io/en/latest/models.html">PyTorch Forecasting</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DLinearModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel">DLinearModel</a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">DLinear paper</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NLinearModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel">NLinearModel</a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">NLinear paper</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
-<tr class="row-odd"><td><p>Naive Baselines</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel">TiDEModel</a></p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/2304.08424.pdf">TiDE paper</a></p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Ensemble Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on ensembled forecasting models and the ensemble model itself</p></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a></p></td>
 <td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a></p></td>
+<td></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩 🟩 🟩</p></td>
+<td><p>🟩 🟩</p></td>
+<td><p>🟩</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="community-contact">
 <h2>Community &amp; Contact<a class="headerlink" href="#community-contact" title="Permalink to this headline">¶</a></h2>
-<p>Anyone is welcome to join our <a href="#id5"><span class="problematic" id="id6">:raw-html-m2r:`&lt;del&gt;\ `Discord server &lt;https://discord.gg/Um3jBTYFsA&gt;`_</span></a>&lt;/del&gt;`
-<a class="reference external" href="https://gitter.im/u8darts/darts">Gitter room</a> to
-ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
-or have suggestions, GitHub issues are also welcome.</p>
-<p>If what you want to tell us is not suitable for Discord or Github,
+<p>Anyone is welcome to join our <a class="reference external" href="https://gitter.im/u8darts/darts">Gitter room</a> to ask questions, make proposals,
+discuss use-cases, and more. If you spot a bug or have suggestions, GitHub issues are also welcome.</p>
+<p>If what you want to tell us is not suitable for Gitter or Github,
 feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for
 darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other
 inquiries.</p>

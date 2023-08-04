@@ -10,3 +10,4 @@
         darts.models.filtering
         darts.models.forecasting
         
+        darts.models.utils

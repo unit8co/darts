@@ -1887,7 +1887,7 @@ HPU available: False, using: 0 HPUs
 <p>By default, the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> will do a linear regression. It is very easy to use any desired sklearn-compatible regression model by specifying the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter, but for convenience Darts also provides a couple of ready-made models out of the box:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html">RandomForest</a> wraps around <code class="docutils literal notranslate"><span class="pre">sklearn.ensemble.RandomForestRegressor</span></code>.</p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.gradient_boosted_model.html">LightGBMModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">lightbm</span></code>.</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html">LightGBMModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">lightbm</span></code>.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html">LinearRegressionModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">sklearn.linear_model.LinearRegression</span></code> (accepting the same kwargs).</p></li>
 </ul>
 <p>For example, this is what fitting a Bayesian ridge regression to our toy two-series problem looks like:</p>
@@ -2428,6 +2428,7 @@ rho-risk at quantile 0.95: 0.01
 <h1>Ensembling models<a class="headerlink" href="#Ensembling-models" title="Permalink to this headline">¶</a></h1>
 <p><em>Ensembling</em> is about combining the forecasts produced by several models, in order to obtain a final - and hopefully better forecast.</p>
 <p>For instance, in our example of a <a class="reference external" href="#A-less-naive-model">less naive model above</a>, we manually combined a naive seasonal model with a naive drift model. Here, we will show how models forecasts can be automatically combined, naively using a <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code>, or learned using <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>.</p>
+<p>It is of course also possible to use <code class="docutils literal notranslate"><span class="pre">past</span></code> and/or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> with ensemble model but they will be passed only to the models supporting them when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
 <section id="Naive-Ensembling">
 <h2>Naive Ensembling<a class="headerlink" href="#Naive-Ensembling" title="Permalink to this headline">¶</a></h2>
 <p>Naive ensembling just takes the average of the forecasts of several models. Darts provides a <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code>, which allows to do this while still manipulating only one forecasting model (which, for instance, allows for easier backtesting):</p>
@@ -2548,6 +2549,63 @@ MAPE = 4.85
 array([0.01368849, 1.0980105 ], dtype=float32)
 </pre></div></div>
 </div>
+<p>By using a probabilistic regression model, the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> can also generate probabilistic forecasts:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[65]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
+
+<span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">]</span>
+
+<span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">NaiveDrift</span><span class="p">(),</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">12</span><span class="p">)]</span>
+
+<span class="n">regression_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
+    <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+    <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">likelihood</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span>
+    <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ensemble_model</span> <span class="o">=</span> <span class="n">RegressionEnsembleModel</span><span class="p">(</span>
+    <span class="n">forecasting_models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span>
+    <span class="n">regression_train_n_points</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">regression_model</span><span class="o">=</span><span class="n">regression_model</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">backtest</span> <span class="o">=</span> <span class="n">ensemble_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series_air</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">backtest</span><span class="p">,</span> <span class="n">series_air</span><span class="p">)))</span>
+<span class="n">series_air</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">backtest</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8ca7a08507a741f1bb55d4c2136fb1ba", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MAPE = 4.81
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/quickstart_00-quickstart_124_2.png" src="../_images/quickstart_00-quickstart_124_2.png" />
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> uses the <em>stacking</em> technique to train and combine the <code class="docutils literal notranslate"><span class="pre">forecasting_models</span></code>: each one of them is trained independently and the <code class="docutils literal notranslate"><span class="pre">regression_model</span></code> is then trained using their predictions as <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>.</p>
 </section>
 </section>
 <section id="Filtering-models">
@@ -2577,7 +2635,7 @@ array([0.01368849, 1.0980105 ], dtype=float32)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_124_0.png" src="../_images/quickstart_00-quickstart_124_0.png" />
+<img alt="../_images/quickstart_00-quickstart_127_0.png" src="../_images/quickstart_00-quickstart_127_0.png" />
 </div>
 </div>
 </section>
@@ -2614,7 +2672,7 @@ array([0.01368849, 1.0980105 ], dtype=float32)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_126_0.png" src="../_images/quickstart_00-quickstart_126_0.png" />
+<img alt="../_images/quickstart_00-quickstart_129_0.png" src="../_images/quickstart_00-quickstart_129_0.png" />
 </div>
 </div>
 </section>
