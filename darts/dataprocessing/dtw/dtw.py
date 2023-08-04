@@ -309,7 +309,7 @@ def dtw(
     series2
         A `TimeSeries` to align with `series1`.
     window
-        Optionally, a `Window` Used to constrain the search for the optimal alignment: see `SakoeChiba` and `Itakura`.
+        Optionally, a `Window` used to constrain the search for the optimal alignment: see `SakoeChiba` and `Itakura`.
         Default considers all possible alignments (`NoWindow`).
     distance
         Function taking as input either two `floats` for univariate series or two `np.ndarray`,
