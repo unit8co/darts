@@ -16,8 +16,9 @@ from darts.models import (
     LightGBMModel,
     LinearRegressionModel,
     NaiveSeasonal,
+    NotImportedModule,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 try:
@@ -30,6 +31,7 @@ try:
         RNNModel,
         TCNModel,
         TFTModel,
+        TiDEModel,
         TransformerModel,
     )
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
@@ -42,11 +44,11 @@ except ImportError:
     )
     TORCH_AVAILABLE = False
 
-models_reg_no_cov_cls_kwargs = [
-    (LinearRegressionModel, {"lags": 8}, (8, 1)),
-    (CatBoostModel, {"lags": 6}, (6, 1)),
-    (LightGBMModel, {"lags": 4}, (4, 1)),
-]
+models_reg_no_cov_cls_kwargs = [(LinearRegressionModel, {"lags": 8}, (8, 1))]
+if not isinstance(CatBoostModel, NotImportedModule):
+    models_reg_no_cov_cls_kwargs.append((CatBoostModel, {"lags": 6}, (6, 1)))
+if not isinstance(LightGBMModel, NotImportedModule):
+    models_reg_no_cov_cls_kwargs.append((LightGBMModel, {"lags": 4}, (4, 1)))
 
 models_reg_cov_cls_kwargs = [
     # target + past covariates
@@ -106,6 +108,7 @@ if TORCH_AVAILABLE:
                 "n_rnn_layers": 1,
                 "batch_size": 32,
                 "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
             },
             # Min of lags needed and max of lags needed
             (IN_LEN, OUT_LEN),
@@ -119,6 +122,7 @@ if TORCH_AVAILABLE:
                 "hidden_dim": 10,
                 "batch_size": 32,
                 "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
             },
             # autoregressive model
             (IN_LEN, 1),
@@ -131,6 +135,7 @@ if TORCH_AVAILABLE:
                 "training_length": 12,
                 "n_epochs": NB_EPOCH,
                 "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
             },
             (IN_LEN, 1),
             "DualCovariates",
@@ -142,6 +147,7 @@ if TORCH_AVAILABLE:
                 "output_chunk_length": OUT_LEN,
                 "n_epochs": NB_EPOCH,
                 "batch_size": 32,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "PastCovariates",
@@ -158,6 +164,7 @@ if TORCH_AVAILABLE:
                 "dim_feedforward": 16,
                 "batch_size": 32,
                 "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "PastCovariates",
@@ -172,6 +179,7 @@ if TORCH_AVAILABLE:
                 "num_layers": 2,
                 "layer_widths": 12,
                 "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "PastCovariates",
@@ -186,6 +194,7 @@ if TORCH_AVAILABLE:
                 "num_attention_heads": 4,
                 "add_relative_index": True,
                 "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "MixedCovariates",
@@ -196,6 +205,18 @@ if TORCH_AVAILABLE:
                 "input_chunk_length": IN_LEN,
                 "output_chunk_length": OUT_LEN,
                 "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
+            },
+            (IN_LEN, OUT_LEN),
+            "MixedCovariates",
+        ),
+        (
+            TiDEModel,
+            {
+                "input_chunk_length": IN_LEN,
+                "output_chunk_length": OUT_LEN,
+                "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "MixedCovariates",
@@ -623,6 +644,156 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
                 f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+            )
+
+    @pytest.mark.slow
+    def test_optimized_historical_forecasts_regression(self):
+        start_ts = pd.Timestamp("2000-01-01")
+        ts_univariate = tg.linear_timeseries(
+            start_value=1, end_value=100, length=20, start=start_ts
+        )
+        ts_multivariate = ts_univariate.stack(
+            tg.sine_timeseries(length=20, start=start_ts)
+        )
+        # slightly longer to not affect the last predictable timestamp
+        ts_covs = tg.gaussian_timeseries(length=30, start=start_ts)
+        start = 14
+        model_cls = LinearRegressionModel
+        for ts in [ts_univariate, ts_multivariate]:
+            # cover several covariates combinations and several regression models
+            for _, model_kwargs, _ in (
+                models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs
+            ):
+                for multi_models in [True, False]:
+                    for forecast_horizon in [1, 5]:
+                        # ocl == forecast horizon
+                        model_kwargs_same = model_kwargs.copy()
+                        model_kwargs_same["output_chunk_length"] = forecast_horizon
+                        model_kwargs_same["multi_models"] = multi_models
+                        model_same = model_cls(**model_kwargs_same)
+                        model_same.fit(
+                            series=ts[:start],
+                            past_covariates=ts_covs
+                            if model_same.supports_past_covariates
+                            else None,
+                            future_covariates=ts_covs
+                            if model_same.supports_future_covariates
+                            else None,
+                        )
+                        # ocl >= forecast horizon
+                        model_kwargs_diff = model_kwargs.copy()
+                        model_kwargs_diff["output_chunk_length"] = 5
+                        model_kwargs_diff["multi_models"] = multi_models
+                        model_diff = model_cls(**model_kwargs_same)
+                        model_diff.fit(
+                            series=ts[:start],
+                            past_covariates=ts_covs
+                            if model_diff.supports_past_covariates
+                            else None,
+                            future_covariates=ts_covs
+                            if model_diff.supports_future_covariates
+                            else None,
+                        )
+                        for model in [model_same, model_diff]:
+                            for last_points_only in [True, False]:
+                                for stride in [1, 2]:
+                                    hist_fct = model.historical_forecasts(
+                                        series=ts,
+                                        past_covariates=ts_covs
+                                        if model.supports_past_covariates
+                                        else None,
+                                        future_covariates=ts_covs
+                                        if model.supports_future_covariates
+                                        else None,
+                                        start=start,
+                                        retrain=False,
+                                        last_points_only=last_points_only,
+                                        stride=stride,
+                                        forecast_horizon=forecast_horizon,
+                                        enable_optimization=False,
+                                    )
+
+                                    # manually packing the series in list to match expected inputs
+                                    opti_hist_fct = (
+                                        model._optimized_historical_forecasts(
+                                            series=[ts],
+                                            past_covariates=[ts_covs]
+                                            if model.supports_past_covariates
+                                            else None,
+                                            future_covariates=[ts_covs]
+                                            if model.supports_future_covariates
+                                            else None,
+                                            start=start,
+                                            last_points_only=last_points_only,
+                                            stride=stride,
+                                            forecast_horizon=forecast_horizon,
+                                        )
+                                    )
+                                    # pack the output to generalize the tests
+                                    if last_points_only:
+                                        hist_fct = [hist_fct]
+                                        opti_hist_fct = [opti_hist_fct]
+
+                                    for fct, opti_fct in zip(hist_fct, opti_hist_fct):
+                                        self.assertTrue(
+                                            (
+                                                fct.time_index == opti_fct.time_index
+                                            ).all()
+                                        )
+                                        np.testing.assert_array_almost_equal(
+                                            fct.all_values(), opti_fct.all_values()
+                                        )
+
+    def test_optimized_historical_forecasts_regression_with_encoders(self):
+        for use_covs in [False, True]:
+            series_train, series_val = self.ts_pass_train, self.ts_pass_val
+            model = LinearRegressionModel(
+                lags=3,
+                lags_past_covariates=2,
+                lags_future_covariates=[2, 3],
+                add_encoders={
+                    "cyclic": {"future": ["month"]},
+                    "datetime_attribute": {"past": ["dayofweek"]},
+                },
+                output_chunk_length=5,
+            )
+            if use_covs:
+                pc = tg.gaussian_timeseries(
+                    start=series_train.start_time() - 2 * series_train.freq,
+                    end=series_val.end_time(),
+                    freq=series_train.freq,
+                )
+                fc = tg.gaussian_timeseries(
+                    start=series_train.start_time() + 3 * series_train.freq,
+                    end=series_val.end_time() + 4 * series_train.freq,
+                    freq=series_train.freq,
+                )
+            else:
+                pc, fc = None, None
+
+            model.fit(self.ts_pass_train, past_covariates=pc, future_covariates=fc)
+
+            hist_fct = model.historical_forecasts(
+                series=self.ts_pass_val,
+                past_covariates=pc,
+                future_covariates=fc,
+                retrain=False,
+                last_points_only=True,
+                forecast_horizon=5,
+                enable_optimization=False,
+            )
+
+            opti_hist_fct = model._optimized_historical_forecasts(
+                series=[self.ts_pass_val],
+                past_covariates=[pc],
+                future_covariates=[fc],
+                last_points_only=True,
+                forecast_horizon=5,
+            )
+
+            self.assertTrue((hist_fct.time_index == opti_hist_fct.time_index).all())
+            np.testing.assert_array_almost_equal(
+                hist_fct.all_values(), opti_hist_fct.all_values()
             )
 
     @pytest.mark.slow
@@ -1221,11 +1392,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         # test int
         helper_hist_forecasts(10, 0.9)
-        expected_msg = "Model has not been fit before the first predict iteration at prediction point (in time)"
+        expected_msg = "Model has not been fit yet."
         # `retrain=0` with not-trained model, encountering directly a predictable time index
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(0, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        self.assertTrue(
+            str(error_msg.value).startswith(expected_msg), str(error_msg.value)
+        )
 
         # test bool
         helper_hist_forecasts(True, 0.9)
@@ -1270,6 +1443,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                     output_chunk_length=ocl,
                     n_epochs=1,
                     random_state=42,
+                    **tfm_kwargs,
                 )
 
         for model_type in ["regression", "torch"]:

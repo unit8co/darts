@@ -42,6 +42,7 @@ from copy import deepcopy
 from inspect import signature
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -1266,52 +1267,55 @@ class TimeSeries:
         )
 
     @property
-    def n_samples(self):
+    def n_samples(self) -> int:
         """Number of samples contained in the series."""
         return len(self._xa.sample)
 
     @property
-    def n_components(self):
+    def n_components(self) -> int:
         """Number of components (dimensions) contained in the series."""
         return len(self._xa.component)
 
     @property
-    def width(self):
+    def width(self) -> int:
         """ "Width" (= number of components) of the series."""
         return self.n_components
 
     @property
-    def n_timesteps(self):
+    def n_timesteps(self) -> int:
         """Number of time steps in the series."""
         return len(self._time_index)
 
     @property
-    def is_deterministic(self):
+    def is_deterministic(self) -> bool:
         """Whether this series is deterministic."""
         return self.n_samples == 1
 
     @property
-    def is_stochastic(self):
+    def is_stochastic(self) -> bool:
         """Whether this series is stochastic."""
         return not self.is_deterministic
 
     @property
-    def is_probabilistic(self):
+    def is_probabilistic(self) -> bool:
         """Whether this series is stochastic (= probabilistic)."""
         return self.is_stochastic
 
     @property
-    def is_univariate(self):
+    def is_univariate(self) -> bool:
         """Whether this series is univariate."""
         return self.n_components == 1
 
     @property
-    def freq(self):
-        """The frequency of the series."""
+    def freq(self) -> Union[pd.DateOffset, int]:
+        """The frequency of the series.
+        A `pd.DateOffset` if series is indexed with a `pd.DatetimeIndex`.
+        An integer (step size) if series is indexed with a `pd.RangeIndex`.
+        """
         return self._freq
 
     @property
-    def freq_str(self):
+    def freq_str(self) -> str:
         """The frequency string representation of the series."""
         return self._freq_str
 
@@ -1321,12 +1325,12 @@ class TimeSeries:
         return self._xa.values.dtype
 
     @property
-    def components(self):
+    def components(self) -> pd.Index:
         """The names of the components, as a Pandas Index."""
         return self._xa.get_index(DIMS[1]).copy()
 
     @property
-    def columns(self):
+    def columns(self) -> pd.Index:
         """The names of the components, as a Pandas Index."""
         return self.components
 
@@ -1418,10 +1422,10 @@ class TimeSeries:
             logger,
         )
 
-    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> pd.Timestamp:
+    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> Union[pd.Timestamp, int]:
         return next(filter(lambda t: t >= ts, self._time_index))
 
-    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> pd.Timestamp:
+    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> Union[pd.Timestamp, int]:
         return next(filter(lambda t: t <= ts, self._time_index[::-1]))
 
     """
@@ -2125,7 +2129,7 @@ class TimeSeries:
 
     def get_timestamp_at_point(
         self, point: Union[pd.Timestamp, float, int]
-    ) -> pd.Timestamp:
+    ) -> Union[pd.Timestamp, int]:
         """
         Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).
 
@@ -3060,7 +3064,7 @@ class TimeSeries:
 
             'backfill': use NEXT valid observation to fill.
         kwargs
-            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where
+            some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more informations, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
@@ -3082,7 +3086,7 @@ class TimeSeries:
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
-        >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
+        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30T"))
         >>> print(resampled_ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
                       dtype='datetime64[ns]', name='time', freq='H')
@@ -3692,9 +3696,11 @@ class TimeSeries:
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
         label: Optional[Union[str, Sequence[str]]] = "",
+        max_nr_components: int = 10,
+        ax: Optional[matplotlib.axes.Axes] = None,
         *args,
         **kwargs,
-    ):
+    ) -> matplotlib.axes.Axes:
         """Plot the series.
 
         This is a wrapper method around :func:`xarray.DataArray.plot()`.
@@ -3702,7 +3708,7 @@ class TimeSeries:
         Parameters
         ----------
         new_plot
-            whether to spawn a new Figure
+            Whether to spawn a new axis to plot on. See also parameter `ax`.
         central_quantile
             The quantile (between 0 and 1) to plot as a "central" value, if the series is stochastic (i.e., if
             it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
@@ -3717,16 +3723,26 @@ class TimeSeries:
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
             interval is shown if `high_quantile` is None (default 0.95).
         default_formatting
-            Whether or not to use the darts default scheme.
+            Whether to use the darts default scheme.
         label
             Can either be a string or list of strings. If a string and the series only has a single component, it is
             used as the label for that component. If a string and the series has multiple components, it is used as
             a prefix for each component name. If a list of strings with length equal to the number of components in
             the series, the labels will be mapped to the components in order.
+        max_nr_components
+            The maximum number of components of a series to plot. -1 means all components will be plotted.
+        ax
+            Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
+            `new_plot=True`, will create a new axis.
         args
             some positional arguments for the `plot()` method
         kwargs
             some keyword arguments for the `plot()` method
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
         """
         alpha_confidence_intvls = 0.25
 
@@ -3744,41 +3760,43 @@ class TimeSeries:
                 logger,
             )
 
-        fig = (
-            plt.figure()
-            if new_plot
-            else (kwargs["figure"] if "figure" in kwargs else plt.gcf())
-        )
-        kwargs["figure"] = fig
+        if new_plot:
+            fig, ax = plt.subplots()
+        else:
+            if ax is None:
+                ax = plt.gca()
 
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
 
-        if self.n_components > 10:
+        n_components_to_plot = max_nr_components
+        if n_components_to_plot == -1:
+            n_components_to_plot = self.n_components
+        elif self.n_components > max_nr_components:
             logger.warning(
-                "Number of components is larger than 10 ({}). Plotting only the first 10 components.".format(
-                    self.n_components
-                )
+                f"Number of components is larger than {max_nr_components} ({self.n_components}). "
+                f"Plotting only the first {max_nr_components} components."
+                f"You can overwrite this in the using the `plot_all_components` argument in plot()"
+                f"Beware that plotting a large number of components may cause performance issues."
             )
 
         if not isinstance(label, str) and isinstance(label, Sequence):
             raise_if_not(
                 len(label) == self.n_components
-                or (self.n_components > 10 and len(label) >= 10),
+                or (
+                    self.n_components > n_components_to_plot
+                    and len(label) >= n_components_to_plot
+                ),
                 "The label argument should have the same length as the number of plotted components "
-                f"({min(self.n_components, 10)}), only {len(label)} labels were provided",
+                f"({min(self.n_components, n_components_to_plot)}), only {len(label)} labels were provided",
                 logger,
             )
             custom_labels = True
         else:
             custom_labels = False
 
-        for i, c in enumerate(self._xa.component[:10]):
+        for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
-
-            if i > 0:
-                kwargs["figure"] = plt.gcf()
-
             comp = self._xa.sel(component=c)
 
             if comp.sample.size > 1:
@@ -3805,18 +3823,18 @@ class TimeSeries:
             kwargs["label"] = label_to_use
 
             if central_series.shape[0] > 1:
-                p = central_series.plot(*args, **kwargs)
+                p = central_series.plot(*args, ax=ax, **kwargs)
             # empty TimeSeries
             elif central_series.shape[0] == 0:
-                p = plt.plot(
+                p = ax.plot(
                     [],
                     [],
                     *args,
                     **kwargs,
                 )
-                plt.xlabel(self.time_index.name)
+                ax.set_xlabel(self.time_index.name)
             else:
-                p = plt.plot(
+                p = ax.plot(
                     [self.start_time()],
                     central_series.values[0],
                     "o",
@@ -3835,7 +3853,7 @@ class TimeSeries:
                 low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
                 high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
                 if low_series.shape[0] > 1:
-                    plt.fill_between(
+                    ax.fill_between(
                         self.time_index,
                         low_series,
                         high_series,
@@ -3847,7 +3865,7 @@ class TimeSeries:
                         ),
                     )
                 else:
-                    plt.plot(
+                    ax.plot(
                         [self.start_time(), self.start_time()],
                         [low_series.values[0], high_series.values[0]],
                         "-+",
@@ -3855,8 +3873,9 @@ class TimeSeries:
                         lw=2,
                     )
 
-        plt.legend()
-        plt.title(self._xa.name)
+        ax.legend()
+        ax.set_title(self._xa.name)
+        return ax
 
     def with_columns_renamed(
         self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]

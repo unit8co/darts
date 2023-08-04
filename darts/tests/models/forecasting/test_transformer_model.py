@@ -5,7 +5,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -70,12 +70,14 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 force_reset=True,
+                **tfm_kwargs
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
                 model_name="unittest-model-transformer",
                 work_dir=self.temp_work_dir,
                 best=False,
+                map_location="cpu",
             )
             pred1 = model2.predict(n=6)
             pred2 = model_loaded.predict(n=6)
@@ -85,7 +87,7 @@ if TORCH_AVAILABLE:
 
             # Another random model should not
             model3 = TransformerModel(
-                input_chunk_length=1, output_chunk_length=1, n_epochs=1
+                input_chunk_length=1, output_chunk_length=1, n_epochs=1, **tfm_kwargs
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
@@ -102,7 +104,7 @@ if TORCH_AVAILABLE:
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
-                input_chunk_length=1, output_chunk_length=3, n_epochs=1
+                input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
             )
             model.fit(series)
             pred = model.predict(7)
@@ -121,13 +123,19 @@ if TORCH_AVAILABLE:
         def test_activations(self):
             with self.assertRaises(ValueError):
                 model1 = TransformerModel(
-                    input_chunk_length=1, output_chunk_length=1, activation="invalid"
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    activation="invalid",
+                    **tfm_kwargs
                 )
                 model1.fit(self.series, epochs=1)
 
             # internal activation function uses PyTorch TransformerEncoderLayer
             model2 = TransformerModel(
-                input_chunk_length=1, output_chunk_length=1, activation="gelu"
+                input_chunk_length=1,
+                output_chunk_length=1,
+                activation="gelu",
+                **tfm_kwargs
             )
             model2.fit(self.series, epochs=1)
             assert isinstance(
@@ -139,7 +147,10 @@ if TORCH_AVAILABLE:
 
             # glue variant FFN uses our custom _FeedForwardEncoderLayer
             model3 = TransformerModel(
-                input_chunk_length=1, output_chunk_length=1, activation="SwiGLU"
+                input_chunk_length=1,
+                output_chunk_length=1,
+                activation="SwiGLU",
+                **tfm_kwargs
             )
             model3.fit(self.series, epochs=1)
             assert isinstance(
@@ -155,16 +166,24 @@ if TORCH_AVAILABLE:
             base_model = TransformerModel
 
             # default norm_type is None
-            model0 = base_model(input_chunk_length=1, output_chunk_length=1)
+            model0 = base_model(
+                input_chunk_length=1, output_chunk_length=1, **tfm_kwargs
+            )
             y0 = model0.fit(self.series, epochs=1)
 
             model1 = base_model(
-                input_chunk_length=1, output_chunk_length=1, norm_type="RMSNorm"
+                input_chunk_length=1,
+                output_chunk_length=1,
+                norm_type="RMSNorm",
+                **tfm_kwargs
             )
             y1 = model1.fit(self.series, epochs=1)
 
             model2 = base_model(
-                input_chunk_length=1, output_chunk_length=1, norm_type=nn.LayerNorm
+                input_chunk_length=1,
+                output_chunk_length=1,
+                norm_type=nn.LayerNorm,
+                **tfm_kwargs
             )
             y2 = model2.fit(self.series, epochs=1)
 
@@ -173,6 +192,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 activation="gelu",
                 norm_type="RMSNorm",
+                **tfm_kwargs
             )
             y3 = model3.fit(self.series, epochs=1)
 
@@ -183,6 +203,9 @@ if TORCH_AVAILABLE:
 
             with self.assertRaises(AttributeError):
                 model4 = base_model(
-                    input_chunk_length=1, output_chunk_length=1, norm_type="invalid"
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    norm_type="invalid",
+                    **tfm_kwargs
                 )
                 model4.fit(self.series, epochs=1)

@@ -1,3 +1,5 @@
+import platform
+
 import numpy as np
 import pytest
 
@@ -12,9 +14,11 @@ from darts.models import (
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
+    NotImportedModule,
+    XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -28,8 +32,11 @@ try:
         NBEATSModel,
         RNNModel,
         TCNModel,
+        TFTModel,
+        TiDEModel,
         TransformerModel,
     )
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
     from darts.utils.likelihood_models import (
         BernoulliLikelihood,
         BetaLikelihood,
@@ -56,6 +63,9 @@ except ImportError:
         "Torch not available. Tests related to torch-based models will be skipped."
     )
     TORCH_AVAILABLE = False
+
+lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
+cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3),
@@ -97,8 +107,9 @@ if TORCH_AVAILABLE:
                 "n_epochs": 20,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
             },
-            1.9,
+            0.04,
         ),
         (
             TCNModel,
@@ -108,8 +119,9 @@ if TORCH_AVAILABLE:
                 "n_epochs": 60,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
             },
-            0.28,
+            0.08,
         ),
         (
             BlockRNNModel,
@@ -119,8 +131,9 @@ if TORCH_AVAILABLE:
                 "n_epochs": 20,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
             },
-            1,
+            0.04,
         ),
         (
             TransformerModel,
@@ -130,8 +143,9 @@ if TORCH_AVAILABLE:
                 "n_epochs": 20,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
             },
-            1,
+            0.2,
         ),
         (
             NBEATSModel,
@@ -141,14 +155,40 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
             },
-            1,
+            0.3,
+        ),
+        (
+            TFTModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 5,
+                "n_epochs": 10,
+                "random_state": 0,
+                "add_relative_index": True,
+                "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
+            },
+            0.1,
+        ),
+        (
+            TiDEModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 5,
+                "n_epochs": 10,
+                "random_state": 0,
+                "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
+            },
+            0.05,
         ),
     ]
 
 
 @pytest.mark.slow
-class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
+class ProbabilisticModelsTestCase(DartsBaseTestClass):
     np.random.seed(0)
 
     constant_ts = tg.constant_timeseries(length=200, value=0.5)
@@ -157,17 +197,22 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
+    constant_noisy_ts_short = constant_noisy_ts[:30]
+
     @pytest.mark.slow
     def test_fit_predict_determinism(self):
-
         for model_cls, model_kwargs, _ in models_cls_kwargs_errs:
+            if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+                fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+            else:
+                fit_kwargs = {}
             # whether the first predictions of two models initiated with the same random state are the same
             model = model_cls(**model_kwargs)
-            model.fit(self.constant_noisy_ts)
+            model.fit(self.constant_noisy_ts_short, **fit_kwargs)
             pred1 = model.predict(n=10, num_samples=2).values()
 
             model = model_cls(**model_kwargs)
-            model.fit(self.constant_noisy_ts)
+            model.fit(self.constant_noisy_ts_short, **fit_kwargs)
             pred2 = model.predict(n=10, num_samples=2).values()
 
             self.assertTrue((pred1 == pred2).all())
@@ -227,7 +272,11 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         """
         seed = 142857
         n_times, n_samples = 100, 1
-        model_classes = [LinearRegressionModel, LightGBMModel, CatBoostModel]
+        model_classes = [LinearRegressionModel, XGBModel]
+        if lgbm_available:
+            model_classes.append(LightGBMModel)
+        if cb_available:
+            model_classes.append(CatBoostModel)
 
         for n_comp in [1, 3]:
             list_lkl = [
@@ -254,7 +303,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
             for model_cls in model_classes:
                 # Catboost is the only regression model supporting the GaussianLikelihood
-                if isinstance(model_cls, CatBoostModel):
+                if cb_available and issubclass(model_cls, CatBoostModel):
                     list_lkl.append(
                         {
                             "kwargs": {"likelihood": "gaussian"},
@@ -293,6 +342,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     """ More likelihood tests
     """
     if TORCH_AVAILABLE:
+        runs_on_m1 = platform.processor() == "arm"
         np.random.seed(42)
         torch.manual_seed(42)
 
@@ -309,7 +359,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         bounded_series = TimeSeries.from_values(np.random.beta(2, 5, size=(100, 2)))
         simplex_series = bounded_series["0"].stack(1.0 - bounded_series["0"])
 
-        lkl_series = (
+        lkl_series = [
             (GaussianLikelihood(), real_series, 0.1, 3),
             (PoissonLikelihood(), discrete_pos_series, 2, 2),
             (NegativeBinomialLikelihood(), discrete_pos_series, 0.5, 0.5),
@@ -327,7 +377,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             (LogNormalLikelihood(), real_pos_series, 0.3, 1),
             (WeibullLikelihood(), real_pos_series, 0.2, 2.5),
             (QuantileRegression(), real_series, 0.2, 1),
-        )
+        ]
 
         def test_likelihoods_and_resulting_mean_forecasts(self):
             def _get_avgs(series):
@@ -336,7 +386,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 )
 
             for lkl, series, diff1, diff2 in self.lkl_series:
-                model = RNNModel(input_chunk_length=5, likelihood=lkl)
+                model = RNNModel(input_chunk_length=5, likelihood=lkl, **tfm_kwargs)
                 model.fit(series, epochs=50)
                 pred = model.predict(n=50, num_samples=50)
 
@@ -378,12 +428,15 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 (BetaLikelihood(), [0.5, 0.5]),
                 (ExponentialLikelihood(), [1.0]),
                 (GeometricLikelihood(), [0.3]),
-                (CauchyLikelihood(), [0, 1]),
                 (ContinuousBernoulliLikelihood(), [0.4]),
                 (HalfNormalLikelihood(), [1]),
                 (LogNormalLikelihood(), [0, 0.25]),
                 (WeibullLikelihood(), [1, 1.5]),
             ]
+            if not self.runs_on_m1:
+                list_lkl.append(
+                    (CauchyLikelihood(), [0, 1]),
+                )
 
             n_times = 100
             n_comp = 1
@@ -411,9 +464,30 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
                 # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
                 models = [
-                    RNNModel(4, "RNN", likelihood=lkl, n_epochs=1, random_state=seed),
-                    NBEATSModel(4, 1, likelihood=lkl, n_epochs=1, random_state=seed),
-                    DLinearModel(4, 1, likelihood=lkl, n_epochs=1, random_state=seed),
+                    RNNModel(
+                        4,
+                        "RNN",
+                        likelihood=lkl,
+                        n_epochs=1,
+                        random_state=seed,
+                        **tfm_kwargs,
+                    ),
+                    NBEATSModel(
+                        4,
+                        1,
+                        likelihood=lkl,
+                        n_epochs=1,
+                        random_state=seed,
+                        **tfm_kwargs,
+                    ),
+                    DLinearModel(
+                        4,
+                        1,
+                        likelihood=lkl,
+                        n_epochs=1,
+                        random_state=seed,
+                        **tfm_kwargs,
+                    ),
                 ]
 
                 true_lkl_params = np.array(lkl_params)
@@ -474,9 +548,9 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
                 # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
                 models = [
-                    RNNModel(4, "RNN", likelihood=lkl, n_epochs=1),
-                    TCNModel(4, 1, likelihood=lkl, n_epochs=1),
-                    DLinearModel(4, 1, likelihood=lkl, n_epochs=1),
+                    RNNModel(4, "RNN", likelihood=lkl, n_epochs=1, **tfm_kwargs),
+                    TCNModel(4, 1, likelihood=lkl, n_epochs=1, **tfm_kwargs),
+                    DLinearModel(4, 1, likelihood=lkl, n_epochs=1, **tfm_kwargs),
                 ]
 
                 for model in models:
@@ -498,7 +572,10 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         def test_predict_likelihood_parameters_wrong_args(self):
             # deterministic model
             model = DLinearModel(
-                input_chunk_length=4, output_chunk_length=4, n_epochs=1
+                input_chunk_length=4,
+                output_chunk_length=4,
+                n_epochs=1,
+                **tfm_kwargs,
             )
             model.fit(self.constant_noisy_ts)
             with self.assertRaises(ValueError):
@@ -509,6 +586,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=4,
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
+                **tfm_kwargs,
             )
             model.fit(self.constant_noisy_ts)
             # num_samples > 1
@@ -520,7 +598,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             model.predict(n=4, num_samples=1, predict_likelihood_parameters=True)
 
         def test_stochastic_inputs(self):
-            model = RNNModel(input_chunk_length=5)
+            model = RNNModel(input_chunk_length=5, **tfm_kwargs)
             model.fit(self.constant_ts, epochs=2)
 
             # build a stochastic series
