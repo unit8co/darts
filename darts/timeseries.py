@@ -3064,7 +3064,7 @@ class TimeSeries:
 
             'backfill': use NEXT valid observation to fill.
         kwargs
-            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where
+            some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more informations, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
@@ -3086,7 +3086,7 @@ class TimeSeries:
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
-        >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
+        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30T"))
         >>> print(resampled_ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
                       dtype='datetime64[ns]', name='time', freq='H')

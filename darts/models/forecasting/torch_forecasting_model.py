@@ -1707,6 +1707,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
 
+        # loss_fn is excluded from pl_forecasting_module ckpt, must be restored
+        loss_fn = model.model_params.get("loss_fn")
+        if loss_fn is not None:
+            model.model.criterion = loss_fn
+        # train and val metrics also need to be restored
+        torch_metrics = model.model.configure_torch_metrics(
+            model.model_params.get("torch_metrics")
+        )
+        model.model.train_metrics = torch_metrics.clone(prefix="train_")
+        model.model.val_metrics = torch_metrics.clone(prefix="val_")
+
         # restore _fit_called attribute, set to False in load() if no .ckpt is found/provided
         model._fit_called = True
         model.load_ckpt_path = file_path
