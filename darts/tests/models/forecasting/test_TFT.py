@@ -194,9 +194,9 @@ if TORCH_AVAILABLE:
                 add_encoders={"cyclic": {"future": "hour"}},
                 categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
                 pl_trainer_kwargs={
-                        "fast_dev_run": True,
-                        **tfm_kwargs["pl_trainer_kwargs"],
-                    }
+                    "fast_dev_run": True,
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
             model.fit(target_multi, verbose=False)
 

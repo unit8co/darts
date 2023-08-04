@@ -155,9 +155,7 @@ if TORCH_AVAILABLE:
         ),
     ]
 
-    class GlobalForecastingModelsTestCase(
-        DartsBaseTestClass
-    ):
+    class GlobalForecastingModelsTestCase(DartsBaseTestClass):
         # forecasting horizon used in runnability tests
         forecasting_horizon = 12
 
