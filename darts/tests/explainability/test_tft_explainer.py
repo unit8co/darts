@@ -26,8 +26,6 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TFTExplainerTestCase(DartsBaseTestClass):
-        # for running locally on M1 devices
-
         freq = "MS"
         series_lin_pos = tg.linear_timeseries(
             length=10, freq=freq
@@ -376,7 +374,7 @@ if TORCH_AVAILABLE:
                 },
                 index=[0],
             )
-            # M1 gives slightly differently from intel-based
+            # relaxed comparison because M1 chip gives slightly different results than intel chip
             assert ((enc_imp.round(decimals=1) - enc_expected).abs() <= 3).all().all()
 
             dec_expected = pd.DataFrame(
@@ -388,12 +386,13 @@ if TORCH_AVAILABLE:
                 },
                 index=[0],
             )
-            # M1 gives slightly differently from intel-based
+            # relaxed comparison because M1 chip gives slightly different results than intel chip
             assert ((dec_imp.round(decimals=1) - dec_expected).abs() <= 0.6).all().all()
 
             stc_expected = pd.DataFrame(
                 {"num_statcov": 11.9, "cat_statcov": 88.1}, index=[0]
             )
+            # relaxed comparison because M1 chip gives slightly different results than intel chip
             assert ((stc_imp.round(decimals=1) - stc_expected).abs() <= 0.1).all().all()
 
             with patch("matplotlib.pyplot.show") as _:
@@ -441,7 +440,7 @@ if TORCH_AVAILABLE:
                 results = explainer.explain()
 
                 att = results.get_attention()
-                # M1 gives slightly differently from intel-based
+                # relaxed comparison because M1 chip gives slightly different results than intel chip
                 assert np.all(
                     np.abs(np.round(att.values(), decimals=1) - att_exp) <= 0.2
                 )

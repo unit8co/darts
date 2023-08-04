@@ -157,7 +157,7 @@ if TORCH_AVAILABLE:
 
     class GlobalForecastingModelsTestCase(
         DartsBaseTestClass
-    ):  # for running locally on M1 devices
+    ):
         # forecasting horizon used in runnability tests
         forecasting_horizon = 12
 
