@@ -14,7 +14,7 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -248,6 +248,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             input_chunk_length=4,
             output_chunk_length=2,
             likelihood=QuantileRegression([0.05, 0.5, 0.95]),
+            **tfm_kwargs
         )
 
         naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
@@ -284,6 +285,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             input_chunk_length=4,
             output_chunk_length=2,
             likelihood=QuantileRegression([0.05, 0.5, 0.95]),
+            **tfm_kwargs
         )
 
         multivariate_series = self.series1.stack(self.series2)
@@ -333,9 +335,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_call_predict_global_models_univariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(12, n_epochs=1),
-                TCNModel(10, 2, n_epochs=1),
-                NBEATSModel(10, 2, n_epochs=1),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
             ]
         )
         with self.assertRaises(Exception):
@@ -348,9 +350,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_call_predict_global_models_multivariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(12, n_epochs=1),
-                TCNModel(10, 2, n_epochs=1),
-                NBEATSModel(10, 2, n_epochs=1),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
             ]
         )
         naive_ensemble.fit(self.seq1)
@@ -360,9 +362,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_call_predict_global_models_multivariate_input_with_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(12, n_epochs=1),
-                TCNModel(10, 2, n_epochs=1),
-                NBEATSModel(10, 2, n_epochs=1),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
             ]
         )
         naive_ensemble.fit(self.seq1, self.cov1)
@@ -375,7 +377,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_mixed(self):
         # NaiveDrift is local, RNNModel is global
-        naive_ensemble = NaiveEnsembleModel([NaiveDrift(), RNNModel(12, n_epochs=1)])
+        naive_ensemble = NaiveEnsembleModel(
+            [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
+        )
         # ensemble is neither local, nor global
         self.assertFalse(naive_ensemble.is_local_ensemble)
         self.assertFalse(naive_ensemble.is_global_ensemble)
@@ -396,7 +400,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         # RNN support future covariates only
         mixed_ensemble_one_covs = NaiveEnsembleModel(
-            [NaiveDrift(), RNNModel(12, n_epochs=1)]
+            [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
         )
         with self.assertRaises(ValueError):
             mixed_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
@@ -404,7 +408,10 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         # both models support future covariates only
         mixed_ensemble_future_covs = NaiveEnsembleModel(
-            [StatsForecastAutoARIMA(), RNNModel(12, n_epochs=1)]
+            [
+                StatsForecastAutoARIMA(),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+            ]
         )
         mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
         with self.assertRaises(ValueError):

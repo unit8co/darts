@@ -5,7 +5,7 @@ import pytest
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -45,7 +45,7 @@ if TORCH_AVAILABLE:
             ts_integer_index = TimeSeries.from_values(values=ts_time_index.values())
 
             # model requires future covariates without cyclic encoding
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1)
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1, **tfm_kwargs)
             with self.assertRaises(ValueError):
                 model.fit(ts_time_index, verbose=False)
 
@@ -54,12 +54,16 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False)
 
             # should work with relative index both with time index and integer index
             model = TFTModel(
-                input_chunk_length=1, output_chunk_length=1, add_relative_index=True
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_relative_index=True,
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False)
             model.fit(ts_integer_index, verbose=False)
@@ -92,6 +96,7 @@ if TORCH_AVAILABLE:
                 "loss_fn": MSELoss(),
                 "random_state": 42,
             }
+            kwargs_TFT_quick_test = dict(kwargs_TFT_quick_test, **tfm_kwargs)
 
             # univariate
             first_var = ts.columns[0]
@@ -156,6 +161,7 @@ if TORCH_AVAILABLE:
                 "random_state": 42,
                 "add_encoders": {"cyclic": {"future": "hour"}},
             }
+            kwargs_TFT_full_coverage = dict(kwargs_TFT_full_coverage, **tfm_kwargs)
 
             self.helper_test_prediction_accuracy(
                 season_length,
@@ -187,7 +193,10 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 add_encoders={"cyclic": {"future": "hour"}},
                 categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
-                pl_trainer_kwargs={"fast_dev_run": True},
+                pl_trainer_kwargs={
+                    "fast_dev_run": True,
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
             model.fit(target_multi, verbose=False)
 
@@ -237,6 +246,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
+                **tfm_kwargs
             )
             model.fit(target_multi)
             preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
@@ -248,6 +258,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
+                **tfm_kwargs
             )
             model.fit(target_multi.with_static_covariates(None))
             preds = model.predict(n=2, series=target_multi)
@@ -395,6 +406,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type="RMSNorm",
+                **tfm_kwargs
             )
             model1.fit(series, epochs=1)
 
@@ -403,6 +415,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type=nn.LayerNorm,
+                **tfm_kwargs
             )
             model2.fit(series, epochs=1)
 
@@ -412,5 +425,6 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_relative_index=True,
                     norm_type="invalid",
+                    **tfm_kwargs
                 )
                 model4.fit(series, epochs=1)

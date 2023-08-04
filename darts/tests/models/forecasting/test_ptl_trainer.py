@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
@@ -28,7 +28,6 @@ if TORCH_AVAILABLE:
             "logger": False,
             "enable_checkpointing": False,
         }
-
         series = linear_timeseries(length=100).astype(np.float32)
         pl_200_or_above = int(pl.__version__.split(".")[0]) >= 2
         precisions = {
@@ -54,6 +53,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 random_state=42,
+                **tfm_kwargs,
             )
 
             # fit model with custom trainer
@@ -62,23 +62,31 @@ if TORCH_AVAILABLE:
                 enable_checkpointing=True,
                 logger=False,
                 callbacks=model.trainer_params["callbacks"],
+                **tfm_kwargs["pl_trainer_kwargs"],
             )
             model.fit(self.series, trainer=trainer)
 
             # load automatically saved model with manual load_model() and load_from_checkpoint()
             model_loaded = RNNModel.load_from_checkpoint(
-                model_name=auto_name, work_dir=self.temp_work_dir, best=False
+                model_name=auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+                map_location="cpu",
             )
 
             # compare prediction of loaded model with original model
             self.assertEqual(model.predict(n=4), model_loaded.predict(n=4))
 
         def test_prediction_custom_trainer(self):
-            model = RNNModel(12, "RNN", 10, 10, random_state=42)
-            model2 = RNNModel(12, "RNN", 10, 10, random_state=42)
+            model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+            model2 = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
 
             # fit model with custom trainer
-            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[32])
+            trainer = pl.Trainer(
+                **self.trainer_params,
+                precision=self.precisions[32],
+                **tfm_kwargs["pl_trainer_kwargs"],
+            )
             model.fit(self.series, trainer=trainer)
 
             # fit model with built-in trainer
@@ -88,15 +96,23 @@ if TORCH_AVAILABLE:
             self.assertEqual(model.predict(n=4), model2.predict(n=4))
 
         def test_custom_trainer_setup(self):
-            model = RNNModel(12, "RNN", 10, 10, random_state=42)
+            model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
 
             # trainer with wrong precision should raise ValueError
-            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[64])
+            trainer = pl.Trainer(
+                **self.trainer_params,
+                precision=self.precisions[64],
+                **tfm_kwargs["pl_trainer_kwargs"],
+            )
             with self.assertRaises(ValueError):
                 model.fit(self.series, trainer=trainer)
 
             # no error with correct precision
-            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[32])
+            trainer = pl.Trainer(
+                **self.trainer_params,
+                precision=self.precisions[32],
+                **tfm_kwargs["pl_trainer_kwargs"],
+            )
             model.fit(self.series, trainer=trainer)
 
             # check if number of epochs trained is same as trainer.max_epochs
@@ -105,7 +121,10 @@ if TORCH_AVAILABLE:
         def test_builtin_extended_trainer(self):
             # wrong precision parameter name
             with self.assertRaises(TypeError):
-                invalid_trainer_kwarg = {"precisionn": self.precisions[32]}
+                invalid_trainer_kwarg = {
+                    "precisionn": self.precisions[32],
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                }
                 model = RNNModel(
                     12,
                     "RNN",
@@ -118,7 +137,10 @@ if TORCH_AVAILABLE:
 
             # flaot 16 not supported
             with self.assertRaises(ValueError):
-                invalid_trainer_kwarg = {"precision": "16-mixed"}
+                invalid_trainer_kwarg = {
+                    "precision": "16-mixed",
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                }
                 model = RNNModel(
                     12,
                     "RNN",
@@ -131,7 +153,10 @@ if TORCH_AVAILABLE:
 
             # precision value doesn't match `series` dtype
             with self.assertRaises(ValueError):
-                invalid_trainer_kwarg = {"precision": self.precisions[64]}
+                invalid_trainer_kwarg = {
+                    "precision": self.precisions[64],
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                }
                 model = RNNModel(
                     12,
                     "RNN",
@@ -145,6 +170,7 @@ if TORCH_AVAILABLE:
             for precision in [64, 32]:
                 valid_trainer_kwargs = {
                     "precision": self.precisions[precision],
+                    **tfm_kwargs["pl_trainer_kwargs"],
                 }
 
                 # valid parameters shouldn't raise error
@@ -180,7 +206,10 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 random_state=42,
-                pl_trainer_kwargs={"callbacks": [my_counter_0, my_counter_2]},
+                pl_trainer_kwargs={
+                    "callbacks": [my_counter_0, my_counter_2],
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
 
             # check if callbacks were added
@@ -202,7 +231,8 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 pl_trainer_kwargs={
-                    "callbacks": [CounterCallback(0), CounterCallback(2)]
+                    "callbacks": [CounterCallback(0), CounterCallback(2)],
+                    **tfm_kwargs["pl_trainer_kwargs"],
                 },
             )
             # we expect 3 callbacks
@@ -233,7 +263,10 @@ if TORCH_AVAILABLE:
                 10,
                 nr_epochs_val_period=1,
                 random_state=42,
-                pl_trainer_kwargs={"callbacks": [my_stopper]},
+                pl_trainer_kwargs={
+                    "callbacks": [my_stopper],
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
 
             # training should stop immediately with high stopping_threshold
@@ -252,7 +285,10 @@ if TORCH_AVAILABLE:
                 10,
                 nr_epochs_val_period=1,
                 random_state=42,
-                pl_trainer_kwargs={"callbacks": [my_stopper]},
+                pl_trainer_kwargs={
+                    "callbacks": [my_stopper],
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
 
             with self.assertRaises(RuntimeError):
