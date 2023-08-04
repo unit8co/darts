@@ -37,6 +37,7 @@ except ImportError:
 
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
+    torch_model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
     RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(
@@ -77,12 +78,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
+                **self.torch_model_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
+                **self.torch_model_kwargs,
             ),
         ]
 
@@ -156,10 +159,18 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_torch_models_retrain(self):
         model1 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            input_chunk_length=12,
+            output_chunk_length=1,
+            random_state=0,
+            n_epochs=2,
+            **self.torch_model_kwargs,
         )
         model2 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            input_chunk_length=12,
+            output_chunk_length=1,
+            random_state=0,
+            n_epochs=2,
+            **self.torch_model_kwargs,
         )
 
         ensemble = RegressionEnsembleModel([model1], 5)
@@ -310,12 +321,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **self.torch_model_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **self.torch_model_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
         ]
@@ -337,12 +350,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **self.torch_model_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **self.torch_model_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
             RegressionModel(lags_past_covariates=[-1]),
