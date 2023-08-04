@@ -102,6 +102,8 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
 
 class BacktestingTestCase(DartsBaseTestClass):
+    torch_model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
+
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
         linear_series_int = TimeSeries.from_values(linear_series.values())
@@ -231,7 +233,11 @@ class BacktestingTestCase(DartsBaseTestClass):
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
             tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
+                input_chunk_length=12,
+                output_chunk_length=1,
+                batch_size=1,
+                n_epochs=1,
+                **self.torch_model_kwargs
             )
             # cannot perform historical forecasts with `retrain=False` and untrained model
             with pytest.raises(ValueError):
@@ -265,7 +271,11 @@ class BacktestingTestCase(DartsBaseTestClass):
 
             # univariate model
             tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
+                input_chunk_length=12,
+                output_chunk_length=1,
+                batch_size=1,
+                n_epochs=1,
+                **self.torch_model_kwargs
             )
             tcn_model.fit(linear_series, verbose=False)
             # univariate fitted model + multivariate series
@@ -279,7 +289,11 @@ class BacktestingTestCase(DartsBaseTestClass):
                 )
 
             tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1
+                input_chunk_length=12,
+                output_chunk_length=3,
+                batch_size=1,
+                n_epochs=1,
+                **self.torch_model_kwargs
             )
             pred = tcn_model.historical_forecasts(
                 linear_series_multi,
@@ -588,6 +602,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                     "output_chunk_length": [1, 3],
                     "n_epochs": [1, 5],
                     "random_state": [rng_seed],
+                    "pl_trainer_kwargs": [self.torch_model_kwargs["pl_trainer_kwargs"]],
                 },
             },
         ]
@@ -620,5 +635,6 @@ class BacktestingTestCase(DartsBaseTestClass):
             "n_epochs": [1],
             "batch_size": [1],
             "kernel_size": [2, 3, 4],
+            "pl_trainer_kwargs": [self.torch_model_kwargs["pl_trainer_kwargs"]],
         }
         TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape)
