@@ -359,9 +359,10 @@ class TiDEModel(MixedCovariatesTorchModel):
         multilayer perceptron (MLP)-based encoder-decoders without attention.
 
         The model is implemented as a :class:`MixedCovariatesTorchModel`, which means that it supports
-        both past and future covariates, as well as static covariates. At this time the model does not support
-        probabilistic forecasts. The original paper does not consider the use of past covariates, so we assume
-        that they are passed to the encoder as-is.
+        both past and future covariates, as well as static covariates. Probabilistic forecasting is supported through
+        the use of a `likelihood` instead of a `loss_fn`.
+        The original paper does not describe how past covariates are treated in detail, so we assume that they are
+        passed to the encoder as-is.
 
         The encoder and decoder are implemented as a series of residual blocks. The number of residual blocks in
         the encoder and decoder can be controlled via ``num_encoder_layers`` and ``num_decoder_layers`` respectively.

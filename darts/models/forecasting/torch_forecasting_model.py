@@ -1,4 +1,7 @@
 """
+TorchForecastingModel
+---------------------
+
 This file contains several abstract classes:
 
     * TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
