@@ -202,7 +202,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
     @pytest.mark.slow
     def test_fit_predict_determinism(self):
         for model_cls, model_kwargs, _ in models_cls_kwargs_errs:
-            if issubclass(model_cls, TorchForecastingModel):
+            if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
                 fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
             else:
                 fit_kwargs = {}
