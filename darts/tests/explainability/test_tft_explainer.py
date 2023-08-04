@@ -8,7 +8,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -27,7 +27,6 @@ if TORCH_AVAILABLE:
 
     class TFTExplainerTestCase(DartsBaseTestClass):
         # for running locally on M1 devices
-        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
 
         freq = "MS"
         series_lin_pos = tg.linear_timeseries(
@@ -494,5 +493,5 @@ if TORCH_AVAILABLE:
                 add_relative_index=add_relative_idx,
                 full_attention=full_attention,
                 random_state=42,
-                **self.model_kwargs
+                **tfm_kwargs
             )

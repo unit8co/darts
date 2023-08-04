@@ -18,7 +18,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -98,7 +98,6 @@ models_cls_kwargs_errs += [
 ]
 
 if TORCH_AVAILABLE:
-    torch_model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
     models_cls_kwargs_errs += [
         (
             RNNModel,
@@ -108,7 +107,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 20,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             0.04,
         ),
@@ -120,7 +119,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 60,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             0.08,
         ),
@@ -132,7 +131,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 20,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             0.04,
         ),
@@ -144,7 +143,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 20,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             0.2,
         ),
@@ -156,7 +155,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             0.3,
         ),
@@ -169,7 +168,7 @@ if TORCH_AVAILABLE:
                 "random_state": 0,
                 "add_relative_index": True,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             0.1,
         ),
@@ -181,7 +180,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             0.05,
         ),
@@ -387,9 +386,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                 )
 
             for lkl, series, diff1, diff2 in self.lkl_series:
-                model = RNNModel(
-                    input_chunk_length=5, likelihood=lkl, **torch_model_kwargs
-                )
+                model = RNNModel(input_chunk_length=5, likelihood=lkl, **tfm_kwargs)
                 model.fit(series, epochs=50)
                 pred = model.predict(n=50, num_samples=50)
 
@@ -473,7 +470,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                         likelihood=lkl,
                         n_epochs=1,
                         random_state=seed,
-                        **torch_model_kwargs,
+                        **tfm_kwargs,
                     ),
                     NBEATSModel(
                         4,
@@ -481,7 +478,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                         likelihood=lkl,
                         n_epochs=1,
                         random_state=seed,
-                        **torch_model_kwargs,
+                        **tfm_kwargs,
                     ),
                     DLinearModel(
                         4,
@@ -489,7 +486,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                         likelihood=lkl,
                         n_epochs=1,
                         random_state=seed,
-                        **torch_model_kwargs,
+                        **tfm_kwargs,
                     ),
                 ]
 
@@ -551,13 +548,9 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
 
                 # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
                 models = [
-                    RNNModel(
-                        4, "RNN", likelihood=lkl, n_epochs=1, **torch_model_kwargs
-                    ),
-                    TCNModel(4, 1, likelihood=lkl, n_epochs=1, **torch_model_kwargs),
-                    DLinearModel(
-                        4, 1, likelihood=lkl, n_epochs=1, **torch_model_kwargs
-                    ),
+                    RNNModel(4, "RNN", likelihood=lkl, n_epochs=1, **tfm_kwargs),
+                    TCNModel(4, 1, likelihood=lkl, n_epochs=1, **tfm_kwargs),
+                    DLinearModel(4, 1, likelihood=lkl, n_epochs=1, **tfm_kwargs),
                 ]
 
                 for model in models:
@@ -582,7 +575,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                 input_chunk_length=4,
                 output_chunk_length=4,
                 n_epochs=1,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(self.constant_noisy_ts)
             with self.assertRaises(ValueError):
@@ -593,7 +586,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=4,
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(self.constant_noisy_ts)
             # num_samples > 1
@@ -605,7 +598,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
             model.predict(n=4, num_samples=1, predict_likelihood_parameters=True)
 
         def test_stochastic_inputs(self):
-            model = RNNModel(input_chunk_length=5, **torch_model_kwargs)
+            model = RNNModel(input_chunk_length=5, **tfm_kwargs)
             model.fit(self.constant_ts, epochs=2)
 
             # build a stochastic series

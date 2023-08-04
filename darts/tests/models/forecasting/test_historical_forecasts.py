@@ -18,7 +18,7 @@ from darts.models import (
     NaiveSeasonal,
     NotImportedModule,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 try:
@@ -92,7 +92,6 @@ models_reg_cov_cls_kwargs = [
 ]
 
 if TORCH_AVAILABLE:
-    torch_model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
     IN_LEN = 24
     OUT_LEN = 12
 
@@ -109,7 +108,7 @@ if TORCH_AVAILABLE:
                 "n_rnn_layers": 1,
                 "batch_size": 32,
                 "n_epochs": NB_EPOCH,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             # Min of lags needed and max of lags needed
             (IN_LEN, OUT_LEN),
@@ -123,7 +122,7 @@ if TORCH_AVAILABLE:
                 "hidden_dim": 10,
                 "batch_size": 32,
                 "n_epochs": NB_EPOCH,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             # autoregressive model
             (IN_LEN, 1),
@@ -136,7 +135,7 @@ if TORCH_AVAILABLE:
                 "training_length": 12,
                 "n_epochs": NB_EPOCH,
                 "likelihood": GaussianLikelihood(),
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             (IN_LEN, 1),
             "DualCovariates",
@@ -148,7 +147,7 @@ if TORCH_AVAILABLE:
                 "output_chunk_length": OUT_LEN,
                 "n_epochs": NB_EPOCH,
                 "batch_size": 32,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "PastCovariates",
@@ -165,7 +164,7 @@ if TORCH_AVAILABLE:
                 "dim_feedforward": 16,
                 "batch_size": 32,
                 "n_epochs": NB_EPOCH,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "PastCovariates",
@@ -180,7 +179,7 @@ if TORCH_AVAILABLE:
                 "num_layers": 2,
                 "layer_widths": 12,
                 "n_epochs": NB_EPOCH,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "PastCovariates",
@@ -195,7 +194,7 @@ if TORCH_AVAILABLE:
                 "num_attention_heads": 4,
                 "add_relative_index": True,
                 "n_epochs": NB_EPOCH,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "MixedCovariates",
@@ -206,7 +205,7 @@ if TORCH_AVAILABLE:
                 "input_chunk_length": IN_LEN,
                 "output_chunk_length": OUT_LEN,
                 "n_epochs": NB_EPOCH,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "MixedCovariates",
@@ -217,7 +216,7 @@ if TORCH_AVAILABLE:
                 "input_chunk_length": IN_LEN,
                 "output_chunk_length": OUT_LEN,
                 "n_epochs": NB_EPOCH,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             },
             (IN_LEN, OUT_LEN),
             "MixedCovariates",
@@ -1444,7 +1443,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                     output_chunk_length=ocl,
                     n_epochs=1,
                     random_state=42,
-                    **torch_model_kwargs,
+                    **tfm_kwargs,
                 )
 
         for model_type in ["regression", "torch"]:

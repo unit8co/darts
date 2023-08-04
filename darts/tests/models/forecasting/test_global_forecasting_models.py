@@ -12,7 +12,7 @@ from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -46,7 +46,6 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    torch_model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
     IN_LEN = 24
     OUT_LEN = 12
     models_cls_kwargs_errs = [
@@ -58,7 +57,7 @@ if TORCH_AVAILABLE:
                 "n_rnn_layers": 1,
                 "batch_size": 32,
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             180.0,
         ),
@@ -69,7 +68,7 @@ if TORCH_AVAILABLE:
                 "hidden_dim": 10,
                 "batch_size": 32,
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             180.0,
         ),
@@ -79,7 +78,7 @@ if TORCH_AVAILABLE:
                 "training_length": 12,
                 "n_epochs": 10,
                 "likelihood": GaussianLikelihood(),
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             80.0,
         ),
@@ -88,7 +87,7 @@ if TORCH_AVAILABLE:
             {
                 "n_epochs": 10,
                 "batch_size": 32,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             240.0,
         ),
@@ -102,7 +101,7 @@ if TORCH_AVAILABLE:
                 "dim_feedforward": 16,
                 "batch_size": 32,
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             180.0,
         ),
@@ -114,7 +113,7 @@ if TORCH_AVAILABLE:
                 "num_layers": 2,
                 "layer_widths": 12,
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             180.0,
         ),
@@ -126,7 +125,7 @@ if TORCH_AVAILABLE:
                 "num_attention_heads": 4,
                 "add_relative_index": True,
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             100.0,
         ),
@@ -134,7 +133,7 @@ if TORCH_AVAILABLE:
             NLinearModel,
             {
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             100,
         ),
@@ -142,7 +141,7 @@ if TORCH_AVAILABLE:
             DLinearModel,
             {
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             100,
         ),
@@ -150,7 +149,7 @@ if TORCH_AVAILABLE:
             TiDEModel,
             {
                 "n_epochs": 10,
-                "pl_trainer_kwargs": torch_model_kwargs["pl_trainer_kwargs"],
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             100,
         ),
@@ -238,14 +237,14 @@ if TORCH_AVAILABLE:
                     hidden_dim=10,
                     batch_size=32,
                     n_epochs=10,
-                    **torch_model_kwargs,
+                    **tfm_kwargs,
                 ),
                 TCNModel(
                     input_chunk_length=4,
                     output_chunk_length=3,
                     n_epochs=10,
                     batch_size=32,
-                    **torch_model_kwargs,
+                    **tfm_kwargs,
                 ),
             ]:
                 model_path_str = type(model).__name__
@@ -444,7 +443,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=5,
                 n_epochs=20,
                 random_state=0,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(series=self.target_past)
             long_pred_no_cov = model.predict(n=160)
@@ -454,7 +453,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=5,
                 n_epochs=20,
                 random_state=0,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(series=self.target_past, past_covariates=self.covariates_past)
             long_pred_with_cov = model.predict(n=160, past_covariates=self.covariates)
@@ -472,7 +471,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=166, series=self.ts_pass_train)
 
             # recurrent models can only predict data points for time steps where future covariates are available
-            model = RNNModel(12, n_epochs=1, **torch_model_kwargs)
+            model = RNNModel(12, n_epochs=1, **tfm_kwargs)
             model.fit(series=self.target_past, future_covariates=self.covariates_past)
             model.predict(n=160, future_covariates=self.covariates)
             with self.assertRaises(ValueError):
@@ -499,7 +498,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 n_epochs=10,
                 random_state=0,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(series=targets[0], past_covariates=self.covariates_past)
             preds_default = model.predict(
@@ -695,7 +694,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=2,
                 n_epochs=2,
                 batch_size=32,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(ts)
 
@@ -711,7 +710,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=2,
                 n_epochs=2,
                 batch_size=32,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
 
             model.fit(ts, max_samples_per_ts=5)
@@ -731,7 +730,7 @@ if TORCH_AVAILABLE:
                 num_layers=1,
                 layer_widths=2,
                 n_epochs=2,
-                **torch_model_kwargs,
+                **tfm_kwargs,
             )
 
             res = model.residuals(ts)

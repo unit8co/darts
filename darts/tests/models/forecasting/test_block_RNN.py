@@ -5,7 +5,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 
 logger = get_logger(__name__)
 
@@ -22,8 +22,6 @@ if TORCH_AVAILABLE:
 
     class BlockRNNModelTestCase(DartsBaseTestClass):
         __test__ = True
-        # for running locally on M1 devices
-        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
@@ -64,10 +62,7 @@ if TORCH_AVAILABLE:
         def test_fit(self):
             # Test basic fit()
             model = BlockRNNModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                n_epochs=2,
-                **self.model_kwargs
+                input_chunk_length=1, output_chunk_length=1, n_epochs=2, **tfm_kwargs
             )
             model.fit(self.series)
 
@@ -81,7 +76,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 force_reset=True,
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
@@ -102,7 +97,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 model="RNN",
                 n_epochs=2,
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
@@ -119,10 +114,7 @@ if TORCH_AVAILABLE:
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
-                input_chunk_length=1,
-                output_chunk_length=3,
-                n_epochs=1,
-                **self.model_kwargs
+                input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
             )
             model.fit(series)
             pred = model.predict(7)

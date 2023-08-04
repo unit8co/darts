@@ -18,7 +18,7 @@ from darts.models import (
     RegressionModel,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
@@ -37,7 +37,6 @@ except ImportError:
 
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
-    torch_model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
     RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(
@@ -78,14 +77,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
-                **self.torch_model_kwargs,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
-                **self.torch_model_kwargs,
+                **tfm_kwargs,
             ),
         ]
 
@@ -163,14 +162,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             output_chunk_length=1,
             random_state=0,
             n_epochs=2,
-            **self.torch_model_kwargs,
+            **tfm_kwargs,
         )
         model2 = BlockRNNModel(
             input_chunk_length=12,
             output_chunk_length=1,
             random_state=0,
             n_epochs=2,
-            **self.torch_model_kwargs,
+            **tfm_kwargs,
         )
 
         ensemble = RegressionEnsembleModel([model1], 5)
@@ -321,14 +320,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
-                **self.torch_model_kwargs,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
-                **self.torch_model_kwargs,
+                **tfm_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
         ]
@@ -350,14 +349,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
-                **self.torch_model_kwargs,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
-                **self.torch_model_kwargs,
+                **tfm_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
             RegressionModel(lags_past_covariates=[-1]),

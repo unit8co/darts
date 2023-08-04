@@ -13,7 +13,7 @@ from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
@@ -43,9 +43,6 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TestTorchForecastingModel(DartsBaseTestClass):
-        # for running locally on M1 devices
-        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
-
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 
@@ -61,7 +58,7 @@ if TORCH_AVAILABLE:
 
         def test_save_model_parameters(self):
             # check if re-created model has same params as original
-            model = RNNModel(12, "RNN", 10, 10, **self.model_kwargs)
+            model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
             self.assertTrue(model._model_params, model.untrained_model()._model_params)
 
         @patch(
@@ -77,7 +74,7 @@ if TORCH_AVAILABLE:
                 model_name=model_name,
                 work_dir=self.temp_work_dir,
                 save_checkpoints=False,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             model2 = RNNModel(
                 12,
@@ -88,7 +85,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 force_reset=True,
                 save_checkpoints=False,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
 
             model1.fit(self.series, epochs=1)
@@ -117,7 +114,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=False,
                 random_state=42,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             model_auto_save = RNNModel(
                 12,
@@ -128,7 +125,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 random_state=42,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
 
             # save model without training
@@ -246,7 +243,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=4,
                     output_chunk_length=1,
                     **kwargs,
-                    **self.model_kwargs,
+                    **tfm_kwargs,
                 )
 
             model_dir = os.path.join(self.temp_work_dir)
@@ -295,7 +292,7 @@ if TORCH_AVAILABLE:
                     save_checkpoints=save_checkpoints,
                     random_state=42,
                     force_reset=True,
-                    **self.model_kwargs,
+                    **tfm_kwargs,
                 )
 
             model_dir = os.path.join(self.temp_work_dir)
@@ -560,7 +557,7 @@ if TORCH_AVAILABLE:
                     likelihood=likelihood,
                     random_state=42,
                     force_reset=True,
-                    **self.model_kwargs,
+                    **tfm_kwargs,
                 )
 
             model_dir = os.path.join(self.temp_work_dir)
@@ -654,13 +651,9 @@ if TORCH_AVAILABLE:
                 )
 
         def test_create_instance_new_model_no_name_set(self):
-            RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, **self.model_kwargs
-            )
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, **tfm_kwargs)
             # no exception is raised
-            RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, **self.model_kwargs
-            )
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, **tfm_kwargs)
             # no exception is raised
 
         def test_create_instance_existing_model_with_name_no_fit(self):
@@ -672,7 +665,7 @@ if TORCH_AVAILABLE:
                 10,
                 work_dir=self.temp_work_dir,
                 model_name=model_name,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             # no exception is raised
 
@@ -683,7 +676,7 @@ if TORCH_AVAILABLE:
                 10,
                 work_dir=self.temp_work_dir,
                 model_name=model_name,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             # no exception is raised
 
@@ -701,7 +694,7 @@ if TORCH_AVAILABLE:
                 10,
                 work_dir=self.temp_work_dir,
                 model_name=model_name,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             # no exception is raised
             # since no fit, there is no data stored for the model, hence `force_reset` does noting
@@ -714,7 +707,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 model_name=model_name,
                 force_reset=True,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             patch_reset_model.assert_not_called()
 
@@ -733,7 +726,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 model_name=model_name,
                 save_checkpoints=True,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             # no exception is raised
 
@@ -748,7 +741,7 @@ if TORCH_AVAILABLE:
                 model_name=model_name,
                 save_checkpoints=True,
                 force_reset=True,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             patch_reset_model.assert_called_once()
 
@@ -765,7 +758,7 @@ if TORCH_AVAILABLE:
                 10,
                 n_epochs=20,
                 work_dir=self.temp_work_dir,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
 
             model1.fit(self.series)
@@ -781,7 +774,7 @@ if TORCH_AVAILABLE:
                 10,
                 n_epochs=20,
                 work_dir=self.temp_work_dir,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
 
             model1.fit(self.series)
@@ -799,7 +792,7 @@ if TORCH_AVAILABLE:
                 10,
                 n_epochs=20,
                 work_dir=self.temp_work_dir,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
 
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
@@ -818,7 +811,7 @@ if TORCH_AVAILABLE:
                 10,
                 n_epochs=20,
                 work_dir=self.temp_work_dir,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
 
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
@@ -843,7 +836,7 @@ if TORCH_AVAILABLE:
                 save_checkpoints=True,
                 model_name=original_model_name,
                 random_state=1,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(ts_training)
             original_preds = model.predict(10)
@@ -859,7 +852,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 model_name=retrained_model_name,
                 random_state=1,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             model_rt.load_weights_from_checkpoint(
                 model_name=original_model_name,
@@ -899,7 +892,7 @@ if TORCH_AVAILABLE:
 
             # raise Exception when trying to pass `weights_only`=True to `torch.load()`
             with self.assertRaises(ValueError):
-                model_rt = RNNModel(12, "RNN", 5, 5, **self.model_kwargs)
+                model_rt = RNNModel(12, "RNN", 5, 5, **tfm_kwargs)
                 model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
                     work_dir=self.temp_work_dir,
@@ -923,7 +916,7 @@ if TORCH_AVAILABLE:
                 save_checkpoints=False,
                 model_name=original_model_name,
                 random_state=1,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(ts_training)
             path_manual_save = os.path.join(self.temp_work_dir, "RNN_manual_save.pt")
@@ -941,7 +934,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 model_name=retrained_model_name,
                 random_state=1,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             model_rt.load_weights(path=path_manual_save, map_location="cpu")
 
@@ -1007,7 +1000,7 @@ if TORCH_AVAILABLE:
                 save_checkpoints=True,
                 force_reset=True,
                 loss_fn=torch.nn.L1Loss(),
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
             model.fit(self.series)
 
@@ -1026,7 +1019,7 @@ if TORCH_AVAILABLE:
             # model with one torch_metrics
             pl_trainer_kwargs = dict(
                 {"logger": DummyLogger(), "log_every_n_steps": 1},
-                **self.model_kwargs["pl_trainer_kwargs"],
+                **tfm_kwargs["pl_trainer_kwargs"],
             )
             model = RNNModel(
                 12,
@@ -1073,7 +1066,7 @@ if TORCH_AVAILABLE:
                     10,
                     optimizer_cls=optim_cls,
                     optimizer_kwargs=optim_kwargs,
-                    **self.model_kwargs,
+                    **tfm_kwargs,
                 )
                 # should not raise an error
                 model.fit(self.series, epochs=1)
@@ -1097,7 +1090,7 @@ if TORCH_AVAILABLE:
                     10,
                     lr_scheduler_cls=lr_scheduler_cls,
                     lr_scheduler_kwargs=lr_scheduler_kwargs,
-                    **self.model_kwargs,
+                    **tfm_kwargs,
                 )
                 # should not raise an error
                 model.fit(self.series, epochs=1)
@@ -1122,7 +1115,7 @@ if TORCH_AVAILABLE:
             model_kwargs = {
                 "logger": DummyLogger(),
                 "log_every_n_steps": 1,
-                **self.model_kwargs["pl_trainer_kwargs"],
+                **tfm_kwargs["pl_trainer_kwargs"],
             }
             # test single metric
             model = RNNModel(
@@ -1168,7 +1161,7 @@ if TORCH_AVAILABLE:
             model_kwargs = {
                 "logger": DummyLogger(),
                 "log_every_n_steps": 1,
-                **self.model_kwargs["pl_trainer_kwargs"],
+                **tfm_kwargs["pl_trainer_kwargs"],
             }
             # test single metric
             model = RNNModel(
@@ -1219,14 +1212,14 @@ if TORCH_AVAILABLE:
                     10,
                     n_epochs=1,
                     torch_metrics=torch_metrics,
-                    **self.model_kwargs,
+                    **tfm_kwargs,
                 )
                 model.fit(self.series)
 
         @pytest.mark.slow
         def test_lr_find(self):
             train_series, val_series = self.series[:-40], self.series[-40:]
-            model = RNNModel(12, "RNN", 10, 10, random_state=42, **self.model_kwargs)
+            model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
             # find the learning rate
             res = model.lr_find(series=train_series, val_series=val_series, epochs=50)
             assert isinstance(res, _LRFinder)
@@ -1239,7 +1232,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=3, series=self.series)
 
             # check that results are reproducible
-            model = RNNModel(12, "RNN", 10, 10, random_state=42, **self.model_kwargs)
+            model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
             res2 = model.lr_find(series=train_series, val_series=val_series, epochs=50)
             assert res.suggestion() == res2.suggestion()
 
@@ -1257,7 +1250,7 @@ if TORCH_AVAILABLE:
                     random_state=42,
                     optimizer_cls=torch.optim.Adam,
                     optimizer_kwargs={"lr": lr},
-                    **self.model_kwargs,
+                    **tfm_kwargs,
                 )
                 model.fit(train_series)
                 scores[lr_name] = mape(
@@ -1351,7 +1344,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 force_reset=True,
                 save_checkpoints=True,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )
 
         def helper_create_DLinearModel(self):
@@ -1362,5 +1355,5 @@ if TORCH_AVAILABLE:
                     "datetime_attribute": {"past": ["hour"], "future": ["month"]}
                 },
                 n_epochs=1,
-                **self.model_kwargs,
+                **tfm_kwargs,
             )

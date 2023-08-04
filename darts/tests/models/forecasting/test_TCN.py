@@ -2,7 +2,7 @@ import pytest
 
 from darts.logging import get_logger
 from darts.metrics import mae
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -21,9 +21,6 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TCNModelTestCase(DartsBaseTestClass):
-        # for running locally on M1 devices
-        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
-
         def test_creation(self):
             with self.assertRaises(ValueError):
                 # cannot choose a kernel size larger than the input length
@@ -40,7 +37,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 num_layers=1,
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model.fit(large_ts[:98])
             pred = model.predict(n=2).values()[0]
@@ -51,7 +48,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 num_layers=1,
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
@@ -72,7 +69,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 n_epochs=300,
                 random_state=0,
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model.fit(train)
             pred = model.predict(n=10)
@@ -100,7 +97,7 @@ if TORCH_AVAILABLE:
                             dilation_base=dilation_base,
                             weight_norm=False,
                             n_epochs=1,
-                            **self.model_kwargs
+                            **tfm_kwargs
                         )
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module
@@ -148,7 +145,7 @@ if TORCH_AVAILABLE:
                             weight_norm=False,
                             num_layers=model.model.num_layers - 1,
                             n_epochs=1,
-                            **self.model_kwargs
+                            **tfm_kwargs
                         )
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module
@@ -195,10 +192,7 @@ if TORCH_AVAILABLE:
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
-                input_chunk_length=12,
-                output_chunk_length=3,
-                n_epochs=1,
-                **self.model_kwargs
+                input_chunk_length=12, output_chunk_length=3, n_epochs=1, **tfm_kwargs
             )
             model.fit(series)
             pred = model.predict(7)

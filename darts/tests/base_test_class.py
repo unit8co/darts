@@ -5,6 +5,7 @@ import unittest
 
 # Print something for all tests taking longer than this
 DURATION_THRESHOLD = 2.0
+tfm_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
 
 
 class DartsBaseTestClass(unittest.TestCase):

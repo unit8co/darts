@@ -5,7 +5,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -32,8 +32,6 @@ if TORCH_AVAILABLE:
 
     class TransformerModelTestCase(DartsBaseTestClass):
         __test__ = True
-        # for running locally on M1 devices
-        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
@@ -72,7 +70,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 force_reset=True,
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
@@ -89,10 +87,7 @@ if TORCH_AVAILABLE:
 
             # Another random model should not
             model3 = TransformerModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                n_epochs=1,
-                **self.model_kwargs
+                input_chunk_length=1, output_chunk_length=1, n_epochs=1, **tfm_kwargs
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
@@ -109,10 +104,7 @@ if TORCH_AVAILABLE:
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
-                input_chunk_length=1,
-                output_chunk_length=3,
-                n_epochs=1,
-                **self.model_kwargs
+                input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
             )
             model.fit(series)
             pred = model.predict(7)
@@ -134,7 +126,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     activation="invalid",
-                    **self.model_kwargs
+                    **tfm_kwargs
                 )
                 model1.fit(self.series, epochs=1)
 
@@ -143,7 +135,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 activation="gelu",
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model2.fit(self.series, epochs=1)
             assert isinstance(
@@ -158,7 +150,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 activation="SwiGLU",
-                **self.model_kwargs
+                **tfm_kwargs
             )
             model3.fit(self.series, epochs=1)
             assert isinstance(
@@ -175,7 +167,7 @@ if TORCH_AVAILABLE:
 
             # default norm_type is None
             model0 = base_model(
-                input_chunk_length=1, output_chunk_length=1, **self.model_kwargs
+                input_chunk_length=1, output_chunk_length=1, **tfm_kwargs
             )
             y0 = model0.fit(self.series, epochs=1)
 
@@ -183,7 +175,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 norm_type="RMSNorm",
-                **self.model_kwargs
+                **tfm_kwargs
             )
             y1 = model1.fit(self.series, epochs=1)
 
@@ -191,7 +183,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 norm_type=nn.LayerNorm,
-                **self.model_kwargs
+                **tfm_kwargs
             )
             y2 = model2.fit(self.series, epochs=1)
 
@@ -200,7 +192,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 activation="gelu",
                 norm_type="RMSNorm",
-                **self.model_kwargs
+                **tfm_kwargs
             )
             y3 = model3.fit(self.series, epochs=1)
 
@@ -214,6 +206,6 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     norm_type="invalid",
-                    **self.model_kwargs
+                    **tfm_kwargs
                 )
                 model4.fit(self.series, epochs=1)
