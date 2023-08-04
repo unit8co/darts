@@ -159,7 +159,6 @@ if TORCH_AVAILABLE:
     class GlobalForecastingModelsTestCase(
         DartsBaseTestClass
     ):  # for running locally on M1 devices
-        torch_model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
         # forecasting horizon used in runnability tests
         forecasting_horizon = 12
 
@@ -239,14 +238,14 @@ if TORCH_AVAILABLE:
                     hidden_dim=10,
                     batch_size=32,
                     n_epochs=10,
-                    **self.torch_model_kwargs,
+                    **torch_model_kwargs,
                 ),
                 TCNModel(
                     input_chunk_length=4,
                     output_chunk_length=3,
                     n_epochs=10,
                     batch_size=32,
-                    **self.torch_model_kwargs,
+                    **torch_model_kwargs,
                 ),
             ]:
                 model_path_str = type(model).__name__
@@ -445,7 +444,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=5,
                 n_epochs=20,
                 random_state=0,
-                **self.torch_model_kwargs,
+                **torch_model_kwargs,
             )
             model.fit(series=self.target_past)
             long_pred_no_cov = model.predict(n=160)
@@ -455,7 +454,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=5,
                 n_epochs=20,
                 random_state=0,
-                **self.torch_model_kwargs,
+                **torch_model_kwargs,
             )
             model.fit(series=self.target_past, past_covariates=self.covariates_past)
             long_pred_with_cov = model.predict(n=160, past_covariates=self.covariates)
@@ -473,7 +472,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=166, series=self.ts_pass_train)
 
             # recurrent models can only predict data points for time steps where future covariates are available
-            model = RNNModel(12, n_epochs=1, **self.torch_model_kwargs)
+            model = RNNModel(12, n_epochs=1, **torch_model_kwargs)
             model.fit(series=self.target_past, future_covariates=self.covariates_past)
             model.predict(n=160, future_covariates=self.covariates)
             with self.assertRaises(ValueError):
@@ -500,7 +499,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 n_epochs=10,
                 random_state=0,
-                **self.torch_model_kwargs,
+                **torch_model_kwargs,
             )
             model.fit(series=targets[0], past_covariates=self.covariates_past)
             preds_default = model.predict(
@@ -696,7 +695,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=2,
                 n_epochs=2,
                 batch_size=32,
-                **self.torch_model_kwargs,
+                **torch_model_kwargs,
             )
             model.fit(ts)
 
@@ -712,7 +711,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=2,
                 n_epochs=2,
                 batch_size=32,
-                **self.torch_model_kwargs,
+                **torch_model_kwargs,
             )
 
             model.fit(ts, max_samples_per_ts=5)
@@ -732,7 +731,7 @@ if TORCH_AVAILABLE:
                 num_layers=1,
                 layer_widths=2,
                 n_epochs=2,
-                **self.torch_model_kwargs,
+                **torch_model_kwargs,
             )
 
             res = model.residuals(ts)
