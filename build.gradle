@@ -178,7 +178,7 @@ void docSteps() {
 }
 
 task buildDocs() {
-    dependsOn pip_core, pip_release, installLocally
+    dependsOn pip_notorch, pip_release, installLocally
     // dependsOn cleanDocs
     doLast {
         docSteps()
