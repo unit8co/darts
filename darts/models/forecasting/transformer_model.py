@@ -313,7 +313,7 @@ class _TransformerModule(PLPastCovariatesModule):
         tgt = start_token_padded
 
         predictions = []
-        for _ in range(self.output_chunk_length):
+        for _ in range(self.target_length):
             pred = self._prediction_step(src, tgt)[:, -1, :, :]
             predictions.append(pred)
             tgt = torch.cat(
@@ -333,9 +333,11 @@ class _TransformerModule(PLPastCovariatesModule):
         src = self.positional_encoding(src)
         tgt = self.positional_encoding(tgt)
 
-        tgt_mask = self.transformer.generate_square_subsequent_mask(
-            tgt.shape[0], device
-        ).type(torch_type)
+        sz = tgt.shape[0]  # mask size
+        tgt_mask = torch.triu(
+            torch.full((sz, sz), float("-inf"), device=device, dtype=torch_type),
+            diagonal=1,
+        )
 
         x = self.transformer(src=src, tgt=tgt, tgt_mask=tgt_mask)
         out = self.decoder(x)
@@ -351,6 +353,7 @@ class _TransformerModule(PLPastCovariatesModule):
     # Allow teacher forcing
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
+        train_batch = list(train_batch)
         future_targets = train_batch[-1]
         train_batch.append(future_targets)
         return super().training_step(train_batch, batch_idx)
