@@ -18,7 +18,7 @@ from darts.models import (
     NaiveSeasonal,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
@@ -116,6 +116,22 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertEqual(score, 1.0)
 
+        # univariate model + univariate series + historical_forecasts precalculated
+        forecasts = NaiveDrift().historical_forecasts(
+            linear_series,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            last_points_only=False,
+        )
+        precalculated_forecasts_score = NaiveDrift().backtest(
+            linear_series,
+            historical_forecasts=forecasts,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        self.assertEqual(score, precalculated_forecasts_score)
+
         # very large train length should not affect the backtest
         score = NaiveDrift().backtest(
             linear_series,
@@ -155,16 +171,16 @@ class BacktestingTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(
                 linear_series,
-                start=pd.Timestamp("20000217"),
+                start=pd.Timestamp("20000218"),
                 forecast_horizon=3,
                 overlap_end=False,
             )
         NaiveDrift().backtest(
-            linear_series, start=pd.Timestamp("20000216"), forecast_horizon=3
+            linear_series, start=pd.Timestamp("20000217"), forecast_horizon=3
         )
         NaiveDrift().backtest(
             linear_series,
-            start=pd.Timestamp("20000217"),
+            start=pd.Timestamp("20000218"),
             forecast_horizon=3,
             overlap_end=True,
         )
@@ -215,7 +231,11 @@ class BacktestingTestCase(DartsBaseTestClass):
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
             tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
+                input_chunk_length=12,
+                output_chunk_length=1,
+                batch_size=1,
+                n_epochs=1,
+                **tfm_kwargs
             )
             # cannot perform historical forecasts with `retrain=False` and untrained model
             with pytest.raises(ValueError):
@@ -249,7 +269,11 @@ class BacktestingTestCase(DartsBaseTestClass):
 
             # univariate model
             tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
+                input_chunk_length=12,
+                output_chunk_length=1,
+                batch_size=1,
+                n_epochs=1,
+                **tfm_kwargs
             )
             tcn_model.fit(linear_series, verbose=False)
             # univariate fitted model + multivariate series
@@ -263,7 +287,11 @@ class BacktestingTestCase(DartsBaseTestClass):
                 )
 
             tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1
+                input_chunk_length=12,
+                output_chunk_length=3,
+                batch_size=1,
+                n_epochs=1,
+                **tfm_kwargs
             )
             pred = tcn_model.historical_forecasts(
                 linear_series_multi,
@@ -551,7 +579,9 @@ class BacktestingTestCase(DartsBaseTestClass):
         best_parameters as the single worker run.
         """
 
-        np.random.seed(1)
+        rng_seed = 1
+
+        np.random.seed(rng_seed)
 
         dummy_series = get_dummy_series(
             ts_length=100, lt_end_value=1, st_value_offset=0
@@ -561,7 +591,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         test_cases = [
             {
                 "model": ARIMA,  # ExtendedForecastingModel
-                "parameters": {"p": [18, 4], "q": [2, 3]},
+                "parameters": {"p": [18, 4], "q": [2, 3], "random_state": [rng_seed]},
             },
             {
                 "model": BlockRNNModel,  # TorchForecastingModel
@@ -569,9 +599,8 @@ class BacktestingTestCase(DartsBaseTestClass):
                     "input_chunk_length": [5, 10],
                     "output_chunk_length": [1, 3],
                     "n_epochs": [1, 5],
-                    "random_state": [
-                        42
-                    ],  # necessary to avoid randomness among runs with same parameters
+                    "random_state": [rng_seed],
+                    "pl_trainer_kwargs": [tfm_kwargs["pl_trainer_kwargs"]],
                 },
             },
         ]
@@ -581,14 +610,14 @@ class BacktestingTestCase(DartsBaseTestClass):
             model = test["model"]
             parameters = test["parameters"]
 
-            np.random.seed(1)
+            np.random.seed(rng_seed)
             _, best_params1, _ = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
             )
 
-            np.random.seed(1)
+            np.random.seed(rng_seed)
             _, best_params2, _ = model.gridsearch(
-                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
+                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=2
             )
 
             self.assertEqual(best_params1, best_params2)
@@ -604,5 +633,6 @@ class BacktestingTestCase(DartsBaseTestClass):
             "n_epochs": [1],
             "batch_size": [1],
             "kernel_size": [2, 3, 4],
+            "pl_trainer_kwargs": [tfm_kwargs["pl_trainer_kwargs"]],
         }
         TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape)

@@ -1,4 +1,5 @@
 import unittest
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -15,8 +16,9 @@ from darts.models import (
     RandomForest,
     RegressionEnsembleModel,
     RegressionModel,
+    Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
@@ -35,7 +37,6 @@ except ImportError:
 
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
-
     RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(
@@ -76,12 +77,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
+                **tfm_kwargs,
             ),
         ]
 
@@ -155,10 +158,18 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_torch_models_retrain(self):
         model1 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            input_chunk_length=12,
+            output_chunk_length=1,
+            random_state=0,
+            n_epochs=2,
+            **tfm_kwargs,
         )
         model2 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            input_chunk_length=12,
+            output_chunk_length=1,
+            random_state=0,
+            n_epochs=2,
+            **tfm_kwargs,
         )
 
         ensemble = RegressionEnsembleModel([model1], 5)
@@ -197,6 +208,19 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.seq1, self.cov1)
         ensemble.predict(10, self.seq2, self.cov2)
+
+    def test_train_predict_models_with_future_covariates(self):
+        ensemble_models = [
+            LinearRegressionModel(lags=1, lags_future_covariates=[1]),
+            RandomForest(lags=1, lags_future_covariates=[1]),
+        ]
+        ensemble = RegressionEnsembleModel(ensemble_models, 10)
+        ensemble.fit(self.sine_series, future_covariates=self.ts_cov1)
+        # expected number of coefs is lags*components -> we have 1 lag for each target (1 comp)
+        # and future covs (2 comp)
+        expected_coefs = len(self.sine_series.components) + len(self.ts_cov1.components)
+        assert len(ensemble_models[0].model.coef_) == expected_coefs
+        ensemble.predict(10, self.sine_series, future_covariates=self.ts_cov1)
 
     def test_predict_with_target(self):
         series_long = self.combined
@@ -296,12 +320,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
         ]
@@ -323,12 +349,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
             RegressionModel(lags_past_covariates=[-1]),
@@ -336,3 +364,351 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
         self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 3)
+
+    def test_call_backtest_regression_ensemble_local_models(self):
+        series = tg.sine_timeseries(
+            value_frequency=(1 / 5), value_y_offset=10, length=50
+        )
+        regr_train_n = 10
+        ensemble = RegressionEnsembleModel(
+            [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
+        )
+        ensemble.fit(series)
+        assert max(m_.min_train_series_length for m_ in ensemble.models) == 10
+        # -10 comes from the maximum minimum train series length of all models
+        assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
+        ensemble.backtest(series)
+
+    def test_stochastic_regression_ensemble_model(self):
+        quantiles = [0.25, 0.5, 0.75]
+
+        # probabilistic ensembling model
+        linreg_prob = LinearRegressionModel(
+            quantiles=quantiles, lags_future_covariates=[0], likelihood="quantile"
+        )
+
+        # deterministic ensembling model
+        linreg_dete = LinearRegressionModel(lags_future_covariates=[0])
+
+        # every models are probabilistic
+        ensemble_allproba = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob.untrained_model(),
+        )
+
+        self.assertTrue(ensemble_allproba._models_are_probabilistic)
+        self.assertTrue(ensemble_allproba._is_probabilistic)
+        ensemble_allproba.fit(self.ts_random_walk[:100])
+        # probabilistic forecasting is supported
+        pred = ensemble_allproba.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
+        # forecasting models are a mix of probabilistic and deterministic, probabilistic regressor
+        ensemble_mixproba = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_deterministic_global_model(lags=[-2, -4]),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob.untrained_model(),
+        )
+
+        self.assertFalse(ensemble_mixproba._models_are_probabilistic)
+        self.assertTrue(ensemble_mixproba._is_probabilistic)
+        ensemble_mixproba.fit(self.ts_random_walk[:100])
+        # probabilistic forecasting is supported
+        pred = ensemble_mixproba.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
+        # forecasting models are a mix of probabilistic and deterministic, probabilistic regressor
+        # with regression_train_num_samples > 1
+        ensemble_mixproba2 = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_deterministic_global_model(lags=[-2, -4]),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob.untrained_model(),
+            regression_train_num_samples=100,
+            regression_train_samples_reduction="median",
+        )
+
+        self.assertFalse(ensemble_mixproba2._models_are_probabilistic)
+        self.assertTrue(ensemble_mixproba2._is_probabilistic)
+        ensemble_mixproba2.fit(self.ts_random_walk[:100])
+        pred = ensemble_mixproba2.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
+        # only regression model is probabilistic
+        ensemble_proba_reg = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_deterministic_global_model(lags=[-1, -3]),
+                self.get_deterministic_global_model(lags=[-2, -4]),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob.untrained_model(),
+        )
+
+        self.assertFalse(ensemble_proba_reg._models_are_probabilistic)
+        self.assertTrue(ensemble_proba_reg._is_probabilistic)
+        ensemble_proba_reg.fit(self.ts_random_walk[:100])
+        # probabilistic forecasting is supported
+        pred = ensemble_proba_reg.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
+        # every models but regression model are probabilistics
+        ensemble_dete_reg = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_dete.untrained_model(),
+        )
+
+        self.assertTrue(ensemble_dete_reg._models_are_probabilistic)
+        self.assertFalse(ensemble_dete_reg._is_probabilistic)
+        ensemble_dete_reg.fit(self.ts_random_walk[:100])
+        # deterministic forecasting is supported
+        ensemble_dete_reg.predict(5, num_samples=1)
+        # probabilistic forecasting is not supported
+        with self.assertRaises(ValueError):
+            ensemble_dete_reg.predict(5, num_samples=10)
+
+        # every models are deterministic
+        ensemble_alldete = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_deterministic_global_model([-1, -3]),
+                self.get_deterministic_global_model([-2, -4]),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_dete.untrained_model(),
+        )
+
+        self.assertFalse(ensemble_alldete._models_are_probabilistic)
+        self.assertFalse(ensemble_alldete._is_probabilistic)
+        ensemble_alldete.fit(self.ts_random_walk[:100])
+        # deterministic forecasting is supported
+        ensemble_alldete.predict(5, num_samples=1)
+        # probabilistic forecasting is not supported
+        with self.assertRaises(ValueError):
+            ensemble_alldete.predict(5, num_samples=10)
+
+        # deterministic forecasters cannot be sampled
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=[
+                    self.get_deterministic_global_model(lags=[-1, -3]),
+                    self.get_deterministic_global_model(lags=[-2, -4]),
+                ],
+                regression_train_n_points=10,
+                regression_model=linreg_prob.untrained_model(),
+                regression_train_num_samples=10,
+            )
+
+    def test_stochastic_training_regression_ensemble_model(self):
+        """
+        regression model is deterministic (default) but the forecasting models are
+        probabilistic and they can be sampled to train the regression model.
+        """
+        quantiles = [0.25, 0.5, 0.75]
+
+        # cannot sample deterministic forecasting models
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=[
+                    self.get_deterministic_global_model(lags=[-1, -3]),
+                    self.get_deterministic_global_model(lags=[-2, -4]),
+                ],
+                regression_train_n_points=50,
+                regression_train_num_samples=500,
+            )
+
+        # must use apprioriate reduction method
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=[
+                    self.get_probabilistic_global_model(
+                        lags=[-1, -3], quantiles=quantiles
+                    ),
+                    self.get_probabilistic_global_model(
+                        lags=[-2, -4], quantiles=quantiles
+                    ),
+                ],
+                regression_train_n_points=50,
+                regression_train_num_samples=500,
+                regression_train_samples_reduction="wrong",
+            )
+
+        # by default, does not reduce samples and convert them to components
+        ensemble_model_mean = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=500,
+            regression_train_samples_reduction="mean",
+        )
+
+        ensemble_model_median = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=500,
+        )
+        self.assertEqual(ensemble_model_median.train_samples_reduction, "median")
+
+        ensemble_model_0_5_quantile = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=500,
+            regression_train_samples_reduction=0.5,
+        )
+
+        train, val = self.ts_sum1.split_after(0.9)
+        ensemble_model_mean.fit(train)
+        ensemble_model_median.fit(train)
+        ensemble_model_0_5_quantile.fit(train)
+
+        pred_mean_training = ensemble_model_mean.predict(len(val))
+        pred_median_training = ensemble_model_median.predict(len(val))
+        pred_0_5_qt_training = ensemble_model_0_5_quantile.predict(len(val))
+
+        self.assertEqual(pred_median_training, pred_0_5_qt_training)
+        self.assertEqual(
+            pred_mean_training.all_values().shape,
+            pred_median_training.all_values().shape,
+        )
+
+        # deterministic regression model -> deterministic ensemble
+        with self.assertRaises(ValueError):
+            ensemble_model_mean.predict(len(val), num_samples=100)
+        with self.assertRaises(ValueError):
+            ensemble_model_median.predict(len(val), num_samples=100)
+        with self.assertRaises(ValueError):
+            ensemble_model_0_5_quantile.predict(len(val), num_samples=100)
+
+        # possible to use very small regression_train_num_samples
+        ensemble_model_mean_1_sample = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=1,
+        )
+        ensemble_model_mean_1_sample.fit(train)
+        ensemble_model_mean_1_sample.predict(len(val))
+
+        # multi-series support
+        ensemble_model_median.fit([train, train + 100])
+        ensemble_model_mean.predict(len(val), series=train)
+
+    def test_predict_likelihood_parameters_univariate_regression_ensemble(self):
+        quantiles = [0.05, 0.5, 0.95]
+        ensemble = RegressionEnsembleModel(
+            [
+                self.get_probabilistic_global_model(
+                    lags=2, output_chunk_length=2, quantiles=quantiles
+                ),
+                self.get_probabilistic_global_model(
+                    lags=3, output_chunk_length=3, quantiles=quantiles
+                ),
+            ],
+            regression_train_n_points=10,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=[0],
+                output_chunk_length=4,
+                likelihood="quantile",
+                quantiles=quantiles,
+            ),
+        )
+        ensemble.fit(self.sine_series)
+        pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
+
+        self.assertTrue(
+            all(pred_ens.components == ["sine_q0.05", "sine_q0.50", "sine_q0.95"])
+        )
+        self.assertTrue(
+            all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values())
+            and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+        )
+
+    def test_predict_likelihood_parameters_multivariate_regression_ensemble(self):
+        quantiles = [0.05, 0.5, 0.95]
+        multivariate_series = self.sine_series.stack(self.lin_series)
+
+        ensemble = RegressionEnsembleModel(
+            [
+                self.get_probabilistic_global_model(
+                    lags=2, output_chunk_length=2, quantiles=quantiles
+                ),
+                self.get_probabilistic_global_model(
+                    lags=3, output_chunk_length=3, quantiles=quantiles
+                ),
+            ],
+            regression_train_n_points=10,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=[0],
+                output_chunk_length=4,
+                likelihood="quantile",
+                quantiles=quantiles,
+            ),
+        )
+        ensemble.fit(multivariate_series)
+        pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
+
+        self.assertTrue(
+            all(
+                pred_ens.components
+                == [
+                    "sine_q0.05",
+                    "sine_q0.50",
+                    "sine_q0.95",
+                    "linear_q0.05",
+                    "linear_q0.50",
+                    "linear_q0.95",
+                ]
+            )
+        )
+        self.assertTrue(
+            all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values())
+            and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+        )
+        self.assertTrue(
+            all(pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values())
+            and all(
+                pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values()
+            )
+        )
+
+    @staticmethod
+    def get_probabilistic_global_model(
+        lags: Union[int, List[int]],
+        output_chunk_length: int = 1,
+        likelihood: str = "quantile",
+        quantiles: Union[None, List[float]] = [0.05, 0.5, 0.95],
+        random_state: int = 42,
+    ) -> LinearRegressionModel:
+        return LinearRegressionModel(
+            lags=lags,
+            likelihood=likelihood,
+            quantiles=quantiles,
+            random_state=random_state,
+        )
+
+    @staticmethod
+    def get_deterministic_global_model(
+        lags: Union[int, List[int]], random_state: int = 13
+    ) -> LinearRegressionModel:
+        return LinearRegressionModel(lags=lags, random_state=random_state)

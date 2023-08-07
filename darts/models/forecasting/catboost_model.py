@@ -31,6 +31,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         quantiles: List = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """CatBoost Model
@@ -87,6 +88,10 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
         """
@@ -98,7 +103,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self.likelihood = likelihood
         self.quantiles = None
 
-        self.output_chunk_length = output_chunk_length
+        self._output_chunk_length = output_chunk_length
 
         likelihood_map = {
             "quantile": None,
@@ -132,10 +137,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
+            use_static_covariates=use_static_covariates,
         )
-
-    def __str__(self):
-        return f"CatBoostModel(lags={self.lags})"
 
     def fit(
         self,
@@ -221,20 +224,42 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
-        """Override of RegressionModel's predict method,
-        to allow for the probabilistic case
-        """
-        if self.likelihood == "quantile":
-            return self._predict_quantiles(x, num_samples, **kwargs)
-        elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
-        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._predict_normal(x, num_samples, **kwargs)
+        """Override of RegressionModel's method to allow for the probabilistic case"""
+        if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, "normal", predict_likelihood_parameters, **kwargs
+            )
+        elif self.likelihood is not None:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
+            )
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
 
+    def _likelihood_components_names(
+        self, input_series: TimeSeries
+    ) -> Optional[List[str]]:
+        """Override of RegressionModel's method to support the gaussian/normal likelihood"""
+        if self.likelihood == "quantile":
+            return self._quantiles_generate_components_names(input_series)
+        elif self.likelihood == "poisson":
+            return self._likelihood_generate_components_names(input_series, ["lamba"])
+        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._likelihood_generate_components_names(
+                input_series, ["mu", "sigma"]
+            )
+        else:
+            return None
+
+    @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
 

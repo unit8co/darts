@@ -11,16 +11,17 @@ from darts.models import (
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
-    RegressionEnsembleModel,
+    StatsForecastAutoARIMA,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models import NBEATSModel, RNNModel, TCNModel
+    from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
+    from darts.utils.likelihood_models import QuantileRegression
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -57,11 +58,37 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         new_model = model_ens.untrained_model()
         assert not new_model.models[0]._fit_called
 
+    def test_extreme_lag_inference(self):
+        ensemble = NaiveEnsembleModel([NaiveDrift()])
+        assert ensemble.extreme_lags == (
+            -3,
+            -1,
+            None,
+            None,
+            None,
+            None,
+        )  # test if default is okay
+
+        model1 = LinearRegressionModel(
+            lags=3, lags_past_covariates=[-3, -5], lags_future_covariates=[7, 8]
+        )
+        model2 = LinearRegressionModel(
+            lags=5, lags_past_covariates=6, lags_future_covariates=[6, 9]
+        )
+
+        ensemble = NaiveEnsembleModel(
+            [model1, model2]
+        )  # test if infers extreme lags is okay
+        expected = (-5, 0, -6, -1, 6, 9)
+        assert expected == ensemble.extreme_lags
+
     def test_input_models_local_models(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([])
+        # models are not instantiated
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing])
+        # one model is not instantiated
         with self.assertRaises(ValueError):
             NaiveEnsembleModel(
                 [NaiveDrift(), NaiveSeasonal, Theta(), ExponentialSmoothing()]
@@ -75,12 +102,19 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(Exception):
             naive_ensemble.predict(5)
         naive_ensemble.fit(self.series1)
-        naive_ensemble.predict(5)
+        pred1 = naive_ensemble.predict(5)
+        assert self.series1.components == pred1.components
 
-    def test_predict_ensemble_local_models(self):
+    def test_call_backtest_naive_ensemble_local_models(self):
+        ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
+        ensemble.fit(self.series1)
+        assert ensemble.extreme_lags == (-10, 0, None, None, None, None)
+        ensemble.backtest(self.series1)
+
+    def test_predict_univariate_ensemble_local_models(self):
         naive = NaiveSeasonal(K=5)
         theta = Theta()
-        naive_ensemble = NaiveEnsembleModel([naive, theta])
+        naive_ensemble: NaiveEnsembleModel = NaiveEnsembleModel([naive, theta])
         naive_ensemble.fit(self.series1 + self.series2)
         forecast_naive_ensemble = naive_ensemble.predict(5)
         naive.fit(self.series1 + self.series2)
@@ -91,29 +125,219 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
         )
 
-    def test_stochastic_ensemble(self):
-        model1 = LinearRegressionModel(lags=1, likelihood="quantile")
-        model2 = LinearRegressionModel(lags=2, likelihood="quantile")
+    def test_predict_multivariate_ensemble_local_models(self):
+        multivariate_series = self.series1.stack(self.series2)
 
-        naive_ensemble = NaiveEnsembleModel([model1, model2])
-        self.assertTrue(naive_ensemble._is_probabilistic())
+        seasonal1 = NaiveSeasonal(K=5)
+        seasonal2 = NaiveSeasonal(K=8)
+        naive_ensemble: NaiveEnsembleModel = NaiveEnsembleModel([seasonal1, seasonal2])
+        naive_ensemble.fit(multivariate_series)
+        forecast_naive_ensemble = naive_ensemble.predict(5)
+        seasonal1.fit(multivariate_series)
+        seasonal2.fit(multivariate_series)
+        forecast_mean = 0.5 * seasonal1.predict(5) + 0.5 * seasonal2.predict(5)
 
-        regression_ensemble = RegressionEnsembleModel(
-            [model1, model2], regression_train_n_points=1
+        self.assertTrue(
+            np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
         )
-        self.assertTrue(regression_ensemble._is_probabilistic())
+        self.assertTrue(
+            all(forecast_naive_ensemble.components == multivariate_series.components)
+        )
+
+    def test_stochastic_naive_ensemble(self):
+        num_samples = 100
+
+        # probabilistic forecasting models
+        model_proba_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
+        )
+        model_proba_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
+
+        # only probabilistic forecasting models
+        naive_ensemble_proba = NaiveEnsembleModel([model_proba_1, model_proba_2])
+        self.assertTrue(naive_ensemble_proba._is_probabilistic)
+
+        naive_ensemble_proba.fit(self.series1 + self.series2)
+        # by default, only 1 sample
+        pred_proba_1_sample = naive_ensemble_proba.predict(n=5)
+        self.assertEqual(pred_proba_1_sample.n_samples, 1)
+
+        # possible to obtain probabilistic forecast by averaging samples across the models
+        pred_proba_many_sample = naive_ensemble_proba.predict(
+            n=5, num_samples=num_samples
+        )
+        self.assertEqual(pred_proba_many_sample.n_samples, num_samples)
+
+        # need to redefine the models to reset the random state
+        model_alone_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
+        )
+        model_alone_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
+        model_alone_1.fit(self.series1 + self.series2)
+        model_alone_2.fit(self.series1 + self.series2)
+        forecast_mean = 0.5 * model_alone_1.predict(
+            5, num_samples=num_samples
+        ) + 0.5 * model_alone_2.predict(5, num_samples=num_samples)
+
+        self.assertEqual(
+            forecast_mean.values().shape, pred_proba_many_sample.values().shape
+        )
+        self.assertEqual(forecast_mean.n_samples, pred_proba_many_sample.n_samples)
+        self.assertTrue(
+            np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
+        )
+
+    def test_predict_likelihood_parameters_wrong_args(self):
+        m_deterministic = LinearRegressionModel(lags=2, output_chunk_length=2)
+        m_proba_quantile1 = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile2 = LinearRegressionModel(
+            lags=3,
+            output_chunk_length=3,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_poisson = LinearRegressionModel(
+            lags=2, output_chunk_length=2, likelihood="poisson"
+        )
+        # one model is not probabilistic
+        naive_ensemble = NaiveEnsembleModel([m_deterministic, m_proba_quantile1])
+        naive_ensemble.fit(self.series1 + self.series2)
+        with self.assertRaises(ValueError):
+            naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+
+        # one model has a different likelihood
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile1.untrained_model(), m_proba_poisson]
+        )
+        naive_ensemble.fit(self.series1 + self.series2)
+        with self.assertRaises(ValueError):
+            naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+
+        # n > shortest output_chunk_length
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile1.untrained_model(), m_proba_quantile2]
+        )
+        naive_ensemble.fit(self.series1 + self.series2)
+        with self.assertRaises(ValueError):
+            naive_ensemble.predict(n=4, predict_likelihood_parameters=True)
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_predict_likelihood_parameters_univariate_naive_ensemble(self):
+        m_proba_quantile1 = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile2 = LinearRegressionModel(
+            lags=3,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile3 = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            likelihood=QuantileRegression([0.05, 0.5, 0.95]),
+            **tfm_kwargs
+        )
+
+        naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
+        naive_ensemble.fit(self.series1)
+        pred_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile2.untrained_model(), m_proba_quantile3.untrained_model()]
+        )
+        naive_ensemble.fit(self.series1)
+        pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+        self.assertEqual(pred_ens.time_index, pred_mix_ens.time_index)
+        self.assertTrue(all(pred_ens.components == pred_mix_ens.components))
+        self.assertTrue(
+            pred_ens["sine_q0.05"].values()
+            < pred_ens["sine_q0.50"].values()
+            < pred_ens["sine_q0.95"].values()
+        )
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_predict_likelihood_parameters_multivariate_naive_ensemble(self):
+        m_proba_quantile1 = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile2 = LinearRegressionModel(
+            lags=3,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile3 = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            likelihood=QuantileRegression([0.05, 0.5, 0.95]),
+            **tfm_kwargs
+        )
+
+        multivariate_series = self.series1.stack(self.series2)
+
+        naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
+        naive_ensemble.fit(multivariate_series)
+        pred_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile2.untrained_model(), m_proba_quantile3.untrained_model()]
+        )
+        naive_ensemble.fit(multivariate_series)
+        pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+        self.assertEqual(pred_ens.time_index, pred_mix_ens.time_index)
+        self.assertTrue(
+            all(
+                pred_ens.components
+                == [
+                    "sine_q0.05",
+                    "sine_q0.50",
+                    "sine_q0.95",
+                    "linear_q0.05",
+                    "linear_q0.50",
+                    "linear_q0.95",
+                ]
+            )
+        )
+        self.assertTrue(all(pred_ens.components == pred_mix_ens.components))
+        self.assertTrue(
+            pred_ens["sine_q0.05"].values()
+            < pred_ens["sine_q0.50"].values()
+            < pred_ens["sine_q0.95"].values()
+        )
+        self.assertTrue(
+            pred_ens["linear_q0.05"].values()
+            < pred_ens["linear_q0.50"].values()
+            < pred_ens["linear_q0.95"].values()
+        )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
+        # one model is not instantiated
+        with self.assertRaises(ValueError):
+            NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel])
         NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel(10, 2)])
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_call_predict_global_models_univariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(12, n_epochs=1),
-                TCNModel(10, 2, n_epochs=1),
-                NBEATSModel(10, 2, n_epochs=1),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
             ]
         )
         with self.assertRaises(Exception):
@@ -126,9 +350,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_call_predict_global_models_multivariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(12, n_epochs=1),
-                TCNModel(10, 2, n_epochs=1),
-                NBEATSModel(10, 2, n_epochs=1),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
             ]
         )
         naive_ensemble.fit(self.seq1)
@@ -138,9 +362,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_call_predict_global_models_multivariate_input_with_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(12, n_epochs=1),
-                TCNModel(10, 2, n_epochs=1),
-                NBEATSModel(10, 2, n_epochs=1),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
             ]
         )
         naive_ensemble.fit(self.seq1, self.cov1)
@@ -152,8 +376,63 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_mixed(self):
+        # NaiveDrift is local, RNNModel is global
+        naive_ensemble = NaiveEnsembleModel(
+            [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
+        )
+        # ensemble is neither local, nor global
+        self.assertFalse(naive_ensemble.is_local_ensemble)
+        self.assertFalse(naive_ensemble.is_global_ensemble)
+
+        # ensemble contains one local model, no support for multiple ts fit
         with self.assertRaises(ValueError):
-            NaiveEnsembleModel([NaiveDrift(), Theta(), RNNModel(12)])
+            naive_ensemble.fit([self.series1, self.series2])
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_call_predict_different_covariates_support(self):
+        # AutoARIMA support future covariates only
+        local_ensemble_one_covs = NaiveEnsembleModel(
+            [NaiveDrift(), StatsForecastAutoARIMA()]
+        )
+        with self.assertRaises(ValueError):
+            local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
+        local_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
+
+        # RNN support future covariates only
+        mixed_ensemble_one_covs = NaiveEnsembleModel(
+            [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
+        )
+        with self.assertRaises(ValueError):
+            mixed_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
+        mixed_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
+
+        # both models support future covariates only
+        mixed_ensemble_future_covs = NaiveEnsembleModel(
+            [
+                StatsForecastAutoARIMA(),
+                RNNModel(12, n_epochs=1, **tfm_kwargs),
+            ]
+        )
+        mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
+        with self.assertRaises(ValueError):
+            mixed_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
+
+        # RegressionModels with different covariates
+        global_ensemble_both_covs = NaiveEnsembleModel(
+            [
+                LinearRegressionModel(lags=1, lags_past_covariates=[-1]),
+                LinearRegressionModel(lags=1, lags_future_covariates=[1]),
+            ]
+        )
+        # missing future covariates
+        with self.assertRaises(ValueError):
+            global_ensemble_both_covs.fit(self.series1, past_covariates=self.series2)
+        # missing past covariates
+        with self.assertRaises(ValueError):
+            global_ensemble_both_covs.fit(self.series1, future_covariates=self.series2)
+        global_ensemble_both_covs.fit(
+            self.series1, past_covariates=self.series2, future_covariates=self.series2
+        )
 
     def test_fit_multivar_ts_with_local_models(self):
         naive = NaiveEnsembleModel(
@@ -174,7 +453,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         series_short = series_long[:25]
 
         # train with a single series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit(series_short, past_covariates=series_long)
         # predict after end of train series
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
@@ -196,7 +475,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
         # train with multiple series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
         with self.assertRaises(ValueError):
             # predict without passing series should raise an error
@@ -218,7 +497,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
     @staticmethod
-    def get_global_ensembe_model(output_chunk_length=5):
+    def get_global_ensemble_model(output_chunk_length=5):
         lags = [-1, -2, -5]
         return NaiveEnsembleModel(
             models=[

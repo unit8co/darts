@@ -260,14 +260,9 @@ class FFT(LocalForecastingModel):
         self.trend = trend
         self.trend_poly_degree = trend_poly_degree
 
-    def __str__(self):
-        return (
-            "FFT(nr_freqs_to_keep="
-            + str(self.nr_freqs_to_keep)
-            + ", trend="
-            + str(self.trend)
-            + ")"
-        )
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     def _exp_trend(self, x) -> Callable:
         """Helper function, used to make FFT model pickable."""

@@ -86,9 +86,6 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         self.model = SFAutoETS(*ets_args, **ets_kwargs)
         self._linreg = None
 
-    def __str__(self):
-        return "ETS-Statsforecasts"
-
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
@@ -146,11 +143,17 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         return self._build_forecast_series(samples)
 
     @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         return True
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True

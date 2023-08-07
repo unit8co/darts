@@ -6,12 +6,13 @@ from unittest.mock import ANY, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -28,6 +29,7 @@ try:
         RNNModel,
         TCNModel,
         TFTModel,
+        TiDEModel,
         TransformerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import (
@@ -55,20 +57,40 @@ if TORCH_AVAILABLE:
                 "n_rnn_layers": 1,
                 "batch_size": 32,
                 "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             180.0,
         ),
         (
             RNNModel,
-            {"model": "RNN", "hidden_dim": 10, "batch_size": 32, "n_epochs": 10},
+            {
+                "model": "RNN",
+                "hidden_dim": 10,
+                "batch_size": 32,
+                "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
             180.0,
         ),
         (
             RNNModel,
-            {"training_length": 12, "n_epochs": 10, "likelihood": GaussianLikelihood()},
+            {
+                "training_length": 12,
+                "n_epochs": 10,
+                "likelihood": GaussianLikelihood(),
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
             80.0,
         ),
-        (TCNModel, {"n_epochs": 10, "batch_size": 32}, 240.0),
+        (
+            TCNModel,
+            {
+                "n_epochs": 10,
+                "batch_size": 32,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            240.0,
+        ),
         (
             TransformerModel,
             {
@@ -79,6 +101,7 @@ if TORCH_AVAILABLE:
                 "dim_feedforward": 16,
                 "batch_size": 32,
                 "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             180.0,
         ),
@@ -90,6 +113,7 @@ if TORCH_AVAILABLE:
                 "num_layers": 2,
                 "layer_widths": 12,
                 "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             180.0,
         ),
@@ -101,6 +125,7 @@ if TORCH_AVAILABLE:
                 "num_attention_heads": 4,
                 "add_relative_index": True,
                 "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             100.0,
         ),
@@ -108,6 +133,7 @@ if TORCH_AVAILABLE:
             NLinearModel,
             {
                 "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             100,
         ),
@@ -115,6 +141,15 @@ if TORCH_AVAILABLE:
             DLinearModel,
             {
                 "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            100,
+        ),
+        (
+            TiDEModel,
+            {
+                "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             100,
         ),
@@ -196,13 +231,18 @@ if TORCH_AVAILABLE:
 
             for model in [
                 RNNModel(
-                    input_chunk_length=4, hidden_dim=10, batch_size=32, n_epochs=10
+                    input_chunk_length=4,
+                    hidden_dim=10,
+                    batch_size=32,
+                    n_epochs=10,
+                    **tfm_kwargs,
                 ),
                 TCNModel(
                     input_chunk_length=4,
                     output_chunk_length=3,
                     n_epochs=10,
                     batch_size=32,
+                    **tfm_kwargs,
                 ),
             ]:
                 model_path_str = type(model).__name__
@@ -302,11 +342,13 @@ if TORCH_AVAILABLE:
                 )
 
                 # Here we rely on the fact that all non-Dual models currently are Past models
-                cov_name = (
-                    "future_covariates"
-                    if isinstance(model, DualCovariatesTorchModel)
-                    else "past_covariates"
-                )
+                if isinstance(model, DualCovariatesTorchModel):
+                    cov_name = "future_covariates"
+                    is_past = False
+                else:
+                    cov_name = "past_covariates"
+                    is_past = True
+
                 cov_kwargs = {
                     cov_name: [self.time_covariates_train, self.time_covariates_train]
                 }
@@ -325,7 +367,14 @@ if TORCH_AVAILABLE:
                 cov_kwargs_notrain = {cov_name: self.time_covariates}
                 with self.assertRaises(ValueError):
                     # when model is fit using covariates, n cannot be greater than output_chunk_length...
-                    model.predict(n=13, series=self.ts_pass_train, **cov_kwargs_train)
+                    # (for short covariates)
+                    # past covariates model can predict up until output_chunk_length
+                    # with train future covariates we cannot predict at all after end of series
+                    model.predict(
+                        n=13 if is_past else 1,
+                        series=self.ts_pass_train,
+                        **cov_kwargs_train,
+                    )
 
                 # ... unless future covariates are provided
                 pred = model.predict(
@@ -349,10 +398,36 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
                 model.fit(series=self.ts_pass_train, **cov_kwargs_train)
-                pred1 = model.predict(1)
-                pred2 = model.predict(1, series=self.ts_pass_train)
-                pred3 = model.predict(1, **cov_kwargs_train)
-                pred4 = model.predict(1, **cov_kwargs_train, series=self.ts_pass_train)
+                if is_past:
+                    # with past covariates from train we can predict up until output_chunk_length
+                    pred1 = model.predict(1)
+                    pred2 = model.predict(1, series=self.ts_pass_train)
+                    pred3 = model.predict(1, **cov_kwargs_train)
+                    pred4 = model.predict(
+                        1, **cov_kwargs_train, series=self.ts_pass_train
+                    )
+                else:
+                    # with future covariates we need additional time steps to predict
+                    with pytest.raises(ValueError):
+                        _ = model.predict(1)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(1, series=self.ts_pass_train)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(1, **cov_kwargs_train)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(
+                            1, **cov_kwargs_train, series=self.ts_pass_train
+                        )
+
+                    pred1 = model.predict(1, **cov_kwargs_notrain)
+                    pred2 = model.predict(
+                        1, series=self.ts_pass_train, **cov_kwargs_notrain
+                    )
+                    pred3 = model.predict(1, **cov_kwargs_notrain)
+                    pred4 = model.predict(
+                        1, **cov_kwargs_notrain, series=self.ts_pass_train
+                    )
+
                 self.assertEqual(pred1, pred2)
                 self.assertEqual(pred1, pred3)
                 self.assertEqual(pred1, pred4)
@@ -360,13 +435,14 @@ if TORCH_AVAILABLE:
         def test_future_covariates(self):
             # models with future covariates should produce better predictions over a long forecasting horizon
             # than a model trained with no covariates
+
             model = TCNModel(
                 input_chunk_length=50,
                 output_chunk_length=5,
                 n_epochs=20,
                 random_state=0,
+                **tfm_kwargs,
             )
-
             model.fit(series=self.target_past)
             long_pred_no_cov = model.predict(n=160)
 
@@ -375,6 +451,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=5,
                 n_epochs=20,
                 random_state=0,
+                **tfm_kwargs,
             )
             model.fit(series=self.target_past, past_covariates=self.covariates_past)
             long_pred_with_cov = model.predict(n=160, past_covariates=self.covariates)
@@ -392,7 +469,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=166, series=self.ts_pass_train)
 
             # recurrent models can only predict data points for time steps where future covariates are available
-            model = RNNModel(12, n_epochs=1)
+            model = RNNModel(12, n_epochs=1, **tfm_kwargs)
             model.fit(series=self.target_past, future_covariates=self.covariates_past)
             model.predict(n=160, future_covariates=self.covariates)
             with self.assertRaises(ValueError):
@@ -419,6 +496,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 n_epochs=10,
                 random_state=0,
+                **tfm_kwargs,
             )
             model.fit(series=targets[0], past_covariates=self.covariates_past)
             preds_default = model.predict(
@@ -504,7 +582,7 @@ if TORCH_AVAILABLE:
                 model.fit(multiple_ts)
 
                 # safe random state for two successive identical predictions
-                if model._is_probabilistic():
+                if model._is_probabilistic:
                     random_state = deepcopy(model._random_instance)
                 else:
                     random_state = None
@@ -610,7 +688,11 @@ if TORCH_AVAILABLE:
             ts = linear_timeseries(start_value=0, end_value=1, length=50)
 
             model = RNNModel(
-                input_chunk_length=20, output_chunk_length=2, n_epochs=2, batch_size=32
+                input_chunk_length=20,
+                output_chunk_length=2,
+                n_epochs=2,
+                batch_size=32,
+                **tfm_kwargs,
             )
             model.fit(ts)
 
@@ -622,7 +704,11 @@ if TORCH_AVAILABLE:
             ts = linear_timeseries(start_value=0, end_value=1, length=50)
 
             model = RNNModel(
-                input_chunk_length=20, output_chunk_length=2, n_epochs=2, batch_size=32
+                input_chunk_length=20,
+                output_chunk_length=2,
+                n_epochs=2,
+                batch_size=32,
+                **tfm_kwargs,
             )
 
             model.fit(ts, max_samples_per_ts=5)
@@ -642,6 +728,8 @@ if TORCH_AVAILABLE:
                 num_layers=1,
                 layer_widths=2,
                 n_epochs=2,
+                **tfm_kwargs,
             )
 
-            model.residuals(ts)
+            res = model.residuals(ts)
+            assert len(res) == 38 - (24 + 12)

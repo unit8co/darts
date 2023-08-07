@@ -867,7 +867,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             # Cannot divide by 0.
             self.series1 / 0
 
-    def test_getitem(self):
+    def test_getitem_datetime_index(self):
         seriesA: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
         self.assertEqual(self.series1[pd.date_range("20130101", " 20130104")], seriesA)
         self.assertEqual(self.series1[:4], seriesA)
@@ -889,6 +889,50 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         with self.assertRaises(IndexError):
             self.series1[::-1]
+
+    def test_getitem_integer_index(self):
+        freq = 3
+        start = 1
+        end = start + (len(self.series1) - 1) * freq
+        idx_int = pd.RangeIndex(start=start, stop=end + freq, step=freq)
+        series = TimeSeries.from_times_and_values(
+            times=idx_int, values=self.series1.values()
+        )
+        assert series.freq == freq
+        assert series.start_time() == start
+        assert series.end_time() == end
+        assert series[idx_int] == series == series[0 : len(series)]
+
+        series_single = series.drop_after(start + 2 * freq)
+        assert (
+            series[pd.RangeIndex(start=start, stop=start + 2 * freq, step=freq)]
+            == series_single
+        )
+        assert series[:2] == series_single
+        assert series_single.freq == freq
+        assert series_single.start_time() == start
+        assert series_single.end_time() == start + freq
+
+        idx_single = pd.RangeIndex(start=start + freq, stop=start + 2 * freq, step=freq)
+        assert series[idx_single].time_index == idx_single
+        assert series[idx_single].pd_series().equals(series.pd_series()[1:2])
+        assert series[idx_single] == series[1:2] == series[1]
+
+        # cannot slice with two RangeIndex
+        with pytest.raises(IndexError):
+            _ = series[idx_single : idx_single + freq]
+
+        # RangeIndex not in time_index
+        with pytest.raises(KeyError):
+            _ = series[idx_single - 1]
+
+        # RangeIndex start is out of bounds
+        with pytest.raises(KeyError):
+            _ = series[pd.RangeIndex(start - freq, stop=end + freq, step=freq)]
+
+        # RangeIndex end is out of bounds
+        with pytest.raises(KeyError):
+            _ = series[pd.RangeIndex(start, stop=end + 2 * freq, step=freq)]
 
     def test_fill_missing_dates(self):
         with self.assertRaises(ValueError):
@@ -1089,13 +1133,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             resampled_timeseries.pd_series().at[pd.Timestamp("20130109")], 8
         )
 
-        # using loffset to avoid nan in the first value
+        # using offset to avoid nan in the first value
         times = pd.date_range(
             start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
-        resampled_timeseries = timeseries.resample(freq="1h", loffset="30T")
+        resampled_timeseries = timeseries.resample(
+            freq="1h", offset=pd.Timedelta("30T")
+        )
         self.assertEqual(
             resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")], 0
         )
@@ -1106,9 +1152,41 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             TimeSeries.from_times_and_values(
                 pd.date_range("20130101", "20130102"), range(2), fill_missing_dates=True
             )
-        # test empty pandas series error
+        # test empty pandas series with DatetimeIndex
+        freq = "D"
+        # fails without freq
         with self.assertRaises(ValueError):
-            TimeSeries.from_series(pd.Series(dtype="object"), freq="D")
+            TimeSeries.from_series(pd.Series(index=pd.DatetimeIndex([])))
+        # works with index having freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([], freq=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([])), freq=freq
+        )
+        assert series_a == series_b
+
+        # test empty pandas series with DatetimeIndex
+        freq = 2
+        # fails pd.Index (IntIndex)
+        with self.assertRaises(ValueError):
+            TimeSeries.from_series(pd.Series(index=pd.Index([])))
+        # works with pd.RangeIndex as freq (step) is given by default (step=1)
+        series_a = TimeSeries.from_series(pd.Series(index=pd.RangeIndex(start=0)))
+        assert series_a.freq == 1
+        # works with RangeIndex of different freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0, step=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0)), freq=freq
+        )
+        assert series_a == series_b
+
         # frequency should be ignored when fill_missing_dates is False
         seriesA = TimeSeries.from_times_and_values(
             pd.date_range("20130101", "20130105"),
@@ -1844,6 +1922,30 @@ class TimeSeriesHierarchyTestCase(DartsBaseTestClass):
         self.assertEqual(
             (series1.slice_intersect(series2[10:20])).hierarchy, self.hierarchy
         )
+
+    def test_with_string_items(self):
+        # Single parents may be specified as string rather than [string]
+        dates = pd.date_range("2020-01-01", "2020-12-31", freq="D")
+        nr_dates = len(dates)
+        t1 = TimeSeries.from_times_and_values(
+            dates, 3 * np.ones(nr_dates), columns=["T1"]
+        )
+        t2 = TimeSeries.from_times_and_values(
+            dates, 5 * np.ones(nr_dates), columns=["T2"]
+        )
+        t3 = TimeSeries.from_times_and_values(dates, np.ones(nr_dates), columns=["T3"])
+        tsum = TimeSeries.from_times_and_values(
+            dates, 9 * np.ones(nr_dates), columns=["T_sum"]
+        )
+
+        ts = concatenate([t1, t2, t3, tsum], axis="component")
+        string_hierarchy = {"T1": "T_sum", "T2": "T_sum", "T3": "T_sum"}
+        ts_with_string_hierarchy = ts.with_hierarchy(string_hierarchy)
+        hierarchy_as_list = {k: [v] for k, v in string_hierarchy.items()}
+        assert ts_with_string_hierarchy.hierarchy == hierarchy_as_list
+        list_hierarchy = {"T1": ["T_sum"], "T2": ["T_sum"], "T3": ["T_sum"]}
+        ts_with_list_hierarchy = ts.with_hierarchy(list_hierarchy)
+        assert ts_with_string_hierarchy.hierarchy == ts_with_list_hierarchy.hierarchy
 
 
 class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
