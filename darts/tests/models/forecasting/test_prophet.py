@@ -1,17 +1,20 @@
+import unittest
 from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.models import Prophet
+from darts.models import NotImportedModule, Prophet
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 
+@unittest.skipUnless(not isinstance(Prophet, NotImportedModule), "requires prophet")
 class ProphetTestCase(DartsBaseTestClass):
     def test_add_seasonality_calls(self):
         # test if adding seasonality at model creation and with method model.add_seasonality() are equal
@@ -22,10 +25,17 @@ class ProphetTestCase(DartsBaseTestClass):
         }
         kwargs_mandatory2 = {
             "name": "custom2",
-            "seasonal_periods": 24,
+            "seasonal_periods": 24.9,
             "fourier_order": 1,
         }
-        kwargs_all = dict(kwargs_mandatory, **{"prior_scale": 1.0, "mode": "additive"})
+        kwargs_all = dict(
+            kwargs_mandatory,
+            **{
+                "prior_scale": 1.0,
+                "mode": "additive",
+                "condition_name": "custom_condition",
+            }
+        )
         model1 = Prophet(add_seasonalities=kwargs_all)
         model2 = Prophet()
         model2.add_seasonality(**kwargs_all)
@@ -234,3 +244,54 @@ class ProphetTestCase(DartsBaseTestClass):
         for pred in compare_preds:
             for val_i, pred_i in zip(val.univariate_values(), pred.univariate_values()):
                 self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+
+    def test_conditional_seasonality(self):
+        """
+        Test that conditional seasonality is correctly incorporated by the model
+        """
+        duration = 395
+        horizon = 7
+        df = pd.DataFrame()
+        df["ds"] = pd.date_range(start="2022-01-02", periods=395)
+        df["y"] = [i + 10 * (i % 7 == 0) for i in range(duration)]
+        df["is_sunday"] = df["ds"].apply(lambda x: int(x.weekday() == 6))
+
+        ts = TimeSeries.from_dataframe(
+            df[:-horizon], time_col="ds", value_cols="y", freq="D"
+        )
+        future_covariates = TimeSeries.from_dataframe(
+            df, time_col="ds", value_cols=["is_sunday"], freq="D"
+        )
+        expected_result = TimeSeries.from_dataframe(
+            df[-horizon:], time_col="ds", value_cols="y", freq="D"
+        )
+
+        model = Prophet(seasonality_mode="additive")
+        model.add_seasonality(
+            name="weekly_sun",
+            seasonal_periods=7,
+            fourier_order=2,
+            condition_name="is_sunday",
+        )
+
+        model.fit(ts, future_covariates=future_covariates)
+
+        forecast = model.predict(horizon, future_covariates=future_covariates)
+
+        for val_i, pred_i in zip(
+            expected_result.univariate_values(), forecast.univariate_values()
+        ):
+            self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+
+        invalid_future_covariates = future_covariates.with_values(
+            np.reshape(np.random.randint(0, 3, duration), (-1, 1, 1)).astype("float")
+        )
+
+        with pytest.raises(ValueError):
+            model.fit(ts, future_covariates=invalid_future_covariates)
+
+        with pytest.raises(ValueError):
+            model.fit(
+                ts,
+                future_covariates=invalid_future_covariates.drop_columns("is_sunday"),
+            )

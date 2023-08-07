@@ -1,0 +1,3 @@
+prophet>=1.1.1
+catboost>=1.0.6
+lightgbm>=3.2.0

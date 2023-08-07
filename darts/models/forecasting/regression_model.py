@@ -27,9 +27,10 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -40,6 +41,10 @@ from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
 )
+from darts.utils.historical_forecasts import (
+    _optimized_historical_forecasts_regression_all_points,
+    _optimized_historical_forecasts_regression_last_points_only,
+)
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import (
     _check_quantiles,
@@ -49,16 +54,6 @@ from darts.utils.utils import (
 )
 
 logger = get_logger(__name__)
-
-try:
-    from catboost import CatBoostRegressor
-except ModuleNotFoundError:
-    logger.warning(
-        "The catboost module could not be imported. "
-        "To enable support for CatBoostRegressor, "
-        "follow the instruction in the README: "
-        "https://github.com/unit8co/darts/blob/master/INSTALL.md"
-    )
 
 
 class RegressionModel(GlobalForecastingModel):
@@ -131,13 +126,20 @@ class RegressionModel(GlobalForecastingModel):
         super().__init__(add_encoders=add_encoders)
 
         self.model = model
-        self.lags = {}
-        self.output_chunk_length = None
+        self.lags: Dict[str, List[int]] = {}
         self.input_dim = None
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
         self._lagged_feature_names: Optional[List[str]] = None
+
+        # check and set output_chunk_length
+        raise_if_not(
+            isinstance(output_chunk_length, int) and output_chunk_length > 0,
+            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
+            logger=logger,
+        )
+        self._output_chunk_length = output_chunk_length
 
         # model checks
         if self.model is None:
@@ -247,13 +249,6 @@ class RegressionModel(GlobalForecastingModel):
             if lags_future_covariates:
                 self.lags["future"] = sorted(lags_future_covariates)
 
-        # check and set output_chunk_length
-        raise_if_not(
-            isinstance(output_chunk_length, int) and output_chunk_length > 0,
-            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
-        )
-        self.output_chunk_length = output_chunk_length
-
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
     @property
@@ -334,6 +329,10 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def min_train_samples(self) -> int:
         return 2
+
+    @property
+    def output_chunk_length(self) -> int:
+        return self._output_chunk_length
 
     def get_multioutput_estimator(self, horizon, target_dim):
         raise_if_not(
@@ -467,6 +466,8 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        self._verify_static_covariates(series[0].static_covariates)
+
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_fit_encodings(
@@ -522,7 +523,7 @@ class RegressionModel(GlobalForecastingModel):
                     self.model = MultiOutputRegressor(
                         self.model, n_jobs=n_jobs_multioutput_wrapper
                     )
-                elif isinstance(self.model, CatBoostRegressor):
+                elif self.model.__class__.__name__ == "CatBoostRegressor":
                     if (
                         self.model.get_params()["loss_function"]
                         == "RMSEWithUncertainty"
@@ -558,6 +559,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
@@ -577,32 +579,47 @@ class RegressionModel(GlobalForecastingModel):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Currently this parameter is ignored for regression models.
+            Number of times a prediction is sampled from a probabilistic model. Should be set to 1
+            for deterministic models.
+        verbose
+            Optionally, whether to print progress.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
         """
-        raise_if(
-            not self._is_probabilistic() and num_samples > 1,
-            "`num_samples > 1` is only supported for probabilistic models.",
-            logger,
-        )
-
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
-            raise_if(
-                self.training_series is None,
-                "Input series has to be provided after fitting on multiple series.",
-            )
+            if self.training_series is None:
+                raise_log(
+                    ValueError(
+                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                        "or from not having fit the model yet."
+                    ),
+                    logger,
+                )
             series = self.training_series
 
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        self._verify_static_covariates(series[0].static_covariates)
+
+        # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -610,13 +627,15 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = series2seq(self.past_covariate_series)
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = series2seq(self.future_covariate_series)
-
-        super().predict(n, series, past_covariates, future_covariates, num_samples)
+        super().predict(
+            n,
+            series,
+            past_covariates,
+            future_covariates,
+            num_samples,
+            verbose,
+            predict_likelihood_parameters,
+        )
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {
@@ -760,7 +779,9 @@ class RegressionModel(GlobalForecastingModel):
             X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
-            prediction = self._predict_and_sample(X, num_samples, **kwargs)
+            prediction = self._predict_and_sample(
+                X, num_samples, predict_likelihood_parameters, **kwargs
+            )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
             predictions.append(prediction[:, last_step_shift:])
@@ -772,20 +793,33 @@ class RegressionModel(GlobalForecastingModel):
         predictions = np.moveaxis(
             predictions.reshape(len(series), num_samples, n, -1), 1, -1
         )
+
         # build time series from the predicted values starting after end of series
         predictions = [
-            self._build_forecast_series(row, input_tgt)
-            for row, input_tgt in zip(predictions, series)
+            self._build_forecast_series(
+                points_preds=row,
+                input_series=input_tgt,
+                custom_components=self._likelihood_components_names(input_tgt)
+                if predict_likelihood_parameters
+                else None,
+                with_static_covs=False if predict_likelihood_parameters else True,
+                with_hierarchy=False if predict_likelihood_parameters else True,
+            )
+            for idx_ts, (row, input_tgt) in enumerate(zip(predictions, series))
         ]
 
         return predictions[0] if called_with_single_series else predictions
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
+        """By default, the regression model returns a single sample."""
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-
         return prediction.reshape(k, self.pred_dim, -1)
 
     @property
@@ -820,6 +854,121 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        return True
+
+    def _check_optimizable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings=bool,
+    ) -> bool:
+        """
+        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= self.output_chunk_length`
+        (no auto-regression required).
+        """
+
+        supported_retrain = (retrain is False) or (retrain == 0)
+        supported_forecast_horizon = forecast_horizon <= self.output_chunk_length
+        if supported_retrain and supported_forecast_horizon:
+            return True
+
+        if show_warnings:
+            if not supported_retrain:
+                logger.warning(
+                    "`enable_optimization=True` is ignored because `retrain` is not `False`"
+                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+                )
+            if not supported_forecast_horizon:
+                logger.warning(
+                    "`enable_optimization=True` is ignored because "
+                    "`forecast_horizon > self.output_chunk_length`."
+                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+                )
+
+        return False
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Optional[Sequence[TimeSeries]],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
+        """
+        TODO: support forecast_horizon > output_chunk_length (auto-regression)
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("Model has not been fit yet."),
+                logger,
+            )
+        if forecast_horizon > self.output_chunk_length:
+            raise_log(
+                ValueError(
+                    "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
+                    "supported in this optimized routine."
+                ),
+                logger,
+            )
+
+        # manage covariates, usually handled by RegressionModel.predict()
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
+
+        self._verify_static_covariates(series[0].static_covariates)
+
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_fit_predict_encodings(
+                n=forecast_horizon,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+        # TODO: move the loop here instead of duplicated code in each sub-routine?
+        if last_points_only:
+            return _optimized_historical_forecasts_regression_last_points_only(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+            )
+        else:
+            return _optimized_historical_forecasts_regression_all_points(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+            )
 
 
 class _LikelihoodMixin:
@@ -860,15 +1009,30 @@ class _LikelihoodMixin:
 
         return quantiles, median_idx
 
-    def _predict_quantiles(
-        self, x: np.ndarray, num_samples: int, **kwargs
+    def _likelihood_components_names(
+        self, input_series: TimeSeries
+    ) -> Optional[List[str]]:
+        if self.likelihood == "quantile":
+            return self._quantiles_generate_components_names(input_series)
+        elif self.likelihood == "poisson":
+            return self._likelihood_generate_components_names(input_series, ["lambda"])
+        else:
+            return None
+
+    def _predict_quantile(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
         """
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
 
-        if num_samples == 1:
+        # if predict_likelihood_parameters is True, all the quantiles must be predicted
+        if num_samples == 1 and not predict_likelihood_parameters:
             # return median
             fitted = self._model_container[0.5]
             return fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
@@ -880,15 +1044,30 @@ class _LikelihoodMixin:
             model_output = fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
-        # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        return model_outputs
 
-        sampled = self._quantile_sampling(model_outputs)
+    def _predict_poisson(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        """
+        X is of shape (n_series * n_samples, n_regression_features)
+        """
+        k = x.shape[0]
+        # shape (n_series * n_samples, output_chunk_length, n_components)
+        return self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
 
-        # sampled has shape (n_series * n_samples, output_chunk_length, n_components)
-
-        return sampled
-
-    def _predict_normal(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
+    def _predict_normal(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
         """Method intended for CatBoost's RMSEWithUncertainty loss. Returns samples
         computed from double-valued inputs [mean, variance].
         X is of shape (n_series * n_samples, n_regression_features)
@@ -903,13 +1082,12 @@ class _LikelihoodMixin:
         output_dim = len(model_output.shape)
 
         # deterministic case: we return the mean only
-        if num_samples == 1:
+        if num_samples == 1 and not predict_likelihood_parameters:
             # univariate & single-chunk output
             if output_dim <= 2:
                 output_slice = model_output[:, 0]
             else:
                 output_slice = model_output[0, :, :]
-
             return output_slice.reshape(k, self.pred_dim, -1)
 
         # probabilistic case
@@ -923,64 +1101,22 @@ class _LikelihoodMixin:
             # shape becomes: (n_components * output_chunk_length, num_samples, 2)
             model_output = model_output.transpose()
 
-        return self._normal_sampling(model_output, num_samples)
+        # shape (n_components * output_chunk_length, num_samples, 2)
+        return model_output
 
-    def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
-        """Sampling method for CatBoost's [mean, variance] output.
-        model_output is of shape (n_components * output_chunk_length, n_samples, 2),
-        where the last 2 dimensions are mu and sigma.
-        """
-        shape = model_output.shape
-        chunk_len = self.pred_dim
-
-        # treating each component separately
-        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
-
-        list_of_samples = [
-            self._rng.normal(
-                mu_sigma[:, 0],  # mean vector
-                mu_sigma[:, 1],  # diagonal covariance matrix
-            )
-            for mu_sigma in mu_sigma_list
-        ]
-
-        samples_transposed = np.array(list_of_samples).transpose()
-        samples_reshaped = samples_transposed.reshape(n_samples, chunk_len, -1)
-
-        return samples_reshaped
-
-    def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
-        """
-        X is of shape (n_series * n_samples, n_regression_features)
-        """
-        k = x.shape[0]
-
-        model_output = self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
-        if num_samples == 1:
-            return model_output
-
-        return self._poisson_sampling(model_output)
-
-    def _poisson_sampling(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
-        """
-
-        return self._rng.poisson(lam=model_output).astype(float)
-
-    def _quantile_sampling(self, model_output: np.ndarray) -> np.ndarray:
+    def _sampling_quantile(self, model_output: np.ndarray) -> np.ndarray:
         """
         Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
         quantiles closest to the sampled value.
 
-        model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
+        model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         """
-        num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
+        k, n_timesteps, n_components, n_quantiles = model_output.shape
 
         # obtain samples
         probs = self._rng.uniform(
             size=(
-                num_samples,
+                k,
                 n_timesteps,
                 n_components,
                 1,
@@ -1025,7 +1161,116 @@ class _LikelihoodMixin:
         weights = (probs - left_q) / (right_q - left_q)
         inter = left_value + weights * (right_value - left_value)
 
+        # shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)
         return inter.squeeze(-1)
+
+    def _sampling_poisson(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
+        """
+        return self._rng.poisson(lam=model_output).astype(float)
+
+    def _sampling_normal(self, model_output: np.ndarray) -> np.ndarray:
+        """Sampling method for CatBoost's [mean, variance] output.
+        model_output is of shape (n_components * output_chunk_length, n_samples, 2) where the last dimension
+        contain mu and sigma.
+        """
+        n_entries, n_samples, n_params = model_output.shape
+
+        # treating each component separately
+        mu_sigma_list = [model_output[i, :, :] for i in range(n_entries)]
+
+        list_of_samples = [
+            self._rng.normal(
+                mu_sigma[:, 0],  # mean vector
+                mu_sigma[:, 1],  # diagonal covariance matrix
+            )
+            for mu_sigma in mu_sigma_list
+        ]
+
+        samples_transposed = np.array(list_of_samples).transpose()
+        samples_reshaped = samples_transposed.reshape(n_samples, self.pred_dim, -1)
+
+        return samples_reshaped
+
+    def _params_quantile(self, model_output: np.ndarray) -> np.ndarray:
+        """Quantiles on the last dimension, grouped by component"""
+        k, n_timesteps, n_components, n_quantiles = model_output.shape
+        # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
+        return model_output.reshape(k, n_timesteps, n_components * n_quantiles)
+
+    def _params_poisson(self, model_output: np.ndarray) -> np.ndarray:
+        """Lambdas on the last dimension, grouped by component"""
+        return model_output
+
+    def _params_normal(self, model_output: np.ndarray) -> np.ndarray:
+        """[mu, sigma] on the last dimension, grouped by component"""
+        shape = model_output.shape
+        n_samples = shape[1]
+
+        # extract mu and sigma for each component
+        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
+
+        # reshape to (n_samples, output_chunk_length, 2)
+        params_transposed = np.array(mu_sigma_list).transpose()
+        params_reshaped = params_transposed.reshape(n_samples, self.pred_dim, -1)
+        return params_reshaped
+
+    def _predict_and_sample_likelihood(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        likelihood: str,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        model_output = getattr(self, f"_predict_{likelihood}")(
+            x, num_samples, predict_likelihood_parameters, **kwargs
+        )
+        if predict_likelihood_parameters:
+            return getattr(self, f"_params_{likelihood}")(model_output)
+        else:
+            if num_samples == 1:
+                return model_output
+            else:
+                return getattr(self, f"_sampling_{likelihood}")(model_output)
+
+    def _num_parameters_quantile(self) -> int:
+        return len(self.quantiles)
+
+    def _num_parameters_poisson(self) -> int:
+        return 1
+
+    def _num_parameters_normal(self) -> int:
+        return 2
+
+    @property
+    def num_parameters(self) -> int:
+        """Mimic function of Likelihood class"""
+        likelihood = self.likelihood
+        if likelihood is None:
+            return 0
+        elif likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._num_parameters_normal()
+        else:
+            return getattr(self, f"_num_parameters_{likelihood}")()
+
+    def _quantiles_generate_components_names(
+        self, input_series: TimeSeries
+    ) -> List[str]:
+        return self._likelihood_generate_components_names(
+            input_series,
+            [f"q{quantile:.2f}" for quantile in self._model_container.keys()],
+        )
+
+    def _likelihood_generate_components_names(
+        self, input_series: TimeSeries, parameter_names: List[str]
+    ) -> List[str]:
+        return [
+            f"{tgt_name}_{param_n}"
+            for tgt_name in input_series.components
+            for param_n in parameter_names
+        ]
 
 
 class _QuantileModelContainer(OrderedDict):
