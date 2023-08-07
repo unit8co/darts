@@ -324,6 +324,7 @@ class _TransformerModule(PLPastCovariatesModule):
 
     def _prediction_step(self, src: torch.Tensor, tgt: torch.Tensor):
         batch_size = src.shape[1]
+        device, torch_type = src.device, src.dtype
         # "math.sqrt(self.input_size)" is a normalization factor
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
         src = self.encoder(src) * math.sqrt(self.d_model)
@@ -333,8 +334,9 @@ class _TransformerModule(PLPastCovariatesModule):
         tgt = self.positional_encoding(tgt)
 
         tgt_mask = self.transformer.generate_square_subsequent_mask(
-            tgt.shape[0], src.get_device()
-        )
+            tgt.shape[0], device
+        ).type(torch_type)
+
         x = self.transformer(src=src, tgt=tgt, tgt_mask=tgt_mask)
         out = self.decoder(x)
 
