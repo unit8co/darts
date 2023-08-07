@@ -323,8 +323,8 @@ class _TransformerModule(PLPastCovariatesModule):
         return torch.stack(predictions, dim=1)
 
     def _prediction_step(self, src: torch.Tensor, tgt: torch.Tensor):
-        batch_size = src.shape[1]
-        device, torch_type = src.device, src.dtype
+        target_length = tgt.shape[0]
+        device, tensor_type = src.device, src.dtype
         # "math.sqrt(self.input_size)" is a normalization factor
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
         src = self.encoder(src) * math.sqrt(self.d_model)
@@ -333,9 +333,13 @@ class _TransformerModule(PLPastCovariatesModule):
         src = self.positional_encoding(src)
         tgt = self.positional_encoding(tgt)
 
-        sz = tgt.shape[0]  # mask size
         tgt_mask = torch.triu(
-            torch.full((sz, sz), float("-inf"), device=device, dtype=torch_type),
+            torch.full(
+                (target_length, target_length),
+                float("-inf"),
+                device=device,
+                dtype=tensor_type,
+            ),
             diagonal=1,
         )
 
@@ -346,7 +350,9 @@ class _TransformerModule(PLPastCovariatesModule):
         # from (1, batch_size, output_chunk_length * output_size)
         # to (batch_size, output_chunk_length, output_size, nr_params)
         predictions = self._permute_transformer_inputs(out)
-        predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
+        predictions = predictions.view(
+            -1, target_length, self.target_size, self.nr_params
+        )
 
         return predictions
 
