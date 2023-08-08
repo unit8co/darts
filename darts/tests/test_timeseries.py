@@ -10,7 +10,11 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
+from darts.utils.timeseries_generation import (
+    constant_timeseries,
+    generate_index,
+    linear_timeseries,
+)
 
 
 class TimeSeriesTestCase(DartsBaseTestClass):
@@ -2201,6 +2205,17 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
 
         with self.assertRaises(AttributeError):
             TimeSeries.from_dataframe(df=df, time_col="Time")
+
+    def test_df_named_columns_index(self):
+        df = pd.DataFrame(
+            data=np.random.randint(0, 10, size=(10, 1)),
+            index=generate_index(start=pd.Timestamp("2000-01-01"), length=10, freq="D"),
+            columns=["y"],
+        ).reset_index()
+        df["id"] = list("AB") * 5
+        df = df.pivot(columns="id", values="y", index="index").reset_index()
+
+        TimeSeries.from_dataframe(df, time_col="index")
 
 
 class SimpleStatisticsTestCase(DartsBaseTestClass):
