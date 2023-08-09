@@ -217,7 +217,11 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
     ]:
         extreme_lags_ = super().extreme_lags
-        return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
+        if extreme_lags_[0] is None:
+            return extreme_lags_
+        else:
+            # shift min_target_lag in the past to account for the regression model
+            return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
     @property
     def output_chunk_length(self) -> int:
