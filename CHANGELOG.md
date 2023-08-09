@@ -8,6 +8,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.25.0...master)
 
+### For users of the library:
+
+**Fixed**
+- Fixed a bug with `RegressionEnsembleModel.extreme_lags` when the forecasting models have only covariates lags. [#1942](https://github.com/unit8co/darts/pull/1942) by [Antoine Madrona](https://github.com/madtoinou).
+
 ## [0.25.0](https://github.com/unit8co/darts/tree/0.25.0) (2023-08-04)
 ### For users of the library:
 
