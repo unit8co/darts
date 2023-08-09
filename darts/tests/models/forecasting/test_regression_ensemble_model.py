@@ -366,18 +366,41 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 3)
 
     def test_call_backtest_regression_ensemble_local_models(self):
-        series = tg.sine_timeseries(
-            value_frequency=(1 / 5), value_y_offset=10, length=50
-        )
         regr_train_n = 10
         ensemble = RegressionEnsembleModel(
             [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
         )
-        ensemble.fit(series)
+        ensemble.fit(self.sine_series)
         assert max(m_.min_train_series_length for m_ in ensemble.models) == 10
         # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
-        ensemble.backtest(series)
+        ensemble.backtest(self.sine_series)
+
+    def test_extreme_lags(self):
+        # forecasting models do not use target lags
+        train_n_points = 10
+        model1 = RandomForest(
+            lags_future_covariates=[0],
+        )
+        model2 = RegressionModel(lags_past_covariates=3)
+        model = RegressionEnsembleModel(
+            forecasting_models=[model1, model2],
+            regression_train_n_points=train_n_points,
+        )
+
+        self.assertEqual(model.extreme_lags, (None, 0, -3, -1, 0, 0))
+
+        # mix of all the lags
+        model3 = RandomForest(
+            lags_future_covariates=[-2, 5],
+        )
+        model4 = RegressionModel(lags=[-7, -3], lags_past_covariates=3)
+        model = RegressionEnsembleModel(
+            forecasting_models=[model3, model4],
+            regression_train_n_points=train_n_points,
+        )
+
+        self.assertEqual(model.extreme_lags, (-7 - train_n_points, 0, -3, -1, -2, 5))
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]
