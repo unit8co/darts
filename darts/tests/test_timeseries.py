@@ -2215,18 +2215,17 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
             index=time_index,
             columns=["y"],
         ).reset_index()
-        df["id"] = list("AB") * 2
-        # df.columns.name = "id"
-        df = df.pivot(columns="id", values="y", index="index").reset_index()
-
-        ts = TimeSeries.from_dataframe(df, time_col="index", fillna_value=-1)
-
+        df.columns.name = "id"
+        ts = TimeSeries.from_dataframe(df, time_col="index")
         exp_ts = TimeSeries.from_times_and_values(
             times=time_index,
-            values=np.array([[0, -1], [-1, 1], [2, -1], [-1, 3]]),
-            columns=pd.Index(["A", "B"]),
+            values=np.array([0, 1, 2, 3]),
+            columns=pd.Index(["y"]),
         )
+        # check that series are exactly identical
         self.assertEqual(ts, exp_ts)
+        # check that the original df was not changed
+        self.assertEqual(df.columns.name, "id")
 
 
 class SimpleStatisticsTestCase(DartsBaseTestClass):
