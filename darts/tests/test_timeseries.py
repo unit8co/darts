@@ -2207,15 +2207,26 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
             TimeSeries.from_dataframe(df=df, time_col="Time")
 
     def test_df_named_columns_index(self):
+        time_index = generate_index(
+            start=pd.Timestamp("2000-01-01"), length=4, freq="D", name="index"
+        )
         df = pd.DataFrame(
-            data=np.random.randint(0, 10, size=(10, 1)),
-            index=generate_index(start=pd.Timestamp("2000-01-01"), length=10, freq="D"),
+            data=np.arange(4),
+            index=time_index,
             columns=["y"],
         ).reset_index()
-        df["id"] = list("AB") * 5
+        df["id"] = list("AB") * 2
+        # df.columns.name = "id"
         df = df.pivot(columns="id", values="y", index="index").reset_index()
 
-        TimeSeries.from_dataframe(df, time_col="index")
+        ts = TimeSeries.from_dataframe(df, time_col="index", fillna_value=-1)
+
+        exp_ts = TimeSeries.from_times_and_values(
+            times=time_index,
+            values=np.array([[0, -1], [-1, 1], [2, -1], [-1, 3]]),
+            columns=pd.Index(["A", "B"]),
+        )
+        self.assertEqual(ts, exp_ts)
 
 
 class SimpleStatisticsTestCase(DartsBaseTestClass):
