@@ -710,6 +710,9 @@ class TimeSeries:
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
 
+        if series_df.columns.name:
+            series_df.columns.name = None
+
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
