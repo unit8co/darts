@@ -67,6 +67,10 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
         self.trend = self.model.trend
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
@@ -93,6 +97,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         raise_if(
             self.trend and self.trend != "c",

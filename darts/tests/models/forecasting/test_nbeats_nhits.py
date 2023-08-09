@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -60,6 +60,7 @@ if TORCH_AVAILABLE:
                     num_blocks=1,
                     layer_widths=20,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -73,6 +74,7 @@ if TORCH_AVAILABLE:
                     num_blocks=1,
                     layer_widths=20,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
@@ -94,6 +96,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=20,
                     random_state=42,
+                    **tfm_kwargs
                 )
 
                 model.fit(series_multivariate)
@@ -116,6 +119,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=4,
                     n_epochs=5,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model.fit(series_multivariate, past_covariates=series_covariates)
 
@@ -182,7 +186,10 @@ if TORCH_AVAILABLE:
                     log_tensorboard=True,
                     work_dir=self.temp_work_dir,
                     generic_architecture=architecture,
-                    pl_trainer_kwargs={"log_every_n_steps": 1},
+                    pl_trainer_kwargs={
+                        "log_every_n_steps": 1,
+                        **tfm_kwargs["pl_trainer_kwargs"],
+                    },
                 )
                 model.fit(ts)
                 model.predict(n=2)
@@ -200,6 +207,7 @@ if TORCH_AVAILABLE:
                     layer_widths=20,
                     random_state=42,
                     activation="LeakyReLU",
+                    **tfm_kwargs
                 )
                 model.fit(ts)
 
@@ -213,5 +221,6 @@ if TORCH_AVAILABLE:
                         layer_widths=20,
                         random_state=42,
                         activation="invalid",
+                        **tfm_kwargs
                     )
                     model.fit(ts)

@@ -91,7 +91,7 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if(
             train_num_samples is not None
             and train_num_samples > 1
-            and all([not m._is_probabilistic() for m in models]),
+            and all([not m._is_probabilistic for m in models]),
             "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
             "contains only deterministic models.",
             logger,
@@ -215,6 +215,7 @@ class EnsembleModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ):
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
@@ -228,7 +229,8 @@ class EnsembleModel(GlobalForecastingModel):
                 future_covariates=future_covariates
                 if model.supports_future_covariates
                 else None,
-                num_samples=num_samples if model._is_probabilistic() else 1,
+                num_samples=num_samples if model._is_probabilistic else 1,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for model in self.models
         ]
@@ -257,6 +259,7 @@ class EnsembleModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         super().predict(
@@ -266,13 +269,18 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=num_samples,
             verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
-        # for multi-level models, forecasting models can generate arbitrary number of samples
+        # for single-level ensemble, probabilistic forecast is obtained directly from forecasting models
         if self.train_samples_reduction is None:
             pred_num_samples = num_samples
+            forecast_models_pred_likelihood_params = predict_likelihood_parameters
+        # for multi-levels ensemble, forecasting models can generate arbitrary number of samples
         else:
             pred_num_samples = self.train_num_samples
+            # second layer model (regression) cannot be trained on likelihood parameters
+            forecast_models_pred_likelihood_params = False
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
 
@@ -282,16 +290,23 @@ class EnsembleModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=pred_num_samples,
+            predict_likelihood_parameters=forecast_models_pred_likelihood_params,
         )
 
-        return self.ensemble(predictions, series=series, num_samples=num_samples)
+        return self.ensemble(
+            predictions,
+            series=series,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+        )
 
     @abstractmethod
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
@@ -311,7 +326,9 @@ class EnsembleModel(GlobalForecastingModel):
         """
         pass
 
-    def _predictions_reduction(self, predictions: TimeSeries) -> TimeSeries:
+    def _predictions_reduction(
+        self, predictions: Union[Sequence[TimeSeries], TimeSeries]
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Reduce the sample dimension of the forecasting models predictions"""
         is_single_series = isinstance(predictions, TimeSeries)
         predictions = series2seq(predictions)
@@ -359,11 +376,70 @@ class EnsembleModel(GlobalForecastingModel):
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         )
 
-    def _models_are_probabilistic(self) -> bool:
-        return all([model._is_probabilistic() for model in self.models])
+    @property
+    def output_chunk_length(self) -> Optional[int]:
+        """Return `None` if none of the forecasting models have a `output_chunk_length`,
+        otherwise return the smallest output_chunk_length.
+        """
+        tmp = [
+            m.output_chunk_length
+            for m in self.models
+            if m.output_chunk_length is not None
+        ]
 
+        if len(tmp) == 0:
+            return None
+        else:
+            return min(tmp)
+
+    @property
+    def _models_are_probabilistic(self) -> bool:
+        return all([model._is_probabilistic for model in self.models])
+
+    @property
+    def _models_same_likelihood(self) -> bool:
+        """Return `True` if all the `forecasting_models` are probabilistic and fit the same distribution."""
+        if not self._models_are_probabilistic:
+            return False
+
+        models_likelihood = set()
+        lkl_same_params = True
+        tmp_quantiles = None
+        for m in self.models:
+            # regression model likelihood is a string, torch-based model likelihoods is an object
+            likelihood = getattr(m, "likelihood")
+            is_obj_lkl = not isinstance(likelihood, str)
+            lkl_simplified_name = (
+                likelihood.simplified_name() if is_obj_lkl else likelihood
+            )
+            models_likelihood.add(lkl_simplified_name)
+
+            # check the quantiles
+            if lkl_simplified_name == "quantile":
+                quantiles: List[str] = (
+                    likelihood.quantiles if is_obj_lkl else m.quantiles
+                )
+                if tmp_quantiles is None:
+                    tmp_quantiles = quantiles
+                elif tmp_quantiles != quantiles:
+                    lkl_same_params = False
+
+        return len(models_likelihood) == 1 and lkl_same_params
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        """EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the
+        same likelihood.
+        """
+        return self._models_same_likelihood
+
+    @property
     def _is_probabilistic(self) -> bool:
-        return self._models_are_probabilistic()
+        return self._models_are_probabilistic
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return all([model.supports_multivariate for model in self.models])
 
     @property
     def supports_past_covariates(self) -> bool:

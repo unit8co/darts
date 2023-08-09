@@ -1,4 +1,5 @@
 import unittest
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,7 @@ from darts.models import (
     RegressionModel,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
@@ -76,12 +77,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
+                **tfm_kwargs,
             ),
         ]
 
@@ -155,10 +158,18 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_torch_models_retrain(self):
         model1 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            input_chunk_length=12,
+            output_chunk_length=1,
+            random_state=0,
+            n_epochs=2,
+            **tfm_kwargs,
         )
         model2 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            input_chunk_length=12,
+            output_chunk_length=1,
+            random_state=0,
+            n_epochs=2,
+            **tfm_kwargs,
         )
 
         ensemble = RegressionEnsembleModel([model1], 5)
@@ -309,12 +320,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
         ]
@@ -336,12 +349,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             BlockRNNModel(
                 input_chunk_length=20,
                 output_chunk_length=horizon,
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
+                **tfm_kwargs,
             ),
             RegressionModel(lags_past_covariates=[-1]),
             RegressionModel(lags_past_covariates=[-1]),
@@ -378,15 +393,15 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # every models are probabilistic
         ensemble_allproba = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_probabilistic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
             ],
             regression_train_n_points=10,
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertTrue(ensemble_allproba._models_are_probabilistic())
-        self.assertTrue(ensemble_allproba._is_probabilistic())
+        self.assertTrue(ensemble_allproba._models_are_probabilistic)
+        self.assertTrue(ensemble_allproba._is_probabilistic)
         ensemble_allproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_allproba.predict(5, num_samples=10)
@@ -395,15 +410,15 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # forecasting models are a mix of probabilistic and deterministic, probabilistic regressor
         ensemble_mixproba = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_deterministic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_deterministic_global_model(lags=[-2, -4]),
             ],
             regression_train_n_points=10,
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertFalse(ensemble_mixproba._models_are_probabilistic())
-        self.assertTrue(ensemble_mixproba._is_probabilistic())
+        self.assertFalse(ensemble_mixproba._models_are_probabilistic)
+        self.assertTrue(ensemble_mixproba._is_probabilistic)
         ensemble_mixproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_mixproba.predict(5, num_samples=10)
@@ -413,8 +428,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # with regression_train_num_samples > 1
         ensemble_mixproba2 = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_deterministic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_deterministic_global_model(lags=[-2, -4]),
             ],
             regression_train_n_points=10,
             regression_model=linreg_prob.untrained_model(),
@@ -422,8 +437,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_samples_reduction="median",
         )
 
-        self.assertFalse(ensemble_mixproba2._models_are_probabilistic())
-        self.assertTrue(ensemble_mixproba2._is_probabilistic())
+        self.assertFalse(ensemble_mixproba2._models_are_probabilistic)
+        self.assertTrue(ensemble_mixproba2._is_probabilistic)
         ensemble_mixproba2.fit(self.ts_random_walk[:100])
         pred = ensemble_mixproba2.predict(5, num_samples=10)
         self.assertEqual(pred.n_samples, 10)
@@ -431,15 +446,15 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # only regression model is probabilistic
         ensemble_proba_reg = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_deterministic_global_model([-1, -3]),
-                self.get_deterministic_global_model([-2, -4]),
+                self.get_deterministic_global_model(lags=[-1, -3]),
+                self.get_deterministic_global_model(lags=[-2, -4]),
             ],
             regression_train_n_points=10,
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertFalse(ensemble_proba_reg._models_are_probabilistic())
-        self.assertTrue(ensemble_proba_reg._is_probabilistic())
+        self.assertFalse(ensemble_proba_reg._models_are_probabilistic)
+        self.assertTrue(ensemble_proba_reg._is_probabilistic)
         ensemble_proba_reg.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_proba_reg.predict(5, num_samples=10)
@@ -448,15 +463,15 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # every models but regression model are probabilistics
         ensemble_dete_reg = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_probabilistic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
             ],
             regression_train_n_points=10,
             regression_model=linreg_dete.untrained_model(),
         )
 
-        self.assertTrue(ensemble_dete_reg._models_are_probabilistic())
-        self.assertFalse(ensemble_dete_reg._is_probabilistic())
+        self.assertTrue(ensemble_dete_reg._models_are_probabilistic)
+        self.assertFalse(ensemble_dete_reg._is_probabilistic)
         ensemble_dete_reg.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_dete_reg.predict(5, num_samples=1)
@@ -474,8 +489,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_dete.untrained_model(),
         )
 
-        self.assertFalse(ensemble_alldete._models_are_probabilistic())
-        self.assertFalse(ensemble_alldete._is_probabilistic())
+        self.assertFalse(ensemble_alldete._models_are_probabilistic)
+        self.assertFalse(ensemble_alldete._is_probabilistic)
         ensemble_alldete.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_alldete.predict(5, num_samples=1)
@@ -487,8 +502,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[
-                    self.get_deterministic_global_model([-1, -3]),
-                    self.get_deterministic_global_model([-2, -4]),
+                    self.get_deterministic_global_model(lags=[-1, -3]),
+                    self.get_deterministic_global_model(lags=[-2, -4]),
                 ],
                 regression_train_n_points=10,
                 regression_model=linreg_prob.untrained_model(),
@@ -506,8 +521,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[
-                    self.get_deterministic_global_model([-1, -3]),
-                    self.get_deterministic_global_model([-2, -4]),
+                    self.get_deterministic_global_model(lags=[-1, -3]),
+                    self.get_deterministic_global_model(lags=[-2, -4]),
                 ],
                 regression_train_n_points=50,
                 regression_train_num_samples=500,
@@ -517,8 +532,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[
-                    self.get_probabilistic_global_model([-1, -3], quantiles),
-                    self.get_probabilistic_global_model([-2, -4], quantiles),
+                    self.get_probabilistic_global_model(
+                        lags=[-1, -3], quantiles=quantiles
+                    ),
+                    self.get_probabilistic_global_model(
+                        lags=[-2, -4], quantiles=quantiles
+                    ),
                 ],
                 regression_train_n_points=50,
                 regression_train_num_samples=500,
@@ -528,8 +547,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # by default, does not reduce samples and convert them to components
         ensemble_model_mean = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_probabilistic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
             ],
             regression_train_n_points=50,
             regression_train_num_samples=500,
@@ -538,8 +557,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
         ensemble_model_median = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_probabilistic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
             ],
             regression_train_n_points=50,
             regression_train_num_samples=500,
@@ -548,8 +567,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
         ensemble_model_0_5_quantile = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_probabilistic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
             ],
             regression_train_n_points=50,
             regression_train_num_samples=500,
@@ -582,8 +601,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # possible to use very small regression_train_num_samples
         ensemble_model_mean_1_sample = RegressionEnsembleModel(
             forecasting_models=[
-                self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_probabilistic_global_model([-2, -4], quantiles),
+                self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
+                self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
             ],
             regression_train_n_points=50,
             regression_train_num_samples=1,
@@ -595,15 +614,101 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble_model_median.fit([train, train + 100])
         ensemble_model_mean.predict(len(val), series=train)
 
+    def test_predict_likelihood_parameters_univariate_regression_ensemble(self):
+        quantiles = [0.05, 0.5, 0.95]
+        ensemble = RegressionEnsembleModel(
+            [
+                self.get_probabilistic_global_model(
+                    lags=2, output_chunk_length=2, quantiles=quantiles
+                ),
+                self.get_probabilistic_global_model(
+                    lags=3, output_chunk_length=3, quantiles=quantiles
+                ),
+            ],
+            regression_train_n_points=10,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=[0],
+                output_chunk_length=4,
+                likelihood="quantile",
+                quantiles=quantiles,
+            ),
+        )
+        ensemble.fit(self.sine_series)
+        pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
+
+        self.assertTrue(
+            all(pred_ens.components == ["sine_q0.05", "sine_q0.50", "sine_q0.95"])
+        )
+        self.assertTrue(
+            all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values())
+            and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+        )
+
+    def test_predict_likelihood_parameters_multivariate_regression_ensemble(self):
+        quantiles = [0.05, 0.5, 0.95]
+        multivariate_series = self.sine_series.stack(self.lin_series)
+
+        ensemble = RegressionEnsembleModel(
+            [
+                self.get_probabilistic_global_model(
+                    lags=2, output_chunk_length=2, quantiles=quantiles
+                ),
+                self.get_probabilistic_global_model(
+                    lags=3, output_chunk_length=3, quantiles=quantiles
+                ),
+            ],
+            regression_train_n_points=10,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=[0],
+                output_chunk_length=4,
+                likelihood="quantile",
+                quantiles=quantiles,
+            ),
+        )
+        ensemble.fit(multivariate_series)
+        pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
+
+        self.assertTrue(
+            all(
+                pred_ens.components
+                == [
+                    "sine_q0.05",
+                    "sine_q0.50",
+                    "sine_q0.95",
+                    "linear_q0.05",
+                    "linear_q0.50",
+                    "linear_q0.95",
+                ]
+            )
+        )
+        self.assertTrue(
+            all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values())
+            and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+        )
+        self.assertTrue(
+            all(pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values())
+            and all(
+                pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values()
+            )
+        )
+
     @staticmethod
-    def get_probabilistic_global_model(lags, quantiles, random_state=42):
+    def get_probabilistic_global_model(
+        lags: Union[int, List[int]],
+        output_chunk_length: int = 1,
+        likelihood: str = "quantile",
+        quantiles: Union[None, List[float]] = [0.05, 0.5, 0.95],
+        random_state: int = 42,
+    ) -> LinearRegressionModel:
         return LinearRegressionModel(
             lags=lags,
+            likelihood=likelihood,
             quantiles=quantiles,
-            likelihood="quantile",
             random_state=random_state,
         )
 
     @staticmethod
-    def get_deterministic_global_model(lags, random_state=13):
+    def get_deterministic_global_model(
+        lags: Union[int, List[int]], random_state: int = 13
+    ) -> LinearRegressionModel:
         return LinearRegressionModel(lags=lags, random_state=random_state)

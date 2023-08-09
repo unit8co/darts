@@ -114,7 +114,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(101), 91)
         # getting index for negative idx return idx + len(ts)
-        self.assertEqual(series.get_index_at_point(-3), 97)
+        self.assertEqual(series.get_index_at_point({"point": -3}), 97)
 
         # slicing outside of the index range should return an empty ts
         self.assertEqual(len(series[120:125]), 0)
@@ -133,7 +133,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(100), 50)
         # getting index for negative idx return idx + len(ts)
-        self.assertEqual(series.get_index_at_point(-1), 99)
+        self.assertEqual(series.get_index_at_point({"point": -1}), 99)
 
         # getting index outside of the index range should raise an exception
         with self.assertRaises(IndexError):
@@ -163,7 +163,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(16), 3)
         # getting index for negative idx return idx + len(ts)
-        self.assertEqual(series.get_index_at_point(-2), 8)
+        self.assertEqual(series.get_index_at_point({"point": -2}), 8)
 
     def test_integer_indexing(self):
         n = 10
@@ -499,25 +499,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(len(seriesK), 5)
         test_case.assertEqual(len(seriesL), len(test_series) - 5)
 
-        seriesM, seriesN = test_series.split_after(-2)
-        test_case.assertEqual(len(seriesM), len(test_series) - len(seriesN))
-        test_case.assertEqual(len(seriesN), 1)
-
-        seriesO, seriesP = test_series.split_before(-2)
-        test_case.assertEqual(len(seriesO), len(test_series) - len(seriesP))
-        test_case.assertEqual(len(seriesP), 2)
-
         test_case.assertEqual(test_series.freq_str, seriesA.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesC.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesE.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesG.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesI.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesK.freq_str)
-        test_case.assertEqual(test_series.freq_str, seriesM.freq_str)
-        test_case.assertEqual(test_series.freq_str, seriesO.freq_str)
 
         # Test split points outside of range
-        for value in [1.1, pd.Timestamp("21300104")]:
+        for value in [-5, 1.1, pd.Timestamp("21300104")]:
             with test_case.assertRaises(ValueError):
                 test_series.split_before(value)
 
@@ -1149,13 +1139,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             resampled_timeseries.pd_series().at[pd.Timestamp("20130109")], 8
         )
 
-        # using loffset to avoid nan in the first value
+        # using offset to avoid nan in the first value
         times = pd.date_range(
             start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
-        resampled_timeseries = timeseries.resample(freq="1h", loffset="30T")
+        resampled_timeseries = timeseries.resample(
+            freq="1h", offset=pd.Timedelta("30T")
+        )
         self.assertEqual(
             resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")], 0
         )
@@ -1166,9 +1158,41 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             TimeSeries.from_times_and_values(
                 pd.date_range("20130101", "20130102"), range(2), fill_missing_dates=True
             )
-        # test empty pandas series error
+        # test empty pandas series with DatetimeIndex
+        freq = "D"
+        # fails without freq
         with self.assertRaises(ValueError):
-            TimeSeries.from_series(pd.Series(dtype="object"), freq="D")
+            TimeSeries.from_series(pd.Series(index=pd.DatetimeIndex([])))
+        # works with index having freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([], freq=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([])), freq=freq
+        )
+        assert series_a == series_b
+
+        # test empty pandas series with DatetimeIndex
+        freq = 2
+        # fails pd.Index (IntIndex)
+        with self.assertRaises(ValueError):
+            TimeSeries.from_series(pd.Series(index=pd.Index([])))
+        # works with pd.RangeIndex as freq (step) is given by default (step=1)
+        series_a = TimeSeries.from_series(pd.Series(index=pd.RangeIndex(start=0)))
+        assert series_a.freq == 1
+        # works with RangeIndex of different freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0, step=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0)), freq=freq
+        )
+        assert series_a == series_b
+
         # frequency should be ignored when fill_missing_dates is False
         seriesA = TimeSeries.from_times_and_values(
             pd.date_range("20130101", "20130105"),

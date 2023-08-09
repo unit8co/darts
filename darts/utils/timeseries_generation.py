@@ -20,7 +20,7 @@ def generate_index(
     start: Optional[Union[pd.Timestamp, int]] = None,
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: Union[str, int] = None,
+    freq: Union[str, int, pd.DateOffset] = None,
     name: str = None,
 ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
@@ -750,10 +750,30 @@ def datetime_attribute_timeseries(
 def _build_forecast_series(
     points_preds: Union[np.ndarray, Sequence[np.ndarray]],
     input_series: TimeSeries,
+    custom_columns: List[str] = None,
+    with_static_covs: bool = True,
+    with_hierarchy: bool = True,
 ) -> TimeSeries:
     """
     Builds a forecast time series starting after the end of an input time series, with the
     correct time index (or after the end of the input series, if specified).
+
+    Parameters
+    ----------
+    points_preds
+        Forecasted values, can be either the target(s) or parameters of the likelihood model
+    input_series
+        TimeSeries used as input for the prediction
+    custom_columns
+        New names for the forecast TimeSeries, used when the number of components changes
+    with_static_covs
+        If set to False, do not copy the input_series `static_covariates` attribute
+    with_hierarchy
+        If set to False, do not copy the input_series `hierarchy` attribute
+    Returns
+    -------
+    TimeSeries
+        New TimeSeries instance starting after the input series
     """
     time_index_length = (
         len(points_preds)
@@ -771,9 +791,9 @@ def _build_forecast_series(
         time_index,
         values,
         freq=input_series.freq_str,
-        columns=input_series.columns,
-        static_covariates=input_series.static_covariates,
-        hierarchy=input_series.hierarchy,
+        columns=input_series.columns if custom_columns is None else custom_columns,
+        static_covariates=input_series.static_covariates if with_static_covs else None,
+        hierarchy=input_series.hierarchy if with_hierarchy else None,
     )
 
 

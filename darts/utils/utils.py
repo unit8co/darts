@@ -5,17 +5,15 @@ Additional util functions
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from types import SimpleNamespace
 from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
 
-import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.utils.timeseries_generation import generate_index
 
 try:
@@ -181,124 +179,6 @@ def _with_sanity_checks(
         return sanitized_method
 
     return decorator
-
-
-def _historical_forecasts_general_checks(series, kwargs):
-    """
-    Performs checks common to ForecastingModel and RegressionModel backtest() methods
-    Parameters
-    ----------
-    series
-        Either series when called from ForecastingModel, or target_series if called from RegressionModel
-    signature_params
-        A dictionary of the signature parameters of the calling method, to get the default values
-        Typically would be signature(self.backtest).parameters
-    kwargs
-        Params specified by the caller of backtest(), they take precedence over the arguments' default values
-    """
-
-    # parse kwargs
-    n = SimpleNamespace(**kwargs)
-
-    # check forecast horizon
-    raise_if_not(
-        n.forecast_horizon > 0,
-        "The provided forecasting horizon must be a positive integer.",
-        logger,
-    )
-
-    # check stride
-    raise_if_not(
-        n.stride > 0,
-        "The provided stride parameter must be a positive integer.",
-        logger,
-    )
-
-    series = series2seq(series)
-
-    if n.start is not None:
-        # check start parameter in general (non series dependent)
-        if not isinstance(n.start, (float, int, np.int64, pd.Timestamp)):
-            raise_log(
-                TypeError(
-                    "`start` needs to be either `float`, `int`, `pd.Timestamp` or `None`"
-                ),
-                logger,
-            )
-        if isinstance(n.start, float):
-            raise_if_not(
-                0.0 <= n.start <= 1.0, "`start` should be between 0.0 and 1.0.", logger
-            )
-        elif isinstance(n.start, (int, np.int64)):
-            pass
-
-        # verbose error messages
-        if not isinstance(n.start, pd.Timestamp):
-            start_value_msg = f"`start` value `{n.start}` corresponding to timestamp"
-        else:
-            start_value_msg = "`start` time"
-        for idx, series_ in enumerate(series):
-            # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
-            if isinstance(n.start, pd.Timestamp):
-                if n.start > series_.end_time():
-                    raise_log(
-                        ValueError(
-                            f"`start` time `{n.start}` is after the last timestamp `{series_.end_time()}` of the "
-                            f"series at index: {idx}."
-                        ),
-                        logger,
-                    )
-                elif n.start < series_.start_time():
-                    raise_log(
-                        ValueError(
-                            f"`start` time `{n.start}` is before the first timestamp `{series_.start_time()}` of the "
-                            f"series at index: {idx}."
-                        ),
-                        logger,
-                    )
-            elif isinstance(n.start, (int, np.int64)):
-                raise_if(
-                    (n.start < 0 and np.abs(n.start) > len(series_))
-                    or (
-                        (
-                            series_.has_datetime_index
-                            or (series_.has_range_index and series_.freq == 1)
-                        )
-                        and n.start >= len(series_)
-                    ),
-                    f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
-                    f"at index: {idx}.",
-                    logger,
-                )
-                raise_if(
-                    series_.has_range_index
-                    and series_.freq > 1
-                    and n.start > series_.time_index[-1],
-                    f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                    f"for series at index: {idx}.",
-                    logger,
-                )
-
-            start = series_.get_timestamp_at_point(n.start)
-            raise_if(
-                n.retrain is not False and start == series_.start_time(),
-                f"{start_value_msg} `{start}` is the first timestamp of the series {idx}, resulting in an "
-                f"empty training set.",
-                logger,
-            )
-
-            # check that overlap_end and start together form a valid combination
-            overlap_end = n.overlap_end
-            if not overlap_end and not (
-                start + (series_.freq * (n.forecast_horizon - 1)) in series_
-            ):
-                raise_log(
-                    ValueError(
-                        f"{start_value_msg} `{start}` is too late in the series {idx} to make any predictions with "
-                        f"`overlap_end` set to `False`."
-                    ),
-                    logger,
-                )
 
 
 def _parallel_apply(

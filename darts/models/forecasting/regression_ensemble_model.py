@@ -99,7 +99,7 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
-        self.regression_model = regression_model
+        self.regression_model: RegressionModel = regression_model
         self.train_n_points = regression_train_n_points
 
     def _split_multi_ts_sequence(
@@ -115,7 +115,6 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
@@ -186,10 +185,10 @@ class RegressionEnsembleModel(EnsembleModel):
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]
@@ -200,6 +199,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 series=serie,
                 future_covariates=prediction,
                 num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for serie, prediction in zip(series, predictions)
         ]
@@ -219,9 +219,27 @@ class RegressionEnsembleModel(EnsembleModel):
         extreme_lags_ = super().extreme_lags
         return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
+    @property
+    def output_chunk_length(self) -> int:
+        """Return the `output_chunk_length` of the regression model (ensembling layer)"""
+        return self.regression_model.output_chunk_length
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        """RegressionEnsembleModel supports likelihood parameters predictions if its regression model does"""
+        return self.regression_model.supports_likelihood_parameter_prediction
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return (
+            super().supports_multivariate
+            and self.regression_model.supports_multivariate
+        )
+
+    @property
     def _is_probabilistic(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model._is_probabilistic()
+        return self.regression_model._is_probabilistic

@@ -28,7 +28,7 @@ class _RNNModule(PLDualCovariatesModule):
         target_size: int,
         nr_params: int,
         dropout: float = 0.0,
-        **kwargs
+        **kwargs,
     ):
 
         """PyTorch module implementing an RNN to be used in `RNNModel`.
@@ -86,7 +86,9 @@ class _RNNModule(PLDualCovariatesModule):
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
 
-    def forward(self, x_in: Tuple, h=None):
+    def forward(
+        self, x_in: Tuple, h: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         x, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
@@ -103,7 +105,7 @@ class _RNNModule(PLDualCovariatesModule):
         # returns outputs for all inputs, only the last one is needed for prediction time
         return predictions, last_hidden_state
 
-    def _produce_train_output(self, input_batch: Tuple):
+    def _produce_train_output(self, input_batch: Tuple) -> torch.Tensor:
         (
             past_target,
             historic_future_covariates,
@@ -120,11 +122,16 @@ class _RNNModule(PLDualCovariatesModule):
         )
         return self(model_input)[0]
 
-    def _produce_predict_output(self, x: Tuple, last_hidden_state=None):
+    def _produce_predict_output(
+        self, x: Tuple, last_hidden_state: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
         if self.likelihood:
-            return self.likelihood.sample(output), hidden
+            if self.predict_likelihood_parameters:
+                return self.likelihood.predict_likelihood_parameters(output), hidden
+            else:
+                return self.likelihood.sample(output), hidden
         else:
             return output.squeeze(dim=-1), hidden
 
@@ -190,7 +197,6 @@ class _RNNModule(PLDualCovariatesModule):
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
-
         return batch_prediction
 
 
@@ -203,7 +209,7 @@ class RNNModel(DualCovariatesTorchModel):
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
         training_length: int = 24,
-        **kwargs
+        **kwargs,
     ):
 
         """Recurrent Neural Network Model (RNNs).
@@ -469,6 +475,10 @@ class RNNModel(DualCovariatesTorchModel):
             train_dataset.ds_past.shift == 1,
             "RNNModel requires a shifted training dataset with shift=1.",
         )
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self) -> int:
