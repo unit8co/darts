@@ -2214,13 +2214,14 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
             data=np.arange(4),
             index=time_index,
             columns=["y"],
-        ).reset_index()
+        )
         df.columns.name = "id"
-        ts = TimeSeries.from_dataframe(df, time_col="index")
+        ts = TimeSeries.from_dataframe(df)
+
         exp_ts = TimeSeries.from_times_and_values(
             times=time_index,
-            values=np.array([0, 1, 2, 3]),
-            columns=pd.Index(["y"]),
+            values=np.arange(4),
+            columns=["y"],
         )
         # check that series are exactly identical
         self.assertEqual(ts, exp_ts)
