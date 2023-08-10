@@ -388,7 +388,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_n_points=train_n_points,
         )
 
-        self.assertEqual(model.extreme_lags, (None, 0, -3, -1, 0, 0))
+        self.assertEqual(model.extreme_lags, (-train_n_points, 0, -3, -1, 0, 0))
 
         # mix of all the lags
         model3 = RandomForest(
