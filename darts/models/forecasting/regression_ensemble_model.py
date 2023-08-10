@@ -130,8 +130,8 @@ class RegressionEnsembleModel(EnsembleModel):
 
         raise_if(
             train_n_points_too_big,
-            "`regression_train_n_points` parameter too big (must be smaller or "
-            "equal to the number of points in training_series)",
+            "`regression_train_n_points` parameter too big (must be strictly smaller than "
+            "the number of points in training_series)",
             logger,
         )
 
