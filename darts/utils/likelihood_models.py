@@ -31,6 +31,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 """
 
 import collections.abc
+import inspect
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 
@@ -231,6 +232,20 @@ class Likelihood(ABC):
             return other_state == self_state
         else:
             return False
+
+    def __repr__(self, include_default_params: bool = True) -> str:
+        """Return the class and parameters of the instance in a nice format"""
+        cls_name = self.__class__.__name__
+        # only display the constructor parameters as user cannot change the other attributes
+        init_signature = inspect.signature(self.__class__.__init__)
+        params_string = ", ".join(
+            [
+                f"{str(v)}"
+                for _, v in init_signature.parameters.items()
+                if str(v) != "self"
+            ]
+        )
+        return f"{cls_name}({params_string})"
 
 
 class GaussianLikelihood(Likelihood):
