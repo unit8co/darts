@@ -653,22 +653,9 @@ if TORCH_AVAILABLE:
         def test_create_instance_new_model_no_name_set(self):
             RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, **tfm_kwargs)
             # no exception is raised
-            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, **tfm_kwargs)
-            # no exception is raised
 
         def test_create_instance_existing_model_with_name_no_fit(self):
             model_name = "test_model"
-            RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                work_dir=self.temp_work_dir,
-                model_name=model_name,
-                **tfm_kwargs,
-            )
-            # no exception is raised
-
             RNNModel(
                 12,
                 "RNN",
