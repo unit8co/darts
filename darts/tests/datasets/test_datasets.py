@@ -144,7 +144,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][1], long_cov.values()[-60:-50])
             np.testing.assert_almost_equal(ds[0][2], long_cov.values()[-50:-30])
             np.testing.assert_almost_equal(ds[0][3], self.cov_st2)
-            self.assertEqual(ds[0][4], target)
+            assert ds[0][4] == target
 
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
@@ -166,7 +166,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][1], covariate.values()[20:30])
             np.testing.assert_almost_equal(ds[0][2], covariate.values()[30:40])
             np.testing.assert_almost_equal(ds[0][3], self.cov_st2)
-            self.assertEqual(ds[0][4], target)
+            assert ds[0][4] == target
 
         def test_future_covariates_inference_dataset(self):
             # one target series
@@ -222,7 +222,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
             np.testing.assert_almost_equal(ds[0][1], long_cov.values()[-50:-20])
             np.testing.assert_almost_equal(ds[0][2], self.cov_st2)
-            self.assertEqual(ds[0][3], target)
+            assert ds[0][3] == target
 
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
@@ -239,7 +239,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
             np.testing.assert_almost_equal(ds[0][1], covariate.values()[30:50])
             np.testing.assert_almost_equal(ds[0][2], self.cov_st2)
-            self.assertEqual(ds[0][3], target)
+            assert ds[0][3] == target
 
         def test_dual_covariates_inference_dataset(self):
             # one target series
@@ -304,7 +304,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][1], long_cov.values()[-60:-50])
             np.testing.assert_almost_equal(ds[0][2], long_cov.values()[-50:-20])
             np.testing.assert_almost_equal(ds[0][3], self.cov_st2)
-            self.assertEqual(ds[0][4], target)
+            assert ds[0][4] == target
 
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
@@ -326,7 +326,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][1], covariate.values()[20:30])
             np.testing.assert_almost_equal(ds[0][2], covariate.values()[30:50])
             np.testing.assert_almost_equal(ds[0][3], self.cov_st2)
-            self.assertEqual(ds[0][4], target)
+            assert ds[0][4] == target
 
         def test_mixed_covariates_inference_dataset(self):
             # With future past covariates:
@@ -379,7 +379,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][3], future_cov.values()[-50:-20])
             np.testing.assert_almost_equal(ds[0][4], long_past_cov.values()[-50:-30])
             np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-            self.assertEqual(ds[0][6], target)
+            assert ds[0][6] == target
 
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
@@ -407,7 +407,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][3], future_cov.values()[20:40])
             np.testing.assert_almost_equal(ds[0][4], past_cov.values()[30:40])
             np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-            self.assertEqual(ds[0][6], target)
+            assert ds[0][6] == target
 
         def test_split_covariates_inference_dataset(self):
             # With future past covariates:
@@ -459,7 +459,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][2], future_cov.values()[-50:-20])
             np.testing.assert_almost_equal(ds[0][3], long_past_cov.values()[-50:-30])
             np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-            self.assertEqual(ds[0][5], target)
+            assert ds[0][5] == target
 
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
@@ -486,7 +486,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][2], future_cov.values()[20:40])
             np.testing.assert_almost_equal(ds[0][3], past_cov.values()[30:40])
             np.testing.assert_almost_equal(ds[0][4], self.cov_st2)
-            self.assertEqual(ds[0][5], target)
+            assert ds[0][5] == target
 
         def test_past_covariates_sequential_dataset(self):
             # one target series
@@ -495,7 +495,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            self.assertEqual(len(ds), 81)
+            assert len(ds) == 81
             self._assert_eq(
                 ds[5], (self.target1[75:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -506,7 +506,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            self.assertEqual(len(ds), 262)
+            assert len(ds) == 262
             self._assert_eq(
                 ds[5], (self.target1[75:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -522,7 +522,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 max_samples_per_ts=50,
             )
-            self.assertEqual(len(ds), 100)
+            assert len(ds) == 100
             self._assert_eq(
                 ds[5], (self.target1[75:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -636,7 +636,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            self.assertEqual(len(ds), 81)
+            assert len(ds) == 81
             self._assert_eq(
                 ds[5], (self.target1[75:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -647,7 +647,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            self.assertEqual(len(ds), 262)
+            assert len(ds) == 262
             self._assert_eq(
                 ds[5], (self.target1[75:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -663,7 +663,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 max_samples_per_ts=50,
             )
-            self.assertEqual(len(ds), 100)
+            assert len(ds) == 100
             self._assert_eq(
                 ds[5], (self.target1[75:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -752,7 +752,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            self.assertEqual(len(ds), 81)
+            assert len(ds) == 81
             self._assert_eq(
                 ds[5],
                 (self.target1[75:85], None, None, self.cov_st1, self.target1[85:95]),
@@ -764,7 +764,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            self.assertEqual(len(ds), 262)
+            assert len(ds) == 262
             self._assert_eq(
                 ds[5],
                 (self.target1[75:85], None, None, self.cov_st1, self.target1[85:95]),
@@ -787,7 +787,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 max_samples_per_ts=50,
             )
-            self.assertEqual(len(ds), 100)
+            assert len(ds) == 100
             self._assert_eq(
                 ds[5],
                 (self.target1[75:85], None, None, self.cov_st1, self.target1[85:95]),
@@ -882,7 +882,7 @@ if TORCH_AVAILABLE:
             ds = PastCovariatesShiftedDataset(
                 target_series=self.target1, length=10, shift=5
             )
-            self.assertEqual(len(ds), 86)
+            assert len(ds) == 86
             self._assert_eq(
                 ds[5], (self.target1[80:90], None, self.cov_st1, self.target1[85:95])
             )
@@ -891,7 +891,7 @@ if TORCH_AVAILABLE:
             ds = PastCovariatesShiftedDataset(
                 target_series=[self.target1, self.target2], length=10, shift=5
             )
-            self.assertEqual(len(ds), 272)
+            assert len(ds) == 272
             self._assert_eq(
                 ds[5], (self.target1[80:90], None, self.cov_st1, self.target1[85:95])
             )
@@ -907,7 +907,7 @@ if TORCH_AVAILABLE:
                 shift=5,
                 max_samples_per_ts=50,
             )
-            self.assertEqual(len(ds), 100)
+            assert len(ds) == 100
             self._assert_eq(
                 ds[5], (self.target1[80:90], None, self.cov_st1, self.target1[85:95])
             )
@@ -994,7 +994,7 @@ if TORCH_AVAILABLE:
             ds = FutureCovariatesShiftedDataset(
                 target_series=self.target1, length=10, shift=5
             )
-            self.assertEqual(len(ds), 86)
+            assert len(ds) == 86
             self._assert_eq(
                 ds[5], (self.target1[80:90], None, self.cov_st1, self.target1[85:95])
             )
@@ -1003,7 +1003,7 @@ if TORCH_AVAILABLE:
             ds = FutureCovariatesShiftedDataset(
                 target_series=[self.target1, self.target2], length=10, shift=5
             )
-            self.assertEqual(len(ds), 272)
+            assert len(ds) == 272
             self._assert_eq(
                 ds[5], (self.target1[80:90], None, self.cov_st1, self.target1[85:95])
             )
@@ -1019,7 +1019,7 @@ if TORCH_AVAILABLE:
                 shift=5,
                 max_samples_per_ts=50,
             )
-            self.assertEqual(len(ds), 100)
+            assert len(ds) == 100
             self._assert_eq(
                 ds[5], (self.target1[80:90], None, self.cov_st1, self.target1[85:95])
             )
@@ -1106,7 +1106,7 @@ if TORCH_AVAILABLE:
             ds = DualCovariatesShiftedDataset(
                 target_series=self.target1, length=10, shift=5
             )
-            self.assertEqual(len(ds), 86)
+            assert len(ds) == 86
             self._assert_eq(
                 ds[5],
                 (self.target1[80:90], None, None, self.cov_st1, self.target1[85:95]),
@@ -1116,7 +1116,7 @@ if TORCH_AVAILABLE:
             ds = DualCovariatesShiftedDataset(
                 target_series=[self.target1, self.target2], length=10, shift=5
             )
-            self.assertEqual(len(ds), 272)
+            assert len(ds) == 272
             self._assert_eq(
                 ds[5],
                 (self.target1[80:90], None, None, self.cov_st1, self.target1[85:95]),
@@ -1139,7 +1139,7 @@ if TORCH_AVAILABLE:
                 shift=5,
                 max_samples_per_ts=50,
             )
-            self.assertEqual(len(ds), 100)
+            assert len(ds) == 100
             self._assert_eq(
                 ds[5],
                 (self.target1[80:90], None, None, self.cov_st1, self.target1[85:95]),
@@ -1240,7 +1240,7 @@ if TORCH_AVAILABLE:
                 lh=(1, 3),
                 lookback=2,
             )
-            self.assertEqual(len(ds), 20)
+            assert len(ds) == 20
             self._assert_eq(
                 ds[5], (self.target1[65:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -1252,7 +1252,7 @@ if TORCH_AVAILABLE:
                 lh=(1, 3),
                 lookback=2,
             )
-            self.assertEqual(len(ds), 40)
+            assert len(ds) == 40
             self._assert_eq(
                 ds[5], (self.target1[65:85], None, self.cov_st1, self.target1[85:95])
             )
@@ -1304,7 +1304,7 @@ if TORCH_AVAILABLE:
                 times1, np.random.randn(len(times1))
             ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-            self.assertEqual(_get_matching_index(target, cov, idx=15), 5)
+            assert _get_matching_index(target, cov, idx=15) == 5
 
             # check non-dividable freq
             times1 = pd.date_range(start="20100101", end="20120101", freq="M")
@@ -1313,7 +1313,7 @@ if TORCH_AVAILABLE:
                 times1, np.random.randn(len(times1))
             ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-            self.assertEqual(_get_matching_index(target, cov, idx=15), 15 - 7)
+            assert _get_matching_index(target, cov, idx=15) == 15 - 7
 
             # check integer-indexed series
             times2 = pd.RangeIndex(start=10, stop=90)
@@ -1321,4 +1321,4 @@ if TORCH_AVAILABLE:
                 np.random.randn(100)
             ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-            self.assertEqual(_get_matching_index(target, cov, idx=15), 5)
+            assert _get_matching_index(target, cov, idx=15) == 5

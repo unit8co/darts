@@ -39,11 +39,11 @@ class ProphetTestCase(DartsBaseTestClass):
         model1 = Prophet(add_seasonalities=kwargs_all)
         model2 = Prophet()
         model2.add_seasonality(**kwargs_all)
-        self.assertEqual(model1._add_seasonalities, model2._add_seasonalities)
+        assert model1._add_seasonalities == model2._add_seasonalities
 
         # add multiple seasonalities
         model3 = Prophet(add_seasonalities=[kwargs_mandatory, kwargs_mandatory2])
-        self.assertEqual(len(model3._add_seasonalities), 2)
+        assert len(model3._add_seasonalities) == 2
 
         # seasonality already exists
         with pytest.raises(ValueError):
@@ -162,7 +162,7 @@ class ProphetTestCase(DartsBaseTestClass):
         pred = model.predict(len(val))
 
         for val_i, pred_i in zip(val.univariate_values(), pred.univariate_values()):
-            self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+            assert abs(val_i - pred_i) < 0.1
 
     def helper_test_freq_coversion(self, test_cases):
         for freq, period in test_cases.items():
@@ -172,10 +172,11 @@ class ProphetTestCase(DartsBaseTestClass):
             # this should not raise an error if frequency is known
             _ = Prophet._freq_to_days(freq=ts_sine.freq_str)
 
-        self.assertAlmostEqual(
-            Prophet._freq_to_days(freq="30S"),
-            30 * Prophet._freq_to_days(freq="S"),
-            delta=10e-9,
+        assert (
+            abs(
+                Prophet._freq_to_days(freq="30S") - 30 * Prophet._freq_to_days(freq="S")
+            )
+            < 10e-9
         )
 
         # check bad frequency string
@@ -243,7 +244,7 @@ class ProphetTestCase(DartsBaseTestClass):
         # all predictions should fit the underlying curve very well
         for pred in compare_preds:
             for val_i, pred_i in zip(val.univariate_values(), pred.univariate_values()):
-                self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+                assert abs(val_i - pred_i) < 0.1
 
     def test_conditional_seasonality(self):
         """
@@ -281,7 +282,7 @@ class ProphetTestCase(DartsBaseTestClass):
         for val_i, pred_i in zip(
             expected_result.univariate_values(), forecast.univariate_values()
         ):
-            self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+            assert abs(val_i - pred_i) < 0.1
 
         invalid_future_covariates = future_covariates.with_values(
             np.reshape(np.random.randint(0, 3, duration), (-1, 1, 1)).astype("float")

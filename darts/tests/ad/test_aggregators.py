@@ -79,18 +79,14 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         aggregator = OrAggregator()
 
         # Check return types
-        self.assertTrue(isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries))
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1]),
-                Sequence,
-            )
+        assert isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries)
+        assert isinstance(
+            aggregator.predict([self.mts_anomalies1]),
+            Sequence,
         )
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
-                Sequence,
-            )
+        assert isinstance(
+            aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
+            Sequence,
         )
 
     def test_DetectFittableAggregator(self):
@@ -100,18 +96,14 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
         # Check return types
-        self.assertTrue(isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries))
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1]),
-                Sequence,
-            )
+        assert isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries)
+        assert isinstance(
+            aggregator.predict([self.mts_anomalies1]),
+            Sequence,
         )
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
-                Sequence,
-            )
+        assert isinstance(
+            aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
+            Sequence,
         )
 
     def test_eval_accuracy(self):
@@ -119,32 +111,24 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         aggregator = AndAggregator()
 
         # Check return types
-        self.assertTrue(
-            isinstance(
-                aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1),
-                float,
-            )
+        assert isinstance(
+            aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1),
+            float,
         )
-        self.assertTrue(
-            isinstance(
-                aggregator.eval_accuracy([self.real_anomalies], [self.mts_anomalies1]),
-                Sequence,
-            )
+        assert isinstance(
+            aggregator.eval_accuracy([self.real_anomalies], [self.mts_anomalies1]),
+            Sequence,
         )
-        self.assertTrue(
-            isinstance(
-                aggregator.eval_accuracy(self.real_anomalies, [self.mts_anomalies1]),
-                Sequence,
-            )
+        assert isinstance(
+            aggregator.eval_accuracy(self.real_anomalies, [self.mts_anomalies1]),
+            Sequence,
         )
-        self.assertTrue(
-            isinstance(
-                aggregator.eval_accuracy(
-                    [self.real_anomalies, self.real_anomalies],
-                    [self.mts_anomalies1, self.mts_anomalies2],
-                ),
-                Sequence,
-            )
+        assert isinstance(
+            aggregator.eval_accuracy(
+                [self.real_anomalies, self.real_anomalies],
+                [self.mts_anomalies1, self.mts_anomalies2],
+            ),
+            Sequence,
         )
 
         # intersection between 'actual_anomalies' and the series in the sequence 'list_series'
@@ -168,13 +152,10 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         for aggregator in list_NonFittableAggregator:
 
             # name must be of type str
-            self.assertEqual(
-                type(aggregator.__str__()),
-                str,
-            )
+            assert type(aggregator.__str__()) == str
 
             # Check if trainable is False, being a NonFittableAggregator
-            self.assertTrue(not aggregator.trainable)
+            assert not aggregator.trainable
 
             # predict on (sequence of) univariate series
             with pytest.raises(ValueError):
@@ -204,35 +185,29 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
             # Check width return
             # Check if return type is the same number of series in input
-            self.assertTrue(
-                len(
-                    aggregator.eval_accuracy(
-                        [self.real_anomalies, self.real_anomalies],
-                        [self.mts_anomalies1, self.mts_anomalies2],
-                    )
-                ),
-                len([self.mts_anomalies1, self.mts_anomalies2]),
-            )
+            assert len(
+                aggregator.eval_accuracy(
+                    [self.real_anomalies, self.real_anomalies],
+                    [self.mts_anomalies1, self.mts_anomalies2],
+                )
+            ), len([self.mts_anomalies1, self.mts_anomalies2])
 
     def test_FittableAggregator(self):
 
         for aggregator in list_FittableAggregator:
 
             # name must be of type str
-            self.assertEqual(
-                type(aggregator.__str__()),
-                str,
-            )
+            assert type(aggregator.__str__()) == str
 
             # Need to call fit() before calling predict()
             with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.mts_anomalies1])
 
             # Check if trainable is True, being a FittableAggregator
-            self.assertTrue(aggregator.trainable)
+            assert aggregator.trainable
 
             # Check if _fit_called is False
-            self.assertTrue(not aggregator._fit_called)
+            assert not aggregator._fit_called
 
             # fit on sequence with series that have different width
             with pytest.raises(ValueError):
@@ -346,7 +321,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
             # Check if _fit_called is True after being fitted
-            self.assertTrue(aggregator._fit_called)
+            assert aggregator._fit_called
 
             # series must be same width as series used for training
             with pytest.raises(ValueError):
@@ -384,15 +359,12 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
             # Check width return
             # Check if return type is the same number of series in input
-            self.assertTrue(
-                len(
-                    aggregator.eval_accuracy(
-                        [self.real_anomalies, self.real_anomalies],
-                        [self.mts_anomalies1, self.mts_anomalies2],
-                    )
-                ),
-                len([self.mts_anomalies1, self.mts_anomalies2]),
-            )
+            assert len(
+                aggregator.eval_accuracy(
+                    [self.real_anomalies, self.real_anomalies],
+                    [self.mts_anomalies1, self.mts_anomalies2],
+                )
+            ), len([self.mts_anomalies1, self.mts_anomalies2])
 
     def test_OrAggregator(self):
 
@@ -401,103 +373,121 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         # simple case
         # aggregator must have an accuracy of 0 for input with 2 components
         # (only 1 and only 0) and ground truth is only 0
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyzero,
-                self.series_1_and_0,
-                metric="accuracy",
-            ),
-            0,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyzero,
+                    self.series_1_and_0,
+                    metric="accuracy",
+                )
+                - 0
+            )
+            < 1e-05
         )
         # aggregator must have an accuracy of 1 for input with 2 components
         # (only 1 and only 0) and ground truth is only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.series_1_and_0,
-                metric="accuracy",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.series_1_and_0,
+                    metric="accuracy",
+                )
+                - 1
+            )
+            < 1e-05
         )
 
         # aggregator must have an accuracy of 1 for the input containing only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.mts_onlyones,
-                metric="accuracy",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.mts_onlyones,
+                    metric="accuracy",
+                )
+                - 1
+            )
+            < 1e-05
         )
         # aggregator must have an accuracy of 1 for the input containing only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.mts_onlyones,
-                metric="recall",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.mts_onlyones,
+                    metric="recall",
+                )
+                - 1
+            )
+            < 1e-05
         )
         # aggregator must have an accuracy of 1 for the input containing only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.mts_onlyones,
-                metric="precision",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.mts_onlyones,
+                    metric="precision",
+                )
+                - 1
+            )
+            < 1e-05
         )
 
         # single series case (random example)
         # aggregator must found 67 anomalies in the input mts_anomalies1
-        self.assertEqual(
+        assert (
             aggregator.predict(self.mts_anomalies1)
             .sum(axis=0)
             .all_values()
-            .flatten()[0],
-            67,
+            .flatten()[0]
+            == 67
         )
 
         # aggregator must have an accuracy of 0.56 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies,
-                self.mts_anomalies1,
-                metric="accuracy",
-            ),
-            0.56,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies,
+                    self.mts_anomalies1,
+                    metric="accuracy",
+                )
+                - 0.56
+            )
+            < 1e-05
         )
         # aggregator must have an recall of 0.72549 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies, self.mts_anomalies1, metric="recall"
-            ),
-            0.72549,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies, self.mts_anomalies1, metric="recall"
+                )
+                - 0.72549
+            )
+            < 1e-05
         )
         # aggregator must have an f1 of 0.62711 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies, self.mts_anomalies1, metric="f1"
-            ),
-            0.62711,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies, self.mts_anomalies1, metric="f1"
+                )
+                - 0.62711
+            )
+            < 1e-05
         )
         # aggregator must have an precision of 0.55223 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies,
-                self.mts_anomalies1,
-                metric="precision",
-            ),
-            0.55223,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies,
+                    self.mts_anomalies1,
+                    metric="precision",
+                )
+                - 0.55223
+            )
+            < 1e-05
         )
 
         # multiple series case (random example)
@@ -565,103 +555,121 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         # simple case
         # aggregator must have an accuracy of 0 for input with 2 components
         # (only 1 and only 0) and ground truth is only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.series_1_and_0,
-                metric="accuracy",
-            ),
-            0,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.series_1_and_0,
+                    metric="accuracy",
+                )
+                - 0
+            )
+            < 1e-05
         )
         # aggregator must have an accuracy of 0 for input with 2 components
         # (only 1 and only 0) and ground truth is only 0
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyzero,
-                self.series_1_and_0,
-                metric="accuracy",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyzero,
+                    self.series_1_and_0,
+                    metric="accuracy",
+                )
+                - 1
+            )
+            < 1e-05
         )
 
         # aggregator must have an accuracy of 1 for the input containing only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.mts_onlyones,
-                metric="accuracy",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.mts_onlyones,
+                    metric="accuracy",
+                )
+                - 1
+            )
+            < 1e-05
         )
         # aggregator must have an accuracy of 1 for the input containing only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.mts_onlyones,
-                metric="recall",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.mts_onlyones,
+                    metric="recall",
+                )
+                - 1
+            )
+            < 1e-05
         )
         # aggregator must have an accuracy of 1 for the input containing only 1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.onlyones,
-                self.mts_onlyones,
-                metric="precision",
-            ),
-            1,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.onlyones,
+                    self.mts_onlyones,
+                    metric="precision",
+                )
+                - 1
+            )
+            < 1e-05
         )
 
         # single series case (random example)
         # aggregator must found 27 anomalies in the input mts_anomalies1
-        self.assertEqual(
+        assert (
             aggregator.predict(self.mts_anomalies1)
             .sum(axis=0)
             .all_values()
-            .flatten()[0],
-            27,
+            .flatten()[0]
+            == 27
         )
 
         # aggregator must have an accuracy of 0.44 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies,
-                self.mts_anomalies1,
-                metric="accuracy",
-            ),
-            0.44,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies,
+                    self.mts_anomalies1,
+                    metric="accuracy",
+                )
+                - 0.44
+            )
+            < 1e-05
         )
         # aggregator must have an recall of 0.21568 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies, self.mts_anomalies1, metric="recall"
-            ),
-            0.21568,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies, self.mts_anomalies1, metric="recall"
+                )
+                - 0.21568
+            )
+            < 1e-05
         )
         # aggregator must have an f1 of 0.28205 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies, self.mts_anomalies1, metric="f1"
-            ),
-            0.28205,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies, self.mts_anomalies1, metric="f1"
+                )
+                - 0.28205
+            )
+            < 1e-05
         )
         # aggregator must have an precision of 0.40740 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies,
-                self.mts_anomalies1,
-                metric="precision",
-            ),
-            0.40740,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies,
+                    self.mts_anomalies1,
+                    metric="precision",
+                )
+                - 0.40740
+            )
+            < 1e-05
         )
 
         # multiple series case (random example)
@@ -740,14 +748,16 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         )
         aggregator.fit(self.real_anomalies_3w, self.mts_anomalies3)
 
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies_3w,
-                self.mts_anomalies3,
-                metric="accuracy",
-            ),
-            0.92,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies_3w,
+                    self.mts_anomalies3,
+                    metric="accuracy",
+                )
+                - 0.92
+            )
+            < 1e-05
         )
 
         np.testing.assert_array_almost_equal(
@@ -771,49 +781,57 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
         # aggregator must found 100 anomalies in the input mts_anomalies1
-        self.assertEqual(
+        assert (
             aggregator.predict(self.mts_anomalies1)
             .sum(axis=0)
             .all_values()
-            .flatten()[0],
-            100,
+            .flatten()[0]
+            == 100
         )
 
         # aggregator must have an accuracy of 0.51 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies,
-                self.mts_anomalies1,
-                metric="accuracy",
-            ),
-            0.51,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies,
+                    self.mts_anomalies1,
+                    metric="accuracy",
+                )
+                - 0.51
+            )
+            < 1e-05
         )
         # aggregator must have an recall 1.0 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies, self.mts_anomalies1, metric="recall"
-            ),
-            1.0,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies, self.mts_anomalies1, metric="recall"
+                )
+                - 1.0
+            )
+            < 1e-05
         )
         # aggregator must have an f1 of 0.67549 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies, self.mts_anomalies1, metric="f1"
-            ),
-            0.67549,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies, self.mts_anomalies1, metric="f1"
+                )
+                - 0.67549
+            )
+            < 1e-05
         )
         # aggregator must have an precision of 0.51 for the input mts_anomalies1
-        self.assertAlmostEqual(
-            aggregator.eval_accuracy(
-                self.real_anomalies,
-                self.mts_anomalies1,
-                metric="precision",
-            ),
-            0.51,
-            delta=1e-05,
+        assert (
+            abs(
+                aggregator.eval_accuracy(
+                    self.real_anomalies,
+                    self.mts_anomalies1,
+                    metric="precision",
+                )
+                - 0.51
+            )
+            < 1e-05
         )
 
         # multiple series case (random example)

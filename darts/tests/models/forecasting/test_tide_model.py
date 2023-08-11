@@ -43,7 +43,7 @@ if TORCH_AVAILABLE:
                 likelihood=GaussianLikelihood(),
             )
 
-            self.assertEqual(model.input_chunk_length, 1)
+            assert model.input_chunk_length == 1
 
         def test_fit(self):
             large_ts = tg.constant_timeseries(length=100, value=1000)
@@ -71,11 +71,11 @@ if TORCH_AVAILABLE:
 
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
-            self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+            assert abs(pred2 - 10) < abs(pred - 10)
 
             # test short predict
             pred3 = model2.predict(n=1)
-            self.assertEqual(len(pred3), 1)
+            assert len(pred3) == 1
 
         def test_logtensorboard(self):
             ts = tg.constant_timeseries(length=50, value=10)

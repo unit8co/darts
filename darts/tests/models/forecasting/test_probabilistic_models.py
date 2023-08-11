@@ -215,11 +215,11 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
             model.fit(self.constant_noisy_ts_short, **fit_kwargs)
             pred2 = model.predict(n=10, num_samples=2).values()
 
-            self.assertTrue((pred1 == pred2).all())
+            assert (pred1 == pred2).all()
 
             # test whether the next prediction of the same model is different
             pred3 = model.predict(n=10, num_samples=2).values()
-            self.assertTrue((pred2 != pred3).any())
+            assert (pred2 != pred3).any()
 
     def test_probabilistic_forecast_accuracy(self):
         for model_cls, model_kwargs, err in models_cls_kwargs_errs:
@@ -244,14 +244,14 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
 
         # test accuracy of the median prediction compared to the noiseless ts
         mae_err_median = mae(ts[100:], pred)
-        self.assertLess(mae_err_median, err)
+        assert mae_err_median < err
 
         # test accuracy for increasing quantiles between 0.7 and 1 (it should ~decrease, mae should ~increase)
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
-            self.assertLess(mae_err, new_mae + 0.1)
+            assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
         # test accuracy for decreasing quantiles between 0.3 and 0 (it should ~decrease, mae should ~increase)
@@ -259,7 +259,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
         mae_err = mae_err_median
         for quantile in tested_quantiles:
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
-            self.assertLess(mae_err, new_mae + 0.1)
+            assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
     @pytest.mark.slow
@@ -391,17 +391,13 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                 pred = model.predict(n=50, num_samples=50)
 
                 avgs_orig, avgs_pred = _get_avgs(series), _get_avgs(pred)
-                self.assertLess(
-                    abs(avgs_orig[0] - avgs_pred[0]),
-                    diff1,
+                assert abs(avgs_orig[0] - avgs_pred[0]) < diff1, (
                     "The difference between the mean forecast and the mean series is larger "
-                    "than expected on component 0 for distribution {}".format(lkl),
+                    "than expected on component 0 for distribution {}".format(lkl)
                 )
-                self.assertLess(
-                    abs(avgs_orig[1] - avgs_pred[1]),
-                    diff2,
+                assert abs(avgs_orig[1] - avgs_pred[1]) < diff2, (
                     "The difference between the mean forecast and the mean series is larger "
-                    "than expected on component 1 for distribution {}".format(lkl),
+                    "than expected on component 1 for distribution {}".format(lkl)
                 )
 
         @pytest.mark.slow
@@ -499,9 +495,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                     )
 
                     # check the dimensions, values require too much training
-                    self.assertEqual(
-                        pred_lkl_params.values().shape[1], len(true_lkl_params)
-                    )
+                    assert pred_lkl_params.values().shape[1] == len(true_lkl_params)
 
         @pytest.mark.slow
         def test_predict_likelihood_parameters_multivariate_torch_models(self):
@@ -559,14 +553,11 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                         n=1, num_samples=1, predict_likelihood_parameters=True
                     )
                     # check the dimensions
-                    self.assertEqual(
-                        pred_lkl_params.values().shape[1], n_comp * len(lkl_params)
-                    )
+                    assert pred_lkl_params.values().shape[1] == n_comp * len(lkl_params)
                     # check the component names
-                    self.assertTrue(
-                        list(pred_lkl_params.components) == comp_names,
+                    assert list(pred_lkl_params.components) == comp_names, (
                         f"Components names are not matching; expected {comp_names} "
-                        f"but received {list(pred_lkl_params.components)}",
+                        f"but received {list(pred_lkl_params.components)}"
                     )
 
         def test_predict_likelihood_parameters_wrong_args(self):
@@ -616,4 +607,4 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
             preds = [model.predict(series=stochastic_series, n=10) for _ in range(2)]
 
             # random samples should differ
-            self.assertFalse(np.alltrue(preds[0].values() == preds[1].values()))
+            assert not np.alltrue(preds[0].values() == preds[1].values())

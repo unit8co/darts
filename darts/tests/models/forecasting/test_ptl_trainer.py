@@ -76,7 +76,7 @@ if TORCH_AVAILABLE:
             )
 
             # compare prediction of loaded model with original model
-            self.assertEqual(model.predict(n=4), model_loaded.predict(n=4))
+            assert model.predict(n=4) == model_loaded.predict(n=4)
 
         def test_prediction_custom_trainer(self):
             model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
@@ -94,7 +94,7 @@ if TORCH_AVAILABLE:
             model2.fit(self.series, epochs=1)
 
             # both should produce identical prediction
-            self.assertEqual(model.predict(n=4), model2.predict(n=4))
+            assert model.predict(n=4) == model2.predict(n=4)
 
         def test_custom_trainer_setup(self):
             model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
@@ -117,7 +117,7 @@ if TORCH_AVAILABLE:
             model.fit(self.series, trainer=trainer)
 
             # check if number of epochs trained is same as trainer.max_epochs
-            self.assertEqual(trainer.max_epochs, model.epochs_trained)
+            assert trainer.max_epochs == model.epochs_trained
 
         def test_builtin_extended_trainer(self):
             # wrong precision parameter name
@@ -214,13 +214,13 @@ if TORCH_AVAILABLE:
             )
 
             # check if callbacks were added
-            self.assertEqual(len(model.trainer_params["callbacks"]), 2)
+            assert len(model.trainer_params["callbacks"]) == 2
             model.fit(self.series, epochs=2, verbose=True)
             # check that lightning did not mutate callbacks (verbosity adds a progress bar callback)
-            self.assertEqual(len(model.trainer_params["callbacks"]), 2)
+            assert len(model.trainer_params["callbacks"]) == 2
 
-            self.assertEqual(my_counter_0.counter, model.epochs_trained)
-            self.assertEqual(my_counter_2.counter, model.epochs_trained + 2)
+            assert my_counter_0.counter == model.epochs_trained
+            assert my_counter_2.counter == model.epochs_trained + 2
 
             # check that callbacks don't overwrite Darts' built-in checkpointer
             model = RNNModel(
@@ -237,20 +237,16 @@ if TORCH_AVAILABLE:
                 },
             )
             # we expect 3 callbacks
-            self.assertEqual(len(model.trainer_params["callbacks"]), 3)
+            assert len(model.trainer_params["callbacks"]) == 3
 
             # first one is our Checkpointer
-            self.assertTrue(
-                isinstance(
-                    model.trainer_params["callbacks"][0], pl.callbacks.ModelCheckpoint
-                )
+            assert isinstance(
+                model.trainer_params["callbacks"][0], pl.callbacks.ModelCheckpoint
             )
 
             # second and third are CounterCallbacks
             for i in range(1, 3):
-                self.assertTrue(
-                    isinstance(model.trainer_params["callbacks"][i], CounterCallback)
-                )
+                assert isinstance(model.trainer_params["callbacks"][i], CounterCallback)
 
         def test_early_stopping(self):
             my_stopper = pl.callbacks.early_stopping.EarlyStopping(
@@ -272,7 +268,7 @@ if TORCH_AVAILABLE:
 
             # training should stop immediately with high stopping_threshold
             model.fit(self.series, val_series=self.series, epochs=100, verbose=True)
-            self.assertEqual(model.epochs_trained, 1)
+            assert model.epochs_trained == 1
 
             # check that early stopping only takes valid monitor variables
             my_stopper = pl.callbacks.early_stopping.EarlyStopping(

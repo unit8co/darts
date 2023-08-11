@@ -182,9 +182,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         model2.fit(self.combined)
         forecast2 = model2.predict(10)
 
-        self.assertAlmostEqual(
-            sum(forecast1.values() - forecast2.values())[0], 0.0, places=2
-        )
+        assert round(abs(sum(forecast1.values() - forecast2.values())[0] - 0.0), 2) == 0
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_train_predict_global_models_univar(self):
@@ -232,22 +230,22 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble_model.fit(series_short, past_covariates=series_long)
         # predict after end of train series
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
-        self.assertTrue(isinstance(preds, TimeSeries))
+        assert isinstance(preds, TimeSeries)
         # predict a new target series
         preds = ensemble_model.predict(
             n=5, series=series_long, past_covariates=series_long
         )
-        self.assertTrue(isinstance(preds, TimeSeries))
+        assert isinstance(preds, TimeSeries)
         # predict multiple target series
         preds = ensemble_model.predict(
             n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        assert isinstance(preds, list) and len(preds) == 2
         # predict single target series in list
         preds = ensemble_model.predict(
             n=5, series=[series_long], past_covariates=[series_long]
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+        assert isinstance(preds, list) and len(preds) == 1
 
         # train with multiple series
         ensemble_model = self.get_global_ensembe_model()
@@ -259,17 +257,17 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         preds = ensemble_model.predict(
             n=5, series=series_long, past_covariates=series_long
         )
-        self.assertTrue(isinstance(preds, TimeSeries))
+        assert isinstance(preds, TimeSeries)
         # predict multiple target series
         preds = ensemble_model.predict(
             n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        assert isinstance(preds, list) and len(preds) == 2
         # predict single target series in list
         preds = ensemble_model.predict(
             n=5, series=[series_long], past_covariates=[series_long]
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+        assert isinstance(preds, list) and len(preds) == 1
 
     def helper_test_models_accuracy(
         self, model_instance, n, series, past_covariates, min_rmse
@@ -284,10 +282,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         prediction = model_instance.predict(n=n, past_covariates=past_covariates)
         current_rmse = rmse(test_series, prediction)
 
-        self.assertTrue(
-            current_rmse <= min_rmse,
-            f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded.",
-        )
+        assert (
+            current_rmse <= min_rmse
+        ), f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded."
 
     def denoising_input(self):
         np.random.seed(self.RANDOM_SEED)
@@ -389,7 +386,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_n_points=train_n_points,
         )
 
-        self.assertEqual(model.extreme_lags, (-train_n_points, 0, -3, -1, 0, 0))
+        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0)
 
         # mix of all the lags
         model3 = RandomForest(
@@ -401,7 +398,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_n_points=train_n_points,
         )
 
-        self.assertEqual(model.extreme_lags, (-7 - train_n_points, 0, -3, -1, -2, 5))
+        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5)
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]
@@ -424,12 +421,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertTrue(ensemble_allproba._models_are_probabilistic)
-        self.assertTrue(ensemble_allproba._is_probabilistic)
+        assert ensemble_allproba._models_are_probabilistic
+        assert ensemble_allproba._is_probabilistic
         ensemble_allproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_allproba.predict(5, num_samples=10)
-        self.assertEqual(pred.n_samples, 10)
+        assert pred.n_samples == 10
 
         # forecasting models are a mix of probabilistic and deterministic, probabilistic regressor
         ensemble_mixproba = RegressionEnsembleModel(
@@ -441,12 +438,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertFalse(ensemble_mixproba._models_are_probabilistic)
-        self.assertTrue(ensemble_mixproba._is_probabilistic)
+        assert not ensemble_mixproba._models_are_probabilistic
+        assert ensemble_mixproba._is_probabilistic
         ensemble_mixproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_mixproba.predict(5, num_samples=10)
-        self.assertEqual(pred.n_samples, 10)
+        assert pred.n_samples == 10
 
         # forecasting models are a mix of probabilistic and deterministic, probabilistic regressor
         # with regression_train_num_samples > 1
@@ -461,11 +458,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_samples_reduction="median",
         )
 
-        self.assertFalse(ensemble_mixproba2._models_are_probabilistic)
-        self.assertTrue(ensemble_mixproba2._is_probabilistic)
+        assert not ensemble_mixproba2._models_are_probabilistic
+        assert ensemble_mixproba2._is_probabilistic
         ensemble_mixproba2.fit(self.ts_random_walk[:100])
         pred = ensemble_mixproba2.predict(5, num_samples=10)
-        self.assertEqual(pred.n_samples, 10)
+        assert pred.n_samples == 10
 
         # only regression model is probabilistic
         ensemble_proba_reg = RegressionEnsembleModel(
@@ -477,12 +474,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertFalse(ensemble_proba_reg._models_are_probabilistic)
-        self.assertTrue(ensemble_proba_reg._is_probabilistic)
+        assert not ensemble_proba_reg._models_are_probabilistic
+        assert ensemble_proba_reg._is_probabilistic
         ensemble_proba_reg.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_proba_reg.predict(5, num_samples=10)
-        self.assertEqual(pred.n_samples, 10)
+        assert pred.n_samples == 10
 
         # every models but regression model are probabilistics
         ensemble_dete_reg = RegressionEnsembleModel(
@@ -494,8 +491,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_dete.untrained_model(),
         )
 
-        self.assertTrue(ensemble_dete_reg._models_are_probabilistic)
-        self.assertFalse(ensemble_dete_reg._is_probabilistic)
+        assert ensemble_dete_reg._models_are_probabilistic
+        assert not ensemble_dete_reg._is_probabilistic
         ensemble_dete_reg.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_dete_reg.predict(5, num_samples=1)
@@ -513,8 +510,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_dete.untrained_model(),
         )
 
-        self.assertFalse(ensemble_alldete._models_are_probabilistic)
-        self.assertFalse(ensemble_alldete._is_probabilistic)
+        assert not ensemble_alldete._models_are_probabilistic
+        assert not ensemble_alldete._is_probabilistic
         ensemble_alldete.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_alldete.predict(5, num_samples=1)
@@ -587,7 +584,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_n_points=50,
             regression_train_num_samples=500,
         )
-        self.assertEqual(ensemble_model_median.train_samples_reduction, "median")
+        assert ensemble_model_median.train_samples_reduction == "median"
 
         ensemble_model_0_5_quantile = RegressionEnsembleModel(
             forecasting_models=[
@@ -608,10 +605,10 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         pred_median_training = ensemble_model_median.predict(len(val))
         pred_0_5_qt_training = ensemble_model_0_5_quantile.predict(len(val))
 
-        self.assertEqual(pred_median_training, pred_0_5_qt_training)
-        self.assertEqual(
-            pred_mean_training.all_values().shape,
-            pred_median_training.all_values().shape,
+        assert pred_median_training == pred_0_5_qt_training
+        assert (
+            pred_mean_training.all_values().shape
+            == pred_median_training.all_values().shape
         )
 
         # deterministic regression model -> deterministic ensemble
@@ -660,13 +657,10 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble.fit(self.sine_series)
         pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
 
-        self.assertTrue(
-            all(pred_ens.components == ["sine_q0.05", "sine_q0.50", "sine_q0.95"])
-        )
-        self.assertTrue(
-            all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values())
-            and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
-        )
+        assert all(pred_ens.components == ["sine_q0.05", "sine_q0.50", "sine_q0.95"])
+        assert all(
+            pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()
+        ) and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
 
     def test_predict_likelihood_parameters_multivariate_regression_ensemble(self):
         quantiles = [0.05, 0.5, 0.95]
@@ -692,29 +686,23 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble.fit(multivariate_series)
         pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
 
-        self.assertTrue(
-            all(
-                pred_ens.components
-                == [
-                    "sine_q0.05",
-                    "sine_q0.50",
-                    "sine_q0.95",
-                    "linear_q0.05",
-                    "linear_q0.50",
-                    "linear_q0.95",
-                ]
-            )
+        assert all(
+            pred_ens.components
+            == [
+                "sine_q0.05",
+                "sine_q0.50",
+                "sine_q0.95",
+                "linear_q0.05",
+                "linear_q0.50",
+                "linear_q0.95",
+            ]
         )
-        self.assertTrue(
-            all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values())
-            and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
-        )
-        self.assertTrue(
-            all(pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values())
-            and all(
-                pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values()
-            )
-        )
+        assert all(
+            pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()
+        ) and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+        assert all(
+            pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values()
+        ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
 
     @staticmethod
     def get_probabilistic_global_model(

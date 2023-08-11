@@ -407,11 +407,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 + 1  # because we include the first element
             )
 
-            self.assertTrue(
-                len(forecasts) == theorical_forecast_length,
+            assert len(forecasts) == theorical_forecast_length, (
                 f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
                 f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts)}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts)}"
             )
 
             # range index
@@ -424,11 +423,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=False,
             )
 
-            self.assertTrue(
-                len(forecasts) == theorical_forecast_length,
+            assert len(forecasts) == theorical_forecast_length, (
                 f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
                 f"of retrain=True, overlap_end=False, and a time index of type RangeIndex."
-                f"Expected {theorical_forecast_length}, got {len(forecasts)}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts)}"
             )
 
             # stride 2
@@ -462,11 +460,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 + 1  # because of stride
             )  # if odd number of elements, we keep the floor
 
-            self.assertTrue(
-                len(forecasts) == theorical_forecast_length,
+            assert len(forecasts) == theorical_forecast_length, (
                 f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
                 f"of retrain=True and overlap_end=False and stride=2. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts)}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts)}"
             )
 
             # stride 3
@@ -501,11 +498,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             )  # if odd number of elements, we keep the floor
 
             # Here to adapt if forecast_horizon or train_length change
-            self.assertTrue(
-                len(forecasts) == theorical_forecast_length,
+            assert len(forecasts) == theorical_forecast_length, (
                 f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
                 f"of retrain=True and overlap_end=False and stride=3. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts)}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts)}"
             )
 
             # last points only False
@@ -533,17 +529,15 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 + 1  # because we include the first element
             )
 
-            self.assertTrue(
-                len(forecasts) == theorical_forecast_length,
+            assert len(forecasts) == theorical_forecast_length, (
                 f"Model {model_cls} does not return the right number of historical forecasts in the case of "
                 f"retrain=True and overlap_end=False, and last_points_only=False. "
-                f"expected {theorical_forecast_length}, got {len(forecasts)}",
+                f"expected {theorical_forecast_length}, got {len(forecasts)}"
             )
 
-            self.assertTrue(
-                len(forecasts[0]) == forecast_horizon,
+            assert len(forecasts[0]) == forecast_horizon, (
                 f"Model {model_cls} does not return forecast_horizon points per historical forecast in the case of "
-                f"retrain=True and overlap_end=False, and last_points_only=False",
+                f"retrain=True and overlap_end=False, and last_points_only=False"
             )
 
     def test_sanity_check_invalid_start(self):
@@ -620,10 +614,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=False,
             )
 
-            self.assertTrue(
-                len(forecasts) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
 
             theorical_forecast_length = (
                 self.ts_val_length
@@ -639,11 +632,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 + 1  # because we include the first element
             )
 
-            self.assertTrue(
-                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
+            assert (
+                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
+            ), (
                 f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
                 f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
             )
 
     @pytest.mark.slow
@@ -735,11 +729,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                                         opti_hist_fct = [opti_hist_fct]
 
                                     for fct, opti_fct in zip(hist_fct, opti_hist_fct):
-                                        self.assertTrue(
-                                            (
-                                                fct.time_index == opti_fct.time_index
-                                            ).all()
-                                        )
+                                        assert (
+                                            fct.time_index == opti_fct.time_index
+                                        ).all()
                                         np.testing.assert_array_almost_equal(
                                             fct.all_values(), opti_fct.all_values()
                                         )
@@ -791,7 +783,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 forecast_horizon=5,
             )
 
-            self.assertTrue((hist_fct.time_index == opti_hist_fct.time_index).all())
+            assert (hist_fct.time_index == opti_hist_fct.time_index).all()
             np.testing.assert_array_almost_equal(
                 hist_fct.all_values(), opti_hist_fct.all_values()
             )
@@ -819,10 +811,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 retrain=True,
                 overlap_end=False,
             )
-            self.assertTrue(
-                len(forecasts) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
             # If retrain=True and overlap_end=False, as ts has 72 values, we can only forecast
             # (target length)-(training length=input_chunk_length+output_chunk_length) - (horizon - 1)
             # indeed we start to predict after the first trainable point (input_chunk_length+output_chunk_length)
@@ -836,11 +827,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             theorical_forecast_length = (
                 self.ts_val_length - (bounds[0] + bounds[1]) - (forecast_hrz - 1)
             )
-            self.assertTrue(
-                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
+            assert (
+                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
+            ), (
                 f"Model {model_cls} does not return the right number of historical forecasts in the case of "
                 f"retrain=True and overlap_end=False. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
             )
 
             model = model_cls(
@@ -859,18 +851,15 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=True,
             )
 
-            self.assertTrue(
-                len(forecasts) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
             theorical_forecast_length = (
                 self.ts_val_length
                 - (bounds[0] + bounds[1])  # train sample length
                 - 0  # with overlap_end=True, we are not restricted by the end of the series or horizon
             )
-            self.assertTrue(
-                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
-            )
+            assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
 
             model = model_cls(
                 random_state=0,
@@ -887,10 +876,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=False,
             )
 
-            self.assertTrue(
-                len(forecasts) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
             theorical_forecast_length = (
                 self.ts_val_length
                 - bounds[0]  # prediction input sample length
@@ -898,9 +886,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                     forecast_hrz - 1
                 )  # overlap_end=False -> if entire horizon is available, we can predict 1
             )
-            self.assertTrue(
-                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
-            )
+            assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
 
             model = model_cls(
                 random_state=0,
@@ -917,18 +903,15 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=True,
             )
 
-            self.assertTrue(
-                len(forecasts) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
             theorical_forecast_length = (
                 self.ts_val_length
                 - bounds[0]  # prediction input sample length
                 - 0  # overlap_end=False -> we are not restricted by the end of the series or horizon
             )
-            self.assertTrue(
-                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
-            )
+            assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
 
     def test_regression_auto_start_multiple_with_cov_retrain(self):
         forecast_hrz = 10
@@ -959,10 +942,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=False,
             )
 
-            self.assertTrue(
-                len(forecasts_retrain) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts_retrain) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
 
             (
                 min_target_lag,
@@ -994,14 +976,15 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 + kwargs.get("output_chunk_length", 1)
             )
 
-            self.assertTrue(
+            assert (
                 len(forecasts_retrain[0])
                 == len(forecasts_retrain[1])
-                == theorical_retrain_forecast_length,
+                == theorical_retrain_forecast_length
+            ), (
                 f"Model {model_cls} does not return the right number of historical forecasts in the case of "
                 f"retrain=True and overlap_end=False. "
                 f"Expected {theorical_retrain_forecast_length}, got {len(forecasts_retrain[0])} "
-                f"and {len(forecasts_retrain[1])}",
+                f"and {len(forecasts_retrain[1])}"
             )
 
             # with last_points_only=True: start is shifted by biggest past lag + training timestamps
@@ -1011,13 +994,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 + (-past_lag + forecast_hrz + kwargs.get("output_chunk_length", 1))
                 * self.ts_pass_val.freq
             )
-            self.assertEqual(forecasts_retrain[0].start_time(), expected_start)
+            assert forecasts_retrain[0].start_time() == expected_start
 
             # end is shifted back by the biggest future lag
             expected_end = (
                 self.ts_pass_val.end_time() - future_lag * self.ts_pass_val.freq
             )
-            self.assertEqual(forecasts_retrain[0].end_time(), expected_end)
+            assert forecasts_retrain[0].end_time() == expected_end
 
     def test_regression_auto_start_multiple_with_cov_no_retrain(self):
         forecast_hrz = 10
@@ -1089,13 +1072,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 self.ts_pass_val.start_time()
                 + (-past_lag + forecast_hrz - 1) * self.ts_pass_val.freq
             )
-            self.assertEqual(forecasts_no_retrain[0].start_time(), expected_start)
+            assert forecasts_no_retrain[0].start_time() == expected_start
 
             # end is shifted by the biggest future lag
             expected_end = (
                 self.ts_pass_val.end_time() - future_lag * self.ts_pass_val.freq
             )
-            self.assertEqual(forecasts_no_retrain[0].end_time(), expected_end)
+            assert forecasts_no_retrain[0].end_time() == expected_end
 
     @pytest.mark.slow
     @unittest.skipUnless(
@@ -1130,10 +1113,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=False,
             )
 
-            self.assertTrue(
-                len(forecasts) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
 
             theorical_forecast_length = (
                 self.ts_val_length
@@ -1142,11 +1124,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 - 0  # past covs have same start as target -> no shift
                 - 0  # we don't have future covs in output chunk -> no shift
             )
-            self.assertTrue(
-                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
+            assert (
+                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
+            ), (
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates with same start. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
             )
 
             model = model_cls(
@@ -1174,11 +1157,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 - 5  # past covs start 5 later -> shift
                 - 0  # we don't have future covs in output chunk -> no shift
             )
-            self.assertTrue(
-                len(forecasts[0]) == theorical_forecast_length,
+            assert len(forecasts[0]) == theorical_forecast_length, (
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates starting after. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[0])}"
             )
             theorical_forecast_length = (
                 self.ts_val_length
@@ -1187,11 +1169,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 - 0  # past covs have same start as target -> no shift
                 - 0  # we don't have future covs in output chunk -> no shift
             )
-            self.assertTrue(
-                len(forecasts[1]) == theorical_forecast_length,
+            assert len(forecasts[1]) == theorical_forecast_length, (
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates starting before. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[1])}"
             )
 
         # Past and future covariates
@@ -1231,12 +1212,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 - 7  # future covs start 7 after target (more than past covs) -> shift
                 - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
-            self.assertTrue(
-                len(forecasts[0]) == theorical_forecast_length,
+            assert len(forecasts[0]) == theorical_forecast_length, (
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates and future_covariates with "
                 f"different start. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[0])}"
             )
             theorical_forecast_length = (
                 self.ts_val_length
@@ -1247,11 +1227,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 - 0  # all covs start at the same time as target -> no shift,
                 - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
-            self.assertTrue(
-                len(forecasts[1]) == theorical_forecast_length,
+            assert len(forecasts[1]) == theorical_forecast_length, (
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates with different start. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[1])}"
             )
 
         # Future covariates only
@@ -1279,10 +1258,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 overlap_end=False,
             )
 
-            self.assertTrue(
-                len(forecasts) == 2,
-                f"Model {model_cls} did not return a list of historical forecasts",
-            )
+            assert (
+                len(forecasts) == 2
+            ), f"Model {model_cls} did not return a list of historical forecasts"
             theorical_forecast_length = (
                 self.ts_val_length
                 - (bounds[0] + bounds[1])  # train sample length
@@ -1292,12 +1270,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 - 7  # future covs start 7 after target (more than past covs) -> shift
                 - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
-            self.assertTrue(
-                len(forecasts[0]) == theorical_forecast_length,
+            assert len(forecasts[0]) == theorical_forecast_length, (
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and no past_covariates and future_covariates "
                 f"with different start. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[0])}"
             )
             theorical_forecast_length = (
                 self.ts_val_length
@@ -1306,12 +1283,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 - 0  # all covs start at the same time as target -> no shift
                 - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
-            self.assertTrue(
-                len(forecasts[1]) == theorical_forecast_length,
+            assert len(forecasts[1]) == theorical_forecast_length, (
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and no past_covariates and future_covariates "
                 f"with different start. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[1])}"
             )
 
     def test_retrain(self):
@@ -1369,26 +1345,26 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         expected_msg = "the Callable `retrain` must have a signature/arguments matching the following positional"
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_missing_arg, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        assert str(error_msg.value).startswith(expected_msg)
         # returning a non-bool value (int)
         expected_msg = "Return value of `retrain` must be bool, received <class 'int'>"
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_invalid_ouput_int, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        assert str(error_msg.value).startswith(expected_msg)
         # returning a non-bool value (str)
         expected_msg = "Return value of `retrain` must be bool, received <class 'str'>"
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_invalid_ouput_str, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        assert str(error_msg.value).startswith(expected_msg)
         # predict fails but model could have been trained before the predict round
         expected_msg = "`retrain` is `False` in the first train iteration at prediction point (in time)"
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_delayed_true, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        assert str(error_msg.value).startswith(expected_msg)
         # always returns False, treated slightly different than `retrain=False` and `retrain=0`
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_invalid, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        assert str(error_msg.value).startswith(expected_msg)
 
         # test int
         helper_hist_forecasts(10, 0.9)
@@ -1396,9 +1372,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         # `retrain=0` with not-trained model, encountering directly a predictable time index
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(0, 0.9)
-        self.assertTrue(
-            str(error_msg.value).startswith(expected_msg), str(error_msg.value)
-        )
+        assert str(error_msg.value).startswith(expected_msg), str(error_msg.value)
 
         # test bool
         helper_hist_forecasts(True, 0.9)
@@ -1406,19 +1380,19 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         expected_msg = "The model has not been fitted yet, and `retrain` is ``False``."
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(False, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        assert str(error_msg.value).startswith(expected_msg)
 
         expected_start = pd.Timestamp("1949-10-01 00:00:00")
         # start before first trainable time index should still work
         res = helper_hist_forecasts(True, pd.Timestamp("1949-09-01 00:00:00"))
-        self.assertTrue(res.time_index[0] == expected_start)
+        assert res.time_index[0] == expected_start
         # start at first trainable time index should still work
         res = helper_hist_forecasts(True, expected_start)
-        self.assertTrue(res.time_index[0] == expected_start)
+        assert res.time_index[0] == expected_start
         # start at last trainable time index should still work
         expected_end = pd.Timestamp("1960-12-01 00:00:00")
         res = helper_hist_forecasts(True, expected_end)
-        self.assertTrue(res.time_index[0] == expected_end)
+        assert res.time_index[0] == expected_end
 
     def test_predict_likelihood_parameters(self):
         """standard checks that historical forecasts work with direct likelihood parameter predictions

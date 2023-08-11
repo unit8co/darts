@@ -58,7 +58,7 @@ if TORCH_AVAILABLE:
             model2 = BlockRNNModel(
                 input_chunk_length=1, output_chunk_length=1, model="RNN"
             )
-            self.assertEqual(model1.model.__repr__(), model2.model.__repr__())
+            assert model1.model.__repr__() == model2.model.__repr__()
 
         def test_fit(self):
             # Test basic fit()
@@ -90,7 +90,7 @@ if TORCH_AVAILABLE:
             pred2 = model_loaded.predict(n=6)
 
             # Two models with the same parameters should deterministically yield the same output
-            self.assertEqual(sum(pred1.values() - pred2.values()), 0.0)
+            assert sum(pred1.values() - pred2.values()) == 0.0
 
             # Another random model should not
             model3 = BlockRNNModel(
@@ -102,16 +102,16 @@ if TORCH_AVAILABLE:
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
-            self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.0)
+            assert sum(pred1.values() - pred3.values()) != 0.0
 
             # test short predict
             pred4 = model3.predict(n=1)
-            self.assertEqual(len(pred4), 1)
+            assert len(pred4) == 1
 
             # test validation series input
             model3.fit(self.series[:60], val_series=self.series[60:])
             pred4 = model3.predict(n=6)
-            self.assertEqual(len(pred4), 6)
+            assert len(pred4) == 6
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
@@ -119,13 +119,13 @@ if TORCH_AVAILABLE:
             )
             model.fit(series)
             pred = model.predict(7)
-            self.assertEqual(len(pred), 7)
+            assert len(pred) == 7
             pred = model.predict(2)
-            self.assertEqual(len(pred), 2)
-            self.assertEqual(pred.width, 1)
+            assert len(pred) == 2
+            assert pred.width == 1
             pred = model.predict(4)
-            self.assertEqual(len(pred), 4)
-            self.assertEqual(pred.width, 1)
+            assert len(pred) == 4
+            assert pred.width == 1
 
         def test_pred_length(self):
             self.helper_test_pred_length(BlockRNNModel, self.series)

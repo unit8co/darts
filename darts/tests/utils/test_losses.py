@@ -26,8 +26,8 @@ if TORCH_AVAILABLE:
             lval = loss_fn(y_hat, self.y)
             lval.backward()
 
-            self.assertTrue(torch.allclose(lval, exp_loss_val, atol=1e-3))
-            self.assertTrue(torch.allclose(W.grad, exp_w_grad, atol=1e-3))
+            assert torch.allclose(lval, exp_loss_val, atol=1e-3)
+            assert torch.allclose(W.grad, exp_w_grad, atol=1e-3)
 
         def test_smape_loss(self):
             exp_val = torch.tensor(0.7753)

@@ -66,14 +66,10 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
 
         exact_alignment = dtw.dtw(series1, series2, multi_grid_radius=-1)
 
-        self.assertEqual(
-            exact_alignment.distance(),
-            0,
-            "Minimum cost between two shifted series should be 0",
-        )
-        self.assertTrue(
-            np.array_equal(exact_alignment.path(), expected_path), "Incorrect path"
-        )
+        assert (
+            exact_alignment.distance() == 0
+        ), "Minimum cost between two shifted series should be 0"
+        assert np.array_equal(exact_alignment.path(), expected_path), "Incorrect path"
 
     def test_multi_grid(self):
         size = 2**5 - 1  # test odd size
@@ -89,7 +85,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         exact_distance = dtw.dtw(series1, series2, multi_grid_radius=-1).distance()
         approx_distance = dtw.dtw(series1, series2, multi_grid_radius=1).distance()
 
-        self.assertAlmostEqual(exact_distance, approx_distance, 3)
+        assert round(abs(exact_distance - approx_distance), 3) == 0
 
     def test_sakoe_chiba_window(self):
         window = 2
@@ -99,7 +95,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         path = alignment.path()
 
         for i, j in path:
-            self.assertGreaterEqual(window, abs(i - j))
+            assert window >= abs(i - j)
 
     def test_itakura_window(self):
         n = 6
@@ -110,29 +106,26 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         window.init_size(n, m)
 
         cells = list(window)
-        self.assertEqual(
-            cells,
-            [
-                (1, 1),
-                (1, 2),
-                (2, 1),
-                (2, 2),
-                (2, 3),
-                (3, 1),
-                (3, 2),
-                (3, 3),
-                (3, 4),
-                (4, 2),
-                (4, 3),
-                (4, 4),
-                (5, 2),
-                (5, 3),
-                (5, 4),
-                (5, 5),
-                (6, 4),
-                (6, 5),
-            ],
-        )
+        assert cells == [
+            (1, 1),
+            (1, 2),
+            (2, 1),
+            (2, 2),
+            (2, 3),
+            (3, 1),
+            (3, 2),
+            (3, 3),
+            (3, 4),
+            (4, 2),
+            (4, 3),
+            (4, 4),
+            (5, 2),
+            (5, 3),
+            (5, 4),
+            (5, 5),
+            (6, 4),
+            (6, 5),
+        ]
 
         sizes = [(10, 43), (543, 45), (34, 11)]
 
@@ -145,7 +138,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
             )
 
             dist = dtw.dtw(series1, series2, window=dtw.Itakura(slope)).mean_distance()
-            self.assertGreater(1, dist)
+            assert 1 > dist
 
     def test_warp(self):
         # Support different time dimension names
@@ -159,7 +152,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         alignment = dtw.dtw(series1, series2)
 
         warped1, warped2 = alignment.warped()
-        self.assertAlmostEqual(alignment.mean_distance(), mae(warped1, warped2))
+        assert round(abs(alignment.mean_distance() - mae(warped1, warped2)), 7) == 0
         assert warped1.static_covariates.equals(series1.static_covariates)
         assert warped2.static_covariates.equals(series2.static_covariates)
 
@@ -186,8 +179,8 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         metric1 = dtw_metric(self.series1, self.series2, metric=mae)
         metric2 = dtw_metric(self.series1, self.series2, metric=mape)
 
-        self.assertGreater(0.5, metric1)
-        self.assertGreater(5, metric2)
+        assert 0.5 > metric1
+        assert 5 > metric2
 
     def test_nans(self):
         with pytest.raises(ValueError):
@@ -221,7 +214,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
             multi_series1, multi_series2, multi_grid_radius=radius
         )
 
-        self.assertTrue(np.all(alignment_uni.path() == alignment_multi.path()))
+        assert np.all(alignment_uni.path() == alignment_multi.path())
 
 
 # MINI_BENCHMARK

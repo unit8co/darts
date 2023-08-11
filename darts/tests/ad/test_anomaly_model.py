@@ -102,7 +102,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             ]:
 
                 # scorer are trainable
-                self.assertTrue(anomaly_model.scorers_are_trainable is False)
+                assert anomaly_model.scorers_are_trainable is False
 
         list_FittableAnomalyScorer = [
             PyODScorer(model=KNN()),
@@ -119,7 +119,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             ]:
 
                 # scorer are not trainable
-                self.assertTrue(anomaly_model.scorers_are_trainable is True)
+                assert anomaly_model.scorers_are_trainable is True
 
     def test_Score(self):
 
@@ -141,16 +141,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
                 am.score(self.test, return_model_prediction="True")
 
             # if return_model_prediction set to true, output must be tuple
-            self.assertTrue(
-                isinstance(am.score(self.test, return_model_prediction=True), Tuple)
-            )
+            assert isinstance(am.score(self.test, return_model_prediction=True), Tuple)
 
             # if return_model_prediction set to false output must be
             # Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-            self.assertTrue(
-                not isinstance(
-                    am.score(self.test, return_model_prediction=False), Tuple
-                )
+            assert not isinstance(
+                am.score(self.test, return_model_prediction=False), Tuple
             )
 
     def test_FitFilteringAnomalyModelInput(self):
@@ -484,27 +480,21 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
             # Check return types
             # Check if return type is float when input is a series
-            self.assertTrue(
-                isinstance(
-                    am.eval_accuracy(self.anomalies, self.test),
-                    Dict,
-                )
+            assert isinstance(
+                am.eval_accuracy(self.anomalies, self.test),
+                Dict,
             )
 
             # Check if return type is Sequence when input is a Sequence of series
-            self.assertTrue(
-                isinstance(
-                    am.eval_accuracy(self.anomalies, [self.test]),
-                    Sequence,
-                )
+            assert isinstance(
+                am.eval_accuracy(self.anomalies, [self.test]),
+                Sequence,
             )
-            self.assertTrue(
-                isinstance(
-                    am.eval_accuracy(
-                        [self.anomalies, self.anomalies], [self.test, self.test]
-                    ),
-                    Sequence,
-                )
+            assert isinstance(
+                am.eval_accuracy(
+                    [self.anomalies, self.anomalies], [self.test, self.test]
+                ),
+                Sequence,
             )
 
     def test_ForecastingAnomalyModelInput(self):
@@ -614,15 +604,17 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # check that NormScorer is the abs difference of model_output and test_series_slope
-        self.assertEqual(
-            (model_output - test_series_slope.slice_intersect(model_output)).__abs__(),
-            NormScorer().score_from_prediction(test_series_slope, model_output),
+        assert (
+            model_output - test_series_slope.slice_intersect(model_output)
+        ).__abs__() == NormScorer().score_from_prediction(
+            test_series_slope, model_output
         )
 
         # check that Difference is the difference of model_output and test_series_slope
-        self.assertEqual(
-            test_series_slope.slice_intersect(model_output) - model_output,
-            Difference().score_from_prediction(test_series_slope, model_output),
+        assert test_series_slope.slice_intersect(
+            model_output
+        ) - model_output == Difference().score_from_prediction(
+            test_series_slope, model_output
         )
 
         dict_auc_roc = anomaly_model.eval_accuracy(
@@ -647,8 +639,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
-        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+        assert len(auc_roc_from_scores) == len(dict_auc_roc)
+        assert len(auc_pr_from_scores) == len(dict_auc_pr)
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
@@ -737,15 +729,17 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # check that Difference is the difference of model_output and test_series_noise
-        self.assertEqual(
-            test_series_noise.slice_intersect(model_output) - model_output,
-            Difference().score_from_prediction(test_series_noise, model_output),
+        assert test_series_noise.slice_intersect(
+            model_output
+        ) - model_output == Difference().score_from_prediction(
+            test_series_noise, model_output
         )
 
         # check that NormScorer is the abs difference of model_output and test_series_noise
-        self.assertEqual(
-            (test_series_noise.slice_intersect(model_output) - model_output).__abs__(),
-            NormScorer().score_from_prediction(test_series_noise, model_output),
+        assert (
+            test_series_noise.slice_intersect(model_output) - model_output
+        ).__abs__() == NormScorer().score_from_prediction(
+            test_series_noise, model_output
         )
 
         dict_auc_roc = anomaly_model.eval_accuracy(
@@ -770,8 +764,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
-        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+        assert len(auc_roc_from_scores) == len(dict_auc_roc)
+        assert len(auc_pr_from_scores) == len(dict_auc_pr)
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
@@ -872,15 +866,15 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # check that NormScorer is the abs difference of model_output and series_test
-        self.assertEqual(
-            (series_test.slice_intersect(model_output) - model_output).__abs__(),
-            NormScorer().score_from_prediction(series_test, model_output),
-        )
+        assert (
+            series_test.slice_intersect(model_output) - model_output
+        ).__abs__() == NormScorer().score_from_prediction(series_test, model_output)
 
         # check that Difference is the difference of model_output and series_test
-        self.assertEqual(
-            series_test.slice_intersect(model_output) - model_output,
-            Difference().score_from_prediction(series_test, model_output),
+        assert series_test.slice_intersect(
+            model_output
+        ) - model_output == Difference().score_from_prediction(
+            series_test, model_output
         )
 
         dict_auc_roc = anomaly_model.eval_accuracy(
@@ -905,8 +899,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
-        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+        assert len(auc_roc_from_scores) == len(dict_auc_roc)
+        assert len(auc_pr_from_scores) == len(dict_auc_pr)
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
@@ -1011,10 +1005,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # model_output must be multivariate (same width as input)
-        self.assertEqual(model_output.width, mts_series_test.width)
+        assert model_output.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
-        self.assertEqual(len(scores), len(anomaly_model.scorers))
+        assert len(scores) == len(anomaly_model.scorers)
 
         dict_auc_roc = anomaly_model.eval_accuracy(
             mts_anomalies, mts_series_test, metric="AUC_ROC"
@@ -1038,8 +1032,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
-        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+        assert len(auc_roc_from_scores) == len(dict_auc_roc)
+        assert len(auc_pr_from_scores) == len(dict_auc_pr)
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
@@ -1096,10 +1090,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # model_output must be multivariate (same width as input)
-        self.assertEqual(model_output.width, mts_series_test.width)
+        assert model_output.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
-        self.assertEqual(len(scores), len(anomaly_model.scorers))
+        assert len(scores) == len(anomaly_model.scorers)
 
         dict_auc_roc = anomaly_model.eval_accuracy(
             ts_anomalies, mts_series_test, metric="AUC_ROC"
@@ -1123,8 +1117,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
-        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+        assert len(auc_roc_from_scores) == len(dict_auc_roc)
+        assert len(auc_pr_from_scores) == len(dict_auc_pr)
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
@@ -1239,10 +1233,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # model_output must be multivariate (same width as input)
-        self.assertEqual(model_output.width, mts_series_test.width)
+        assert model_output.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
-        self.assertEqual(len(scores), len(anomaly_model.scorers))
+        assert len(scores) == len(anomaly_model.scorers)
 
         dict_auc_roc = anomaly_model.eval_accuracy(
             mts_anomalies, mts_series_test, start=0.1, metric="AUC_ROC"
@@ -1266,8 +1260,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
-        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+        assert len(auc_roc_from_scores) == len(dict_auc_roc)
+        assert len(auc_pr_from_scores) == len(dict_auc_pr)
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
@@ -1324,10 +1318,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # model_output must be multivariate (same width as input)
-        self.assertEqual(model_output.width, mts_series_test.width)
+        assert model_output.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
-        self.assertEqual(len(scores), len(anomaly_model.scorers))
+        assert len(scores) == len(anomaly_model.scorers)
 
         dict_auc_roc = anomaly_model.eval_accuracy(
             ts_anomalies, mts_series_test, start=0.1, metric="AUC_ROC"
@@ -1351,8 +1345,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
-        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+        assert len(auc_roc_from_scores) == len(dict_auc_roc)
+        assert len(auc_pr_from_scores) == len(dict_auc_pr)
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(

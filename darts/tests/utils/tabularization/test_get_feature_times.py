@@ -235,9 +235,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             target_expected = self.get_feature_times_target_training(target, lags, ocl)
             past_expected = self.get_feature_times_past(past, lags_past)
             future_expected = self.get_feature_times_future(future, lags_future)
-            self.assertTrue(target_expected.equals(feature_times[0]))
-            self.assertTrue(past_expected.equals(feature_times[1]))
-            self.assertTrue(future_expected.equals(feature_times[2]))
+            assert target_expected.equals(feature_times[0])
+            assert past_expected.equals(feature_times[1])
+            assert future_expected.equals(feature_times[2])
 
     def test_feature_times_training_datetime_idx(self):
         """
@@ -272,9 +272,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             target_expected = self.get_feature_times_target_training(target, lags, ocl)
             past_expected = self.get_feature_times_past(past, lags_past)
             future_expected = self.get_feature_times_future(future, lags_future)
-            self.assertTrue(target_expected.equals(feature_times[0]))
-            self.assertTrue(past_expected.equals(feature_times[1]))
-            self.assertTrue(future_expected.equals(feature_times[2]))
+            assert target_expected.equals(feature_times[0])
+            assert past_expected.equals(feature_times[1])
+            assert future_expected.equals(feature_times[2])
 
     def test_feature_times_prediction_range_idx(self):
         """
@@ -305,9 +305,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             target_expected = self.get_feature_times_target_prediction(target, lags)
             past_expected = self.get_feature_times_past(past, lags_past)
             future_expected = self.get_feature_times_future(future, lags_future)
-            self.assertTrue(target_expected.equals(feature_times[0]))
-            self.assertTrue(past_expected.equals(feature_times[1]))
-            self.assertTrue(future_expected.equals(feature_times[2]))
+            assert target_expected.equals(feature_times[0])
+            assert past_expected.equals(feature_times[1])
+            assert future_expected.equals(feature_times[2])
 
     def test_feature_times_prediction_datetime_idx(self):
         """
@@ -338,9 +338,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             target_expected = self.get_feature_times_target_prediction(target, lags)
             past_expected = self.get_feature_times_past(past, lags_past)
             future_expected = self.get_feature_times_future(future, lags_future)
-            self.assertTrue(target_expected.equals(feature_times[0]))
-            self.assertTrue(past_expected.equals(feature_times[1]))
-            self.assertTrue(future_expected.equals(feature_times[2]))
+            assert target_expected.equals(feature_times[0])
+            assert past_expected.equals(feature_times[1])
+            assert future_expected.equals(feature_times[2])
 
     #
     #   Specified Test Cases
@@ -365,9 +365,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 output_chunk_length=ocl,
                 is_training=True,
             )
-            self.assertEqual(
-                feature_times[0][-1], target.end_time() - target.freq * (ocl - 1)
-            )
+            assert feature_times[0][-1] == target.end_time() - target.freq * (ocl - 1)
 
     def test_feature_times_output_chunk_length_datetime_idx(self):
         """
@@ -389,9 +387,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 output_chunk_length=ocl,
                 is_training=True,
             )
-            self.assertEqual(
-                feature_times[0][-1], target.end_time() - target.freq * (ocl - 1)
-            )
+            assert feature_times[0][-1] == target.end_time() - target.freq * (ocl - 1)
 
     def test_feature_times_lags_range_idx(self):
         """
@@ -412,9 +408,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                     lags=[-1, max_lags],
                     is_training=is_training,
                 )
-                self.assertEqual(
-                    feature_times[0][0],
-                    target.start_time() + target.freq * abs(max_lags),
+                assert feature_times[0][0] == target.start_time() + target.freq * abs(
+                    max_lags
                 )
 
     def test_feature_times_lags_datetime_idx(self):
@@ -436,9 +431,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                     lags=[-1, max_lags],
                     is_training=is_training,
                 )
-                self.assertEqual(
-                    feature_times[0][0],
-                    target.start_time() + target.freq * abs(max_lags),
+                assert feature_times[0][0] == target.start_time() + target.freq * abs(
+                    max_lags
                 )
 
     def test_feature_times_training_single_time_range_idx(self):
@@ -456,8 +450,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags=lags,
             is_training=True,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], 1)
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == 1
 
         # Can only create feature for time `6` (`-2` lags behind is time `2`):
         future = linear_timeseries(start=2, length=1, freq=2)
@@ -470,10 +464,10 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=future_lags,
             is_training=True,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], 1)
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(feature_times[2][0], 6)
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == 1
+        assert len(feature_times[2]) == 1
+        assert feature_times[2][0] == 6
 
     def test_feature_times_training_single_time_datetime_idx(self):
         """
@@ -490,8 +484,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags=lags,
             is_training=True,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], pd.Timestamp("1/2/2000"))
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == pd.Timestamp("1/2/2000")
 
         # Can only create feature for "1/6/2000" (`-2` lags behind is "1/2/2000"):
         future = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=1, freq="2d")
@@ -504,10 +498,10 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=future_lags,
             is_training=True,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], pd.Timestamp("1/2/2000"))
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(feature_times[2][0], pd.Timestamp("1/6/2000"))
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == pd.Timestamp("1/2/2000")
+        assert len(feature_times[2]) == 1
+        assert feature_times[2][0] == pd.Timestamp("1/6/2000")
 
     def test_feature_times_prediction_single_time_range_idx(self):
         """
@@ -523,8 +517,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags=lags,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], 1)
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == 1
 
         # Can only create feature for time `6` (`-2` lags behind is time `2`):
         future = linear_timeseries(start=2, length=1, freq=2)
@@ -536,10 +530,10 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], 1)
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(feature_times[2][0], 6)
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == 1
+        assert len(feature_times[2]) == 1
+        assert feature_times[2][0] == 6
 
     def test_feature_times_prediction_single_time_datetime_idx(self):
         """
@@ -555,8 +549,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags=lags,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], pd.Timestamp("1/2/2000"))
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == pd.Timestamp("1/2/2000")
 
         # Can only create feature for "1/6/2000" (`-2` lag behind is time "1/2/2000"):
         future = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=1, freq="2d")
@@ -568,10 +562,10 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(feature_times[0][0], pd.Timestamp("1/2/2000"))
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(feature_times[2][0], pd.Timestamp("1/6/2000"))
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == pd.Timestamp("1/2/2000")
+        assert len(feature_times[2]) == 1
+        assert feature_times[2][0] == pd.Timestamp("1/6/2000")
 
     def test_feature_times_extend_time_index_range_idx(self):
         """
@@ -594,17 +588,13 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future_1,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(
-            feature_times[0][0], target.start_time() - lags[0] * target.freq
-        )
-        self.assertEqual(len(feature_times[1]), 1)
-        self.assertEqual(
-            feature_times[1][0], past.start_time() - lags_past[0] * past.freq
-        )
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(
-            feature_times[2][0], future.start_time() - lags_future_1[0] * future.freq
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == target.start_time() - lags[0] * target.freq
+        assert len(feature_times[1]) == 1
+        assert feature_times[1][0] == past.start_time() - lags_past[0] * past.freq
+        assert len(feature_times[2]) == 1
+        assert (
+            feature_times[2][0] == future.start_time() - lags_future_1[0] * future.freq
         )
         # Feature time occurs before start of series:
         lags_future_2 = [4]
@@ -613,9 +603,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future_2,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(
-            feature_times[2][0], future.start_time() - lags_future_2[0] * future.freq
+        assert len(feature_times[2]) == 1
+        assert (
+            feature_times[2][0] == future.start_time() - lags_future_2[0] * future.freq
         )
 
     def test_feature_times_extend_time_index_datetime_idx(self):
@@ -639,17 +629,13 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future_1,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[0]), 1)
-        self.assertEqual(
-            feature_times[0][0], target.start_time() - lags[0] * target.freq
-        )
-        self.assertEqual(len(feature_times[1]), 1)
-        self.assertEqual(
-            feature_times[1][0], past.start_time() - lags_past[0] * past.freq
-        )
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(
-            feature_times[2][0], future.start_time() - lags_future_1[0] * future.freq
+        assert len(feature_times[0]) == 1
+        assert feature_times[0][0] == target.start_time() - lags[0] * target.freq
+        assert len(feature_times[1]) == 1
+        assert feature_times[1][0] == past.start_time() - lags_past[0] * past.freq
+        assert len(feature_times[2]) == 1
+        assert (
+            feature_times[2][0] == future.start_time() - lags_future_1[0] * future.freq
         )
         # Feature time occurs before start of series:
         lags_future_2 = [4]
@@ -658,9 +644,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future_2,
             is_training=False,
         )
-        self.assertEqual(len(feature_times[2]), 1)
-        self.assertEqual(
-            feature_times[2][0], future.start_time() - lags_future_2[0] * future.freq
+        assert len(feature_times[2]) == 1
+        assert (
+            feature_times[2][0] == future.start_time() - lags_future_2[0] * future.freq
         )
 
     def test_feature_times_future_lags_range_idx(self):
@@ -682,8 +668,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             is_training=False,
         )
         # All times will be feature times:
-        self.assertEqual(len(feature_times[2]), future.n_timesteps)
-        self.assertTrue(feature_times[2].equals(future.time_index))
+        assert len(feature_times[2]) == future.n_timesteps
+        assert feature_times[2].equals(future.time_index)
 
         # Case 2 - Positive lag:
         lags_future = [1]
@@ -694,8 +680,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         )
         # Need to include new time at start of series; only last time will be excluded:
         extended_future = future.prepend_values([0])
-        self.assertEqual(len(feature_times[2]), extended_future.n_timesteps - 1)
-        self.assertTrue(feature_times[2].equals(extended_future.time_index[:-1]))
+        assert len(feature_times[2]) == extended_future.n_timesteps - 1
+        assert feature_times[2].equals(extended_future.time_index[:-1])
 
         # Case 3 - Combo of negative, zero, and positive lags:
         lags_future = [-1, 0, 1]
@@ -705,8 +691,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             is_training=False,
         )
         # Only first and last times will be excluded:
-        self.assertEqual(len(feature_times[2]), future.n_timesteps - 2)
-        self.assertTrue(feature_times[2].equals(future.time_index[1:-1]))
+        assert len(feature_times[2]) == future.n_timesteps - 2
+        assert feature_times[2].equals(future.time_index[1:-1])
 
     def test_feature_times_future_lags_datetime_idx(self):
         """
@@ -727,8 +713,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             is_training=False,
         )
         # All times will be feature times:
-        self.assertEqual(len(feature_times[2]), future.n_timesteps)
-        self.assertTrue(feature_times[2].equals(future.time_index))
+        assert len(feature_times[2]) == future.n_timesteps
+        assert feature_times[2].equals(future.time_index)
 
         # Case 2 - Positive lag:
         lags_future = [1]
@@ -739,8 +725,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         )
         # Need to include new time at start of series; only last time will be excluded:
         extended_future = future.prepend_values([0])
-        self.assertEqual(len(feature_times[2]), extended_future.n_timesteps - 1)
-        self.assertTrue(feature_times[2].equals(extended_future.time_index[:-1]))
+        assert len(feature_times[2]) == extended_future.n_timesteps - 1
+        assert feature_times[2].equals(extended_future.time_index[:-1])
 
         # Case 3 - Combo of negative, zero, and positive lags:
         lags_future = [-1, 0, 1]
@@ -750,8 +736,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             is_training=False,
         )
         # Only first and last times will be excluded:
-        self.assertEqual(len(feature_times[2]), future.n_timesteps - 2)
-        self.assertTrue(feature_times[2].equals(future.time_index[1:-1]))
+        assert len(feature_times[2]) == future.n_timesteps - 2
+        assert feature_times[2].equals(future.time_index[1:-1])
 
     def test_feature_times_unspecified_series(self):
         """
@@ -775,9 +761,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         feature_times = _get_feature_times(
             target_series=target, lags=lags, is_training=False
         )
-        self.assertTrue(expected_target.equals(feature_times[0]))
-        self.assertEqual(feature_times[1], None)
-        self.assertEqual(feature_times[2], None)
+        assert expected_target.equals(feature_times[0])
+        assert feature_times[1] is None
+        assert feature_times[2] is None
 
         # Specify only past, without target and future:
         feature_times = _get_feature_times(
@@ -785,9 +771,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_past_covariates=lags_past,
             is_training=False,
         )
-        self.assertEqual(feature_times[0], None)
-        self.assertTrue(expected_past.equals(feature_times[1]))
-        self.assertEqual(feature_times[2], None)
+        assert feature_times[0] is None
+        assert expected_past.equals(feature_times[1])
+        assert feature_times[2] is None
 
         # Specify only future, without target and past:
         feature_times = _get_feature_times(
@@ -795,9 +781,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future,
             is_training=False,
         )
-        self.assertEqual(feature_times[0], None)
-        self.assertEqual(feature_times[1], None)
-        self.assertTrue(expected_future.equals(feature_times[2]))
+        assert feature_times[0] is None
+        assert feature_times[1] is None
+        assert expected_future.equals(feature_times[2])
 
         # Specify target and past, without future:
         feature_times = _get_feature_times(
@@ -807,9 +793,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_past_covariates=lags_past,
             is_training=False,
         )
-        self.assertTrue(expected_target.equals(feature_times[0]))
-        self.assertTrue(expected_past.equals(feature_times[1]))
-        self.assertEqual(feature_times[2], None)
+        assert expected_target.equals(feature_times[0])
+        assert expected_past.equals(feature_times[1])
+        assert feature_times[2] is None
 
         # Specify target and future, without past:
         feature_times = _get_feature_times(
@@ -819,9 +805,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future,
             is_training=False,
         )
-        self.assertTrue(expected_target.equals(feature_times[0]))
-        self.assertEqual(feature_times[1], None)
-        self.assertTrue(expected_future.equals(feature_times[2]))
+        assert expected_target.equals(feature_times[0])
+        assert feature_times[1] is None
+        assert expected_future.equals(feature_times[2])
 
         # Specify past and future, without target:
         feature_times = _get_feature_times(
@@ -831,9 +817,9 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             lags_future_covariates=lags_future,
             is_training=False,
         )
-        self.assertEqual(feature_times[0], None)
-        self.assertTrue(expected_past.equals(feature_times[1]))
-        self.assertTrue(expected_future.equals(feature_times[2]))
+        assert feature_times[0] is None
+        assert expected_past.equals(feature_times[1])
+        assert expected_future.equals(feature_times[2])
 
     def test_feature_times_unspecified_lag_or_series_warning(self):
         """
@@ -860,14 +846,11 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 lags_past_covariates=lags_past,
                 is_training=False,
             )
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[0].category, UserWarning))
-            self.assertEqual(
-                str(w[0].message),
-                (
-                    "`future_covariates` was specified without accompanying "
-                    "`lags_future_covariates` and, thus, will be ignored."
-                ),
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert str(w[0].message) == (
+                "`future_covariates` was specified without accompanying "
+                "`lags_future_covariates` and, thus, will be ignored."
             )
         # Specify `lags_future_covariates` but not `future_covariates` when `is_training = False`
         with warnings.catch_warnings(record=True) as w:
@@ -877,14 +860,11 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 lags_future_covariates=lags_future,
                 is_training=False,
             )
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[0].category, UserWarning))
-            self.assertEqual(
-                str(w[0].message),
-                (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                ),
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert str(w[0].message) == (
+                "`lags_future_covariates` was specified without accompanying "
+                "`future_covariates` and, thus, will be ignored."
             )
         # Specify `future_covariates` but not `lags_future_covariates` and
         # `target_series` but not lags, when `is_training = True`
@@ -897,14 +877,11 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 output_chunk_length=1,
                 is_training=True,
             )
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[0].category, UserWarning))
-            self.assertEqual(
-                str(w[0].message),
-                (
-                    "`future_covariates` was specified without accompanying "
-                    "`lags_future_covariates` and, thus, will be ignored."
-                ),
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert str(w[0].message) == (
+                "`future_covariates` was specified without accompanying "
+                "`lags_future_covariates` and, thus, will be ignored."
             )
         # Specify `lags_future_covariates` but not `future_covariates`, and
         # `target_series` but not lags, when `is_training = True`
@@ -917,14 +894,11 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 output_chunk_length=1,
                 is_training=True,
             )
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[0].category, UserWarning))
-            self.assertEqual(
-                str(w[0].message),
-                (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                ),
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert str(w[0].message) == (
+                "`lags_future_covariates` was specified without accompanying "
+                "`future_covariates` and, thus, will be ignored."
             )
         # Specify `lags_future_covariates` but not `future_covariates`, and
         # `past_covariates` but not `lags_past_covariates`, when `is_training = True`
@@ -936,22 +910,16 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 lags_future_covariates=lags_future,
                 is_training=False,
             )
-            self.assertEqual(len(w), 2)
-            self.assertTrue(issubclass(w[0].category, UserWarning))
-            self.assertTrue(issubclass(w[1].category, UserWarning))
-            self.assertEqual(
-                str(w[0].message),
-                (
-                    "`past_covariates` was specified without accompanying "
-                    "`lags_past_covariates` and, thus, will be ignored."
-                ),
+            assert len(w) == 2
+            assert issubclass(w[0].category, UserWarning)
+            assert issubclass(w[1].category, UserWarning)
+            assert str(w[0].message) == (
+                "`past_covariates` was specified without accompanying "
+                "`lags_past_covariates` and, thus, will be ignored."
             )
-            self.assertEqual(
-                str(w[1].message),
-                (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                ),
+            assert str(w[1].message) == (
+                "`lags_future_covariates` was specified without accompanying "
+                "`future_covariates` and, thus, will be ignored."
             )
         # Specify `lags_future_covariates` but not `future_covariates`, and
         # `past_covariates` but not `lags_past_covariates`, and `target_series`
@@ -964,22 +932,16 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 output_chunk_length=1,
                 is_training=True,
             )
-            self.assertEqual(len(w), 2)
-            self.assertTrue(issubclass(w[0].category, UserWarning))
-            self.assertTrue(issubclass(w[1].category, UserWarning))
-            self.assertEqual(
-                str(w[0].message),
-                (
-                    "`past_covariates` was specified without accompanying "
-                    "`lags_past_covariates` and, thus, will be ignored."
-                ),
+            assert len(w) == 2
+            assert issubclass(w[0].category, UserWarning)
+            assert issubclass(w[1].category, UserWarning)
+            assert str(w[0].message) == (
+                "`past_covariates` was specified without accompanying "
+                "`lags_past_covariates` and, thus, will be ignored."
             )
-            self.assertEqual(
-                str(w[1].message),
-                (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                ),
+            assert str(w[1].message) == (
+                "`lags_future_covariates` was specified without accompanying "
+                "`future_covariates` and, thus, will be ignored."
             )
         # Specify `target_series` but not `lags` when `is_training = False`:
         with warnings.catch_warnings(record=True) as w:
@@ -991,8 +953,8 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 lags_future_covariates=lags_future,
                 is_training=False,
             )
-            self.assertEqual(len(w), 1)
-            self.assertTrue(issubclass(w[0].category, UserWarning))
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
         # Specify `target_series` but not `lags` when `is_training = True`;
         # this should *not* throw a warning:
         with warnings.catch_warnings(record=True) as w:
@@ -1004,7 +966,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 lags_future_covariates=lags_future,
                 is_training=True,
             )
-            self.assertEqual(len(w), 0)
+            assert len(w) == 0
 
     def test_feature_times_unspecified_training_inputs_error(self):
         """
@@ -1014,20 +976,18 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         """
         output_chunk_length = 1
         # Don't specify `target_series`:
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(
                 output_chunk_length=output_chunk_length, is_training=True
             )
-        self.assertEqual(
-            ("Must specify `target_series` when `is_training = True`."),
-            str(e.exception),
+        assert ("Must specify `target_series` when `is_training = True`.") == str(
+            err.value
         )
         # Don't specify neither `target_series` nor `output_chunk_length`
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(is_training=True)
-        self.assertEqual(
-            ("Must specify `target_series` when `is_training = True`."),
-            str(e.exception),
+        assert ("Must specify `target_series` when `is_training = True`.") == str(
+            err.value
         )
 
     def test_feature_times_no_lags_specified_error(self):
@@ -1036,11 +996,11 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         when no lags have been specified.
         """
         target = linear_timeseries(start=1, length=20, freq=1)
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(target_series=target, is_training=False)
-        self.assertEqual(
-            "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`.",
-            str(e.exception),
+        assert (
+            "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
+            == str(err.value)
         )
 
     def test_feature_times_series_too_short_error(self):
@@ -1051,32 +1011,26 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         """
         series = linear_timeseries(start=1, length=2, freq=1)
         # `target_series` too short when predicting:
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(target_series=series, lags=[-20, -1], is_training=False)
-        self.assertEqual(
-            (
-                "`target_series` must have at least `-min(lags) + max(lags) + 1` = 20 "
-                "timesteps; instead, it only has 2."
-            ),
-            str(e.exception),
-        )
+        assert (
+            "`target_series` must have at least `-min(lags) + max(lags) + 1` = 20 "
+            "timesteps; instead, it only has 2."
+        ) == str(err.value)
         # `target_series` too short when training:
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(
                 target_series=series,
                 lags=[-20],
                 output_chunk_length=5,
                 is_training=True,
             )
-        self.assertEqual(
-            (
-                "`target_series` must have at least `-min(lags) + output_chunk_length` = 25 "
-                "timesteps; instead, it only has 2."
-            ),
-            str(e.exception),
-        )
+        assert (
+            "`target_series` must have at least `-min(lags) + output_chunk_length` = 25 "
+            "timesteps; instead, it only has 2."
+        ) == str(err.value)
         # `past_covariates` too short when training:
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(
                 target_series=series,
                 past_covariates=series,
@@ -1084,14 +1038,11 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
                 output_chunk_length=1,
                 is_training=True,
             )
-        self.assertEqual(
-            (
-                "`past_covariates` must have at least "
-                "`-min(lags_past_covariates) + max(lags_past_covariates) + 1` = 20 timesteps; "
-                "instead, it only has 2."
-            ),
-            str(e.exception),
-        )
+        assert (
+            "`past_covariates` must have at least "
+            "`-min(lags_past_covariates) + max(lags_past_covariates) + 1` = 20 timesteps; "
+            "instead, it only has 2."
+        ) == str(err.value)
 
     def test_feature_times_invalid_lag_values_error(self):
         """
@@ -1102,23 +1053,19 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         """
         series = linear_timeseries(start=1, length=3, freq=1)
         # `lags` not <= -1:
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(target_series=series, lags=[0], is_training=False)
-        self.assertEqual(
-            ("`lags` must be a `Sequence` containing only `int` values less than 0."),
-            str(e.exception),
-        )
+        assert (
+            "`lags` must be a `Sequence` containing only `int` values less than 0."
+        ) == str(err.value)
         # `lags_past_covariates` not <= -1:
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as err:
             _get_feature_times(
                 past_covariates=series, lags_past_covariates=[0], is_training=False
             )
-        self.assertEqual(
-            (
-                "`lags_past_covariates` must be a `Sequence` containing only `int` values less than 0."
-            ),
-            str(e.exception),
-        )
+        assert (
+            "`lags_past_covariates` must be a `Sequence` containing only `int` values less than 0."
+        ) == str(err.value)
         # `lags_future_covariates` can be positive, negative, and/or zero - no error should be thrown:
         _get_feature_times(
             future_covariates=series,

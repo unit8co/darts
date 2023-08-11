@@ -140,7 +140,7 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
 
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
 
     def test_input_transformed_multiple_series(self):
         """
@@ -161,9 +161,9 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
             (test_input_1, test_input_2)
         )
         # 2 * 1 + 10 = 12
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         # 2 * 2 + 10 = 14
-        self.assertEqual(transformed_2, constant_timeseries(value=14, length=11))
+        assert transformed_2 == constant_timeseries(value=14, length=11)
 
         # Have different `scale` param for different jobs:
         mock = self.DataTransformerMock(
@@ -173,14 +173,14 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
             (test_input_1, test_input_2)
         )
         # 2 * 1 + 10 = 12
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 10 = 16
-        self.assertEqual(transformed_2, constant_timeseries(value=16, length=11))
+        assert transformed_2 == constant_timeseries(value=16, length=11)
 
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
         transformed_1 = mock.transform(test_input_1)
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
 
         # Have different `scale`, `translation`, and `stack_samples` params for different jobs:
         mock = self.DataTransformerMock(
@@ -194,14 +194,14 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
             (test_input_1, test_input_2)
         )
         # 2 * 1 + 10 = 12
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 11 = 17
-        self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
+        assert transformed_2 == constant_timeseries(value=17, length=11)
 
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
         transformed_1 = mock.transform(test_input_1)
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
 
         # Train on three series with three different fixed param values,
         # but pass only one or two series as inputs to `transform`;
@@ -218,13 +218,13 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
         # If single series provided to transformer trained on three
         # series, should transform using the first set of fitted parameters:
         transformed_1 = mock.transform(test_input_1)
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         # If two series provided to transformer trained on three
         # series, should transform using the first and second set of
         # fitted parameters:
         transformed_1, transformed_2 = mock.transform((test_input_1, test_input_2))
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
-        self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
+        assert transformed_2 == constant_timeseries(value=17, length=11)
 
     def test_input_transformed_multiple_samples(self):
         """
@@ -245,7 +245,7 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
         expected = expected.concatenate(
             constant_timeseries(value=14, length=10), axis="sample"
         )
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
 
     def test_input_transformed_masking(self):
         """
@@ -269,12 +269,12 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
             scale=scale, translation=translation, mask_components=True
         )
         transformed = mock.fit_transform(test_input, component_mask=mask)
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
 
         # Manually apply component mask:
         mock = self.DataTransformerMock(scale=2, translation=10, mask_components=False)
         transformed = mock.fit_transform(test_input, component_mask=mask)
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
 
 
 class GlobalFittableDataTransformerTestCase(unittest.TestCase):
@@ -357,8 +357,8 @@ class GlobalFittableDataTransformerTestCase(unittest.TestCase):
         transformed_1, transformed_2 = self.DataTransformerMock(
             global_fit=False
         ).fit_transform([series_1, series_2])
-        self.assertEqual(transformed_1, TimeSeries.from_values(np.zeros((3, 2, 1))))
-        self.assertEqual(transformed_2, TimeSeries.from_values(np.zeros((3, 2, 1))))
+        assert transformed_1 == TimeSeries.from_values(np.zeros((3, 2, 1)))
+        assert transformed_2 == TimeSeries.from_values(np.zeros((3, 2, 1)))
 
         # Global fitting - mean of `series_1` and `series_2` should be `1.5`, so
         # `series_1` values should be transformed to `-0.5` and `series_2` values
@@ -366,9 +366,5 @@ class GlobalFittableDataTransformerTestCase(unittest.TestCase):
         transformed_1, transformed_2 = self.DataTransformerMock(
             global_fit=True
         ).fit_transform([series_1, series_2])
-        self.assertEqual(
-            transformed_1, TimeSeries.from_values(-0.5 * np.ones((3, 2, 1)))
-        )
-        self.assertEqual(
-            transformed_2, TimeSeries.from_values(0.5 * np.ones((3, 2, 1)))
-        )
+        assert transformed_1 == TimeSeries.from_values(-0.5 * np.ones((3, 2, 1)))
+        assert transformed_2 == TimeSeries.from_values(0.5 * np.ones((3, 2, 1)))

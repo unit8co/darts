@@ -107,34 +107,26 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # Check return types for score_from_prediction()
         # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
-            )
+        assert isinstance(
+            scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
         )
 
         # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction([self.test], [self.modified_test]),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.score_from_prediction([self.test], [self.modified_test]),
+            Sequence,
         )
 
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
-                TimeSeries,
-            )
+        assert isinstance(
+            scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
+            TimeSeries,
         )
 
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
+            Sequence,
         )
 
     def test_ScoreFittableAnomalyScorer(self):
@@ -143,50 +135,42 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check return types for score()
         scorer.fit(self.train)
         # Check if return type is float when input is a series
-        self.assertTrue(isinstance(scorer.score(self.test), TimeSeries))
+        assert isinstance(scorer.score(self.test), TimeSeries)
 
         # Check if return type is Sequence when input is a sequence of series
-        self.assertTrue(isinstance(scorer.score([self.test]), Sequence))
+        assert isinstance(scorer.score([self.test]), Sequence)
 
         scorer.fit(self.mts_train)
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(isinstance(scorer.score(self.mts_test), TimeSeries))
+        assert isinstance(scorer.score(self.mts_test), TimeSeries)
 
         # Check if return type is Sequence when input is a sequence of multivariate series
-        self.assertTrue(isinstance(scorer.score([self.mts_test]), Sequence))
+        assert isinstance(scorer.score([self.mts_test]), Sequence)
 
         # Check return types for score_from_prediction()
         scorer.fit_from_prediction(self.train, self.modified_train)
         # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
-            )
+        assert isinstance(
+            scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
         )
 
         # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction([self.test], [self.modified_test]),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.score_from_prediction([self.test], [self.modified_test]),
+            Sequence,
         )
 
         scorer.fit_from_prediction(self.mts_train, self.modified_mts_train)
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
-                TimeSeries,
-            )
+        assert isinstance(
+            scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
+            TimeSeries,
         )
 
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
+            Sequence,
         )
 
     def test_eval_accuracy_from_prediction(self):
@@ -194,85 +178,69 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer = Norm(component_wise=False)
         # Check return types
         # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, self.test, self.modified_test
-                ),
-                float,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, self.test, self.modified_test
+            ),
+            float,
         )
 
         # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, [self.test], self.modified_test
-                ),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, [self.test], self.modified_test
+            ),
+            Sequence,
         )
 
         # Check if return type is a float when input is a multivariate series and component_wise is set to False
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, self.mts_test, self.modified_mts_test
-                ),
-                float,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, self.mts_test, self.modified_mts_test
+            ),
+            float,
         )
 
         # Check if return type is Sequence when input is a multivariate series and component_wise is set to False
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, [self.mts_test], self.modified_mts_test
-                ),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, [self.mts_test], self.modified_mts_test
+            ),
+            Sequence,
         )
 
         scorer = Norm(component_wise=True)
         # Check return types
         # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, self.test, self.modified_test
-                ),
-                float,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, self.test, self.modified_test
+            ),
+            float,
         )
 
         # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, [self.test], self.modified_test
-                ),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, [self.test], self.modified_test
+            ),
+            Sequence,
         )
 
         # Check if return type is a float when input is a multivariate series and component_wise is set to True
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.mts_anomalies, self.mts_test, self.modified_mts_test
-                ),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.mts_anomalies, self.mts_test, self.modified_mts_test
+            ),
+            Sequence,
         )
 
         # Check if return type is Sequence when input is a multivariate series and component_wise is set to True
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.mts_anomalies, [self.mts_test], self.modified_mts_test
-                ),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.eval_accuracy_from_prediction(
+                self.mts_anomalies, [self.mts_test], self.modified_mts_test
+            ),
+            Sequence,
         )
 
         non_fittable_scorer = Norm(component_wise=False)
@@ -345,10 +313,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         for scorer in [non_fittable_scorer, fittable_scorer]:
 
             # name must be of type str
-            self.assertEqual(
-                type(scorer.__str__()),
-                str,
-            )
+            assert type(scorer.__str__()) == str
 
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
             with pytest.raises(ValueError):
@@ -433,7 +398,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         for scorer in list_NonFittableAnomalyScorer:
             # Check if trainable is False, being a NonFittableAnomalyScorer
-            self.assertTrue(not scorer.trainable)
+            assert not scorer.trainable
 
             # checks for score_from_prediction()
             # input must be Timeseries or sequence of Timeseries
@@ -473,10 +438,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 scorer.score_from_prediction(self.test, self.modified_test)
 
             # Check if trainable is True, being a FittableAnomalyScorer
-            self.assertTrue(scorer.trainable)
+            assert scorer.trainable
 
             # Check if _fit_called is False
-            self.assertTrue(not scorer._fit_called)
+            assert not scorer._fit_called
 
             # fit on sequence with series that have different width
             with pytest.raises(ValueError):
@@ -571,7 +536,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerA1 = scorer
             scorerA1.fit(self.train)
             # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerA1._fit_called)
+            assert scorerA1._fit_called
             with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerA1.score(self.mts_test)
@@ -579,7 +544,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerA2 = scorer
             scorerA2.fit(self.mts_train)
             # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerA2._fit_called)
+            assert scorerA2._fit_called
             with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerA2.score(self.test)
@@ -589,7 +554,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerB1 = scorer
             scorerB1.fit_from_prediction(self.train, self.modified_train)
             # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerB1._fit_called)
+            assert scorerB1._fit_called
             with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerB1.score_from_prediction(self.mts_test, self.modified_mts_test)
@@ -597,7 +562,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerB2 = scorer
             scorerB2.fit_from_prediction(self.mts_train, self.modified_mts_train)
             # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerB2._fit_called)
+            assert scorerB2._fit_called
             with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerB2.score_from_prediction(self.test, self.modified_test)
@@ -611,19 +576,15 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             Norm(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = Norm(component_wise=False)
-        self.assertTrue(
-            scorer.score_from_prediction(self.test, self.modified_test).width == 1
-        )
-        self.assertTrue(
+        assert scorer.score_from_prediction(self.test, self.modified_test).width == 1
+        assert (
             scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
             == 1
         )
         # if component_wise=True must always return the same width as the input
         scorer = Norm(component_wise=True)
-        self.assertTrue(
-            scorer.score_from_prediction(self.test, self.modified_test).width == 1
-        )
-        self.assertTrue(
+        assert scorer.score_from_prediction(self.test, self.modified_test).width == 1
+        assert (
             scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
             == self.mts_test.width
         )
@@ -636,39 +597,31 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorer.score_from_prediction(self.probabilistic, self.train)
 
         # univariate case (equivalent to abs diff)
-        self.assertEqual(
-            scorer.score_from_prediction(self.test, self.test + 1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
-        self.assertEqual(
-            scorer.score_from_prediction(self.test + 1, self.test)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case with component_wise set to True (equivalent to abs diff)
         # abs(a - 2a) =  a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"],
-            self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"]
+            == self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"],
-            self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"]
+            == self.mts_test["1"]
         )
         # abs(2a - a) =  a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"],
-            self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"]
+            == self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"],
-            self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"]
+            == self.mts_test["1"]
         )
 
         scorer = Norm(component_wise=False)
@@ -676,33 +629,27 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # always expects a deterministic input
 
         # univariate case (equivalent to abs diff)
-        self.assertEqual(
-            scorer.score_from_prediction(self.test, self.test + 1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
-        self.assertEqual(
-            scorer.score_from_prediction(self.test + 1, self.test)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case with component_wise set to False
         # norm(a - a + sqrt(2)) = 2 * len(a) with a being series of dim=2
-        self.assertAlmostEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test + np.sqrt(2))
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            2 * len(self.mts_test),
-            delta=1e-05,
+        assert (
+            abs(
+                scorer.score_from_prediction(self.mts_test, self.mts_test + np.sqrt(2))
+                .sum(axis=0)
+                .all_values()
+                .flatten()[0]
+                - 2 * len(self.mts_test)
+            )
+            < 1e-05
         )
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
     def test_Difference(self):
 
@@ -715,48 +662,40 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorer.score_from_prediction(self.probabilistic, self.train)
 
         # univariate case
-        self.assertEqual(
-            scorer.score_from_prediction(self.test, self.test + 1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            -len(self.test),
-        )
-        self.assertEqual(
-            scorer.score_from_prediction(self.test + 1, self.test)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == -len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case
         # output of score() must be the same width as the width of the input
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test).width,
-            self.mts_test.width,
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test).width
+            == self.mts_test.width
         )
 
         # a - 2a = - a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"],
-            -self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"]
+            == -self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"],
-            -self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"]
+            == -self.mts_test["1"]
         )
         # 2a - a =  a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"],
-            self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"]
+            == self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"],
-            self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"]
+            == self.mts_test["1"]
         )
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
     def test_WassersteinScorer(self):
 
@@ -769,15 +708,15 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # if component_wise=False must always return a univariate anomaly score
         scorer = WassersteinScorer(component_wise=False)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == 1)
+        assert scorer.score(self.mts_test).width == 1
         # if component_wise=True must always return the same width as the input
         scorer = WassersteinScorer(component_wise=True)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
+        assert scorer.score(self.mts_test).width == self.mts_test.width
 
         # window parameter
         # window must be int
@@ -854,7 +793,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 actual_anomalies=self.anomalies,
             )
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
     def test_univariate_Wasserstein(self):
 
@@ -907,10 +846,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
-        self.assertAlmostEqual(auc_roc_w10, 0.80637, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w10, 0.83390, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_w20, 0.77828, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w20, 0.93934, delta=1e-05)
+        assert abs(auc_roc_w10 - 0.80637) < 1e-05
+        assert abs(auc_pr_w10 - 0.83390) < 1e-05
+        assert abs(auc_roc_w20 - 0.77828) < 1e-05
+        assert abs(auc_pr_w20 - 0.93934) < 1e-05
 
     def test_multivariate_componentwise_Wasserstein(self):
 
@@ -979,9 +918,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_wasserstein_per_width, mts_test_wasserstein, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.94637, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 0.98606, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.96722, delta=1e-05)
+        assert abs(auc_roc_cwfalse - 0.94637) < 1e-05
+        assert abs(auc_roc_cwtrue[0] - 0.98606) < 1e-05
+        assert abs(auc_roc_cwtrue[1] - 0.96722) < 1e-05
 
     def test_kmeansScorer(self):
 
@@ -994,15 +933,15 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # if component_wise=False must always return a univariate anomaly score
         scorer = KMeansScorer(component_wise=False)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == 1)
+        assert scorer.score(self.mts_test).width == 1
         # if component_wise=True must always return the same width as the input
         scorer = KMeansScorer(component_wise=True)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
+        assert scorer.score(self.mts_test).width == self.mts_test.width
 
         # window parameter
         # window must be int
@@ -1044,7 +983,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         with pytest.raises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
     def test_univariate_kmeans(self):
 
@@ -1125,8 +1064,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_PR"
         )
 
-        self.assertEqual(metric_AUC_ROC, 1.0)
-        self.assertEqual(metric_AUC_PR, 1.0)
+        assert metric_AUC_ROC == 1.0
+        assert metric_AUC_PR == 1.0
 
     def test_multivariate_window_kmeans(self):
 
@@ -1199,10 +1138,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             ts_anomalies, ts_test, metric="AUC_PR"
         )
 
-        self.assertAlmostEqual(auc_roc_w1, 0.41551, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w1, 0.064761, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_w2, 0.957513, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w2, 0.88584, delta=1e-05)
+        assert abs(auc_roc_w1 - 0.41551) < 1e-05
+        assert abs(auc_pr_w1 - 0.064761) < 1e-05
+        assert abs(auc_roc_w2 - 0.957513) < 1e-05
+        assert abs(auc_pr_w2 - 0.88584) < 1e-05
 
     def test_multivariate_componentwise_kmeans(self):
 
@@ -1272,14 +1211,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
+        assert abs(auc_roc_cwtrue[0] - 1.0) < 1e-05
+        assert abs(auc_roc_cwtrue[1] - 0.97666) < 1e-05
         # sklearn changed the centroid initialization in version 1.3.0
         # so the results are slightly different for older versions
         if sklearn.__version__ < "1.3.0":
-            self.assertAlmostEqual(auc_roc_cwfalse, 0.9851, delta=1e-05)
+            assert abs(auc_roc_cwfalse - 0.9851) < 1e-05
         else:
-            self.assertAlmostEqual(auc_roc_cwfalse, 0.99007, delta=1e-05)
+            assert abs(auc_roc_cwfalse - 0.99007) < 1e-05
 
     def test_PyODScorer(self):
 
@@ -1296,15 +1235,15 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # if component_wise=False must always return a univariate anomaly score
         scorer = PyODScorer(model=KNN(), component_wise=False)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == 1)
+        assert scorer.score(self.mts_test).width == 1
         # if component_wise=True must always return the same width as the input
         scorer = PyODScorer(model=KNN(), component_wise=True)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
+        assert scorer.score(self.mts_test).width == self.mts_test.width
 
         # window parameter
         # window must be int
@@ -1346,7 +1285,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         with pytest.raises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
     def test_univariate_PyODScorer(self):
 
@@ -1428,8 +1367,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             pyod_mts_anomalies, pyod_mts_test, metric="AUC_PR"
         )
 
-        self.assertEqual(metric_AUC_ROC, 1.0)
-        self.assertEqual(metric_AUC_PR, 1.0)
+        assert metric_AUC_ROC == 1.0
+        assert metric_AUC_PR == 1.0
 
     def test_multivariate_window_PyODScorer(self):
 
@@ -1502,10 +1441,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
         auc_pr_w2 = pyod_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
 
-        self.assertAlmostEqual(auc_roc_w1, 0.5, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w1, 0.07, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_w2, 0.957513, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w2, 0.88584, delta=1e-05)
+        assert abs(auc_roc_w1 - 0.5) < 1e-05
+        assert abs(auc_pr_w1 - 0.07) < 1e-05
+        assert abs(auc_roc_w2 - 0.957513) < 1e-05
+        assert abs(auc_pr_w2 - 0.88584) < 1e-05
 
     def test_multivariate_componentwise_PyODScorer(self):
 
@@ -1580,9 +1519,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_pyod_per_width, mts_test_PyOD, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.990566, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.98311, delta=1e-05)
+        assert abs(auc_roc_cwfalse - 0.990566) < 1e-05
+        assert abs(auc_roc_cwtrue[0] - 1.0) < 1e-05
+        assert abs(auc_roc_cwtrue[1] - 0.98311) < 1e-05
 
     def test_NLLScorer(self):
 
@@ -1633,9 +1572,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
-            value_test1, -np.log(norm.pdf(3, loc=0, scale=2)), delta=1e-01
-        )
+        assert abs(value_test1 - -np.log(norm.pdf(3, loc=0, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         gaussian_samples_2 = np.random.normal(loc=0, scale=2, size=10000)
@@ -1650,9 +1587,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
-            value_test2, -np.log(norm.pdf(-2, loc=0, scale=2)), delta=1e-01
-        )
+        assert abs(value_test2 - -np.log(norm.pdf(-2, loc=0, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -1664,21 +1599,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(value_window), 2)
+        assert len(value_window) == 2
         # check width
-        self.assertEqual(value_window.width, 1)
+        assert value_window.width == 1
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
+        assert value_window.all_values().flatten()[0] == value_test1
+        assert value_window.all_values().flatten()[1] == value_test2
 
         scorer = GaussianNLLScorer(window=2)
         # check avg of two values
-        self.assertEqual(
+        assert (
             scorer.score_from_prediction(actual_series, distribution_series)
             .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
+            .flatten()[0]
+            == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
@@ -1692,13 +1627,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check length
-        self.assertEqual(len(value_multivariate), 1)
+        assert len(value_multivariate) == 1
         # check width
-        self.assertEqual(value_multivariate.width, 2)
+        assert value_multivariate.width == 2
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+        assert value_multivariate.all_values().flatten()[0] == value_test1
+        assert value_multivariate.all_values().flatten()[1] == value_test2
 
         # test window multivariate (n_samples=2, len=2, window=1 and 2)
         scorer_w1 = GaussianNLLScorer(window=1)
@@ -1726,55 +1661,67 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
+        assert len(score_w1) == 2
+        assert len(score_w2) == 1
         # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
+        assert score_w1.width == 2
+        assert score_w2.width == 2
 
         # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(norm.pdf(1.5, loc=0, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[0]
+                - -np.log(norm.pdf(1.5, loc=0, scale=2))
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(norm.pdf(2.1, loc=0, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[1]
+                - -np.log(norm.pdf(2.1, loc=0, scale=2))
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(norm.pdf(0.1, loc=0, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[2]
+                - -np.log(norm.pdf(0.1, loc=0, scale=2))
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(norm.pdf(0.001, loc=0, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[3]
+                - -np.log(norm.pdf(0.001, loc=0, scale=2))
+            )
+            < 1e-01
         )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (
-                -np.log(norm.pdf(1.5, loc=0, scale=2))
-                - np.log(norm.pdf(0.1, loc=0, scale=2))
+        assert (
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (
+                    -np.log(norm.pdf(1.5, loc=0, scale=2))
+                    - np.log(norm.pdf(0.1, loc=0, scale=2))
+                )
+                / 2
             )
-            / 2,
-            delta=1e-01,
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (
-                -np.log(norm.pdf(2.1, loc=0, scale=2))
-                - np.log(norm.pdf(0.001, loc=0, scale=2))
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (
+                    -np.log(norm.pdf(2.1, loc=0, scale=2))
+                    - np.log(norm.pdf(0.001, loc=0, scale=2))
+                )
+                / 2
             )
-            / 2,
-            delta=1e-01,
+            < 1e-01
         )
 
-        self.assertTrue(scorer.is_probabilistic)
+        assert scorer.is_probabilistic
 
     def test_LaplaceNLLScorer(self):
 
@@ -1815,12 +1762,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples
-            value_test1,
-            -np.log(laplace.pdf(3, loc=0, scale=2)),
-            delta=1e-01,
-        )
+        assert abs(value_test1 - -np.log(laplace.pdf(3, loc=0, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         laplace_samples_2 = np.random.laplace(loc=0, scale=2, size=1000)
@@ -1835,12 +1777,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples
-            value_test2,
-            -np.log(laplace.pdf(-2, loc=0, scale=2)),
-            delta=1e-01,
-        )
+        assert abs(value_test2 - -np.log(laplace.pdf(-2, loc=0, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -1852,21 +1789,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(value_window), 2)
+        assert len(value_window) == 2
         # check width
-        self.assertEqual(value_window.width, 1)
+        assert value_window.width == 1
 
         # check equal value_test1 and value_test2
-        self.assertAlmostEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertAlmostEqual(value_window.all_values().flatten()[1], value_test2)
+        assert round(abs(value_window.all_values().flatten()[0] - value_test1), 7) == 0
+        assert round(abs(value_window.all_values().flatten()[1] - value_test2), 7) == 0
 
         scorer = LaplaceNLLScorer(window=2)
         # check avg of two values
-        self.assertEqual(
+        assert (
             scorer.score_from_prediction(actual_series, distribution_series)
             .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
+            .flatten()[0]
+            == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
@@ -1880,16 +1817,18 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check length
-        self.assertEqual(len(value_multivariate), 1)
+        assert len(value_multivariate) == 1
         # check width
-        self.assertEqual(value_multivariate.width, 2)
+        assert value_multivariate.width == 2
 
         # check equal value_test1 and value_test2
-        self.assertAlmostEqual(
-            value_multivariate.all_values().flatten()[0], value_test1
+        assert (
+            round(abs(value_multivariate.all_values().flatten()[0] - value_test1), 7)
+            == 0
         )
-        self.assertAlmostEqual(
-            value_multivariate.all_values().flatten()[1], value_test2
+        assert (
+            round(abs(value_multivariate.all_values().flatten()[1] - value_test2), 7)
+            == 0
         )
 
         # test window multivariate (n_samples=2, len=2, window=1 and 2)
@@ -1918,57 +1857,67 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
+        assert len(score_w1) == 2
+        assert len(score_w2) == 1
         # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
+        assert score_w1.width == 2
+        assert score_w2.width == 2
 
         # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(laplace.pdf(1.5, loc=0, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[0]
+                - -np.log(laplace.pdf(1.5, loc=0, scale=2))
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples
-            score_w1.all_values().flatten()[1],
-            -np.log(laplace.pdf(2, loc=0, scale=2)),
-            delta=0.5,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[1]
+                - -np.log(laplace.pdf(2, loc=0, scale=2))
+            )
+            < 0.5
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(laplace.pdf(0.1, loc=0, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[2]
+                - -np.log(laplace.pdf(0.1, loc=0, scale=2))
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(laplace.pdf(0.001, loc=0, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[3]
+                - -np.log(laplace.pdf(0.001, loc=0, scale=2))
+            )
+            < 1e-01
         )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (
-                -np.log(laplace.pdf(1.5, loc=0, scale=2))
-                - np.log(laplace.pdf(0.1, loc=0, scale=2))
+        assert (
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (
+                    -np.log(laplace.pdf(1.5, loc=0, scale=2))
+                    - np.log(laplace.pdf(0.1, loc=0, scale=2))
+                )
+                / 2
             )
-            / 2,
-            delta=1e-01,
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples
-            score_w2.all_values().flatten()[1],
-            (
-                -np.log(laplace.pdf(2, loc=0, scale=2))
-                - np.log(laplace.pdf(0.001, loc=0, scale=2))
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (
+                    -np.log(laplace.pdf(2, loc=0, scale=2))
+                    - np.log(laplace.pdf(0.001, loc=0, scale=2))
+                )
+                / 2
             )
-            / 2,
-            delta=0.5,
+            < 0.5
         )
 
-        self.assertTrue(scorer.is_probabilistic)
+        assert scorer.is_probabilistic
 
     def test_ExponentialNLLScorer(self):
 
@@ -2008,12 +1957,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test1,
-            -np.log(expon.pdf(3, scale=2.0)),
-            delta=1e-01,
-        )
+        assert abs(value_test1 - -np.log(expon.pdf(3, scale=2.0))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         exponential_samples_2 = np.random.exponential(scale=2.0, size=1000)
@@ -2028,12 +1972,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test2,
-            -np.log(expon.pdf(10, scale=2)),
-            delta=1e-01,
-        )
+        assert abs(value_test2 - -np.log(expon.pdf(10, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2048,21 +1987,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(value_window), 2)
+        assert len(value_window) == 2
         # check width
-        self.assertEqual(value_window.width, 1)
+        assert value_window.width == 1
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
+        assert value_window.all_values().flatten()[0] == value_test1
+        assert value_window.all_values().flatten()[1] == value_test2
 
         scorer = ExponentialNLLScorer(window=2)
         # check avg of two values
-        self.assertEqual(
+        assert (
             scorer.score_from_prediction(actual_series, distribution_series)
             .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
+            .flatten()[0]
+            == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
@@ -2076,13 +2015,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check length
-        self.assertEqual(len(value_multivariate), 1)
+        assert len(value_multivariate) == 1
         # check width
-        self.assertEqual(value_multivariate.width, 2)
+        assert value_multivariate.width == 2
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+        assert value_multivariate.all_values().flatten()[0] == value_test1
+        assert value_multivariate.all_values().flatten()[1] == value_test2
 
         # test window multivariate (n_samples=2, len=2, window=1 and 2)
         scorer_w1 = ExponentialNLLScorer(window=1)
@@ -2110,47 +2049,49 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
+        assert len(score_w1) == 2
+        assert len(score_w2) == 1
         # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
+        assert score_w1.width == 2
+        assert score_w2.width == 2
 
         # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(expon.pdf(1.5, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[0] - -np.log(expon.pdf(1.5, scale=2)))
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(expon.pdf(2, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[1] - -np.log(expon.pdf(2, scale=2)))
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(expon.pdf(0.1, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[2] - -np.log(expon.pdf(0.1, scale=2)))
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(expon.pdf(0.001, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[3] - -np.log(expon.pdf(0.001, scale=2)))
+            < 1e-01
         )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(expon.pdf(1.5, scale=2)) - np.log(expon.pdf(0.1, scale=2))) / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (-np.log(expon.pdf(1.5, scale=2)) - np.log(expon.pdf(0.1, scale=2)))
+                / 2
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(expon.pdf(2, scale=2)) - np.log(expon.pdf(0.001, scale=2))) / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (-np.log(expon.pdf(2, scale=2)) - np.log(expon.pdf(0.001, scale=2)))
+                / 2
+            )
+            < 1e-01
         )
 
-        self.assertTrue(scorer.is_probabilistic)
+        assert scorer.is_probabilistic
 
     def test_GammaNLLScorer(self):
 
@@ -2188,12 +2129,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test1,
-            -np.log(gamma.pdf(3, 2, scale=2)),
-            delta=1e-01,
-        )
+        assert abs(value_test1 - -np.log(gamma.pdf(3, 2, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         gamma_samples_2 = np.random.gamma(2, scale=2, size=10000)
@@ -2206,12 +2142,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test2,
-            -np.log(gamma.pdf(10, 2, scale=2)),
-            delta=1e-01,
-        )
+        assert abs(value_test2 - -np.log(gamma.pdf(10, 2, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2221,21 +2152,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(value_window), 2)
+        assert len(value_window) == 2
         # check width
-        self.assertEqual(value_window.width, 1)
+        assert value_window.width == 1
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
+        assert value_window.all_values().flatten()[0] == value_test1
+        assert value_window.all_values().flatten()[1] == value_test2
 
         scorer = GammaNLLScorer(window=2)
         # check avg of two values
-        self.assertEqual(
+        assert (
             scorer.score_from_prediction(actual_series, distribution_series)
             .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
+            .flatten()[0]
+            == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
@@ -2249,13 +2180,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check length
-        self.assertEqual(len(value_multivariate), 1)
+        assert len(value_multivariate) == 1
         # check width
-        self.assertEqual(value_multivariate.width, 2)
+        assert value_multivariate.width == 2
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+        assert value_multivariate.all_values().flatten()[0] == value_test1
+        assert value_multivariate.all_values().flatten()[1] == value_test2
 
         # test window multivariate (n_samples=2, len=2, window=1 and 2)
         scorer_w1 = GammaNLLScorer(window=1)
@@ -2278,49 +2209,61 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
+        assert len(score_w1) == 2
+        assert len(score_w2) == 1
         # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
+        assert score_w1.width == 2
+        assert score_w2.width == 2
 
         # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(gamma.pdf(1.5, 2, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[0] - -np.log(gamma.pdf(1.5, 2, scale=2))
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(gamma.pdf(2, 2, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[1] - -np.log(gamma.pdf(2, 2, scale=2)))
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(gamma.pdf(0.5, 2, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[2] - -np.log(gamma.pdf(0.5, 2, scale=2))
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(gamma.pdf(0.9, 2, scale=2)),
-            delta=1e-01,
+        assert (
+            abs(
+                score_w1.all_values().flatten()[3] - -np.log(gamma.pdf(0.9, 2, scale=2))
+            )
+            < 1e-01
         )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(gamma.pdf(1.5, 2, scale=2)) - np.log(gamma.pdf(0.5, 2, scale=2)))
-            / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (
+                    -np.log(gamma.pdf(1.5, 2, scale=2))
+                    - np.log(gamma.pdf(0.5, 2, scale=2))
+                )
+                / 2
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(gamma.pdf(2, 2, scale=2)) - np.log(gamma.pdf(0.9, 2, scale=2)))
-            / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (
+                    -np.log(gamma.pdf(2, 2, scale=2))
+                    - np.log(gamma.pdf(0.9, 2, scale=2))
+                )
+                / 2
+            )
+            < 1e-01
         )
 
-        self.assertTrue(scorer.is_probabilistic)
+        assert scorer.is_probabilistic
 
     def test_CauchyNLLScorer(self):
 
@@ -2358,7 +2301,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(value_test1, -np.log(cauchy.pdf(3)), delta=1e-01)
+        assert abs(value_test1 - -np.log(cauchy.pdf(3))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         cauchy_samples_2 = np.random.standard_cauchy(size=10000)
@@ -2371,7 +2314,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(value_test2, -np.log(cauchy.pdf(-2)), delta=1e-01)
+        assert abs(value_test2 - -np.log(cauchy.pdf(-2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2381,21 +2324,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(value_window), 2)
+        assert len(value_window) == 2
         # check width
-        self.assertEqual(value_window.width, 1)
+        assert value_window.width == 1
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
+        assert value_window.all_values().flatten()[0] == value_test1
+        assert value_window.all_values().flatten()[1] == value_test2
 
         scorer = CauchyNLLScorer(window=2)
         # check avg of two values
-        self.assertEqual(
+        assert (
             scorer.score_from_prediction(actual_series, distribution_series)
             .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
+            .flatten()[0]
+            == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
@@ -2409,13 +2352,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check length
-        self.assertEqual(len(value_multivariate), 1)
+        assert len(value_multivariate) == 1
         # check width
-        self.assertEqual(value_multivariate.width, 2)
+        assert value_multivariate.width == 2
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+        assert value_multivariate.all_values().flatten()[0] == value_test1
+        assert value_multivariate.all_values().flatten()[1] == value_test2
 
         # test window multivariate (n_samples=2, len=2, window=1 and 2)
         scorer_w1 = CauchyNLLScorer(window=1)
@@ -2438,39 +2381,41 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
+        assert len(score_w1) == 2
+        assert len(score_w2) == 1
         # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
+        assert score_w1.width == 2
+        assert score_w2.width == 2
 
         # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0], -np.log(cauchy.pdf(1.5)), delta=1e-01
+        assert (
+            abs(score_w1.all_values().flatten()[0] - -np.log(cauchy.pdf(1.5))) < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1], -np.log(cauchy.pdf(2)), delta=1e-01
+        assert abs(score_w1.all_values().flatten()[1] - -np.log(cauchy.pdf(2))) < 1e-01
+        assert (
+            abs(score_w1.all_values().flatten()[2] - -np.log(cauchy.pdf(0.5))) < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2], -np.log(cauchy.pdf(0.5)), delta=1e-01
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3], -np.log(cauchy.pdf(0.9)), delta=1e-01
+        assert (
+            abs(score_w1.all_values().flatten()[3] - -np.log(cauchy.pdf(0.9))) < 1e-01
         )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(cauchy.pdf(1.5)) - np.log(cauchy.pdf(0.5))) / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (-np.log(cauchy.pdf(1.5)) - np.log(cauchy.pdf(0.5))) / 2
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(cauchy.pdf(2)) - np.log(cauchy.pdf(0.9))) / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (-np.log(cauchy.pdf(2)) - np.log(cauchy.pdf(0.9))) / 2
+            )
+            < 1e-01
         )
 
-        self.assertTrue(scorer.is_probabilistic)
+        assert scorer.is_probabilistic
 
     def test_PoissonNLLScorer(self):
 
@@ -2510,7 +2455,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(value_test1, -np.log(poisson.pmf(3, mu=1)), delta=1e-02)
+        assert abs(value_test1 - -np.log(poisson.pmf(3, mu=1))) < 1e-02
 
         # test 2 univariate (len=1 and window=1)
         poisson_samples_2 = np.random.poisson(size=10000, lam=1)
@@ -2525,7 +2470,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(value_test2, -np.log(poisson.pmf(10, mu=1)), delta=1e-01)
+        assert abs(value_test2 - -np.log(poisson.pmf(10, mu=1))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2537,21 +2482,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(value_window), 2)
+        assert len(value_window) == 2
         # check width
-        self.assertEqual(value_window.width, 1)
+        assert value_window.width == 1
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
+        assert value_window.all_values().flatten()[0] == value_test1
+        assert value_window.all_values().flatten()[1] == value_test2
 
         scorer = PoissonNLLScorer(window=2)
         # check avg of two values
-        self.assertEqual(
+        assert (
             scorer.score_from_prediction(actual_series, distribution_series)
             .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
+            .flatten()[0]
+            == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
@@ -2565,13 +2510,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # check length
-        self.assertEqual(len(value_multivariate), 1)
+        assert len(value_multivariate) == 1
         # check width
-        self.assertEqual(value_multivariate.width, 2)
+        assert value_multivariate.width == 2
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+        assert value_multivariate.all_values().flatten()[0] == value_test1
+        assert value_multivariate.all_values().flatten()[1] == value_test2
 
         # test window multivariate (n_samples=2, len=2, window=1 and 2)
         scorer_w1 = PoissonNLLScorer(window=1)
@@ -2597,44 +2542,44 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
+        assert len(score_w1) == 2
+        assert len(score_w2) == 1
         # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
+        assert score_w1.width == 2
+        assert score_w2.width == 2
 
         # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(poisson.pmf(1, mu=1)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[0] - -np.log(poisson.pmf(1, mu=1)))
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(poisson.pmf(2, mu=1)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[1] - -np.log(poisson.pmf(2, mu=1)))
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(poisson.pmf(3, mu=1)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[2] - -np.log(poisson.pmf(3, mu=1)))
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(poisson.pmf(4, mu=1)),
-            delta=1e-01,
+        assert (
+            abs(score_w1.all_values().flatten()[3] - -np.log(poisson.pmf(4, mu=1)))
+            < 1e-01
         )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(poisson.pmf(1, mu=1)) - np.log(poisson.pmf(3, mu=1))) / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (-np.log(poisson.pmf(1, mu=1)) - np.log(poisson.pmf(3, mu=1))) / 2
+            )
+            < 1e-01
         )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(poisson.pmf(2, mu=1)) - np.log(poisson.pmf(4, mu=1))) / 2,
-            delta=1e-01,
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (-np.log(poisson.pmf(2, mu=1)) - np.log(poisson.pmf(4, mu=1))) / 2
+            )
+            < 1e-01
         )
 
-        self.assertTrue(scorer.is_probabilistic)
+        assert scorer.is_probabilistic

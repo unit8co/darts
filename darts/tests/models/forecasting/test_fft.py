@@ -10,7 +10,7 @@ class FFTTestCase(DartsBaseTestClass):
 
         # test random walk
         random_walk_ts = tg.random_walk_timeseries(freq=freq, length=length)
-        self.assertEqual(_find_relevant_timestamp_attributes(random_walk_ts), set())
+        assert _find_relevant_timestamp_attributes(random_walk_ts) == set()
 
         for period, relevant_attributes in period_attributes_tuples:
 
@@ -18,21 +18,18 @@ class FFTTestCase(DartsBaseTestClass):
             seasonal_ts = tg.sine_timeseries(
                 freq=freq, value_frequency=1 / period, length=length
             )
-            self.assertEqual(
-                _find_relevant_timestamp_attributes(seasonal_ts),
-                relevant_attributes,
-                "failed to recognize season in non-noisy timeseries",
-            )
+            assert (
+                _find_relevant_timestamp_attributes(seasonal_ts) == relevant_attributes
+            ), "failed to recognize season in non-noisy timeseries"
 
             # test seasonal period with no noise
             seasonal_noisy_ts = seasonal_ts + tg.gaussian_timeseries(
                 freq=freq, length=length
             )
-            self.assertEqual(
-                _find_relevant_timestamp_attributes(seasonal_noisy_ts),
-                relevant_attributes,
-                "failed to recognize season in noisy timeseries",
-            )
+            assert (
+                _find_relevant_timestamp_attributes(seasonal_noisy_ts)
+                == relevant_attributes
+            ), "failed to recognize season in noisy timeseries"
 
     def test_find_relevant_timestamp_attributes(self):
 

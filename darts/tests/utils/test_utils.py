@@ -25,13 +25,13 @@ class UtilsTestCase(DartsBaseTestClass):
 
         # test start and end dates
         for common_series in common_series_list:
-            self.assertEqual(common_series.start_time(), pd.Timestamp("20000104"))
-            self.assertEqual(common_series.end_time(), pd.Timestamp("20000108"))
+            assert common_series.start_time() == pd.Timestamp("20000104")
+            assert common_series.end_time() == pd.Timestamp("20000108")
 
         # test widths
-        self.assertEqual(common_series_list[0].width, 1)
-        self.assertEqual(common_series_list[1].width, 1)
-        self.assertEqual(common_series_list[2].width, 2)
+        assert common_series_list[0].width == 1
+        assert common_series_list[1].width == 1
+        assert common_series_list[2].width == 2
 
     def test_sanity_check_example(self):
         class Model:
@@ -65,10 +65,10 @@ class UtilsTestCase(DartsBaseTestClass):
 
         subseries = extract_subseries(series)
 
-        self.assertEqual(len(subseries), len(start_times))
+        assert len(subseries) == len(start_times)
         for sub, start, end in zip(subseries, start_times, end_times):
-            self.assertEqual(sub.start_time(), pd.to_datetime(start))
-            self.assertEqual(sub.end_time(), pd.to_datetime(end))
+            assert sub.start_time() == pd.to_datetime(start)
+            assert sub.end_time() == pd.to_datetime(end)
 
         # Multivariate timeserie
         times = pd.date_range("20130206", "20130215")
@@ -84,13 +84,13 @@ class UtilsTestCase(DartsBaseTestClass):
 
         # gaps is characterized by NaN in all the covariate columns
         subseries_all = extract_subseries(series, mode="all")
-        self.assertEqual(len(subseries_all), 2)
-        self.assertEqual(subseries_all[0], series[:2])
-        self.assertEqual(subseries_all[1], series[3:])
+        assert len(subseries_all) == 2
+        assert subseries_all[0] == series[:2]
+        assert subseries_all[1] == series[3:]
 
         # gaps is characterized by NaN in any of the covariate columns
         subseries_any = extract_subseries(series, mode="any")
-        self.assertEqual(len(subseries_any), 3)
-        self.assertEqual(subseries_any[0], series[:2])
-        self.assertEqual(subseries_any[1], series[3:5])
-        self.assertEqual(subseries_any[2], series[-1])
+        assert len(subseries_any) == 3
+        assert subseries_any[0] == series[:2]
+        assert subseries_any[1] == series[3:5]
+        assert subseries_any[2] == series[-1]

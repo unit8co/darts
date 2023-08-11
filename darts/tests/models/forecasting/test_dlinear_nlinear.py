@@ -87,11 +87,11 @@ if TORCH_AVAILABLE:
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
-                self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+                assert abs(pred2 - 10) < abs(pred - 10)
 
                 # test short predict
                 pred3 = model2.predict(n=1)
-                self.assertEqual(len(pred3), 1)
+                assert len(pred3) == 1
 
         def test_logtensorboard(self):
             ts = tg.constant_timeseries(length=50, value=10)
@@ -141,8 +141,8 @@ if TORCH_AVAILABLE:
                 model_not_shared.fit(ts)
                 pred_shared = model_shared.predict(n=2)
                 pred_not_shared = model_not_shared.predict(n=2)
-                self.assertTrue(
-                    np.any(np.not_equal(pred_shared.values(), pred_not_shared.values()))
+                assert np.any(
+                    np.not_equal(pred_shared.values(), pred_not_shared.values())
                 )
 
         def test_multivariate_and_covariates(self):
@@ -227,8 +227,8 @@ if TORCH_AVAILABLE:
                 e1, e2 = _eval_model(
                     train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
                 )
-                self.assertLessEqual(e1, 0.34)
-                self.assertLessEqual(e2, 0.28)
+                assert e1 <= 0.34
+                assert e2 <= 0.28
 
                 e1, e2 = _eval_model(
                     train1.with_static_covariates(None),
@@ -240,14 +240,14 @@ if TORCH_AVAILABLE:
                     cls=model,
                     lkl=lkl,
                 )
-                self.assertLessEqual(e1, 0.32)
-                self.assertLessEqual(e2, 0.28)
+                assert e1 <= 0.32
+                assert e2 <= 0.28
 
                 e1, e2 = _eval_model(
                     train1, train2, val1, val2, None, None, cls=model, lkl=lkl
                 )
-                self.assertLessEqual(e1, 0.40)
-                self.assertLessEqual(e2, 0.34)
+                assert e1 <= 0.40
+                assert e2 <= 0.34
 
                 e1, e2 = _eval_model(
                     train1.with_static_covariates(None),
@@ -259,8 +259,8 @@ if TORCH_AVAILABLE:
                     cls=model,
                     lkl=lkl,
                 )
-                self.assertLessEqual(e1, 0.40)
-                self.assertLessEqual(e2, 0.34)
+                assert e1 <= 0.40
+                assert e2 <= 0.34
 
             # can only fit models with past/future covariates when shared_weights=False
             for model in [DLinearModel, NLinearModel]:

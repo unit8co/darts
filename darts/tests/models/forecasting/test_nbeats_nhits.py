@@ -79,11 +79,11 @@ if TORCH_AVAILABLE:
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
-                self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+                assert abs(pred2 - 10) < abs(pred - 10)
 
                 # test short predict
                 pred3 = model2.predict(n=1)
-                self.assertEqual(len(pred3), 1)
+                assert len(pred3) == 1
 
         def test_multivariate(self):
             # testing a 2-variate linear ts, first one from 0 to 1, second one from 0 to 0.5, length 100
@@ -105,10 +105,8 @@ if TORCH_AVAILABLE:
 
                 # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
                 # We just test if the given result is not too far on average.
-                self.assertTrue(
-                    abs(
-                        np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03
-                    )
+                assert abs(
+                    np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03
                 )
 
                 # Test Covariates
@@ -128,8 +126,8 @@ if TORCH_AVAILABLE:
                     n=3, series=series_multivariate, past_covariates=series_covariates
                 ).values()
 
-                self.assertEqual(len(res), 3)
-                self.assertTrue(abs(np.average(res)) < 5)
+                assert len(res) == 3
+                assert abs(np.average(res)) < 5
 
         def test_nhits_sampling_sizes(self):
             # providing bad sizes or shapes should fail
@@ -171,7 +169,7 @@ if TORCH_AVAILABLE:
                 num_stacks=2,
                 num_blocks=2,
             )
-            self.assertEqual(model.n_freq_downsample[-1][-1], 1)
+            assert model.n_freq_downsample[-1][-1] == 1
 
         def test_logtensorboard(self):
             ts = tg.constant_timeseries(length=50, value=10)

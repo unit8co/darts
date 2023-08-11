@@ -45,19 +45,19 @@ class StatsForecastAutoETSTestCase(DartsBaseTestClass):
         # compare in-sample predictions to the residuals they have supposedly been fitted on
         current_mae = mae(resids, ts_in_sample_preds)
 
-        self.assertTrue(current_mae < 9)
+        assert current_mae < 9
 
     def test_fit_a_linreg(self):
         model = StatsForecastAutoETS(season_length=12, model="ZZZ")
         model.fit(series=self.ts_pass_train, future_covariates=self.ts_trend_train)
 
         # check if linear regression was fit
-        self.assertIsNotNone(model._linreg)
-        self.assertTrue(model._linreg._fit_called)
+        assert model._linreg is not None
+        assert model._linreg._fit_called
 
         # fit a linear regression
         linreg = LinearRegressionModel(lags_future_covariates=[0])
         linreg.fit(series=self.ts_pass_train, future_covariates=self.ts_trend_train)
 
         # check if the linear regression was fit on the same data by checking if the coefficients are equal
-        self.assertEqual(model._linreg.model.coef_, linreg.model.coef_)
+        assert model._linreg.model.coef_ == linreg.model.coef_

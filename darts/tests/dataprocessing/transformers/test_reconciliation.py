@@ -159,7 +159,7 @@ class ReconciliationTestCase(unittest.TestCase):
         )
 
     def test_hierarchy_preserved_after_predict(self):
-        self.assertEqual(self.pred.hierarchy, self.series.hierarchy)
+        assert self.pred.hierarchy == self.series.hierarchy
 
     def test_more_intricate_hierarchy(self):
         recon = BottomUpReconciliator()
@@ -199,7 +199,7 @@ class ReconciliationTestCase(unittest.TestCase):
 
         def assert_ts_are_equal(ts1, ts2):
             for comp in ["T1", "T2", "T3", "T_sum"]:
-                self.assertEqual(ts1[comp], ts2[comp])
+                assert ts1[comp] == ts2[comp]
 
         hierarchy = {"T1": ["T_sum"], "T2": ["T_sum"], "T3": ["T_sum"]}
         ts_1 = ts_1.with_hierarchy(hierarchy)

@@ -220,9 +220,7 @@ if TORCH_AVAILABLE:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
-                self.assertTrue(
-                    model._model_params, model.untrained_model()._model_params
-                )
+                assert model._model_params, model.untrained_model()._model_params
 
         def test_save_load_model(self):
             # check if save and load methods work and if loaded model creates same forecasts as original model
@@ -255,8 +253,8 @@ if TORCH_AVAILABLE:
                 model.save()
                 model.save(model_path_str)
 
-                self.assertTrue(os.path.exists(full_model_path_str))
-                self.assertTrue(
+                assert os.path.exists(full_model_path_str)
+                assert (
                     len(
                         [
                             p
@@ -270,8 +268,8 @@ if TORCH_AVAILABLE:
                 # test load
                 loaded_model = type(model).load(model_path_str)
 
-                self.assertEqual(
-                    model_prediction, loaded_model.predict(self.forecasting_horizon)
+                assert model_prediction == loaded_model.predict(
+                    self.forecasting_horizon
                 )
 
             os.chdir(cwd)
@@ -287,13 +285,12 @@ if TORCH_AVAILABLE:
                 model.fit(self.ts_pass_train)
                 pred = model.predict(n=36)
                 mape_err = mape(self.ts_pass_val, pred)
-                self.assertTrue(
-                    mape_err < err,
+                assert mape_err < err, (
                     "Model {} produces errors too high (one time "
-                    "series). Error = {}".format(model_cls, mape_err),
+                    "series). Error = {}".format(model_cls, mape_err)
                 )
-                self.assertTrue(
-                    pred.static_covariates.equals(self.ts_passengers.static_covariates)
+                assert pred.static_covariates.equals(
+                    self.ts_passengers.static_covariates
                 )
 
         def test_multi_ts(self):
@@ -310,26 +307,23 @@ if TORCH_AVAILABLE:
                     model.predict(n=1)
                 pred = model.predict(n=36, series=self.ts_pass_train)
                 mape_err = mape(self.ts_pass_val, pred)
-                self.assertTrue(
-                    mape_err < err,
+                assert mape_err < err, (
                     "Model {} produces errors too high (several time "
-                    "series). Error = {}".format(model_cls, mape_err),
+                    "series). Error = {}".format(model_cls, mape_err)
                 )
 
                 # check prediction for several time series
                 pred_list = model.predict(
                     n=36, series=[self.ts_pass_train, self.ts_pass_train_1]
                 )
-                self.assertTrue(
-                    len(pred_list) == 2,
-                    f"Model {model_cls} did not return a list of prediction",
-                )
+                assert (
+                    len(pred_list) == 2
+                ), f"Model {model_cls} did not return a list of prediction"
                 for pred in pred_list:
                     mape_err = mape(self.ts_pass_val, pred)
-                    self.assertTrue(
-                        mape_err < err,
+                    assert mape_err < err, (
                         "Model {} produces errors too high (several time series 2). "
-                        "Error = {}".format(model_cls, mape_err),
+                        "Error = {}".format(model_cls, mape_err)
                     )
 
         def test_covariates(self):
@@ -385,10 +379,9 @@ if TORCH_AVAILABLE:
                     n=12, series=self.ts_pass_train, **cov_kwargs_notrain
                 )
                 mape_err = mape(self.ts_pass_val, pred)
-                self.assertTrue(
-                    mape_err < err,
+                assert mape_err < err, (
                     "Model {} produces errors too high (several time "
-                    "series with covariates). Error = {}".format(model_cls, mape_err),
+                    "series with covariates). Error = {}".format(model_cls, mape_err)
                 )
 
                 # when model is fit using 1 training and 1 covariate series, time series args are optional
@@ -428,9 +421,9 @@ if TORCH_AVAILABLE:
                         1, **cov_kwargs_notrain, series=self.ts_pass_train
                     )
 
-                self.assertEqual(pred1, pred2)
-                self.assertEqual(pred1, pred3)
-                self.assertEqual(pred1, pred4)
+                assert pred1 == pred2
+                assert pred1 == pred3
+                assert pred1 == pred4
 
         def test_future_covariates(self):
             # models with future covariates should produce better predictions over a long forecasting horizon
@@ -455,11 +448,9 @@ if TORCH_AVAILABLE:
             )
             model.fit(series=self.target_past, past_covariates=self.covariates_past)
             long_pred_with_cov = model.predict(n=160, past_covariates=self.covariates)
-            self.assertTrue(
-                mape(self.target_future, long_pred_no_cov)
-                > mape(self.target_future, long_pred_with_cov),
-                "Models with future covariates should produce better predictions.",
-            )
+            assert mape(self.target_future, long_pred_no_cov) > mape(
+                self.target_future, long_pred_with_cov
+            ), "Models with future covariates should produce better predictions."
 
             # block models can predict up to self.output_chunk_length points beyond the last future covariate...
             model.predict(n=165, past_covariates=self.covariates)
@@ -515,9 +506,7 @@ if TORCH_AVAILABLE:
                     batch_size=batch_size,
                 )
                 for i in range(len(targets)):
-                    self.assertLess(
-                        sum(sum((preds[i] - preds_default[i]).values())), epsilon
-                    )
+                    assert sum(sum((preds[i] - preds_default[i]).values())) < epsilon
 
         def test_predict_from_dataset_unsupported_input(self):
             # an exception should be thrown if an unsupported type is passed
@@ -538,17 +527,14 @@ if TORCH_AVAILABLE:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
-                self.assertTrue(
-                    isinstance(
-                        model,
-                        (
-                            PastCovariatesTorchModel,
-                            DualCovariatesTorchModel,
-                            MixedCovariatesTorchModel,
-                        ),
+                assert isinstance(
+                    model,
+                    (
+                        PastCovariatesTorchModel,
+                        DualCovariatesTorchModel,
+                        MixedCovariatesTorchModel,
                     ),
-                    "unit test not yet defined for the given {X}CovariatesTorchModel.",
-                )
+                ), "unit test not yet defined for the given {X}CovariatesTorchModel."
 
                 if isinstance(model, PastCovariatesTorchModel):
                     past_covs, future_covs = self.covariates, None
@@ -569,7 +555,7 @@ if TORCH_AVAILABLE:
                     pred = model.predict(
                         n=n, past_covariates=past_covs, future_covariates=future_covs
                     )
-                    self.assertEqual(len(pred), n)
+                    assert len(pred) == n
 
         def test_same_result_with_different_n_jobs(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
@@ -595,11 +581,9 @@ if TORCH_AVAILABLE:
                 pred2 = model.predict(
                     n=36, series=multiple_ts, n_jobs=-1
                 )  # assuming > 1 core available in the machine
-                self.assertEqual(
-                    pred1,
-                    pred2,
-                    "Model {} produces different predictions with different number of jobs",
-                )
+                assert (
+                    pred1 == pred2
+                ), "Model {} produces different predictions with different number of jobs"
 
         @patch(
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"

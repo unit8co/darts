@@ -122,9 +122,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         theta.fit(self.series1 + self.series2)
         forecast_mean = 0.5 * naive.predict(5) + 0.5 * theta.predict(5)
 
-        self.assertTrue(
-            np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
-        )
+        assert np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
 
     def test_predict_multivariate_ensemble_local_models(self):
         multivariate_series = self.series1.stack(self.series2)
@@ -138,12 +136,8 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         seasonal2.fit(multivariate_series)
         forecast_mean = 0.5 * seasonal1.predict(5) + 0.5 * seasonal2.predict(5)
 
-        self.assertTrue(
-            np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
-        )
-        self.assertTrue(
-            all(forecast_naive_ensemble.components == multivariate_series.components)
-        )
+        assert np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
+        assert all(forecast_naive_ensemble.components == multivariate_series.components)
 
     def test_stochastic_naive_ensemble(self):
         num_samples = 100
@@ -158,18 +152,18 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         # only probabilistic forecasting models
         naive_ensemble_proba = NaiveEnsembleModel([model_proba_1, model_proba_2])
-        self.assertTrue(naive_ensemble_proba._is_probabilistic)
+        assert naive_ensemble_proba._is_probabilistic
 
         naive_ensemble_proba.fit(self.series1 + self.series2)
         # by default, only 1 sample
         pred_proba_1_sample = naive_ensemble_proba.predict(n=5)
-        self.assertEqual(pred_proba_1_sample.n_samples, 1)
+        assert pred_proba_1_sample.n_samples == 1
 
         # possible to obtain probabilistic forecast by averaging samples across the models
         pred_proba_many_sample = naive_ensemble_proba.predict(
             n=5, num_samples=num_samples
         )
-        self.assertEqual(pred_proba_many_sample.n_samples, num_samples)
+        assert pred_proba_many_sample.n_samples == num_samples
 
         # need to redefine the models to reset the random state
         model_alone_1 = LinearRegressionModel(
@@ -184,13 +178,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             5, num_samples=num_samples
         ) + 0.5 * model_alone_2.predict(5, num_samples=num_samples)
 
-        self.assertEqual(
-            forecast_mean.values().shape, pred_proba_many_sample.values().shape
-        )
-        self.assertEqual(forecast_mean.n_samples, pred_proba_many_sample.n_samples)
-        self.assertTrue(
-            np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
-        )
+        assert forecast_mean.values().shape == pred_proba_many_sample.values().shape
+        assert forecast_mean.n_samples == pred_proba_many_sample.n_samples
+        assert np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
 
     def test_predict_likelihood_parameters_wrong_args(self):
         m_deterministic = LinearRegressionModel(lags=2, output_chunk_length=2)
@@ -260,9 +250,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         )
         naive_ensemble.fit(self.series1)
         pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
-        self.assertEqual(pred_ens.time_index, pred_mix_ens.time_index)
-        self.assertTrue(all(pred_ens.components == pred_mix_ens.components))
-        self.assertTrue(
+        assert pred_ens.time_index == pred_mix_ens.time_index
+        assert all(pred_ens.components == pred_mix_ens.components)
+        assert (
             pred_ens["sine_q0.05"].values()
             < pred_ens["sine_q0.50"].values()
             < pred_ens["sine_q0.95"].values()
@@ -299,27 +289,25 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         )
         naive_ensemble.fit(multivariate_series)
         pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
-        self.assertEqual(pred_ens.time_index, pred_mix_ens.time_index)
-        self.assertTrue(
-            all(
-                pred_ens.components
-                == [
-                    "sine_q0.05",
-                    "sine_q0.50",
-                    "sine_q0.95",
-                    "linear_q0.05",
-                    "linear_q0.50",
-                    "linear_q0.95",
-                ]
-            )
+        assert pred_ens.time_index == pred_mix_ens.time_index
+        assert all(
+            pred_ens.components
+            == [
+                "sine_q0.05",
+                "sine_q0.50",
+                "sine_q0.95",
+                "linear_q0.05",
+                "linear_q0.50",
+                "linear_q0.95",
+            ]
         )
-        self.assertTrue(all(pred_ens.components == pred_mix_ens.components))
-        self.assertTrue(
+        assert all(pred_ens.components == pred_mix_ens.components)
+        assert (
             pred_ens["sine_q0.05"].values()
             < pred_ens["sine_q0.50"].values()
             < pred_ens["sine_q0.95"].values()
         )
-        self.assertTrue(
+        assert (
             pred_ens["linear_q0.05"].values()
             < pred_ens["linear_q0.50"].values()
             < pred_ens["linear_q0.95"].values()
@@ -382,8 +370,8 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
         )
         # ensemble is neither local, nor global
-        self.assertFalse(naive_ensemble.is_local_ensemble)
-        self.assertFalse(naive_ensemble.is_global_ensemble)
+        assert not naive_ensemble.is_local_ensemble
+        assert not naive_ensemble.is_global_ensemble
 
         # ensemble contains one local model, no support for multiple ts fit
         with pytest.raises(ValueError):
@@ -458,22 +446,22 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         ensemble_model.fit(series_short, past_covariates=series_long)
         # predict after end of train series
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
-        self.assertTrue(isinstance(preds, TimeSeries))
+        assert isinstance(preds, TimeSeries)
         # predict a new target series
         preds = ensemble_model.predict(
             n=5, series=series_long, past_covariates=series_long
         )
-        self.assertTrue(isinstance(preds, TimeSeries))
+        assert isinstance(preds, TimeSeries)
         # predict multiple target series
         preds = ensemble_model.predict(
             n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        assert isinstance(preds, list) and len(preds) == 2
         # predict single target series in list
         preds = ensemble_model.predict(
             n=5, series=[series_long], past_covariates=[series_long]
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+        assert isinstance(preds, list) and len(preds) == 1
 
         # train with multiple series
         ensemble_model = self.get_global_ensemble_model()
@@ -485,17 +473,17 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         preds = ensemble_model.predict(
             n=5, series=series_long, past_covariates=series_long
         )
-        self.assertTrue(isinstance(preds, TimeSeries))
+        assert isinstance(preds, TimeSeries)
         # predict multiple target series
         preds = ensemble_model.predict(
             n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        assert isinstance(preds, list) and len(preds) == 2
         # predict single target series in list
         preds = ensemble_model.predict(
             n=5, series=[series_long], past_covariates=[series_long]
         )
-        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+        assert isinstance(preds, list) and len(preds) == 1
 
     @staticmethod
     def get_global_ensemble_model(output_chunk_length=5):

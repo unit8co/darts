@@ -28,8 +28,8 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                 start=start, end=end, value=value, length=length
             )
             value_set = set(constant_ts.values().flatten())
-            self.assertTrue(len(value_set) == 1)
-            self.assertEqual(len(constant_ts), length_assert)
+            assert len(value_set) == 1
+            assert len(constant_ts) == length_assert
 
         for length_assert in [1, 2, 5, 10, 100]:
             test_routine(start=0, length=length_assert)
@@ -55,13 +55,20 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                 start_value=start_value,
                 end_value=end_value,
             )
-            self.assertEqual(linear_ts.values()[0][0], start_value)
-            self.assertEqual(linear_ts.values()[-1][0], end_value)
-            self.assertAlmostEqual(
-                linear_ts.values()[-1][0] - linear_ts.values()[-2][0],
-                (end_value - start_value) / (length_assert - 1),
+            assert linear_ts.values()[0][0] == start_value
+            assert linear_ts.values()[-1][0] == end_value
+            assert (
+                round(
+                    abs(
+                        linear_ts.values()[-1][0]
+                        - linear_ts.values()[-2][0]
+                        - (end_value - start_value) / (length_assert - 1)
+                    ),
+                    7,
+                )
+                == 0
             )
-            self.assertEqual(len(linear_ts), length_assert)
+            assert len(linear_ts) == length_assert
 
         for length_assert in [2, 5, 10, 100]:
             test_routine(start=0, length=length_assert)
@@ -87,9 +94,9 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                 value_amplitude=value_amplitude,
                 value_y_offset=value_y_offset,
             )
-            self.assertTrue((sine_ts <= value_y_offset + value_amplitude).all().all())
-            self.assertTrue((sine_ts >= value_y_offset - value_amplitude).all().all())
-            self.assertEqual(len(sine_ts), length_assert)
+            assert (sine_ts <= value_y_offset + value_amplitude).all().all()
+            assert (sine_ts >= value_y_offset - value_amplitude).all().all()
+            assert len(sine_ts) == length_assert
 
         for length_assert in [1, 2, 5, 10, 100]:
             test_routine(start=0, length=length_assert)
@@ -105,7 +112,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
         # testing for correct length
         def test_routine(start, end=None, length=None):
             gaussian_ts = gaussian_timeseries(start=start, end=end, length=length)
-            self.assertEqual(len(gaussian_ts), length_assert)
+            assert len(gaussian_ts) == length_assert
 
         for length_assert in [1, 2, 5, 10, 100]:
             test_routine(start=0, length=length_assert)
@@ -121,7 +128,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
         # testing for correct length
         def test_routine(start, end=None, length=None):
             random_walk_ts = random_walk_timeseries(start=start, end=end, length=length)
-            self.assertEqual(len(random_walk_ts), length_assert)
+            assert len(random_walk_ts) == length_assert
 
         for length_assert in [1, 2, 5, 10, 100]:
             test_routine(start=0, length=length_assert)
@@ -153,9 +160,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             ts = holidays_timeseries(
                 time_index, country_code, until=until, add_length=add_length
             )
-            self.assertTrue(
-                all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values)
-            )
+            assert all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values)
 
         for time_index in [time_index_1, time_index_2, time_index_3]:
             for country_code in ["US", "CH", "AR"]:
@@ -190,9 +195,9 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             freq=None,
         ):
             index = generate_index(start=start, end=end, length=length, freq=freq)
-            self.assertEqual(len(index), expected_length)
-            self.assertEqual(index[0], expected_start)
-            self.assertEqual(index[-1], expected_end)
+            assert len(index) == expected_length
+            assert index[0] == expected_start
+            assert index[-1] == expected_end
 
         for length in [1, 2, 5, 50]:
             for start in [0, 1, 9]:
@@ -294,7 +299,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             autoregressive_ts = autoregressive_timeseries(
                 coef=[-1, 1.618], start=start, end=end, length=length
             )
-            self.assertEqual(len(autoregressive_ts), length_assert)
+            assert len(autoregressive_ts) == length_assert
 
         # testing for correct calculation
         def test_calculation(coef):
@@ -302,11 +307,8 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                 coef=coef, length=100
             ).values()
             for idx, val in enumerate(autoregressive_values[len(coef) :]):
-                self.assertTrue(
-                    val
-                    == np.dot(
-                        coef, autoregressive_values[idx : idx + len(coef)].ravel()
-                    )
+                assert val == np.dot(
+                    coef, autoregressive_values[idx : idx + len(coef)].ravel()
                 )
 
         for length_assert in [1, 2, 5, 10, 100]:

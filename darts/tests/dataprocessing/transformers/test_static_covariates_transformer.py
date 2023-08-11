@@ -156,8 +156,8 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
             ),
         )
         series_recovered2 = scaler.inverse_transform(series_tr2[0])
-        self.assertTrue(
-            self.series1.static_covariates.equals(series_recovered2.static_covariates)
+        assert self.series1.static_covariates.equals(
+            series_recovered2.static_covariates
         )
 
         np.testing.assert_almost_equal(
@@ -167,20 +167,16 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
             ),
         )
         series_recovered3 = scaler.inverse_transform(series_tr2[1])
-        self.assertTrue(
-            self.series2.static_covariates.equals(series_recovered3.static_covariates)
+        assert self.series2.static_covariates.equals(
+            series_recovered3.static_covariates
         )
 
         series_recovered_multi = scaler.inverse_transform(series_tr2)
-        self.assertTrue(
-            self.series1.static_covariates.equals(
-                series_recovered_multi[0].static_covariates
-            )
+        assert self.series1.static_covariates.equals(
+            series_recovered_multi[0].static_covariates
         )
-        self.assertTrue(
-            self.series2.static_covariates.equals(
-                series_recovered_multi[1].static_covariates
-            )
+        assert self.series2.static_covariates.equals(
+            series_recovered_multi[1].static_covariates
         )
 
     def helper_test_scaling(self, series, scaler, test_values):
@@ -196,6 +192,4 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
         )
 
         series_recovered = scaler.inverse_transform(series_tr)
-        self.assertTrue(
-            series.static_covariates.equals(series_recovered.static_covariates)
-        )
+        assert series.static_covariates.equals(series_recovered.static_covariates)

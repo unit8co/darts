@@ -135,7 +135,7 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
         for width, dataset_cls in zip(width_datasets, datasets):
             dataset = dataset_cls()
             ts: TimeSeries = dataset.load()
-            self.assertEqual(ts.width, width)
+            assert ts.width == width
 
     def test_hash(self):
         with pytest.raises(DatasetLoadingException):
@@ -158,8 +158,8 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
         ts = ele_multi_series_dataset.load().pd_dataframe()
 
         ms = ElectricityDataset()._to_multi_series(ts)
-        self.assertEqual(len(ms), 5)
-        self.assertEqual(len(ms[0]), 105216)
+        assert len(ms) == 5
+        assert len(ms[0]) == 105216
 
         multi_series_datasets = [
             UberTLCDataset,
@@ -170,5 +170,5 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
         ]
         for dataset in multi_series_datasets:
             ms = dataset()._to_multi_series(ts)
-            self.assertEqual(len(ms), 5)
-            self.assertEqual(len(ms[0]), len(ts.index))
+            assert len(ms) == 5
+            assert len(ms[0]) == len(ts.index)

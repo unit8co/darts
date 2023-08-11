@@ -325,8 +325,8 @@ if TORCH_AVAILABLE:
             ts_list = [ts] if isinstance(ts, TimeSeries) else ts
 
             for y_hat_i, ts_i in zip(y_hat_list, ts_list):
-                self.assertEqual(len(y_hat_i), predict_n)
-                self.assertEqual(y_hat_i.n_components, ts_i.n_components)
+                assert len(y_hat_i) == predict_n
+                assert y_hat_i.n_components == ts_i.n_components
 
         def helper_test_prediction_accuracy(
             self,
@@ -352,12 +352,10 @@ if TORCH_AVAILABLE:
             )
 
             y_true = ts[y_hat.start_time() : y_hat.end_time()]
-            self.assertTrue(
-                np.allclose(
-                    y_true[1:-1].all_values(),
-                    y_hat[1:-1].all_values(),
-                    atol=absolute_tolarance,
-                )
+            assert np.allclose(
+                y_true[1:-1].all_values(),
+                y_hat[1:-1].all_values(),
+                atol=absolute_tolarance,
             )
 
         @staticmethod

@@ -145,9 +145,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
-            self.assertTrue(
-                model._model_params == model.untrained_model()._model_params
-            )
+            assert model._model_params == model.untrained_model()._model_params
 
     def test_save_load_model(self):
         # check if save and load methods work and if loaded model creates same forecasts as original model
@@ -174,9 +172,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 model.save(f)
 
             for p in full_model_paths:
-                self.assertTrue(os.path.exists(p))
+                assert os.path.exists(p)
 
-            self.assertTrue(
+            assert (
                 len(
                     [
                         p
@@ -199,8 +197,8 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             ]
 
             for loaded_model in loaded_models:
-                self.assertEqual(
-                    model_prediction, loaded_model.predict(self.forecasting_horizon)
+                assert model_prediction == loaded_model.predict(
+                    self.forecasting_horizon
                 )
 
         os.chdir(cwd)
@@ -224,9 +222,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_models_runnability(self):
         for model, _ in models:
             if not isinstance(model, RegressionModel):
-                self.assertTrue(isinstance(model, LocalForecastingModel))
+                assert isinstance(model, LocalForecastingModel)
             prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
-            self.assertTrue(len(prediction) == self.forecasting_horizon)
+            assert len(prediction) == self.forecasting_horizon
 
     def test_models_performance(self):
         # for every model, check whether its errors do not exceed the given bounds
@@ -235,10 +233,10 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
             current_mape = mape(self.ts_pass_val, prediction)
-            self.assertTrue(
-                current_mape < max_mape,
-                "{} model exceeded the maximum MAPE of {}. "
-                "with a MAPE of {}".format(str(model), max_mape, current_mape),
+            assert (
+                current_mape < max_mape
+            ), "{} model exceeded the maximum MAPE of {}. " "with a MAPE of {}".format(
+                str(model), max_mape, current_mape
             )
 
     def test_multivariate_models_performance(self):
@@ -248,10 +246,10 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(self.ts_ice_heater_train)
             prediction = model.predict(len(self.ts_ice_heater_val))
             current_mape = mape(self.ts_ice_heater_val, prediction)
-            self.assertTrue(
-                current_mape < max_mape,
-                "{} model exceeded the maximum MAPE of {}. "
-                "with a MAPE of {}".format(str(model), max_mape, current_mape),
+            assert (
+                current_mape < max_mape
+            ), "{} model exceeded the maximum MAPE of {}. " "with a MAPE of {}".format(
+                str(model), max_mape, current_mape
             )
 
     def test_multivariate_input(self):
@@ -296,7 +294,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     self.forecasting_horizon, future_covariates=future_covariates
                 )
 
-                self.assertTrue(len(prediction) == self.forecasting_horizon)
+                assert len(prediction) == self.forecasting_horizon
 
                 # Test mismatch in length between exogenous variables and forecasting horizon
                 with pytest.raises(ValueError):
@@ -349,11 +347,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 model.fit(series, future_covariates=fc)
 
                 prediction = model.predict(n, future_covariates=fc)
-                self.assertTrue(len(prediction) == n)
+                assert len(prediction) == n
 
                 if isinstance(model, TransferableFutureCovariatesLocalForecastingModel):
                     prediction = model.predict(n, series=series, future_covariates=fc)
-                    self.assertTrue(len(prediction) == n)
+                    assert len(prediction) == n
 
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)
@@ -378,17 +376,15 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         model = NaiveSeasonal(K=1)
         model.fit(ts)
         pred = model.predict(n=5)
-        self.assertTrue(
-            all(pred.time_index == pd.RangeIndex(start=50, stop=60, step=2))
-        )
+        assert all(pred.time_index == pd.RangeIndex(start=50, stop=60, step=2))
 
         # datetime-index
         ts = tg.constant_timeseries(start=pd.Timestamp("20130101"), length=20, value=1)
         model = NaiveSeasonal(K=1)
         model.fit(ts)
         pred = model.predict(n=5)
-        self.assertEqual(pred.start_time(), pd.Timestamp("20130121"))
-        self.assertEqual(pred.end_time(), pd.Timestamp("20130125"))
+        assert pred.start_time() == pd.Timestamp("20130121")
+        assert pred.end_time() == pd.Timestamp("20130125")
 
     @pytest.mark.slow
     def test_statsmodels_future_models(self):
@@ -441,7 +437,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             pred2 = model.predict(n=pred_len, series=series2, num_samples=n_samples)
 
             # check that the results with a second custom ts are different from the results given with the training ts
-            self.assertFalse(np.array_equal(pred1.values, pred2.values()))
+            assert not np.array_equal(pred1.values, pred2.values())
 
             # check runnability with exogeneous variables
             model = model_cls(**kwargs)
@@ -449,7 +445,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             pred1 = model.predict(n=pred_len, future_covariates=exog1)
             pred2 = model.predict(n=pred_len, series=series2, future_covariates=exog2)
 
-            self.assertFalse(np.array_equal(pred1.values(), pred2.values()))
+            assert not np.array_equal(pred1.values(), pred2.values())
 
             # check runnability with future covariates with extra time steps in the past compared to the target series
             model = model_cls(**kwargs)
@@ -493,7 +489,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.predict(n=pred_len, series=series2, future_covariates=exog2)
             pred3 = model.predict(n=pred_len, future_covariates=exog1)
 
-            self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
+            assert np.array_equal(pred1.values(), pred3.values())
             model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
     @patch("typing.Callable", autospec=retrain_func, return_value=True)
@@ -627,7 +623,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             ),
         ]
         for model, expected in model_expected_name_pairs:
-            self.assertEqual(expected, str(model))
+            assert expected == str(model)
 
     def test_model_repr_call(self):
         model_expected_name_pairs = [
@@ -642,4 +638,4 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             ),  # default value for a param
         ]
         for model, expected in model_expected_name_pairs:
-            self.assertEqual(expected, repr(model))
+            assert expected == repr(model)

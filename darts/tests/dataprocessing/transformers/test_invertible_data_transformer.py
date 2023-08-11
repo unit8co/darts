@@ -169,10 +169,10 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
 
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
 
         # Should get input back:
-        self.assertEqual(mock.inverse_transform(transformed), test_input)
+        assert mock.inverse_transform(transformed) == test_input
 
     def test_input_transformed_multiple_series(self):
         """
@@ -190,20 +190,20 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
         mock = self.DataTransformerMock(scale=2, translation=10, parallel_params=False)
         (transformed_1, transformed_2) = mock.transform((test_input_1, test_input_2))
         # 2 * 1 + 10 = 12
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         # 2 * 2 + 10 = 14
-        self.assertEqual(transformed_2, constant_timeseries(value=14, length=11))
+        assert transformed_2 == constant_timeseries(value=14, length=11)
         # Should get input back:
         inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
-        self.assertEqual(inv_1, test_input_1)
-        self.assertEqual(inv_2, test_input_2)
+        assert inv_1 == test_input_1
+        assert inv_2 == test_input_2
 
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
         transformed_1 = mock.transform(test_input_1)
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         inv_1 = mock.inverse_transform(transformed_1)
-        self.assertEqual(inv_1, test_input_1)
+        assert inv_1 == test_input_1
 
         # Have different `scale` param for different jobs:
         mock = self.DataTransformerMock(
@@ -211,13 +211,13 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
         )
         (transformed_1, transformed_2) = mock.transform((test_input_1, test_input_2))
         # 2 * 1 + 10 = 12
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 10 = 16
-        self.assertEqual(transformed_2, constant_timeseries(value=16, length=11))
+        assert transformed_2 == constant_timeseries(value=16, length=11)
         # Should get input back:
         inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
-        self.assertEqual(inv_1, test_input_1)
-        self.assertEqual(inv_2, test_input_2)
+        assert inv_1 == test_input_1
+        assert inv_2 == test_input_2
 
         # Have different `scale`, `translation`, and `stack_samples` params for different jobs:
         mock = self.DataTransformerMock(
@@ -229,19 +229,19 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
         )
         (transformed_1, transformed_2) = mock.transform((test_input_1, test_input_2))
         # 2 * 1 + 10 = 12
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 11 = 17
-        self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
+        assert transformed_2 == constant_timeseries(value=17, length=11)
         # Should get input back:
         inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
-        self.assertEqual(inv_1, test_input_1)
-        self.assertEqual(inv_2, test_input_2)
+        assert inv_1 == test_input_1
+        assert inv_2 == test_input_2
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
         transformed_1 = mock.transform(test_input_1)
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         inv_1 = mock.inverse_transform(transformed_1)
-        self.assertEqual(inv_1, test_input_1)
+        assert inv_1 == test_input_1
 
         # Specify three sets of fixed params, but pass only one or two series as inputs
         # to `transform`/`inverse_transform`; transformer should apply `i`th set of fixed
@@ -257,18 +257,18 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
         # fixed params, should transform/inverse transform using the first set of fixed
         # parameters:
         transformed_1 = mock.transform(test_input_1)
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
         inv_1 = mock.inverse_transform(transformed_1)
-        self.assertEqual(inv_1, test_input_1)
+        assert inv_1 == test_input_1
         # If two series provided to transformer with three sets of
         # fixed params, should transform/inverse transform using the first and
         # second set of fixed parameters:
         transformed_1, transformed_2 = mock.transform((test_input_1, test_input_2))
-        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
-        self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
+        assert transformed_1 == constant_timeseries(value=12, length=10)
+        assert transformed_2 == constant_timeseries(value=17, length=11)
         inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
-        self.assertEqual(inv_1, test_input_1)
-        self.assertEqual(inv_2, test_input_2)
+        assert inv_1 == test_input_1
+        assert inv_2 == test_input_2
 
     def test_input_transformed_multiple_samples(self):
         """
@@ -289,10 +289,10 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
         expected = expected.concatenate(
             constant_timeseries(value=14, length=10), axis="sample"
         )
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
         # Should get input back:
         inv = mock.inverse_transform(transformed)
-        self.assertEqual(inv, test_input)
+        assert inv == test_input
 
     def test_input_transformed_masking(self):
         """
@@ -316,15 +316,15 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
             scale=scale, translation=translation, mask_components=True
         )
         transformed = mock.transform(test_input, component_mask=mask)
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
         # Should get input back:
         inv = mock.inverse_transform(transformed, component_mask=mask)
-        self.assertEqual(inv, test_input)
+        assert inv == test_input
 
         # Manually apply component mask:
         mock = self.DataTransformerMock(scale=2, translation=10, mask_components=False)
         transformed = mock.transform(test_input, component_mask=mask)
-        self.assertEqual(transformed, expected)
+        assert transformed == expected
         # Should get input back:
         inv = mock.inverse_transform(transformed, component_mask=mask)
-        self.assertEqual(inv, test_input)
+        assert inv == test_input

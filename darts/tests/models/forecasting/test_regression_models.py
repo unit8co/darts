@@ -418,30 +418,26 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 # TESTING SINGLE INT
                 # testing lags
                 model_instance = model(lags=5, multi_models=mode)
-                self.assertEqual(
-                    model_instance.lags.get("target"), [-5, -4, -3, -2, -1]
-                )
+                assert model_instance.lags.get("target") == [-5, -4, -3, -2, -1]
                 # testing lags_past_covariates
                 model_instance = model(
                     lags=None, lags_past_covariates=3, multi_models=mode
                 )
-                self.assertEqual(model_instance.lags.get("past"), [-3, -2, -1])
+                assert model_instance.lags.get("past") == [-3, -2, -1]
                 # testing lags_future covariates
                 model_instance = model(
                     lags=None, lags_future_covariates=(3, 5), multi_models=mode
                 )
-                self.assertEqual(
-                    model_instance.lags.get("future"), [-3, -2, -1, 0, 1, 2, 3, 4]
-                )
+                assert model_instance.lags.get("future") == [-3, -2, -1, 0, 1, 2, 3, 4]
 
                 # TESTING LIST of int
                 # lags
                 values = [-5, -3, -1]
                 model_instance = model(lags=values, multi_models=mode)
-                self.assertEqual(model_instance.lags.get("target"), values)
+                assert model_instance.lags.get("target") == values
                 # testing lags_past_covariates
                 model_instance = model(lags_past_covariates=values, multi_models=mode)
-                self.assertEqual(model_instance.lags.get("past"), values)
+                assert model_instance.lags.get("past") == values
                 # testing lags_future_covariates
 
                 with pytest.raises(ValueError):
@@ -494,43 +490,39 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             )
 
             # checking number of dimensions
-            self.assertEqual(len(training_samples.shape), 2)  # samples, features
-            self.assertEqual(
-                len(training_labels.shape), 2
-            )  # samples, components (multivariate)
-            self.assertEqual(training_samples.shape[0], training_labels.shape[0])
-            self.assertEqual(
-                training_samples.shape[0], len(self.target_series) * max_samples_per_ts
+            assert len(training_samples.shape) == 2  # samples, features
+            assert len(training_labels.shape) == 2  # samples, components (multivariate)
+            assert training_samples.shape[0] == training_labels.shape[0]
+            assert (
+                training_samples.shape[0]
+                == len(self.target_series) * max_samples_per_ts
             )
-            self.assertEqual(
-                training_samples.shape[1],
-                len(self.lags_1["target"]) * self.target_series[0].width
+            assert (
+                training_samples.shape[1]
+                == len(self.lags_1["target"]) * self.target_series[0].width
                 + len(self.lags_1["past"]) * self.past_covariates[0].width
-                + len(self.lags_1["future"]) * self.future_covariates[0].width,
+                + len(self.lags_1["future"]) * self.future_covariates[0].width
             )
 
             # check last sample
-            self.assertListEqual(
-                list(training_samples[0, :]),
-                [
-                    79.0,
-                    179.0,
-                    279.0,
-                    80.0,
-                    180.0,
-                    280.0,
-                    81.0,
-                    181.0,
-                    281.0,
-                    10078.0,
-                    10178.0,
-                    10080.0,
-                    10180.0,
-                    20077.0,
-                    20084.0,
-                ],
-            )
-            self.assertListEqual(list(training_labels[0]), [82, 182, 282])
+            assert list(training_samples[0, :]) == [
+                79.0,
+                179.0,
+                279.0,
+                80.0,
+                180.0,
+                280.0,
+                81.0,
+                181.0,
+                281.0,
+                10078.0,
+                10178.0,
+                10080.0,
+                10180.0,
+                20077.0,
+                20084.0,
+            ]
+            assert list(training_labels[0]) == [82, 182, 282]
 
     def test_prediction_data_creation(self):
         multi_models_modes = [True, False]
@@ -601,153 +593,136 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     ]
                 )
             # prediction preprocessing end
-            self.assertTrue(
-                all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags])
+            assert all(
+                [lag >= 0 for lags in relative_cov_lags.values() for lag in lags]
             )
 
             if mode:
                 # tests for multi_models = True
-                self.assertEqual(
-                    covariate_matrices["past"].shape,
-                    (
-                        len(series),
-                        relative_cov_lags["past"][-1]
-                        + (n_pred_steps - 1) * output_chunk_length
-                        + 1,
-                        covariates["past"][0][0].width,
-                    ),
+                assert covariate_matrices["past"].shape == (
+                    len(series),
+                    relative_cov_lags["past"][-1]
+                    + (n_pred_steps - 1) * output_chunk_length
+                    + 1,
+                    covariates["past"][0][0].width,
                 )
-                self.assertEqual(
-                    covariate_matrices["future"].shape,
-                    (
-                        len(series),
-                        relative_cov_lags["future"][-1]
-                        + (n_pred_steps - 1) * output_chunk_length
-                        + 1,
-                        covariates["future"][0][0].width,
-                    ),
+                assert covariate_matrices["future"].shape == (
+                    len(series),
+                    relative_cov_lags["future"][-1]
+                    + (n_pred_steps - 1) * output_chunk_length
+                    + 1,
+                    covariates["future"][0][0].width,
                 )
-                self.assertEqual(
-                    series_matrix.shape,
-                    (len(series), -self.lags_1["target"][0], series[0].width),
+                assert series_matrix.shape == (
+                    len(series),
+                    -self.lags_1["target"][0],
+                    series[0].width,
                 )
-                self.assertListEqual(
-                    list(covariate_matrices["past"][0, :, 0]),
-                    [
-                        10047.0,
-                        10048.0,
-                        10049.0,
-                        10050.0,
-                        10051.0,
-                        10052.0,
-                        10053.0,
-                        10054.0,
-                        10055.0,
-                        10056.0,
-                        10057.0,
-                        10058.0,
-                        10059.0,
-                    ],
-                )
-                self.assertListEqual(
-                    list(covariate_matrices["future"][0, :, 0]),
-                    [
-                        20046.0,
-                        20047.0,
-                        20048.0,
-                        20049.0,
-                        20050.0,
-                        20051.0,
-                        20052.0,
-                        20053.0,
-                        20054.0,
-                        20055.0,
-                        20056.0,
-                        20057.0,
-                        20058.0,
-                        20059.0,
-                        20060.0,
-                        20061.0,
-                        20062.0,
-                        20063.0,
-                    ],
-                )
-                self.assertListEqual(list(series_matrix[0, :, 0]), [48.0, 49.0, 50.0])
+                assert list(covariate_matrices["past"][0, :, 0]) == [
+                    10047.0,
+                    10048.0,
+                    10049.0,
+                    10050.0,
+                    10051.0,
+                    10052.0,
+                    10053.0,
+                    10054.0,
+                    10055.0,
+                    10056.0,
+                    10057.0,
+                    10058.0,
+                    10059.0,
+                ]
+                assert list(covariate_matrices["future"][0, :, 0]) == [
+                    20046.0,
+                    20047.0,
+                    20048.0,
+                    20049.0,
+                    20050.0,
+                    20051.0,
+                    20052.0,
+                    20053.0,
+                    20054.0,
+                    20055.0,
+                    20056.0,
+                    20057.0,
+                    20058.0,
+                    20059.0,
+                    20060.0,
+                    20061.0,
+                    20062.0,
+                    20063.0,
+                ]
+                assert list(series_matrix[0, :, 0]) == [48.0, 49.0, 50.0]
             else:
                 # tests for multi_models = False
-                self.assertEqual(
-                    covariate_matrices["past"].shape,
-                    (
-                        len(series),
-                        relative_cov_lags["past"][-1]
-                        + (n_pred_steps - 1) * output_chunk_length
-                        + (remaining_steps - 1)
-                        + 1,
-                        covariates["past"][0][0].width,
-                    ),
+                assert covariate_matrices["past"].shape == (
+                    len(series),
+                    relative_cov_lags["past"][-1]
+                    + (n_pred_steps - 1) * output_chunk_length
+                    + (remaining_steps - 1)
+                    + 1,
+                    covariates["past"][0][0].width,
                 )
-                self.assertEqual(
-                    covariate_matrices["future"].shape,
-                    (
-                        len(series),
-                        relative_cov_lags["future"][-1]
-                        + (n_pred_steps - 1) * output_chunk_length
-                        + (remaining_steps - 1)
-                        + 1,
-                        covariates["future"][0][0].width,
-                    ),
+                assert covariate_matrices["future"].shape == (
+                    len(series),
+                    relative_cov_lags["future"][-1]
+                    + (n_pred_steps - 1) * output_chunk_length
+                    + (remaining_steps - 1)
+                    + 1,
+                    covariates["future"][0][0].width,
                 )
-                self.assertEqual(
-                    series_matrix.shape,
-                    (len(series), -self.lags_1["target"][0] + shift, series[0].width),
+                assert series_matrix.shape == (
+                    len(series),
+                    -self.lags_1["target"][0] + shift,
+                    series[0].width,
                 )
-                self.assertListEqual(
-                    list(covariate_matrices["past"][0, :, 0]),
-                    [
-                        10043.0,
-                        10044.0,
-                        10045.0,
-                        10046.0,
-                        10047.0,
-                        10048.0,
-                        10049.0,
-                        10050.0,
-                        10051.0,
-                        10052.0,
-                        10053.0,
-                        10054.0,
-                        10055.0,
-                        10056.0,
-                    ],
-                )
-                self.assertListEqual(
-                    list(covariate_matrices["future"][0, :, 0]),
-                    [
-                        20042.0,
-                        20043.0,
-                        20044.0,
-                        20045.0,
-                        20046.0,
-                        20047.0,
-                        20048.0,
-                        20049.0,
-                        20050.0,
-                        20051.0,
-                        20052.0,
-                        20053.0,
-                        20054.0,
-                        20055.0,
-                        20056.0,
-                        20057.0,
-                        20058.0,
-                        20059.0,
-                        20060.0,
-                    ],
-                )
-                self.assertListEqual(
-                    list(series_matrix[0, :, 0]),
-                    [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
-                )
+                assert list(covariate_matrices["past"][0, :, 0]) == [
+                    10043.0,
+                    10044.0,
+                    10045.0,
+                    10046.0,
+                    10047.0,
+                    10048.0,
+                    10049.0,
+                    10050.0,
+                    10051.0,
+                    10052.0,
+                    10053.0,
+                    10054.0,
+                    10055.0,
+                    10056.0,
+                ]
+                assert list(covariate_matrices["future"][0, :, 0]) == [
+                    20042.0,
+                    20043.0,
+                    20044.0,
+                    20045.0,
+                    20046.0,
+                    20047.0,
+                    20048.0,
+                    20049.0,
+                    20050.0,
+                    20051.0,
+                    20052.0,
+                    20053.0,
+                    20054.0,
+                    20055.0,
+                    20056.0,
+                    20057.0,
+                    20058.0,
+                    20059.0,
+                    20060.0,
+                ]
+                assert list(series_matrix[0, :, 0]) == [
+                    44.0,
+                    45.0,
+                    46.0,
+                    47.0,
+                    48.0,
+                    49.0,
+                    50.0,
+                ]
 
     def test_optional_static_covariates(self):
         """adding static covariates to lagged data logic is tested in
@@ -870,7 +845,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             train_series_static_cov, pred_no_static_cov, pred_static_cov
         ):
             rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
-            self.assertLess(rmses[1], rmses[0])
+            assert rmses[1] < rmses[0]
 
         # given series of different sizes in input
         train_series_no_cov = [sine_series[period:], irregular_series]
@@ -890,10 +865,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         expected_features_in = [
             f"smooth_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
         ]
-        self.assertEqual(model_no_static_cov.lagged_feature_names, expected_features_in)
-        self.assertEqual(
-            len(model_no_static_cov.model.feature_importances_),
-            len(expected_features_in),
+        assert model_no_static_cov.lagged_feature_names == expected_features_in
+        assert len(model_no_static_cov.model.feature_importances_) == len(
+            expected_features_in
         )
 
         fitting_series = [
@@ -908,10 +882,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             f"smooth_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
         ] + ["curve_type_statcov_target_smooth"]
 
-        self.assertEqual(model_static_cov.lagged_feature_names, expected_features_in)
-        self.assertEqual(
-            len(model_static_cov.model.feature_importances_),
-            len(expected_features_in),
+        assert model_static_cov.lagged_feature_names == expected_features_in
+        assert len(model_static_cov.model.feature_importances_) == len(
+            expected_features_in
         )
 
         pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
@@ -921,7 +894,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             train_series_static_cov, pred_no_static_cov, pred_static_cov
         ):
             rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
-            self.assertLess(rmses[1], rmses[0])
+            assert rmses[1] < rmses[0]
 
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
@@ -973,16 +946,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
                 )
 
-                self.assertEqual(
-                    model_instance.input_dim, {"target": 1, "past": 2, "future": None}
-                )
+                assert model_instance.input_dim == {
+                    "target": 1,
+                    "past": 2,
+                    "future": None,
+                }
 
                 with pytest.raises(ValueError):
                     prediction = model_instance.predict(n=len(test_y) + 2)
 
                 # while it should work with n = 1
                 prediction = model_instance.predict(n=1)
-                self.assertEqual(len(prediction), 1)
+                assert len(prediction) == 1
 
     @pytest.mark.slow
     def test_fit(self):
@@ -1003,7 +978,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
                     model_instance = model(lags=12, multi_models=mode)
                     model_instance.fit(series=series)
-                    self.assertEqual(model_instance.lags.get("past"), None)
+                    assert model_instance.lags.get("past") is None
 
                     model_instance = model(
                         lags=12, lags_past_covariates=12, multi_models=mode
@@ -1011,7 +986,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     model_instance.fit(
                         series=series, past_covariates=self.sine_multivariate1
                     )
-                    self.assertEqual(len(model_instance.lags.get("past")), 12)
+                    assert len(model_instance.lags.get("past")) == 12
 
                     model_instance = model(
                         lags=12, lags_future_covariates=(0, 1), multi_models=mode
@@ -1019,7 +994,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     model_instance.fit(
                         series=series, future_covariates=self.sine_multivariate1
                     )
-                    self.assertEqual(len(model_instance.lags.get("future")), 1)
+                    assert len(model_instance.lags.get("future")) == 1
 
                     model_instance = model(
                         lags=12, lags_past_covariates=[-1, -4, -6], multi_models=mode
@@ -1027,7 +1002,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     model_instance.fit(
                         series=series, past_covariates=self.sine_multivariate1
                     )
-                    self.assertEqual(len(model_instance.lags.get("past")), 3)
+                    assert len(model_instance.lags.get("past")) == 3
 
                     model_instance = model(
                         lags=12,
@@ -1040,7 +1015,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         past_covariates=self.sine_multivariate1,
                         future_covariates=self.sine_multivariate1,
                     )
-                    self.assertEqual(len(model_instance.lags.get("past")), 3)
+                    assert len(model_instance.lags.get("past")) == 3
 
     def helper_test_models_accuracy(self, series, past_covariates, min_rmse_model):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
@@ -1068,10 +1043,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     current_rmse = rmse(prediction, test_series)
                     # in case of multi-series take mean rmse
                     mean_rmse = np.mean(current_rmse)
-                    self.assertTrue(
-                        mean_rmse <= min_rmse_model[idx],
+                    assert mean_rmse <= min_rmse_model[idx], (
                         f"{str(model_instance)} model was not able to predict data as well as expected. "
-                        f"A mean rmse score of {mean_rmse} was recorded.",
+                        f"A mean rmse score of {mean_rmse} was recorded."
                     )
 
     def test_models_accuracy_univariate(self):
@@ -1110,30 +1084,22 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             min_train_series_length_expected = (
                 -model.lags["target"][0] + model.output_chunk_length + 1
             )
-            self.assertEqual(
-                min_train_series_length_expected, model.min_train_series_length
-            )
+            assert min_train_series_length_expected == model.min_train_series_length
             model = cb_cls(lags=2, multi_models=mode)
             min_train_series_length_expected = (
                 -model.lags["target"][0] + model.output_chunk_length + 1
             )
-            self.assertEqual(
-                min_train_series_length_expected, model.min_train_series_length
-            )
+            assert min_train_series_length_expected == model.min_train_series_length
             model = lgbm_cls(lags=[-4, -3, -2], multi_models=mode)
             min_train_series_length_expected = (
                 -model.lags["target"][0] + model.output_chunk_length + 1
             )
-            self.assertEqual(
-                min_train_series_length_expected, model.min_train_series_length
-            )
+            assert min_train_series_length_expected == model.min_train_series_length
             model = XGBModel(lags=[-4, -3, -2], multi_models=mode)
             min_train_series_length_expected = (
                 -model.lags["target"][0] + model.output_chunk_length + 1
             )
-            self.assertEqual(
-                min_train_series_length_expected, model.min_train_series_length
-            )
+            assert min_train_series_length_expected == model.min_train_series_length
 
     def test_historical_forecast(self):
         mutli_models_modes = [True, False]
@@ -1150,7 +1116,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 last_points_only=True,
                 verbose=False,
             )
-            self.assertEqual(len(result), 21)
+            assert len(result) == 21
 
             model = self.models[1](lags=5, lags_past_covariates=5, multi_models=mode)
             result = model.historical_forecasts(
@@ -1164,7 +1130,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 last_points_only=True,
                 verbose=False,
             )
-            self.assertEqual(len(result), 21)
+            assert len(result) == 21
 
             model = self.models[1](
                 lags=5, lags_past_covariates=5, output_chunk_length=5, multi_models=mode
@@ -1180,7 +1146,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 last_points_only=True,
                 verbose=False,
             )
-            self.assertEqual(len(result), 21)
+            assert len(result) == 21
 
     def test_multioutput_wrapper(self):
         lags = 4
@@ -1197,9 +1163,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         for model, supports_multioutput_natively in models:
             model.fit(series=self.sine_multivariate1)
             if supports_multioutput_natively:
-                self.assertFalse(isinstance(model.model, MultiOutputRegressor))
+                assert not isinstance(model.model, MultiOutputRegressor)
             else:
-                self.assertIsInstance(model.model, MultiOutputRegressor)
+                assert isinstance(model.model, MultiOutputRegressor)
 
     def test_multioutput_validation(self):
 
@@ -1230,7 +1196,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         for model in models:
             model.fit(series=train, val_series=val)
             if model.output_chunk_length > 1 and model.multi_models:
-                self.assertIsInstance(model.model, MultiOutputRegressor)
+                assert isinstance(model.model, MultiOutputRegressor)
 
     def test_regression_model(self):
         multi_models_modes = [True, False]
@@ -1249,7 +1215,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
             for model in models:
                 model.fit(series=self.sine_univariate1)
-                self.assertEqual(len(model.lags.get("target")), lags)
+                assert len(model.lags.get("target")) == lags
                 model.predict(n=10)
 
     def test_multiple_ts(self):
@@ -1284,9 +1250,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 past_covariates=[past_covariates, past_covariates + 0.5],
             )
 
-            self.assertEqual(
-                len(predictions[0]), 10, f"Found {len(predictions)} instead"
-            )
+            assert len(predictions[0]) == 10, f"Found {len(predictions)} instead"
 
             # multiple TS, both future and past covariates, checking that both covariates lead to better results than
             # using a single one (target series = past_cov + future_cov + noise)
@@ -1366,7 +1330,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 inter_reduction=np.mean,
             )
 
-            self.assertGreater(error_past_only, error_both)
+            assert error_past_only > error_both
             # test 2: with both covariates, 2 TS should learn more than one (with little noise)
             model = RegressionModel(
                 lags=3,
@@ -1391,7 +1355,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 inter_reduction=np.mean,
             )
 
-            self.assertGreater(error_both, error_both_multi_ts)
+            assert error_both > error_both_multi_ts
 
     def test_only_future_covariates(self):
         multi_models_modes = [True, False]
@@ -1417,9 +1381,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 future_covariates=[covariates, covariates + 0.5],
             )
 
-            self.assertEqual(
-                len(predictions[0]), 10, f"Found {len(predictions[0])} instead"
-            )
+            assert len(predictions[0]) == 10, f"Found {len(predictions[0])} instead"
 
     def test_not_enough_covariates(self):
         multi_models_modes = [True, False]
@@ -1569,9 +1531,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             np.testing.assert_equal(preds[0].values(), preds[1].values())
 
             # the time axis returned by the second model should be as expected
-            self.assertTrue(
-                all(preds[1].time_index == pd.RangeIndex(start=50, stop=70, step=2))
-            )
+            assert all(preds[1].time_index == pd.RangeIndex(start=50, stop=70, step=2))
 
     def test_encoders(self):
         max_past_lag = -4
@@ -2108,15 +2068,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        self.assertEqual(indices, [2, 3, 5])
-        self.assertEqual(
-            column_names,
-            [
-                "past_cov_past_cov_cat_dummy_lag-1",
-                "fut_cov_fut_cov_promo_mechanism_lag1",
-                "product_id",
-            ],
-        )
+        assert indices == [2, 3, 5]
+        assert column_names == [
+            "past_cov_past_cov_cat_dummy_lag-1",
+            "fut_cov_fut_cov_promo_mechanism_lag1",
+            "product_id",
+        ]
 
     @unittest.skipUnless(lgbm_available, "requires lightgbm")
     @patch.object(
@@ -2144,10 +2101,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             cat_param_name,
             cat_param_default,
         ) = self.lgbm_w_categorical_covariates._categorical_fit_param
-        self.assertEqual(
-            kwargs[cat_param_name],
-            [2, 3, 5],
-        )
+        assert kwargs[cat_param_name] == [2, 3, 5]
 
     def helper_create_LinearModel(self, multi_models=True, extreme_lags=False):
         if not extreme_lags:
@@ -2313,11 +2267,11 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
                 model.fit(self.constant_noisy_multivar_ts)
                 pred2 = model.predict(n=10, num_samples=2).values()
 
-                self.assertTrue((pred1 == pred2).all())
+                assert (pred1 == pred2).all()
 
                 # test whether the next prediction of the same model is different
                 pred3 = model.predict(n=10, num_samples=2).values()
-                self.assertTrue((pred2 != pred3).any())
+                assert (pred2 != pred3).any()
 
     @pytest.mark.slow
     def test_probabilistic_forecast_accuracy(self):
@@ -2350,14 +2304,14 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
 
         # test accuracy of the median prediction compared to the noiseless ts
         mae_err_median = mae(ts[100:], pred)
-        self.assertLess(mae_err_median, err)
+        assert mae_err_median < err
 
         # test accuracy for increasing quantiles between 0.7 and 1 (it should ~decrease, mae should ~increase)
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
-            self.assertLess(mae_err, new_mae + 0.1)
+            assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
         # test accuracy for decreasing quantiles between 0.3 and 0 (it should ~decrease, mae should ~increase)
@@ -2365,5 +2319,5 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
         mae_err = mae_err_median
         for quantile in tested_quantiles:
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
-            self.assertLess(mae_err, new_mae + 0.1)
+            assert mae_err < new_mae + 0.1
             mae_err = new_mae

@@ -32,8 +32,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         pd_series = pd_series.map(lambda x: np.sin(x * np.pi / 3 + np.pi / 2))
         series = TimeSeries.from_series(pd_series)
 
-        self.assertEqual((True, 6), check_seasonality(series))
-        self.assertEqual((False, 3), check_seasonality(series, m=3))
+        assert (True, 6) == check_seasonality(series)
+        assert (False, 3) == check_seasonality(series, m=3)
 
         with pytest.raises(AssertionError):
             check_seasonality(series.stack(series))
@@ -70,9 +70,9 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # Test granger basics
         tests = granger_causality_tests(series_effect_2, series_effect_2, 10)
-        self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.99)
+        assert tests[1][0]["ssr_ftest"][1] > 0.99
         tests = granger_causality_tests(series_cause_2, series_effect_2, 10)
-        self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.01)
+        assert tests[1][0]["ssr_ftest"][1] > 0.01
 
     def test_stationarity_tests(self):
         series_1 = constant_timeseries(start=0, end=9999).stack(
@@ -99,9 +99,9 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             stationarity_test_kpss(series_2)
 
         # Test basics
-        self.assertTrue(stationarity_test_kpss(series_3)[1] > 0.05)
-        self.assertTrue(stationarity_test_adf(series_3)[1] < 0.05)
-        self.assertTrue(stationarity_tests)
+        assert stationarity_test_kpss(series_3)[1] > 0.05
+        assert stationarity_test_adf(series_3)[1] < 0.05
+        assert stationarity_tests
 
 
 class SeasonalDecomposeTestCase(DartsBaseTestClass):
@@ -117,40 +117,40 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         # test default (naive) method
         calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6)
         diff = self.trend - calc_trend
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test default (naive) method additive
         calc_trend, _ = extract_trend_and_seasonality(
             self.ts, freq=6, model=ModelMode.ADDITIVE
         )
         diff = self.trend - calc_trend
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test STL method
         calc_trend, _ = extract_trend_and_seasonality(
             self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE
         )
         diff = self.trend - calc_trend
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test MSTL method
         calc_trend, calc_seasonality = extract_trend_and_seasonality(
             self.ts, freq=[3, 6], method="MSTL", model=ModelMode.ADDITIVE
         )
-        self.assertTrue(len(calc_seasonality.components) == 2)
+        assert len(calc_seasonality.components) == 2
         diff = self.trend - calc_trend
         # relaxed tolerance for MSTL since it will have a larger error from the
         # extrapolation of the trend, it is still a small number but is more
         # than STL or naive trend extraction
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5)
 
         # test MSTL method with single freq
         calc_trend, calc_seasonality = extract_trend_and_seasonality(
             self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
         )
-        self.assertTrue(len(calc_seasonality.components) == 1)
+        assert len(calc_seasonality.components) == 1
         diff = self.trend - calc_trend
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5)
 
         # make sure non MSTL methods fail with multiple freqs
         with pytest.raises(ValueError):
@@ -173,12 +173,12 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         # test default (naive) method
         calc_trend = remove_seasonality(self.ts, freq=6)
         diff = self.trend - calc_trend
-        self.assertTrue(np.mean(diff.values() ** 2).item() < 0.5)
+        assert np.mean(diff.values() ** 2).item() < 0.5
 
         # test default (naive) method additive
         calc_trend = remove_seasonality(self.ts, freq=6, model=SeasonalityMode.ADDITIVE)
         diff = self.trend - calc_trend
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test STL method
         calc_trend = remove_seasonality(
@@ -189,7 +189,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
             low_pass=9,
         )
         diff = self.trend - calc_trend
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # check if error is raised
         with pytest.raises(ValueError):
@@ -201,12 +201,12 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         # test naive method
         calc_season = remove_trend(self.ts, freq=6)
         diff = self.season - calc_season
-        self.assertTrue(np.mean(diff.values() ** 2).item() < 1.5)
+        assert np.mean(diff.values() ** 2).item() < 1.5
 
         # test naive method additive
         calc_season = remove_trend(self.ts, freq=6, model=ModelMode.ADDITIVE)
         diff = self.season - calc_season
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test STL method
         calc_season = remove_trend(
@@ -217,7 +217,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
             low_pass=9,
         )
         diff = self.season - calc_season
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # check if error is raised
         with pytest.raises(ValueError):
