@@ -394,6 +394,28 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         self.assertEqual(len(forecasts), 5)
         self.assertTrue((series.time_index[5:] == forecasts.time_index).all())
 
+    def test_historical_forecasts_negative_rangeindex(self):
+        series = TimeSeries.from_times_and_values(
+            times=pd.RangeIndex(start=-5, stop=5, step=1), values=np.arange(10)
+        )
+
+        model = LinearRegressionModel(lags=2)
+        model.fit(series[:8])
+
+        # start as point
+        forecasts = model.historical_forecasts(
+            series=series, start=-2, start_format="point", retrain=False
+        )
+        self.assertEqual(len(forecasts), 7)
+        self.assertTrue((series.time_index[-7:] == forecasts.time_index).all())
+
+        # start as index
+        forecasts = model.historical_forecasts(
+            series=series, start=-2, start_format="index", retrain=False
+        )
+        self.assertEqual(len(forecasts), 2)
+        self.assertTrue((series.time_index[-2:] == forecasts.time_index).all())
+
     def test_historical_forecasts(self):
         train_length = 10
         forecast_horizon = 8
