@@ -233,7 +233,7 @@ class Likelihood(ABC):
         else:
             return False
 
-    def __repr__(self, include_default_params: bool = True) -> str:
+    def __repr__(self) -> str:
         """Return the class and parameters of the instance in a nice format"""
         cls_name = self.__class__.__name__
         # only display the constructor parameters as user cannot change the other attributes
