@@ -587,38 +587,154 @@ if TORCH_AVAILABLE:
             # check that weights from checkpoint give identical predictions as weights from manual save
             self.assertTrue(preds_manual_from_weights == preds_auto_from_weights)
 
-            # model with no likelihood
+            # model with explicitely no likelihood
             model_no_likelihood = self.helper_create_DLinearModel(
                 "no_likelihood", likelihood=None
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError) as error_msg:
                 model_no_likelihood.load_weights_from_checkpoint(
                     auto_name,
                     work_dir=self.temp_work_dir,
                     best=False,
                     map_location="cpu",
                 )
+            self.assertTrue(
+                str(error_msg.value).startswith(
+                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                    "incorrect"
+                )
+            )
+
+            # model with missing likelihood (as if user forgot them)
+            model_no_likelihood_bis = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                model_name="no_likelihood_bis",
+                add_encoders=None,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=False,
+                random_state=42,
+                force_reset=True,
+                n_epochs=1,
+                # likelihood=likelihood,
+                **tfm_kwargs,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                model_no_likelihood_bis.load_weights_from_checkpoint(
+                    auto_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                    map_location="cpu",
+                )
+            self.assertTrue(
+                str(error_msg.value).startswith(
+                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                    "missing"
+                )
+            )
 
             # model with a different likelihood
             model_other_likelihood = self.helper_create_DLinearModel(
                 "other_likelihood", likelihood=LaplaceLikelihood()
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError) as error_msg:
                 model_other_likelihood.load_weights(
                     model_path_manual, map_location="cpu"
                 )
+            self.assertTrue(
+                str(error_msg.value).startswith(
+                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                    "incorrect"
+                )
+            )
 
             # model with the same likelihood but different parameters
             model_same_likelihood_other_prior = self.helper_create_DLinearModel(
                 "same_likelihood_other_prior", likelihood=GaussianLikelihood()
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError) as error_msg:
                 model_same_likelihood_other_prior.load_weights(
                     model_path_manual, map_location="cpu"
                 )
+            self.assertTrue(
+                str(error_msg.value).startswith(
+                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                    "incorrect"
+                )
+            )
 
         def test_load_weights_from_checkpoint_params_check(self):
-            pass
+            """
+            Verify that the method comparing the parameters between the saved model and the loading model
+            behave as expected, used to return meaningful error message instead of the torch.load ones.
+            """
+            model_name = "params_check"
+            ckpt_name = f"{model_name}.pt"
+            # barebone model
+            model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+            )
+            model.fit(self.series[:10])
+            model.save(ckpt_name)
+
+            # identical model
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+            )
+            loading_model.load_weights(ckpt_name)
+
+            # different optimizer
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+                optimizer_cls=torch.optim.AdamW,
+            )
+            loading_model.load_weights(ckpt_name)
+
+            # different pl_trainer_kwargs
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+                pl_trainer_kwargs={"enable_model_summary": False},
+            )
+            loading_model.load_weights(ckpt_name)
+
+            # different input_chunk_length (tfm parameter)
+            loading_model = DLinearModel(
+                input_chunk_length=4 + 1,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                loading_model.load_weights(ckpt_name)
+            self.assertTrue(
+                str(error_msg.value).startswith(
+                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                    "incorrect"
+                )
+            )
+
+            # different kernel size (cls specific parameter)
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                kernel_size=10,
+                work_dir=self.temp_work_dir,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                loading_model.load_weights(ckpt_name)
+            self.assertTrue(
+                str(error_msg.value).startswith(
+                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                    "incorrect"
+                )
+            )
 
         def test_create_instance_new_model_no_name_set(self):
             RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, **tfm_kwargs)
@@ -1325,7 +1441,7 @@ if TORCH_AVAILABLE:
             model_name: str = "unitest_model",
             add_encoders: Optional[Dict] = None,
             save_checkpoints: bool = False,
-            likelihood: Likelihood = None,
+            likelihood: Optional[Likelihood] = None,
         ):
             return DLinearModel(
                 input_chunk_length=4,
