@@ -1,8 +1,10 @@
+import copy
 from datetime import date, timedelta
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytest
 import shap
 import sklearn
 from dateutil.relativedelta import relativedelta
@@ -18,9 +20,14 @@ from darts.models import (
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
+    NotImportedModule,
     RegressionModel,
+    XGBModel,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
+
+lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
+cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
 
 class ShapExplainerTestCase(DartsBaseTestClass):
@@ -90,6 +97,25 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         days, np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1)
     ).with_columns_renamed(["0", "1"], ["price", "power"])
 
+    target_ts_with_static_covs = TimeSeries.from_times_and_values(
+        days,
+        x_1.reshape(-1, 1),
+        static_covariates=pd.DataFrame({"type": [0], "state": [1]}),
+    ).with_columns_renamed(["0"], ["price"])
+    target_ts_with_multi_component_static_covs = TimeSeries.from_times_and_values(
+        days,
+        np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1),
+        static_covariates=pd.DataFrame({"type": [0, 1], "state": [2, 3]}),
+    ).with_columns_renamed(["0", "1"], ["price", "power"])
+    target_ts_multiple_series_with_different_static_covs = [
+        TimeSeries.from_times_and_values(
+            days, x_1.reshape(-1, 1), static_covariates=pd.DataFrame({"type": [0]})
+        ).with_columns_renamed(["0"], ["price"]),
+        TimeSeries.from_times_and_values(
+            days, x_2.reshape(-1, 1), static_covariates=pd.DataFrame({"state": [1]})
+        ).with_columns_renamed(["0"], ["price"]),
+    ]
+
     past_cov_ts = TimeSeries.from_times_and_values(
         days_past_cov,
         np.concatenate(
@@ -108,9 +134,9 @@ class ShapExplainerTestCase(DartsBaseTestClass):
     )
 
     def test_creation(self):
-
+        model_cls = LightGBMModel if lgbm_available else XGBModel
         # Model should be fitted first
-        m = LightGBMModel(
+        m = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[0],
@@ -137,7 +163,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
                 self.target_ts,
             )
 
-        m = LightGBMModel(
+        m = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[0],
@@ -228,7 +254,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         # CatBoost
-        m = CatBoostModel(
+        model_cls = CatBoostModel if cb_available else XGBModel
+        m = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -6],
             lags_future_covariates=[0],
@@ -249,7 +276,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             ShapExplainer(m, shap_method="bad_choice")
 
     def test_explain(self):
-        m = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        m = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[0],
@@ -408,7 +436,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(shap_explain.explain(), ShapExplainabilityResult))
 
     def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
-        model = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[2],
@@ -444,7 +473,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
         fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
 
-        model = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[2],
@@ -479,7 +509,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         past_cov = np.random.normal(0, 1, len(days)).astype("float32")
         past_cov_ts = TimeSeries.from_times_and_values(days, past_cov.reshape(-1, 1))
 
-        model = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
             lags=None,
             lags_past_covariates=[-1, -2],
             lags_future_covariates=[-1, -2],
@@ -505,7 +536,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             self.assertEqual(explanation.start_time(), self.target_ts.start_time())
 
     def test_plot(self):
-        m_0 = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        m_0 = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[0],
@@ -598,7 +630,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         plt.close()
 
     def test_feature_values_align_with_input(self):
-        model = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
             lags=4,
             output_chunk_length=1,
         )
@@ -624,7 +657,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
     def test_feature_values_align_with_raw_output_shap(self):
-        model = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
             lags=4,
             output_chunk_length=1,
         )
@@ -650,7 +684,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         ), "The shape of the feature values should be the same as the shap values"
 
     def test_shap_explanation_object_validity(self):
-        model = LightGBMModel(
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
             lags=4,
             lags_past_covariates=2,
             lags_future_covariates=[1],
@@ -670,3 +705,108 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             ),
             shap.Explanation,
         )
+
+    def test_shap_selected_components(self):
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
+            lags=4,
+            lags_past_covariates=2,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        # check that explain() with selected components gives identical results
+        for comp in self.target_ts.components:
+            explanation_comp = shap_explain.explain(target_components=[comp])
+            assert explanation_comp.available_components == [comp]
+            assert explanation_comp.available_horizons == [1]
+            # explained forecasts
+            fc_res_tmp = copy.deepcopy(explanation_results.explained_forecasts)
+            fc_res_tmp[1] = {str(comp): fc_res_tmp[1][comp]}
+            assert explanation_comp.explained_forecasts == fc_res_tmp
+
+            # feature values
+            fv_res_tmp = copy.deepcopy(explanation_results.feature_values)
+            fv_res_tmp[1] = {str(comp): fv_res_tmp[1][comp]}
+            assert explanation_comp.explained_forecasts == fc_res_tmp
+
+            # shap objects
+            assert (
+                len(explanation_comp.shap_explanation_object[1]) == 1
+                and comp in explanation_comp.shap_explanation_object[1]
+            )
+
+    def test_shapley_with_static_cov(self):
+        ts = self.target_ts_with_static_covs
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=ts,
+        )
+        shap_explain = ShapExplainer(model)
+
+        # different static covariates dimensions should raise an error
+        with pytest.raises(ValueError):
+            shap_explain.explain(
+                ts.with_static_covariates(ts.static_covariates["state"])
+            )
+
+        # without static covariates should raise an error
+        with pytest.raises(ValueError):
+            shap_explain.explain(ts.with_static_covariates(None))
+
+        explanation_results = shap_explain.explain(ts)
+        assert len(explanation_results.explained_forecasts[1]["price"].columns) == (
+            -(min(model.lags["target"])) + model.static_covariates.shape[1]
+        )
+
+        model.fit(
+            series=self.target_ts_with_multi_component_static_covs,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        assert len(explanation_results.feature_values[1]) == 2
+        for comp in self.target_ts_with_multi_component_static_covs.components:
+            comps_out = explanation_results.explained_forecasts[1][comp].columns
+            assert len(comps_out) == (
+                -(min(model.lags["target"])) * model.input_dim["target"]
+                + model.input_dim["target"] * model.static_covariates.shape[1]
+            )
+            assert comps_out[-4:].tolist() == [
+                "type_statcov_target_price",
+                "type_statcov_target_power",
+                "state_statcov_target_price",
+                "state_statcov_target_power",
+            ]
+
+    def test_shapley_multiple_series_with_different_static_covs(self):
+        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model = model_cls(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts_multiple_series_with_different_static_covs,
+        )
+        shap_explain = ShapExplainer(
+            model,
+            background_series=self.target_ts_multiple_series_with_different_static_covs,
+        )
+        explanation_results = shap_explain.explain()
+
+        self.assertTrue(len(explanation_results.feature_values) == 2)
+
+        # model trained on multiple series will take column names of first series -> even though
+        # static covs have different names, the output will show the same names
+        for explained_forecast in explanation_results.explained_forecasts:
+            comps_out = explained_forecast[1]["price"].columns.tolist()
+            assert comps_out[-1] == "type_statcov_target_price"

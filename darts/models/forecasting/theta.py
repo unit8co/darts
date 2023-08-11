@@ -40,7 +40,7 @@ class Theta(LocalForecastingModel):
 
         `season_mode` must be a ``SeasonalityMode`` Enum member.
 
-        You can access the Enum with ``from darts import SeasonalityMode``.
+        You can access the Enum with ``from darts.utils.utils import SeasonalityMode``.
 
         Parameters
         ----------
@@ -167,6 +167,10 @@ class Theta(LocalForecastingModel):
                 forecast += replicated_seasonality
 
         return self._build_forecast_series(forecast)
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     @property
     def min_train_series_length(self) -> int:
@@ -478,6 +482,10 @@ class FourTheta(LocalForecastingModel):
             n_jobs=n_jobs,
         )
         return theta
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     @property
     def min_train_series_length(self) -> int:

@@ -97,7 +97,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
-            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that
@@ -224,15 +224,23 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
-        if self.likelihood == "quantile":
-            return self._predict_quantiles(x, num_samples, **kwargs)
-        elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
+        """Override of RegressionModel's predict method to allow for the probabilistic case"""
+        if self.likelihood is not None:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
+            )
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
 
+    @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
 

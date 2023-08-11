@@ -4,13 +4,13 @@ Time Series Statistics
 """
 
 import math
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import argrelmax
 from scipy.stats import norm
-from statsmodels.tsa.seasonal import STL, seasonal_decompose
+from statsmodels.tsa.seasonal import MSTL, STL, seasonal_decompose
 from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
 
 from darts import TimeSeries
@@ -123,7 +123,7 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
 
 def extract_trend_and_seasonality(
     ts: TimeSeries,
-    freq: int = None,
+    freq: Union[int, Sequence[int]] = None,
     model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
@@ -146,6 +146,8 @@ def extract_trend_and_seasonality(
         The method to be used to decompose the series.
         - "naive" : Seasonal decomposition using moving averages [1]_.
         - "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
+        - "MSTL" : Season-Trend decomposition using LOESS with multiple seasonalities [3]_.
+        Only compatible with ``ADDITIVE`` model type.
     kwargs
         Other keyword arguments are passed down to the decomposition method.
     Returns
@@ -157,6 +159,7 @@ def extract_trend_and_seasonality(
     -------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
+    .. [3] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html
     """
 
     ts._assert_univariate()
@@ -165,9 +168,15 @@ def extract_trend_and_seasonality(
         f"Unknown value for model_mode: {model}.",
         logger,
     )
+
     raise_if_not(
         model is not SeasonalityMode.NONE,
         "The model must be either MULTIPLICATIVE or ADDITIVE.",
+    )
+
+    raise_if(
+        isinstance(freq, Sequence) and method != "MSTL",
+        f"{method} decomposition cannot be performed with more than one seasonality, received {freq}.",
     )
 
     if method == "naive":
@@ -186,6 +195,19 @@ def extract_trend_and_seasonality(
         decomp = STL(
             endog=ts.pd_series(),
             period=freq,
+            **kwargs,
+        ).fit()
+
+    elif method == "MSTL":
+        raise_if_not(
+            model in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE],
+            f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}.",
+            logger,
+        )
+
+        decomp = MSTL(
+            endog=ts.pd_series(),
+            periods=freq,
             **kwargs,
         ).fit()
 
@@ -489,7 +511,6 @@ def granger_causality_tests(
     ts_effect: TimeSeries,
     maxlag: int,
     addconst: bool = True,
-    verbose: bool = True,
 ) -> None:
     """
     Provides four tests for granger non causality of 2 time series using
@@ -510,8 +531,6 @@ def granger_causality_tests(
         If an iterable, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
-    verbose
-        Print results.
 
     Returns
     -------
@@ -561,7 +580,6 @@ def granger_causality_tests(
         ),
         maxlag,
         addconst,
-        verbose,
     )
 
 
@@ -852,6 +870,7 @@ def plot_residuals_analysis(
     num_bins: int = 20,
     fill_nan: bool = True,
     default_formatting: bool = True,
+    acf_max_lag: int = 24,
 ) -> None:
     """Plots data relevant to residuals.
 
@@ -871,6 +890,8 @@ def plot_residuals_analysis(
         A boolean value indicating whether NaN values should be filled in the residuals.
     default_formatting
         Whether or not to use the darts default scheme.
+    acf_max_lag
+        The maximum lag to be displayed in the ACF plot. Must be less than residuals length.
     """
 
     residuals._assert_univariate()
@@ -910,8 +931,11 @@ def plot_residuals_analysis(
     ax2.set_xlabel("value")
 
     # plot ACF
+    acf_max_lag = min(acf_max_lag, len(residuals) - 1)
     ax3 = fig.add_subplot(gs[1:, :1])
-    plot_acf(residuals, axis=ax3, default_formatting=default_formatting)
+    plot_acf(
+        residuals, axis=ax3, default_formatting=default_formatting, max_lag=acf_max_lag
+    )
     ax3.set_ylabel("ACF value")
     ax3.set_xlabel("lag")
     ax3.set_title("ACF")

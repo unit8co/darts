@@ -95,6 +95,10 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             self._random_state = None
             np.random.seed(random_state if random_state is not None else 0)
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
 
@@ -157,6 +161,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
                 random_state=self._random_state,
+                anchor="end",
                 exog=future_covariates.values(copy=False)
                 if future_covariates
                 else None,
@@ -173,6 +178,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         return self._build_forecast_series(forecast)
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True
 

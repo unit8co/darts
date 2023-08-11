@@ -1,5 +1,6 @@
 import copy
 import os
+import pathlib
 import shutil
 import tempfile
 from typing import Callable
@@ -28,6 +29,7 @@ from darts.models import (
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
+    NotImportedModule,
     Prophet,
     RandomForest,
     RegressionModel,
@@ -71,7 +73,6 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
-    (Prophet(), 9.0),
     (AutoARIMA(), 12),
     (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
     (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
@@ -92,7 +93,6 @@ dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
     StatsForecastAutoETS(season_length=12),
-    Prophet(),
     AutoARIMA(),
 ]
 
@@ -101,13 +101,15 @@ encoder_support_models = [
     VARIMA(1, 0, 0),
     ARIMA(),
     AutoARIMA(),
-    Prophet(),
     KalmanForecaster(dim_x=30),
 ]
+if not isinstance(Prophet, NotImportedModule):
+    models.append((Prophet(), 9.0))
+    dual_models.append(Prophet())
+    encoder_support_models.append(Prophet())
 
 
 class LocalForecastingModelsTestCase(DartsBaseTestClass):
-
     # forecasting horizon used in runnability tests
     forecasting_horizon = 5
 
@@ -154,8 +156,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
         for model in [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)]:
             model_path_str = type(model).__name__
-            model_path_file = model_path_str + "_file"
-            model_paths = [model_path_str, model_path_file]
+            model_path_pathlike = pathlib.Path(model_path_str + "_pathlike")
+            model_path_binary = model_path_str + "_binary"
+            model_paths = [model_path_str, model_path_pathlike, model_path_binary]
             full_model_paths = [
                 os.path.join(self.temp_work_dir, p) for p in model_paths
             ]
@@ -166,7 +169,8 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             # test save
             model.save()
             model.save(model_path_str)
-            with open(model_path_file, "wb") as f:
+            model.save(model_path_pathlike)
+            with open(model_path_binary, "wb") as f:
                 model.save(f)
 
             for p in full_model_paths:
@@ -180,13 +184,19 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                         if p.startswith(type(model).__name__)
                     ]
                 )
-                == 3
+                == len(full_model_paths) + 1
             )
 
             # test load
             loaded_model_str = type(model).load(model_path_str)
-            loaded_model_file = type(model).load(model_path_file)
-            loaded_models = [loaded_model_str, loaded_model_file]
+            loaded_model_pathlike = type(model).load(model_path_pathlike)
+            with open(model_path_binary, "rb") as f:
+                loaded_model_binary = type(model).load(f)
+            loaded_models = [
+                loaded_model_str,
+                loaded_model_pathlike,
+                loaded_model_binary,
+            ]
 
             for loaded_model in loaded_models:
                 self.assertEqual(
@@ -194,6 +204,22 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 )
 
         os.chdir(cwd)
+
+    def test_save_load_model_invalid_path(self):
+        # check if save and load methods raise an error when given an invalid path
+        model = ARIMA(1, 1, 1)
+        model.fit(self.ts_gaussian)
+
+        # Use a byte string as path (, which is not supported)
+        model_path_invalid = b"invalid_path"
+
+        # test save
+        with pytest.raises(ValueError):
+            model.save(model_path_invalid)
+
+        # test load
+        with pytest.raises(ValueError):
+            type(model).load(model_path_invalid)
 
     def test_models_runnability(self):
         for model, _ in models:
@@ -260,7 +286,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 if isinstance(target.time_index, pd.RangeIndex):
                     try:
                         # _supports_range_index raises a ValueError if model does not support RangeIndex
-                        model._supports_range_index()
+                        model._supports_range_index
                     except ValueError:
                         continue
 
@@ -366,7 +392,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     @pytest.mark.slow
     def test_statsmodels_future_models(self):
-
         # same tests, but VARIMA requires to work on a multivariate target series
         UNIVARIATE = "univariate"
         MULTIVARIATE = "multivariate"
@@ -545,7 +570,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         ]
 
         for model_cls, retrainable, multivariate, retrain, model_type in params:
-
             if (
                 not isinstance(retrain, (int, bool, Callable))
                 or (isinstance(retrain, int) and retrain < 0)
@@ -556,7 +580,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     _ = model_cls.historical_forecasts(series, retrain=retrain)
 
             else:
-
                 if isinstance(retrain, Mock):
                     # resets patch_retrain_func call_count to 0
                     retrain.call_count = 0
@@ -569,7 +592,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     with patch(
                         predict_method_to_patch, side_effect=series
                     ) as patch_predict_method:
-
                         # Set _fit_called attribute to True, otherwise retrain function is never called
                         model_cls._fit_called = True
 
@@ -592,10 +614,10 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             (ExponentialSmoothing(), "ExponentialSmoothing()"),  # no params changed
             (ARIMA(1, 1, 1), "ARIMA(p=1, q=1)"),  # default value for a param
             (
-                Prophet(
+                KalmanForecaster(
                     add_encoders={"cyclic": {"past": ["month"]}}
                 ),  # data structure param
-                "Prophet(add_encoders={'cyclic': {'past': ['month']}})",
+                "KalmanForecaster(add_encoders={'cyclic': {'past': ['month']}})",
             ),
             (
                 TBATS(

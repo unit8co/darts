@@ -53,28 +53,24 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # Test univariate
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_cause_1, series_effect_1, 10, verbose=False)
+            granger_causality_tests(series_cause_1, series_effect_1, 10)
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_effect_1, series_cause_1, 10, verbose=False)
+            granger_causality_tests(series_effect_1, series_cause_1, 10)
 
         # Test deterministic
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_cause_1, series_effect_3, 10, verbose=False)
+            granger_causality_tests(series_cause_1, series_effect_3, 10)
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_effect_3, series_cause_1, 10, verbose=False)
+            granger_causality_tests(series_effect_3, series_cause_1, 10)
 
         # Test Frequency
         with self.assertRaises(ValueError):
-            granger_causality_tests(series_cause_2, series_effect_4, 10, verbose=False)
+            granger_causality_tests(series_cause_2, series_effect_4, 10)
 
         # Test granger basics
-        tests = granger_causality_tests(
-            series_effect_2, series_effect_2, 10, verbose=False
-        )
+        tests = granger_causality_tests(series_effect_2, series_effect_2, 10)
         self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.99)
-        tests = granger_causality_tests(
-            series_cause_2, series_effect_2, 10, verbose=False
-        )
+        tests = granger_causality_tests(series_cause_2, series_effect_2, 10)
         self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.01)
 
     def test_stationarity_tests(self):
@@ -136,10 +132,40 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         diff = self.trend - calc_trend
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
-        # check if error is raised
+        # test MSTL method
+        calc_trend, calc_seasonality = extract_trend_and_seasonality(
+            self.ts, freq=[3, 6], method="MSTL", model=ModelMode.ADDITIVE
+        )
+        self.assertTrue(len(calc_seasonality.components) == 2)
+        diff = self.trend - calc_trend
+        # relaxed tolerance for MSTL since it will have a larger error from the
+        # extrapolation of the trend, it is still a small number but is more
+        # than STL or naive trend extraction
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
+
+        # test MSTL method with single freq
+        calc_trend, calc_seasonality = extract_trend_and_seasonality(
+            self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
+        )
+        self.assertTrue(len(calc_seasonality.components) == 1)
+        diff = self.trend - calc_trend
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
+
+        # make sure non MSTL methods fail with multiple freqs
+        with self.assertRaises(ValueError):
+            calc_trend, calc_seasonality = extract_trend_and_seasonality(
+                self.ts, freq=[1, 4, 6], method="STL", model=ModelMode.ADDITIVE
+            )
+
+        # check if error is raised when using multiplicative model
         with self.assertRaises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
+            )
+
+        with self.assertRaises(ValueError):
+            calc_trend, _ = extract_trend_and_seasonality(
+                self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
             )
 
     def test_remove_seasonality(self):
@@ -204,6 +230,10 @@ class PlotTestCase(DartsBaseTestClass):
 
     def test_statistics_plot(self):
         plot_residuals_analysis(self.series)
+        plt.close()
+        plot_residuals_analysis(self.series, acf_max_lag=10)
+        plt.close()
+        plot_residuals_analysis(self.series[:10])
         plt.close()
         plot_pacf(self.series)
         plt.close()

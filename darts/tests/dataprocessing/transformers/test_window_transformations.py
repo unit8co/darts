@@ -1,5 +1,4 @@
 import itertools
-import sys
 import unittest
 
 import numpy as np
@@ -16,7 +15,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
     series_from_values = TimeSeries.from_values(
         np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     )
-    target = TimeSeries.from_times_and_values(times, range(1, 11))
+    target = TimeSeries.from_times_and_values(times, np.array(range(1, 11)))
 
     series_multi_prob = (
         (target + 10)
@@ -103,16 +102,14 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             }  # window list
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        # skip this test for Python <= 3.7
-        if sys.version_info >= (3, 8):
-            with self.assertRaises(ValueError):
-                window_transformations = {
-                    "function": "mean",
-                    "window": 3,
-                    "mode": "rolling",
-                    "step": -2,
-                }  # Negative step
-                self.series_univ_det.window_transform(transforms=window_transformations)
+        with self.assertRaises(ValueError):
+            window_transformations = {
+                "function": "mean",
+                "window": 3,
+                "mode": "rolling",
+                "step": -2,
+            }  # Negative step
+            self.series_univ_det.window_transform(transforms=window_transformations)
 
         with self.assertRaises(ValueError):
             window_transformations = {
@@ -274,7 +271,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         )
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            [0, 1, 1, 2, 2, 2, 2, 2, 2, 2],
+            np.array([0, 1, 1, 2, 2, 2, 2, 2, 2, 2]),
             columns=["rolling_udf_5_0"],
         )
         self.assertEqual(transformed_ts, expected_transformed_series)
@@ -306,7 +303,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         )
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            [100, 3, 6, 9, 12, 15, 18, 21, 24, 27],
+            np.array([100, 3, 6, 9, 12, 15, 18, 21, 24, 27]),
             columns=["rolling_sum_3_2_0"],
         )
         self.assertEqual(transformed_ts, expected_transformed_series)
@@ -317,7 +314,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         )
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times[1:],
-            [3, 6, 9, 12, 15, 18, 21, 24, 27],
+            np.array([3, 6, 9, 12, 15, 18, 21, 24, 27]),
             columns=["rolling_sum_3_2_0"],
         )
         self.assertEqual(transformed_ts, expected_transformed_series)
@@ -329,7 +326,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         # backfill works only with forecasting_safe=False
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            [3, 3, 6, 9, 12, 15, 18, 21, 24, 27],
+            np.array([3, 3, 6, 9, 12, 15, 18, 21, 24, 27]),
             columns=["rolling_sum_3_2_0"],
         )
         self.assertEqual(transformed_ts, expected_transformed_series)
@@ -378,7 +375,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         }
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            ["NaN", 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            np.array(["NaN", 1, 2, 3, 4, 5, 6, 7, 8, 9]),
             columns=["rolling_sum_1_0"],
         )
         transformed_ts = self.target.window_transform(
@@ -390,7 +387,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         transformation = {"function": "sum", "mode": "rolling", "window": 1}
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            ["NaN", 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            np.array(["NaN", 1, 2, 3, 4, 5, 6, 7, 8, 9]),
             columns=["rolling_sum_1_0"],
         )
         transformed_ts = self.target.window_transform(
@@ -398,31 +395,26 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         )
         self.assertEqual(transformed_ts, expected_transformed_series)
 
-        # pandas on Python <= 3.7 raises this error:
-        # AttributeError: 'ExponentialMovingWindow' object has no attribute 'sum'
-
-        # skip these tests in Python <= 3.7:
-        if sys.version_info < (3, 8):
-            return
-
         transformation = [
             {"function": "sum", "mode": "rolling", "window": 1, "closed": "left"},
             {"function": "sum", "mode": "ewm", "span": 1},
         ]
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            [
-                ["NaN", "NaN"],
-                [1, 1],
-                [2, 2],
-                [3, 3],
-                [4, 4],
-                [5, 5],
-                [6, 6],
-                [7, 7],
-                [8, 8],
-                [9, 9],
-            ],
+            np.array(
+                [
+                    ["NaN", "NaN"],
+                    [1, 1],
+                    [2, 2],
+                    [3, 3],
+                    [4, 4],
+                    [5, 5],
+                    [6, 6],
+                    [7, 7],
+                    [8, 8],
+                    [9, 9],
+                ]
+            ),
             columns=["rolling_sum_1_0", "ewm_sum_0"],
         )
         transformed_ts = self.target.window_transform(
@@ -432,18 +424,20 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
 
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            [
-                [1, 1],
-                [1, 1],
-                [2, 2],
-                [3, 3],
-                [4, 4],
-                [5, 5],
-                [6, 6],
-                [7, 7],
-                [8, 8],
-                [9, 9],
-            ],
+            np.array(
+                [
+                    [1, 1],
+                    [1, 1],
+                    [2, 2],
+                    [3, 3],
+                    [4, 4],
+                    [5, 5],
+                    [6, 6],
+                    [7, 7],
+                    [8, 8],
+                    [9, 9],
+                ]
+            ),
             columns=["rolling_sum_1_0", "ewm_sum_0"],
         )
         transformed_ts = self.target.window_transform(
@@ -467,18 +461,20 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
 
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            [
-                ["NaN", "NaN"],
-                ["NaN", "NaN"],
-                [3, 2],
-                [5, 3],
-                [7, 4],
-                [9, 5],
-                [11, 6],
-                [13, 7],
-                [15, 8],
-                [17, 9],
-            ],
+            np.array(
+                [
+                    ["NaN", "NaN"],
+                    ["NaN", "NaN"],
+                    [3, 2],
+                    [5, 3],
+                    [7, 4],
+                    [9, 5],
+                    [11, 6],
+                    [13, 7],
+                    [15, 8],
+                    [17, 9],
+                ]
+            ),
             columns=["rolling_sum_2_2_0", "ewm_sum_2_0"],
         )
 
@@ -491,9 +487,11 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
 class WindowTransformerTestCase(unittest.TestCase):
 
     times = pd.date_range("20130101", "20130110")
-    target = TimeSeries.from_times_and_values(times, range(1, 11))
+    target = TimeSeries.from_times_and_values(times, np.array(range(1, 11)))
     times_hourly = pd.date_range(start="20130101", freq="1H", periods=10)
-    target_hourly = TimeSeries.from_times_and_values(times_hourly, range(1, 11))
+    target_hourly = TimeSeries.from_times_and_values(
+        times_hourly, np.array(range(1, 11))
+    )
 
     series_multi_prob = (
         (target + 10)
@@ -581,11 +579,11 @@ class WindowTransformerTestCase(unittest.TestCase):
         """
 
         times1 = pd.date_range("20130101", "20130110")
-        series_1 = TimeSeries.from_times_and_values(times1, range(1, 11))
+        series_1 = TimeSeries.from_times_and_values(times1, np.array(range(1, 11)))
 
         expected_transformed_series = TimeSeries.from_times_and_values(
             times1,
-            [100, 15, 30, 45, 60, 75, 90, 105, 120, 135],
+            np.array([100, 15, 30, 45, 60, 75, 90, 105, 120, 135]),
             columns=["rolling_sum_3_2_0"],
         )
 

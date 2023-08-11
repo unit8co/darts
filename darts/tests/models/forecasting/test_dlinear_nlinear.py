@@ -9,7 +9,7 @@ import pytest
 from darts import concatenate
 from darts.logging import get_logger
 from darts.metrics import rmse
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -71,7 +71,8 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
-                    **kwargs
+                    **kwargs,
+                    **tfm_kwargs
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -82,6 +83,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
@@ -102,7 +104,10 @@ if TORCH_AVAILABLE:
                     n_epochs=1,
                     log_tensorboard=True,
                     work_dir=self.temp_work_dir,
-                    pl_trainer_kwargs={"log_every_n_steps": 1},
+                    pl_trainer_kwargs={
+                        "log_every_n_steps": 1,
+                        **tfm_kwargs["pl_trainer_kwargs"],
+                    },
                 )
                 model.fit(ts)
                 model.predict(n=2)
@@ -121,6 +126,7 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=True,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model_not_shared = model_cls(
                     input_chunk_length=5,
@@ -129,6 +135,7 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=False,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model_shared.fit(ts)
                 model_not_shared.fit(ts)
@@ -185,6 +192,7 @@ if TORCH_AVAILABLE:
                     const_init=True,
                     likelihood=lkl,
                     random_state=42,
+                    **tfm_kwargs
                 )
 
                 model.fit(
@@ -254,6 +262,22 @@ if TORCH_AVAILABLE:
                 self.assertLessEqual(e1, 0.40)
                 self.assertLessEqual(e2, 0.34)
 
+            # can only fit models with past/future covariates when shared_weights=False
+            for model in [DLinearModel, NLinearModel]:
+                for shared_weights in [True, False]:
+                    model_instance = model(
+                        5, 5, shared_weights=shared_weights, **tfm_kwargs
+                    )
+                    assert model_instance.supports_past_covariates == (
+                        not shared_weights
+                    )
+                    assert model_instance.supports_future_covariates == (
+                        not shared_weights
+                    )
+                    if shared_weights:
+                        with pytest.raises(ValueError):
+                            model_instance.fit(series1, future_covariates=fut_cov1)
+
         def test_optional_static_covariates(self):
             series = tg.sine_timeseries(length=20).with_static_covariates(
                 pd.DataFrame({"a": [1]})
@@ -265,6 +289,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=True,
                     n_epochs=1,
+                    **tfm_kwargs
                 )
                 model.fit(series)
                 with pytest.raises(ValueError):
@@ -276,6 +301,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
+                    **tfm_kwargs
                 )
                 model.fit(series)
                 preds = model.predict(n=2, series=series.with_static_covariates(None))
@@ -287,6 +313,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
+                    **tfm_kwargs
                 )
                 model.fit(series.with_static_covariates(None))
                 preds = model.predict(n=2, series=series)

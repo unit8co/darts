@@ -1,4 +1,7 @@
 """
+TorchForecastingModel
+---------------------
+
 This file contains several abstract classes:
 
     * TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
@@ -17,6 +20,7 @@ This file contains several abstract classes:
       forecasting models.
 """
 
+import copy
 import datetime
 import inspect
 import os
@@ -28,13 +32,13 @@ from glob import glob
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
 from torch import Tensor
 from torch.utils.data import DataLoader
 
+from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import (
     get_logger,
     raise_if,
@@ -595,22 +599,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """In charge of generating a dummy input sample and exporting the model to ONNX."""
         pass
 
-    def _verify_static_covariates(self, static_covariates: Optional[pd.DataFrame]):
-        """
-        Verify that all static covariates are numeric.
-        """
-        if static_covariates is not None and self.uses_static_covariates:
-            numeric_mask = static_covariates.columns.isin(
-                static_covariates.select_dtypes(include=np.number)
-            )
-            raise_if(
-                sum(~numeric_mask),
-                "TorchForecastingModels can only interpret numeric static covariate data. Consider "
-                "encoding/transforming categorical static covariates with "
-                "`darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.",
-                logger,
-            )
-
     @random_method
     def fit(
         self,
@@ -688,7 +676,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        params = self._setup_for_fit_from_dataset(
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ), params = self._setup_for_fit_from_dataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -723,12 +715,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
     ) -> Tuple[
-        TrainingDataset,
-        Optional[TrainingDataset],
-        Optional[pl.Trainer],
-        Optional[bool],
-        int,
-        int,
+        Tuple[
+            Sequence[TimeSeries],
+            Optional[Sequence[TimeSeries]],
+            Optional[Sequence[TimeSeries]],
+        ],
+        Tuple[
+            TrainingDataset,
+            Optional[TrainingDataset],
+            Optional[pl.Trainer],
+            Optional[bool],
+            int,
+            int,
+        ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
         additional inputs required for training the model with `fit_from_dataset()`.
@@ -839,7 +838,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ),
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
-        return (
+        series_input = (series, past_covariates, future_covariates)
+        fit_from_ds_params = (
             train_dataset,
             val_dataset,
             trainer,
@@ -847,6 +847,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             epochs,
             num_loader_workers,
         )
+        return series_input, fit_from_ds_params
 
     @random_method
     def fit_from_dataset(
@@ -1161,22 +1162,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         lr_finder
             `_LRFinder` object of Lightning containing the results of the LR sweep.
         """
-
-        trainer, model, train_loader, val_loader = self._setup_for_train(
-            *self._setup_for_fit_from_dataset(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                val_series=val_series,
-                val_past_covariates=val_past_covariates,
-                val_future_covariates=val_future_covariates,
-                trainer=trainer,
-                verbose=verbose,
-                epochs=epochs,
-                max_samples_per_ts=max_samples_per_ts,
-                num_loader_workers=num_loader_workers,
-            )
+        _, params = self._setup_for_fit_from_dataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            trainer=trainer,
+            verbose=verbose,
+            epochs=epochs,
+            max_samples_per_ts=max_samples_per_ts,
+            num_loader_workers=num_loader_workers,
         )
+        trainer, model, train_loader, val_loader = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
             model,
             train_dataloaders=train_loader,
@@ -1205,6 +1204,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1270,6 +1270,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
 
         Returns
         -------
@@ -1278,25 +1282,33 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if ``series`` is not specified and the model has been trained on a single series.
         """
         if series is None:
-            raise_if(
-                self.training_series is None,
-                "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                "or from not having fit the model yet.",
-            )
+            if self.training_series is None:
+                raise_log(
+                    ValueError(
+                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                        "or from not having fit the model yet."
+                    ),
+                    logger,
+                )
             series = self.training_series
 
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
         self._verify_static_covariates(series[0].static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
-        # additionally, do not generate encodings when covariates were loaded as they already
-        # contain the encodings
+        # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders is not None and self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -1304,13 +1316,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = series2seq(self.past_covariate_series)
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = series2seq(self.future_covariate_series)
-
-        super().predict(n, series, past_covariates, future_covariates)
+        super().predict(
+            n,
+            series,
+            past_covariates,
+            future_covariates,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+        )
 
         dataset = self._build_inference_dataset(
             target=series,
@@ -1330,6 +1343,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             num_samples=num_samples,
             num_loader_workers=num_loader_workers,
             mc_dropout=mc_dropout,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1347,6 +1361,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
         """
         This method allows for predicting with a specific :class:`darts.utils.data.InferenceDataset` instance.
@@ -1392,6 +1407,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
 
         Returns
         -------
@@ -1415,6 +1434,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "`roll_size` must be an integer between 1 and `self.output_chunk_length`.",
             )
 
+        # prevent auto-regression when prediction the likelihood parameters
+        raise_if(
+            predict_likelihood_parameters and n > self.output_chunk_length,
+            "`n` must be smaller than or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
+            logger,
+        )
+
         # check that `num_samples` is a positive integer
         raise_if_not(num_samples > 0, "`num_samples` must be a positive integer.")
 
@@ -1428,6 +1454,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             roll_size=roll_size,
             batch_size=batch_size,
             n_jobs=n_jobs,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
         pred_loader = DataLoader(
@@ -1687,6 +1714,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info(f"loading {file_name}")
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
+
+        # loss_fn is excluded from pl_forecasting_module ckpt, must be restored
+        loss_fn = model.model_params.get("loss_fn")
+        if loss_fn is not None:
+            model.model.criterion = loss_fn
+        # train and val metrics also need to be restored
+        torch_metrics = model.model.configure_torch_metrics(
+            model.model_params.get("torch_metrics")
+        )
+        model.model.train_metrics = torch_metrics.clone(prefix="train_")
+        model.model.val_metrics = torch_metrics.clone(prefix="val_")
+
         # restore _fit_called attribute, set to False in load() if no .ckpt is found/provided
         model._fit_called = True
         model.load_ckpt_path = file_path
@@ -1708,6 +1747,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_name: str = None,
         best: bool = True,
         strict: bool = True,
+        load_encoders: bool = True,
         **kwargs,
     ):
         """
@@ -1739,6 +1779,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Default: ``True``.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/torch.
             nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`_.
+        load_encoders
+            If set, will load the encoders from the model to enable direct call of fit() or predict().
+            Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -1767,18 +1810,37 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # checkpoints generated by PL, prefix is defined in TorchForecastingModel __init__()
         if file_name[:5] == "last-" or file_name[:5] == "best-":
             checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
+            tfm_save_file_dir = _get_runs_folder(work_dir, model_name)
+            tfm_save_file_name = INIT_MODEL_NAME
         # manual save
         else:
-            checkpoint_dir = os.getcwd()
+            checkpoint_dir = ""
+            tfm_save_file_dir = checkpoint_dir
+            # remove the .ckpt added in TorchForecastingModel.save()
+            tfm_save_file_name = file_name[:-5]
 
         ckpt_path = os.path.join(checkpoint_dir, file_name)
         ckpt = torch.load(ckpt_path, **kwargs)
         ckpt_hyper_params = ckpt["hyper_parameters"]
 
         # verify that the arguments passed to the constructor match those of the checkpoint
+        # add_encoders is checked in _load_encoders()
+        skipped_params = list(
+            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
+        ) + [
+            "loss_fn",
+            "torch_metrics",
+            "optimizer_cls",
+            "optimizer_kwargs",
+            "lr_scheduler_cls",
+            "lr_scheduler_kwargs",
+        ]
         for param_key, param_value in self.model_params.items():
             # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
-            if param_key in ckpt_hyper_params.keys() and param_value is not None:
+            if (
+                param_key in ckpt_hyper_params.keys()
+                and param_key not in skipped_params
+            ):
                 # some parameters must be converted
                 if isinstance(ckpt_hyper_params[param_key], list) and not isinstance(
                     param_value, list
@@ -1810,6 +1872,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ]
         self.train_sample = tuple(mock_train_sample)
 
+        # updating model attributes before self._init_model() which create new ckpt
+        tfm_save_file_path = os.path.join(tfm_save_file_dir, tfm_save_file_name)
+        with open(tfm_save_file_path, "rb") as tfm_save_file:
+            tfm_save: TorchForecastingModel = torch.load(
+                tfm_save_file, map_location=kwargs.get("map_location", None)
+            )
+            # encoders are necessary for direct inference
+            self.encoders, self.add_encoders = self._load_encoders(
+                tfm_save, load_encoders
+            )
+
         # instanciate the model without having to call `fit_from_dataset`
         self.model = self._init_model()
         # cast model precision to correct type
@@ -1819,7 +1892,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # update the fit_called attribute to allow for direct inference
         self._fit_called = True
 
-    def load_weights(self, path: str, **kwargs):
+    def load_weights(self, path: str, load_encoders: bool = True, **kwargs):
         """
         Loads the weights from a manually saved model (saved with :meth:`save() <TorchForecastingModel.save()>`).
 
@@ -1828,6 +1901,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path
             Path from which to load the model's weights. If no path was specified when saving the model, the
             automatically generated path ending with ".pt" has to be provided.
+        load_encoders
+            If set, will load the encoders from the model to enable direct call of fit() or predict().
+            Default: ``True``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -1844,6 +1920,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.load_weights_from_checkpoint(
             file_name=path_ptl_ckpt,
+            load_encoders=load_encoders,
             **kwargs,
         )
 
@@ -1867,7 +1944,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return self.model.epochs_trained if self.model_created else 0
 
     @property
-    def likelihood(self) -> Likelihood:
+    def likelihood(self) -> Optional[Likelihood]:
         return (
             self.model.likelihood
             if self.model_created
@@ -1890,12 +1967,101 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else self.pl_module_params["output_chunk_length"]
         )
 
+    @property
     def _is_probabilistic(self) -> bool:
         return (
-            self.model._is_probabilistic()
+            self.model._is_probabilistic
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )
+
+    def _load_encoders(
+        self, tfm_save: "TorchForecastingModel", load_encoders: bool
+    ) -> Tuple[SequentialEncoder, Dict]:
+        """Return the encoders from a model save with several sanity checks."""
+        if self.add_encoders is None:
+            same_encoders = True
+            same_transformer = True
+        elif tfm_save.add_encoders is None:
+            same_encoders = False
+            same_transformer = False
+        else:
+            # transformers are equal if they are instances of the same class
+            self_transformer = self.add_encoders.get("transformer", None)
+            tfm_transformer = tfm_save.add_encoders.get("transformer", None)
+            same_transformer = type(self_transformer) == type(tfm_transformer)
+
+            # encoders are equal if they have the same entries (transformer excluded)
+            self_encoders = {
+                k: v for k, v in self.add_encoders.items() if k != "transformer"
+            }
+            tfm_encoders = {
+                k: v for k, v in tfm_save.add_encoders.items() if k != "transformer"
+            }
+            same_encoders = self_encoders == tfm_encoders
+
+        if load_encoders:
+            # avoid silently overwriting new encoders
+            raise_if_not(
+                same_transformer,
+                f"Transformers defined in the loaded encoders and the new model must have the same type, received "
+                f"({None if tfm_save.add_encoders is None else type(tfm_save.add_encoders.get('transformer', None))}) "
+                f"and "
+                f"({None if self.add_encoders is None else type(self.add_encoders.get('transformer', None))}).",
+                logger,
+            )
+            raise_if_not(
+                same_encoders,
+                f"Encoders loaded from the checkpoint ({tfm_save.add_encoders}) "
+                f"are different from the encoders defined in the new model "
+                f"({self.add_encoders}).",
+                logger,
+            )
+
+            new_add_encoders: Dict = copy.deepcopy(tfm_save.add_encoders)
+            new_encoders: SequentialEncoder = copy.deepcopy(tfm_save.encoders)
+        else:
+            raise_if(
+                len(tfm_save.add_encoders) > 0 and self.add_encoders is None,
+                f"Model was created without encoders and encoders were not loaded, but the weights were trained "
+                f"using encoders({tfm_save.add_encoders}). Either set `load_encoders` to `True` or add a matching "
+                f"`add_encoders` dict at model creation.",
+                logger,
+            )
+
+            new_add_encoders: Dict = self.add_encoders
+            new_encoders: SequentialEncoder = self.initialize_encoders()
+
+            # compare the dimensions of the new and ckpt encoders
+            if tfm_save.encoders is not None:
+                # extract output dimensions of checkpoint encoders
+                (
+                    ckpt_past_enc_n_comp,
+                    ckpt_future_enc_n_comp,
+                ) = tfm_save.encoders.encoding_n_components
+                # extract output dimensions of new encoders
+                (
+                    new_past_enc_n_comp,
+                    new_future_enc_n_comp,
+                ) = new_encoders.encoding_n_components
+
+                raise_if(
+                    new_past_enc_n_comp != ckpt_past_enc_n_comp
+                    or new_future_enc_n_comp != ckpt_future_enc_n_comp,
+                    f"Number of components mismatch between model's and checkpoint's encoders:\n"
+                    f"- past covs: new {new_past_enc_n_comp}, checkpoint {ckpt_past_enc_n_comp}\n"
+                    f"- future covs: new {new_future_enc_n_comp}, checkpoint {ckpt_future_enc_n_comp}",
+                    logger,
+                )
+
+                # display warning, an exception will be raised if `fit()`` is not called before `predict()`
+                if not new_encoders.fit_called and new_encoders.requires_fit:
+                    logger.info(
+                        "Model's weights were loaded without the encoders and at least one of "
+                        "them needs to be fitted: please call `fit()` before calling `predict()`."
+                    )
+
+        return new_encoders, new_add_encoders
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer
