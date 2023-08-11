@@ -2064,7 +2064,7 @@ class TimeSeries:
         Parameters
         ----------
         point
-            This parameter supports 4 different data types: ``pd.Timestamp``, ``float``, ``int`` and ``dict``.
+            This parameter supports 3 different data types: ``pd.Timestamp``, ``float`` and ``int``.
 
             ``pd.Timestamp`` work only on series that are indexed with a ``pd.DatetimeIndex``. In such cases, the
             returned point will be the index of this timestamp if it is present in the series time index.

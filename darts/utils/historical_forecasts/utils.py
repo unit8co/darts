@@ -55,10 +55,10 @@ def _historical_forecasts_general_checks(model, series, kwargs):
 
     if n.start is not None:
         # check start parameter in general (non series dependent)
-        if not isinstance(n.start, (float, int, np.int64, pd.Timestamp, dict)):
+        if not isinstance(n.start, (float, int, np.int64, pd.Timestamp)):
             raise_log(
                 TypeError(
-                    "`start` needs to be either `float`, `int`, `pd.Timestamp`, `dict`, or `None`"
+                    "`start` must be either `float`, `int`, `pd.Timestamp` or `None`"
                 ),
                 logger,
             )
@@ -66,13 +66,13 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         if n.start_format == "index":
             raise_if_not(
                 isinstance(n.start, (int, np.int64)),
-                f"Since `start_format='index'`, `start` should be an integer, received {type(n.start)}",
+                f"Since `start_format='index'`, `start` must be an integer, received {type(n.start)}",
                 logger,
             )
 
         if isinstance(n.start, float):
             raise_if_not(
-                0.0 <= n.start <= 1.0, "`start` should be between 0.0 and 1.0.", logger
+                0.0 <= n.start <= 1.0, "if `start` is a float, must be between 0.0 and 1.0.", logger
             )
 
         # verbose error messages
