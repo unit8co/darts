@@ -108,28 +108,31 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         n.start < 0 and np.abs(n.start) > len(series_)
                     ):
                         out_of_bound_error = True
-                else:
-                    if (
-                        series_.has_datetime_index
-                        or (series_.has_range_index and series_.freq == 1)
-                    ) and n.start >= len(series_):
+                elif series_.has_datetime_index:
+                    if n.start >= len(series_):
                         out_of_bound_error = True
+                elif n.start < series_.time_index[0]:
+                    raise_log(
+                        ValueError(
+                            f"`start` index `{n.start}` is smaller than the first index `{series_.time_index[0]}` "
+                            f"for series at index: {idx}."
+                        ),
+                        logger,
+                    )
+                elif n.start > series_.time_index[-1]:
+                    raise_log(
+                        ValueError(
+                            f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
+                            f"for series at index: {idx}."
+                        ),
+                        logger,
+                    )
 
                 if out_of_bound_error:
                     raise_log(
                         ValueError(
                             f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
                             f"at index: {idx}."
-                        ),
-                        logger,
-                    )
-                elif (
-                    series_.has_range_index and series_.freq > 1
-                ) and n.start > series_.time_index[-1]:
-                    raise_log(
-                        ValueError(
-                            f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                            f"for series at index: {idx}."
                         ),
                         logger,
                     )
