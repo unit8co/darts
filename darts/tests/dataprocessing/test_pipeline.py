@@ -2,6 +2,8 @@ import logging
 import unittest
 from typing import Any, Mapping
 
+import pytest
+
 from darts import TimeSeries
 from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import (
@@ -127,7 +129,7 @@ class PipelineTestCase(unittest.TestCase):
         p = Pipeline([mock])
 
         # when & then
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             p.inverse_transform(None)
 
     def test_transformers_not_modified(self):
@@ -225,7 +227,7 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(str(p[1]._transformers), str([transformers[1]]))
         self.assertEqual(str(p[4:8]._transformers), str(transformers[4:8]))
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             p["invalid attempt"]
 
     def test_raises_on_non_transformers(self):
@@ -233,7 +235,7 @@ class PipelineTestCase(unittest.TestCase):
         input_list = list(range(10))
 
         # when & then
-        with self.assertRaises(
+        with pytest.raises(
             ValueError,
             msg="transformers should be objects deriving from BaseDataTransformer",
         ):
@@ -245,7 +247,7 @@ class PipelineTestCase(unittest.TestCase):
         p = Pipeline([])
 
         # when & then
-        with self.assertRaises(ValueError, msg="Key must be int, str or slice"):
+        with pytest.raises(ValueError, msg="Key must be int, str or slice"):
             p[bad_key]
 
     def test_multi_ts(self):
@@ -284,7 +286,7 @@ class PipelineTestCase(unittest.TestCase):
         transformed = pipeline.transform(series)
 
         # should fail, since partial is False by default
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             pipeline.inverse_transform(transformed)
 
         back = pipeline.inverse_transform(transformed, partial=True)

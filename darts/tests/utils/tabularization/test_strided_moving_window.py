@@ -1,6 +1,7 @@
 from itertools import product
 
 import numpy as np
+import pytest
 
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import strided_moving_window
@@ -54,14 +55,14 @@ class StridedMovingWindowTestCase(DartsBaseTestClass):
         """
         x = np.arange(1)
         # `stride` isn't positive:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             strided_moving_window(x, window_len=1, stride=0)
         self.assertEqual(
             ("`stride` must be a positive `int`."),
             str(e.exception),
         )
         # `stride` is `float`, not `int`:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             strided_moving_window(x, window_len=1, stride=1.1)
         self.assertEqual(
             ("`stride` must be a positive `int`."),
@@ -75,14 +76,14 @@ class StridedMovingWindowTestCase(DartsBaseTestClass):
         """
         x = np.arange(1)
         # `window_len` isn't positive:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             strided_moving_window(x, window_len=0, stride=1)
         self.assertEqual(
             ("`window_len` must be a positive `int`."),
             str(e.exception),
         )
         # `window_len` is `float`, not `int`:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             strided_moving_window(x, window_len=1.1, stride=1)
         self.assertEqual(
             ("`window_len` must be a positive `int`."),
@@ -97,14 +98,14 @@ class StridedMovingWindowTestCase(DartsBaseTestClass):
         """
         x = np.arange(1)
         # `axis` NOT an int:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             strided_moving_window(x, window_len=1, stride=1, axis=0.1)
         self.assertEqual(
             ("`axis` must be an `int` that is less than `x.ndim`."),
             str(e.exception),
         )
         # `axis` NOT < x.ndim:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             strided_moving_window(x, window_len=1, stride=1, axis=1)
         self.assertEqual(
             ("`axis` must be an `int` that is less than `x.ndim`."),
@@ -117,7 +118,7 @@ class StridedMovingWindowTestCase(DartsBaseTestClass):
         is set to a value larger than `x.shape[axis]`.
         """
         x = np.arange(1)
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             strided_moving_window(x, window_len=2, stride=1)
         self.assertEqual(
             ("`window_len` must be less than or equal to x.shape[axis]."),

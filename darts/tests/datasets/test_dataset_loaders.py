@@ -138,19 +138,19 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
             self.assertEqual(ts.width, width)
 
     def test_hash(self):
-        with self.assertRaises(DatasetLoadingException):
+        with pytest.raises(DatasetLoadingException):
             wrong_hash_dataset.load()
 
     def test_uri(self):
-        with self.assertRaises(DatasetLoadingException):
+        with pytest.raises(DatasetLoadingException):
             wrong_url_dataset.load()
 
     def test_zip_uri(self):
-        with self.assertRaises(DatasetLoadingException):
+        with pytest.raises(DatasetLoadingException):
             wrong_zip_url_dataset.load()
 
     def test_pre_process_fn(self):
-        with self.assertRaises(DatasetLoadingException):
+        with pytest.raises(DatasetLoadingException):
             no_pre_process_fn_dataset.load()
 
     def test_multi_series_dataset(self):

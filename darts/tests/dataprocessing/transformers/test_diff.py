@@ -4,6 +4,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.dataprocessing.transformers import Diff
 from darts.timeseries import TimeSeries
@@ -186,7 +187,7 @@ class DiffTestCase(unittest.TestCase):
         length to differenced components.
         """
         diff = Diff(lags=1, dropna=True)
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             diff.fit(self.sine_series, component_mask=np.array([1, 0, 1], dtype=bool))
         self.assertEqual(
             (
@@ -204,7 +205,7 @@ class DiffTestCase(unittest.TestCase):
         """
         lags = (1000,)
         diff = Diff(lags=lags)
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             diff.fit(self.sine_series)
         self.assertEqual(
             (
@@ -231,7 +232,7 @@ class DiffTestCase(unittest.TestCase):
             diff = Diff(lags=1, dropna=dropna)
             diff.fit(series1)
             series2_diffed = series2.diff(n=1, periods=1, dropna=dropna)
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 diff.inverse_transform(series2_diffed)
             expected_start = (
                 series1.start_time()
@@ -260,7 +261,7 @@ class DiffTestCase(unittest.TestCase):
         )
         diff = Diff(lags=1, dropna=True)
         diff.fit(series1)
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             diff.inverse_transform(series2.diff(n=1, periods=1, dropna=True))
         self.assertEqual(
             f"Series is of frequency {series2.freq}, but transform was fitted to data of frequency {series1.freq}.",
@@ -280,7 +281,7 @@ class DiffTestCase(unittest.TestCase):
         series_rm_comp = TimeSeries.from_times_and_values(
             values=vals[:, 1:, :], times=dates
         )
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             diff.inverse_transform(series_rm_comp.diff(n=1, periods=1, dropna=True))
         self.assertEqual(
             f"Expected series to have {series.n_components} components; "
@@ -290,7 +291,7 @@ class DiffTestCase(unittest.TestCase):
         series_rm_samp = TimeSeries.from_times_and_values(
             values=vals[:, :, 1:], times=dates
         )
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             diff.inverse_transform(series_rm_samp.diff(n=1, periods=1, dropna=True))
         self.assertEqual(
             f"Expected series to have {series.n_samples} samples; "

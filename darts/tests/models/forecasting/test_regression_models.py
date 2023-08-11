@@ -444,33 +444,33 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 self.assertEqual(model_instance.lags.get("past"), values)
                 # testing lags_future_covariates
 
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=0, multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=[-1, 0], multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=[3, 5], multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=[-3, -5.0], multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=-5, multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=3.6, multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=None, lags_past_covariates=False, multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=None, multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=5, lags_future_covariates=True, multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=5, lags_future_covariates=(1, -3), multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=5, lags_future_covariates=(1, 2, 3), multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=5, lags_future_covariates=(1, True), multi_models=mode)
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model(lags=5, lags_future_covariates=(1, 1.0), multi_models=mode)
 
     def test_training_data_creation(self):
@@ -929,7 +929,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         for mode in multi_models_modes:
             for model in self.models:
                 # testing past covariates
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # testing lags_past_covariates None but past_covariates during training
                     model_instance = model(
                         lags=4, lags_past_covariates=None, multi_models=mode
@@ -939,7 +939,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         past_covariates=self.sine_multivariate1,
                     )
 
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # testing lags_past_covariates but no past_covariates during fit
                     model_instance = model(
                         lags=4, lags_past_covariates=3, multi_models=mode
@@ -947,7 +947,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     model_instance.fit(series=self.sine_univariate1)
 
                 # testing future_covariates
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # testing lags_future_covariates None but future_covariates during training
                     model_instance = model(
                         lags=4, lags_future_covariates=None, multi_models=mode
@@ -957,7 +957,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         future_covariates=self.sine_multivariate1,
                     )
 
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # testing lags_covariate but no covariate during fit
                     model_instance = model(
                         lags=4, lags_future_covariates=3, multi_models=mode
@@ -977,7 +977,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     model_instance.input_dim, {"target": 1, "past": 2, "future": None}
                 )
 
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     prediction = model_instance.predict(n=len(test_y) + 2)
 
                 # while it should work with n = 1
@@ -992,7 +992,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
                 # test fitting both on univariate and multivariate timeseries
                 for series in [self.sine_univariate1, self.sine_multivariate2]:
-                    with self.assertRaises(ValueError):
+                    with pytest.raises(ValueError):
                         model_instance = model(
                             lags=4, lags_past_covariates=4, multi_models=mode
                         )
@@ -1481,7 +1481,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     future_covariates=future_covariates[: -25 + req_future_offset],
                 )
                 # check that one less past covariate time step causes ValueError
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model.predict(
                         n,
                         series=target_series[:-25],
@@ -1489,7 +1489,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         future_covariates=future_covariates[: -25 + req_future_offset],
                     )
                 # check that one less future covariate time step causes ValueError
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model.predict(
                         n,
                         series=target_series[:-25],
@@ -2085,7 +2085,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model_incorrect_statcov,
             model_incorrect_futcov,
         ]:
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.fit(
                     series=series,
                     past_covariates=past_covariates,

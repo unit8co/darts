@@ -1,3 +1,5 @@
+import pytest
+
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.model_selection import MODEL_AWARE, SIMPLE, train_test_split
 from darts.utils.timeseries_generation import constant_timeseries
@@ -19,7 +21,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         self.assertTrue(True)
 
     def test_parameters_for_axis_1_no_n(self):
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError,
             "You need to provide non-zero `horizon` and `input_size` parameters when axis=1",
         ):
@@ -28,7 +30,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             )
 
     def test_parameters_for_axis_1_no_horizon(self):
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError,
             "You need to provide non-zero `horizon` and `input_size` parameters when axis=1",
         ):
@@ -40,11 +42,11 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             )
 
     def test_empty_dataset(self):
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             train_test_split([])
 
     def test_horiz_number_of_samples_too_small(self):
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError, "Not enough data to create training and test sets"
         ):
             train_set, test_set = train_test_split(
@@ -79,7 +81,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_horiz_split_overindexing_train_set(self):
         train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             IndexError, "Exceeded the size of the training sequence."
         ):
             train_set[6]
@@ -92,9 +94,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_horiz_split_overindexing_test_set(self):
         train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
-        with self.assertRaisesRegex(
-            IndexError, "Exceeded the size of the test sequence."
-        ):
+        with pytest.raisesRegex(IndexError, "Exceeded the size of the test sequence."):
             test_set[2]
 
     def test_horiz_split_last_index_test_set(self):
@@ -145,7 +145,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         )
 
     def test_negative_test_start_index(self):
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError, "Not enough data to create training and test sets"
         ):
             train_set, test_set = train_test_split(
@@ -158,7 +158,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             )
 
     def test_horiz_split_horizon_equal_to_ts_length(self):
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError, "Not enough data to create training and test sets"
         ):
             train_set, test_set = train_test_split(
@@ -171,7 +171,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             )
 
     def test_single_timeseries_no_horizon_no_n(self):
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             # even if the default axis is 0, but since it is a single timeseries, default axis is 1
             train_test_split(
                 constant_timeseries(value=123, length=10),
@@ -226,7 +226,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             constant_timeseries(value=123, length=1000),
         ]
 
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError, "Not enough data to create training and test sets"
         ):
             train_set, test_set = train_test_split(
@@ -264,7 +264,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     def test_simple_vertical_split_exception_on_bad_param(self):
         # bad value for vertical_split_type
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             train_set, test_set = train_test_split(
                 make_dataset(4, 10),
                 axis=1,
@@ -274,7 +274,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     def test_simple_vertical_split_test_size_too_large(self):
 
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError, "`test_size` is bigger then timeseries length"
         ):
             train_set, test_set = train_test_split(
@@ -283,7 +283,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     def test_model_aware_vertical_split_empty_training_set(self):
 
-        with self.assertRaisesRegex(
+        with pytest.raisesRegex(
             AttributeError, "Not enough data to create training and test sets"
         ):
             train_set, test_set = train_test_split(

@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BoxCox, Mapper
@@ -25,7 +26,7 @@ class BoxCoxTestCase(unittest.TestCase):
         boxcox.fit(self.multi_series)
         self.assertEqual(boxcox._fitted_params, [[0.3, 0.4]])
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             boxcox = BoxCox(lmbda=[0.2, 0.4, 0.5])
             boxcox.fit(self.multi_series)
 

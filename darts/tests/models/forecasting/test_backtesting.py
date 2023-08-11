@@ -153,7 +153,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         np.testing.assert_almost_equal(score, np.array([1.0, 0.0]))
 
         # window of size 2 is too small for naive drift
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(
                 linear_series,
                 train_length=2,
@@ -168,7 +168,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertEqual(score, 1.0)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(
                 linear_series,
                 start=pd.Timestamp("20000218"),
@@ -199,31 +199,31 @@ class BacktestingTestCase(DartsBaseTestClass):
         NaiveDrift().backtest(linear_series, train_length=10, start=30)
 
         # Using invalid start and/or forecast_horizon values
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=0.7, forecast_horizon=-1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=-0.7, forecast_horizon=1)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=100)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=1.2)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, start="wrong type")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, train_length=0, start=0.5)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, train_length=1.2, start=0.5)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, train_length="wrong type", start=0.5)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(
                 linear_series, start=49, forecast_horizon=2, overlap_end=False
             )
 
         # univariate model + multivariate series
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             FFT().backtest(
                 linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3
             )
@@ -393,10 +393,10 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.9)
 
         # Using a too small start value
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest(lags=12).backtest(series=target, start=0, forecast_horizon=3)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest(lags=12).backtest(
                 series=target, start=0.01, forecast_horizon=3
             )
@@ -537,19 +537,19 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         params = {"lags": list(range(1, 11)), "past_covariates": list(range(1, 11))}
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=-5
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=105
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=-24.56
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=1.5
             )

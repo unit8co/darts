@@ -1,6 +1,7 @@
 import random
 
 import numpy as np
+import pytest
 
 from darts.metrics import mape
 from darts.models import FourTheta, Theta
@@ -13,11 +14,11 @@ from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 class FourThetaTestCase(DartsBaseTestClass):
     def test_input(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             FourTheta(model_mode=SeasonalityMode.ADDITIVE)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             FourTheta(season_mode=ModelMode.ADDITIVE)
-        with self.assertRaises((ValueError, TypeError)):
+        with pytest.raises((ValueError, TypeError)):
             FourTheta(trend_mode="linear")
 
     def test_negative_series(self):
@@ -36,7 +37,7 @@ class FourThetaTestCase(DartsBaseTestClass):
 
     def test_zero_mean(self):
         sine_series = st(length=50)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model = FourTheta(
                 model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL
             )
@@ -110,7 +111,7 @@ class FourThetaTestCase(DartsBaseTestClass):
 
     def test_fit_insufficient_train_series_length(self):
         sine_series = st(length=21, freq="MS")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fourtheta = FourTheta(
                 model_mode=ModelMode.MULTIPLICATIVE,
                 trend_mode=TrendMode.EXPONENTIAL,
@@ -118,7 +119,7 @@ class FourThetaTestCase(DartsBaseTestClass):
                 seasonality_period=12,
             )
             fourtheta.fit(sine_series)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             theta = Theta(
                 season_mode=SeasonalityMode.ADDITIVE,
                 seasonality_period=12,

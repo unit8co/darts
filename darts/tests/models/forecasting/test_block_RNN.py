@@ -2,6 +2,7 @@ import shutil
 import tempfile
 
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -45,7 +46,7 @@ if TORCH_AVAILABLE:
             shutil.rmtree(self.temp_work_dir)
 
         def test_creation(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # cannot choose any string
                 BlockRNNModel(
                     input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?"

@@ -40,7 +40,7 @@ if TORCH_AVAILABLE:
             shutil.rmtree(self.temp_work_dir)
 
         def test_creation(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 DLinearModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -48,7 +48,7 @@ if TORCH_AVAILABLE:
                     likelihood=GaussianLikelihood(),
                 )
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 NLinearModel(
                     input_chunk_length=1,
                     output_chunk_length=1,

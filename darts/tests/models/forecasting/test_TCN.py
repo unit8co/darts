@@ -22,7 +22,7 @@ if TORCH_AVAILABLE:
 
     class TCNModelTestCase(DartsBaseTestClass):
         def test_creation(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # cannot choose a kernel size larger than the input length
                 TCNModel(input_chunk_length=20, output_chunk_length=1, kernel_size=100)
             TCNModel(input_chunk_length=12, output_chunk_length=1)

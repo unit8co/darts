@@ -33,11 +33,11 @@ if TORCH_AVAILABLE:
             q_non_symmetric = [0.2, 0.5, 0.9]
 
             # if a QuantileLoss is used, it must have to q=0.5 quantile
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 QuantileRegression(q_no_50)
 
             # if a QuantileLoss is used, it must be symmetric around q=0.5 quantile (i.e. [0.1, 0.5, 0.9])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 QuantileRegression(q_non_symmetric)
 
         def test_future_covariate_handling(self):
@@ -46,7 +46,7 @@ if TORCH_AVAILABLE:
 
             # model requires future covariates without cyclic encoding
             model = TFTModel(input_chunk_length=1, output_chunk_length=1, **tfm_kwargs)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.fit(ts_time_index, verbose=False)
 
             # should work with cyclic encoding for time index
@@ -419,7 +419,7 @@ if TORCH_AVAILABLE:
             )
             model2.fit(series, epochs=1)
 
-            with self.assertRaises(AttributeError):
+            with pytest.raises(AttributeError):
                 model4 = base_model(
                     input_chunk_length=1,
                     output_chunk_length=1,

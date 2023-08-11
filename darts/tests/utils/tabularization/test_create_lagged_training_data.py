@@ -4,6 +4,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
@@ -1523,7 +1524,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         lags = [-1]
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=series_1,
                     output_chunk_length=1,
@@ -1553,7 +1554,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             # is specified without `lags_past_covariates` - ignore this:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                with self.assertRaises(ValueError) as e:
+                with pytest.raises(ValueError) as e:
                     create_lagged_training_data(
                         target_series=series_1,
                         output_chunk_length=1,
@@ -1571,7 +1572,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             # `future_covariates` - ignore both warnings:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                with self.assertRaises(ValueError) as e:
+                with pytest.raises(ValueError) as e:
                     create_lagged_training_data(
                         target_series=series_1,
                         output_chunk_length=1,
@@ -1595,7 +1596,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         lags = [-1]
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=0,
@@ -1607,7 +1608,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 "`output_chunk_length` must be a positive `int`.",
                 str(e.exception),
             )
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=1.1,
@@ -1628,7 +1629,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         target = linear_timeseries(start=1, length=20, freq=1)
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=1,
@@ -1654,7 +1655,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         series = linear_timeseries(start=1, length=2, freq=1)
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=5,
@@ -1671,7 +1672,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 str(e.exception),
             )
             # `lags_past_covariates` too large test:
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
@@ -1704,7 +1705,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             # Test invalid `lags` values:
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
@@ -1719,7 +1720,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 str(e.exception),
             )
             # Test invalid `lags_past_covariates` values:
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,

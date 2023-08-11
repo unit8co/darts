@@ -137,7 +137,7 @@ if TORCH_AVAILABLE:
             # check that the PyTorch Ligthning ckpt does not exist
             self.assertFalse(os.path.exists(no_training_ckpt_path + ".ckpt"))
             # informative exception about `fit()` not called
-            with self.assertRaises(
+            with pytest.raises(
                 ValueError,
                 msg="The model must be fit before calling predict(). "
                 "For global models, if predict() is called without specifying a series, "
@@ -357,7 +357,7 @@ if TORCH_AVAILABLE:
             # model with undeclared encoders
             model_no_enc = create_DLinearModel("no_encoder", add_encoders=None)
             # weights were trained with encoders, new model must be instantiated with encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_no_enc.load_weights_from_checkpoint(
                     auto_name,
                     work_dir=self.temp_work_dir,
@@ -395,7 +395,7 @@ if TORCH_AVAILABLE:
                 map_location="cpu",
             )
             # cannot predict because of un-fitted encoder
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_same_enc_noload.predict(n=4, series=self.series)
 
             model_same_enc_load = create_DLinearModel(
@@ -416,7 +416,7 @@ if TORCH_AVAILABLE:
                 "other_encoder_load", add_encoders=encoders_other_past
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_other_enc_load.load_weights(
                     model_path_manual,
                     load_encoders=True,
@@ -443,7 +443,7 @@ if TORCH_AVAILABLE:
                 isinstance(model_other_enc_noload.encoders, SequentialEncoder)
             )
             # since fit() was not called, new fittable encoders were not trained
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_other_enc_noload.predict(n=4, series=self.series)
 
             # predict() can be called after fit()
@@ -475,7 +475,7 @@ if TORCH_AVAILABLE:
                 add_encoders=encoders_past_other_transformer,
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_other_transformer.load_weights(
                     model_path_manual,
                     load_encoders=True,
@@ -488,7 +488,7 @@ if TORCH_AVAILABLE:
                 map_location="cpu",
             )
             # since fit() was not called, new fittable encoders were not trained
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_other_transformer.predict(n=4, series=self.series)
 
             # predict() can be called after fit()
@@ -500,14 +500,14 @@ if TORCH_AVAILABLE:
                 "encoder_2_components_past", add_encoders=encoders_2_past
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_2_past.load_weights(
                     model_path_manual,
                     load_encoders=True,
                     map_location="cpu",
                 )
             # new encoders have one additional past component
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_2_past.load_weights(
                     model_path_manual,
                     load_encoders=False,
@@ -519,14 +519,14 @@ if TORCH_AVAILABLE:
                 "encoder_past_n_future", add_encoders=encoders_past_n_future
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_past_n_future.load_weights(
                     model_path_manual,
                     load_encoders=True,
                     map_location="cpu",
                 )
             # identical past components, but different future components
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_past_n_future.load_weights(
                     model_path_manual,
                     load_encoders=False,
@@ -624,7 +624,7 @@ if TORCH_AVAILABLE:
 
             # model with no likelihood
             model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_no_likelihood.load_weights_from_checkpoint(
                     auto_name,
                     work_dir=self.temp_work_dir,
@@ -636,7 +636,7 @@ if TORCH_AVAILABLE:
             model_other_likelihood = create_DLinearModel(
                 "other_likelihood", likelihood=LaplaceLikelihood()
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_other_likelihood.load_weights(
                     model_path_manual, map_location="cpu"
                 )
@@ -645,7 +645,7 @@ if TORCH_AVAILABLE:
             model_same_likelihood_other_prior = create_DLinearModel(
                 "same_likelihood_other_prior", likelihood=GaussianLikelihood()
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_same_likelihood_other_prior.load_weights(
                     model_path_manual, map_location="cpu"
                 )
@@ -876,7 +876,7 @@ if TORCH_AVAILABLE:
             )
 
             # raise Exception when trying to load ckpt weights in different architecture
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_rt = RNNModel(
                     12,
                     "RNN",
@@ -891,7 +891,7 @@ if TORCH_AVAILABLE:
                 )
 
             # raise Exception when trying to pass `weights_only`=True to `torch.load()`
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_rt = RNNModel(12, "RNN", 5, 5, **tfm_kwargs)
                 model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
@@ -1103,7 +1103,7 @@ if TORCH_AVAILABLE:
             _ = RNNModel(12, "RNN", 10, 10, **valid_kwarg)
 
             # invalid params should raise an error
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
 
         def test_metrics(self):
@@ -1204,7 +1204,7 @@ if TORCH_AVAILABLE:
 
         def test_invalid_metrics(self):
             torch_metrics = ["invalid"]
-            with self.assertRaises(AttributeError):
+            with pytest.raises(AttributeError):
                 model = RNNModel(
                     12,
                     "RNN",

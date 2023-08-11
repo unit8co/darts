@@ -3,6 +3,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
@@ -35,50 +36,50 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         Test that the forecasting window transformer dictionary input parameter is correctly formatted
         """
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             window_transformations = None  # None input
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = []  # empty list
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             window_transformations = {}  # empty dictionary
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = [1, 2, 3]  # list of not dictionaries
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             window_transformations = {"random_fn_name": "mean"}  # no 'function' key
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             window_transformations = {
                 "function": "wild_fn"
             }  # not valid pandas built-in function
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {
                 "function": 1
             }  # not valid pandas built-in function nore callable
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {"function": None}  # None function value
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             window_transformations = {
                 "function": "quantile",
                 "window": [3],
             }  # not enough mandatory arguments for quantile
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {
                 "function": "mean",
                 "mode": "rolling",
@@ -86,7 +87,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             }  # negative window
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {
                 "function": "mean",
                 "mode": "rolling",
@@ -94,7 +95,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             }  # None window
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {
                 "function": "mean",
                 "mode": "rolling",
@@ -102,7 +103,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             }  # window list
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {
                 "function": "mean",
                 "window": 3,
@@ -111,7 +112,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             }  # Negative step
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {
                 "function": "mean",
                 "window": 3,
@@ -119,7 +120,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             }  # invalid mode
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             window_transformations = {
                 "function": "mean",
                 "mode": "rolling",
@@ -331,13 +332,13 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         )
         self.assertEqual(transformed_ts, expected_transformed_series)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # uknonwn treat_na
             self.target.window_transform(
                 window_transformations, treat_na="fillrnd", forecasting_safe=False
             )
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # unauhtorized treat_na=bfill with forecasting_safe=True
             self.target.window_transform(window_transformations, treat_na="bfill")
 
@@ -569,7 +570,7 @@ class WindowTransformerTestCase(unittest.TestCase):
             transforms=invalid_parameters,
         )
         # if pd.DateOffset, raise ValueError of non-fixed frequency
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             invalid_transformer.transform(self.target_hourly)
 
     def test_transformers_pipeline(self):

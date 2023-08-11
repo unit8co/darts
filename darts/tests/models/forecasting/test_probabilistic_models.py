@@ -578,7 +578,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
                 **tfm_kwargs,
             )
             model.fit(self.constant_noisy_ts)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.predict(n=1, predict_likelihood_parameters=True)
 
             model = DLinearModel(
@@ -590,10 +590,10 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
             )
             model.fit(self.constant_noisy_ts)
             # num_samples > 1
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.predict(n=1, num_samples=2, predict_likelihood_parameters=True)
             # n > output_chunk_length
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.predict(n=5, num_samples=1, predict_likelihood_parameters=True)
             model.predict(n=4, num_samples=1, predict_likelihood_parameters=True)
 

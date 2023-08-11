@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -44,7 +45,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         )
 
         # Series cannot be lower than three without passing frequency as argument to constructor
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             TimeSeries(self.dataframe1.iloc[:2, :])
         TimeSeries.from_dataframe(self.dataframe1.iloc[:2, :], freq="D")
 
@@ -66,7 +67,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertFalse(self.series1 == seriesC)
 
     def test_rescale(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.series1.rescale_with_value(1)
 
         seriesA = self.series2.rescale_with_value(0)
@@ -131,7 +132,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
     """
 
     def test_stack(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.series1.stack(self.series3)
         seriesA = self.series1.stack(self.series2)
         dataframeA = pd.concat([self.dataframe1, self.dataframe2], axis=1)
@@ -153,9 +154,9 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         )
 
     def test_univariate_component(self):
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             self.series1.univariate_component(-5)
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             self.series1.univariate_component(3)
         seriesA = self.series1.univariate_component(1)
         self.assertTrue(
@@ -243,7 +244,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertEqual(last_column.at[pd.Timestamp("2020-12-24 23:00:00")], 0)
 
     def test_assert_univariate(self):
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             self.series1._assert_univariate()
         self.series1.univariate_component(0)._assert_univariate()
 

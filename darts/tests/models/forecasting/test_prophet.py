@@ -46,16 +46,16 @@ class ProphetTestCase(DartsBaseTestClass):
         self.assertEqual(len(model3._add_seasonalities), 2)
 
         # seasonality already exists
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model1.add_seasonality(**kwargs_mandatory)
 
         # missing mandatory arguments
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             for kw, arg in kwargs_mandatory.items():
                 Prophet(add_seasonalities={kw: arg})
 
         # invalid keywords
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Prophet(
                 add_seasonalities=dict(
                     kwargs_mandatory, **{"some_random_keyword": "custom"}
@@ -63,10 +63,10 @@ class ProphetTestCase(DartsBaseTestClass):
             )
 
         # invalid value dtypes
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Prophet(add_seasonalities=dict({kw: None for kw in kwargs_mandatory}))
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Prophet(add_seasonalities=dict([]))
 
     def test_prophet_model(self):
@@ -179,7 +179,7 @@ class ProphetTestCase(DartsBaseTestClass):
         )
 
         # check bad frequency string
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = Prophet._freq_to_days(freq="30SS")
 
     def helper_test_prophet_model(self, period, freq, compare_all_models=False):

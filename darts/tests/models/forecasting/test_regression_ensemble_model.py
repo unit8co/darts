@@ -3,6 +3,7 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
@@ -143,16 +144,16 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
         # too big value to perform the split
         ensemble = RegressionEnsembleModel(self.get_local_models(), 100)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble.fit(self.combined)
 
         ensemble = RegressionEnsembleModel(self.get_local_models(), 50)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble.fit(self.combined)
 
         # too big value considering min_train_series_length
         ensemble = RegressionEnsembleModel(self.get_local_models(), 45)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble.fit(self.combined)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -251,7 +252,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # train with multiple series
         ensemble_model = self.get_global_ensembe_model()
         ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # predict without passing series should raise an error
             ensemble_model.predict(n=5, past_covariates=series_long)
         # predict a new target series
@@ -476,7 +477,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # deterministic forecasting is supported
         ensemble_dete_reg.predict(5, num_samples=1)
         # probabilistic forecasting is not supported
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble_dete_reg.predict(5, num_samples=10)
 
         # every models are deterministic
@@ -495,11 +496,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # deterministic forecasting is supported
         ensemble_alldete.predict(5, num_samples=1)
         # probabilistic forecasting is not supported
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble_alldete.predict(5, num_samples=10)
 
         # deterministic forecasters cannot be sampled
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[
                     self.get_deterministic_global_model(lags=[-1, -3]),
@@ -518,7 +519,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         quantiles = [0.25, 0.5, 0.75]
 
         # cannot sample deterministic forecasting models
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[
                     self.get_deterministic_global_model(lags=[-1, -3]),
@@ -529,7 +530,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             )
 
         # must use apprioriate reduction method
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[
                     self.get_probabilistic_global_model(
@@ -591,11 +592,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         )
 
         # deterministic regression model -> deterministic ensemble
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble_model_mean.predict(len(val), num_samples=100)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble_model_median.predict(len(val), num_samples=100)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ensemble_model_0_5_quantile.predict(len(val), num_samples=100)
 
         # possible to use very small regression_train_num_samples

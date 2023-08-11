@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from darts.logging import get_logger
 from darts.models import LinearRegressionModel, NaiveSeasonal
@@ -103,11 +104,11 @@ class TestResidualsTestCase(DartsBaseTestClass):
         )
 
         # if model is trained with covariates, should raise error when covariates are missing in residuals()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model_1.residuals(target_series_1)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model_1.residuals(target_series_1, past_covariates=past_covariates)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model_1.residuals(target_series_1, future_covariates=future_covariates)

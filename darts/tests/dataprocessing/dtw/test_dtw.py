@@ -3,6 +3,7 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.dataprocessing import dtw
 from darts.metrics import dtw_metric, mae, mape
@@ -166,11 +167,11 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         See DTWAlignment.warped for why this functionality is currently disabled
 
         #Mutually Exclusive Option
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             alignment.warped(take_dates=True, range_index=True)
 
         #Take_dates does not support indexing by RangeIndex
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             xa3 = xa1.copy()
             xa3["time1"] = pd.RangeIndex(0, len(self.series1))
 
@@ -189,7 +190,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         self.assertGreater(5, metric2)
 
     def test_nans(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             series1 = _series_from_values([np.nan, 0, 1, 2, 3])
             series2 = _series_from_values([0, 1, 2, 3, 4])
 

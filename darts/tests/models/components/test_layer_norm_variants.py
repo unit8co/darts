@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from darts.logging import get_logger
 
@@ -49,5 +50,5 @@ if TORCH_AVAILABLE:
 
             # try invalid input_dim
             rin = RINorm(input_dim=3, affine=True)
-            with self.assertRaises(RuntimeError):
+            with pytest.raises(RuntimeError):
                 x_norm = rin(x)

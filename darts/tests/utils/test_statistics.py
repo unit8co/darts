@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
@@ -34,7 +35,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual((True, 6), check_seasonality(series))
         self.assertEqual((False, 3), check_seasonality(series, m=3))
 
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             check_seasonality(series.stack(series))
 
     def test_granger_causality(self):
@@ -52,19 +53,19 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         )
 
         # Test univariate
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             granger_causality_tests(series_cause_1, series_effect_1, 10)
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             granger_causality_tests(series_effect_1, series_cause_1, 10)
 
         # Test deterministic
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             granger_causality_tests(series_cause_1, series_effect_3, 10)
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             granger_causality_tests(series_effect_3, series_cause_1, 10)
 
         # Test Frequency
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             granger_causality_tests(series_cause_2, series_effect_4, 10)
 
         # Test granger basics
@@ -82,19 +83,19 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         series_3 = gaussian_timeseries(start=0, end=9999)
 
         # Test univariate
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             stationarity_tests(series_1)
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             stationarity_test_adf(series_1)
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             stationarity_test_kpss(series_1)
 
         # Test deterministic
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             stationarity_tests(series_2)
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             stationarity_test_adf(series_2)
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             stationarity_test_kpss(series_2)
 
         # Test basics
@@ -152,18 +153,18 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
 
         # make sure non MSTL methods fail with multiple freqs
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             calc_trend, calc_seasonality = extract_trend_and_seasonality(
                 self.ts, freq=[1, 4, 6], method="STL", model=ModelMode.ADDITIVE
             )
 
         # check if error is raised when using multiplicative model
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
             )
@@ -191,7 +192,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # check if error is raised
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             calc_trend = remove_seasonality(
                 self.ts, freq=6, method="STL", model=SeasonalityMode.MULTIPLICATIVE
             )
@@ -219,7 +220,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # check if error is raised
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             calc_season = remove_trend(
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )

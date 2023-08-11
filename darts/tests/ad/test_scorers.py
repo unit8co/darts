@@ -1,6 +1,7 @@
 from typing import Sequence
 
 import numpy as np
+import pytest
 import sklearn
 from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
@@ -279,63 +280,63 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         fittable_scorer.fit(self.train)
 
         # if component_wise set to False, 'actual_anomalies' must have widths of 1
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.mts_anomalies, series=self.test
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.mts_anomalies],
                 series=[self.test, self.test],
             )
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric=1
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
             )
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
             )
 
         # 'actual_anomalies' must be binary
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(actual_anomalies=self.test, series=self.test)
 
         # 'actual_anomalies' must contain anomalies (at least one)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.only_0_anomalies, series=self.test
             )
 
         # 'actual_anomalies' cannot contain only anomalies
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.only_1_anomalies, series=self.test
             )
 
         # 'actual_anomalies' must match the number of series if length higher than 1
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies], series=self.test
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies],
                 series=[self.test, self.test, self.test],
             )
 
         # 'actual_anomalies' must have non empty intersection with 'series'
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies[:20], series=self.test[30:]
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies[:20]],
                 series=[self.test, self.test[40:]],
@@ -350,21 +351,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             )
 
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 fittable_scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
                     metric=1,
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 fittable_scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
                     metric="auc_roc",
                 )
-            with self.assertRaises(TypeError):
+            with pytest.raises(TypeError):
                 fittable_scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
@@ -373,7 +374,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
 
             # 'actual_anomalies' must be binary
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.test,
                     actual_series=self.test,
@@ -381,7 +382,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
 
             # 'actual_anomalies' must contain anomalies (at least one)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.only_0_anomalies,
                     actual_series=self.test,
@@ -389,7 +390,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
 
             # 'actual_anomalies' cannot contain only anomalies
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.only_1_anomalies,
                     actual_series=self.test,
@@ -397,7 +398,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
 
             # 'actual_anomalies' must match the number of series if length higher than 1
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.eval_accuracy_from_prediction(
                     actual_anomalies=[self.anomalies, self.anomalies],
                     actual_series=[self.test, self.test, self.test],
@@ -407,7 +408,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                         self.modified_test,
                     ],
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.eval_accuracy_from_prediction(
                     actual_anomalies=[self.anomalies, self.anomalies],
                     actual_series=self.test,
@@ -415,13 +416,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
 
             # 'actual_anomalies' must have non empty intersection with 'actual_series' and 'pred_series'
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies[:20],
                     actual_series=self.test[30:],
                     pred_series=self.modified_test[30:],
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.eval_accuracy_from_prediction(
                     actual_anomalies=[self.anomalies, self.anomalies[:20]],
                     actual_series=[self.test, self.test[40:]],
@@ -436,25 +437,25 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # checks for score_from_prediction()
             # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, "str")
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.train], [self.modified_train, "str"]
                 )
             # score on sequence with series that have different width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, self.modified_mts_train)
             # input sequences have different length
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.train], [self.modified_train]
                 )
             # two inputs must have a non zero intersection
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train[:50], self.train[55:])
             # every pairwise element must have a non zero intersection
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.train[:50]], [self.train, self.train[55:]]
                 )
@@ -464,11 +465,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         for scorer in list_FittableAnomalyScorer:
 
             # Need to call fit() before calling score()
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score(self.test)
 
             # Need to call fit() before calling score_from_prediction()
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.test, self.modified_test)
 
             # Check if trainable is True, being a FittableAnomalyScorer
@@ -478,11 +479,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             self.assertTrue(not scorer._fit_called)
 
             # fit on sequence with series that have different width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit([self.train, self.mts_train])
 
             # fit on sequence with series that have different width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit_from_prediction(
                     [self.train, self.mts_train],
                     [self.modified_train, self.modified_mts_train],
@@ -490,79 +491,79 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # checks for fit_from_prediction()
             # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, "str")
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.train], [self.modified_train, "str"]
                 )
             # two inputs must have the same length
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit_from_prediction(
                     [self.train, self.train], [self.modified_train]
                 )
             # two inputs must have the same width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit_from_prediction([self.train], [self.modified_mts_train])
             # every element must have the same width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit_from_prediction(
                     [self.train, self.mts_train],
                     [self.modified_train, self.modified_mts_train],
                 )
             # two inputs must have a non zero intersection
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit_from_prediction(self.train[:50], self.train[55:])
             # every pairwise element must have a non zero intersection
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit_from_prediction(
                     [self.train, self.train[:50]], [self.train, self.train[55:]]
                 )
 
             # checks for fit()
             # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit("str")
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.fit([self.modified_train, "str"])
 
             # checks for score_from_prediction()
             scorer.fit_from_prediction(self.train, self.modified_train)
             # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, "str")
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.train], [self.modified_train, "str"]
                 )
             # two inputs must have the same length
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.train], [self.modified_train]
                 )
             # two inputs must have the same width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction([self.train], [self.modified_mts_train])
             # every element must have the same width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.mts_train],
                     [self.modified_train, self.modified_mts_train],
                 )
             # two inputs must have a non zero intersection
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train[:50], self.train[55:])
             # every pairwise element must have a non zero intersection
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score_from_prediction(
                     [self.train, self.train[:50]], [self.train, self.train[55:]]
                 )
 
             # checks for score()
             # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score("str")
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 scorer.score([self.modified_train, "str"])
 
             # caseA: fit with fit()
@@ -571,7 +572,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerA1.fit(self.train)
             # Check if _fit_called is True after being fitted
             self.assertTrue(scorerA1._fit_called)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerA1.score(self.mts_test)
             # case2: fit on MTS
@@ -579,7 +580,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerA2.fit(self.mts_train)
             # Check if _fit_called is True after being fitted
             self.assertTrue(scorerA2._fit_called)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerA2.score(self.test)
 
@@ -589,7 +590,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerB1.fit_from_prediction(self.train, self.modified_train)
             # Check if _fit_called is True after being fitted
             self.assertTrue(scorerB1._fit_called)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerB1.score_from_prediction(self.mts_test, self.modified_mts_test)
             # case2: fit on MTS
@@ -597,16 +598,16 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorerB2.fit_from_prediction(self.mts_train, self.modified_mts_train)
             # Check if _fit_called is True after being fitted
             self.assertTrue(scorerB2._fit_called)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 scorerB2.score_from_prediction(self.test, self.modified_test)
 
     def test_Norm(self):
 
         # component_wise must be bool
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Norm(component_wise=1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Norm(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = Norm(component_wise=False)
@@ -629,9 +630,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         scorer = Norm(component_wise=True)
         # always expects a deterministic input
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.probabilistic, self.train)
 
         # univariate case (equivalent to abs diff)
@@ -708,9 +709,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer = Difference()
 
         # always expects a deterministic input
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.probabilistic, self.train)
 
         # univariate case
@@ -761,9 +762,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # component_wise parameter
         # component_wise must be bool
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(component_wise=1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = WassersteinScorer(component_wise=False)
@@ -780,26 +781,26 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(window=0)
 
         # diff_fn paramter
         # must be None, 'diff' or 'abs_diff'
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(diff_fn="random")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             WassersteinScorer(diff_fn=1)
 
         # test _diff_series() directly
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             s_tmp = WassersteinScorer()
             s_tmp.diff_fn = "random"
             s_tmp._diff_series(self.train, self.test)
@@ -809,28 +810,28 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer = WassersteinScorer()
 
         # always expects a deterministic input
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score(self.probabilistic)
 
         # window must be smaller than the input of score()
         scorer = WassersteinScorer(window=101)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.fit(self.train)  # len(self.train)=100
 
         scorer = WassersteinScorer(window=80)
         scorer.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
         # test plotting (just call the functions)
         scorer = WassersteinScorer(window=2)
         scorer.fit(self.train)
         scorer.show_anomalies(self.test, self.anomalies)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies([self.test, self.test], self.anomalies)
         scorer.show_anomalies_from_prediction(
@@ -838,14 +839,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             pred_series=self.test + 1,
             actual_anomalies=self.anomalies,
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies_from_prediction(
                 actual_series=[self.test, self.test],
                 pred_series=self.test + 1,
                 actual_anomalies=self.anomalies,
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies_from_prediction(
                 actual_series=self.test,
@@ -986,9 +987,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # component_wise parameter
         # component_wise must be bool
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(component_wise=1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = KMeansScorer(component_wise=False)
@@ -1005,42 +1006,42 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(window=0)
 
         # diff_fn paramter
         # must be None, 'diff' or 'abs_diff'
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(diff_fn="random")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KMeansScorer(diff_fn=1)
 
         scorer = KMeansScorer()
 
         # always expects a deterministic input
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score(self.probabilistic)
 
         # window must be smaller than the input of score()
         scorer = KMeansScorer(window=101)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.fit(self.train)  # len(self.train)=100
 
         scorer = KMeansScorer(window=80)
         scorer.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
         self.assertFalse(scorer.is_probabilistic)
@@ -1283,14 +1284,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
     def test_PyODScorer(self):
 
         # model parameter must be pyod.models typy BaseDetector
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=MovingAverageFilter(window=10))
 
         # component_wise parameter
         # component_wise must be bool
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), component_wise=1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = PyODScorer(model=KNN(), component_wise=False)
@@ -1307,42 +1308,42 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=0)
 
         # diff_fn paramter
         # must be None, 'diff' or 'abs_diff'
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), diff_fn="random")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), diff_fn=1)
 
         scorer = PyODScorer(model=KNN())
 
         # always expects a deterministic input
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score(self.probabilistic)
 
         # window must be smaller than the input of score()
         scorer = PyODScorer(model=KNN(), window=101)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.fit(self.train)  # len(self.train)=100
 
         scorer = PyODScorer(model=KNN(), window=80)
         scorer.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
         self.assertFalse(scorer.is_probabilistic)
@@ -1587,9 +1588,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         for s in list_NLLScorer:
             # expects for 'actual_series' a deterministic input and for 'pred_series' a probabilistic input
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 s.score_from_prediction(actual_series=self.test, pred_series=self.test)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 s.score_from_prediction(
                     actual_series=self.probabilistic, pred_series=self.train
                 )
@@ -1598,20 +1599,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GaussianNLLScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GaussianNLLScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GaussianNLLScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GaussianNLLScorer(window=0)
 
         scorer = GaussianNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(
                 actual_series=self.test, pred_series=self.probabilistic
             )  # len(self.test)=100
@@ -1779,20 +1780,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LaplaceNLLScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LaplaceNLLScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LaplaceNLLScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LaplaceNLLScorer(window=0)
 
         scorer = LaplaceNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(
                 actual_series=self.test, pred_series=self.probabilistic
             )  # len(self.test)=100
@@ -1973,20 +1974,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ExponentialNLLScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ExponentialNLLScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ExponentialNLLScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ExponentialNLLScorer(window=0)
 
         scorer = ExponentialNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(
                 actual_series=self.test, pred_series=self.probabilistic
             )  # len(self.test)=100
@@ -2155,20 +2156,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GammaNLLScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GammaNLLScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GammaNLLScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             GammaNLLScorer(window=0)
 
         scorer = GammaNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(
                 actual_series=self.test, pred_series=self.probabilistic
             )  # len(self.test)=100
@@ -2325,20 +2326,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             CauchyNLLScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             CauchyNLLScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             CauchyNLLScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             CauchyNLLScorer(window=0)
 
         scorer = CauchyNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(
                 actual_series=self.test, pred_series=self.probabilistic
             )  # len(self.test)=100
@@ -2475,20 +2476,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # window parameter
         # window must be int
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PoissonNLLScorer(window=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PoissonNLLScorer(window="string")
         # window must be non negative
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PoissonNLLScorer(window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PoissonNLLScorer(window=0)
 
         scorer = PoissonNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             scorer.score_from_prediction(
                 actual_series=self.test, pred_series=self.probabilistic
             )  # len(self.test)=100

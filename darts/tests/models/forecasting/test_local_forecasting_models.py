@@ -257,10 +257,10 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_multivariate_input(self):
         es_model = ExponentialSmoothing()
         ts_passengers_enhanced = self.ts_passengers.add_datetime_attribute("month")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             es_model.fit(ts_passengers_enhanced)
         es_model.fit(ts_passengers_enhanced["#Passengers"])
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             es_model.fit(ts_passengers_enhanced["2"])
 
     def test_exogenous_variables_support(self):
@@ -299,7 +299,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 self.assertTrue(len(prediction) == self.forecasting_horizon)
 
                 # Test mismatch in length between exogenous variables and forecasting horizon
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model.predict(
                         self.forecasting_horizon,
                         future_covariates=tg.gaussian_timeseries(
@@ -309,9 +309,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     )
 
                 # Test mismatch in time-index/length between series and exogenous variables
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model.fit(target, future_covariates=target[:-1])
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model.fit(target[1:], future_covariates=target[:-1])
 
     def test_encoders_support(self):
@@ -360,11 +360,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         ts = TimeSeries.from_dataframe(pd.DataFrame({"V1": values}))
 
         varima = VARIMA(trend="t")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             varima.fit(series=ts)
 
         autoarima = AutoARIMA(trend="t")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             autoarima.fit(series=ts)
 
     def test_forecast_time_index(self):
@@ -460,26 +460,26 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             )
 
             # check error is raised if model expects covariates but those are not passed when predicting with new data
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model = model_cls(**kwargs)
                 model.fit(series1, future_covariates=exog1)
                 model.predict(n=pred_len, series=series2)
 
             # check error is raised if new future covariates are not wide enough for prediction (on the original series)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model = model_cls(**kwargs)
                 model.fit(series1, future_covariates=exog1)
                 model.predict(n=pred_len, future_covariates=exog1[:-pred_len])
 
             # check error is raised if new future covariates are not wide enough for prediction (on a new series)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model = model_cls(**kwargs)
                 model.fit(series1, future_covariates=exog1)
                 model.predict(
                     n=pred_len, series=series2, future_covariates=exog2[:-pred_len]
                 )
             # and checking the case with insufficient historic future covariates
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model = model_cls(**kwargs)
                 model.fit(series1, future_covariates=exog1)
                 model.predict(
@@ -576,7 +576,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 or (isinstance(retrain, (Callable)) and (not retrainable))
                 or ((retrain != 1) and (not retrainable))
             ):
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     _ = model_cls.historical_forecasts(series, retrain=retrain)
 
             else:

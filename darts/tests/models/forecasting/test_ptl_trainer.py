@@ -2,6 +2,7 @@ import shutil
 import tempfile
 
 import numpy as np
+import pytest
 
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
@@ -104,7 +105,7 @@ if TORCH_AVAILABLE:
                 precision=self.precisions[64],
                 **tfm_kwargs["pl_trainer_kwargs"],
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.fit(self.series, trainer=trainer)
 
             # no error with correct precision
@@ -120,7 +121,7 @@ if TORCH_AVAILABLE:
 
         def test_builtin_extended_trainer(self):
             # wrong precision parameter name
-            with self.assertRaises(TypeError):
+            with pytest.raises(TypeError):
                 invalid_trainer_kwarg = {
                     "precisionn": self.precisions[32],
                     **tfm_kwargs["pl_trainer_kwargs"],
@@ -136,7 +137,7 @@ if TORCH_AVAILABLE:
                 model.fit(self.series, epochs=1)
 
             # flaot 16 not supported
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 invalid_trainer_kwarg = {
                     "precision": "16-mixed",
                     **tfm_kwargs["pl_trainer_kwargs"],
@@ -152,7 +153,7 @@ if TORCH_AVAILABLE:
                 model.fit(self.series.astype(np.float16), epochs=1)
 
             # precision value doesn't match `series` dtype
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 invalid_trainer_kwarg = {
                     "precision": self.precisions[64],
                     **tfm_kwargs["pl_trainer_kwargs"],
@@ -291,5 +292,5 @@ if TORCH_AVAILABLE:
                 },
             )
 
-            with self.assertRaises(RuntimeError):
+            with pytest.raises(RuntimeError):
                 model.fit(self.series, val_series=self.series, epochs=100, verbose=True)

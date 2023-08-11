@@ -143,13 +143,13 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             output_chunk_length=4,
             add_encoders=self.add_encoders,
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
 
         # Model should be a RegressionModel
         m = ExponentialSmoothing()
         m.fit(self.target_ts["price"])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ShapExplainer(m)
 
         # For now, multi_models=False not allowed
@@ -157,7 +157,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         m.fit(
             series=self.target_ts,
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ShapExplainer(
                 m,
                 self.target_ts,
@@ -178,7 +178,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         # Should have the same number of target, past and futures in the respective lists
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ShapExplainer(
                 m,
                 [self.target_ts, self.target_ts],
@@ -187,13 +187,13 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             )
 
         # Missing a future covariate if you choose to use a new background
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ShapExplainer(
                 m, self.target_ts, background_past_covariates=self.past_cov_ts
             )
 
         # Missing a past covariate if you choose to use a new background
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ShapExplainer(
                 m, self.target_ts, background_future_covariates=self.fut_cov_ts
             )
@@ -272,7 +272,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         # Bad choice of shap explainer
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ShapExplainer(m, shap_method="bad_choice")
 
     def test_explain(self):
@@ -291,39 +291,39 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         shap_explain = ShapExplainer(m)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = shap_explain.explain(horizons=[1, 5])  # horizon > output_chunk_length
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = shap_explain.explain(
                 horizons=[1, 2], target_components=["test"]
             )  # wrong name
 
         results = shap_explain.explain()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_explanation(horizon=5, component="price")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_feature_values(horizon=5, component="price")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_shap_explanation_object(horizon=5, component="price")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_explanation(horizon=1, component="test")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_feature_values(horizon=1, component="test")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_shap_explanation_object(horizon=1, component="test")
 
         results = shap_explain.explain(horizons=[1, 3], target_components=["power"])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_explanation(horizon=2, component="power")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_feature_values(horizon=2, component="power")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_shap_explanation_object(horizon=2, component="power")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_explanation(horizon=1, component="test")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_feature_values(horizon=1, component="test")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_shap_explanation_object(horizon=1, component="test")
 
         explanation = results.get_explanation(horizon=1, component="power")
@@ -357,13 +357,13 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         self.assertTrue(len(feature_vals) == 1)
         self.assertTrue(feature_vals.time_index[-1] == pd.Timestamp(2014, 6, 5))
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_explanation(horizon=5, component="price")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_feature_values(horizon=5, component="price")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_explanation(horizon=1, component="test")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             results.get_feature_values(horizon=1, component="test")
 
         # right instance
@@ -553,7 +553,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         shap_explain = ShapExplainer(m_0)
 
         # We need at least 5 points for force_plot
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             shap_explain.force_plot_from_ts(
                 self.target_ts[100:104],
                 self.past_cov_ts[100:104],
@@ -573,7 +573,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         plt.close()
 
         # no component name -> multivariate error
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             shap_explain.force_plot_from_ts(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
@@ -582,7 +582,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             )
 
         # fake component
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             shap_explain.force_plot_from_ts(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
@@ -592,7 +592,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             )
 
         # horizon 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             shap_explain.force_plot_from_ts(
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
@@ -602,13 +602,13 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             )
 
         # Wrong component name
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             shap_explain.summary_plot(horizons=[1], target_components=["test"])
 
         # Wrong horizon
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             shap_explain.summary_plot(horizons=[0], target_components=["test"])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             shap_explain.summary_plot(horizons=[10], target_components=["test"])
 
         # No past or future covariates

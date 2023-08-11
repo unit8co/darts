@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -85,7 +86,7 @@ if TORCH_AVAILABLE:
             self._assert_eq(ds[1][1:], (None, None, self.cov_st2, self.target2))
 
             # fail if covariates do not have same size
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = PastCovariatesInferenceDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -127,7 +128,7 @@ if TORCH_AVAILABLE:
             )
 
             # should fail if covariates are too short
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
             # Should return correct values when covariates is long enough
@@ -184,7 +185,7 @@ if TORCH_AVAILABLE:
             self._assert_eq(ds[1][1:], (None, self.cov_st2, self.target2))
 
             # fail if covariates do not have same size
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = FutureCovariatesInferenceDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -210,7 +211,7 @@ if TORCH_AVAILABLE:
             )
 
             # should fail if covariates are too short
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
             # Should return correct values when covariates is long enough
@@ -257,7 +258,7 @@ if TORCH_AVAILABLE:
             self._assert_eq(ds[1][1:], (None, None, self.cov_st2, self.target2))
 
             # fail if covariates do not have same size
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = DualCovariatesInferenceDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -287,7 +288,7 @@ if TORCH_AVAILABLE:
             )
 
             # should fail if covariates are too short
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
             # Should return correct values when covariates is long enough
@@ -357,7 +358,7 @@ if TORCH_AVAILABLE:
             )
 
             # should fail if future covariates are too short
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
             # Should return correct values when covariates is long enough
@@ -438,7 +439,7 @@ if TORCH_AVAILABLE:
             )
 
             # should fail if future covariates are too short
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
             # Should return correct values when covariates is long enough
@@ -531,7 +532,7 @@ if TORCH_AVAILABLE:
             )
 
             # two targets and one covariate
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = PastCovariatesSequentialDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -575,7 +576,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[5]
 
             # the same should fail when series are integer-indexed
@@ -591,7 +592,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=10,
                 output_chunk_length=10,
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[5]
 
             # we should get the correct covariate slice even when target and covariates are not aligned
@@ -672,7 +673,7 @@ if TORCH_AVAILABLE:
             )
 
             # two targets and one covariate
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = FutureCovariatesSequentialDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -739,7 +740,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=2,
             )
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
         def test_dual_covariates_sequential_dataset(self):
@@ -803,7 +804,7 @@ if TORCH_AVAILABLE:
             )
 
             # two targets and one covariate
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = DualCovariatesSequentialDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -873,7 +874,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=2,
             )
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
         def test_past_covariates_shifted_dataset(self):
@@ -916,7 +917,7 @@ if TORCH_AVAILABLE:
             )
 
             # two targets and one covariate
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = PastCovariatesShiftedDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -985,7 +986,7 @@ if TORCH_AVAILABLE:
             ds = PastCovariatesShiftedDataset(
                 target_series=[target1], covariates=[cov1], length=3, shift=2
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
         def test_future_covariates_shifted_dataset(self):
@@ -1028,7 +1029,7 @@ if TORCH_AVAILABLE:
             )
 
             # two targets and one covariate
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = FutureCovariatesShiftedDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -1097,7 +1098,7 @@ if TORCH_AVAILABLE:
             ds = FutureCovariatesShiftedDataset(
                 target_series=[target1], covariates=[cov1], length=3, shift=2
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
         def test_dual_covariates_shifted_dataset(self):
@@ -1155,7 +1156,7 @@ if TORCH_AVAILABLE:
             )
 
             # two targets and one covariate
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = DualCovariatesShiftedDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )
@@ -1228,7 +1229,7 @@ if TORCH_AVAILABLE:
             ds = DualCovariatesShiftedDataset(
                 target_series=[target1], covariates=[cov1], length=3, shift=2
             )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = ds[0]
 
         def test_horizon_based_dataset(self):
@@ -1261,7 +1262,7 @@ if TORCH_AVAILABLE:
             )
 
             # two targets and one covariate
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 ds = HorizonBasedDataset(
                     target_series=[self.target1, self.target2], covariates=[self.cov1]
                 )

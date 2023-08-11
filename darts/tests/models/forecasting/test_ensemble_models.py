@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -48,7 +49,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         # trained models should raise error
         model.fit(self.series1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([model])
 
         # an untrained ensemble model should also give untrained underlying models
@@ -83,13 +84,13 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         assert expected == ensemble.extreme_lags
 
     def test_input_models_local_models(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([])
         # models are not instantiated
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing])
         # one model is not instantiated
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel(
                 [NaiveDrift(), NaiveSeasonal, Theta(), ExponentialSmoothing()]
             )
@@ -99,7 +100,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     def test_call_predict_local_models(self):
         naive_ensemble = NaiveEnsembleModel([NaiveSeasonal(), Theta()])
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             naive_ensemble.predict(5)
         naive_ensemble.fit(self.series1)
         pred1 = naive_ensemble.predict(5)
@@ -211,7 +212,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         # one model is not probabilistic
         naive_ensemble = NaiveEnsembleModel([m_deterministic, m_proba_quantile1])
         naive_ensemble.fit(self.series1 + self.series2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
 
         # one model has a different likelihood
@@ -219,7 +220,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             [m_proba_quantile1.untrained_model(), m_proba_poisson]
         )
         naive_ensemble.fit(self.series1 + self.series2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
 
         # n > shortest output_chunk_length
@@ -227,7 +228,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             [m_proba_quantile1.untrained_model(), m_proba_quantile2]
         )
         naive_ensemble.fit(self.series1 + self.series2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             naive_ensemble.predict(n=4, predict_likelihood_parameters=True)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -327,7 +328,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
         # one model is not instantiated
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel])
         NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel(10, 2)])
 
@@ -340,7 +341,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
                 NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
             ]
         )
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             naive_ensemble.predict(5)
 
         naive_ensemble.fit(self.series1)
@@ -385,7 +386,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertFalse(naive_ensemble.is_global_ensemble)
 
         # ensemble contains one local model, no support for multiple ts fit
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             naive_ensemble.fit([self.series1, self.series2])
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -394,7 +395,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         local_ensemble_one_covs = NaiveEnsembleModel(
             [NaiveDrift(), StatsForecastAutoARIMA()]
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
         local_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
 
@@ -402,7 +403,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         mixed_ensemble_one_covs = NaiveEnsembleModel(
             [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             mixed_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
         mixed_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
 
@@ -414,7 +415,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             ]
         )
         mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             mixed_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
 
         # RegressionModels with different covariates
@@ -425,10 +426,10 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             ]
         )
         # missing future covariates
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             global_ensemble_both_covs.fit(self.series1, past_covariates=self.series2)
         # missing past covariates
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             global_ensemble_both_covs.fit(self.series1, future_covariates=self.series2)
         global_ensemble_both_covs.fit(
             self.series1, past_covariates=self.series2, future_covariates=self.series2
@@ -438,14 +439,14 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         naive = NaiveEnsembleModel(
             [NaiveDrift(), NaiveSeasonal(), Theta(), ExponentialSmoothing()]
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             naive.fit(self.seq1)
 
     def test_fit_univar_ts_with_covariates_for_local_models(self):
         naive = NaiveEnsembleModel(
             [NaiveDrift(), NaiveSeasonal(), Theta(), ExponentialSmoothing()]
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             naive.fit(self.series1, self.series2)
 
     def test_predict_with_target(self):
@@ -477,7 +478,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         # train with multiple series
         ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # predict without passing series should raise an error
             ensemble_model.predict(n=5, past_covariates=series_long)
         # predict a new target series

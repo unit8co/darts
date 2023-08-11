@@ -4,6 +4,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
@@ -1271,7 +1272,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         lags = [-1]
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_prediction_data(
                     target_series=series_1,
                     lags=lags,
@@ -1284,7 +1285,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 "Specified series do not share any common times for which features can be created.",
                 str(e.exception),
             )
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_prediction_data(
                     target_series=series_1,
                     lags=lags,
@@ -1311,7 +1312,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             # versa - ignore these warnings:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                with self.assertRaises(ValueError) as e:
+                with pytest.raises(ValueError) as e:
                     create_lagged_prediction_data(
                         target_series=series,
                         lags_future_covariates=[-1],
@@ -1332,7 +1333,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         target = linear_timeseries(start=1, length=20, freq=1)
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_prediction_data(
                     target_series=target,
                     use_moving_windows=use_moving_windows,
@@ -1352,7 +1353,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         series = linear_timeseries(start=1, length=2, freq=1)
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_prediction_data(
                     target_series=series,
                     lags=[-20, -1],
@@ -1367,7 +1368,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 ),
                 str(e.exception),
             )
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_prediction_data(
                     past_covariates=series,
                     lags_past_covariates=[-20, -1],
@@ -1397,7 +1398,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             # Test invalid `lags` values:
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_prediction_data(
                     target_series=series,
                     lags=[0],
@@ -1411,7 +1412,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 str(e.exception),
             )
             # Test invalid `lags_past_covariates` values:
-            with self.assertRaises(ValueError) as e:
+            with pytest.raises(ValueError) as e:
                 create_lagged_prediction_data(
                     past_covariates=series,
                     lags_past_covariates=[0],

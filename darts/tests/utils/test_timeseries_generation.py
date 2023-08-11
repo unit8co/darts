@@ -2,6 +2,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import (
@@ -167,15 +168,15 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
         test_routine(time_index_1, "AR", until=pd.Timestamp("2016-01-01"))
 
         # test overflow
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             holidays_timeseries(time_index_1, "US", add_length=99999)
 
         # test date is too short
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             holidays_timeseries(time_index_2, "US", until="2016-01-01")
 
         # test wrong timestamp
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             holidays_timeseries(time_index_3, "US", until=163)
 
     def test_generate_index(self):
@@ -267,24 +268,24 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                     )
 
         # `start`, `end` and `length` cannot both be set simultaneously
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             generate_index(start=0, end=9, length=10)
         # same as above but `start` defaults to timestamp '2000-01-01' in all timeseries generation functions
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             linear_timeseries(end=9, length=10)
 
         # exactly two of [`start`, `end`, `length`] must be set
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             generate_index(start=0)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             generate_index(start=None, end=1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             generate_index(start=None, end=None, length=10)
 
         # `start` and `end` must have same type
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             generate_index(start=0, end=pd.Timestamp("2000-01-01"))
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             generate_index(start=pd.Timestamp("2000-01-01"), end=10)
 
     def test_autoregressive_timeseries(self):

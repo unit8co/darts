@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import get_shared_times_bounds
@@ -260,7 +261,7 @@ class GetSharedTimesBoundsTestCase(DartsBaseTestClass):
         """
         series_1 = linear_timeseries(start=1, length=5, freq=1)
         series_2 = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=5, freq="d")
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             get_shared_times_bounds(series_1, series_2)
         self.assertEqual(
             (

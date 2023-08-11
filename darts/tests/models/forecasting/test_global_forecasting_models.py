@@ -305,7 +305,7 @@ if TORCH_AVAILABLE:
                     **kwargs,
                 )
                 model.fit([self.ts_pass_train, self.ts_pass_train_1])
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
                     model.predict(n=1)
                 pred = model.predict(n=36, series=self.ts_pass_train)
@@ -355,17 +355,17 @@ if TORCH_AVAILABLE:
                 model.fit(
                     series=[self.ts_pass_train, self.ts_pass_train_1], **cov_kwargs
                 )
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
                     model.predict(n=1)
 
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # when model is fit using multiple covariates, covariates are required at prediction time
                     model.predict(n=1, series=self.ts_pass_train)
 
                 cov_kwargs_train = {cov_name: self.time_covariates_train}
                 cov_kwargs_notrain = {cov_name: self.time_covariates}
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     # when model is fit using covariates, n cannot be greater than output_chunk_length...
                     # (for short covariates)
                     # past covariates model can predict up until output_chunk_length
@@ -465,14 +465,14 @@ if TORCH_AVAILABLE:
             model.predict(n=165, past_covariates=self.covariates)
 
             # ... not more
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.predict(n=166, series=self.ts_pass_train)
 
             # recurrent models can only predict data points for time steps where future covariates are available
             model = RNNModel(12, n_epochs=1, **tfm_kwargs)
             model.fit(series=self.target_past, future_covariates=self.covariates_past)
             model.predict(n=160, future_covariates=self.covariates)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.predict(n=161, future_covariates=self.covariates)
 
         def test_batch_predictions(self):
@@ -529,7 +529,7 @@ if TORCH_AVAILABLE:
             )
             model.fit([self.ts_pass_train, self.ts_pass_train_1])
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model.predict_from_dataset(n=1, input_series_dataset=unsupported_type)
 
         def test_prediction_with_different_n(self):

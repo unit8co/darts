@@ -1,6 +1,7 @@
 from typing import Sequence
 
 import numpy as np
+import pytest
 from sklearn.ensemble import GradientBoostingClassifier
 
 from darts import TimeSeries
@@ -148,16 +149,16 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
         # intersection between 'actual_anomalies' and the series in the sequence 'list_series'
         # must be non empty
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             aggregator.eval_accuracy(self.real_anomalies[:30], self.mts_anomalies1[40:])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             aggregator.eval_accuracy(
                 [self.real_anomalies, self.real_anomalies[:30]],
                 [self.mts_anomalies1, self.mts_anomalies1[40:]],
             )
 
         # window parameter must be smaller than the length of the input (len = 100)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             aggregator.eval_accuracy(
                 self.real_anomalies, self.mts_anomalies1, window=101
             )
@@ -176,29 +177,29 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             self.assertTrue(not aggregator.trainable)
 
             # predict on (sequence of) univariate series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.real_anomalies])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict(self.real_anomalies)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.real_anomalies])
 
             # input a (sequence of) non binary series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict(self.mts_train)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.mts_train])
 
             # input a (sequence of) probabilistic series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict(self.mts_probabilistic)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.mts_probabilistic])
 
             # input an element that is not a series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, "random"])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, 1])
 
             # Check width return
@@ -224,7 +225,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             )
 
             # Need to call fit() before calling predict()
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.mts_anomalies1])
 
             # Check if trainable is True, being a FittableAggregator
@@ -234,109 +235,109 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             self.assertTrue(not aggregator._fit_called)
 
             # fit on sequence with series that have different width
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.real_anomalies],
                     [self.mts_anomalies1, self.mts_anomalies3],
                 )
 
             # fit on a (sequence of) univariate series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, self.real_anomalies)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, [self.real_anomalies])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.real_anomalies],
                     [self.mts_anomalies1, self.real_anomalies],
                 )
 
             # fit on a (sequence of) non binary series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, self.mts_train)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, [self.mts_train])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.real_anomalies],
                     [self.mts_anomalies1, self.mts_train],
                 )
 
             # fit on a (sequence of) probabilistic series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, self.mts_probabilistic)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, [self.mts_probabilistic])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.real_anomalies],
                     [self.mts_anomalies1, self.mts_probabilistic],
                 )
 
             # input an element that is not a series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, "random")
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, [self.mts_anomalies1, "random"])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.real_anomalies, [self.mts_anomalies1, 1])
 
             # fit on a (sequence of) multivariate anomalies
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.mts_anomalies1, self.mts_anomalies1)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit([self.mts_anomalies1], [self.mts_anomalies1])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.mts_anomalies1],
                     [self.mts_anomalies1, self.mts_anomalies1],
                 )
 
             # fit on a (sequence of) non binary anomalies
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.train, self.mts_anomalies1)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit([self.train], self.mts_anomalies1)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.train],
                     [self.mts_anomalies1, self.mts_anomalies1],
                 )
 
             # fit on a (sequence of) probabilistic anomalies
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(self.mts_probabilistic, self.mts_anomalies1)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit([self.mts_probabilistic], self.mts_anomalies1)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.mts_probabilistic],
                     [self.mts_anomalies1, self.mts_anomalies1],
                 )
 
             # input an element that is not a anomalies
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit("random", self.mts_anomalies1)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, "random"],
                     [self.mts_anomalies1, self.mts_anomalies1],
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, 1], [self.mts_anomalies1, self.mts_anomalies1]
                 )
 
             # nbr of anomalies must match nbr of input series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.real_anomalies], self.mts_anomalies1
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies, self.real_anomalies], [self.mts_anomalies1]
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.fit(
                     [self.real_anomalies], [self.mts_anomalies1, self.mts_anomalies1]
                 )
@@ -348,37 +349,37 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             self.assertTrue(aggregator._fit_called)
 
             # series must be same width as series used for training
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict(self.mts_anomalies3)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies3])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.mts_anomalies3])
 
             # predict on (sequence of) univariate series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.real_anomalies])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict(self.real_anomalies)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.real_anomalies])
 
             # input a (sequence of) non binary series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict(self.mts_train)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.mts_train])
 
             # input a (sequence of) probabilistic series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict(self.mts_probabilistic)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, self.mts_probabilistic])
 
             # input an element that is not a series
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, "random"])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 aggregator.predict([self.mts_anomalies1, 1])
 
             # Check width return
@@ -724,7 +725,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     def test_EnsembleSklearn(self):
 
         # Need to input an EnsembleSklearn model
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             EnsembleSklearnAggregator(model=MovingAverageFilter(window=10))
 
         # simple case

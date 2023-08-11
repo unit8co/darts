@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.metrics import metrics
@@ -53,19 +54,19 @@ class MetricsTestCase(DartsBaseTestClass):
     )
 
     def test_zero(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mape(self.series1, self.series1)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.smape(self.series1, self.series1)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mape(self.series12, self.series12)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.smape(self.series12, self.series12)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.ope(
                 self.series1 - self.series1.pd_series().mean(),
                 self.series1 - self.series1.pd_series().mean(),
@@ -185,7 +186,7 @@ class MetricsTestCase(DartsBaseTestClass):
         self.helper_test_nan(metrics.marre)
 
     def test_season(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mase(self.series3, self.series3 * 1.3, self.series_train, 8)
 
     def test_mse(self):
@@ -295,19 +296,19 @@ class MetricsTestCase(DartsBaseTestClass):
         )
 
         # fails because of wrong indexes (series1/2 indexes should be the continuation of series3)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mase(self.series1, self.series2, self.series3, 1)
         # multi-ts, second series is not a TimeSeries
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mase([self.series1] * 2, self.series2, [insample] * 2)
         # multi-ts, insample series is not a TimeSeries
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mase([self.series1] * 2, [self.series2] * 2, insample)
         # multi-ts one array has different length
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mase([self.series1] * 2, [self.series2] * 2, [insample] * 3)
         # not supported input
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.mase(1, 2, 3)
 
     def test_ope(self):
@@ -317,7 +318,7 @@ class MetricsTestCase(DartsBaseTestClass):
 
     def test_rho_risk(self):
         # deterministic not supported
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.rho_risk(self.series1, self.series1)
 
         # general univariate, multivariate and multi-ts tests
@@ -349,7 +350,7 @@ class MetricsTestCase(DartsBaseTestClass):
 
     def test_quantile_loss(self):
         # deterministic not supported
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             metrics.quantile_loss(self.series1, self.series1)
 
         # general univariate, multivariate and multi-ts tests
@@ -405,7 +406,7 @@ class MetricsTestCase(DartsBaseTestClass):
         )
 
         # should fail if kwargs are passed as args, because of the "*"
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             metrics.r2_score(series00, series11, False, np.mean)
 
     def test_multiple_ts(self):

@@ -1,6 +1,7 @@
 from typing import Sequence
 
 import numpy as np
+import pytest
 
 from darts import TimeSeries
 from darts.ad.detectors.quantile_detector import QuantileDetector
@@ -58,7 +59,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a multivariate series
         self.assertTrue(isinstance(detector.detect([self.mts_test]), Sequence))
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # Input cannot be probabilistic
             detector.detect(self.probabilistic)
 
@@ -81,7 +82,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a sequence of multivariate series
         self.assertTrue(isinstance(detector.detect([self.mts_test]), Sequence))
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # Input cannot be probabilistic
             detector.detect(self.probabilistic)
 
@@ -114,7 +115,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             )
         )
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # Input cannot be probabilistic
             detector.eval_accuracy(self.anomalies, self.probabilistic)
 
@@ -123,17 +124,17 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         for detector in list_FittableDetector:
 
             # Need to call fit() before calling detect()
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 detector.detect(self.test)
 
             # Check if _fit_called is False
             self.assertTrue(not detector._fit_called)
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # fit on sequence with series that have different width
                 detector.fit([self.train, self.mts_train])
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # Input cannot be probabilistic
                 detector.fit(self.probabilistic)
 
@@ -144,7 +145,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             # Check if _fit_called is True after being fitted
             self.assertTrue(detector1._fit_called)
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 detector1.detect(self.mts_test)
 
@@ -155,66 +156,66 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             # Check if _fit_called is True after being fitted
             self.assertTrue(detector2._fit_called)
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # series must be same width as series used for training
                 detector2.detect(self.train)
 
     def test_QuantileDetector(self):
 
         # Need to have at least one parameter (low, high) not None
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=None, high_quantile=None)
 
         # Parameter low must be float or Sequence of float
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             QuantileDetector(low_quantile="0.5")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             QuantileDetector(low_quantile=[0.2, "0.1"])
 
         # Parameter high must be float or Sequence of float
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             QuantileDetector(high_quantile="0.5")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             QuantileDetector(high_quantile=[0.2, "0.1"])
 
         # if high and low are both sequences of length>1, they must be of the same size
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=[0.2, 0.1], high_quantile=[0.95, 0.8, 0.9])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=[0.2, 0.1, 0.7], high_quantile=[0.95, 0.8])
 
         # Parameter must be between 0 and 1
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(high_quantile=1.1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(high_quantile=-0.2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(high_quantile=[-0.1, 0.9])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=1.1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=-0.2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=[-0.2, 0.3])
 
         # Parameter high must be higher or equal than parameter low
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=0.7, high_quantile=0.2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=[0.2, 0.9], high_quantile=[0.95, 0.1])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=0.2, high_quantile=[0.95, 0.1])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=[0.2, 0.9], high_quantile=0.8)
 
         # Parameter high/low cannot be sequence of only None
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=[None, None, None])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(high_quantile=[None, None, None])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             QuantileDetector(low_quantile=[None], high_quantile=[None, None, None])
 
         # check that low_threshold and high_threshold are the same and no errors are raised
@@ -226,33 +227,33 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # if high and low have a length higher than 1
 
         detector = QuantileDetector(low_quantile=0.1, high_quantile=[0.8, 0.7])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit([self.train, self.mts_train])
 
         detector = QuantileDetector(low_quantile=[0.1, 0.2], high_quantile=[0.8, 0.9])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit([self.train, self.mts_train])
 
         detector = QuantileDetector(low_quantile=[0.1, 0.2], high_quantile=0.8)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit([self.train, self.mts_train])
 
         detector = QuantileDetector(low_quantile=[0.1, 0.2])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit([self.train, self.mts_train])
 
         detector = QuantileDetector(high_quantile=[0.1, 0.2])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.fit([self.train, self.mts_train])
 
         # widths of series used for scoring must match the number of values given for high or/and low,
@@ -260,37 +261,37 @@ class ADDetectorsTestCase(DartsBaseTestClass):
 
         detector = QuantileDetector(low_quantile=0.1, high_quantile=[0.8, 0.7])
         detector.fit(self.mts_train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = QuantileDetector(low_quantile=[0.1, 0.2], high_quantile=[0.8, 0.9])
         detector.fit(self.mts_train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = QuantileDetector(low_quantile=[0.1, 0.2], high_quantile=0.8)
         detector.fit(self.mts_train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = QuantileDetector(low_quantile=[0.1, 0.2])
         detector.fit(self.mts_train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = QuantileDetector(high_quantile=[0.1, 0.2])
         detector.fit(self.mts_train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = QuantileDetector(low_quantile=0.05, high_quantile=0.95)
@@ -535,70 +536,70 @@ class ADDetectorsTestCase(DartsBaseTestClass):
 
         # Parameters
         # Need to have at least one parameter (low, high) not None
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=None, high_threshold=None)
 
         # if high and low are both sequences of length>1, they must be of the same size
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=[0.2, 0.1], high_threshold=[0.95, 0.8, 0.9])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=[0.2, 0.1, 0.7], high_threshold=[0.95, 0.8])
 
         # Parameter high must be higher or equal than parameter low
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=0.7, high_threshold=0.2)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=[0.2, 0.9], high_threshold=[0.95, 0.1])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=0.2, high_threshold=[0.95, 0.1])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=[0.2, 0.9], high_threshold=0.8)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=[0.2, 0.9, None], high_threshold=0.8)
 
         # Parameter high/low cannot be sequence of only None
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=[None, None, None])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(high_threshold=[None, None, None])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ThresholdDetector(low_threshold=[None], high_threshold=[None, None, None])
 
         # widths of series used for scoring must match the number of values given for high or/and low,
         # if high and low have a length higher than 1
 
         detector = ThresholdDetector(low_threshold=0.1, high_threshold=[0.8, 0.7])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = ThresholdDetector(
             low_threshold=[0.1, 0.2], high_threshold=[0.8, 0.9]
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = ThresholdDetector(low_threshold=[0.1, 0.2], high_threshold=0.8)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = ThresholdDetector(low_threshold=[0.1, 0.2])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = ThresholdDetector(high_threshold=[0.1, 0.2])
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect(self.train)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
         detector = ThresholdDetector(low_threshold=9.5, high_threshold=10.5)

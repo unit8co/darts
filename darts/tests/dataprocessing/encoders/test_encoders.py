@@ -152,20 +152,20 @@ class EncoderTestCase(DartsBaseTestClass):
 
         # test invalid encoder kwarg at model creation
         bad_encoder = {"no_encoder": {"past": ["month"]}}
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_encoder)
 
         # test invalid kwargs at model creation
         bad_time = {"cyclic": {"ppast": ["month"]}}
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_time)
 
         bad_attribute = {"cyclic": {"past": ["year"]}}
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_attribute)
 
         bad_type = {"cyclic": {"past": 1}}
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_type)
 
     @unittest.skipUnless(

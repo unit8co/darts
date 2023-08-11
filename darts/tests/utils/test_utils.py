@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -45,7 +46,7 @@ class UtilsTestCase(DartsBaseTestClass):
         m = Model()
 
         # b != c should raise error
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             m.fit(5, b=3, c=2)
 
         # b == c should not raise error

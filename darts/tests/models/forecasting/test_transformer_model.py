@@ -2,6 +2,7 @@ import shutil
 import tempfile
 
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -121,7 +122,7 @@ if TORCH_AVAILABLE:
             self.helper_test_pred_length(TransformerModel, series)
 
         def test_activations(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model1 = TransformerModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -201,7 +202,7 @@ if TORCH_AVAILABLE:
             assert y0 != y3
             assert y1 != y3
 
-            with self.assertRaises(AttributeError):
+            with pytest.raises(AttributeError):
                 model4 = base_model(
                     input_chunk_length=1,
                     output_chunk_length=1,

@@ -3,6 +3,7 @@ from itertools import product
 from typing import Sequence
 
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -1013,7 +1014,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         """
         output_chunk_length = 1
         # Don't specify `target_series`:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(
                 output_chunk_length=output_chunk_length, is_training=True
             )
@@ -1022,7 +1023,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             str(e.exception),
         )
         # Don't specify neither `target_series` nor `output_chunk_length`
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(is_training=True)
         self.assertEqual(
             ("Must specify `target_series` when `is_training = True`."),
@@ -1035,7 +1036,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         when no lags have been specified.
         """
         target = linear_timeseries(start=1, length=20, freq=1)
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(target_series=target, is_training=False)
         self.assertEqual(
             "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`.",
@@ -1050,7 +1051,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         """
         series = linear_timeseries(start=1, length=2, freq=1)
         # `target_series` too short when predicting:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(target_series=series, lags=[-20, -1], is_training=False)
         self.assertEqual(
             (
@@ -1060,7 +1061,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             str(e.exception),
         )
         # `target_series` too short when training:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(
                 target_series=series,
                 lags=[-20],
@@ -1075,7 +1076,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             str(e.exception),
         )
         # `past_covariates` too short when training:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(
                 target_series=series,
                 past_covariates=series,
@@ -1101,14 +1102,14 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         """
         series = linear_timeseries(start=1, length=3, freq=1)
         # `lags` not <= -1:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(target_series=series, lags=[0], is_training=False)
         self.assertEqual(
             ("`lags` must be a `Sequence` containing only `int` values less than 0."),
             str(e.exception),
         )
         # `lags_past_covariates` not <= -1:
-        with self.assertRaises(ValueError) as e:
+        with pytest.raises(ValueError) as e:
             _get_feature_times(
                 past_covariates=series, lags_past_covariates=[0], is_training=False
             )

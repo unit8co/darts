@@ -2,6 +2,7 @@ import shutil
 import tempfile
 
 import numpy as np
+import pytest
 
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
@@ -29,7 +30,7 @@ if TORCH_AVAILABLE:
             shutil.rmtree(self.temp_work_dir)
 
         def test_creation(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # if a list is passed to the `layer_widths` argument, it must have a length equal to `num_stacks`
                 NBEATSModel(
                     input_chunk_length=1,
@@ -38,7 +39,7 @@ if TORCH_AVAILABLE:
                     layer_widths=[1, 2],
                 )
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 NHiTSModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -132,7 +133,7 @@ if TORCH_AVAILABLE:
 
         def test_nhits_sampling_sizes(self):
             # providing bad sizes or shapes should fail
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
 
                 # wrong number of coeffs for stacks and blocks
                 NHiTSModel(
@@ -143,7 +144,7 @@ if TORCH_AVAILABLE:
                     pooling_kernel_sizes=((1,), (1,)),
                     n_freq_downsample=((1,), (1,)),
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 NHiTSModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -211,7 +212,7 @@ if TORCH_AVAILABLE:
                 )
                 model.fit(ts)
 
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model = model_cls(
                         input_chunk_length=1,
                         output_chunk_length=1,

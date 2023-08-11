@@ -1,3 +1,4 @@
+import pytest
 from numpy.random import RandomState
 
 from darts.logging import get_logger
@@ -30,7 +31,7 @@ if TORCH_AVAILABLE:
 
     class RandomMethodTestCase(DartsBaseTestClass):
         def test_it_raises_error_if_used_on_function(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
 
                 @random_method
                 def a_random_function():
