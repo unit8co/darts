@@ -571,7 +571,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
-        start_format: Literal["point", "index"] = "point",
+        start_format: Literal["positional_index", "value_index"] = "value_index",
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -641,8 +641,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
-            If set to 'index', `start` must be an integer and corresponds to the absolute position of the first point
-            in time at which the prediction is generated. Default: ``'point'``.
+            If set to 'positional_index', `start` must be an ``int`` corresponding to the position of the first
+            predicted point. If set to 'value_index', `start` must be a ``float`` or an element from the time index.
+            Default: ``'value_index'``.
         forecast_horizon
             The forecast horizon for the predictions.
         stride
@@ -1047,6 +1048,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
+        # start_format: Literal["positional_index", "value_index"] = "value_index",
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -1121,6 +1123,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            If set to 'positional_index', `start` must be an ``int`` corresponding to the position of the first
+            predicted point. If set to 'value_index', `start` must be a ``float`` or an element from the time index.
+            Default: ``'value_index'``.
         forecast_horizon
             The forecast horizon for the point predictions.
         stride
@@ -1177,6 +1183,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 num_samples=num_samples,
                 train_length=train_length,
                 start=start,
+                # start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 retrain=retrain,
@@ -1227,6 +1234,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon: Optional[int] = None,
         stride: int = 1,
         start: Union[pd.Timestamp, float, int] = 0.5,
+        # start_format: Literal["positional_index", "value_index"] = "value_index",
         last_points_only: bool = False,
         show_warnings: bool = True,
         val_series: Optional[TimeSeries] = None,
@@ -1298,6 +1306,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             of `series` from which predictions will be made to evaluate the model.
             For a detailed description of how the different data types are interpreted, please see the documentation
             for `ForecastingModel.backtest`. Only used in expanding window mode.
+        start_format
+            The format of the start parameter, either 'positional_index' or 'value_index'.
+            For a detailed description this argument, please see the documentation for `ForecastingModel.backtest`.
         last_points_only
             Whether to use the whole forecasts or only the last point of each forecast to compute the error. Only used
             in expanding window mode.
@@ -1403,6 +1414,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates=future_covariates,
                     num_samples=1,
                     start=start,
+                    # start_format=start_format,
                     forecast_horizon=forecast_horizon,
                     stride=stride,
                     metric=metric,
@@ -1910,7 +1922,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
-        start_format: Literal["point", "index"] = "point",
+        start_format: Literal["positional_index", "value_index"] = "value_index",
         forecast_horizon: int = 1,
         stride: int = 1,
         overlap_end: bool = False,

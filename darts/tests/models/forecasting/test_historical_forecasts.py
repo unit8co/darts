@@ -374,25 +374,24 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             "LocalForecastingModel does not support historical forecasting with `retrain` set to `False`"
         )
 
-    def test_historical_forecasts_index_start(self):
+    def test_historical_forecasts_positional_index_start(self):
         series = tg.sine_timeseries(length=10)
 
         model = LinearRegressionModel(lags=2)
         model.fit(series[:8])
 
         # negative index
-        forecasts = model.historical_forecasts(
-            series=series, start=-2, start_format="index", retrain=False
+        forecasts_neg = model.historical_forecasts(
+            series=series, start=-2, start_format="positional_index", retrain=False
         )
-        self.assertEqual(len(forecasts), 2)
-        self.assertTrue((series.time_index[-2:] == forecasts.time_index).all())
+        self.assertEqual(len(forecasts_neg), 2)
+        self.assertTrue((series.time_index[-2:] == forecasts_neg.time_index).all())
 
         # positive index
-        forecasts = model.historical_forecasts(
-            series=series, start=5, start_format="index", retrain=False
+        forecasts_pos = model.historical_forecasts(
+            series=series, start=8, start_format="positional_index", retrain=False
         )
-        self.assertEqual(len(forecasts), 5)
-        self.assertTrue((series.time_index[5:] == forecasts.time_index).all())
+        self.assertEqual(forecasts_pos, forecasts_neg)
 
     def test_historical_forecasts_negative_rangeindex(self):
         series = TimeSeries.from_times_and_values(
@@ -404,14 +403,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         # start as point
         forecasts = model.historical_forecasts(
-            series=series, start=-2, start_format="point", retrain=False
+            series=series, start=-2, start_format="value_index", retrain=False
         )
         self.assertEqual(len(forecasts), 7)
         self.assertTrue((series.time_index[-7:] == forecasts.time_index).all())
 
         # start as index
         forecasts = model.historical_forecasts(
-            series=series, start=-2, start_format="index", retrain=False
+            series=series, start=-2, start_format="positional_index", retrain=False
         )
         self.assertEqual(len(forecasts), 2)
         self.assertTrue((series.time_index[-2:] == forecasts.time_index).all())
@@ -650,47 +649,47 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             "`start` index `20` is larger than the last index `18`"
         )
 
-        # index too high when start_format = 'index'
+        # index too high when start_format = 'positional_index'
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=11, start_format="index"
+                timeidx_, start=11, start_format="positional_index"
             )
         assert str(msg.value).startswith(
             "`start` index `11` is out of bounds for series of length 10"
         )
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step1, start=11, start_format="index"
+                rangeidx_step1, start=11, start_format="positional_index"
             )
         assert str(msg.value).startswith(
             "`start` index `11` is out of bounds for series of length 10"
         )
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step2, start=11, start_format="index"
+                rangeidx_step2, start=11, start_format="positional_index"
             )
         assert str(msg.value).startswith(
             "`start` index `11` is out of bounds for series of length 10"
         )
 
-        # index too high (negative) when start_format = 'index'
+        # index too high (negative) when  start_format = 'positional_index'
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=-11, start_format="index"
+                timeidx_, start=-11, start_format="positional_index"
             )
         assert str(msg.value).startswith(
             "`start` index `-11` is out of bounds for series of length 10"
         )
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step1, start=-11, start_format="index"
+                rangeidx_step1, start=-11, start_format="positional_index"
             )
         assert str(msg.value).startswith(
             "`start` index `-11` is out of bounds for series of length 10"
         )
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step2, start=-11, start_format="index"
+                rangeidx_step2, start=-11, start_format="positional_index"
             )
         assert str(msg.value).startswith(
             "`start` index `-11` is out of bounds for series of length 10"

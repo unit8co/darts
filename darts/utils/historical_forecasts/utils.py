@@ -63,7 +63,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-        if n.start_format == "index":
+        if n.start_format == "positional_index":
             raise_if_not(
                 isinstance(n.start, (int, np.int64)),
                 f"Since `start_format='index'`, `start` must be an integer, received {type(n.start)}",
@@ -72,7 +72,9 @@ def _historical_forecasts_general_checks(model, series, kwargs):
 
         if isinstance(n.start, float):
             raise_if_not(
-                0.0 <= n.start <= 1.0, "if `start` is a float, must be between 0.0 and 1.0.", logger
+                0.0 <= n.start <= 1.0,
+                "if `start` is a float, must be between 0.0 and 1.0.",
+                logger,
             )
 
         # verbose error messages
@@ -100,13 +102,20 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         logger,
                     )
             elif isinstance(n.start, (int, np.int64)):
-                if (n.start_format == "index" and np.abs(n.start) >= len(series_)) or (
-                    (
+                out_of_bound_error = False
+                if n.start_format == "positional_index":
+                    if (n.start > 0 and n.start >= len(series_)) or (
+                        n.start < 0 and np.abs(n.start) > len(series_)
+                    ):
+                        out_of_bound_error = True
+                else:
+                    if (
                         series_.has_datetime_index
                         or (series_.has_range_index and series_.freq == 1)
-                    )
-                    and n.start >= len(series_)
-                ):
+                    ) and n.start >= len(series_):
+                        out_of_bound_error = True
+
+                if out_of_bound_error:
                     raise_log(
                         ValueError(
                             f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
@@ -125,7 +134,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         logger,
                     )
 
-            if n.start_format == "point":
+            if n.start_format == "value_index":
                 start = series_.get_timestamp_at_point(n.start)
             else:
                 start = series_.time_index[n.start]
@@ -379,31 +388,13 @@ def _adjust_historical_forecasts_time_index(
     forecast_horizon: int,
     overlap_end: bool,
     start: Optional[Union[pd.Timestamp, float, int]],
-    start_format: Literal["point", "index"],
+    start_format: Literal["positional_index", "value_index"],
     show_warnings: bool,
 ) -> TimeIndex:
     """
     Shrink the beginning and end of the historical forecasts time index based on the values of `start`,
     `forecast_horizon` and `overlap_end`.
     """
-
-    if start_format == "index":
-        if not isinstance(start, int):
-            raise_log(
-                ValueError(
-                    f"Since `start_format='index'`, `start` should be an integer, received {type(start)}"
-                ),
-                logger,
-            )
-
-        if start >= len(series):
-            raise_log(
-                ValueError(
-                    f"`start` index `{start}` is out of bounds for series of length {len(series)}"
-                ),
-                logger,
-            )
-
     # shift the end of the forecastable index based on `overlap_end`` and `forecast_horizon``
     last_valid_pred_time = model._get_last_prediction_time(
         series,
@@ -418,7 +409,7 @@ def _adjust_historical_forecasts_time_index(
 
     # when applicable, shift the start of the forecastable index based on `start`
     if start is not None:
-        if start_format == "point":
+        if start_format == "value_index":
             start_time_ = series.get_timestamp_at_point(start)
         else:
             start_time_ = series.time_index[start]
@@ -576,7 +567,7 @@ def _get_historical_forecast_boundaries(
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     start: Optional[Union[pd.Timestamp, float, int]],
-    start_format: Literal["point", "index"],
+    start_format: Literal["positional_index", "value_index"],
     forecast_horizon: int,
     overlap_end: bool,
     freq: pd.DateOffset,
