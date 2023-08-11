@@ -2056,7 +2056,7 @@ class TimeSeries:
         return self.__class__(self._xa)
 
     def get_index_at_point(
-        self, point: Union[pd.Timestamp, float, int, Dict[str, int]], after=True
+        self, point: Union[pd.Timestamp, float, int], after=True
     ) -> int:
         """
         Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).
@@ -2078,48 +2078,12 @@ class TimeSeries:
             If an ``int`` and series is datetime-indexed, the value of `point` is returned.
             If an ``int`` and series is integer-indexed, the index position of `point` in the RangeIndex is returned
             (accounting for steps).
-
-            If a ``dict`` {'point':int}, the integer index is retrieved starting from the end of the time
-            index.
         after
             If the provided pandas Timestamp is not in the time series index, whether to return the index of the
             next timestamp or the index of the previous one.
 
         """
         point_index = -1
-        # when passed as dict, the point is absolute, taken from the end of the time index
-        if isinstance(point, dict):
-            if set(point.keys()) != {"point"}:
-                raise_log(
-                    ValueError(
-                        "`point`, when passed as a dict, should only contain the 'point' key."
-                    ),
-                    logger,
-                )
-
-            point = point["point"]
-            if not isinstance(point, int):
-                raise_log(
-                    ValueError(
-                        f"start['point'] should be an integer, received {type(point)}."
-                    ),
-                    logger,
-                )
-
-            if np.abs(point) > len(self):
-                raise_log(
-                    ValueError(
-                        f"start['point'] is greater than the length of the series ({len(self)})."
-                    ),
-                    logger,
-                )
-
-            # convert point to a value taken from the time index
-            if point > 0:
-                point = self.time_index[len(self) - point]
-            else:
-                point = self.time_index[point + len(self)]
-
         if isinstance(point, float):
             raise_if_not(
                 0.0 <= point <= 1.0,
@@ -2139,7 +2103,7 @@ class TimeSeries:
                 )
             raise_if_not(
                 0 <= point_index < len(self),
-                "point (int) should be a valid index in series",
+                f"The index corresponding to the provided point ({point}) should be a valid index in series",
                 logger,
             )
         elif isinstance(point, pd.Timestamp):
@@ -2167,7 +2131,7 @@ class TimeSeries:
         return point_index
 
     def get_timestamp_at_point(
-        self, point: Union[pd.Timestamp, float, int, Dict]
+        self, point: Union[pd.Timestamp, float, int]
     ) -> Union[pd.Timestamp, int]:
         """
         Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).
@@ -2179,9 +2143,7 @@ class TimeSeries:
             In case of a `float`, the parameter will be treated as the proportion of the time series
             that should lie before the point.
             In case of `int`, the parameter will be treated as an integer index to the time index of
-            `series`. Will raise a ValueError if not a valid index in `series`
-            If case of `dict` {'point':int}, the point is retrieved starting from the end of the time
-            index. Will raise a ValueError if point is greater than the `series` length.
+            `series`. Will raise a ValueError if not a valid index in `series`.
             In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
             is present in the series time index, otherwise will raise a ValueError.
         """

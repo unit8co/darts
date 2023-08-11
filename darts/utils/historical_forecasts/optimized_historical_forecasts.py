@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Union
+from typing import List, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -20,6 +20,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     num_samples: int = 1,
     start: Optional[Union[pd.Timestamp, float, int]] = None,
+    start_format: Literal["point", "index"] = "point",
     forecast_horizon: int = 1,
     stride: int = 1,
     overlap_end: bool = False,
@@ -63,6 +64,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             start=start,
+            start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
             freq=freq,
@@ -156,6 +158,7 @@ def _optimized_historical_forecasts_regression_all_points(
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     num_samples: int = 1,
     start: Optional[Union[pd.Timestamp, float, int]] = None,
+    start_format: Literal["point", "index"] = "point",
     forecast_horizon: int = 1,
     stride: int = 1,
     overlap_end: bool = False,
@@ -199,6 +202,7 @@ def _optimized_historical_forecasts_regression_all_points(
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             start=start,
+            start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
             freq=freq,

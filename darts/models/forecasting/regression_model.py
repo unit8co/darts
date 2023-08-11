@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -897,6 +897,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["point", "index"] = "point",
         forecast_horizon: int = 1,
         stride: int = 1,
         overlap_end: bool = False,
@@ -949,6 +950,7 @@ class RegressionModel(GlobalForecastingModel):
                 future_covariates=future_covariates,
                 num_samples=num_samples,
                 start=start,
+                start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
@@ -963,6 +965,7 @@ class RegressionModel(GlobalForecastingModel):
                 future_covariates=future_covariates,
                 num_samples=num_samples,
                 start=start,
+                start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,

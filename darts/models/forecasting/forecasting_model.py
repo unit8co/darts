@@ -22,7 +22,18 @@ from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
 from itertools import product
 from random import sample
-from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    BinaryIO,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -559,7 +570,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         train_length: Optional[int] = None,
-        start: Optional[Union[pd.Timestamp, float, int, Dict]] = None,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["point", "index"] = "point",
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -610,13 +622,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `min_train_series_length`.
         start
             Optionally, the first point in time at which a prediction is computed for a future time.
-            This parameter supports: ``float``, ``int`` and ``pandas.Timestamp``, and ``None``.
+            This parameter supports: ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
             If a ``float``, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
             If an ``int``, the parameter will be treated as an integer index to the time index of
             `series` that will be used as first prediction time.
-            If a ``dict`` defined as {"index":int, "from":"start"/"end"}, the parameter will be considered
-            as the relative index of the first prediction point.
             If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time
             directly.
             If ``None``, the first prediction time will automatically be set to:
@@ -630,6 +640,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            If set to 'index', `start` must be an integer and corresponds to the absolute position of the first point
+            in time at which the prediction is generated. Default: ``'point'``.
         forecast_horizon
             The forecast horizon for the predictions.
         stride
@@ -800,6 +813,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 future_covariates=future_covariates,
                 num_samples=num_samples,
                 start=start,
+                start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
@@ -878,6 +892,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 forecast_horizon=forecast_horizon,
                 overlap_end=overlap_end,
                 start=start,
+                start_format=start_format,
                 show_warnings=show_warnings,
             )
 
@@ -1895,6 +1910,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["point", "index"] = "point",
         forecast_horizon: int = 1,
         stride: int = 1,
         overlap_end: bool = False,
