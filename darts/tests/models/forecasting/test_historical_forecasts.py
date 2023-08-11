@@ -374,17 +374,25 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             "LocalForecastingModel does not support historical forecasting with `retrain` set to `False`"
         )
 
-    def test_historical_forecasts_negative_start(self):
+    def test_historical_forecasts_index_start(self):
         series = tg.sine_timeseries(length=10)
 
         model = LinearRegressionModel(lags=2)
         model.fit(series[:8])
 
+        # negative index
         forecasts = model.historical_forecasts(
-            series=series, start={"point": -2}, retrain=False
+            series=series, start=-2, start_format="index", retrain=False
         )
         self.assertEqual(len(forecasts), 2)
-        self.assertEqual(series.time_index[-2], forecasts.time_index[0])
+        self.assertTrue((series.time_index[-2:] == forecasts.time_index).all())
+
+        # positive index
+        forecasts = model.historical_forecasts(
+            series=series, start=5, start_format="index", retrain=False
+        )
+        self.assertEqual(len(forecasts), 5)
+        self.assertTrue((series.time_index[5:] == forecasts.time_index).all())
 
     def test_historical_forecasts(self):
         train_length = 10
@@ -563,7 +571,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         rangeidx_step1 = tg.linear_timeseries(start=0, length=10, freq=1)
         rangeidx_step2 = tg.linear_timeseries(start=0, length=10, freq=2)
 
-        # index too large
+        # point (int) too large
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(timeidx_, start=11)
         assert str(msg.value).startswith("`start` index `11` is out of bounds")
@@ -574,7 +582,23 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             LinearRegressionModel(lags=1).historical_forecasts(rangeidx_step2, start=11)
         assert str(msg.value).startswith("The provided point is not a valid index")
 
-        # value too low
+        # point (int) too low
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step1, start=rangeidx_step1.start_time() - rangeidx_step1.freq
+            )
+        assert str(msg.value).startswith(
+            "The index corresponding to the provided point ("
+        )
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step2, start=rangeidx_step2.start_time() - rangeidx_step2.freq
+            )
+        assert str(msg.value).startswith(
+            "The index corresponding to the provided point ("
+        )
+
+        # point (timestamp) too low
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
                 timeidx_, start=timeidx_.start_time() - timeidx_.freq
@@ -582,18 +606,8 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         assert str(msg.value).startswith(
             "`start` time `1999-12-31 00:00:00` is before the first timestamp `2000-01-01 00:00:00`"
         )
-        with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step1, start=rangeidx_step1.start_time() - rangeidx_step1.freq
-            )
-        assert str(msg.value).startswith("if `start` is an integer, must be `>= 0`")
-        with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step2, start=rangeidx_step2.start_time() - rangeidx_step2.freq
-            )
-        assert str(msg.value).startswith("if `start` is an integer, must be `>= 0`")
 
-        # value too high
+        # point (timestamp) too high
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
                 timeidx_, start=timeidx_.end_time() + timeidx_.freq
@@ -612,6 +626,52 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             )
         assert str(msg.value).startswith(
             "`start` index `20` is larger than the last index `18`"
+        )
+
+        # index too high when start_format = 'index'
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                timeidx_, start=11, start_format="index"
+            )
+        assert str(msg.value).startswith(
+            "`start` index `11` is out of bounds for series of length 10"
+        )
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step1, start=11, start_format="index"
+            )
+        assert str(msg.value).startswith(
+            "`start` index `11` is out of bounds for series of length 10"
+        )
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step2, start=11, start_format="index"
+            )
+        assert str(msg.value).startswith(
+            "`start` index `11` is out of bounds for series of length 10"
+        )
+
+        # index too high (negative) when start_format = 'index'
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                timeidx_, start=-11, start_format="index"
+            )
+        assert str(msg.value).startswith(
+            "`start` index `-11` is out of bounds for series of length 10"
+        )
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step1, start=-11, start_format="index"
+            )
+        assert str(msg.value).startswith(
+            "`start` index `-11` is out of bounds for series of length 10"
+        )
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step2, start=-11, start_format="index"
+            )
+        assert str(msg.value).startswith(
+            "`start` index `-11` is out of bounds for series of length 10"
         )
 
     def test_regression_auto_start_multiple_no_cov(self):

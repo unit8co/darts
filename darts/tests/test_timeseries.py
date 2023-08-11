@@ -117,8 +117,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(101), 91)
-        # getting index for negative idx return idx + len(ts)
-        self.assertEqual(series.get_index_at_point({"point": -3}), 97)
 
         # slicing outside of the index range should return an empty ts
         self.assertEqual(len(series[120:125]), 0)
@@ -136,8 +134,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(100), 50)
-        # getting index for negative idx return idx + len(ts)
-        self.assertEqual(series.get_index_at_point({"point": -1}), 99)
 
         # getting index outside of the index range should raise an exception
         with self.assertRaises(IndexError):
@@ -166,8 +162,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(16), 3)
-        # getting index for negative idx return idx + len(ts)
-        self.assertEqual(series.get_index_at_point({"point": -2}), 8)
 
     def test_integer_indexing(self):
         n = 10
