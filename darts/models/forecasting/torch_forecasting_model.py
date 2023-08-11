@@ -2065,7 +2065,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _check_ckpt_parameters(self, tfm_save):
         """
-        Check that the parameters used to instantiate the new model loading the weights match those of
+        Check that the positional parameters used to instantiate the new model loading the weights match those
         of the saved model, to return meaningful messages in case of discrepancies.
         """
         # parameters unrelated to the weights shape
@@ -2079,25 +2079,45 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "lr_scheduler_cls",
             "lr_scheduler_kwargs",
         ]
-        ckpt_model_params = tfm_save.model_params
-        for param_key, param_value in self.model_params.items():
-            if (
-                param_key in ckpt_model_params.keys()
-                and param_key not in skipped_params
-            ):
-                # some parameters must be converted
-                if isinstance(ckpt_model_params[param_key], list) and not isinstance(
-                    param_value, list
-                ):
-                    param_value = [param_value] * len(ckpt_model_params[param_key])
+        params_to_check = set(tfm_save.model_params.keys()) - set(skipped_params)
 
-                raise_if(
-                    param_value != ckpt_model_params[param_key],
-                    f"The values of the hyper parameter {param_key} should be identical between "
-                    f"the instantiated model ({param_value}) and the loaded checkpoint "
-                    f"({ckpt_model_params[param_key]}). Please adjust the model accordingly.",
-                    logger,
+        incorrect_params = []
+        missing_params = []
+        for param_key in params_to_check:
+            if param_key not in self.model_params.keys():
+                # param name, expected value
+                missing_params.append((param_key, tfm_save.model_params[param_key]))
+            elif self.model_params[param_key] != tfm_save.model_params[param_key]:
+                # param name, expected value, current value
+                incorrect_params.append(
+                    (
+                        param_key,
+                        tfm_save.model_params[param_key],
+                        self.model_params[param_key],
+                    )
                 )
+
+        # at least one discrepancy was detected
+        if len(missing_params) + len(incorrect_params) > 0:
+            msg = [
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical."
+            ]
+
+            # warning messages formated to facilate copy-pasting
+            if len(missing_params) > 0:
+                msg += ["missing :"]
+                msg += [
+                    f"\t - {param}={exp_val}" for (param, exp_val) in missing_params
+                ]
+
+            if len(incorrect_params) > 0:
+                msg += ["incorrect :"]
+                msg += [
+                    f"\t - found {param}={cur_val}, should be {param}={exp_val}"
+                    for (param, exp_val, cur_val) in incorrect_params
+                ]
+
+            raise_log(ValueError("\n".join(msg)), logger)
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer
