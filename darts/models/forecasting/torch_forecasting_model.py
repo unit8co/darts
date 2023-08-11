@@ -2079,16 +2079,29 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "lr_scheduler_cls",
             "lr_scheduler_kwargs",
         ]
-        params_to_check = set(tfm_save.model_params.keys()) - set(skipped_params)
+        # model_params can be missing some kwargs
+        params_to_check = set(tfm_save.model_params.keys()).union(
+            self.model_params.keys()
+        ) - set(skipped_params)
 
         incorrect_params = []
         missing_params = []
         for param_key in params_to_check:
+            # param was not used at loading model creation
             if param_key not in self.model_params.keys():
-                # param name, expected value
                 missing_params.append((param_key, tfm_save.model_params[param_key]))
+            # new param was used at loading model creation
+            elif param_key not in tfm_save.model_params.keys():
+                incorrect_params.append(
+                    (
+                        param_key,
+                        None,
+                        self.model_params[param_key],
+                    )
+                )
+            # param was different at loading model creation
             elif self.model_params[param_key] != tfm_save.model_params[param_key]:
-                # param name, expected value, current value
+                # NOTE: for TFTModel, default is None but converted to `QuantileRegression()`
                 incorrect_params.append(
                     (
                         param_key,
@@ -2107,13 +2120,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if len(missing_params) > 0:
                 msg += ["missing :"]
                 msg += [
-                    f"\t - {param}={exp_val}" for (param, exp_val) in missing_params
+                    f"   - {param}={exp_val}" for (param, exp_val) in missing_params
                 ]
 
             if len(incorrect_params) > 0:
                 msg += ["incorrect :"]
                 msg += [
-                    f"\t - found {param}={cur_val}, should be {param}={exp_val}"
+                    f"   - found {param}={cur_val}, should be {param}={exp_val}"
                     for (param, exp_val, cur_val) in incorrect_params
                 ]
 
