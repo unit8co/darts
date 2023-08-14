@@ -12,7 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improvement**
 - `TimeSeries` with a `RangeIndex` starting in the negative start are now supported by `historical_forecasts`. [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou).
-- Added a new argument `start_format` to `historical_forecasts()`, `backtest()` and `gridsearch` so that integer `start` can be used a position or a value of the time index. [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou).
+- Added a new argument `start_format` to `historical_forecasts()`, `backtest()` and `gridsearch`; an integer `start` can be used as a `RangeIndex` position (previously, had to be able of the index). [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Fixed**
 - Fixed a bug in `TimeSeries.from_dataframe()` when using a pandas.DataFrame with `df.columns.name != None`. [#1938](https://github.com/unit8co/darts/pull/1938) by [Antoine Madrona](https://github.com/madtoinou).
