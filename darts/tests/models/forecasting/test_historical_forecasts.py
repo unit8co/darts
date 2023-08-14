@@ -384,14 +384,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         forecasts_neg = model.historical_forecasts(
             series=series, start=-2, start_format="position", retrain=False
         )
-        self.assertEqual(len(forecasts_neg), 2)
-        self.assertTrue((series.time_index[-2:] == forecasts_neg.time_index).all())
+        assert len(forecasts_neg) == 2
+        assert (series.time_index[-2:] == forecasts_neg.time_index).all()
 
         # positive index
         forecasts_pos = model.historical_forecasts(
             series=series, start=8, start_format="position", retrain=False
         )
-        self.assertEqual(forecasts_pos, forecasts_neg)
+        assert forecasts_pos == forecasts_neg
 
     def test_historical_forecasts_negative_rangeindex(self):
         series = TimeSeries.from_times_and_values(
@@ -405,15 +405,15 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         forecasts = model.historical_forecasts(
             series=series, start=-2, start_format="value", retrain=False
         )
-        self.assertEqual(len(forecasts), 7)
-        self.assertTrue((series.time_index[-7:] == forecasts.time_index).all())
+        assert len(forecasts) == 7
+        assert (series.time_index[-7:] == forecasts.time_index).all()
 
         # start as index
         forecasts = model.historical_forecasts(
             series=series, start=-2, start_format="position", retrain=False
         )
-        self.assertEqual(len(forecasts), 2)
-        self.assertTrue((series.time_index[-2:] == forecasts.time_index).all())
+        assert len(forecasts) == 2
+        assert (series.time_index[-2:] == forecasts.time_index).all()
 
     def test_historical_forecasts(self):
         train_length = 10
