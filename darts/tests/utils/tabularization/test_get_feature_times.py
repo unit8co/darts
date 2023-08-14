@@ -7,12 +7,11 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import _get_feature_times
 from darts.utils.timeseries_generation import linear_timeseries
 
 
-class GetFeatureTimesTestCase(DartsBaseTestClass):
+class TestGetFeatureTimes:
     """
     Tests `_get_feature_times` function defined in `darts.utils.data.tabularization`. There
     are broadly two 'groups' of tests defined in this module:
@@ -103,7 +102,7 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
         of constructing prediction features using the `target_series` is identical to
         constructing features for the `past_covariates` series.
         """
-        return GetFeatureTimesTestCase.get_feature_times_past(target_series, lags)
+        return TestGetFeatureTimes.get_feature_times_past(target_series, lags)
 
     @staticmethod
     def get_feature_times_future(

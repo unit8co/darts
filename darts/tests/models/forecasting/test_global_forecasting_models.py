@@ -1,6 +1,4 @@
 import os
-import shutil
-import tempfile
 from copy import deepcopy
 from unittest.mock import ANY, patch
 
@@ -12,7 +10,7 @@ from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -155,7 +153,7 @@ if TORCH_AVAILABLE:
         ),
     ]
 
-    class GlobalForecastingModelsTestCase(DartsBaseTestClass):
+    class TestGlobalForecastingModels:
         # forecasting horizon used in runnability tests
         forecasting_horizon = 12
 
@@ -208,12 +206,6 @@ if TORCH_AVAILABLE:
         target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
         target_past, target_future = target.split_after(split_ratio)
 
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
-
         def test_save_model_parameters(self):
             # model creation parameters were saved before. check if re-created model has same params as original
             for model_cls, kwargs, err in models_cls_kwargs_errs:
@@ -222,10 +214,10 @@ if TORCH_AVAILABLE:
                 )
                 assert model._model_params, model.untrained_model()._model_params
 
-        def test_save_load_model(self):
+        def test_save_load_model(self, tmpdir_module):
             # check if save and load methods work and if loaded model creates same forecasts as original model
             cwd = os.getcwd()
-            os.chdir(self.temp_work_dir)
+            os.chdir(tmpdir_module)
 
             for model in [
                 RNNModel(
@@ -244,7 +236,7 @@ if TORCH_AVAILABLE:
                 ),
             ]:
                 model_path_str = type(model).__name__
-                full_model_path_str = os.path.join(self.temp_work_dir, model_path_str)
+                full_model_path_str = os.path.join(tmpdir_module, model_path_str)
 
                 model.fit(self.ts_pass_train)
                 model_prediction = model.predict(self.forecasting_horizon)
@@ -258,7 +250,7 @@ if TORCH_AVAILABLE:
                     len(
                         [
                             p
-                            for p in os.listdir(self.temp_work_dir)
+                            for p in os.listdir(tmpdir_module)
                             if p.startswith(type(model).__name__)
                         ]
                     )

@@ -4,10 +4,9 @@ import pytest
 
 from darts import TimeSeries
 from darts.metrics import metrics
-from darts.tests.base_test_class import DartsBaseTestClass
 
 
-class MetricsTestCase(DartsBaseTestClass):
+class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
         np.sin(np.pi * np.arange(31) / 4) + 1,

@@ -5,7 +5,6 @@ import pytest
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
@@ -26,7 +25,7 @@ from darts.utils.timeseries_generation import (
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 
-class TimeSeriesTestCase(DartsBaseTestClass):
+class TestTimeSeries:
     def test_check_seasonality(self):
         pd_series = pd.Series(range(50), index=pd.date_range("20130101", "20130219"))
         pd_series = pd_series.map(lambda x: np.sin(x * np.pi / 3 + np.pi / 2))
@@ -104,7 +103,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         assert stationarity_tests
 
 
-class SeasonalDecomposeTestCase(DartsBaseTestClass):
+class TestSeasonalDecompose:
     pd_series = pd.Series(range(50), index=pd.date_range("20130101", "20130219"))
     pd_series = pd_series.map(lambda x: np.sin(x * np.pi / 3 + np.pi / 2))
     season = TimeSeries.from_series(pd_series)
@@ -226,7 +225,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
             )
 
 
-class PlotTestCase(DartsBaseTestClass):
+class TestPlot:
     series = AirPassengersDataset().load()
 
     def test_statistics_plot(self):

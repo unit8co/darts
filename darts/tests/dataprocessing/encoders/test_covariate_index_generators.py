@@ -9,13 +9,12 @@ from darts.dataprocessing.encoders.encoder_base import (
     PastCovariatesIndexGenerator,
 )
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 
-class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
+class TestCovariatesIndexGenerator:
     n_target = 24
     target_time = tg.linear_timeseries(length=n_target, freq="MS")
     cov_time_train = tg.datetime_attribute_timeseries(

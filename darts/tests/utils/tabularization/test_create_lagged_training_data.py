@@ -9,7 +9,6 @@ import pytest
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
@@ -17,7 +16,7 @@ from darts.utils.data.tabularization import (
 from darts.utils.timeseries_generation import linear_timeseries
 
 
-class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
+class TestCreateLaggedTrainingData:
     """
     Tests the `create_lagged_training_data` function defined in `darts.utils.data.tabularization`. There are broadly
     two 'groups' of tests defined in this module:
@@ -85,18 +84,18 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         that only works for `is_training = True`.
         """
         # Get feature times for `target_series`:
-        times = CreateLaggedTrainingDataTestCase.get_feature_times_target(
+        times = TestCreateLaggedTrainingData.get_feature_times_target(
             target, lags, output_chunk_length
         )
         # Intersect `times` with `past_covariates` feature times if past covariates to be added to `X`:
         if lags_past is not None:
-            past_times = CreateLaggedTrainingDataTestCase.get_feature_times_past(
+            past_times = TestCreateLaggedTrainingData.get_feature_times_past(
                 past, lags_past
             )
             times = times.intersection(past_times)
         # Intersect `times` with `future_covariates` feature times if future covariates to be added to `X`:
         if lags_future is not None:
-            future_times = CreateLaggedTrainingDataTestCase.get_feature_times_future(
+            future_times = TestCreateLaggedTrainingData.get_feature_times_future(
                 future, lags_future
             )
             times = times.intersection(future_times)

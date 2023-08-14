@@ -1,8 +1,6 @@
 import copy
 import os
 import pathlib
-import shutil
-import tempfile
 from typing import Callable
 from unittest.mock import Mock, patch
 
@@ -43,7 +41,6 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
@@ -109,7 +106,7 @@ if not isinstance(Prophet, NotImportedModule):
     encoder_support_models.append(Prophet())
 
 
-class LocalForecastingModelsTestCase(DartsBaseTestClass):
+class TestLocalForecastingModels:
     # forecasting horizon used in runnability tests
     forecasting_horizon = 5
 
@@ -136,30 +133,22 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ):
         return len(train_series) % 2 == 0
 
-    def setUp(self):
-        self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_work_dir)
-
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
             assert model._model_params == model.untrained_model()._model_params
 
-    def test_save_load_model(self):
+    def test_save_load_model(self, tmpdir_module):
         # check if save and load methods work and if loaded model creates same forecasts as original model
         cwd = os.getcwd()
-        os.chdir(self.temp_work_dir)
+        os.chdir(tmpdir_module)
 
         for model in [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)]:
             model_path_str = type(model).__name__
             model_path_pathlike = pathlib.Path(model_path_str + "_pathlike")
             model_path_binary = model_path_str + "_binary"
             model_paths = [model_path_str, model_path_pathlike, model_path_binary]
-            full_model_paths = [
-                os.path.join(self.temp_work_dir, p) for p in model_paths
-            ]
+            full_model_paths = [os.path.join(tmpdir_module, p) for p in model_paths]
 
             model.fit(self.ts_gaussian)
             model_prediction = model.predict(self.forecasting_horizon)
@@ -178,7 +167,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 len(
                     [
                         p
-                        for p in os.listdir(self.temp_work_dir)
+                        for p in os.listdir(tmpdir_module)
                         if p.startswith(type(model).__name__)
                     ]
                 )

@@ -1,4 +1,3 @@
-import unittest
 from copy import deepcopy
 from typing import Optional, Sequence
 
@@ -12,7 +11,7 @@ from darts.timeseries import concatenate as darts_concat
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
-class DiffTestCase(unittest.TestCase):
+class TestDiff:
     sine_series = [
         5 * sine_timeseries(length=50, value_frequency=f) for f in (0.05, 0.1, 0.15)
     ]

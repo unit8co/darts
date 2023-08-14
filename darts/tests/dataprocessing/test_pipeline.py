@@ -1,5 +1,3 @@
-import logging
-import unittest
 from typing import Any, Mapping
 
 import pytest
@@ -16,13 +14,7 @@ from darts.dataprocessing.transformers import (
 from darts.utils.timeseries_generation import constant_timeseries
 
 
-class PipelineTestCase(unittest.TestCase):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class TestPipeline:
     class DataTransformerMock1(BaseDataTransformer):
         def __init__(self):
             super().__init__()

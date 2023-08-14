@@ -3,12 +3,11 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import _with_sanity_checks, retain_period_common_to_all
 from darts.utils.missing_values import extract_subseries
 
 
-class UtilsTestCase(DartsBaseTestClass):
+class TestUtils:
     def test_retain_period_common_to_all(self):
         seriesA = TimeSeries.from_times_and_values(
             pd.date_range("20000101", "20000110"), range(10)

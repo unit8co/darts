@@ -5,11 +5,10 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import StaticCovariatesTransformer
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 
-class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
+class TestStaticCovariatesTransformer:
     series = tg.linear_timeseries(length=10)
     static_covs1 = pd.DataFrame(
         data={

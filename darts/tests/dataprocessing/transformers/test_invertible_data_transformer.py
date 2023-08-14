@@ -1,5 +1,3 @@
-import logging
-import unittest
 from typing import Any, Mapping, Sequence, Union
 
 import numpy as np
@@ -11,13 +9,7 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
 from darts.utils.timeseries_generation import constant_timeseries
 
 
-class InvertibleDataTransformerTestCase(unittest.TestCase):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class TestInvertibleDataTransformer:
     class DataTransformerMock(InvertibleDataTransformer):
         def __init__(
             self,
@@ -82,26 +74,26 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
             # Ensure manual masking only performed when `mask_components = False`
             # when transform constructed:
             if not mask_components and ("component_mask" in kwargs):
-                vals = InvertibleDataTransformerTestCase.DataTransformerMock.apply_component_mask(
+                vals = TestInvertibleDataTransformer.DataTransformerMock.apply_component_mask(
                     series, kwargs["component_mask"], return_ts=False
                 )
             else:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = (
-                    InvertibleDataTransformerTestCase.DataTransformerMock.stack_samples(
-                        vals
-                    )
+                vals = TestInvertibleDataTransformer.DataTransformerMock.stack_samples(
+                    vals
                 )
             vals = scale * vals + translation
             if stack_samples:
-                vals = InvertibleDataTransformerTestCase.DataTransformerMock.unstack_samples(
-                    vals, series=series
+                vals = (
+                    TestInvertibleDataTransformer.DataTransformerMock.unstack_samples(
+                        vals, series=series
+                    )
                 )
 
             if not mask_components and ("component_mask" in kwargs):
-                vals = InvertibleDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
+                vals = TestInvertibleDataTransformer.DataTransformerMock.unapply_component_mask(
                     series, vals, kwargs["component_mask"]
                 )
 
@@ -132,26 +124,26 @@ class InvertibleDataTransformerTestCase(unittest.TestCase):
             # Ensure manual masking only performed when `mask_components = False`
             # when transform constructed:
             if not mask_components and ("component_mask" in kwargs):
-                vals = InvertibleDataTransformerTestCase.DataTransformerMock.apply_component_mask(
+                vals = TestInvertibleDataTransformer.DataTransformerMock.apply_component_mask(
                     series, kwargs["component_mask"], return_ts=False
                 )
             else:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = (
-                    InvertibleDataTransformerTestCase.DataTransformerMock.stack_samples(
-                        vals
-                    )
+                vals = TestInvertibleDataTransformer.DataTransformerMock.stack_samples(
+                    vals
                 )
             vals = (vals - translation) / scale
             if stack_samples:
-                vals = InvertibleDataTransformerTestCase.DataTransformerMock.unstack_samples(
-                    vals, series=series
+                vals = (
+                    TestInvertibleDataTransformer.DataTransformerMock.unstack_samples(
+                        vals, series=series
+                    )
                 )
 
             if not mask_components and ("component_mask" in kwargs):
-                vals = InvertibleDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
+                vals = TestInvertibleDataTransformer.DataTransformerMock.unapply_component_mask(
                     series, vals, kwargs["component_mask"]
                 )
 

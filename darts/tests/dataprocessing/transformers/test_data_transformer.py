@@ -1,6 +1,3 @@
-import logging
-import unittest
-
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -10,13 +7,7 @@ from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
-class DataTransformerTestCase(unittest.TestCase):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class TestDataTransformer:
     series1 = tg.random_walk_timeseries(length=100, column_name="series1") * 20 - 10.0
     series2 = series1.stack(tg.random_walk_timeseries(length=100) * 20 - 100.0)
 

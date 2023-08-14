@@ -1,6 +1,3 @@
-import logging
-import unittest
-
 import numpy as np
 from pandas import date_range
 
@@ -15,13 +12,7 @@ from darts.models import LinearRegressionModel
 from darts.utils import timeseries_generation as tg
 
 
-class ReconciliationTestCase(unittest.TestCase):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class TestReconciliation:
     np.random.seed(42)
 
     """ test case with a more intricate hierarchy """

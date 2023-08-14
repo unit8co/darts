@@ -9,7 +9,6 @@ from darts.ad.aggregators.and_aggregator import AndAggregator
 from darts.ad.aggregators.ensemble_sklearn_aggregator import EnsembleSklearnAggregator
 from darts.ad.aggregators.or_aggregator import OrAggregator
 from darts.models import MovingAverageFilter
-from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableAggregator = [
     OrAggregator(),
@@ -21,7 +20,7 @@ list_FittableAggregator = [
 ]
 
 
-class ADAggregatorsTestCase(DartsBaseTestClass):
+class TestADAggregators:
 
     np.random.seed(42)
 

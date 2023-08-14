@@ -18,7 +18,7 @@ from darts.models import (
     NaiveSeasonal,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
@@ -101,7 +101,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
     return expanding_window_ok and split_ok
 
 
-class BacktestingTestCase(DartsBaseTestClass):
+class TestBacktesting:
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
         linear_series_int = TimeSeries.from_values(linear_series.values())

@@ -2,7 +2,6 @@ import pytest
 from numpy.random import RandomState
 
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 
@@ -29,7 +28,7 @@ if TORCH_AVAILABLE:
         def fit(self, some_params=None):
             self.fit_value = torch.randn(5)
 
-    class RandomMethodTestCase(DartsBaseTestClass):
+    class TestRandomMethod:
         def test_it_raises_error_if_used_on_function(self):
             with pytest.raises(ValueError):
 

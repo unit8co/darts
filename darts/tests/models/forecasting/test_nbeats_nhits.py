@@ -1,11 +1,8 @@
-import shutil
-import tempfile
-
 import numpy as np
 import pytest
 
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -22,13 +19,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class NbeatsNhitsModelTestCase(DartsBaseTestClass):
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
-
+    class TestNbeatsNhitsModel:
         def test_creation(self):
             with pytest.raises(ValueError):
                 # if a list is passed to the `layer_widths` argument, it must have a length equal to `num_stacks`
@@ -171,7 +162,7 @@ if TORCH_AVAILABLE:
             )
             assert model.n_freq_downsample[-1][-1] == 1
 
-        def test_logtensorboard(self):
+        def test_logtensorboard(self, tmpdir_module):
             ts = tg.constant_timeseries(length=50, value=10)
 
             # testing if both the modes (generic and interpretable) runs with tensorboard
@@ -183,7 +174,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=1,
                     log_tensorboard=True,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_module,
                     generic_architecture=architecture,
                     pl_trainer_kwargs={
                         "log_every_n_steps": 1,

@@ -18,7 +18,7 @@ from darts.models import (
     NaiveSeasonal,
     NotImportedModule,
 )
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 try:
@@ -224,7 +224,7 @@ if TORCH_AVAILABLE:
     ]
 
 
-class HistoricalforecastTestCase(DartsBaseTestClass):
+class TestHistoricalforecast:
     np.random.seed(42)
     if TORCH_AVAILABLE:
         torch.manual_seed(42)

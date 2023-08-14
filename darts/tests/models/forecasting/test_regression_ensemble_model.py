@@ -19,7 +19,7 @@ from darts.models import (
     RegressionModel,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
@@ -37,7 +37,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
+class TestRegressionEnsembleModels:
     RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(

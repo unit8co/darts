@@ -37,7 +37,6 @@ from darts.datasets.dataset_loaders import (
     DatasetLoaderMetadata,
     DatasetLoadingException,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
 
 datasets = [
     AirPassengersDataset,
@@ -122,7 +121,7 @@ ele_multi_series_dataset = DatasetLoaderCSV(
 )
 
 
-class DatasetLoaderTestCase(DartsBaseTestClass):
+class TestDatasetLoader:
     def tearDown(self):
         # we need to remove the cached datasets between each test
         default_directory = DatasetLoader._DEFAULT_DIRECTORY

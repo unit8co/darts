@@ -20,7 +20,15 @@ def set_up_tests(request):
 
 @pytest.fixture(scope="module")
 def tmpdir_module():
-    """Sets up a temporary directory that will be dunped after the test module (script) finished."""
+    """Sets up a temporary directory that will be deleted after the test module (script) finished."""
+    temp_work_dir = tempfile.mkdtemp(prefix="darts")
+    yield temp_work_dir
+    shutil.rmtree(temp_work_dir)
+
+
+@pytest.fixture(scope="function")
+def tmpdir_fn():
+    """Sets up a temporary directory that will be deleted after the test function finished."""
     temp_work_dir = tempfile.mkdtemp(prefix="darts")
     yield temp_work_dir
     shutil.rmtree(temp_work_dir)

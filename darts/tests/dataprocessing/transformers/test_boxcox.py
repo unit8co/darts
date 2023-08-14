@@ -1,4 +1,3 @@
-import unittest
 from copy import deepcopy
 
 import numpy as np
@@ -10,7 +9,7 @@ from darts.dataprocessing.transformers import BoxCox, Mapper
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
-class BoxCoxTestCase(unittest.TestCase):
+class TestBoxCox:
 
     sine_series = sine_timeseries(length=50, value_y_offset=5, value_frequency=0.05)
     lin_series = linear_timeseries(start_value=1, end_value=10, length=50)

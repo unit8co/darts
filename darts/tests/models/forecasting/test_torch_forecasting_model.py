@@ -1,6 +1,4 @@
 import os
-import shutil
-import tempfile
 from typing import Any, Dict
 from unittest.mock import patch
 
@@ -13,7 +11,7 @@ from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
@@ -42,19 +40,13 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TestTorchForecastingModel(DartsBaseTestClass):
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+    class TestTorchForecastingModel:
+        times = pd.date_range("20130101", "20130410")
+        pd_series = pd.Series(range(100), index=times)
+        series = TimeSeries.from_series(pd_series)
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            self.series = TimeSeries.from_series(pd_series)
-
-            df = pd.DataFrame({"var1": range(100), "var2": range(100)}, index=times)
-            self.multivariate_series = TimeSeries.from_dataframe(df)
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
+        df = pd.DataFrame({"var1": range(100), "var2": range(100)}, index=times)
+        multivariate_series = TimeSeries.from_dataframe(df)
 
         def test_save_model_parameters(self):
             # check if re-created model has same params as original
@@ -64,7 +56,7 @@ if TORCH_AVAILABLE:
         @patch(
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
         )
-        def test_suppress_automatic_save(self, patch_save_model):
+        def test_suppress_automatic_save(self, patch_save_model, tmpdir_fn):
             model_name = "test_model"
             model1 = RNNModel(
                 12,
@@ -72,7 +64,7 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=False,
                 **tfm_kwargs,
             )
@@ -82,7 +74,7 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 force_reset=True,
                 save_checkpoints=False,
                 **tfm_kwargs,
@@ -96,13 +88,13 @@ if TORCH_AVAILABLE:
 
             patch_save_model.assert_not_called()
 
-            model1.save(path=os.path.join(self.temp_work_dir, model_name))
+            model1.save(path=os.path.join(tmpdir_fn, model_name))
             patch_save_model.assert_called()
 
-        def test_manual_save_and_load(self):
+        def test_manual_save_and_load(self, tmpdir_fn):
             """validate manual save with automatic save files by comparing output between the two"""
 
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "test_save_manual"
             auto_name = "test_save_automatic"
             model_manual_save = RNNModel(
@@ -111,7 +103,7 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=manual_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=False,
                 random_state=42,
                 **tfm_kwargs,
@@ -122,7 +114,7 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=True,
                 random_state=42,
                 **tfm_kwargs,
@@ -183,7 +175,7 @@ if TORCH_AVAILABLE:
             # load automatically saved model with manual load() and load_from_checkpoint()
             model_auto_save1 = RNNModel.load_from_checkpoint(
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=False,
                 map_location="cpu",
             )
@@ -203,7 +195,7 @@ if TORCH_AVAILABLE:
             )
             model_auto_save2 = RNNModel.load_from_checkpoint(
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=False,
                 map_location="cpu",
             )
@@ -222,7 +214,7 @@ if TORCH_AVAILABLE:
                 n=4
             )
 
-        def test_valid_save_and_load_weights_with_different_params(self):
+        def test_valid_save_and_load_weights_with_different_params(self, tmpdir_fn):
             """
             Verify that save/load does not break encoders.
 
@@ -239,7 +231,7 @@ if TORCH_AVAILABLE:
                     **tfm_kwargs,
                 )
 
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             # create manually saved model checkpoints folder
             checkpoint_path_manual = os.path.join(model_dir, manual_name)
@@ -261,7 +253,7 @@ if TORCH_AVAILABLE:
                 model_new = create_model(**kwargs_)
                 model_new.load_weights(model_path_manual)
 
-        def test_save_and_load_weights_w_encoders(self):
+        def test_save_and_load_weights_w_encoders(self, tmpdir_fn):
             """
             Verify that save/load does not break encoders.
 
@@ -281,14 +273,14 @@ if TORCH_AVAILABLE:
                     kernel_size=5,
                     model_name=model_name,
                     add_encoders=add_encoders,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     save_checkpoints=save_checkpoints,
                     random_state=42,
                     force_reset=True,
                     **tfm_kwargs,
                 )
 
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             auto_name = "save_auto"
             auto_name_other = "save_auto_other"
@@ -350,7 +342,7 @@ if TORCH_AVAILABLE:
             with pytest.raises(ValueError):
                 model_no_enc.load_weights_from_checkpoint(
                     auto_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
                     load_encoders=False,
                     map_location="cpu",
@@ -358,7 +350,7 @@ if TORCH_AVAILABLE:
             # overwritte undeclared encoders
             model_no_enc.load_weights_from_checkpoint(
                 auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=False,
                 load_encoders=True,
                 map_location="cpu",
@@ -519,7 +511,7 @@ if TORCH_AVAILABLE:
                     map_location="cpu",
                 )
 
-        def test_save_and_load_weights_w_likelihood(self):
+        def test_save_and_load_weights_w_likelihood(self, tmpdir_fn):
             """
             Verify that save/load does not break likelihood.
 
@@ -538,7 +530,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     kernel_size=5,
                     model_name=model_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     save_checkpoints=save_checkpoints,
                     likelihood=likelihood,
                     random_state=42,
@@ -546,7 +538,7 @@ if TORCH_AVAILABLE:
                     **tfm_kwargs,
                 )
 
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             auto_name = "save_auto"
             # create manually saved model checkpoints folder
@@ -600,7 +592,7 @@ if TORCH_AVAILABLE:
                 "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
             )
             model_auto_same_likelihood.load_weights_from_checkpoint(
-                auto_name, work_dir=self.temp_work_dir, best=False, map_location="cpu"
+                auto_name, work_dir=tmpdir_fn, best=False, map_location="cpu"
             )
             preds_auto_from_weights = model_auto_same_likelihood.predict(
                 n=4, series=self.series
@@ -613,7 +605,7 @@ if TORCH_AVAILABLE:
             with pytest.raises(ValueError):
                 model_no_likelihood.load_weights_from_checkpoint(
                     auto_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
                     map_location="cpu",
                 )
@@ -636,20 +628,20 @@ if TORCH_AVAILABLE:
                     model_path_manual, map_location="cpu"
                 )
 
-        def test_create_instance_new_model_no_name_set(self):
-            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, **tfm_kwargs)
+        def test_create_instance_new_model_no_name_set(self, tmpdir_fn):
+            RNNModel(12, "RNN", 10, 10, work_dir=tmpdir_fn, **tfm_kwargs)
             # no exception is raised
-            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, **tfm_kwargs)
+            RNNModel(12, "RNN", 10, 10, work_dir=tmpdir_fn, **tfm_kwargs)
             # no exception is raised
 
-        def test_create_instance_existing_model_with_name_no_fit(self):
+        def test_create_instance_existing_model_with_name_no_fit(self, tmpdir_fn):
             model_name = "test_model"
             RNNModel(
                 12,
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 **tfm_kwargs,
             )
@@ -660,7 +652,7 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 **tfm_kwargs,
             )
@@ -670,7 +662,7 @@ if TORCH_AVAILABLE:
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
         )
         def test_create_instance_existing_model_with_name_force(
-            self, patch_reset_model
+            self, patch_reset_model, tmpdir_fn
         ):
             model_name = "test_model"
             RNNModel(
@@ -678,7 +670,7 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 **tfm_kwargs,
             )
@@ -690,7 +682,7 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 force_reset=True,
                 **tfm_kwargs,
@@ -701,7 +693,7 @@ if TORCH_AVAILABLE:
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
         )
         def test_create_instance_existing_model_with_name_force_fit_with_reset(
-            self, patch_reset_model
+            self, patch_reset_model, tmpdir_fn
         ):
             model_name = "test_model"
             model1 = RNNModel(
@@ -709,7 +701,7 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
                 **tfm_kwargs,
@@ -723,7 +715,7 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
                 force_reset=True,
@@ -743,7 +735,6 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 n_epochs=20,
-                work_dir=self.temp_work_dir,
                 **tfm_kwargs,
             )
 
@@ -759,7 +750,6 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 n_epochs=20,
-                work_dir=self.temp_work_dir,
                 **tfm_kwargs,
             )
 
@@ -777,7 +767,6 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 n_epochs=20,
-                work_dir=self.temp_work_dir,
                 **tfm_kwargs,
             )
 
@@ -796,7 +785,6 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 n_epochs=20,
-                work_dir=self.temp_work_dir,
                 **tfm_kwargs,
             )
 
@@ -807,7 +795,7 @@ if TORCH_AVAILABLE:
             model1.fit(self.series, epochs=15)
             assert 15 == model1.epochs_trained
 
-        def test_load_weights_from_checkpoint(self):
+        def test_load_weights_from_checkpoint(self, tmpdir_fn):
             ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
@@ -818,7 +806,7 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=True,
                 model_name=original_model_name,
                 random_state=1,
@@ -835,14 +823,14 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=retrained_model_name,
                 random_state=1,
                 **tfm_kwargs,
             )
             model_rt.load_weights_from_checkpoint(
                 model_name=original_model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=False,
                 map_location="cpu",
             )
@@ -870,7 +858,7 @@ if TORCH_AVAILABLE:
                 )
                 model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
                     map_location="cpu",
                 )
@@ -880,13 +868,13 @@ if TORCH_AVAILABLE:
                 model_rt = RNNModel(12, "RNN", 5, 5, **tfm_kwargs)
                 model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
                     weights_only=True,
                     map_location="cpu",
                 )
 
-        def test_load_weights(self):
+        def test_load_weights(self, tmpdir_fn):
             ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
@@ -897,14 +885,14 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=False,
                 model_name=original_model_name,
                 random_state=1,
                 **tfm_kwargs,
             )
             model.fit(ts_training)
-            path_manual_save = os.path.join(self.temp_work_dir, "RNN_manual_save.pt")
+            path_manual_save = os.path.join(tmpdir_fn, "RNN_manual_save.pt")
             model.save(path_manual_save)
             original_preds = model.predict(10)
             original_mape = mape(original_preds, ts_test)
@@ -916,7 +904,7 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=retrained_model_name,
                 random_state=1,
                 **tfm_kwargs,
@@ -936,23 +924,23 @@ if TORCH_AVAILABLE:
                 f"respectively {retrained_mape} and {original_mape}"
             )
 
-        def test_multi_steps_pipeline(self):
+        def test_multi_steps_pipeline(self, tmpdir_fn):
             ts_training, ts_val = self.series.split_before(75)
             pretrain_model_name = "pre-train"
             retrained_model_name = "re-train"
 
             # pretraining
-            model = self.helper_create_RNNModel(pretrain_model_name)
+            model = self.helper_create_RNNModel(pretrain_model_name, tmpdir_fn)
             model.fit(
                 ts_training,
                 val_series=ts_val,
             )
 
             # finetuning
-            model = self.helper_create_RNNModel(retrained_model_name)
+            model = self.helper_create_RNNModel(retrained_model_name, tmpdir_fn)
             model.load_weights_from_checkpoint(
                 model_name=pretrain_model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=True,
                 map_location="cpu",
             )
@@ -964,13 +952,13 @@ if TORCH_AVAILABLE:
             # prediction
             model = model.load_from_checkpoint(
                 model_name=retrained_model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=True,
                 map_location="cpu",
             )
             model.predict(4, series=ts_training)
 
-        def test_load_from_checkpoint_w_custom_loss(self):
+        def test_load_from_checkpoint_w_custom_loss(self, tmpdir_fn):
             model_name = "pretraining_custom_loss"
             # model with a custom loss
             model = RNNModel(
@@ -979,7 +967,7 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
                 force_reset=True,
@@ -989,7 +977,7 @@ if TORCH_AVAILABLE:
             model.fit(self.series)
 
             loaded_model = RNNModel.load_from_checkpoint(
-                model_name, self.temp_work_dir, best=False, map_location="cpu"
+                model_name, tmpdir_fn, best=False, map_location="cpu"
             )
             # custom loss function should be properly restored from ckpt
             assert isinstance(loaded_model.model.criterion, torch.nn.L1Loss)
@@ -998,7 +986,7 @@ if TORCH_AVAILABLE:
             # calling fit() should not impact the loss function
             assert isinstance(loaded_model.model.criterion, torch.nn.L1Loss)
 
-        def test_load_from_checkpoint_w_metrics(self):
+        def test_load_from_checkpoint_w_metrics(self, tmpdir_fn):
             model_name = "pretraining_metrics"
             # model with one torch_metrics
             pl_trainer_kwargs = dict(
@@ -1011,7 +999,7 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
                 force_reset=True,
@@ -1025,7 +1013,7 @@ if TORCH_AVAILABLE:
 
             loaded_model = RNNModel.load_from_checkpoint(
                 model_name,
-                self.temp_work_dir,
+                tmpdir_fn,
                 best=False,
                 map_location="cpu",
             )
@@ -1309,7 +1297,7 @@ if TORCH_AVAILABLE:
                 == second_encoders.get("transformer", None).__class__
             )
 
-        def helper_create_RNNModel(self, model_name: str):
+        def helper_create_RNNModel(self, model_name: str, tmpdir_fn):
             return RNNModel(
                 input_chunk_length=4,
                 hidden_dim=3,
@@ -1322,7 +1310,7 @@ if TORCH_AVAILABLE:
                 },
                 n_epochs=2,
                 model_name=model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 force_reset=True,
                 save_checkpoints=True,
                 **tfm_kwargs,

@@ -5,7 +5,7 @@ import pytest
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -27,7 +27,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TFTModelTestCase(DartsBaseTestClass):
+    class TestTFTModel:
         def test_quantile_regression(self):
             q_no_50 = [0.1, 0.4, 0.9]
             q_non_symmetric = [0.2, 0.5, 0.9]

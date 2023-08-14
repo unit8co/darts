@@ -4,7 +4,6 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import gaussian_timeseries
 
 logger = get_logger(__name__)
@@ -36,7 +35,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class DatasetTestCase(DartsBaseTestClass):
+    class TestDataset:
         target1 = gaussian_timeseries(length=100).with_static_covariates(
             pd.Series([0, 1], index=["st1", "st2"])
         )

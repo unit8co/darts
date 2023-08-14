@@ -6,14 +6,13 @@ import pytest
 from darts import TimeSeries
 from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
-from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableDetector = [ThresholdDetector(low_threshold=0.2)]
 
 list_FittableDetector = [QuantileDetector(low_quantile=0.2)]
 
 
-class ADDetectorsTestCase(DartsBaseTestClass):
+class TestADDetectors:
 
     np.random.seed(42)
 

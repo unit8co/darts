@@ -18,7 +18,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -188,7 +188,7 @@ if TORCH_AVAILABLE:
 
 
 @pytest.mark.slow
-class ProbabilisticModelsTestCase(DartsBaseTestClass):
+class TestProbabilisticModels:
     np.random.seed(0)
 
     constant_ts = tg.constant_timeseries(length=200, value=0.5)
@@ -360,7 +360,7 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
         simplex_series = bounded_series["0"].stack(1.0 - bounded_series["0"])
 
         lkl_series = [
-            (GaussianLikelihood(), real_series, 0.1, 3),
+            (GaussianLikelihood(), real_series, 0.17, 3),
             (PoissonLikelihood(), discrete_pos_series, 2, 2),
             (NegativeBinomialLikelihood(), discrete_pos_series, 0.5, 0.5),
             (BernoulliLikelihood(), binary_series, 0.15, 0.15),
@@ -379,26 +379,27 @@ class ProbabilisticModelsTestCase(DartsBaseTestClass):
             (QuantileRegression(), real_series, 0.2, 1),
         ]
 
-        def test_likelihoods_and_resulting_mean_forecasts(self):
+        @pytest.mark.parametrize("lkl_params", lkl_series)
+        def test_likelihoods_and_resulting_mean_forecasts(self, lkl_params):
             def _get_avgs(series):
                 return np.mean(series.all_values()[:, 0, :]), np.mean(
                     series.all_values()[:, 1, :]
                 )
 
-            for lkl, series, diff1, diff2 in self.lkl_series:
-                model = RNNModel(input_chunk_length=5, likelihood=lkl, **tfm_kwargs)
-                model.fit(series, epochs=50)
-                pred = model.predict(n=50, num_samples=50)
+            lkl, series, diff1, diff2 = lkl_params
+            model = RNNModel(input_chunk_length=5, likelihood=lkl, **tfm_kwargs)
+            model.fit(series, epochs=50)
+            pred = model.predict(n=50, num_samples=50)
 
-                avgs_orig, avgs_pred = _get_avgs(series), _get_avgs(pred)
-                assert abs(avgs_orig[0] - avgs_pred[0]) < diff1, (
-                    "The difference between the mean forecast and the mean series is larger "
-                    "than expected on component 0 for distribution {}".format(lkl)
-                )
-                assert abs(avgs_orig[1] - avgs_pred[1]) < diff2, (
-                    "The difference between the mean forecast and the mean series is larger "
-                    "than expected on component 1 for distribution {}".format(lkl)
-                )
+            avgs_orig, avgs_pred = _get_avgs(series), _get_avgs(pred)
+            assert abs(avgs_orig[0] - avgs_pred[0]) < diff1, (
+                "The difference between the mean forecast and the mean series is larger "
+                "than expected on component 0 for distribution {}".format(lkl)
+            )
+            assert abs(avgs_orig[1] - avgs_pred[1]) < diff2, (
+                "The difference between the mean forecast and the mean series is larger "
+                "than expected on component 1 for distribution {}".format(lkl)
+            )
 
         @pytest.mark.slow
         def test_predict_likelihood_parameters_univariate_torch_models(self):

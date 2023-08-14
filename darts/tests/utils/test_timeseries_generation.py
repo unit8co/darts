@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import (
     autoregressive_timeseries,
     constant_timeseries,
@@ -17,7 +16,7 @@ from darts.utils.timeseries_generation import (
 )
 
 
-class TimeSeriesGenerationTestCase(DartsBaseTestClass):
+class TestTimeSeriesGeneration:
     def test_constant_timeseries(self):
         # testing parameters
         value = 5

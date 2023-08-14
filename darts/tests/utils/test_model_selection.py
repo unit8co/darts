@@ -1,6 +1,5 @@
 import pytest
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.model_selection import MODEL_AWARE, SIMPLE, train_test_split
 from darts.utils.timeseries_generation import constant_timeseries
 
@@ -13,7 +12,7 @@ def verify_shape(dataset, rows, cols):
     return len(dataset) == rows and all(len(row) == cols for row in dataset)
 
 
-class ClassTrainTestSplitTestCase(DartsBaseTestClass):
+class TestClassTrainTestSplit:
     def test_parameters_for_axis_0(self):
         train_test_split(make_dataset(2, 10), axis=0, test_size=1)
 

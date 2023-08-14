@@ -3,11 +3,10 @@ from itertools import product
 import numpy as np
 import pytest
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import strided_moving_window
 
 
-class StridedMovingWindowTestCase(DartsBaseTestClass):
+class TestStridedMovingWindow:
 
     """
     Tests `strided_moving_window` function defined in `darts.utils.data.tabularization`.

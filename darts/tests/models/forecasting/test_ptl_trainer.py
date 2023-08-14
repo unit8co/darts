@@ -1,11 +1,8 @@
-import shutil
-import tempfile
-
 import numpy as np
 import pytest
 
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
@@ -23,7 +20,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TestTorchForecastingModel(DartsBaseTestClass):
+    class TestTorchForecastingModel:
         trainer_params = {
             "max_epochs": 1,
             "logger": False,
@@ -36,13 +33,7 @@ if TORCH_AVAILABLE:
             64: "64" if not pl_200_or_above else "64-true",
         }
 
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
-
-        def test_prediction_loaded_custom_trainer(self):
+        def test_prediction_loaded_custom_trainer(self, tmpdir_module):
             """validate manual save with automatic save files by comparing output between the two"""
             auto_name = "test_save_automatic"
             model = RNNModel(
@@ -51,7 +42,7 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_module,
                 save_checkpoints=True,
                 random_state=42,
                 **tfm_kwargs,
@@ -70,7 +61,7 @@ if TORCH_AVAILABLE:
             # load automatically saved model with manual load_model() and load_from_checkpoint()
             model_loaded = RNNModel.load_from_checkpoint(
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_module,
                 best=False,
                 map_location="cpu",
             )
@@ -189,7 +180,7 @@ if TORCH_AVAILABLE:
                 assert model.trainer.precision == self.precisions[precision]
                 assert preds.dtype == ts_dtype
 
-        def test_custom_callback(self):
+        def test_custom_callback(self, tmpdir_module):
             class CounterCallback(pl.callbacks.Callback):
                 # counts the number of trained epochs starting from count_default
                 def __init__(self, count_default):
@@ -229,7 +220,7 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 random_state=42,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_module,
                 save_checkpoints=True,
                 pl_trainer_kwargs={
                     "callbacks": [CounterCallback(0), CounterCallback(2)],

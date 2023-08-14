@@ -31,10 +31,9 @@ from darts.ad import (
 )
 from darts.ad.utils import eval_accuracy_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverageFilter, NaiveSeasonal, RegressionModel
-from darts.tests.base_test_class import DartsBaseTestClass
 
 
-class ADAnomalyModelTestCase(DartsBaseTestClass):
+class TestADAnomalyModel:
     np.random.seed(42)
 
     # univariate series

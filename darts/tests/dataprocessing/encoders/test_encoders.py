@@ -30,7 +30,6 @@ from darts.dataprocessing.encoders.encoders import (
 )
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_log
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -44,7 +43,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-class EncoderTestCase(DartsBaseTestClass):
+class TestEncoder:
     encoders_cls = [
         FutureCallableIndexEncoder,
         FutureCyclicEncoder,

@@ -1,5 +1,3 @@
-import logging
-import unittest
 from typing import Any, Mapping, Sequence, Union
 
 import numpy as np
@@ -11,17 +9,11 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.utils.timeseries_generation import constant_timeseries
 
 
-class LocalFittableDataTransformerTestCase(unittest.TestCase):
+class TestLocalFittableDataTransformer:
     """
     Tests that data transformers inheriting from `FittableDataTransformer` class behave
     correctly when `global_fit` attribute is `False`.
     """
-
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     class DataTransformerMock(FittableDataTransformer):
         def __init__(
@@ -105,24 +97,26 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
             # Ensure manual masking only performed when `mask_components = False`
             # when transform constructed:
             if not mask_components and ("component_mask" in kwargs):
-                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.apply_component_mask(
+                vals = TestLocalFittableDataTransformer.DataTransformerMock.apply_component_mask(
                     series, kwargs["component_mask"], return_ts=False
                 )
             else:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.stack_samples(
-                    vals
+                vals = (
+                    TestLocalFittableDataTransformer.DataTransformerMock.stack_samples(
+                        vals
+                    )
                 )
             vals = scale * vals + translation
             if stack_samples:
-                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.unstack_samples(
+                vals = TestLocalFittableDataTransformer.DataTransformerMock.unstack_samples(
                     vals, series=series
                 )
 
             if not mask_components and ("component_mask" in kwargs):
-                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
+                vals = TestLocalFittableDataTransformer.DataTransformerMock.unapply_component_mask(
                     series, vals, kwargs["component_mask"]
                 )
 
@@ -277,17 +271,11 @@ class LocalFittableDataTransformerTestCase(unittest.TestCase):
         assert transformed == expected
 
 
-class GlobalFittableDataTransformerTestCase(unittest.TestCase):
+class TestGlobalFittableDataTransformer:
     """
     Tests that data transformers inheriting from `FittableDataTransformer` class behave
     correctly when `global_fit` attribute is `True`.
     """
-
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     class DataTransformerMock(FittableDataTransformer):
         def __init__(self, global_fit: bool):

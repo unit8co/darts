@@ -7,7 +7,6 @@ import pytest
 
 from darts.dataprocessing import dtw
 from darts.metrics import dtw_metric, mae, mape
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 
@@ -18,7 +17,7 @@ def _series_from_values(values):
     )
 
 
-class DynamicTimeWarpingTestCase(DartsBaseTestClass):
+class TestDynamicTimeWarping:
     length = 20
     freq = 1 / length
     series1 = tg.sine_timeseries(

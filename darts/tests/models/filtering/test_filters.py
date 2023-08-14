@@ -8,18 +8,17 @@ from darts.metrics import rmse
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.filtering.moving_average_filter import MovingAverageFilter
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 
-class FilterBaseTestClass(DartsBaseTestClass):
+class FilterBaseTestClass:
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         np.random.seed(42)
 
 
-class KalmanFilterTestCase(FilterBaseTestClass):
+class TestKalmanFilter(FilterBaseTestClass):
     def test_kalman(self):
         """KalmanFilter test.
         Creates an increasing sequence of numbers, adds noise and
@@ -135,7 +134,7 @@ class KalmanFilterTestCase(FilterBaseTestClass):
         assert prediction.n_samples == 1
 
 
-class MovingAverageTestCase(FilterBaseTestClass):
+class TestMovingAverage(FilterBaseTestClass):
     def test_moving_average_univariate(self):
         ma = MovingAverageFilter(window=3, centered=False)
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
@@ -159,7 +158,7 @@ class MovingAverageTestCase(FilterBaseTestClass):
         )
 
 
-class GaussianProcessFilterTestCase(FilterBaseTestClass):
+class TestGaussianProcessFilter(FilterBaseTestClass):
     def test_gaussian_process(self):
         """GaussianProcessFilter test.
         Creates a sine wave, adds noise and assumes the GP filter
@@ -208,12 +207,12 @@ class GaussianProcessFilterTestCase(FilterBaseTestClass):
 
 
 if __name__ == "__main__":
-    KalmanFilterTestCase().test_kalman()
-    KalmanFilterTestCase().test_kalman_multivariate()
-    KalmanFilterTestCase().test_kalman_covariates()
-    KalmanFilterTestCase().test_kalman_covariates_multivariate()
-    KalmanFilterTestCase().test_kalman_samples()
-    KalmanFilterTestCase().test_kalman_given_kf()
-    MovingAverageTestCase().test_moving_average_univariate()
-    MovingAverageTestCase().test_moving_average_multivariate()
-    GaussianProcessFilterTestCase().test_gaussian_process()
+    TestKalmanFilter().test_kalman()
+    TestKalmanFilter().test_kalman_multivariate()
+    TestKalmanFilter().test_kalman_covariates()
+    TestKalmanFilter().test_kalman_covariates_multivariate()
+    TestKalmanFilter().test_kalman_samples()
+    TestKalmanFilter().test_kalman_given_kf()
+    TestMovingAverage().test_moving_average_univariate()
+    TestMovingAverage().test_moving_average_multivariate()
+    TestGaussianProcessFilter().test_gaussian_process()

@@ -2,7 +2,7 @@ import pytest
 
 from darts.logging import get_logger
 from darts.metrics import mae
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -20,7 +20,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TCNModelTestCase(DartsBaseTestClass):
+    class TestTCNModel:
         def test_creation(self):
             with pytest.raises(ValueError):
                 # cannot choose a kernel size larger than the input length

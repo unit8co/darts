@@ -5,10 +5,9 @@ from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
 from darts.metrics import mae
 from darts.models import LinearRegressionModel, StatsForecastAutoETS
-from darts.tests.base_test_class import DartsBaseTestClass
 
 
-class StatsForecastAutoETSTestCase(DartsBaseTestClass):
+class TestStatsForecastAutoETS:
     # real timeseries for functionality tests
     ts_passengers = AirPassengersDataset().load()
     ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp("19570101"))

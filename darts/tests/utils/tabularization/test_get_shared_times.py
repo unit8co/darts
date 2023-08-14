@@ -3,7 +3,6 @@ from math import gcd
 import pandas as pd
 import pytest
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import get_shared_times
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -16,7 +15,7 @@ def lcm(*integers):
     return a
 
 
-class GetSharedTimesTestCase(DartsBaseTestClass):
+class TestGetSharedTimes:
 
     """
     Tests `get_shared_times` function defined in `darts.utils.data.tabularization`.

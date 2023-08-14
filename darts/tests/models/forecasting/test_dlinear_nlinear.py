@@ -1,5 +1,3 @@
-import shutil
-import tempfile
 from itertools import product
 
 import numpy as np
@@ -9,7 +7,7 @@ import pytest
 from darts import concatenate
 from darts.logging import get_logger
 from darts.metrics import rmse
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -29,15 +27,9 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class DlinearNlinearModelsTestCase(DartsBaseTestClass):
+    class TestDlinearNlinearModels:
         np.random.seed(42)
         torch.manual_seed(42)
-
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
 
         def test_creation(self):
             with pytest.raises(ValueError):
@@ -93,7 +85,7 @@ if TORCH_AVAILABLE:
                 pred3 = model2.predict(n=1)
                 assert len(pred3) == 1
 
-        def test_logtensorboard(self):
+        def test_logtensorboard(self, tmpdir_module):
             ts = tg.constant_timeseries(length=50, value=10)
 
             for model_cls in [DLinearModel, NLinearModel]:
@@ -103,7 +95,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=1,
                     log_tensorboard=True,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_module,
                     pl_trainer_kwargs={
                         "log_every_n_steps": 1,
                         **tfm_kwargs["pl_trainer_kwargs"],

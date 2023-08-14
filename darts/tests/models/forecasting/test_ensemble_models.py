@@ -15,7 +15,7 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -36,7 +36,7 @@ def _make_ts(start_value=0, n=100):
     return TimeSeries.from_series(pd_series)
 
 
-class EnsembleModelsTestCase(DartsBaseTestClass):
+class TestEnsembleModels:
     series1 = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     series2 = tg.linear_timeseries(length=50)
 

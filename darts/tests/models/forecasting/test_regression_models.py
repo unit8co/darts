@@ -28,7 +28,6 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
 
@@ -158,7 +157,7 @@ def partialclass(cls, *args, **kwargs):
     return NewCls
 
 
-class RegressionModelsTestCase(DartsBaseTestClass):
+class TestRegressionModels:
 
     np.random.seed(42)
 
@@ -2123,7 +2122,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
 
-class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
+class TestProbabilisticRegressionModels:
     models_cls_kwargs_errs = [
         (
             LinearRegressionModel,

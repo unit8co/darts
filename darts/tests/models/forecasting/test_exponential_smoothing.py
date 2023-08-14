@@ -2,11 +2,10 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.models import ExponentialSmoothing
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 
-class ExponentialSmoothingTestCase(DartsBaseTestClass):
+class TestExponentialSmoothing:
     def helper_test_seasonality_inference(self, freq_string, expected_seasonal_periods):
         series = tg.sine_timeseries(length=200, freq=freq_string)
         model = ExponentialSmoothing()

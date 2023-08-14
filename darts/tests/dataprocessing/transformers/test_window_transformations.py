@@ -1,5 +1,4 @@
 import itertools
-import unittest
 
 import numpy as np
 import pandas as pd
@@ -10,7 +9,7 @@ from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import Mapper, WindowTransformer
 
 
-class TimeSeriesWindowTransformTestCase(unittest.TestCase):
+class TestTimeSeriesWindowTransform:
 
     times = pd.date_range("20130101", "20130110")
     series_from_values = TimeSeries.from_values(
@@ -464,7 +463,7 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         assert transformed_ts == expected_transformed_series
 
 
-class WindowTransformerTestCase(unittest.TestCase):
+class TestWindowTransformer:
 
     times = pd.date_range("20130101", "20130110")
     target = TimeSeries.from_times_and_values(times, np.array(range(1, 11)))

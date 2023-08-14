@@ -9,12 +9,11 @@ import pytest
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import get_logger, raise_if_not, raise_log
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.timeseries_generation import linear_timeseries
 
 
-class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
+class TestCreateLaggedPredictionData:
     """
     Tests `create_lagged_prediction_data` function defined in `darts.utils.data.tabularization`. There
     are broadly two 'groups' of tests defined in this module:
@@ -86,14 +85,14 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             is_target_or_past = i < 2
             if lags_specified:
                 if is_target_or_past:
-                    times_i = CreateLaggedPredictionDataTestCase.get_feature_times_target_or_past(
-                        series_i, lags_i
-                    )
-                else:
                     times_i = (
-                        CreateLaggedPredictionDataTestCase.get_feature_times_future(
+                        TestCreateLaggedPredictionData.get_feature_times_target_or_past(
                             series_i, lags_i
                         )
+                    )
+                else:
+                    times_i = TestCreateLaggedPredictionData.get_feature_times_future(
+                        series_i, lags_i
                     )
             else:
                 times_i = None

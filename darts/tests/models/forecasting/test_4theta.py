@@ -5,14 +5,13 @@ import pytest
 
 from darts.metrics import mape
 from darts.models import FourTheta, Theta
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
 from darts.utils.timeseries_generation import sine_timeseries as st
 from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 
-class FourThetaTestCase(DartsBaseTestClass):
+class TestFourTheta:
     def test_input(self):
         with pytest.raises(ValueError):
             FourTheta(model_mode=SeasonalityMode.ADDITIVE)

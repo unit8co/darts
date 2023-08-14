@@ -1,12 +1,9 @@
-import shutil
-import tempfile
-
 import pandas as pd
 import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.base_test_class import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -31,8 +28,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TransformerModelTestCase(DartsBaseTestClass):
-        __test__ = True
+    class TestTransformerModel:
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
@@ -55,20 +51,14 @@ if TORCH_AVAILABLE:
             custom_decoder=None,
         )
 
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
-
-        def test_fit(self):
+        def test_fit(self, tmpdir_module):
             # Test fit-save-load cycle
             model2 = TransformerModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 n_epochs=2,
                 model_name="unittest-model-transformer",
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_module,
                 save_checkpoints=True,
                 force_reset=True,
                 **tfm_kwargs
@@ -76,7 +66,7 @@ if TORCH_AVAILABLE:
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
                 model_name="unittest-model-transformer",
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_module,
                 best=False,
                 map_location="cpu",
             )

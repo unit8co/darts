@@ -19,7 +19,6 @@ from darts.ad.scorers import (
 from darts.ad.scorers import NormScorer as Norm
 from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
 from darts.models import MovingAverageFilter
-from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableAnomalyScorer = [
     Norm(),
@@ -48,7 +47,7 @@ list_NLLScorer = [
 ]
 
 
-class ADAnomalyScorerTestCase(DartsBaseTestClass):
+class TestADAnomalyScorer:
 
     np.random.seed(42)
 

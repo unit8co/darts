@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import pandas as pd
 
@@ -7,7 +5,7 @@ from darts.dataprocessing.transformers import MissingValuesFiller
 from darts.timeseries import TimeSeries
 
 
-class MissingValuesFillerTestCase(unittest.TestCase):
+class TestMissingValuesFiller:
 
     time = pd.date_range("20130101", "20130130")
     static_covariate = pd.DataFrame({"0": [1]})

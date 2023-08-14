@@ -1,5 +1,3 @@
-import logging
-import unittest
 from typing import Any, Mapping, Sequence, Union
 
 import numpy as np
@@ -9,13 +7,7 @@ from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.utils.timeseries_generation import constant_timeseries
 
 
-class BaseDataTransformerTestCase(unittest.TestCase):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class TestBaseDataTransformer:
     class DataTransformerMock(BaseDataTransformer):
         def __init__(
             self,
@@ -80,25 +72,25 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             # Ensure manual masking only performed when `mask_components = False`
             # when transform constructed:
             if not mask_components and ("component_mask" in kwargs):
-                vals = BaseDataTransformerTestCase.DataTransformerMock.apply_component_mask(
+                vals = TestBaseDataTransformer.DataTransformerMock.apply_component_mask(
                     series, kwargs["component_mask"], return_ts=False
                 )
             else:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = BaseDataTransformerTestCase.DataTransformerMock.stack_samples(
-                    vals
-                )
+                vals = TestBaseDataTransformer.DataTransformerMock.stack_samples(vals)
             vals = scale * vals + translation
             if stack_samples:
-                vals = BaseDataTransformerTestCase.DataTransformerMock.unstack_samples(
+                vals = TestBaseDataTransformer.DataTransformerMock.unstack_samples(
                     vals, series=series
                 )
 
             if not mask_components and ("component_mask" in kwargs):
-                vals = BaseDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
-                    series, vals, kwargs["component_mask"]
+                vals = (
+                    TestBaseDataTransformer.DataTransformerMock.unapply_component_mask(
+                        series, vals, kwargs["component_mask"]
+                    )
                 )
 
             return series.with_values(vals)

@@ -1,12 +1,11 @@
 import pandas as pd
 import pytest
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import get_shared_times_bounds
 from darts.utils.timeseries_generation import linear_timeseries
 
 
-class GetSharedTimesBoundsTestCase(DartsBaseTestClass):
+class TestGetSharedTimesBounds:
     """
     Tests `get_shared_times_bounds` function defined in `darts.utils.data.tabularization`.
     """

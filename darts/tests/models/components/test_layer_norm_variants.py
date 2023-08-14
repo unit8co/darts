@@ -21,9 +21,8 @@ if TORCH_AVAILABLE:
         RINorm,
         RMSNorm,
     )
-    from darts.tests.base_test_class import DartsBaseTestClass
 
-    class LayerNormVariantsTestCase(DartsBaseTestClass):
+    class TestLayerNormVariants:
         def test_lnv(self):
             for layer_norm in [RMSNorm, LayerNorm, LayerNormNoBias]:
                 ln = layer_norm(4)

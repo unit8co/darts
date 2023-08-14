@@ -24,13 +24,12 @@ from darts.models import (
     RegressionModel,
     XGBModel,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
 
-class ShapExplainerTestCase(DartsBaseTestClass):
+class TestShapExplainer:
     np.random.seed(42)
 
     scaler = MinMaxScaler(feature_range=(-1, 1))
