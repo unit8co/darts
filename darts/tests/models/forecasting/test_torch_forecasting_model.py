@@ -598,11 +598,9 @@ if TORCH_AVAILABLE:
                     best=False,
                     map_location="cpu",
                 )
-            assert (
-                str(error_msg.value).startswith(
-                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-                    "incorrect"
-                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
             )
 
             # model with missing likelihood (as if user forgot them)
@@ -626,11 +624,9 @@ if TORCH_AVAILABLE:
                     best=False,
                     map_location="cpu",
                 )
-            assert (
-                str(error_msg.value).startswith(
-                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-                    "missing"
-                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "missing"
             )
 
             # model with a different likelihood
@@ -641,11 +637,9 @@ if TORCH_AVAILABLE:
                 model_other_likelihood.load_weights(
                     model_path_manual, map_location="cpu"
                 )
-            assert (
-                str(error_msg.value).startswith(
-                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-                    "incorrect"
-                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
             )
 
             # model with the same likelihood but different parameters
@@ -656,11 +650,9 @@ if TORCH_AVAILABLE:
                 model_same_likelihood_other_prior.load_weights(
                     model_path_manual, map_location="cpu"
                 )
-            assert (
-                str(error_msg.value).startswith(
-                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-                    "incorrect"
-                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
             )
 
         def test_load_weights_params_check(self):
@@ -714,11 +706,9 @@ if TORCH_AVAILABLE:
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_name)
-            assert (
-                str(error_msg.value).startswith(
-                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-                    "incorrect"
-                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
             )
 
             # different kernel size (cls specific parameter)
@@ -730,11 +720,9 @@ if TORCH_AVAILABLE:
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_name)
-            assert (
-                str(error_msg.value).startswith(
-                    "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-                    "incorrect"
-                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
             )
 
         def test_create_instance_new_model_no_name_set(self):
