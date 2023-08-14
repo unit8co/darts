@@ -1,4 +1,9 @@
-from typing import List, Literal, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd

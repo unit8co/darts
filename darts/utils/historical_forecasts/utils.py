@@ -1,5 +1,10 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
