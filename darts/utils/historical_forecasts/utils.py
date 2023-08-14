@@ -575,7 +575,7 @@ def _get_historical_forecast_boundaries(
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     start: Optional[Union[pd.Timestamp, float, int]],
-    start_format: Literal["positional_index", "value_index"],
+    start_format: Literal["position", "value"],
     forecast_horizon: int,
     overlap_end: bool,
     freq: pd.DateOffset,
