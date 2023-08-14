@@ -615,15 +615,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             steps available, all steps up until prediction time are used, as in default case. Needs to be at least
             `min_train_series_length`.
         start
-            Optionally, the first point in time at which a prediction is computed for a future time.
-            This parameter supports: ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
-            If a ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            If an ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time
-            directly.
-            If ``None``, the first prediction time will automatically be set to:
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
               predictable point is earlier than the first trainable point.
@@ -1101,25 +1100,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             steps available, all steps up until prediction time are used, as in default case. Needs to be at least
             `min_train_series_length`.
         start
-            Optionally, the first point in time at which a prediction is computed for a future time.
-            This parameter supports: ``float``, ``int`` and ``pandas.Timestamp``, and ``None``.
-            If a ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            If an ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time
-            directly.
-            If ``None``, the first prediction time will automatically be set to:
-                 - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
-                 predictable point is earlier than the first trainable point.
-
-                 - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
-                 or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
-
-                 - the first trainable point (given `train_length`) otherwise
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
-            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            For a detailed description of how the different data types are interpreted, please see the documentation
+            for `ForecastingModel.historical_forecasts`. Only used in expanding window mode.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
             `pd.RangeIndex`. For a detailed description this argument, please see the documentation for
@@ -1299,8 +1283,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride
             The number of time steps between two consecutive predictions. Only used in expanding window mode.
         start
-            The ``int``, ``float`` or ``pandas.Timestamp`` that represents the starting point in the time index
-            of `series` from which predictions will be made to evaluate the model.
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
             For a detailed description of how the different data types are interpreted, please see the documentation
             for `ForecastingModel.historical_forecasts`. Only used in expanding window mode.
         start_format
