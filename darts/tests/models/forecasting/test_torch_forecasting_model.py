@@ -598,7 +598,7 @@ if TORCH_AVAILABLE:
                     best=False,
                     map_location="cpu",
                 )
-            self.assertTrue(
+            assert (
                 str(error_msg.value).startswith(
                     "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                     "incorrect"
@@ -626,7 +626,7 @@ if TORCH_AVAILABLE:
                     best=False,
                     map_location="cpu",
                 )
-            self.assertTrue(
+            assert (
                 str(error_msg.value).startswith(
                     "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                     "missing"
@@ -641,7 +641,7 @@ if TORCH_AVAILABLE:
                 model_other_likelihood.load_weights(
                     model_path_manual, map_location="cpu"
                 )
-            self.assertTrue(
+            assert (
                 str(error_msg.value).startswith(
                     "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                     "incorrect"
@@ -656,14 +656,14 @@ if TORCH_AVAILABLE:
                 model_same_likelihood_other_prior.load_weights(
                     model_path_manual, map_location="cpu"
                 )
-            self.assertTrue(
+            assert (
                 str(error_msg.value).startswith(
                     "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                     "incorrect"
                 )
             )
 
-        def test_load_weights_from_checkpoint_params_check(self):
+        def test_load_weights_params_check(self):
             """
             Verify that the method comparing the parameters between the saved model and the loading model
             behave as expected, used to return meaningful error message instead of the torch.load ones.
@@ -675,6 +675,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=4,
                 output_chunk_length=1,
                 work_dir=self.temp_work_dir,
+                n_epochs=1,
             )
             model.fit(self.series[:10])
             model.save(ckpt_name)
@@ -713,7 +714,7 @@ if TORCH_AVAILABLE:
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_name)
-            self.assertTrue(
+            assert (
                 str(error_msg.value).startswith(
                     "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                     "incorrect"
@@ -729,7 +730,7 @@ if TORCH_AVAILABLE:
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_name)
-            self.assertTrue(
+            assert (
                 str(error_msg.value).startswith(
                     "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                     "incorrect"
