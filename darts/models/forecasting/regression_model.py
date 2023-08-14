@@ -902,7 +902,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
-        start_format: Literal["positional_index", "value_index"] = "value_index",
+        start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
         overlap_end: bool = False,

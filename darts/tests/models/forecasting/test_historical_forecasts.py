@@ -374,7 +374,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             "LocalForecastingModel does not support historical forecasting with `retrain` set to `False`"
         )
 
-    def test_historical_forecasts_positional_index_start(self):
+    def test_historical_forecasts_position_start(self):
         series = tg.sine_timeseries(length=10)
 
         model = LinearRegressionModel(lags=2)
@@ -382,14 +382,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         # negative index
         forecasts_neg = model.historical_forecasts(
-            series=series, start=-2, start_format="positional_index", retrain=False
+            series=series, start=-2, start_format="position", retrain=False
         )
         self.assertEqual(len(forecasts_neg), 2)
         self.assertTrue((series.time_index[-2:] == forecasts_neg.time_index).all())
 
         # positive index
         forecasts_pos = model.historical_forecasts(
-            series=series, start=8, start_format="positional_index", retrain=False
+            series=series, start=8, start_format="position", retrain=False
         )
         self.assertEqual(forecasts_pos, forecasts_neg)
 
@@ -403,14 +403,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         # start as point
         forecasts = model.historical_forecasts(
-            series=series, start=-2, start_format="value_index", retrain=False
+            series=series, start=-2, start_format="value", retrain=False
         )
         self.assertEqual(len(forecasts), 7)
         self.assertTrue((series.time_index[-7:] == forecasts.time_index).all())
 
         # start as index
         forecasts = model.historical_forecasts(
-            series=series, start=-2, start_format="positional_index", retrain=False
+            series=series, start=-2, start_format="position", retrain=False
         )
         self.assertEqual(len(forecasts), 2)
         self.assertTrue((series.time_index[-2:] == forecasts.time_index).all())
@@ -650,27 +650,27 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         # positional_index, predicting only the last position
         LinearRegressionModel(lags=1).historical_forecasts(
-            timeidx_, start=9, start_format="positional_index"
+            timeidx_, start=9, start_format="position"
         )
 
         # positional_index, predicting from the first position with retrain=True
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=-10, start_format="positional_index"
+                timeidx_, start=-10, start_format="position"
             )
         assert str(msg.value).endswith(", resulting in an empty training set.")
 
         # positional_index, beyond boundaries
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=10, start_format="positional_index"
+                timeidx_, start=10, start_format="position"
             )
         assert str(msg.value).startswith(
             "`start` index `10` is out of bounds for series of length 10"
         )
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=-11, start_format="positional_index"
+                timeidx_, start=-11, start_format="position"
             )
         assert str(msg.value).startswith(
             "`start` index `-11` is out of bounds for series of length 10"

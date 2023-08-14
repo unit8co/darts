@@ -68,10 +68,10 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-        if n.start_format == "positional_index":
+        if n.start_format == "position":
             raise_if_not(
                 isinstance(n.start, (int, np.int64)),
-                f"Since `start_format='index'`, `start` must be an integer, received {type(n.start)}",
+                f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}",
                 logger,
             )
 
@@ -108,7 +108,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     )
             elif isinstance(n.start, (int, np.int64)):
                 out_of_bound_error = False
-                if n.start_format == "positional_index":
+                if n.start_format == "position":
                     if (n.start > 0 and n.start >= len(series_)) or (
                         n.start < 0 and np.abs(n.start) > len(series_)
                     ):
@@ -142,7 +142,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         logger,
                     )
 
-            if n.start_format == "value_index":
+            if n.start_format == "value":
                 start = series_.get_timestamp_at_point(n.start)
             else:
                 start = series_.time_index[n.start]
@@ -396,7 +396,7 @@ def _adjust_historical_forecasts_time_index(
     forecast_horizon: int,
     overlap_end: bool,
     start: Optional[Union[pd.Timestamp, float, int]],
-    start_format: Literal["positional_index", "value_index"],
+    start_format: Literal["position", "value"],
     show_warnings: bool,
 ) -> TimeIndex:
     """
@@ -417,7 +417,7 @@ def _adjust_historical_forecasts_time_index(
 
     # when applicable, shift the start of the forecastable index based on `start`
     if start is not None:
-        if start_format == "value_index":
+        if start_format == "value":
             start_time_ = series.get_timestamp_at_point(start)
         else:
             start_time_ = series.time_index[start]
