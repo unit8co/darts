@@ -1,6 +1,11 @@
 from types import SimpleNamespace
 from typing import Any, Callable, Optional, Tuple, Union
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 
@@ -58,17 +63,23 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         if not isinstance(n.start, (float, int, np.int64, pd.Timestamp)):
             raise_log(
                 TypeError(
-                    "`start` needs to be either `float`, `int`, `pd.Timestamp` or `None`"
+                    "`start` must be either `float`, `int`, `pd.Timestamp` or `None`"
                 ),
                 logger,
             )
+
+        if n.start_format == "position":
+            raise_if_not(
+                isinstance(n.start, (int, np.int64)),
+                f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}",
+                logger,
+            )
+
         if isinstance(n.start, float):
             raise_if_not(
-                0.0 <= n.start <= 1.0, "`start` should be between 0.0 and 1.0.", logger
-            )
-        elif isinstance(n.start, (int, np.int64)):
-            raise_if_not(
-                n.start >= 0, "if `start` is an integer, must be `>= 0`.", logger
+                0.0 <= n.start <= 1.0,
+                "if `start` is a float, must be between 0.0 and 1.0.",
+                logger,
             )
 
         # verbose error messages
@@ -96,20 +107,24 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         logger,
                     )
             elif isinstance(n.start, (int, np.int64)):
-                if (
-                    series_.has_datetime_index
-                    or (series_.has_range_index and series_.freq == 1)
-                ) and n.start >= len(series_):
+                out_of_bound_error = False
+                if n.start_format == "position":
+                    if (n.start > 0 and n.start >= len(series_)) or (
+                        n.start < 0 and np.abs(n.start) > len(series_)
+                    ):
+                        out_of_bound_error = True
+                elif series_.has_datetime_index:
+                    if n.start >= len(series_):
+                        out_of_bound_error = True
+                elif n.start < series_.time_index[0]:
                     raise_log(
                         ValueError(
-                            f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
-                            f"at index: {idx}."
+                            f"`start` index `{n.start}` is smaller than the first index `{series_.time_index[0]}` "
+                            f"for series at index: {idx}."
                         ),
                         logger,
                     )
-                elif (
-                    series_.has_range_index and series_.freq > 1
-                ) and n.start > series_.time_index[-1]:
+                elif n.start > series_.time_index[-1]:
                     raise_log(
                         ValueError(
                             f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
@@ -118,7 +133,20 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         logger,
                     )
 
-            start = series_.get_timestamp_at_point(n.start)
+                if out_of_bound_error:
+                    raise_log(
+                        ValueError(
+                            f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
+                            f"at index: {idx}."
+                        ),
+                        logger,
+                    )
+
+            if n.start_format == "value":
+                start = series_.get_timestamp_at_point(n.start)
+            else:
+                start = series_.time_index[n.start]
+
             if n.retrain is not False and start == series_.start_time():
                 raise_log(
                     ValueError(
@@ -368,6 +396,7 @@ def _adjust_historical_forecasts_time_index(
     forecast_horizon: int,
     overlap_end: bool,
     start: Optional[Union[pd.Timestamp, float, int]],
+    start_format: Literal["position", "value"],
     show_warnings: bool,
 ) -> TimeIndex:
     """
@@ -388,7 +417,10 @@ def _adjust_historical_forecasts_time_index(
 
     # when applicable, shift the start of the forecastable index based on `start`
     if start is not None:
-        start_time_ = series.get_timestamp_at_point(start)
+        if start_format == "value":
+            start_time_ = series.get_timestamp_at_point(start)
+        else:
+            start_time_ = series.time_index[start]
         # ignore user-defined `start`
         if (
             not historical_forecasts_time_index[0]
@@ -543,6 +575,7 @@ def _get_historical_forecast_boundaries(
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     start: Optional[Union[pd.Timestamp, float, int]],
+    start_format: Literal["position", "value"],
     forecast_horizon: int,
     overlap_end: bool,
     freq: pd.DateOffset,
@@ -570,6 +603,7 @@ def _get_historical_forecast_boundaries(
         forecast_horizon=forecast_horizon,
         overlap_end=overlap_end,
         start=start,
+        start_format=start_format,
         show_warnings=show_warnings,
     )
 
