@@ -2,7 +2,6 @@ import copy
 import functools
 import itertools
 import math
-import unittest
 from unittest.mock import patch
 
 import numpy as np
@@ -1448,7 +1447,7 @@ class TestRegressionModels:
                 future_covariates=future_covariates[: -26 + req_future_offset],
             )
 
-    @unittest.skipUnless(lgbm_available, "requires lightgbm")
+    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @patch.object(
         darts.models.forecasting.lgbm.lgb.LGBMRegressor
         if lgbm_available
@@ -1885,7 +1884,7 @@ class TestRegressionModels:
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
 
-    @unittest.skipUnless(cb_available, "requires catboost")
+    @pytest.mark.skipif(not cb_available, reason="requires catboost")
     @patch.object(
         darts.models.forecasting.catboost_model.CatBoostRegressor
         if cb_available
@@ -1908,7 +1907,7 @@ class TestRegressionModels:
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
-    @unittest.skipUnless(lgbm_available, "requires lightgbm")
+    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     def test_quality_forecast_with_categorical_covariates(self):
         """Test case: two time series, a full sine wave series and a sine wave series
         with some irregularities every other period. Only models which use categorical
@@ -1984,7 +1983,7 @@ class TestRegressionModels:
                 ]
             )
 
-    @unittest.skipUnless(lgbm_available, "requires lightgbm")
+    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @pytest.mark.parametrize(
         "model",
         [
@@ -2025,7 +2024,7 @@ class TestRegressionModels:
                 future_covariates=future_covariates,
             )
 
-    @unittest.skipUnless(lgbm_available, "requires lightgbm")
+    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     def test_get_categorical_features_helper(self):
         """Test helper function responsible for retrieving indices of categorical features"""
         (
@@ -2048,7 +2047,7 @@ class TestRegressionModels:
             "product_id",
         ]
 
-    @unittest.skipUnless(lgbm_available, "requires lightgbm")
+    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @patch.object(
         darts.models.forecasting.lgbm.lgb.LGBMRegressor
         if lgbm_available

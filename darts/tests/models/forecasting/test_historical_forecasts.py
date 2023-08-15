@@ -1,5 +1,4 @@
 import itertools
-import unittest
 
 import numpy as np
 import pandas as pd
@@ -799,10 +798,7 @@ class TestHistoricalforecast:
         )
 
     @pytest.mark.slow
-    @unittest.skipUnless(
-        TORCH_AVAILABLE,
-        "Torch not available. auto start and multiple time series for torch models will be skipped.",
-    )
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)
     def test_torch_auto_start_multiple_no_cov(self, model_config):
         forecast_hrz = 10
@@ -1085,11 +1081,7 @@ class TestHistoricalforecast:
         assert forecasts_no_retrain[0].end_time() == expected_end
 
     @pytest.mark.slow
-    @unittest.skipUnless(
-        TORCH_AVAILABLE,
-        "Torch not available. auto start and multiple time series for torch models and covariates "
-        "will be skipped.",
-    )
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)
     def test_torch_auto_start_with_past_cov(self, model_config):
         forecast_hrz = 10
@@ -1178,11 +1170,7 @@ class TestHistoricalforecast:
         )
 
     @pytest.mark.slow
-    @unittest.skipUnless(
-        TORCH_AVAILABLE,
-        "Torch not available. auto start and multiple time series for torch models and covariates "
-        "will be skipped.",
-    )
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)
     def test_torch_auto_start_with_past_future_cov(self, model_config):
         forecast_hrz = 10
@@ -1245,11 +1233,7 @@ class TestHistoricalforecast:
             )
 
     @pytest.mark.slow
-    @unittest.skipUnless(
-        TORCH_AVAILABLE,
-        "Torch not available. auto start and multiple time series for torch models and covariates "
-        "will be skipped.",
-    )
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)
     def test_torch_auto_start_with_future_cov(self, model_config):
         forecast_hrz = 10

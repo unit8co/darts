@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -221,7 +219,7 @@ class TestEnsembleModels:
         with pytest.raises(ValueError):
             naive_ensemble.predict(n=4, predict_likelihood_parameters=True)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_predict_likelihood_parameters_univariate_naive_ensemble(self):
         m_proba_quantile1 = LinearRegressionModel(
             lags=2,
@@ -258,7 +256,7 @@ class TestEnsembleModels:
             < pred_ens["sine_q0.95"].values()
         )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_predict_likelihood_parameters_multivariate_naive_ensemble(self):
         m_proba_quantile1 = LinearRegressionModel(
             lags=2,
@@ -313,14 +311,14 @@ class TestEnsembleModels:
             < pred_ens["linear_q0.95"].values()
         )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_input_models_global_models(self):
         # one model is not instantiated
         with pytest.raises(ValueError):
             NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel])
         NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel(10, 2)])
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_global_models_univariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
@@ -335,7 +333,7 @@ class TestEnsembleModels:
         naive_ensemble.fit(self.series1)
         naive_ensemble.predict(5)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_global_models_multivariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
@@ -347,7 +345,7 @@ class TestEnsembleModels:
         naive_ensemble.fit(self.seq1)
         naive_ensemble.predict(n=5, series=self.seq1)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_global_models_multivariate_input_with_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
@@ -363,7 +361,7 @@ class TestEnsembleModels:
             n=2, series=predict_series, past_covariates=predict_covariates
         )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_input_models_mixed(self):
         # NaiveDrift is local, RNNModel is global
         naive_ensemble = NaiveEnsembleModel(
@@ -377,7 +375,7 @@ class TestEnsembleModels:
         with pytest.raises(ValueError):
             naive_ensemble.fit([self.series1, self.series2])
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_different_covariates_support(self):
         # AutoARIMA support future covariates only
         local_ensemble_one_covs = NaiveEnsembleModel(
@@ -502,9 +500,3 @@ class TestEnsembleModels:
                 ),
             ],
         )
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

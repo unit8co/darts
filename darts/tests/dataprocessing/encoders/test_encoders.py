@@ -1,5 +1,4 @@
 import copy
-import unittest
 from typing import Optional, Sequence
 
 import numpy as np
@@ -120,10 +119,7 @@ class TestEncoder:
         for ts in target_multi
     ]
 
-    @unittest.skipUnless(
-        TORCH_AVAILABLE,
-        "Torch not available. SequentialEncoder tests with models will be skipped.",
-    )
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_sequence_encoder_from_model_params(self):
         """test if sequence encoder is initialized properly from model params"""
         # valid encoder model parameters are ('past', 'future') for the main key and datetime attribute for sub keys
@@ -167,10 +163,7 @@ class TestEncoder:
         with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_type)
 
-    @unittest.skipUnless(
-        TORCH_AVAILABLE,
-        "Torch not available. SequentialEncoder tests with models will be skipped.",
-    )
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_encoder_sequence_train(self):
         """Test `SequentialEncoder.encode_train()` output"""
         # ====> Sequential Cyclic Encoder Tests <====
@@ -228,10 +221,7 @@ class TestEncoder:
                 list(fc.components), [f"comp{i}" for i in range(len(fc.components))]
             )
 
-    @unittest.skipUnless(
-        TORCH_AVAILABLE,
-        "Torch not available. SequentialEncoder tests with models will be skipped.",
-    )
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_encoder_sequence_inference(self):
         """Test `SequentialEncoder.encode_inference()` output"""
         # ==> test prediction <==

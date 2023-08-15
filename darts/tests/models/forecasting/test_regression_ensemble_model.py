@@ -1,4 +1,3 @@
-import unittest
 from typing import List, Union
 
 import numpy as np
@@ -70,7 +69,7 @@ class TestRegressionEnsembleModels:
     def get_local_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def get_global_models(self, output_chunk_length=5):
         return [
             RNNModel(
@@ -156,7 +155,7 @@ class TestRegressionEnsembleModels:
         with pytest.raises(ValueError):
             ensemble.fit(self.combined)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_torch_models_retrain(self):
         model1 = BlockRNNModel(
             input_chunk_length=12,
@@ -184,7 +183,7 @@ class TestRegressionEnsembleModels:
 
         assert round(abs(sum(forecast1.values() - forecast2.values())[0] - 0.0), 2) == 0
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_univar(self):
         ensemble_models = self.get_global_models(output_chunk_length=10)
         ensemble_models.append(RegressionModel(lags=1))
@@ -192,7 +191,7 @@ class TestRegressionEnsembleModels:
         ensemble.fit(series=self.combined)
         ensemble.predict(10)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_multivar_no_covariates(self):
         ensemble_models = self.get_global_models(output_chunk_length=10)
         ensemble_models.append(RegressionModel(lags=1))
@@ -200,7 +199,7 @@ class TestRegressionEnsembleModels:
         ensemble.fit(self.seq1)
         ensemble.predict(10, self.seq1)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_multivar_with_covariates(self):
         ensemble_models = self.get_global_models(output_chunk_length=10)
         ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
@@ -304,7 +303,7 @@ class TestRegressionEnsembleModels:
 
         return ts_sum1, ts_cov1, ts_sum2, ts_cov2
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_ensemble_models_denoising(self):
         # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
         # WARNING: this test isn't numerically stable, changing self.RANDOM_SEED can lead to exploding coefficients
@@ -333,7 +332,7 @@ class TestRegressionEnsembleModels:
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
         self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 3)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_ensemble_models_denoising_multi_input(self):
         # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
         # WARNING: this test isn't numerically stable, changing self.RANDOM_SEED can lead to exploding coefficients

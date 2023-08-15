@@ -1,5 +1,4 @@
 import random
-import unittest
 from itertools import product
 
 import numpy as np
@@ -322,7 +321,7 @@ class TestBacktesting:
         assert round(abs(error[0] - expected[0]), 4) == 0
         assert round(abs(error[1] - expected[1]), 4) == 0
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_backtest_regression(self):
         np.random.seed(4)
 
@@ -508,7 +507,7 @@ class TestBacktesting:
 
         assert score == recalculated_score, "The metric scores should match"
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_random_search(self):
         np.random.seed(1)
 
@@ -527,7 +526,7 @@ class TestBacktesting:
         assert type(result[2]) == float
         assert min(param_range) <= result[1]["lags"] <= max(param_range)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples_bad_arguments(self):
         dummy_series = get_dummy_series(ts_length=50)
 
@@ -550,7 +549,7 @@ class TestBacktesting:
                 params, dummy_series, forecast_horizon=1, n_random_samples=1.5
             )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples(self):
         np.random.seed(1)
 
@@ -568,7 +567,7 @@ class TestBacktesting:
         )
         assert len(percentage_sampled_result) == 37
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_jobs(self):
         """
         Testing that running gridsearch with multiple workers returns the same
@@ -618,7 +617,7 @@ class TestBacktesting:
 
             assert best_params1 == best_params2
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_multi(self):
         dummy_series = st(length=40, value_y_offset=10).stack(
             lt(length=40, end_value=20)

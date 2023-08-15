@@ -1,5 +1,3 @@
-import unittest
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -244,7 +242,3 @@ def _benchmark_dtw():
 
     cProfile.run("_dtw_exact()", sort="tottime")
     cProfile.run("_dtw_multigrid()", sort="tottime")
-
-
-if __name__ == "__main__":
-    unittest.main()
