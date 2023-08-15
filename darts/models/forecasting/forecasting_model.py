@@ -1102,12 +1102,29 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
             ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
-            For a detailed description of how the different data types are interpreted, please see the documentation
-            for `ForecastingModel.historical_forecasts`. Only used in expanding window mode.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+            (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
-            `pd.RangeIndex`. For a detailed description this argument, please see the documentation for
-            `ForecastingModel.historical_forecasts`.
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         forecast_horizon
             The forecast horizon for the point predictions.
         stride
@@ -1281,21 +1298,38 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon
             The integer value of the forecasting horizon. Activates expanding window mode.
         stride
-            The number of time steps between two consecutive predictions. Only used in expanding window mode.
+            Only used in expanding window mode. The number of time steps between two consecutive predictions.
         start
-            Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
-            For a detailed description of how the different data types are interpreted, please see the documentation
-            for `ForecastingModel.historical_forecasts`. Only used in expanding window mode.
+            Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.
+            This parameter supports: ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+            (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
-            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
-            `pd.RangeIndex`. For a detailed description this argument, please see the documentation for
-            `ForecastingModel.historical_forecasts`.
+            Only used in expanding window mode. Defines the `start` format. Only effective when `start` is an integer
+            and `series` is indexed with a `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         last_points_only
-            Whether to use the whole forecasts or only the last point of each forecast to compute the error. Only used
-            in expanding window mode.
+            Only used in expanding window mode. Whether to use the whole forecasts or only the last point of each
+            forecast to compute the error.
         show_warnings
-            Whether to show warnings related to the `start` parameter. Only used in expanding window mode.
+            Only used in expanding window mode. Whether to show warnings related to the `start` parameter.
         val_series
             The TimeSeries instance used for validation in split mode. If provided, this series must start right after
             the end of `series`; so that a proper comparison of the forecast can be made.
