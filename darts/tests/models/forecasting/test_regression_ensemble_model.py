@@ -143,7 +143,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         linreg2.fit(self.lin_series[:30])
 
         model_ens = RegressionEnsembleModel(
-            [linreg1, linreg2],
+            forecasting_models=[linreg1, linreg2],
             regression_train_n_points=10,
             retrain_forecasting_models=False,
         )
@@ -153,12 +153,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # retrain_forecasting_models=True requires all the model to be reset
         with self.assertRaises(ValueError):
             RegressionEnsembleModel(
-                [linreg1, linreg2],
+                forecasting_models=[linreg1, linreg2],
                 regression_train_n_points=10,
                 retrain_forecasting_models=True,
             )
         model_ens_ft = RegressionEnsembleModel(
-            [linreg1.untrained_model(), linreg2.untrained_model()],
+            forecasting_models=[linreg1.untrained_model(), linreg2.untrained_model()],
             regression_train_n_points=10,
             retrain_forecasting_models=True,
         )
@@ -197,7 +197,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             LinearRegressionModel(lags=3).fit(self.sine_series),
         ]
         ensemble = RegressionEnsembleModel(
-            forecasting_models,
+            forecasting_models=forecasting_models,
             regression_train_n_points=-1,
             retrain_forecasting_models=False,
         )

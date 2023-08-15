@@ -309,7 +309,7 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def _target_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
         """Average across the components, keep n_samples, rename components"""
-        n_forecasting_models = len(self.models)
+        n_forecasting_models = len(self.forecasting_models)
         n_components = series.n_components
         prediction_values = prediction.all_values(copy=False)
         target_values = np.zeros(
@@ -337,12 +337,12 @@ class NaiveEnsembleModel(EnsembleModel):
     def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
         """Average across the components after grouping by likelihood parameter, rename components"""
         # str or torch Likelihood
-        likelihood = getattr(self.models[0], "likelihood")
+        likelihood = getattr(self.forecasting_models[0], "likelihood")
         if isinstance(likelihood, str):
-            likelihood_n_params = self.models[0].num_parameters
+            likelihood_n_params = self.forecasting_models[0].num_parameters
         else:  # Likelihood
             likelihood_n_params = likelihood.num_parameters
-        n_forecasting_models = len(self.models)
+        n_forecasting_models = len(self.forecasting_models)
         n_components = series.n_components
         # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
         prediction_values = prediction.values(copy=False)
