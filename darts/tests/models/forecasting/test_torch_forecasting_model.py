@@ -299,18 +299,27 @@ if TORCH_AVAILABLE:
             }
 
             model_auto_save = self.helper_create_DLinearModel(
-                auto_name, save_checkpoints=True, add_encoders=encoders_past
+                work_dir=tmpdir_fn,
+                model_name=auto_name,
+                save_checkpoints=True,
+                add_encoders=encoders_past,
             )
             model_auto_save.fit(self.series, epochs=1)
 
             model_manual_save = self.helper_create_DLinearModel(
-                manual_name, save_checkpoints=False, add_encoders=encoders_past
+                work_dir=tmpdir_fn,
+                model_name=manual_name,
+                save_checkpoints=False,
+                add_encoders=encoders_past,
             )
             model_manual_save.fit(self.series, epochs=1)
             model_manual_save.save(model_path_manual)
 
             model_auto_save_other = self.helper_create_DLinearModel(
-                auto_name_other, save_checkpoints=True, add_encoders=encoders_other_past
+                work_dir=tmpdir_fn,
+                model_name=auto_name_other,
+                save_checkpoints=True,
+                add_encoders=encoders_other_past,
             )
             model_auto_save_other.fit(self.series, epochs=1)
 
@@ -319,7 +328,7 @@ if TORCH_AVAILABLE:
 
             # model with undeclared encoders
             model_no_enc = self.helper_create_DLinearModel(
-                "no_encoder", add_encoders=None
+                work_dir=tmpdir_fn, model_name="no_encoder", add_encoders=None
             )
             # weights were trained with encoders, new model must be instantiated with encoders
             with pytest.raises(ValueError):
@@ -351,7 +360,9 @@ if TORCH_AVAILABLE:
 
             # model with identical encoders (fittable)
             model_same_enc_noload = self.helper_create_DLinearModel(
-                "same_encoder_noload", add_encoders=encoders_past
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_noload",
+                add_encoders=encoders_past,
             )
             model_same_enc_noload.load_weights(
                 model_path_manual,
@@ -363,7 +374,9 @@ if TORCH_AVAILABLE:
                 model_same_enc_noload.predict(n=4, series=self.series)
 
             model_same_enc_load = self.helper_create_DLinearModel(
-                "same_encoder_load", add_encoders=encoders_past
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_load",
+                add_encoders=encoders_past,
             )
             model_same_enc_load.load_weights(
                 model_path_manual,
@@ -376,7 +389,9 @@ if TORCH_AVAILABLE:
 
             # model with different encoders (fittable)
             model_other_enc_load = self.helper_create_DLinearModel(
-                "other_encoder_load", add_encoders=encoders_other_past
+                work_dir=tmpdir_fn,
+                model_name="other_encoder_load",
+                add_encoders=encoders_other_past,
             )
             # cannot overwritte different declared encoders
             with pytest.raises(ValueError):
@@ -388,7 +403,9 @@ if TORCH_AVAILABLE:
 
             # model with different encoders but same dimensions (fittable)
             model_other_enc_noload = self.helper_create_DLinearModel(
-                "other_encoder_noload", add_encoders=encoders_other_past
+                work_dir=tmpdir_fn,
+                model_name="other_encoder_noload",
+                add_encoders=encoders_other_past,
             )
             model_other_enc_noload.load_weights(
                 model_path_manual,
@@ -413,7 +430,9 @@ if TORCH_AVAILABLE:
 
             # model with same encoders but no scaler (non-fittable)
             model_new_enc_noscaler_noload = self.helper_create_DLinearModel(
-                "same_encoder_noscaler", add_encoders=encoders_past_noscaler
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_noscaler",
+                add_encoders=encoders_past_noscaler,
             )
             model_new_enc_noscaler_noload.load_weights(
                 model_path_manual,
@@ -432,7 +451,8 @@ if TORCH_AVAILABLE:
 
             # model with same encoders but different transformer (fittable)
             model_new_enc_other_transformer = self.helper_create_DLinearModel(
-                "same_encoder_other_transform",
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_other_transform",
                 add_encoders=encoders_past_other_transformer,
             )
             # cannot overwritte different declared encoders
@@ -458,7 +478,9 @@ if TORCH_AVAILABLE:
 
             # model with encoders containing more components (fittable)
             model_new_enc_2_past = self.helper_create_DLinearModel(
-                "encoder_2_components_past", add_encoders=encoders_2_past
+                work_dir=tmpdir_fn,
+                model_name="encoder_2_components_past",
+                add_encoders=encoders_2_past,
             )
             # cannot overwritte different declared encoders
             with pytest.raises(ValueError):
@@ -477,7 +499,9 @@ if TORCH_AVAILABLE:
 
             # model with encoders containing past and future covs (fittable)
             model_new_enc_past_n_future = self.helper_create_DLinearModel(
-                "encoder_past_n_future", add_encoders=encoders_past_n_future
+                work_dir=tmpdir_fn,
+                model_name="encoder_past_n_future",
+                add_encoders=encoders_past_n_future,
             )
             # cannot overwritte different declared encoders
             with pytest.raises(ValueError):
@@ -514,7 +538,8 @@ if TORCH_AVAILABLE:
             )
 
             model_auto_save = self.helper_create_DLinearModel(
-                auto_name,
+                work_dir=tmpdir_fn,
+                model_name=auto_name,
                 save_checkpoints=True,
                 likelihood=GaussianLikelihood(prior_mu=0.5),
             )
@@ -522,7 +547,8 @@ if TORCH_AVAILABLE:
             pred_auto = model_auto_save.predict(n=4, series=self.series)
 
             model_manual_save = self.helper_create_DLinearModel(
-                manual_name,
+                work_dir=tmpdir_fn,
+                model_name=manual_name,
                 save_checkpoints=False,
                 likelihood=GaussianLikelihood(prior_mu=0.5),
             )
@@ -535,7 +561,9 @@ if TORCH_AVAILABLE:
 
             # model with identical likelihood
             model_same_likelihood = self.helper_create_DLinearModel(
-                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood",
+                likelihood=GaussianLikelihood(prior_mu=0.5),
             )
             model_same_likelihood.load_weights(model_path_manual, map_location="cpu")
             model_same_likelihood.predict(n=4, series=self.series)
@@ -543,7 +571,9 @@ if TORCH_AVAILABLE:
 
             # loading models weights with respective methods
             model_manual_same_likelihood = self.helper_create_DLinearModel(
-                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood",
+                likelihood=GaussianLikelihood(prior_mu=0.5),
             )
             model_manual_same_likelihood.load_weights(
                 model_path_manual, map_location="cpu"
@@ -553,7 +583,9 @@ if TORCH_AVAILABLE:
             )
 
             model_auto_same_likelihood = self.helper_create_DLinearModel(
-                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood",
+                likelihood=GaussianLikelihood(prior_mu=0.5),
             )
             model_auto_same_likelihood.load_weights_from_checkpoint(
                 auto_name, work_dir=tmpdir_fn, best=False, map_location="cpu"
@@ -565,7 +597,7 @@ if TORCH_AVAILABLE:
             assert preds_manual_from_weights == preds_auto_from_weights
             # model with explicitely no likelihood
             model_no_likelihood = self.helper_create_DLinearModel(
-                "no_likelihood", likelihood=None
+                work_dir=tmpdir_fn, model_name="no_likelihood", likelihood=None
             )
             with pytest.raises(ValueError) as error_msg:
                 model_no_likelihood.load_weights_from_checkpoint(
@@ -585,7 +617,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 model_name="no_likelihood_bis",
                 add_encoders=None,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=False,
                 random_state=42,
                 force_reset=True,
@@ -596,7 +628,7 @@ if TORCH_AVAILABLE:
             with pytest.raises(ValueError) as error_msg:
                 model_no_likelihood_bis.load_weights_from_checkpoint(
                     auto_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
                     map_location="cpu",
                 )
@@ -607,7 +639,9 @@ if TORCH_AVAILABLE:
 
             # model with a different likelihood
             model_other_likelihood = self.helper_create_DLinearModel(
-                "other_likelihood", likelihood=LaplaceLikelihood()
+                work_dir=tmpdir_fn,
+                model_name="other_likelihood",
+                likelihood=LaplaceLikelihood(),
             )
             with pytest.raises(ValueError) as error_msg:
                 model_other_likelihood.load_weights(
@@ -620,7 +654,9 @@ if TORCH_AVAILABLE:
 
             # model with the same likelihood but different parameters
             model_same_likelihood_other_prior = self.helper_create_DLinearModel(
-                "same_likelihood_other_prior", likelihood=GaussianLikelihood()
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood_other_prior",
+                likelihood=GaussianLikelihood(),
             )
             with pytest.raises(ValueError) as error_msg:
                 model_same_likelihood_other_prior.load_weights(
@@ -631,7 +667,7 @@ if TORCH_AVAILABLE:
                 "incorrect"
             )
 
-        def test_load_weights_params_check(self):
+        def test_load_weights_params_check(self, tmpdir_fn):
             """
             Verify that the method comparing the parameters between the saved model and the loading model
             behave as expected, used to return meaningful error message instead of the torch.load ones.
@@ -642,7 +678,7 @@ if TORCH_AVAILABLE:
             model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 n_epochs=1,
             )
             model.fit(self.series[:10])
@@ -652,7 +688,7 @@ if TORCH_AVAILABLE:
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
             )
             loading_model.load_weights(ckpt_name)
 
@@ -660,7 +696,7 @@ if TORCH_AVAILABLE:
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 optimizer_cls=torch.optim.AdamW,
             )
             loading_model.load_weights(ckpt_name)
@@ -669,7 +705,7 @@ if TORCH_AVAILABLE:
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 pl_trainer_kwargs={"enable_model_summary": False},
             )
             loading_model.load_weights(ckpt_name)
@@ -678,7 +714,7 @@ if TORCH_AVAILABLE:
             loading_model = DLinearModel(
                 input_chunk_length=4 + 1,
                 output_chunk_length=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_name)
@@ -692,7 +728,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=4,
                 output_chunk_length=1,
                 kernel_size=10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_name)
@@ -1288,7 +1324,7 @@ if TORCH_AVAILABLE:
                 )
             assert scores["worst"] > scores["suggested"]
 
-        def test_encoders(self):
+        def test_encoders(self, tmpdir_fn):
             series = linear_timeseries(length=10)
             pc = linear_timeseries(length=12)
             fc = linear_timeseries(length=13)
@@ -1296,9 +1332,10 @@ if TORCH_AVAILABLE:
             ns = [1, 3]
 
             model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
                 add_encoders={
                     "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-                }
+                },
             )
             model.fit(series)
             for n in ns:
@@ -1311,9 +1348,10 @@ if TORCH_AVAILABLE:
                     _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
             model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
                 add_encoders={
                     "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-                }
+                },
             )
             for n in ns:
                 model.fit(series, past_covariates=pc)
@@ -1325,9 +1363,10 @@ if TORCH_AVAILABLE:
                     _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
             model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
                 add_encoders={
                     "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-                }
+                },
             )
             for n in ns:
                 model.fit(series, future_covariates=fc)
@@ -1339,9 +1378,10 @@ if TORCH_AVAILABLE:
                     _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
             model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
                 add_encoders={
                     "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-                }
+                },
             )
             for n in ns:
                 model.fit(series, past_covariates=pc, future_covariates=fc)
@@ -1394,6 +1434,7 @@ if TORCH_AVAILABLE:
 
         def helper_create_DLinearModel(
             self,
+            work_dir: Optional[str] = None,
             model_name: str = "unitest_model",
             add_encoders: Optional[Dict] = None,
             save_checkpoints: bool = False,
@@ -1404,7 +1445,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 model_name=model_name,
                 add_encoders=add_encoders,
-                work_dir=self.temp_work_dir,
+                work_dir=work_dir,
                 save_checkpoints=save_checkpoints,
                 random_state=42,
                 force_reset=True,
