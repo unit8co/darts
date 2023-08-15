@@ -79,6 +79,23 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import ARIMA
+        >>> series = AirPassengersDataset().load()
+        >>> # define ARIMA parameters
+        >>> model = ARIMA(p=12, d=1, q=2)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[448.51505247],
+               [414.33118769],
+               [438.9181897 ],
+               [478.23775116],
+               [499.3940067 ],
+               [554.151738  ]])
         """
         super().__init__(add_encoders=add_encoders)
         self.order = p, d, q

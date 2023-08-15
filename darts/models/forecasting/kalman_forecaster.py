@@ -75,6 +75,23 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import KalmanForecaster
+        >>> series = AirPassengersDataset().load()
+        >>> # increasing the size of the state vector
+        >>> model = KalmanForecaster(dim_x=12)
+        >>> model.fit(series)
+        >>> pred = model.predict(26)
+        >>> pred.values()
+        array([[470.87664788],
+               [437.65504495],
+               [463.00699688],
+               [498.1041088 ],
+               [535.31300311],
+               [597.10971248]])
         """
         super().__init__(add_encoders=add_encoders)
         self.dim_x = dim_x

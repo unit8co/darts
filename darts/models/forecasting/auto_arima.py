@@ -62,6 +62,23 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import AutoARIMA
+        >>> series = AirPassengersDataset().load()
+        >>> # define some boundaries for the parameters
+        >>> model = AutoARIMA(start_p=8, max_p=12, start_q=1)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[447.46348905],
+               [414.15458208],
+               [442.00844015],
+               [483.42738436],
+               [506.05596196],
+               [561.68251165]])
         """
         super().__init__(add_encoders=add_encoders)
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)

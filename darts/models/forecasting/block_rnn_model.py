@@ -74,6 +74,27 @@ class _BlockRNNModule(PLPastCovariatesModule):
         -------
         y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
             Tensor containing the prediction at the last time step of the sequence.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import BlockRNNModel
+        >>> series = AirPassengersDataset().load()
+        >>> model = BlockRNNModel(
+        >>>             input_chunk_length=12,
+        >>>             output_chunk_length=6,
+        >>>             n_rnn_layers=2,
+        >>>             n_epochs=50,
+        >>>             )
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[5.66264695],
+               [6.0170242 ],
+               [6.95271513],
+               [5.65220405],
+               [6.96427217],
+               [6.21813972]])
         """
 
         super().__init__(**kwargs)

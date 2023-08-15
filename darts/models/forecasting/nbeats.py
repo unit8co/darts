@@ -722,6 +722,32 @@ class NBEATSModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] https://openreview.net/forum?id=r1ecqn4YwB
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NBEATSModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # changing the activation function of the encoder/decoder to LeakyReLU
+        >>> model = NBEATSModel(
+                        input_chunk_length=6,
+                        output_chunk_length=6,
+                        n_epochs=5,
+                        activation='LeakyReLU'
+                        )
+        >>> model.fit(target, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[ 929.78509085],
+               [1013.66339481],
+               [ 999.8843893 ],
+               [ 892.66032082],
+               [ 921.09781534],
+               [ 950.37965429]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

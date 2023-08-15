@@ -71,6 +71,25 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import ETTh2Dataset
+        >>> from darts.models import VARIMA
+        >>> # forecasting the High UseFul Load ("HUFL") and Oil Temperature ("OT")
+        >>> series = ETTh2Dataset().load()[:500][["HUFL", "OT"]]
+        >>> # no clear trend in the dataset
+        >>> model = VARIMA(trend="n")
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> # the two targets are predicted together
+        >>> pred.values()
+        array([[48.11908832, 47.94259927],
+               [49.85410722, 47.9768968 ],
+               [51.16256336, 47.99770988],
+               [52.14787078, 48.00830983],
+               [52.88837291, 48.01117491],
+               [53.44342041, 48.00818257]])
         """
         super().__init__(add_encoders=add_encoders)
         self.p = p

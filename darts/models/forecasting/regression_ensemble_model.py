@@ -71,6 +71,40 @@ class RegressionEnsembleModel(EnsembleModel):
         References
         ----------
         .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
+
+        Examples
+        --------
+        Deterministic forecasting
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import RegressionEnsembleModel, NaiveSeasonal, NaiveDrift, LinearRegressionModel
+        >>> series = AirPassengersDataset().load()
+        >>> model = RegressionEnsembleModel(
+                        forecasting_models = [NaiveSeasonal(K=12), NaiveDrift()],
+                        regression_train_n_points=20
+                        )
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[492.02657266],
+               [465.8913335 ],
+               [494.75724139],
+               [537.88270593],
+               [549.43343789],
+               [613.9482374 ]])
+
+        Probabilistic forecasting
+        >>> model = RegressionEnsembleModel(
+        >>>             forecasting_models = [NaiveSeasonal(K=12), NaiveDrift()],
+        >>>             regression_train_n_points=20,
+        >>>             regression_model=LinearRegressionModel(
+        >>>                     lags_future_covariates=[0],
+        >>>                     likelihood="quantile",
+        >>>                     quantiles=[0.05, 0.5, 0.95]
+        >>>                     )
+        >>> model.fit(series)
+        >>> pred = model.predict(6, num_samples=100)
+        >>> pred.all_values().shape
+        (6, 1, 100)
         """
         super().__init__(
             models=forecasting_models,

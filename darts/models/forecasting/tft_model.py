@@ -871,6 +871,33 @@ class TFTModel(MixedCovariatesTorchModel):
         ----------
         .. [1] https://arxiv.org/pdf/1912.09363.pdf
         ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import TFTModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> model = TFTModel(
+        >>>             input_chunk_length=6,
+        >>>             output_chunk_length=6,
+        >>>             n_epochs=5,
+        >>>             )
+        >>> # future_covariates is mandatory for `TFTModel`
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[0.09969039],
+               [0.27813781],
+               [0.45841935],
+               [0.15467635],
+               [0.17572287],
+               [0.55062653]])
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:

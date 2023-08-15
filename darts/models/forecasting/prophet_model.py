@@ -28,11 +28,17 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
-        cap: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        cap: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
-        floor: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        floor: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
         **prophet_kwargs,
     ):
@@ -124,6 +130,29 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import Prophet
+        >>> series = AirPassengersDataset().load()
+        >>> # supplying the seasonality information to improve accuracy
+        >>> model = Prophet(
+                        add_seasonalities={
+                            'name':"yearly_seasonality",
+                            'seasonal_periods':12,
+                            'fourier_order':20
+                            },
+                        )
+        >>> model.fit(target)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[469.84025187],
+               [465.97709479],
+               [493.98029195],
+               [493.66439198],
+               [498.16068783],
+               [540.44780324]])
         """
 
         super().__init__(add_encoders=add_encoders)

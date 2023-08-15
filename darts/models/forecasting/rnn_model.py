@@ -383,6 +383,32 @@ class RNNModel(DualCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import RNNModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # `training_length` > `input_chunk_length` to mimic inference constraints
+        >>> model = RNNModel(
+                        model="RNN",
+                        input_chunk_length=6,
+                        training_length=18,
+                        n_epochs=20,
+                        )
+        >>> model.fit(target, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[ 3.18922903],
+               [ 1.17791019],
+               [ 0.39992814],
+               [ 0.13277921],
+               [ 0.02523252],
+               [-0.01829086]])
         """
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}

@@ -402,6 +402,34 @@ class DLinearModel(MixedCovariatesTorchModel):
         ----------
         .. [1] Zeng, A., Chen, M., Zhang, L., & Xu, Q. (2022).
                Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import DLinearModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> # values corresponding to the forecasted period
+        >>> model = DLinearModel(
+                        input_chunk_length=6,
+                        output_chunk_length=6,
+                        n_epochs=20,
+                        )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[667.20957388],
+               [666.76986848],
+               [666.67733306],
+               [666.06625381],
+               [665.8529289 ],
+               [665.75320573]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

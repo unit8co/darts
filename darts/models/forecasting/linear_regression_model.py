@@ -96,6 +96,50 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
             `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
+
+        Examples
+        --------
+        Deterministic forecasting, using past/future covariates (optional)
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import LinearRegressionModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> # values corresponding to the forecasted period
+        >>> model = LinearRegressionModel(
+        >>>             lags=12,
+        >>>             lags_past_covariates=12,
+        >>>             lags_future_covariates=[0,1,2,3,4,5],
+        >>>             output_chunk_length=6,
+        >>>             )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[1005.72085839],
+               [1005.6548696 ],
+               [1005.65403772],
+               [1005.6846175 ],
+               [1005.75753605],
+               [1005.81830675]])
+
+        Probabilistic forecasting, without covariates
+        >>> # train the model with a quantile regression
+        >>> model = LinearRegressionModel(
+        >>>             lags=12,
+        >>>             output_chunk_length=6,
+        >>>             likelihood="quantile",
+        >>>             quantiles=[0.05, 0.5, 0.95]
+        >>>             )
+        >>> model.fit(target)
+        >>> pred = model.predict(6, num_samples=100)
+        >>> # forecast contains 100 samples for each forecasted timestamp
+        >>> pred.all_values().shape
+        (6, 1, 100)
         """
         self.kwargs = kwargs
         self._median_idx = None
