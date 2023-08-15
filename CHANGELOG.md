@@ -20,6 +20,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug when using `TFTExplainer` with a `TFTModel` running on GPU. [#1949](https://github.com/unit8co/darts/pull/1949) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug in `TorchForecastingModel.load_weights()` that raised an error when loading the weights from a valid architecture. [#1952](https://github.com/unit8co/darts/pull/1952) by [Antoine Madrona](https://github.com/madtoinou).
 
+### For developers of the library:
+
+**Improved**
+- Refactored all tests to use pytest instead of unittest. [#1950](https://github.com/unit8co/darts/pull/1950) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.25.0](https://github.com/unit8co/darts/tree/0.25.0) (2023-08-04)
 ### For users of the library:
