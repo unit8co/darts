@@ -5,7 +5,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
 
 logger = get_logger(__name__)
 
@@ -62,7 +62,7 @@ if TORCH_AVAILABLE:
         def test_fit(self):
             # Test basic fit()
             model = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, n_epochs=2
+                input_chunk_length=1, output_chunk_length=1, n_epochs=2, **tfm_kwargs
             )
             model.fit(self.series)
 
@@ -76,12 +76,14 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 force_reset=True,
+                **tfm_kwargs
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
                 model_name="unittest-model-lstm",
                 work_dir=self.temp_work_dir,
                 best=False,
+                map_location="cpu",
             )
             pred1 = model2.predict(n=6)
             pred2 = model_loaded.predict(n=6)
@@ -91,7 +93,11 @@ if TORCH_AVAILABLE:
 
             # Another random model should not
             model3 = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, model="RNN", n_epochs=2
+                input_chunk_length=1,
+                output_chunk_length=1,
+                model="RNN",
+                n_epochs=2,
+                **tfm_kwargs
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
@@ -108,7 +114,7 @@ if TORCH_AVAILABLE:
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
-                input_chunk_length=1, output_chunk_length=3, n_epochs=1
+                input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
             )
             model.fit(series)
             pred = model.predict(7)

@@ -109,7 +109,7 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
-        self.regression_model = regression_model
+        self.regression_model: RegressionModel = regression_model
 
         raise_if(
             regression_train_n_points == -1
@@ -154,7 +154,6 @@ class RegressionEnsembleModel(EnsembleModel):
             Optionally, a series or sequence of series specifying future-known covariates passed to the
             forecasting models
         """
-
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
@@ -204,8 +203,8 @@ class RegressionEnsembleModel(EnsembleModel):
 
         raise_if(
             train_n_points_too_big,
-            "`regression_train_n_points` parameter too big (must be smaller or "
-            "equal to the number of points in training_series)",
+            "`regression_train_n_points` parameter too big (must be strictly smaller than "
+            "the number of points in training_series)",
             logger,
         )
 
@@ -269,10 +268,10 @@ class RegressionEnsembleModel(EnsembleModel):
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]
@@ -283,6 +282,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 series=serie,
                 future_covariates=prediction,
                 num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for serie, prediction in zip(series, predictions)
         ]
@@ -300,11 +300,33 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
     ]:
         extreme_lags_ = super().extreme_lags
-        return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
+        # shift min_target_lag in the past to account for the regression model training set
+        if extreme_lags_[0] is None:
+            return (-self.train_n_points,) + extreme_lags_[1:]
+        else:
+            return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
+    @property
+    def output_chunk_length(self) -> int:
+        """Return the `output_chunk_length` of the regression model (ensembling layer)"""
+        return self.regression_model.output_chunk_length
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        """RegressionEnsembleModel supports likelihood parameters predictions if its regression model does"""
+        return self.regression_model.supports_likelihood_parameter_prediction
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return (
+            super().supports_multivariate
+            and self.regression_model.supports_multivariate
+        )
+
+    @property
     def _is_probabilistic(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model._is_probabilistic()
+        return self.regression_model._is_probabilistic

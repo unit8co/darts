@@ -64,7 +64,7 @@ task installPipLatest {
             commandLine "pip", "install", "pip-tools"
         }
         exec {
-            commandLine "pip-compile", "-o", "requirements-latest.txt"
+            commandLine "pip-compile", "requirements/core.txt", "requirements/notorch.txt", "requirements/torch.txt", "-o", "requirements-latest.txt"
         }
         exec {
             commandLine "pip", "install", "-r", "requirements-latest.txt"
@@ -80,7 +80,7 @@ void createPipInstallTask(String flavour) {
    }
 }
 
-String[] flavours = ["core", "dev", "torch", "release"];
+String[] flavours = ["core", "dev", "notorch", "torch", "release"];
 
 for(String flavour : flavours) {
     createPipInstallTask(flavour);
@@ -94,7 +94,7 @@ task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pip_core, pip_dev, pip_torch, pip_release
+    dependsOn pip_core, pip_dev, pip_notorch, pip_torch, pip_release
 }
 
 task lint_black(type: Exec) {
@@ -158,14 +158,16 @@ def exampleName=project.properties["exampleName"] ?: ""
 task checkExample(type: Exec) {
     dependsOn pipInstall, installLocally
     workingDir "./examples"
-    // exampleName must be passed with -PexampleName=FFT-examples.ipynb
-    commandLine "papermill", exampleName, exampleName
-
     doFirst {
         exec {
-            commandLine "jupyter", "nbextension", "enable", "--py", "widgetsnbextension"
+            commandLine "echo", "Installed packages"
+        }
+        exec {
+            commandLine "pip", "list"
         }
     }
+    // exampleName must be passed with -PexampleName=FFT-examples.ipynb
+    commandLine "papermill", exampleName, exampleName
 }
 
 // Documentation build
@@ -176,7 +178,7 @@ void docSteps() {
 }
 
 task buildDocs() {
-    dependsOn pip_core, pip_release, installLocally
+    dependsOn pip_notorch, pip_release, installLocally
     // dependsOn cleanDocs
     doLast {
         docSteps()

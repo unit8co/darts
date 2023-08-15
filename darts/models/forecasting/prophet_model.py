@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import prophet
 
-from darts.logging import execute_and_suppress_output, get_logger, raise_if
+from darts.logging import execute_and_suppress_output, get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
@@ -53,7 +53,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
                 dict({
                 'name': str  # (name of the seasonality component),
-                'seasonal_periods': int  # (nr of steps composing a season),
+                'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
                 'fourier_order': int  # (number of Fourier components to use),
                 'prior_scale': Optional[float]  # (a prior scale for this component),
                 'mode': Optional[str]  # ('additive' or 'multiplicative')
@@ -61,7 +61,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             ..
 
             An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
-            after 48 hours then set `seasonal_periods=48`.
+            after 48 hours then set `seasonal_periods=48`. Notice that this value will be multiplied by the inferred
+            number of days for the TimeSeries frequency (1 / 24 in this example) to be consistent with the
+            `add_seasonality()` method of Facebook Prophet, where the `period` parameter is specified in days.
 
             Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
             `add_seasonality()` method.
@@ -181,14 +183,20 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         interval_length = self._freq_to_days(series.freq_str)
+        conditional_seasonality_covariates = self._check_seasonality_conditions(
+            future_covariates=future_covariates
+        )
         for seasonality_name, attributes in self._add_seasonalities.items():
             self.model.add_seasonality(
                 name=seasonality_name,
                 period=attributes["seasonal_periods"] * interval_length,
                 fourier_order=attributes["fourier_order"],
+                prior_scale=attributes["prior_scale"],
+                mode=attributes["mode"],
+                condition_name=attributes["condition_name"],
             )
 
-        # add covariates
+        # add covariates as additional regressors
         if future_covariates is not None:
             fit_df = fit_df.merge(
                 future_covariates.pd_dataframe(),
@@ -197,7 +205,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 how="left",
             )
             for covariate in future_covariates.columns:
-                self.model.add_regressor(covariate)
+                if covariate not in conditional_seasonality_covariates:
+                    self.model.add_regressor(covariate)
 
         # add built-in country holidays
         if self.country_holidays is not None:
@@ -219,6 +228,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
+
+        _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
         super()._predict(n, future_covariates, num_samples)
 
@@ -267,6 +278,78 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
         return predict_df
 
+    def _check_seasonality_conditions(
+        self, future_covariates: Optional[TimeSeries] = None
+    ) -> List[str]:
+        """
+        Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
+        `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`
+        or if the values in the column are not all True or False, an error is raised.
+        Returns a list of the `condition_name`s of the conditional seasonalities that have been checked.
+
+        Parameters
+        ----------
+        future_covariates
+            optionally, a TimeSeries containing the future covariates and including the columns that are used as
+            conditions for the conditional seasonalities when necessary
+
+        Raises
+        ------
+        ValueError
+            if a seasonality has a `condition_name` and a column named `condition_name` is missing in
+            the `future_covariates`
+
+            if a seasonality has a `condition_name` and the values in the corresponding column in `future_covariates`
+            are not binary values (True or False, 1 or 0)
+        """
+
+        conditional_seasonality_covariates = []
+        invalid_conditional_seasonalities = []
+        if future_covariates is not None:
+            future_covariates_columns = future_covariates.columns
+        else:
+            future_covariates_columns = []
+
+        for seasonality_name, attributes in self._add_seasonalities.items():
+            condition_name = attributes["condition_name"]
+            if condition_name is not None:
+                if condition_name not in future_covariates_columns:
+                    invalid_conditional_seasonalities.append(
+                        (seasonality_name, condition_name, "column missing")
+                    )
+                    continue
+                if (
+                    not future_covariates[condition_name]
+                    .pd_series()
+                    .isin([True, False])
+                    .all()
+                ):
+                    invalid_conditional_seasonalities.append(
+                        (seasonality_name, condition_name, "invalid values")
+                    )
+                    continue
+                conditional_seasonality_covariates.append(condition_name)
+
+        if len(invalid_conditional_seasonalities) > 0:
+            formatted_issues_str = ", ".join(
+                f"'{name}' (condition_name: '{cond}'; issue: {reason})"
+                for name, cond, reason in invalid_conditional_seasonalities
+            )
+            raise_log(
+                ValueError(
+                    f"The following seasonalities have invalid conditions: {formatted_issues_str}. "
+                    f"Each conditional seasonality must be accompanied by a binary component/column in the "
+                    f"`future_covariates` with the same name as the `condition_name`"
+                ),
+                logger,
+            )
+        return conditional_seasonality_covariates
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
     def _is_probabilistic(self) -> bool:
         return True
 
@@ -314,31 +397,46 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def add_seasonality(
         self,
         name: str,
-        seasonal_periods: int,
+        seasonal_periods: Union[int, float],
         fourier_order: int,
         prior_scale: Optional[float] = None,
         mode: Optional[str] = None,
+        condition_name: Optional[str] = None,
     ) -> None:
         """Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
         after 48 hours -> `seasonal_periods=48`.
 
         Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
-        `add_seasonality()` method. For information about the parameters see:
-        `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+        `add_seasonality()` method.
+
+        To add conditional seasonalities, provide `condition_name` here, and add a boolean (binary) component/column
+        named `condition_name` to the `future_covariates` series passed to `fit()` and `predict()`.
+
+        For information about the parameters see:
+        `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`.
+        For more details on conditional seasonalities see:
+        https://facebook.github.io/prophet/docs/seasonality,_holiday_effects,_and_regressors.html#seasonalities-that-depend-on-other-factors
 
         Parameters
         ----------
         name
             name of the seasonality component
         seasonal_periods
-            number of timesteps after which the seasonal cycle repeats
+            number of timesteps after which the seasonal cycle repeats. This value will be multiplied by the inferred
+            number of days for the TimeSeries frequency (e.g. 365.25 for a yearly frequency) to be consistent with the
+            `add_seasonality()` method of Facebook Prophet. The inferred number of days can be obtained with
+            `model._freq_to_days(series.freq)`, where `model` is the `Prophet` model and `series` is the target series.
         fourier_order
             number of Fourier components to use
         prior_scale
             optionally, a prior scale for this component
         mode
             optionally, 'additive' or 'multiplicative'
+        condition_name
+            optionally, the name of the condition on which the seasonality depends. If not `None`, expects a
+            `future_covariates` time series with a component/column named `condition_name` to be passed to `fit()`
+            and `predict()`.
         """
         function_call = {
             "name": name,
@@ -346,6 +444,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             "fourier_order": fourier_order,
             "prior_scale": prior_scale,
             "mode": mode,
+            "condition_name": condition_name,
         }
         self._store_add_seasonality_call(seasonality_call=function_call)
 
@@ -373,10 +472,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seasonality_properties = {
             "name": {"default": None, "dtype": str},
-            "seasonal_periods": {"default": None, "dtype": int},
+            "seasonal_periods": {"default": None, "dtype": (int, float)},
             "fourier_order": {"default": None, "dtype": int},
             "prior_scale": {"default": None, "dtype": float},
             "mode": {"default": None, "dtype": str},
+            "condition_name": {"default": None, "dtype": str},
         }
         seasonality_default = {
             kw: seasonality_properties[kw]["default"] for kw in seasonality_properties
@@ -426,6 +526,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
             logger,
         )
+
         self._add_seasonalities[seasonality_name] = add_seasonality_call
 
     @staticmethod
@@ -495,6 +596,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
         return freq_times * days
 
+    @property
     def _supports_range_index(self) -> bool:
         """Prophet does not support integer range index."""
         raise_if(

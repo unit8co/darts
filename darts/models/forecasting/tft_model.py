@@ -26,7 +26,6 @@ from darts.models.forecasting.tft_submodels import (
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data import (
-    MixedCovariatesInferenceDataset,
     MixedCovariatesSequentialDataset,
     MixedCovariatesTrainingDataset,
     TrainingDataset,
@@ -325,6 +324,11 @@ class _TFTModule(PLMixedCovariatesModule):
 
         self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
+        self._attn_out_weights = None
+        self._static_covariate_var = None
+        self._encoder_sparse_weights = None
+        self._decoder_sparse_weights = None
+
     @property
     def reals(self) -> List[str]:
         """
@@ -406,18 +410,30 @@ class _TFTModule(PLMixedCovariatesModule):
 
     @staticmethod
     def get_attention_mask_future(
-        encoder_length: int, decoder_length: int, batch_size: int, device: str
+        encoder_length: int,
+        decoder_length: int,
+        batch_size: int,
+        device: str,
+        full_attention: bool,
     ) -> torch.Tensor:
         """
         Returns causal mask to apply for self-attention layer that acts on future input only.
+        The model will attend to all `False` values.
         """
-        # indices to which is attended
-        attend_step = torch.arange(decoder_length, device=device)
-        # indices for which is predicted
-        predict_step = torch.arange(0, decoder_length, device=device)[:, None]
-        # do not attend to steps to self or after prediction
-        decoder_mask = attend_step >= predict_step
-        # do not attend to past input
+        if full_attention:
+            # attend to entire past and future input
+            decoder_mask = torch.zeros(
+                (decoder_length, decoder_length), dtype=torch.bool, device=device
+            )
+        else:
+            # attend only to past steps relative to forecasting step in the future
+            # indices to which is attended
+            attend_step = torch.arange(decoder_length, device=device)
+            # indices for which is predicted
+            predict_step = torch.arange(0, decoder_length, device=device)[:, None]
+            # do not attend to steps to self or after prediction
+            decoder_mask = attend_step >= predict_step
+        # attend to all past input
         encoder_mask = torch.zeros(
             batch_size, encoder_length, dtype=torch.bool, device=device
         )
@@ -459,20 +475,13 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # avoid unnecessary regeneration of attention mask
         if batch_size != self.batch_size_last:
-            if self.full_attention:
-                self.attention_mask = self.get_attention_mask_full(
-                    time_steps=time_steps,
-                    batch_size=batch_size,
-                    dtype=x_cont_past.dtype,
-                    device=device,
-                )
-            else:
-                self.attention_mask = self.get_attention_mask_future(
-                    encoder_length=encoder_length,
-                    decoder_length=decoder_length,
-                    batch_size=batch_size,
-                    device=device,
-                )
+            self.attention_mask = self.get_attention_mask_future(
+                encoder_length=encoder_length,
+                decoder_length=decoder_length,
+                batch_size=batch_size,
+                device=device,
+                full_attention=self.full_attention,
+            )
             if self.add_relative_index:
                 self.relative_index = self.get_relative_index(
                     encoder_length=encoder_length,
@@ -544,6 +553,7 @@ class _TFTModule(PLMixedCovariatesModule):
                 dtype=x_cont_past.dtype,
                 device=device,
             )
+            static_covariate_var = None
 
         static_context_expanded = self.expand_static_context(
             context=self.static_context_grn(static_embedding), time_steps=time_steps
@@ -607,7 +617,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # multi-head attention
         attn_out, attn_out_weights = self.multihead_attn(
-            q=attn_input if self.full_attention else attn_input[:, encoder_length:],
+            q=attn_input[:, encoder_length:],
             k=attn_input,
             v=attn_input,
             mask=self.attention_mask,
@@ -616,7 +626,7 @@ class _TFTModule(PLMixedCovariatesModule):
         # skip connection over attention
         attn_out = self.post_attn_gan(
             x=attn_out,
-            skip=attn_input if self.full_attention else attn_input[:, encoder_length:],
+            skip=attn_input[:, encoder_length:],
         )
 
         # feed-forward
@@ -625,26 +635,18 @@ class _TFTModule(PLMixedCovariatesModule):
         # skip connection over temporal fusion decoder from LSTM post _GateAddNorm
         out = self.pre_output_gan(
             x=out,
-            skip=lstm_out if self.full_attention else lstm_out[:, encoder_length:],
+            skip=lstm_out[:, encoder_length:],
         )
 
         # generate output for n_targets and loss_size elements for loss evaluation
-        out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
+        out = self.output_layer(out)
         out = out.view(
             batch_size, self.output_chunk_length, self.n_targets, self.loss_size
         )
-
-        # TODO: (Darts) remember this in case we want to output interpretation
-        # return self.to_network_output(
-        #     prediction=self.transform_output(out, target_scale=x["target_scale"]),
-        #     attention=attn_out_weights,
-        #     static_variables=static_covariate_var,
-        #     encoder_variables=encoder_sparse_weights,
-        #     decoder_variables=decoder_sparse_weights,
-        #     decoder_lengths=decoder_lengths,
-        #     encoder_lengths=encoder_lengths,
-        # )
-
+        self._attn_out_weights = attn_out_weights
+        self._static_covariate_var = static_covariate_var
+        self._encoder_sparse_weights = encoder_sparse_weights
+        self._decoder_sparse_weights = decoder_sparse_weights
         return out
 
 
@@ -702,8 +704,8 @@ class TFTModel(MixedCovariatesTorchModel):
         num_attention_heads
             Number of attention heads (4 is a good default)
         full_attention
-            If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
-            only queries on future part. Defaults to ``False``.
+            If ``False``, only attends to previous time steps in the decoder. If ``True`` attends to previous,
+            current, and future time steps. Defaults to ``False``.
         feed_forward
             A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant's
             FeedForward Network (FFN)[2]. The glu variant's FeedForward Network are a series of FFNs designed to work
@@ -1122,23 +1124,9 @@ class TFTModel(MixedCovariatesTorchModel):
             "TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.",
         )
 
-    def _build_inference_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        n: int,
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-    ) -> MixedCovariatesInferenceDataset:
-
-        return MixedCovariatesInferenceDataset(
-            target_series=target,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            n=n,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            use_static_covariates=self.uses_static_covariates,
-        )
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     @property
     def supports_static_covariates(self) -> bool:

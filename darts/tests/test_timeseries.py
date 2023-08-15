@@ -10,7 +10,11 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
+from darts.utils.timeseries_generation import (
+    constant_timeseries,
+    generate_index,
+    linear_timeseries,
+)
 
 
 class TimeSeriesTestCase(DartsBaseTestClass):
@@ -1133,13 +1137,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             resampled_timeseries.pd_series().at[pd.Timestamp("20130109")], 8
         )
 
-        # using loffset to avoid nan in the first value
+        # using offset to avoid nan in the first value
         times = pd.date_range(
             start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
-        resampled_timeseries = timeseries.resample(freq="1h", loffset="30T")
+        resampled_timeseries = timeseries.resample(
+            freq="1h", offset=pd.Timedelta("30T")
+        )
         self.assertEqual(
             resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")], 0
         )
@@ -1150,9 +1156,41 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             TimeSeries.from_times_and_values(
                 pd.date_range("20130101", "20130102"), range(2), fill_missing_dates=True
             )
-        # test empty pandas series error
+        # test empty pandas series with DatetimeIndex
+        freq = "D"
+        # fails without freq
         with self.assertRaises(ValueError):
-            TimeSeries.from_series(pd.Series(dtype="object"), freq="D")
+            TimeSeries.from_series(pd.Series(index=pd.DatetimeIndex([])))
+        # works with index having freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([], freq=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([])), freq=freq
+        )
+        assert series_a == series_b
+
+        # test empty pandas series with DatetimeIndex
+        freq = 2
+        # fails pd.Index (IntIndex)
+        with self.assertRaises(ValueError):
+            TimeSeries.from_series(pd.Series(index=pd.Index([])))
+        # works with pd.RangeIndex as freq (step) is given by default (step=1)
+        series_a = TimeSeries.from_series(pd.Series(index=pd.RangeIndex(start=0)))
+        assert series_a.freq == 1
+        # works with RangeIndex of different freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0, step=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0)), freq=freq
+        )
+        assert series_a == series_b
+
         # frequency should be ignored when fill_missing_dates is False
         seriesA = TimeSeries.from_times_and_values(
             pd.date_range("20130101", "20130105"),
@@ -2167,6 +2205,28 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
 
         with self.assertRaises(AttributeError):
             TimeSeries.from_dataframe(df=df, time_col="Time")
+
+    def test_df_named_columns_index(self):
+        time_index = generate_index(
+            start=pd.Timestamp("2000-01-01"), length=4, freq="D", name="index"
+        )
+        df = pd.DataFrame(
+            data=np.arange(4),
+            index=time_index,
+            columns=["y"],
+        )
+        df.columns.name = "id"
+        ts = TimeSeries.from_dataframe(df)
+
+        exp_ts = TimeSeries.from_times_and_values(
+            times=time_index,
+            values=np.arange(4),
+            columns=["y"],
+        )
+        # check that series are exactly identical
+        self.assertEqual(ts, exp_ts)
+        # check that the original df was not changed
+        self.assertEqual(df.columns.name, "id")
 
 
 class SimpleStatisticsTestCase(DartsBaseTestClass):

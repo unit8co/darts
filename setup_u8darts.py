@@ -9,8 +9,9 @@ def read_requirements(path):
 
 base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
+no_torch_reqs = read_requirements("requirements/notorch.txt")
 
-all_reqs = base_reqs + torch_reqs
+all_reqs = base_reqs + torch_reqs + no_torch_reqs
 
 with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -28,7 +29,7 @@ PROJECT_URLS = {
 
 setup(
     name="u8darts",
-    version="0.24.0",
+    version="0.25.0",
     description="A python library for easy manipulation and forecasting of time series.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -39,7 +40,7 @@ setup(
     license="Apache License 2.0",
     packages=find_packages(),
     install_requires=base_reqs,
-    extras_require={"all": all_reqs, "torch": torch_reqs},
+    extras_require={"all": all_reqs, "torch": torch_reqs, "notorch": no_torch_reqs},
     package_data={
         "darts": ["py.typed"],
     },
