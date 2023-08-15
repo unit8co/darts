@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from unittest.mock import patch
 
 import numpy as np
@@ -261,25 +261,6 @@ if TORCH_AVAILABLE:
             for all but one test.
             Note: Using DLinear since it supports both past and future covariates
             """
-
-            def create_DLinearModel(
-                model_name: str,
-                save_checkpoints: bool = False,
-                add_encoders: Dict = None,
-            ):
-                return DLinearModel(
-                    input_chunk_length=4,
-                    output_chunk_length=1,
-                    kernel_size=5,
-                    model_name=model_name,
-                    add_encoders=add_encoders,
-                    work_dir=tmpdir_fn,
-                    save_checkpoints=save_checkpoints,
-                    random_state=42,
-                    force_reset=True,
-                    **tfm_kwargs,
-                )
-
             model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             auto_name = "save_auto"
@@ -317,18 +298,18 @@ if TORCH_AVAILABLE:
                 "transformer": Scaler(),
             }
 
-            model_auto_save = create_DLinearModel(
+            model_auto_save = self.helper_create_DLinearModel(
                 auto_name, save_checkpoints=True, add_encoders=encoders_past
             )
             model_auto_save.fit(self.series, epochs=1)
 
-            model_manual_save = create_DLinearModel(
+            model_manual_save = self.helper_create_DLinearModel(
                 manual_name, save_checkpoints=False, add_encoders=encoders_past
             )
             model_manual_save.fit(self.series, epochs=1)
             model_manual_save.save(model_path_manual)
 
-            model_auto_save_other = create_DLinearModel(
+            model_auto_save_other = self.helper_create_DLinearModel(
                 auto_name_other, save_checkpoints=True, add_encoders=encoders_other_past
             )
             model_auto_save_other.fit(self.series, epochs=1)
@@ -337,7 +318,9 @@ if TORCH_AVAILABLE:
             assert model_auto_save.predict(n=4) != model_auto_save_other.predict(n=4)
 
             # model with undeclared encoders
-            model_no_enc = create_DLinearModel("no_encoder", add_encoders=None)
+            model_no_enc = self.helper_create_DLinearModel(
+                "no_encoder", add_encoders=None
+            )
             # weights were trained with encoders, new model must be instantiated with encoders
             with pytest.raises(ValueError):
                 model_no_enc.load_weights_from_checkpoint(
@@ -367,7 +350,7 @@ if TORCH_AVAILABLE:
             )
 
             # model with identical encoders (fittable)
-            model_same_enc_noload = create_DLinearModel(
+            model_same_enc_noload = self.helper_create_DLinearModel(
                 "same_encoder_noload", add_encoders=encoders_past
             )
             model_same_enc_noload.load_weights(
@@ -379,7 +362,7 @@ if TORCH_AVAILABLE:
             with pytest.raises(ValueError):
                 model_same_enc_noload.predict(n=4, series=self.series)
 
-            model_same_enc_load = create_DLinearModel(
+            model_same_enc_load = self.helper_create_DLinearModel(
                 "same_encoder_load", add_encoders=encoders_past
             )
             model_same_enc_load.load_weights(
@@ -392,7 +375,7 @@ if TORCH_AVAILABLE:
             )
 
             # model with different encoders (fittable)
-            model_other_enc_load = create_DLinearModel(
+            model_other_enc_load = self.helper_create_DLinearModel(
                 "other_encoder_load", add_encoders=encoders_other_past
             )
             # cannot overwritte different declared encoders
@@ -404,7 +387,7 @@ if TORCH_AVAILABLE:
                 )
 
             # model with different encoders but same dimensions (fittable)
-            model_other_enc_noload = create_DLinearModel(
+            model_other_enc_noload = self.helper_create_DLinearModel(
                 "other_encoder_noload", add_encoders=encoders_other_past
             )
             model_other_enc_noload.load_weights(
@@ -429,7 +412,7 @@ if TORCH_AVAILABLE:
             model_other_enc_noload.predict(n=4, series=self.series)
 
             # model with same encoders but no scaler (non-fittable)
-            model_new_enc_noscaler_noload = create_DLinearModel(
+            model_new_enc_noscaler_noload = self.helper_create_DLinearModel(
                 "same_encoder_noscaler", add_encoders=encoders_past_noscaler
             )
             model_new_enc_noscaler_noload.load_weights(
@@ -448,7 +431,7 @@ if TORCH_AVAILABLE:
             model_new_enc_noscaler_noload.predict(n=4, series=self.series)
 
             # model with same encoders but different transformer (fittable)
-            model_new_enc_other_transformer = create_DLinearModel(
+            model_new_enc_other_transformer = self.helper_create_DLinearModel(
                 "same_encoder_other_transform",
                 add_encoders=encoders_past_other_transformer,
             )
@@ -474,7 +457,7 @@ if TORCH_AVAILABLE:
             model_new_enc_other_transformer.predict(n=4, series=self.series)
 
             # model with encoders containing more components (fittable)
-            model_new_enc_2_past = create_DLinearModel(
+            model_new_enc_2_past = self.helper_create_DLinearModel(
                 "encoder_2_components_past", add_encoders=encoders_2_past
             )
             # cannot overwritte different declared encoders
@@ -493,7 +476,7 @@ if TORCH_AVAILABLE:
                 )
 
             # model with encoders containing past and future covs (fittable)
-            model_new_enc_past_n_future = create_DLinearModel(
+            model_new_enc_past_n_future = self.helper_create_DLinearModel(
                 "encoder_past_n_future", add_encoders=encoders_past_n_future
             )
             # cannot overwritte different declared encoders
@@ -519,25 +502,6 @@ if TORCH_AVAILABLE:
             for all but one test.
             Note: Using DLinear since it supports both past and future covariates
             """
-
-            def create_DLinearModel(
-                model_name: str,
-                save_checkpoints: bool = False,
-                likelihood: Likelihood = None,
-            ):
-                return DLinearModel(
-                    input_chunk_length=4,
-                    output_chunk_length=1,
-                    kernel_size=5,
-                    model_name=model_name,
-                    work_dir=tmpdir_fn,
-                    save_checkpoints=save_checkpoints,
-                    likelihood=likelihood,
-                    random_state=42,
-                    force_reset=True,
-                    **tfm_kwargs,
-                )
-
             model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             auto_name = "save_auto"
@@ -549,7 +513,7 @@ if TORCH_AVAILABLE:
                 checkpoint_path_manual, checkpoint_file_name
             )
 
-            model_auto_save = create_DLinearModel(
+            model_auto_save = self.helper_create_DLinearModel(
                 auto_name,
                 save_checkpoints=True,
                 likelihood=GaussianLikelihood(prior_mu=0.5),
@@ -557,7 +521,7 @@ if TORCH_AVAILABLE:
             model_auto_save.fit(self.series, epochs=1)
             pred_auto = model_auto_save.predict(n=4, series=self.series)
 
-            model_manual_save = create_DLinearModel(
+            model_manual_save = self.helper_create_DLinearModel(
                 manual_name,
                 save_checkpoints=False,
                 likelihood=GaussianLikelihood(prior_mu=0.5),
@@ -570,7 +534,7 @@ if TORCH_AVAILABLE:
             assert np.array_equal(pred_auto.values(), pred_manual.values())
 
             # model with identical likelihood
-            model_same_likelihood = create_DLinearModel(
+            model_same_likelihood = self.helper_create_DLinearModel(
                 "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
             )
             model_same_likelihood.load_weights(model_path_manual, map_location="cpu")
@@ -578,7 +542,7 @@ if TORCH_AVAILABLE:
             # cannot check predictions since this model is not fitted, random state is different
 
             # loading models weights with respective methods
-            model_manual_same_likelihood = create_DLinearModel(
+            model_manual_same_likelihood = self.helper_create_DLinearModel(
                 "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
             )
             model_manual_same_likelihood.load_weights(
@@ -588,7 +552,7 @@ if TORCH_AVAILABLE:
                 n=4, series=self.series
             )
 
-            model_auto_same_likelihood = create_DLinearModel(
+            model_auto_same_likelihood = self.helper_create_DLinearModel(
                 "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
             )
             model_auto_same_likelihood.load_weights_from_checkpoint(
@@ -599,54 +563,150 @@ if TORCH_AVAILABLE:
             )
             # check that weights from checkpoint give identical predictions as weights from manual save
             assert preds_manual_from_weights == preds_auto_from_weights
-
-            # model with no likelihood
-            model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
-            with pytest.raises(ValueError):
+            # model with explicitely no likelihood
+            model_no_likelihood = self.helper_create_DLinearModel(
+                "no_likelihood", likelihood=None
+            )
+            with pytest.raises(ValueError) as error_msg:
                 model_no_likelihood.load_weights_from_checkpoint(
                     auto_name,
                     work_dir=tmpdir_fn,
                     best=False,
                     map_location="cpu",
                 )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
+
+            # model with missing likelihood (as if user forgot them)
+            model_no_likelihood_bis = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                model_name="no_likelihood_bis",
+                add_encoders=None,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=False,
+                random_state=42,
+                force_reset=True,
+                n_epochs=1,
+                # likelihood=likelihood,
+                **tfm_kwargs,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                model_no_likelihood_bis.load_weights_from_checkpoint(
+                    auto_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                    map_location="cpu",
+                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "missing"
+            )
 
             # model with a different likelihood
-            model_other_likelihood = create_DLinearModel(
+            model_other_likelihood = self.helper_create_DLinearModel(
                 "other_likelihood", likelihood=LaplaceLikelihood()
             )
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError) as error_msg:
                 model_other_likelihood.load_weights(
                     model_path_manual, map_location="cpu"
                 )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
 
             # model with the same likelihood but different parameters
-            model_same_likelihood_other_prior = create_DLinearModel(
+            model_same_likelihood_other_prior = self.helper_create_DLinearModel(
                 "same_likelihood_other_prior", likelihood=GaussianLikelihood()
             )
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError) as error_msg:
                 model_same_likelihood_other_prior.load_weights(
                     model_path_manual, map_location="cpu"
                 )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
+
+        def test_load_weights_params_check(self):
+            """
+            Verify that the method comparing the parameters between the saved model and the loading model
+            behave as expected, used to return meaningful error message instead of the torch.load ones.
+            """
+            model_name = "params_check"
+            ckpt_name = f"{model_name}.pt"
+            # barebone model
+            model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+                n_epochs=1,
+            )
+            model.fit(self.series[:10])
+            model.save(ckpt_name)
+
+            # identical model
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+            )
+            loading_model.load_weights(ckpt_name)
+
+            # different optimizer
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+                optimizer_cls=torch.optim.AdamW,
+            )
+            loading_model.load_weights(ckpt_name)
+
+            # different pl_trainer_kwargs
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+                pl_trainer_kwargs={"enable_model_summary": False},
+            )
+            loading_model.load_weights(ckpt_name)
+
+            # different input_chunk_length (tfm parameter)
+            loading_model = DLinearModel(
+                input_chunk_length=4 + 1,
+                output_chunk_length=1,
+                work_dir=self.temp_work_dir,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                loading_model.load_weights(ckpt_name)
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
+
+            # different kernel size (cls specific parameter)
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                kernel_size=10,
+                work_dir=self.temp_work_dir,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                loading_model.load_weights(ckpt_name)
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
 
         def test_create_instance_new_model_no_name_set(self, tmpdir_fn):
-            RNNModel(12, "RNN", 10, 10, work_dir=tmpdir_fn, **tfm_kwargs)
-            # no exception is raised
             RNNModel(12, "RNN", 10, 10, work_dir=tmpdir_fn, **tfm_kwargs)
             # no exception is raised
 
         def test_create_instance_existing_model_with_name_no_fit(self, tmpdir_fn):
             model_name = "test_model"
-            RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                work_dir=tmpdir_fn,
-                model_name=model_name,
-                **tfm_kwargs,
-            )
-            # no exception is raised
-
             RNNModel(
                 12,
                 "RNN",
@@ -1235,7 +1295,11 @@ if TORCH_AVAILABLE:
             # 1 == output_chunk_length, 3 > output_chunk_length
             ns = [1, 3]
 
-            model = self.helper_create_DLinearModel()
+            model = self.helper_create_DLinearModel(
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                }
+            )
             model.fit(series)
             for n in ns:
                 _ = model.predict(n=n)
@@ -1246,7 +1310,11 @@ if TORCH_AVAILABLE:
                 with pytest.raises(ValueError):
                     _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
-            model = self.helper_create_DLinearModel()
+            model = self.helper_create_DLinearModel(
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                }
+            )
             for n in ns:
                 model.fit(series, past_covariates=pc)
                 _ = model.predict(n=n)
@@ -1256,7 +1324,11 @@ if TORCH_AVAILABLE:
                 with pytest.raises(ValueError):
                     _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
-            model = self.helper_create_DLinearModel()
+            model = self.helper_create_DLinearModel(
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                }
+            )
             for n in ns:
                 model.fit(series, future_covariates=fc)
                 _ = model.predict(n=n)
@@ -1266,7 +1338,11 @@ if TORCH_AVAILABLE:
                 with pytest.raises(ValueError):
                     _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
-            model = self.helper_create_DLinearModel()
+            model = self.helper_create_DLinearModel(
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                }
+            )
             for n in ns:
                 model.fit(series, past_covariates=pc, future_covariates=fc)
                 _ = model.predict(n=n)
@@ -1316,13 +1392,23 @@ if TORCH_AVAILABLE:
                 **tfm_kwargs,
             )
 
-        def helper_create_DLinearModel(self):
+        def helper_create_DLinearModel(
+            self,
+            model_name: str = "unitest_model",
+            add_encoders: Optional[Dict] = None,
+            save_checkpoints: bool = False,
+            likelihood: Optional[Likelihood] = None,
+        ):
             return DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                add_encoders={
-                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-                },
+                model_name=model_name,
+                add_encoders=add_encoders,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=save_checkpoints,
+                random_state=42,
+                force_reset=True,
                 n_epochs=1,
+                likelihood=likelihood,
                 **tfm_kwargs,
             )
