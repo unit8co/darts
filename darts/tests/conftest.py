@@ -4,6 +4,14 @@ import tempfile
 
 import pytest
 
+tfm_kwargs = {
+    "pl_trainer_kwargs": {
+        "accelerator": "cpu",
+        "enable_progress_bar": False,
+        "enable_model_summary": False,
+    }
+}
+
 
 @pytest.fixture(scope="session", autouse=True)
 def set_up_tests(request):
@@ -32,14 +40,3 @@ def tmpdir_fn():
     temp_work_dir = tempfile.mkdtemp(prefix="darts")
     yield temp_work_dir
     shutil.rmtree(temp_work_dir)
-
-
-@pytest.fixture(scope="session")
-def tfm_kwargs():
-    return {
-        "pl_trainer_kwargs": {
-            "accelerator": "cpu",
-            "enable_progress_bar": False,
-            "enable_model_summary": False,
-        }
-    }

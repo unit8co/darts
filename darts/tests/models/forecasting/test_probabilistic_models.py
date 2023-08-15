@@ -18,7 +18,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.tests.base_test_class import tfm_kwargs
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -379,16 +379,25 @@ class TestProbabilisticModels:
             (QuantileRegression(), real_series, 0.2, 1),
         ]
 
-        @pytest.mark.parametrize("lkl_params", lkl_series)
-        def test_likelihoods_and_resulting_mean_forecasts(self, lkl_params):
+        @pytest.mark.parametrize("lkl_config", lkl_series)
+        def test_likelihoods_and_resulting_mean_forecasts(self, lkl_config):
             def _get_avgs(series):
                 return np.mean(series.all_values()[:, 0, :]), np.mean(
                     series.all_values()[:, 1, :]
                 )
 
-            lkl, series, diff1, diff2 = lkl_params
-            model = RNNModel(input_chunk_length=5, likelihood=lkl, **tfm_kwargs)
-            model.fit(series, epochs=50)
+            lkl, series, diff1, diff2 = lkl_config
+            seed = 142857
+            torch.manual_seed(seed=seed)
+            kwargs = {
+                "likelihood": lkl,
+                "n_epochs": 50,
+                "random_state": seed,
+                **tfm_kwargs,
+            }
+
+            model = RNNModel(input_chunk_length=5, **kwargs)
+            model.fit(series)
             pred = model.predict(n=50, num_samples=50)
 
             avgs_orig, avgs_pred = _get_avgs(series), _get_avgs(pred)
@@ -401,15 +410,9 @@ class TestProbabilisticModels:
                 "than expected on component 1 for distribution {}".format(lkl)
             )
 
-        @pytest.mark.slow
-        def test_predict_likelihood_parameters_univariate_torch_models(self):
-            """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
-            of the predictions contain the proper elements for univariate input.
-            """
-            # fix seed to avoid values outside of distribution's support
-            seed = 142857
-            torch.manual_seed(seed=seed)
-            list_lkl = [
+        @pytest.mark.parametrize(
+            "lkl_config",
+            [  # tuple of (likelihood, likelihood params)
                 (GaussianLikelihood(), [10, 1]),
                 (PoissonLikelihood(), [5]),
                 (DirichletLikelihood(), [torch.Tensor([0.3, 0.3, 0.3])]),
@@ -430,81 +433,69 @@ class TestProbabilisticModels:
                 (LogNormalLikelihood(), [0, 0.25]),
                 (WeibullLikelihood(), [1, 1.5]),
             ]
-            if not self.runs_on_m1:
-                list_lkl.append(
-                    (CauchyLikelihood(), [0, 1]),
-                )
+            + ([(CauchyLikelihood(), [0, 1])] if not runs_on_m1 else []),
+        )
+        def test_predict_likelihood_parameters_univariate_torch_models(
+            self, lkl_config
+        ):
+            """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
+            of the predictions contain the proper elements for univariate input.
+            """
+            lkl, lkl_params = lkl_config
+            # fix seed to avoid values outside of distribution's support
+            seed = 142857
+            torch.manual_seed(seed=seed)
+            kwargs = {
+                "likelihood": lkl,
+                "n_epochs": 1,
+                "random_state": seed,
+                **tfm_kwargs,
+            }
 
-            n_times = 100
+            n_times = 5
             n_comp = 1
             n_samples = 1
-            for lkl, lkl_params in list_lkl:
-                # QuantileRegression is not distribution
-                if isinstance(lkl, QuantileRegression):
-                    values = np.random.normal(
-                        loc=0, scale=1, size=(n_times, n_comp, n_samples)
-                    )
-                else:
-                    values = lkl._distr_from_params(lkl_params).sample(
-                        (n_times, n_comp, n_samples)
-                    )
-
-                    # Dirichlet must be handled sligthly differently since its multivariate
-                    if isinstance(lkl, DirichletLikelihood):
-                        values = torch.swapaxes(values, 1, 3)
-                        values = torch.squeeze(values, 3)
-                        lkl_params = lkl_params[0]
-
-                ts = TimeSeries.from_values(
-                    values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+            # QuantileRegression is not distribution
+            if isinstance(lkl, QuantileRegression):
+                values = np.random.normal(
+                    loc=0, scale=1, size=(n_times, n_comp, n_samples)
+                )
+            else:
+                values = lkl._distr_from_params(lkl_params).sample(
+                    (n_times, n_comp, n_samples)
                 )
 
-                # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
-                models = [
-                    RNNModel(
-                        4,
-                        "RNN",
-                        likelihood=lkl,
-                        n_epochs=1,
-                        random_state=seed,
-                        **tfm_kwargs,
-                    ),
-                    NBEATSModel(
-                        4,
-                        1,
-                        likelihood=lkl,
-                        n_epochs=1,
-                        random_state=seed,
-                        **tfm_kwargs,
-                    ),
-                    DLinearModel(
-                        4,
-                        1,
-                        likelihood=lkl,
-                        n_epochs=1,
-                        random_state=seed,
-                        **tfm_kwargs,
-                    ),
-                ]
+                # Dirichlet must be handled sligthly differently since its multivariate
+                if isinstance(lkl, DirichletLikelihood):
+                    values = torch.swapaxes(values, 1, 3)
+                    values = torch.squeeze(values, 3)
+                    lkl_params = lkl_params[0]
 
-                true_lkl_params = np.array(lkl_params)
-                for model in models:
-                    # univariate
-                    model.fit(ts)
-                    pred_lkl_params = model.predict(
-                        n=1, num_samples=1, predict_likelihood_parameters=True
-                    )
+            ts = TimeSeries.from_values(
+                values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+            )
 
-                    # check the dimensions, values require too much training
-                    assert pred_lkl_params.values().shape[1] == len(true_lkl_params)
+            # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
+            models = [
+                RNNModel(4, "RNN", training_length=4, **kwargs),
+                NBEATSModel(4, 1, **kwargs),
+                DLinearModel(4, 1, **kwargs),
+            ]
 
-        @pytest.mark.slow
-        def test_predict_likelihood_parameters_multivariate_torch_models(self):
-            """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
-            of the predictions contain the proper elements for multivariate inputs.
-            """
-            torch.manual_seed(seed=142857)
-            list_lkl = [
+            true_lkl_params = np.array(lkl_params)
+            for model in models:
+                # univariate
+                model.fit(ts)
+                pred_lkl_params = model.predict(
+                    n=1, num_samples=1, predict_likelihood_parameters=True
+                )
+
+                # check the dimensions, values require too much training
+                assert pred_lkl_params.values().shape[1] == len(true_lkl_params)
+
+        @pytest.mark.parametrize(
+            "lkl_config",
+            [
                 (
                     GaussianLikelihood(),
                     [10, 1],
@@ -523,43 +514,60 @@ class TestProbabilisticModels:
                         "dummy_1_q0.95",
                     ],
                 ),
-            ]
+            ],
+        )
+        def test_predict_likelihood_parameters_multivariate_torch_models(
+            self, lkl_config
+        ):
+            """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
+            of the predictions contain the proper elements for multivariate inputs.
+            """
+            lkl, lkl_params, comp_names = lkl_config
+            # fix seed to avoid values outside of distribution's support
 
-            n_times = 100
+            seed = 142857
+            torch.manual_seed(seed=seed)
+            kwargs = {
+                "likelihood": lkl,
+                "n_epochs": 1,
+                "random_state": seed,
+                **tfm_kwargs,
+            }
+
+            n_times = 5
             n_comp = 2
             n_samples = 1
-            for lkl, lkl_params, comp_names in list_lkl:
-                if isinstance(lkl, QuantileRegression):
-                    values = np.random.normal(
-                        loc=0, scale=1, size=(n_times, n_comp, n_samples)
-                    )
-                else:
-                    values = lkl._distr_from_params(lkl_params).sample(
-                        (n_times, n_comp, n_samples)
-                    )
-                ts = TimeSeries.from_values(
-                    values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+            if isinstance(lkl, QuantileRegression):
+                values = np.random.normal(
+                    loc=0, scale=1, size=(n_times, n_comp, n_samples)
                 )
+            else:
+                values = lkl._distr_from_params(lkl_params).sample(
+                    (n_times, n_comp, n_samples)
+                )
+            ts = TimeSeries.from_values(
+                values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+            )
 
-                # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
-                models = [
-                    RNNModel(4, "RNN", likelihood=lkl, n_epochs=1, **tfm_kwargs),
-                    TCNModel(4, 1, likelihood=lkl, n_epochs=1, **tfm_kwargs),
-                    DLinearModel(4, 1, likelihood=lkl, n_epochs=1, **tfm_kwargs),
-                ]
+            # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
+            models = [
+                RNNModel(4, "RNN", training_length=4, **kwargs),
+                TCNModel(4, 1, **kwargs),
+                DLinearModel(4, 1, **kwargs),
+            ]
 
-                for model in models:
-                    model.fit(ts)
-                    pred_lkl_params = model.predict(
-                        n=1, num_samples=1, predict_likelihood_parameters=True
-                    )
-                    # check the dimensions
-                    assert pred_lkl_params.values().shape[1] == n_comp * len(lkl_params)
-                    # check the component names
-                    assert list(pred_lkl_params.components) == comp_names, (
-                        f"Components names are not matching; expected {comp_names} "
-                        f"but received {list(pred_lkl_params.components)}"
-                    )
+            for model in models:
+                model.fit(ts)
+                pred_lkl_params = model.predict(
+                    n=1, num_samples=1, predict_likelihood_parameters=True
+                )
+                # check the dimensions
+                assert pred_lkl_params.values().shape[1] == n_comp * len(lkl_params)
+                # check the component names
+                assert list(pred_lkl_params.components) == comp_names, (
+                    f"Components names are not matching; expected {comp_names} "
+                    f"but received {list(pred_lkl_params.components)}"
+                )
 
         def test_predict_likelihood_parameters_wrong_args(self):
             # deterministic model

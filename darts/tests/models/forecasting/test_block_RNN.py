@@ -3,7 +3,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import tfm_kwargs
+from darts.tests.conftest import tfm_kwargs
 
 logger = get_logger(__name__)
 

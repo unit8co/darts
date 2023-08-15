@@ -18,7 +18,7 @@ from darts.models import (
     NaiveSeasonal,
     Theta,
 )
-from darts.tests.base_test_class import tfm_kwargs
+from darts.tests.conftest import tfm_kwargs
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt

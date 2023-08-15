@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 
 import pytest
 
@@ -121,36 +123,54 @@ ele_multi_series_dataset = DatasetLoaderCSV(
 )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def tmp_dir_dataset():
+    """Configures the DataLoaders to use a temporary directory for storing the datasets,
+    and removes the path at the end of all tests in this module."""
+    temp_work_dir = tempfile.mkdtemp(prefix="darts")
+    DatasetLoader._DEFAULT_DIRECTORY = temp_work_dir
+    yield temp_work_dir
+    shutil.rmtree(temp_work_dir)
+
+
 class TestDatasetLoader:
-    def tearDown(self):
-        # we need to remove the cached datasets between each test
-        default_directory = DatasetLoader._DEFAULT_DIRECTORY
-        for f in os.listdir(default_directory):
-            os.remove(os.path.join(default_directory, f))
-        os.rmdir(DatasetLoader._DEFAULT_DIRECTORY)
-
     @pytest.mark.slow
-    def test_ok_dataset(self):
-        for width, dataset_cls in zip(width_datasets, datasets):
-            dataset = dataset_cls()
-            ts: TimeSeries = dataset.load()
-            assert ts.width == width
+    @pytest.mark.parametrize("dataset_config", zip(width_datasets, datasets))
+    def test_ok_dataset(self, dataset_config, tmp_dir_dataset):
+        width, dataset_cls = dataset_config
+        dataset = dataset_cls()
+        assert dataset._DEFAULT_DIRECTORY == tmp_dir_dataset
+        ts: TimeSeries = dataset.load()
+        assert ts.width == width
+        assert os.path.exists(os.path.join(tmp_dir_dataset, dataset._metadata.name))
 
-    def test_hash(self):
+    def test_hash(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             wrong_hash_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
-    def test_uri(self):
+    def test_uri(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             wrong_url_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
-    def test_zip_uri(self):
+    def test_zip_uri(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             wrong_zip_url_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
-    def test_pre_process_fn(self):
+    def test_pre_process_fn(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             no_pre_process_fn_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
     def test_multi_series_dataset(self):
         # processing _to_multi_series takes a long time. Test function with 5 cols.

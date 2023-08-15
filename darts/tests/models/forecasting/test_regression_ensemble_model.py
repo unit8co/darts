@@ -19,7 +19,7 @@ from darts.models import (
     RegressionModel,
     Theta,
 )
-from darts.tests.base_test_class import tfm_kwargs
+from darts.tests.conftest import tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
