@@ -10,7 +10,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
-**Immproved**
+**Improved**
+- `TimeSeries` with a `RangeIndex` starting in the negative start are now supported by `historical_forecasts`. [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou).
+- Added a new argument `start_format` to `historical_forecasts()`, `backtest()` and `gridsearch` that allows to use an integer `start` either as the index position or index value/label for `series` indexed with a `pd.RangeIndex`. [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou).
 - Improvements to `EnsembleModel`:
   - 🔴 Renamed `EnsembleModel` and `NaiveEnsembleModel` constructor argument `models` to `forecasting_models`. [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
   - `EnsembleModel`, `RegressionEnsembleModel` and `NaiveEnsembleModel` accept pretrained `GlobalForecastingModel` as `forecasting_models` to facilitate ensembling of deep learning models. [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
