@@ -321,7 +321,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         target = self.ts_gaussian[:-3]
         future_covariates = self.ts_gaussian
 
-        add_encoders = {"custom": {"future": [lambda x: x.dayofweek]}}
+        # encoder must be named function for pickling
+        def extract_dayofweek(index):
+            return index.dayofweek
+
+        add_encoders = {"custom": {"future": [extract_dayofweek]}}
 
         # test some models that do not support encoders
         no_support_model_cls = [NaiveMean, Theta]
