@@ -459,7 +459,15 @@ class EnsembleModel(GlobalForecastingModel):
         """EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the
         same likelihood.
         """
-        return self._models_same_likelihood
+        return (
+            all(
+                [
+                    m.supports_likelihood_parameter_prediction
+                    for m in self.forecasting_models
+                ]
+            )
+            and self._models_same_likelihood
+        )
 
     @property
     def _is_probabilistic(self) -> bool:
