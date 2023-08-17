@@ -557,7 +557,7 @@ if TORCH_AVAILABLE:
             pred_manual = model_manual_save.predict(n=4, series=self.series)
 
             # predictions are identical when using the same likelihood
-            np.testing.assert_array_equal(pred_auto.values(), pred_manual.values())
+            assert np.array_equal(pred_auto.values(), pred_manual.values())
 
             # model with identical likelihood
             model_same_likelihood = self.helper_create_DLinearModel(
@@ -673,51 +673,46 @@ if TORCH_AVAILABLE:
             behave as expected, used to return meaningful error message instead of the torch.load ones.
             """
             model_name = "params_check"
-            ckpt_name = f"{model_name}.pt"
+            ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
             # barebone model
             model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=tmpdir_fn,
                 n_epochs=1,
             )
             model.fit(self.series[:10])
-            model.save(ckpt_name)
+            model.save(ckpt_path)
 
             # identical model
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=tmpdir_fn,
             )
-            loading_model.load_weights(ckpt_name)
+            loading_model.load_weights(ckpt_path)
 
             # different optimizer
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=tmpdir_fn,
                 optimizer_cls=torch.optim.AdamW,
             )
-            loading_model.load_weights(ckpt_name)
+            loading_model.load_weights(ckpt_path)
 
             # different pl_trainer_kwargs
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                work_dir=tmpdir_fn,
                 pl_trainer_kwargs={"enable_model_summary": False},
             )
-            loading_model.load_weights(ckpt_name)
+            loading_model.load_weights(ckpt_path)
 
             # different input_chunk_length (tfm parameter)
             loading_model = DLinearModel(
                 input_chunk_length=4 + 1,
                 output_chunk_length=1,
-                work_dir=tmpdir_fn,
             )
             with pytest.raises(ValueError) as error_msg:
-                loading_model.load_weights(ckpt_name)
+                loading_model.load_weights(ckpt_path)
             assert str(error_msg.value).startswith(
                 "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                 "incorrect"
@@ -728,10 +723,9 @@ if TORCH_AVAILABLE:
                 input_chunk_length=4,
                 output_chunk_length=1,
                 kernel_size=10,
-                work_dir=tmpdir_fn,
             )
             with pytest.raises(ValueError) as error_msg:
-                loading_model.load_weights(ckpt_name)
+                loading_model.load_weights(ckpt_path)
             assert str(error_msg.value).startswith(
                 "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
                 "incorrect"
