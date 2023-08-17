@@ -295,7 +295,7 @@ class RegressionEnsembleModel(EnsembleModel):
         if self.train_using_historical_forecasts:
             predictions = self._make_multiple_historical_forecasts(
                 train_n_points=self.train_n_points,
-                series=forecast_training,
+                series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 num_samples=self.train_num_samples,
