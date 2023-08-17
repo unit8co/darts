@@ -469,12 +469,8 @@ class TestMetrics:
         s12_stochastic = TimeSeries.from_times_and_values(
             s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
         )
-        assert (
-            round(abs(metrics.quantile_loss(s1, s12_stochastic, tau=1.0) - 0.0), 7) == 0
-        )
-        assert (
-            round(abs(metrics.quantile_loss(s2, s12_stochastic, tau=0.0) - 0.0), 7) == 0
-        )
+        assert round(metrics.quantile_loss(s1, s12_stochastic, tau=1.0), 7) == 0
+        assert round(metrics.quantile_loss(s2, s12_stochastic, tau=0.0), 7) == 0
 
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)

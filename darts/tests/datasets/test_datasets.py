@@ -62,7 +62,7 @@ if TORCH_AVAILABLE:
                 if isinstance(left, (pd.Series, pd.DataFrame)):
                     assert left.equals(right)
                 elif isinstance(left, np.ndarray):
-                    assert np.array_equal(left, right)
+                    np.testing.assert_array_equal(left, right)
                 elif isinstance(left, (list, TimeSeries)):
                     assert left == right
                 else:

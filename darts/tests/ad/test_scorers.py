@@ -1571,7 +1571,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test1 is the - log likelihood
-        assert abs(value_test1 - -np.log(norm.pdf(3, loc=0, scale=2))) < 1e-01
+        assert abs(value_test1 + np.log(norm.pdf(3, loc=0, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         gaussian_samples_2 = np.random.normal(loc=0, scale=2, size=10000)
@@ -1586,7 +1586,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test2 is the - log likelihood
-        assert abs(value_test2 - -np.log(norm.pdf(-2, loc=0, scale=2))) < 1e-01
+        assert abs(value_test2 + np.log(norm.pdf(-2, loc=0, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -1670,28 +1670,28 @@ class TestADAnomalyScorer:
         assert (
             abs(
                 score_w1.all_values().flatten()[0]
-                - -np.log(norm.pdf(1.5, loc=0, scale=2))
+                + np.log(norm.pdf(1.5, loc=0, scale=2))
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w1.all_values().flatten()[1]
-                - -np.log(norm.pdf(2.1, loc=0, scale=2))
+                + np.log(norm.pdf(2.1, loc=0, scale=2))
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w1.all_values().flatten()[2]
-                - -np.log(norm.pdf(0.1, loc=0, scale=2))
+                + np.log(norm.pdf(0.1, loc=0, scale=2))
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w1.all_values().flatten()[3]
-                - -np.log(norm.pdf(0.001, loc=0, scale=2))
+                + np.log(norm.pdf(0.001, loc=0, scale=2))
             )
             < 1e-01
         )
@@ -1761,7 +1761,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test1 is the - log likelihood
-        assert abs(value_test1 - -np.log(laplace.pdf(3, loc=0, scale=2))) < 1e-01
+        assert abs(value_test1 + np.log(laplace.pdf(3, loc=0, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         laplace_samples_2 = np.random.laplace(loc=0, scale=2, size=1000)
@@ -1776,7 +1776,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test2 is the - log likelihood
-        assert abs(value_test2 - -np.log(laplace.pdf(-2, loc=0, scale=2))) < 1e-01
+        assert abs(value_test2 + np.log(laplace.pdf(-2, loc=0, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -1866,28 +1866,28 @@ class TestADAnomalyScorer:
         assert (
             abs(
                 score_w1.all_values().flatten()[0]
-                - -np.log(laplace.pdf(1.5, loc=0, scale=2))
+                + np.log(laplace.pdf(1.5, loc=0, scale=2))
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w1.all_values().flatten()[1]
-                - -np.log(laplace.pdf(2, loc=0, scale=2))
+                + np.log(laplace.pdf(2, loc=0, scale=2))
             )
             < 0.5
         )
         assert (
             abs(
                 score_w1.all_values().flatten()[2]
-                - -np.log(laplace.pdf(0.1, loc=0, scale=2))
+                + np.log(laplace.pdf(0.1, loc=0, scale=2))
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w1.all_values().flatten()[3]
-                - -np.log(laplace.pdf(0.001, loc=0, scale=2))
+                + np.log(laplace.pdf(0.001, loc=0, scale=2))
             )
             < 1e-01
         )
@@ -1956,7 +1956,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test1 is the - log likelihood
-        assert abs(value_test1 - -np.log(expon.pdf(3, scale=2.0))) < 1e-01
+        assert abs(value_test1 + np.log(expon.pdf(3, scale=2.0))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         exponential_samples_2 = np.random.exponential(scale=2.0, size=1000)
@@ -1971,7 +1971,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test2 is the - log likelihood
-        assert abs(value_test2 - -np.log(expon.pdf(10, scale=2))) < 1e-01
+        assert abs(value_test2 + np.log(expon.pdf(10, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2056,19 +2056,19 @@ class TestADAnomalyScorer:
 
         # check values for window=1
         assert (
-            abs(score_w1.all_values().flatten()[0] - -np.log(expon.pdf(1.5, scale=2)))
+            abs(score_w1.all_values().flatten()[0] + np.log(expon.pdf(1.5, scale=2)))
             < 1e-01
         )
         assert (
-            abs(score_w1.all_values().flatten()[1] - -np.log(expon.pdf(2, scale=2)))
+            abs(score_w1.all_values().flatten()[1] + np.log(expon.pdf(2, scale=2)))
             < 1e-01
         )
         assert (
-            abs(score_w1.all_values().flatten()[2] - -np.log(expon.pdf(0.1, scale=2)))
+            abs(score_w1.all_values().flatten()[2] + np.log(expon.pdf(0.1, scale=2)))
             < 1e-01
         )
         assert (
-            abs(score_w1.all_values().flatten()[3] - -np.log(expon.pdf(0.001, scale=2)))
+            abs(score_w1.all_values().flatten()[3] + np.log(expon.pdf(0.001, scale=2)))
             < 1e-01
         )
 
@@ -2128,7 +2128,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test1 is the - log likelihood
-        assert abs(value_test1 - -np.log(gamma.pdf(3, 2, scale=2))) < 1e-01
+        assert abs(value_test1 + np.log(gamma.pdf(3, 2, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         gamma_samples_2 = np.random.gamma(2, scale=2, size=10000)
@@ -2141,7 +2141,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test2 is the - log likelihood
-        assert abs(value_test2 - -np.log(gamma.pdf(10, 2, scale=2))) < 1e-01
+        assert abs(value_test2 + np.log(gamma.pdf(10, 2, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2216,25 +2216,19 @@ class TestADAnomalyScorer:
 
         # check values for window=1
         assert (
-            abs(
-                score_w1.all_values().flatten()[0] - -np.log(gamma.pdf(1.5, 2, scale=2))
-            )
+            abs(score_w1.all_values().flatten()[0] + np.log(gamma.pdf(1.5, 2, scale=2)))
             < 1e-01
         )
         assert (
-            abs(score_w1.all_values().flatten()[1] - -np.log(gamma.pdf(2, 2, scale=2)))
+            abs(score_w1.all_values().flatten()[1] + np.log(gamma.pdf(2, 2, scale=2)))
             < 1e-01
         )
         assert (
-            abs(
-                score_w1.all_values().flatten()[2] - -np.log(gamma.pdf(0.5, 2, scale=2))
-            )
+            abs(score_w1.all_values().flatten()[2] + np.log(gamma.pdf(0.5, 2, scale=2)))
             < 1e-01
         )
         assert (
-            abs(
-                score_w1.all_values().flatten()[3] - -np.log(gamma.pdf(0.9, 2, scale=2))
-            )
+            abs(score_w1.all_values().flatten()[3] + np.log(gamma.pdf(0.9, 2, scale=2)))
             < 1e-01
         )
 
@@ -2300,7 +2294,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test1 is the - log likelihood
-        assert abs(value_test1 - -np.log(cauchy.pdf(3))) < 1e-01
+        assert abs(value_test1 + np.log(cauchy.pdf(3))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         cauchy_samples_2 = np.random.standard_cauchy(size=10000)
@@ -2313,7 +2307,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test2 is the - log likelihood
-        assert abs(value_test2 - -np.log(cauchy.pdf(-2))) < 1e-01
+        assert abs(value_test2 + np.log(cauchy.pdf(-2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2387,16 +2381,10 @@ class TestADAnomalyScorer:
         assert score_w2.width == 2
 
         # check values for window=1
-        assert (
-            abs(score_w1.all_values().flatten()[0] - -np.log(cauchy.pdf(1.5))) < 1e-01
-        )
-        assert abs(score_w1.all_values().flatten()[1] - -np.log(cauchy.pdf(2))) < 1e-01
-        assert (
-            abs(score_w1.all_values().flatten()[2] - -np.log(cauchy.pdf(0.5))) < 1e-01
-        )
-        assert (
-            abs(score_w1.all_values().flatten()[3] - -np.log(cauchy.pdf(0.9))) < 1e-01
-        )
+        assert abs(score_w1.all_values().flatten()[0] + np.log(cauchy.pdf(1.5))) < 1e-01
+        assert abs(score_w1.all_values().flatten()[1] + np.log(cauchy.pdf(2))) < 1e-01
+        assert abs(score_w1.all_values().flatten()[2] + np.log(cauchy.pdf(0.5))) < 1e-01
+        assert abs(score_w1.all_values().flatten()[3] + np.log(cauchy.pdf(0.9))) < 1e-01
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
         assert (
@@ -2454,7 +2442,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test1 is the - log likelihood
-        assert abs(value_test1 - -np.log(poisson.pmf(3, mu=1))) < 1e-02
+        assert abs(value_test1 + np.log(poisson.pmf(3, mu=1))) < 1e-02
 
         # test 2 univariate (len=1 and window=1)
         poisson_samples_2 = np.random.poisson(size=10000, lam=1)
@@ -2469,7 +2457,7 @@ class TestADAnomalyScorer:
         )
 
         # check if value_test2 is the - log likelihood
-        assert abs(value_test2 - -np.log(poisson.pmf(10, mu=1))) < 1e-01
+        assert abs(value_test2 + np.log(poisson.pmf(10, mu=1))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
@@ -2549,19 +2537,19 @@ class TestADAnomalyScorer:
 
         # check values for window=1
         assert (
-            abs(score_w1.all_values().flatten()[0] - -np.log(poisson.pmf(1, mu=1)))
+            abs(score_w1.all_values().flatten()[0] + np.log(poisson.pmf(1, mu=1)))
             < 1e-01
         )
         assert (
-            abs(score_w1.all_values().flatten()[1] - -np.log(poisson.pmf(2, mu=1)))
+            abs(score_w1.all_values().flatten()[1] + np.log(poisson.pmf(2, mu=1)))
             < 1e-01
         )
         assert (
-            abs(score_w1.all_values().flatten()[2] - -np.log(poisson.pmf(3, mu=1)))
+            abs(score_w1.all_values().flatten()[2] + np.log(poisson.pmf(3, mu=1)))
             < 1e-01
         )
         assert (
-            abs(score_w1.all_values().flatten()[3] - -np.log(poisson.pmf(4, mu=1)))
+            abs(score_w1.all_values().flatten()[3] + np.log(poisson.pmf(4, mu=1)))
             < 1e-01
         )
 

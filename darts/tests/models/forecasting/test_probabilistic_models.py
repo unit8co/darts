@@ -616,4 +616,4 @@ class TestProbabilisticModels:
             preds = [model.predict(series=stochastic_series, n=10) for _ in range(2)]
 
             # random samples should differ
-            assert not np.alltrue(preds[0].values() == preds[1].values())
+            assert not np.array_equal(preds[0].values(), preds[1].values())

@@ -775,6 +775,7 @@ class TestHistoricalforecast:
             if model_diff.supports_future_covariates
             else None,
         )
+        # no parametrization to save time on model training at the cost of test granularity
         for model in [model_same, model_diff]:
             for last_points_only in [True, False]:
                 for stride in [1, 2]:

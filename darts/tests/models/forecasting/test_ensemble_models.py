@@ -120,7 +120,9 @@ class TestEnsembleModels:
         theta.fit(self.series1 + self.series2)
         forecast_mean = 0.5 * naive.predict(5) + 0.5 * theta.predict(5)
 
-        assert np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
+        np.testing.assert_array_equal(
+            forecast_naive_ensemble.values(), forecast_mean.values()
+        )
 
     def test_predict_multivariate_ensemble_local_models(self):
         multivariate_series = self.series1.stack(self.series2)
@@ -134,7 +136,9 @@ class TestEnsembleModels:
         seasonal2.fit(multivariate_series)
         forecast_mean = 0.5 * seasonal1.predict(5) + 0.5 * seasonal2.predict(5)
 
-        assert np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
+        np.testing.assert_array_equal(
+            forecast_naive_ensemble.values(), forecast_mean.values()
+        )
         assert all(forecast_naive_ensemble.components == multivariate_series.components)
 
     def test_stochastic_naive_ensemble(self):
@@ -178,7 +182,9 @@ class TestEnsembleModels:
 
         assert forecast_mean.values().shape == pred_proba_many_sample.values().shape
         assert forecast_mean.n_samples == pred_proba_many_sample.n_samples
-        assert np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
+        np.testing.assert_array_equal(
+            pred_proba_many_sample.values(), forecast_mean.values()
+        )
 
     def test_predict_likelihood_parameters_wrong_args(self):
         m_deterministic = LinearRegressionModel(lags=2, output_chunk_length=2)

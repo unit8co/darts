@@ -14,10 +14,8 @@ def verify_shape(dataset, rows, cols):
 
 class TestClassTrainTestSplit:
     def test_parameters_for_axis_0(self):
-        train_test_split(make_dataset(2, 10), axis=0, test_size=1)
-
         # expecting no exception
-        assert True
+        train_test_split(make_dataset(2, 10), axis=0, test_size=1)
 
     def test_parameters_for_axis_1_no_n(self):
         with pytest.raises(AttributeError) as err:

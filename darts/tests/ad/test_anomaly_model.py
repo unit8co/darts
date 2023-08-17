@@ -101,7 +101,7 @@ class TestADAnomalyModel:
             ]:
 
                 # scorer are trainable
-                assert anomaly_model.scorers_are_trainable is False
+                assert not anomaly_model.scorers_are_trainable
 
         list_FittableAnomalyScorer = [
             PyODScorer(model=KNN()),
@@ -118,7 +118,7 @@ class TestADAnomalyModel:
             ]:
 
                 # scorer are not trainable
-                assert anomaly_model.scorers_are_trainable is True
+                assert anomaly_model.scorers_are_trainable
 
     def test_Score(self):
 
@@ -263,16 +263,24 @@ class TestADAnomalyModel:
             ).score(series=self.test)
 
         # forecasting model that do not accept past/future covariates
-        # with pytest.raises(ValueError):
-        #    ForecastingAnomalyModel(model=ExponentialSmoothing(),
-        #       scorer=NormScorer()).fit(
-        #           series=self.train, past_covariates=self.covariates, allow_model_training=True
-        #       )
-        # with pytest.raises(ValueError):
-        #    ForecastingAnomalyModel(model=ExponentialSmoothing(),
-        #       scorer=NormScorer()).fit(
-        #           series=self.train, future_covariates=self.covariates, allow_model_training=True
-        #       )
+        anomaly_model = ForecastingAnomalyModel(
+            model=NaiveSeasonal(), scorer=NormScorer()
+        )
+        with pytest.raises(TypeError):
+            anomaly_model.fit(
+                series=self.train,
+                past_covariates=self.covariates,
+                allow_model_training=True,
+            )
+        anomaly_model = ForecastingAnomalyModel(
+            model=NaiveSeasonal(), scorer=NormScorer()
+        )
+        with pytest.raises(TypeError):
+            anomaly_model.fit(
+                series=self.train,
+                future_covariates=self.covariates,
+                allow_model_training=True,
+            )
 
         # check window size
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1

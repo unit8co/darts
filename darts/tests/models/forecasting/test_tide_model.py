@@ -23,7 +23,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TestTiDEModelModel:
+    class TestTiDEModel:
         np.random.seed(42)
         torch.manual_seed(42)
 

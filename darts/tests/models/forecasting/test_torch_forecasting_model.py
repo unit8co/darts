@@ -557,7 +557,7 @@ if TORCH_AVAILABLE:
             pred_manual = model_manual_save.predict(n=4, series=self.series)
 
             # predictions are identical when using the same likelihood
-            assert np.array_equal(pred_auto.values(), pred_manual.values())
+            np.testing.assert_array_equal(pred_auto.values(), pred_manual.values())
 
             # model with identical likelihood
             model_same_likelihood = self.helper_create_DLinearModel(

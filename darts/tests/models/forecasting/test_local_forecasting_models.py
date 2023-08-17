@@ -271,11 +271,9 @@ class TestLocalForecastingModels:
             [target_dt_idx, target_num_idx], [fc_dt_idx, fc_num_idx]
         ):
             if isinstance(target.time_index, pd.RangeIndex):
-                try:
-                    # _supports_range_index raises a ValueError if model does not support RangeIndex
-                    model._supports_range_index
-                except ValueError:
-                    continue
+                # _supports_range_index raises a ValueError if model does not support RangeIndex
+                with pytest.raises(ValueError):
+                    _ = model._supports_range_index
 
             # Test models runnability - proper future covariates slicing
             model.fit(target, future_covariates=future_covariates)
@@ -478,7 +476,7 @@ class TestLocalForecastingModels:
         model.predict(n=pred_len, series=series2, future_covariates=exog2)
         pred3 = model.predict(n=pred_len, future_covariates=exog1)
 
-        assert np.array_equal(pred1.values(), pred3.values())
+        np.testing.assert_array_equal(pred1.values(), pred3.values())
         model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
     @patch("typing.Callable", autospec=retrain_func, return_value=True)

@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -74,7 +75,7 @@ if TORCH_AVAILABLE:
             pred2 = model_loaded.predict(n=6)
 
             # Two models with the same parameters should deterministically yield the same output
-            assert sum(pred1.values() - pred2.values()) == 0.0
+            np.testing.assert_array_equal(pred1.values(), pred2.values())
 
             # Another random model should not
             model3 = TransformerModel(
@@ -82,7 +83,7 @@ if TORCH_AVAILABLE:
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
-            assert sum(pred1.values() - pred3.values()) != 0.0
+            assert not np.array_equal(pred1.values(), pred3.values())
 
             # test short predict
             pred4 = model3.predict(n=1)

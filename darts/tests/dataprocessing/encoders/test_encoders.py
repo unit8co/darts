@@ -939,7 +939,7 @@ class TestEncoder:
                         past_covs[f"darts_enc_pc_cyc_minute_{curve}"]
                         .all_values(copy=False)
                         .min()
-                        - -1.0
+                        + 1.0
                     )
                     < 1e-9
                 )
@@ -1126,9 +1126,9 @@ class TestEncoder:
             [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
         ):
             if "pc" in cov_name:
-                assert abs(covs[0][cov_name].values(copy=False).min() - -2.5) < 10e-9
+                assert abs(covs[0][cov_name].values(copy=False).min() + 2.5) < 10e-9
             else:
-                assert abs(covs[0][cov_name].values(copy=False).min() - -1.0) < 10e-9
+                assert abs(covs[0][cov_name].values(copy=False).min() + 1.0) < 10e-9
             assert abs(covs[0][cov_name].values(copy=False).max() - 1.0) < 10e-9
             assert abs(covs[1][cov_name].values(copy=False).min() - 0.0) < 10e-9
             assert abs(covs[1][cov_name].values(copy=False).max() - 1.0) < 10e-9

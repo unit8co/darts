@@ -521,9 +521,9 @@ class TestBacktesting:
             params, dummy_series, forecast_horizon=1, n_random_samples=5
         )
 
-        assert type(result[0]) == RandomForest
-        assert type(result[1]["lags"]) == int
-        assert type(result[2]) == float
+        assert isinstance(result[0], RandomForest)
+        assert isinstance(result[1]["lags"], int)
+        assert isinstance(result[2], float)
         assert min(param_range) <= result[1]["lags"] <= max(param_range)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")

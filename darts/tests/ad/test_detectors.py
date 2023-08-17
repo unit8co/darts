@@ -291,7 +291,7 @@ class TestADDetectors:
         binary_detection = detector.detect(self.test)
 
         # Return of .detect() must be binary
-        assert np.array_equal(
+        np.testing.assert_array_equal(
             binary_detection.values(copy=False),
             binary_detection.values(copy=False).astype(bool),
         )
@@ -591,7 +591,7 @@ class TestADDetectors:
         binary_detection = detector.detect(self.test)
 
         # Return of .detect() must be binary
-        assert np.array_equal(
+        np.testing.assert_array_equal(
             binary_detection.values(copy=False),
             binary_detection.values(copy=False).astype(bool),
         )
