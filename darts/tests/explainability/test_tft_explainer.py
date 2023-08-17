@@ -8,7 +8,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -25,7 +25,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TFTExplainerTestCase(DartsBaseTestClass):
+    class TestTFTExplainer:
         freq = "MS"
         series_lin_pos = tg.linear_timeseries(
             length=10, freq=freq

@@ -1,6 +1,6 @@
-import logging
-import unittest
 from typing import Any, Mapping
+
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing import Pipeline
@@ -14,13 +14,7 @@ from darts.dataprocessing.transformers import (
 from darts.utils.timeseries_generation import constant_timeseries
 
 
-class PipelineTestCase(unittest.TestCase):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class TestPipeline:
     class DataTransformerMock1(BaseDataTransformer):
         def __init__(self):
             super().__init__()
@@ -115,11 +109,11 @@ class PipelineTestCase(unittest.TestCase):
         transformed = p.transform(data)
 
         # then
-        self.assertEqual(63, len(transformed))
-        self.assertEqual([0] * 3 + [1] * 30 + [2] * 30, list(transformed.values()))
+        assert 63 == len(transformed)
+        assert [0] * 3 + [1] * 30 + [2] * 30 == list(transformed.values())
         for t in transformers:
-            self.assertTrue(t.transform_called)
-            self.assertFalse(t.inverse_transform_called)
+            assert t.transform_called
+            assert not t.inverse_transform_called
 
     def test_inverse_raise_exception(self):
         # given
@@ -127,7 +121,7 @@ class PipelineTestCase(unittest.TestCase):
         p = Pipeline([mock])
 
         # when & then
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             p.inverse_transform(None)
 
     def test_transformers_not_modified(self):
@@ -139,7 +133,7 @@ class PipelineTestCase(unittest.TestCase):
         p.transform(constant_timeseries(value=1, length=10))
 
         # then
-        self.assertFalse(mock.transform_called)
+        assert not mock.transform_called
 
     def test_fit(self):
         # given
@@ -154,9 +148,9 @@ class PipelineTestCase(unittest.TestCase):
 
         # then
         for i in range(10):
-            self.assertFalse(transformers[i].fit_called)
+            assert not transformers[i].fit_called
         for i in range(10, 20):
-            self.assertTrue(transformers[i].fit_called)
+            assert transformers[i].fit_called
 
     def test_fit_skips_superfluous_transforms(self):
         # given
@@ -173,11 +167,11 @@ class PipelineTestCase(unittest.TestCase):
 
         # then
         for i in range(10):
-            self.assertTrue(transformers[i].transform_called)
-        self.assertTrue(transformers[10].fit_called)
-        self.assertFalse(transformers[10].transform_called)
+            assert transformers[i].transform_called
+        assert transformers[10].fit_called
+        assert not transformers[10].transform_called
         for i in range(11, 21):
-            self.assertFalse(transformers[i].transform_called)
+            assert not transformers[i].transform_called
 
     def test_transform_fit(self):
         # given
@@ -192,11 +186,11 @@ class PipelineTestCase(unittest.TestCase):
 
         # then
         for t in transformers:
-            self.assertTrue(t.transform_called)
+            assert t.transform_called
         for i in range(10):
-            self.assertFalse(transformers[i].fit_called)
+            assert not transformers[i].fit_called
         for i in range(10, 20):
-            self.assertTrue(transformers[i].fit_called)
+            assert transformers[i].fit_called
 
     def test_inverse_transform(self):
         # given
@@ -210,7 +204,7 @@ class PipelineTestCase(unittest.TestCase):
         back = p.inverse_transform(transformed)
 
         # then
-        self.assertEqual(data, back)
+        assert data == back
 
     def test_getitem(self):
         # given
@@ -222,10 +216,10 @@ class PipelineTestCase(unittest.TestCase):
 
         # when & then
         # note : only compares string representations, since __getitem__() copies the transformers
-        self.assertEqual(str(p[1]._transformers), str([transformers[1]]))
-        self.assertEqual(str(p[4:8]._transformers), str(transformers[4:8]))
+        assert str(p[1]._transformers) == str([transformers[1]])
+        assert str(p[4:8]._transformers) == str(transformers[4:8])
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             p["invalid attempt"]
 
     def test_raises_on_non_transformers(self):
@@ -233,11 +227,13 @@ class PipelineTestCase(unittest.TestCase):
         input_list = list(range(10))
 
         # when & then
-        with self.assertRaises(
-            ValueError,
-            msg="transformers should be objects deriving from BaseDataTransformer",
-        ):
+        with pytest.raises(ValueError) as err:
             Pipeline(input_list)
+
+        assert (
+            str(err.value)
+            == "transformers should be objects deriving from BaseDataTransformer"
+        )
 
     def test_raises_on_bad_key(self):
         # given
@@ -245,8 +241,9 @@ class PipelineTestCase(unittest.TestCase):
         p = Pipeline([])
 
         # when & then
-        with self.assertRaises(ValueError, msg="Key must be int, str or slice"):
+        with pytest.raises(ValueError) as err:
             p[bad_key]
+        assert str(err.value) == "key must be either an int or a slice"
 
     def test_multi_ts(self):
 
@@ -266,7 +263,7 @@ class PipelineTestCase(unittest.TestCase):
         back = p.inverse_transform(transformed)
 
         # then
-        self.assertEqual(data, back)
+        assert data == back
 
     def test_pipeline_partial_inverse(self):
         series = constant_timeseries(value=0.0, length=3)
@@ -284,13 +281,13 @@ class PipelineTestCase(unittest.TestCase):
         transformed = pipeline.transform(series)
 
         # should fail, since partial is False by default
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             pipeline.inverse_transform(transformed)
 
         back = pipeline.inverse_transform(transformed, partial=True)
 
         # while the +/- 2 is inverted, the +10 operation is not
-        self.assertEqual(series_plus_ten, back)
+        assert series_plus_ten == back
 
     def test_pipeline_verbose(self):
         """
@@ -310,7 +307,7 @@ class PipelineTestCase(unittest.TestCase):
         pipeline = Pipeline([mapper, mapper_inv], verbose=verbose_value)
 
         for transformer in pipeline:
-            self.assertEqual(transformer._verbose, verbose_value)
+            assert transformer._verbose == verbose_value
 
     def test_pipeline_n_jobs(self):
         """
@@ -330,4 +327,4 @@ class PipelineTestCase(unittest.TestCase):
         pipeline = Pipeline([mapper, mapper_inv], n_jobs=n_jobs_value)
 
         for transformer in pipeline:
-            self.assertEqual(transformer._n_jobs, n_jobs_value)
+            assert transformer._n_jobs == n_jobs_value
