@@ -27,6 +27,7 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_train_num_samples: int = 1,
         regression_train_samples_reduction: Optional[Union[str, float]] = "median",
         retrain_forecasting_models: bool = True,
+        train_using_historical_forecasts: bool = False,
         show_warnings: bool = True,
     ):
         """
@@ -75,6 +76,10 @@ class RegressionEnsembleModel(EnsembleModel):
         retrain_forecasting_models
             If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
             if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
+        train_using_historical_forecasts
+            If set to `True`, use `historical_forecasts()` to generate the covariates used to train the regression
+            model in `fit()`. Available and highly recommended when `forecasting_models` contains only
+            `GlobalForecastingModels`. Default: ``False``.
         show_warnings
             Whether to show warnings related to forecasting_models covariates support.
         References
@@ -121,12 +126,70 @@ class RegressionEnsembleModel(EnsembleModel):
 
         self.train_n_points = regression_train_n_points
 
+        raise_if(
+            train_using_historical_forecasts and not self.is_global_ensemble,
+            "`train_using_historical_forecasts=True` is available only when all the models contained in "
+            "`forecasting_models` are global.",
+            logger,
+        )
+
+        self.train_using_historical_forecasts = train_using_historical_forecasts
+
     def _split_multi_ts_sequence(
         self, n: int, ts_sequence: Sequence[TimeSeries]
     ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
         left = [ts[:-n] for ts in ts_sequence]
         right = [ts[-n:] for ts in ts_sequence]
         return left, right
+
+    def _make_multiple_historical_forecasts(
+        self,
+        train_n_points: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """
+        For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
+        producebetter forecasts than `predict()`.
+
+        train_n_points are generated, starting from the end of the series
+        """
+        is_single_series = isinstance(series, TimeSeries) or series is None
+        predictions = [
+            model.historical_forecasts(
+                series=series,
+                past_covariates=past_covariates
+                if model.supports_past_covariates
+                else None,
+                future_covariates=future_covariates
+                if model.supports_future_covariates
+                else None,
+                num_samples=num_samples if model._is_probabilistic else 1,
+                start=-train_n_points,
+                start_format="index",
+                retrain=False,
+                overlap_end=True,
+                last_points_only=True,
+                show_warnings=self.show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+            )
+            for model in self.forecasting_models
+        ]
+
+        # reduce the probabilistics series
+        if self.train_samples_reduction is not None and self.train_num_samples > 1:
+            predictions = [
+                self._predictions_reduction(prediction) for prediction in predictions
+            ]
+
+        return (
+            self._stack_ts_seq(predictions)
+            if is_single_series
+            else self._stack_ts_multiseq(predictions)
+        )
 
     def fit(
         self,
@@ -229,13 +292,22 @@ class RegressionEnsembleModel(EnsembleModel):
                     else None,
                 )
 
-        predictions = self._make_multiple_predictions(
-            n=self.train_n_points,
-            series=forecast_training,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=self.train_num_samples,
-        )
+        if self.train_using_historical_forecasts:
+            predictions = self._make_multiple_historical_forecasts(
+                train_n_points=self.train_n_points,
+                series=forecast_training,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=self.train_num_samples,
+            )
+        else:
+            predictions = self._make_multiple_predictions(
+                n=self.train_n_points,
+                series=forecast_training,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=self.train_num_samples,
+            )
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(

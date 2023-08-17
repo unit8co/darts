@@ -158,6 +158,7 @@ class EnsembleModel(GlobalForecastingModel):
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
         self.retrain_forecasting_models = retrain_forecasting_models
+        self.show_warnings = show_warnings
 
         if show_warnings:
             if (
@@ -248,7 +249,7 @@ class EnsembleModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-    ):
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
         predictions = [
