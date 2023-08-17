@@ -481,6 +481,10 @@ class EnsembleModel(GlobalForecastingModel):
             [model.supports_future_covariates for model in self.forecasting_models]
         )
 
+    @property
+    def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        return self.is_global_ensemble
+
     def _full_past_covariates_support(self) -> bool:
         return all(
             [model.supports_past_covariates for model in self.forecasting_models]
