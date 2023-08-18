@@ -211,28 +211,34 @@ class RegressionModel(GlobalForecastingModel):
             )
 
         # set lags
-        def _check_int_lags(lags: int, lags_name: str) -> Optional[List[int]]:
+        def _check_int_lags(lags: int, lags_name: str) -> List[int]:
             raise_if_not(
                 lags > 0, f"{lags_name} must be strictly positive. Given: {lags}."
             )
             # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
             return list(range(-lags, 0))
 
-        def _check_list_lags(lags: list, lags_name: str) -> Optional[List[int]]:
+        def _check_list_lags(lags: list, lags_name: str) -> List[int]:
             for lag in lags:
                 raise_if(
                     not isinstance(lag, int) or (lag >= 0),
                     f"Every element of {lags_name} must be a strictly negative integer. Given: {lags}.",
                 )
-            if lags:
-                return sorted(lags)
+            return sorted(lags)
 
         def _check_dict_lags(
             lags: dict, lags_name: str
         ) -> Optional[Tuple[List[int], Dict[str, List[int]]]]:
-            components_lags = dict()
+
+            raise_if_not(
+                len(lags) > 0,
+                f"When passed as a dictionnary, {lags_name} must contain at least one key.",
+                logger,
+            )
+
             min_lags = None
             max_lags = None
+            components_lags = dict()
             # TODO: use component idx instead of component name for robustness?
             for comp_idx, (comp_name, comp_lags) in enumerate(lags.items()):
                 if isinstance(comp_lags, int):
@@ -246,13 +252,21 @@ class RegressionModel(GlobalForecastingModel):
                 else:
                     raise_log(
                         ValueError(
-                            f"when passed as a dictionnary, {lags_name} for component {comp_name} must be either a "
+                            f"When passed as a dictionnary, {lags_name} for component {comp_name} must be either a "
                             f"strictly positive integer or a list, received : {type(comp_lags)}."
                         ),
                         logger,
                     )
-                min_lags: int = min(components_lags[comp_name])
-                max_lags: int = max(components_lags[comp_name])
+
+                if min_lags is None:
+                    min_lags = components_lags[comp_name][0]
+                else:
+                    min_lags = min(min_lags, components_lags[comp_name][0])
+
+                if max_lags is None:
+                    max_lags = components_lags[comp_name][-1]
+                else:
+                    max_lags = max(max_lags, components_lags[comp_name][-1])
             return [min_lags, max_lags], components_lags
 
         if isinstance(lags, int):
@@ -289,31 +303,38 @@ class RegressionModel(GlobalForecastingModel):
 
         def _check_tuple_future_lags(
             lags_future_covariates: Tuple[int, int], lags_name: str
-        ):
+        ) -> List[int]:
             raise_if_not(
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
                 f"{lags_name} tuple must contain integers >= 0. Given: {lags_future_covariates}.",
             )
-            # TODO: check if it should return None or []
-            if lags_future_covariates[0] + lags_future_covariates[1] == 0:
-                return None
-            else:
-                return list(
-                    range(-lags_future_covariates[0], lags_future_covariates[1])
-                )
+            raise_if(
+                lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0,
+                f"{lags_name} tuple cannot be (0,0).",
+                logger,
+            )
+            return list(range(-lags_future_covariates[0], lags_future_covariates[1]))
 
-        def _check_list_future_lags(lags_future_covariates: List[int], lags_name: str):
+        def _check_list_future_lags(
+            lags_future_covariates: List[int], lags_name: str
+        ) -> List[int]:
             for lag in lags_future_covariates:
                 raise_if(
                     not isinstance(lag, int) or isinstance(lag, bool),
                     f"Every element of {lags_name} must be an integer. Given: {lags_future_covariates}.",
                 )
-            if lags_future_covariates:
-                return sorted(lags_future_covariates)
+            return sorted(lags_future_covariates)
 
         def _check_dict_future_lags(
             lags_future_covariates: Dict[str, Union[Tuple, List]]
         ):
+            raise_if_not(
+                len(lags) > 0,
+                "When passed as a dictionnary, `lags_future_covariates` must contain at least one key.",
+                logger,
+            )
+            min_lags = None
+            max_lags = None
             components_lags = dict()
             # TODO: use component idx instead of component name for robustness?
             for comp_idx, (comp_name, comp_lags) in enumerate(
@@ -330,11 +351,21 @@ class RegressionModel(GlobalForecastingModel):
                 else:
                     raise_log(
                         ValueError(
-                            f"when passed as a dictionnary, `future_covariates_lags` for component {comp_name} must be "
+                            f"When passed as a dictionnary, `future_covariates_lags` for component {comp_name} must be "
                             f"either a strictly positive integer or a list, received : {type(comp_lags)}."
                         ),
                         logger,
                     )
+
+            if min_lags is None:
+                min_lags = components_lags[comp_name][0]
+            else:
+                min_lags = min(min_lags, components_lags[comp_name][0])
+
+            if max_lags is None:
+                max_lags = components_lags[comp_name][-1]
+            else:
+                max_lags = max(max_lags, components_lags[comp_name][-1])
             return components_lags
 
         if isinstance(lags_future_covariates, tuple):
