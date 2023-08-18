@@ -24,6 +24,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `TorchForecastingModel.load_weights()` that raised an error when loading the weights from a valid architecture. [#1952](https://github.com/unit8co/darts/pull/1952) by [Antoine Madrona](https://github.com/madtoinou).
 - Properly raising an error when an `EnsembleModel` containing at least one `LocalForecastingModel` is calling `historical_forecasts` with `retrain=False`.  [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
 
+### For developers of the library:
+
+**Improved**
+- Refactored all tests to use pytest instead of unittest. [#1950](https://github.com/unit8co/darts/pull/1950) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.25.0](https://github.com/unit8co/darts/tree/0.25.0) (2023-08-04)
 ### For users of the library:

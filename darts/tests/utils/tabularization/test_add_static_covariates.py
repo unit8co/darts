@@ -4,12 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import add_static_covariates_to_lagged_data
 from darts.utils.timeseries_generation import linear_timeseries
 
 
-class AddStaticToLaggedDataTestCase(DartsBaseTestClass):
+class TestAddStaticToLaggedData:
     series = linear_timeseries(length=6)
     series = series.stack(series)
     series_stcov_single = series.with_static_covariates(pd.DataFrame({"a": [0.0]}))
