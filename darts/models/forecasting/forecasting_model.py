@@ -2078,6 +2078,20 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             ):
                 self.static_covariates = series.static_covariates
         else:
+            # check that all the ts within one group have the same number of components
+            for ts_sequence, cov_name in zip(
+                [series, past_covariates, future_covariates],
+                ["series", "past_covariates", "future_covariates"],
+            ):
+                raise_if(
+                    ts_sequence is not None
+                    and not all(
+                        [ts_sequence[0].width == ts.width for ts in ts_sequence]
+                    ),
+                    f"All the series in `{cov_name}` should have the same number of components",
+                    logger,
+                )
+
             if past_covariates is not None:
                 self._expect_past_covariates = True
             if future_covariates is not None:
