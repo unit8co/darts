@@ -891,7 +891,13 @@ def _create_lagged_data_by_moving_window(
             # Within each window, the `-1` indexed value (i.e. the value at the very end of
             # the window) corresponds to time `t - min_lag_i`. The negative index of the time
             # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
-            lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
+            if isinstance(lags_i, list):
+                lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
+            else:
+                lags_to_extract = [
+                    np.array(comp_lags, dtype=int) + min_lag_i - 1
+                    for comp_lags in lags_i
+                ]
             lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
         # Cache `start_time_idx` for label creation:
@@ -928,7 +934,8 @@ def _create_lagged_data_by_moving_window(
 
 
 def _extract_lagged_vals_from_windows(
-    windows: np.ndarray, lags_to_extract: Optional[np.ndarray] = None
+    windows: np.ndarray,
+    lags_to_extract: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
 ) -> np.ndarray:
     """
     Helper function called by `_create_lagged_data_by_moving_window` that
@@ -938,19 +945,31 @@ def _extract_lagged_vals_from_windows(
     is done such that the order of elements along axis 1 matches the pattern
     described in the docstring of `create_lagged_data`.
 
-    If `lags_to_extract` is specified, then only those values within each window that
+    If `lags_to_extract` is not specified, all of the values within each window is extracted.
+    If `lags_to_extract` is specified as an np.ndarray, then only those values within each window that
     are indexed by `lags_to_extract` will be returned. In such cases, the shape of the returned
     lagged values is `(num_windows, num_components * lags_to_extract.size, num_series)`. For example,
     if `lags_to_extract = [-2]`, only the second-to-last values within each window will be extracted.
-    If `lags_to_extract` is not specified, all of the values within each window is extracted.
+    If `lags_to_extract` is specified as a list of np.ndarray, the values will be extracted using the
+    lags provided for each component.
     """
     # windows.shape = (num_windows, num_components, num_samples, window_len):
-    if lags_to_extract is not None:
-        windows = windows[:, :, :, lags_to_extract]
-    # windows.shape = (num_windows, window_len, num_components, num_samples):
-    windows = np.moveaxis(windows, (0, 3, 1, 2), (0, 1, 2, 3))
-    # lagged_vals.shape = (num_windows, num_components*window_len, num_samples):
-    lagged_vals = windows.reshape((windows.shape[0], -1, windows.shape[-1]))
+    if isinstance(lags_to_extract, list):
+        # iterate over the components-specific lags
+        comp_windows = [
+            windows[:, i, :, comp_lags_to_extract]
+            for i, comp_lags_to_extract in enumerate(lags_to_extract)
+        ]
+        # windows.shape = (sum(lags_len) across components, num_windows, num_samples):
+        windows = np.concatenate(comp_windows, axis=0)
+        lagged_vals = np.moveaxis(windows, (1, 0, 2), (0, 1, 2))
+    else:
+        if lags_to_extract is not None:
+            windows = windows[:, :, :, lags_to_extract]
+        # windows.shape = (num_windows, window_len, num_components, num_samples):
+        windows = np.moveaxis(windows, (0, 3, 1, 2), (0, 1, 2, 3))
+        # lagged_vals.shape = (num_windows, num_components*window_len, num_samples):
+        lagged_vals = windows.reshape((windows.shape[0], -1, windows.shape[-1]))
     return lagged_vals
 
 
