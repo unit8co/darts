@@ -65,23 +65,23 @@ class TestEnsembleModels:
         global_model.fit(self.series1)
 
         # local and global trained
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([local_model, global_model])
 
         # local untrained, global trained
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([local_model.untrained_model(), global_model])
 
         # local trained, global untrained
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([local_model, global_model.untrained_model()])
 
         # global trained, global untrained
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveEnsembleModel([global_model, global_model.untrained_model()])
 
         # both global trained, retrain = True
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # models need to be explicitely reset before retraining them
             model_ens_retrain = NaiveEnsembleModel(
                 [global_model, global_model], retrain_forecasting_models=True
@@ -90,7 +90,7 @@ class TestEnsembleModels:
             [global_model.untrained_model(), global_model.untrained_model()],
             retrain_forecasting_models=True,
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model_ens_retrain.predict(1, series=self.series1)
         model_ens_retrain.fit(self.series1)
         model_ens_retrain.predict(1, series=self.series1)
