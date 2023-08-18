@@ -2009,7 +2009,9 @@ class TestRegressionModels:
                 output_chunk_length=1,
                 categorical_future_covariates=["does_not_exist"],
             ),
-        ],
+        ]
+        if lgbm_available
+        else [],
     )
     def test_fit_with_categorical_features_raises_error(self, model):
         (

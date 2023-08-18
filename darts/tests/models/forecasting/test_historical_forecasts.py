@@ -231,6 +231,8 @@ if TORCH_AVAILABLE:
             "MixedCovariates",
         ),
     ]
+else:
+    models_torch_cls_kwargs = []
 
 
 class TestHistoricalforecast:
