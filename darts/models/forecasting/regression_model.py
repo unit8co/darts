@@ -328,54 +328,46 @@ class RegressionModel(GlobalForecastingModel):
 
         # perform the type and sanity checks
         if isinstance(lags, int):
-            conv_lags = _check_int_lags(lags, "`lags`")
-            if conv_lags:
-                self.lags["target"] = conv_lags
+            self.lags["target"] = _check_int_lags(lags, "`lags`")
         elif isinstance(lags, list):
-            conv_lags = _check_list_lags(lags, "`lags`")
-            if conv_lags:
-                self.lags["target"] = conv_lags
+            self.lags["target"] = _check_list_lags(lags, "`lags`")
         elif isinstance(lags, dict):
             conv_lags = _check_dict_lags(lags, "`lags`")
-            if conv_lags:
+            if conv_lags is not None:
                 # dummy, used to compute the extreme lags
                 self.lags["target"] = conv_lags[0]
                 # actual lags
                 self.component_lags["target"] = conv_lags[1]
 
         if isinstance(lags_past_covariates, int):
-            conv_lags = _check_int_lags(lags_past_covariates, "`lags_past_covariates`")
-            if conv_lags:
-                self.lags["past"] = conv_lags
+            self.lags["past"] = _check_int_lags(
+                lags_past_covariates, "`lags_past_covariates`"
+            )
         elif isinstance(lags_past_covariates, list):
-            conv_lags = _check_list_lags(lags_past_covariates, "`lags_past_covariates`")
-            if conv_lags:
-                self.lags["past"] = conv_lags
+            self.lags["past"] = _check_list_lags(
+                lags_past_covariates, "`lags_past_covariates`"
+            )
         elif isinstance(lags_past_covariates, dict):
             conv_lags = _check_dict_lags(lags_past_covariates, "`lags_past_covariates`")
-            if conv_lags:
+            if conv_lags is not None:
                 # dummy, used to compute the extreme lags
                 self.lags["past"] = conv_lags[0]
                 # actual lags
                 self.component_lags["past"] = conv_lags[1]
 
         if isinstance(lags_future_covariates, tuple):
-            conv_lags = _check_tuple_future_lags(
+            self.lags["future"] = _check_tuple_future_lags(
                 lags_future_covariates, "`lags_future_covariates`"
             )
-            if conv_lags:
-                self.lags["future"] = conv_lags
         elif isinstance(lags_future_covariates, list):
-            conv_lags = _check_list_future_lags(
+            self.lags["future"] = _check_list_future_lags(
                 lags_future_covariates, "`lags_future_covariates`"
             )
-            if conv_lags:
-                self.lags["future"] = conv_lags
         elif isinstance(lags_future_covariates, dict):
             conv_lags = _check_dict_lags(
                 lags_future_covariates, "`lags_future_covariates`"
             )
-            if conv_lags:
+            if conv_lags is not None:
                 # dummy, used to compute the extreme lags
                 self.lags["future"] = conv_lags[0]
                 # actual lags
@@ -420,16 +412,12 @@ class RegressionModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
     ]:
-        min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
+        min_target_lag = self.lags["target"][0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1
-        min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
-        max_past_cov_lag = self.lags.get("past")[-1] if "past" in self.lags else None
-        min_future_cov_lag = (
-            self.lags.get("future")[0] if "future" in self.lags else None
-        )
-        max_future_cov_lag = (
-            self.lags.get("future")[-1] if "future" in self.lags else None
-        )
+        min_past_cov_lag = self.lags["past"][0] if "past" in self.lags else None
+        max_past_cov_lag = self.lags["past"][-1] if "past" in self.lags else None
+        min_future_cov_lag = self.lags["future"][0] if "future" in self.lags else None
+        max_future_cov_lag = self.lags["future"][-1] if "future" in self.lags else None
         return (
             min_target_lag,
             max_target_lag,
