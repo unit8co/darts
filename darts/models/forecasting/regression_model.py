@@ -60,13 +60,18 @@ from darts.utils.utils import (
 
 logger = get_logger(__name__)
 
+LAGS_TYPE = Union[int, List[int], Dict[str, Union[int, List[int]]]]
+FUTURE_LAGS_TYPE = Union[
+    Tuple[int, int], List[int], Dict[str, Union[Tuple[int, int], List[int]]]
+]
+
 
 class RegressionModel(GlobalForecastingModel):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        lags: Optional[LAGS_TYPE] = None,
+        lags_past_covariates: Optional[LAGS_TYPE] = None,
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
         add_encoders: Optional[dict] = None,
         model=None,
@@ -80,7 +85,10 @@ class RegressionModel(GlobalForecastingModel):
         ----------
         lags
             Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise, a list of integers with lags is required (each lag must be < 0).
+            are used (from -1 backward). Otherwise, a list of integers with lags (each lag must be < 0).
+            In order to specify component-wise lags, a dictionnary with the component name or index as key and the
+            lags value can be provided. The number of keys in the dictionnary must match the number of components in
+            the series.
         lags_past_covariates
             Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
             `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
@@ -132,6 +140,7 @@ class RegressionModel(GlobalForecastingModel):
 
         self.model = model
         self.lags: Dict[str, List[int]] = {}
+        self.component_lags: Dict[str, Dict[str, List[int]]] = {}
         self.input_dim = None
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
@@ -174,18 +183,18 @@ class RegressionModel(GlobalForecastingModel):
 
         for _lags, lags_name in lags_type_checks:
             raise_if_not(
-                isinstance(_lags, (int, list)) or _lags is None,
-                f"`{lags_name}` must be of type int or list. Given: {type(_lags)}.",
+                isinstance(_lags, (int, list, dict)) or _lags is None,
+                f"`{lags_name}` must be of type int, list or dict. Given: {type(_lags)}.",
             )
             raise_if(
                 isinstance(_lags, bool),
-                f"`{lags_name}` must be of type int or list, not bool.",
+                f"`{lags_name}` must be of type int, list or dict, not bool.",
             )
 
         raise_if_not(
-            isinstance(lags_future_covariates, (tuple, list))
+            isinstance(lags_future_covariates, (tuple, list, dict))
             or lags_future_covariates is None,
-            f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.",
+            f"`lags_future_covariates` must be of type tuple, list or dict. Given: {type(lags_future_covariates)}.",
         )
 
         if isinstance(lags_future_covariates, tuple):
@@ -202,57 +211,151 @@ class RegressionModel(GlobalForecastingModel):
             )
 
         # set lags
-        if isinstance(lags, int):
-            raise_if_not(lags > 0, f"`lags` must be strictly positive. Given: {lags}.")
+        def _check_int_lags(lags: int, lags_name: str) -> Optional[List[int]]:
+            raise_if_not(
+                lags > 0, f"{lags_name} must be strictly positive. Given: {lags}."
+            )
             # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
-            self.lags["target"] = list(range(-lags, 0))
-        elif isinstance(lags, list):
+            return list(range(-lags, 0))
+
+        def _check_list_lags(lags: list, lags_name: str) -> Optional[List[int]]:
             for lag in lags:
                 raise_if(
                     not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `lags` must be a strictly negative integer. Given: {lags}.",
+                    f"Every element of {lags_name} must be a strictly negative integer. Given: {lags}.",
                 )
             if lags:
-                self.lags["target"] = sorted(lags)
+                return sorted(lags)
+
+        def _check_dict_lags(
+            lags: dict, lags_name: str
+        ) -> Optional[Tuple[List[int], Dict[str, List[int]]]]:
+            components_lags = dict()
+            min_lags = None
+            max_lags = None
+            # TODO: use component idx instead of component name for robustness?
+            for comp_idx, (comp_name, comp_lags) in enumerate(lags.items()):
+                if isinstance(comp_lags, int):
+                    components_lags[comp_name] = _check_int_lags(
+                        comp_lags, f"{lags_name} for component {comp_name}"
+                    )
+                elif isinstance(comp_lags, list):
+                    components_lags[comp_name] = _check_list_lags(
+                        comp_lags, f"{lags_name} for component {comp_name}"
+                    )
+                else:
+                    raise_log(
+                        ValueError(
+                            f"when passed as a dictionnary, {lags_name} for component {comp_name} must be either a "
+                            f"strictly positive integer or a list, received : {type(comp_lags)}."
+                        ),
+                        logger,
+                    )
+                min_lags: int = min(components_lags[comp_name])
+                max_lags: int = max(components_lags[comp_name])
+            return [min_lags, max_lags], components_lags
+
+        if isinstance(lags, int):
+            conv_lags = _check_int_lags(lags, "`lags`")
+            if conv_lags:
+                self.lags["target"] = conv_lags
+        elif isinstance(lags, list):
+            conv_lags = _check_list_lags(lags, "`lags`")
+            if conv_lags:
+                self.lags["target"] = conv_lags
+        elif isinstance(lags, dict):
+            conv_lags = _check_dict_lags(lags, "`lags`")
+            if conv_lags:
+                # dummy, used to compute the extreme lags
+                self.lags["target"] = conv_lags[0]
+                # actual lags
+                self.component_lags["target"] = conv_lags[1]
 
         if isinstance(lags_past_covariates, int):
-            raise_if_not(
-                lags_past_covariates > 0,
-                f"`lags_past_covariates` must be an integer > 0. Given: {lags_past_covariates}.",
-            )
-            self.lags["past"] = list(range(-lags_past_covariates, 0))
+            conv_lags = _check_int_lags(lags_past_covariates, "`lags_past_covariates`")
+            if conv_lags:
+                self.lags["past"] = conv_lags
         elif isinstance(lags_past_covariates, list):
-            for lag in lags_past_covariates:
-                raise_if(
-                    not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `lags_covariates` must be an integer < 0. Given: {lags_past_covariates}.",
-                )
-            if lags_past_covariates:
-                self.lags["past"] = sorted(lags_past_covariates)
+            conv_lags = _check_list_lags(lags_past_covariates, "`lags_past_covariates`")
+            if conv_lags:
+                self.lags["past"] = conv_lags
+        elif isinstance(lags_past_covariates, dict):
+            conv_lags = _check_dict_lags(lags_past_covariates, "`lags_past_covariates`")
+            if conv_lags:
+                # dummy, used to compute the extreme lags
+                self.lags["past"] = conv_lags[0]
+                # actual lags
+                self.component_lags["past"] = conv_lags[1]
 
-        if isinstance(lags_future_covariates, tuple):
+        def _check_tuple_future_lags(
+            lags_future_covariates: Tuple[int, int], lags_name: str
+        ):
             raise_if_not(
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"`lags_future_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
+                f"{lags_name} tuple must contain integers >= 0. Given: {lags_future_covariates}.",
             )
-            if (
-                lags_future_covariates[0] is not None
-                and lags_future_covariates[1] is not None
-            ):
-                if not (
-                    lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0
-                ):
-                    self.lags["future"] = list(
-                        range(-lags_future_covariates[0], lags_future_covariates[1])
-                    )
-        elif isinstance(lags_future_covariates, list):
+            # TODO: check if it should return None or []
+            if lags_future_covariates[0] + lags_future_covariates[1] == 0:
+                return None
+            else:
+                return list(
+                    range(-lags_future_covariates[0], lags_future_covariates[1])
+                )
+
+        def _check_list_future_lags(lags_future_covariates: List[int], lags_name: str):
             for lag in lags_future_covariates:
                 raise_if(
                     not isinstance(lag, int) or isinstance(lag, bool),
-                    f"Every element of `lags_future_covariates` must be an integer. Given: {lags_future_covariates}.",
+                    f"Every element of {lags_name} must be an integer. Given: {lags_future_covariates}.",
                 )
             if lags_future_covariates:
-                self.lags["future"] = sorted(lags_future_covariates)
+                return sorted(lags_future_covariates)
+
+        def _check_dict_future_lags(
+            lags_future_covariates: Dict[str, Union[Tuple, List]]
+        ):
+            components_lags = dict()
+            # TODO: use component idx instead of component name for robustness?
+            for comp_idx, (comp_name, comp_lags) in enumerate(
+                lags_future_covariates.items()
+            ):
+                if isinstance(comp_lags, tuple):
+                    components_lags[comp_name] = _check_tuple_future_lags(
+                        comp_lags, f"`future_covariates_lags` for {comp_name}"
+                    )
+                elif isinstance(comp_lags, list):
+                    components_lags[comp_name] = _check_list_future_lags(
+                        comp_lags, f"`future_covariates_lags` for {comp_name}"
+                    )
+                else:
+                    raise_log(
+                        ValueError(
+                            f"when passed as a dictionnary, `future_covariates_lags` for component {comp_name} must be "
+                            f"either a strictly positive integer or a list, received : {type(comp_lags)}."
+                        ),
+                        logger,
+                    )
+            return components_lags
+
+        if isinstance(lags_future_covariates, tuple):
+            conv_lags = _check_tuple_future_lags(
+                lags_future_covariates, "`future_covariates_lags`"
+            )
+            if conv_lags:
+                self.lags["future"] = conv_lags
+        elif isinstance(lags_future_covariates, list):
+            conv_lags = _check_list_future_lags(
+                lags_future_covariates, "`future_covariates_lags`"
+            )
+            if conv_lags:
+                self.lags["future"] = conv_lags
+        elif isinstance(lags_future_covariates, dict):
+            conv_lags = _check_dict_future_lags(lags_future_covariates)
+            if conv_lags:
+                # dummy, used to compute the extreme lags
+                self.lags["future"] = conv_lags[0]
+                # actual lags
+                self.component_lags["future"] = conv_lags[1]
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
