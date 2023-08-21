@@ -675,29 +675,33 @@ class RegressionModel(GlobalForecastingModel):
             future_covariates=seq2series(future_covariates),
         )
 
-        # TODO: if the keys are string, check if they are indeed in the series?
-        # if provided, component-wise lags must be defined for all the components
-        if "target" in self.component_lags:
-            raise_if(
-                len(self.component_lags["target"]) != self.input_dim["target"],
-                f"The training series contain {self.input_dim['target']} components, "
-                f"{len(self.component_lags['target'])} lags were provided. These two values must exactly match.",
-                logger,
-            )
-        if "past" in self.component_lags and "past" in self.input_dim:
-            raise_if(
-                len(self.component_lags["past"]) != self.input_dim["past"],
-                f"The past covariates series contain {self.input_dim['past']} components, "
-                f"{len(self.component_lags['past'])} lags were provided. These two values must exactly match.",
-                logger,
-            )
-        if "future" in self.component_lags and "future" in self.input_dim:
-            raise_if(
-                len(self.component_lags["future"]) != self.input_dim["future"],
-                f"The future covariates series contain {self.input_dim['future']} components, "
-                f"{len(self.component_lags['future'])} lags were provided. These two values must exactly match.",
-                logger,
-            )
+        # if provided, component-wise lags must be defined for all the components of the first series
+        for variate_type, variate in zip(
+            ["target", "past", "future"], [series, past_covariates, future_covariates]
+        ):
+            if variate_type in self.component_lags:
+                provided_components = set(self.component_lags[variate_type].keys())
+                required_components = set(variate[0].components)
+                # lags were specified for unrecognized components
+                wrong_components = list(provided_components - required_components)
+                if len(wrong_components) > 0:
+                    logger.warning(
+                        f"Lags of components not present in the series ({wrong_components}) were ignored."
+                    )
+
+                missing_keys = list(required_components - provided_components)
+                raise_if(
+                    len(missing_keys) > 0,
+                    f"The {variate_type} series contains {self.input_dim[variate_type]} components, lags were "
+                    f"provided for {len(self.component_lags[variate_type])} of them. The lags for the "
+                    f"following components must be provided: {missing_keys}.",
+                    logger,
+                )
+                # reorder the components based on the input series
+                self.component_lags[variate_type] = {
+                    comp_name: self.component_lags[variate_type][comp_name]
+                    for comp_name in variate[0].components
+                }
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
