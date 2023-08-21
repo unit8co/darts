@@ -140,7 +140,7 @@ class RegressionModel(GlobalForecastingModel):
 
         self.model = model
         self.lags: Dict[str, List[int]] = {}
-        self.component_lags: Dict[str, Dict[str, List[int]]] = {}
+        self.component_lags: Dict[str, Dict[str, Sequence[int]]] = {}
         self.input_dim = None
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
@@ -266,7 +266,7 @@ class RegressionModel(GlobalForecastingModel):
 
         def _check_dict_lags(
             lags: dict, lags_name: str
-        ) -> Optional[Tuple[List[int], Dict[str, List[int]]]]:
+        ) -> Optional[Tuple[List[int], Dict[str, Sequence[int]]]]:
 
             raise_if_not(
                 len(lags) > 0,
@@ -474,10 +474,10 @@ class RegressionModel(GlobalForecastingModel):
     def _create_lagged_data(
         self, target_series, past_covariates, future_covariates, max_samples_per_ts
     ):
-        lags = self.lags.get("target")
-        lags_past_covariates = self.lags.get("past")
-        lags_future_covariates = self.lags.get("future")
-
+        """
+        If lags were specified component-wise manner, they are contained in self.component_lags and the values
+        in self.lags should be ignored.
+        """
         (
             features,
             labels,
@@ -488,9 +488,15 @@ class RegressionModel(GlobalForecastingModel):
             output_chunk_length=self.output_chunk_length,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
+            lags=self.component_lags["target"]
+            if "target" in self.component_lags
+            else self.lags.get("target"),
+            lags_past_covariates=self.component_lags["past"]
+            if "past" in self.component_lags
+            else self.lags.get("past"),
+            lags_future_covariates=self.component_lags["future"]
+            if "future" in self.component_lags
+            else self.lags.get("future"),
             uses_static_covariates=self.uses_static_covariates,
             last_static_covariates_shape=None,
             max_samples_per_ts=max_samples_per_ts,
@@ -538,9 +544,15 @@ class RegressionModel(GlobalForecastingModel):
             target_series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags=self.lags.get("target"),
-            lags_past_covariates=self.lags.get("past"),
-            lags_future_covariates=self.lags.get("future"),
+            lags=self.component_lags["target"]
+            if "target" in self.component_lags
+            else self.lags.get("target"),
+            lags_past_covariates=self.component_lags["past"]
+            if "past" in self.component_lags
+            else self.lags.get("past"),
+            lags_future_covariates=self.component_lags["future"]
+            if "future" in self.component_lags
+            else self.lags.get("future"),
             output_chunk_length=self.output_chunk_length,
             concatenate=False,
             use_static_covariates=self.uses_static_covariates,
@@ -662,6 +674,30 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
         )
+
+        # TODO: if the keys are string, check if they are indeed in the series?
+        # if provided, component-wise lags must be defined for all the components
+        if "target" in self.component_lags:
+            raise_if(
+                len(self.component_lags["target"]) != self.input_dim["target"],
+                f"The training series contain {self.input_dim['target']} components, "
+                f"{len(self.component_lags['target'])} lags were provided. These two values must exactly match.",
+                logger,
+            )
+        if "past" in self.component_lags and "past" in self.input_dim:
+            raise_if(
+                len(self.component_lags["past"]) != self.input_dim["past"],
+                f"The past covariates series contain {self.input_dim['past']} components, "
+                f"{len(self.component_lags['past'])} lags were provided. These two values must exactly match.",
+                logger,
+            )
+        if "future" in self.component_lags and "future" in self.input_dim:
+            raise_if(
+                len(self.component_lags["future"]) != self.input_dim["future"],
+                f"The future covariates series contain {self.input_dim['future']} components, "
+                f"{len(self.component_lags['future'])} lags were provided. These two values must exactly match.",
+                logger,
+            )
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
@@ -863,23 +899,57 @@ class RegressionModel(GlobalForecastingModel):
                     series_matrix = np.concatenate(
                         [series_matrix, predictions[-1]], axis=1
                     )
-                np_X.append(
-                    series_matrix[
-                        :,
-                        [
-                            lag - (shift + last_step_shift)
-                            for lag in self.lags["target"]
-                        ],
-                    ].reshape(len(series) * num_samples, -1)
-                )
+                # component-wise lags
+                if "target" in self.component_lags:
+                    tmp_X = [
+                        series_matrix[
+                            :,
+                            [lag - (shift + last_step_shift) for lag in comp_lags],
+                            comp_i,
+                        ]
+                        for comp_i, (comp, comp_lags) in enumerate(
+                            self.component_lags["target"].items()
+                        )
+                    ]
+                    # values are grouped by component
+                    np_X.append(
+                        np.concatenate(tmp_X).reshape(len(series) * num_samples, -1)
+                    )
+                else:
+                    # values are grouped by lags
+                    np_X.append(
+                        series_matrix[
+                            :,
+                            [
+                                lag - (shift + last_step_shift)
+                                for lag in self.lags["target"]
+                            ],
+                        ].reshape(len(series) * num_samples, -1)
+                    )
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
             for cov_type in ["past", "future"]:
                 if cov_type in covariate_matrices:
-                    np_X.append(
-                        covariate_matrices[cov_type][
-                            :, relative_cov_lags[cov_type] + t_pred
-                        ].reshape(len(series) * num_samples, -1)
-                    )
+                    # component-wise lags
+                    if cov_type in self.component_lags:
+                        tmp_X = [
+                            covariate_matrices[cov_type][
+                                :,
+                                np.array(comp_lags) - self.lags[cov_type][0] + t_pred,
+                                comp_i,
+                            ]
+                            for comp_i, (comp, comp_lags) in enumerate(
+                                self.component_lags[cov_type].items()
+                            )
+                        ]
+                        np_X.append(
+                            np.concatenate(tmp_X).reshape(len(series) * num_samples, -1)
+                        )
+                    else:
+                        np_X.append(
+                            covariate_matrices[cov_type][
+                                :, relative_cov_lags[cov_type] + t_pred
+                            ].reshape(len(series) * num_samples, -1)
+                        )
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)

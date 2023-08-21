@@ -1,12 +1,14 @@
 import warnings
 from functools import reduce
 from math import inf
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+from itertools import chain
 
 import numpy as np
 import pandas as pd
@@ -329,9 +331,13 @@ def create_lagged_training_data(
     output_chunk_length: int,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    lags: Optional[Sequence[int]] = None,
-    lags_past_covariates: Optional[Sequence[int]] = None,
-    lags_future_covariates: Optional[Sequence[int]] = None,
+    lags: Optional[Union[Sequence[int], Dict[str, Sequence[int]]]] = None,
+    lags_past_covariates: Optional[
+        Union[Sequence[int], Dict[str, Sequence[int]]]
+    ] = None,
+    lags_future_covariates: Optional[
+        Union[Sequence[int], Dict[str, Sequence[int]]]
+    ] = None,
     uses_static_covariates: bool = True,
     last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     max_samples_per_ts: Optional[int] = None,
@@ -676,9 +682,13 @@ def create_lagged_component_names(
     target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    lags: Optional[Sequence[int]] = None,
-    lags_past_covariates: Optional[Sequence[int]] = None,
-    lags_future_covariates: Optional[Sequence[int]] = None,
+    lags: Optional[Union[Sequence[int], Dict[str, Sequence[int]]]] = None,
+    lags_past_covariates: Optional[
+        Union[Sequence[int], Dict[str, Sequence[int]]]
+    ] = None,
+    lags_future_covariates: Optional[
+        Union[Sequence[int], Dict[str, Sequence[int]]]
+    ] = None,
     output_chunk_length: int = 1,
     concatenate: bool = True,
     use_static_covariates: bool = False,
@@ -743,11 +753,17 @@ def create_lagged_component_names(
             continue
 
         components = get_single_series(variate).components.tolist()
-        lagged_feature_names += [
-            f"{name}_{variate_type}_lag{lag}"
-            for lag in variate_lags
-            for name in components
-        ]
+        if isinstance(variate_lags, dict):
+            for name in components:
+                lagged_feature_names += [
+                    f"{name}_{variate_type}_lag{lag}" for lag in variate_lags[name]
+                ]
+        else:
+            lagged_feature_names += [
+                f"{name}_{variate_type}_lag{lag}"
+                for lag in variate_lags
+                for name in components
+            ]
 
         if variate_type == "target" and lags:
             label_feature_names = [
@@ -894,9 +910,10 @@ def _create_lagged_data_by_moving_window(
             if isinstance(lags_i, list):
                 lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
             else:
+                # Lags are grouped by component, extracted from the same window
                 lags_to_extract = [
                     np.array(comp_lags, dtype=int) + min_lag_i - 1
-                    for comp_lags in lags_i
+                    for comp_lags in lags_i.values()
                 ]
             lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
@@ -1262,6 +1279,10 @@ def _get_feature_times(
         [target_series, past_covariates, future_covariates],
         [lags, lags_past_covariates, lags_future_covariates],
     ):
+        # TODO: information is available in model.lags, not sure how to make the info get here
+        if isinstance(lags_i, dict):
+            lags_i = list(set(chain(*lags_i.values())))
+
         if check_inputs and (series_i is not None):
             _check_series_length(
                 series_i,
