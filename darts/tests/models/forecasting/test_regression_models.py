@@ -420,7 +420,9 @@ class TestRegressionModels:
         # testing lags_past_covariates
         model_instance = model(lags=None, lags_past_covariates=3, multi_models=mode)
         assert model_instance.lags.get("past") == [-3, -2, -1]
-        # testing lags_future covariates
+        # lags_future covariates does not support SINGLE INT
+
+        # TESTING TUPLE of int, only supported by lags_future_covariates
         model_instance = model(
             lags=None, lags_future_covariates=(3, 5), multi_models=mode
         )
@@ -435,6 +437,25 @@ class TestRegressionModels:
         model_instance = model(lags_past_covariates=values, multi_models=mode)
         assert model_instance.lags.get("past") == values
         # testing lags_future_covariates
+        values = [-5, -1, 5]
+        model_instance = model(lags_future_covariates=values, multi_models=mode)
+        assert model_instance.lags.get("future") == values
+
+        # TESTING DICT, lags are specified component-wise
+        # model.lags contains the extreme across the components
+        values = {"comp0": [-4, -2], "comp1": [-5, -3]}
+        model_instance = model(lags=values, multi_models=mode)
+        assert model_instance.lags.get("target") == [-5, -2]
+        assert model_instance.component_lags.get("target") == values
+        # testing lags_past_covariates
+        model_instance = model(lags_past_covariates=values, multi_models=mode)
+        assert model_instance.lags.get("past") == [-5, -2]
+        assert model_instance.component_lags.get("past") == values
+        # testing lags_future_covariates
+        values = {"comp0": [-4, 2], "comp1": [-5, 3]}
+        model_instance = model(lags_future_covariates=values, multi_models=mode)
+        assert model_instance.lags.get("future") == [-5, 3]
+        assert model_instance.component_lags.get("future") == values
 
         with pytest.raises(ValueError):
             model(multi_models=mode)
@@ -464,6 +485,10 @@ class TestRegressionModels:
             model(lags=5, lags_future_covariates=(1, True), multi_models=mode)
         with pytest.raises(ValueError):
             model(lags=5, lags_future_covariates=(1, 1.0), multi_models=mode)
+        with pytest.raises(ValueError):
+            model(lags=5, lags_future_covariates={}, multi_models=mode)
+        with pytest.raises(ValueError):
+            model(lags=None, lags_future_covariates={}, multi_models=mode)
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_training_data_creation(self, mode):
@@ -1518,6 +1543,77 @@ class TestRegressionModels:
 
         # the time axis returned by the second model should be as expected
         assert all(preds[1].time_index == pd.RangeIndex(start=50, stop=70, step=2))
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ({"lags": [-3, -2, -1]}, {"lags": {"gaussian": 3}}),
+            ({"lags": 3}, {"lags": {"gaussian": 3, "sine": 3}}),
+            ({"lags_past_covariates": 2}, {"lags_past_covariates": {"lin_past": 2}}),
+            (
+                {"lags": 5, "lags_future_covariates": [-2, 3]},
+                {
+                    "lags": {
+                        "gaussian": [-5, -4, -3, -2, -1],
+                        "sine": [-5, -4, -3, -2, -1],
+                    },
+                    "lags_future_covariates": {
+                        "lin_future": [-2, 3],
+                        "sine_future": [-2, 3],
+                    },
+                },
+            ),
+        ],
+    )
+    def test_component_specific_lags(self, config):
+        """Verify that the same lags, defined using int/list or dictionnaries yield the same results"""
+        list_lags, dict_lags = config
+        multivar_target = "lags" in dict_lags and len(dict_lags["lags"]) > 1
+        multivar_future_cov = (
+            "lags_future_covariates" in dict_lags
+            and len(dict_lags["lags_future_covariates"]) > 1
+        )
+
+        # create series based on the model parameters
+        series = tg.gaussian_timeseries(length=20, column_name="gaussian")
+        if multivar_target:
+            series = series.stack(tg.sine_timeseries(length=20, column_name="sine"))
+
+        future_cov = tg.linear_timeseries(length=30, column_name="lin_future")
+        if multivar_future_cov:
+            future_cov = future_cov.stack(
+                tg.sine_timeseries(length=30, column_name="sine_future")
+            )
+
+        past_cov = tg.linear_timeseries(length=30, column_name="lin_past")
+
+        # the lags are identical across the components for each series
+        model = LinearRegressionModel(**list_lags)
+        model.fit(
+            series=series,
+            past_covariates=past_cov if model.supports_past_covariates else None,
+            future_covariates=future_cov if model.supports_future_covariates else None,
+        )
+
+        # the lags are specified for each component, individually
+        model2 = LinearRegressionModel(**dict_lags)
+        model2.fit(
+            series=series,
+            past_covariates=past_cov if model2.supports_past_covariates else None,
+            future_covariates=future_cov if model2.supports_future_covariates else None,
+        )
+
+        # n == output_chunk_length
+        pred = model.predict(1)
+        pred2 = model2.predict(1)
+        np.testing.assert_array_almost_equal(pred.values(), pred2.values())
+        assert pred.time_index.equals(pred2.time_index)
+
+        # n > output_chunk_length
+        pred = model.predict(3)
+        pred2 = model2.predict(3)
+        np.testing.assert_array_almost_equal(pred.values(), pred2.values())
+        assert pred.time_index.equals(pred2.time_index)
 
     @pytest.mark.parametrize(
         "config",

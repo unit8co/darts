@@ -228,7 +228,7 @@ class RegressionModel(GlobalForecastingModel):
 
         def _check_int_lags(lags: int, lags_name: str) -> List[int]:
             raise_if_not(
-                lags > 0, f"{lags_name} must be strictly positive. Given: {lags}."
+                lags > 0, f"`{lags_name}` must be strictly positive. Given: {lags}."
             )
             return list(range(-lags, 0))
 
@@ -236,7 +236,7 @@ class RegressionModel(GlobalForecastingModel):
             for lag in lags:
                 raise_if(
                     not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of {lags_name} must be a strictly negative integer. Given: {lags}.",
+                    f"Every element of `{lags_name}` must be a strictly negative integer. Given: {lags}.",
                 )
             return sorted(lags)
 
@@ -245,11 +245,11 @@ class RegressionModel(GlobalForecastingModel):
         ) -> List[int]:
             raise_if_not(
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"{lags_name} tuple must contain stricly positibe integers. Given: {lags_future_covariates}.",
+                f"`{lags_name}` tuple must contain stricly positibe integers. Given: {lags_future_covariates}.",
             )
             raise_if(
                 lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0,
-                f"{lags_name} tuple cannot be (0, 0) as it corresponds to an empty list of lags.",
+                f"`{lags_name}` tuple cannot be (0, 0) as it corresponds to an empty list of lags.",
                 logger,
             )
             return list(range(-lags_future_covariates[0], lags_future_covariates[1]))
@@ -260,7 +260,7 @@ class RegressionModel(GlobalForecastingModel):
             for lag in lags_future_covariates:
                 raise_if(
                     not isinstance(lag, int) or isinstance(lag, bool),
-                    f"Every element of {lags_name} must be an integer. Given: {lags_future_covariates}.",
+                    f"Every element of `{lags_name}` must be an integer. Given: {lags_future_covariates}.",
                 )
             return sorted(lags_future_covariates)
 
@@ -270,7 +270,7 @@ class RegressionModel(GlobalForecastingModel):
 
             raise_if_not(
                 len(lags) > 0,
-                f"When passed as a dictionnary, {lags_name} must contain at least one key.",
+                f"When passed as a dictionnary, `{lags_name}` must contain at least one key.",
                 logger,
             )
 
@@ -284,11 +284,11 @@ class RegressionModel(GlobalForecastingModel):
                 if lags_name == "lags_future_covariates":
                     if isinstance(comp_lags, tuple):
                         components_lags[comp_name] = _check_tuple_future_lags(
-                            comp_lags, f"{lags_name} for component {comp_name}"
+                            comp_lags, f"`{lags_name}` for component {comp_name}"
                         )
                     elif isinstance(comp_lags, list):
                         components_lags[comp_name] = _check_list_future_lags(
-                            comp_lags, f"{lags_name} for component {comp_name}"
+                            comp_lags, f"`{lags_name}` for component {comp_name}"
                         )
                     else:
                         invalid_type = True
@@ -296,11 +296,11 @@ class RegressionModel(GlobalForecastingModel):
                 else:
                     if isinstance(comp_lags, int):
                         components_lags[comp_name] = _check_int_lags(
-                            comp_lags, f"{lags_name} for component {comp_name}"
+                            comp_lags, f"`{lags_name}` for component {comp_name}"
                         )
                     elif isinstance(comp_lags, list):
                         components_lags[comp_name] = _check_list_lags(
-                            comp_lags, f"{lags_name} for component {comp_name}"
+                            comp_lags, f"`{lags_name}` for component {comp_name}"
                         )
                     else:
                         invalid_type = True
@@ -309,7 +309,7 @@ class RegressionModel(GlobalForecastingModel):
                 if invalid_type:
                     raise_log(
                         ValueError(
-                            f"When passed as a dictionnary, {lags_name} for component {comp_name} must be either a "
+                            f"When passed as a dictionnary, `{lags_name}` for component {comp_name} must be either a "
                             f"{supported_types}, received : {type(comp_lags)}."
                         ),
                         logger,
@@ -328,11 +328,11 @@ class RegressionModel(GlobalForecastingModel):
 
         # perform the type and sanity checks
         if isinstance(lags, int):
-            self.lags["target"] = _check_int_lags(lags, "`lags`")
+            self.lags["target"] = _check_int_lags(lags, "lags")
         elif isinstance(lags, list):
-            self.lags["target"] = _check_list_lags(lags, "`lags`")
+            self.lags["target"] = _check_list_lags(lags, "lags")
         elif isinstance(lags, dict):
-            conv_lags = _check_dict_lags(lags, "`lags`")
+            conv_lags = _check_dict_lags(lags, "lags")
             if conv_lags is not None:
                 # dummy, used to compute the extreme lags
                 self.lags["target"] = conv_lags[0]
@@ -341,14 +341,14 @@ class RegressionModel(GlobalForecastingModel):
 
         if isinstance(lags_past_covariates, int):
             self.lags["past"] = _check_int_lags(
-                lags_past_covariates, "`lags_past_covariates`"
+                lags_past_covariates, "lags_past_covariates"
             )
         elif isinstance(lags_past_covariates, list):
             self.lags["past"] = _check_list_lags(
-                lags_past_covariates, "`lags_past_covariates`"
+                lags_past_covariates, "lags_past_covariates"
             )
         elif isinstance(lags_past_covariates, dict):
-            conv_lags = _check_dict_lags(lags_past_covariates, "`lags_past_covariates`")
+            conv_lags = _check_dict_lags(lags_past_covariates, "lags_past_covariates")
             if conv_lags is not None:
                 # dummy, used to compute the extreme lags
                 self.lags["past"] = conv_lags[0]
@@ -357,15 +357,15 @@ class RegressionModel(GlobalForecastingModel):
 
         if isinstance(lags_future_covariates, tuple):
             self.lags["future"] = _check_tuple_future_lags(
-                lags_future_covariates, "`lags_future_covariates`"
+                lags_future_covariates, "lags_future_covariates"
             )
         elif isinstance(lags_future_covariates, list):
             self.lags["future"] = _check_list_future_lags(
-                lags_future_covariates, "`lags_future_covariates`"
+                lags_future_covariates, "lags_future_covariates"
             )
         elif isinstance(lags_future_covariates, dict):
             conv_lags = _check_dict_lags(
-                lags_future_covariates, "`lags_future_covariates`"
+                lags_future_covariates, "lags_future_covariates"
             )
             if conv_lags is not None:
                 # dummy, used to compute the extreme lags
