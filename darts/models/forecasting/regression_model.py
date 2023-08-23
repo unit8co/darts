@@ -256,7 +256,7 @@ class RegressionModel(GlobalForecastingModel):
         ) -> List[int]:
             raise_if_not(
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"`{lags_name}` tuple must contain stricly positibe integers. Given: {lags_future_covariates}.",
+                f"`{lags_name}` tuple must contain stricly positive integers. Given: {lags_future_covariates}.",
             )
             raise_if(
                 lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0,

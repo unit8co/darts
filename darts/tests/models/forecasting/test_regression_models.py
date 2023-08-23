@@ -492,7 +492,8 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_training_data_creation(self, mode):
-        # testing _get_training_data function
+        """testing _get_training_data function"""
+        # lags defined using lists of integers
         model_instance = RegressionModel(
             lags=self.lags_1["target"],
             lags_past_covariates=self.lags_1["past"],
@@ -540,6 +541,55 @@ class TestRegressionModels:
             20084.0,
         ]
         assert list(training_labels[0]) == [82, 182, 282]
+
+        # lags defined using dictionnaries
+        # cannot use 'default_lags' because it's converted in `fit()`, before calling `_created_lagged_data`
+        model_instance = RegressionModel(
+            lags={"0-trgt-0": [-5, -4], "0-trgt-1": [-3, -2], "0-trgt-2": [-2, -1]},
+            lags_past_covariates={"0-pcov-0": [-10], "0-pvoc-1": [-7]},
+            lags_future_covariates={"0-fcov-0": (2, 2)},
+            multi_models=mode,
+        )
+
+        max_samples_per_ts = 3
+
+        # using only one series of each
+        training_samples, training_labels = model_instance._create_lagged_data(
+            target_series=self.target_series[0],
+            past_covariates=self.past_covariates[0],
+            future_covariates=self.future_covariates[0],
+            max_samples_per_ts=max_samples_per_ts,
+        )
+
+        # checking number of dimensions
+        assert len(training_samples.shape) == 2  # samples, features
+        assert len(training_labels.shape) == 2  # samples, components (multivariate)
+        assert training_samples.shape[0] == training_labels.shape[0]
+        assert training_samples.shape[0] == max_samples_per_ts
+        assert (
+            training_samples.shape[1]
+            == 6  # [-4, -3], [-3, -2], [-2, -1]
+            + 2  # [-10], [-7]
+            + 4  # [-2, -1, 0, 1]
+        )
+
+        # check last sample
+        assert list(training_labels[0]) == [97, 197, 297]
+        # lags are grouped by components instead of lags
+        assert list(training_samples[0, :]) == [
+            92,
+            93,
+            194,
+            195,
+            295,
+            296,  # comp_i = comp_0 + i*100
+            10087,
+            10190,  # past cov; target + 10'000
+            20095,
+            20096,
+            20097,
+            20098,  # future cov; target + 20'000
+        ]
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_prediction_data_creation(self, mode):
