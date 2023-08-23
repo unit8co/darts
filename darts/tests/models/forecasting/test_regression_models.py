@@ -1563,6 +1563,19 @@ class TestRegressionModels:
                     },
                 },
             ),
+            (
+                {"lags": 5, "lags_future_covariates": [-2, 3]},
+                {
+                    "lags": {
+                        "gaussian": [-5, -4, -3, -2, -1],
+                        "sine": [-5, -4, -3, -2, -1],
+                    },
+                    "lags_future_covariates": {
+                        "sine_future": [-2, 3],
+                        "default_lags": [-2, 3],
+                    },
+                },
+            ),
         ],
     )
     def test_component_specific_lags(self, config):

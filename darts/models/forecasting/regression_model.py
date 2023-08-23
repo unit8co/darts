@@ -84,20 +84,31 @@ class RegressionModel(GlobalForecastingModel):
         Parameters
         ----------
         lags
-            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise, a list of integers with lags (each lag must be < 0).
-            In order to specify component-wise lags, a dictionnary with the component name or index as key and the
-            lags value can be provided. The number of keys in the dictionnary must match the number of components in
-            the series.
+            Lagged target values used to predict the next time step.
+            If an integer is given the last `lags` past lags are used (from -1 backward).
+            If a list of integers, each lag must be < 0.
+            If a dictionnary, the keys must be the components' name  (first series when using multiple series) and
+            the values corresponds to the lags (integer or list of integers). The key 'default_lags' can be used to
+            provide fallback lags values for un-specified components. An error will be raised if some components are
+            missing and the 'default_lags' key is not present in the dictionnary.
         lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
-            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
-            with lags < 0 is required.
+            Number of lagged past_covariates values used to predict the next time step.
+            If an integer is given the last `lags_past_covariates` past lags are used (inclusive, starting from lag -1).
+            If a list of integers, each lag must be < 0.
+            If a dictionnary, the keys must be the components' name  (first series when using multiple series) and
+            the values corresponds to the lags (integer or list of integers). The key 'default_lags' can be used to
+            provide fallback lags values for un-specified components. An error will be raised if some components are
+            missing and the 'default_lags' key is not present in the dictionnary.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
-            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
-            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
-            of integers with lags is required.
+            Number of lagged future_covariates values used to predict the next time step.
+            If a tuple (past, future) is given the last `past` lags in the past are used (inclusive, starting from
+            lag -1) along with the first `future` future lags (starting from 0 - the prediction time - up to
+            `future - 1` included).
+            If a list of integer, the values will be used as is.
+            If a dictionnary, the keys must be the components' name  (first series when using multiple series) and
+            the values corresponds to the lags (integer or list of integers). The key 'default_lags' can be used to
+            provide fallback lags values for un-specified components. An error will be raised if some components are
+            missing and the 'default_lags' key is not present in the dictionnary.
         output_chunk_length
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
@@ -680,10 +691,13 @@ class RegressionModel(GlobalForecastingModel):
             ["target", "past", "future"], [series, past_covariates, future_covariates]
         ):
             if variate_type in self.component_lags:
+                # ignore the fallback lags entry
                 provided_components = set(self.component_lags[variate_type].keys())
                 required_components = set(variate[0].components)
                 # lags were specified for unrecognized components
-                wrong_components = list(provided_components - required_components)
+                wrong_components = list(
+                    provided_components - {"default_lags"} - required_components
+                )
                 if len(wrong_components) > 0:
                     logger.warning(
                         f"Lags of components not present in the series ({wrong_components}) were ignored."
@@ -691,15 +705,17 @@ class RegressionModel(GlobalForecastingModel):
 
                 missing_keys = list(required_components - provided_components)
                 raise_if(
-                    len(missing_keys) > 0,
+                    len(missing_keys) > 0 and "default_lags" not in provided_components,
                     f"The {variate_type} series contains {self.input_dim[variate_type]} components, lags were "
                     f"provided for {len(self.component_lags[variate_type])} of them. The lags for the "
                     f"following components must be provided: {missing_keys}.",
                     logger,
                 )
-                # reorder the components based on the input series
+                # reorder the components based on the input series, insert the default when necessary
                 self.component_lags[variate_type] = {
                     comp_name: self.component_lags[variate_type][comp_name]
+                    if comp_name in self.component_lags[variate_type]
+                    else self.component_lags[variate_type]["default_lags"]
                     for comp_name in variate[0].components
                 }
 
