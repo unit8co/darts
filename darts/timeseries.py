@@ -5242,3 +5242,10 @@ def concatenate(
         )
 
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
+
+
+def split_multivariate(time_series: TimeSeries):
+    """split multivariate TimeSeries into a list of univariate TimeSeries"""
+    return [
+        time_series.univariate_component(i) for i in range(time_series.n_components)
+    ]

@@ -1,8 +1,8 @@
 """
-Regression ensemble model
+Multivariate forecasting model wrapper
 -------------------------
 
-An ensemble model which uses a regression model to compute the ensemble forecast.
+A wrapper around local forecasting models which allows forecasting multiple components
 """
 from typing import List, Optional, Tuple
 
@@ -12,27 +12,42 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries, concatenate
+from darts.timeseries import TimeSeries, concatenate, split_multivariate
 from darts.utils.utils import seq2series
 
 logger = get_logger(__name__)
 
 
 class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel):
+    def __init__(self, model: LocalForecastingModel):
+        """
+        Wrapper around LocalForecastingModel allowing it to predict multivariate TimeSeries.
+
+        A copy of the provided model will be trained on each of the components of the provided series separately.
+        Parameters
+        ----------
+        model
+            Model used to predict individual components
+        """
+        super().__init__()
+
+        self.model: LocalForecastingModel = model
+        self._trained_models: List[LocalForecastingModel] = []
+
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         self._trained_models = []
 
         series = seq2series(series)
-        components = self._split_multivariate(series)
+        components = split_multivariate(series)
         if self.supports_future_covariates:
             self._trained_models = [
-                self.base_model.untrained_model().fit(c, future_covariates)
+                self.model.untrained_model().fit(c, future_covariates)
                 for c in components
             ]
         else:
             self._trained_models = [
-                self.base_model.untrained_model().fit(c) for c in components
+                self.model.untrained_model().fit(c) for c in components
             ]
 
         return self
@@ -67,29 +82,6 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         multivariate_series = concatenate(predictions, axis=1)
         return multivariate_series
 
-    def __init__(self, model: LocalForecastingModel):
-        """
-        Wrapper around LocalForecastingModel allowing it to act like a GlobalForecastingModel
-
-        A copy of the provided model will be trained on each of the components of the provided series separately.
-        The model doesn't use series supplied during predict() and instead predicts on the series it trained on.
-
-        Parameters
-        ----------
-        model
-            Model used to predict individual components
-        """
-        super().__init__()
-
-        self.base_model: LocalForecastingModel = model
-        self._trained_models: List[LocalForecastingModel] = []
-
-    def _split_multivariate(self, time_series: TimeSeries):
-        """split multivariate TimeSeries into a list of univariate TimeSeries"""
-        return [
-            time_series.univariate_component(i) for i in range(time_series.n_components)
-        ]
-
     @property
     def extreme_lags(
         self,
@@ -101,7 +93,7 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         Optional[int],
         Optional[int],
     ]:
-        return self.base_model.extreme_lags
+        return self.model.extreme_lags
 
     @property
     def _model_encoder_settings(
@@ -122,30 +114,26 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
 
     @property
     def supports_past_covariates(self) -> bool:
-        return False
+        return self.model.supports_past_covariates
 
     @property
     def supports_future_covariates(self) -> bool:
-        return self.base_model.supports_future_covariates
+        return self.model.supports_future_covariates
 
     @property
     def supports_static_covariates(self) -> bool:
-        return False
+        return self.model.supports_static_covariates
 
     def _is_probabilistic(self) -> bool:
         """
-        A GlobalForecastingModelWrappers is probabilistic if the base_model
+        A MultivariateForecastingModelWrapper is probabilistic if the base_model
         is probabilistic
         """
-        return self.base_model._is_probabilistic()
+        return self.model._is_probabilistic
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
-        return isinstance(
-            self.base_model, TransferableFutureCovariatesLocalForecastingModel
-        )
+        return isinstance(self.model, TransferableFutureCovariatesLocalForecastingModel)
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
-        return isinstance(
-            self.base_model, TransferableFutureCovariatesLocalForecastingModel
-        )
+        return isinstance(self.model, TransferableFutureCovariatesLocalForecastingModel)
