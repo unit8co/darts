@@ -2,7 +2,7 @@ import pytest
 
 from darts.logging import get_logger
 from darts.metrics import mae
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -20,9 +20,9 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TCNModelTestCase(DartsBaseTestClass):
+    class TestTCNModel:
         def test_creation(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # cannot choose a kernel size larger than the input length
                 TCNModel(input_chunk_length=20, output_chunk_length=1, kernel_size=100)
             TCNModel(input_chunk_length=12, output_chunk_length=1)
@@ -33,22 +33,30 @@ if TORCH_AVAILABLE:
 
             # Test basic fit and predict
             model = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, n_epochs=10, num_layers=1
+                input_chunk_length=12,
+                output_chunk_length=1,
+                n_epochs=10,
+                num_layers=1,
+                **tfm_kwargs
             )
             model.fit(large_ts[:98])
             pred = model.predict(n=2).values()[0]
 
             # Test whether model trained on one series is better than one trained on another
             model2 = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, n_epochs=10, num_layers=1
+                input_chunk_length=12,
+                output_chunk_length=1,
+                n_epochs=10,
+                num_layers=1,
+                **tfm_kwargs
             )
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
-            self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+            assert abs(pred2 - 10) < abs(pred - 10)
 
             # test short predict
             pred3 = model2.predict(n=1)
-            self.assertEqual(len(pred3), 1)
+            assert len(pred3) == 1
 
         def test_performance(self):
             # test TCN performance on dummy time series
@@ -61,11 +69,12 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 n_epochs=300,
                 random_state=0,
+                **tfm_kwargs
             )
             model.fit(train)
             pred = model.predict(n=10)
 
-            self.assertTrue(mae(pred, test) < 0.3)
+            assert mae(pred, test) < 0.3
 
         @pytest.mark.slow
         def test_coverage(self):
@@ -88,6 +97,7 @@ if TORCH_AVAILABLE:
                             dilation_base=dilation_base,
                             weight_norm=False,
                             n_epochs=1,
+                            **tfm_kwargs
                         )
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module
@@ -123,7 +133,7 @@ if TORCH_AVAILABLE:
                             curr_output = model.model.forward((input_tensor, None))[
                                 0, -1, 0
                             ]
-                            self.assertNotEqual(zero_output, curr_output)
+                            assert zero_output != curr_output
                             input_tensor[0, i, 0] = 0
 
                         # create model with all weights set to one and one layer less than is automatically detected
@@ -135,6 +145,7 @@ if TORCH_AVAILABLE:
                             weight_norm=False,
                             num_layers=model.model.num_layers - 1,
                             n_epochs=1,
+                            **tfm_kwargs
                         )
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module
@@ -177,21 +188,21 @@ if TORCH_AVAILABLE:
                                 uncovered_input_found = True
                                 break
                             input_tensor[0, i, 0] = 0
-                        self.assertTrue(uncovered_input_found)
+                        assert uncovered_input_found
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
-                input_chunk_length=12, output_chunk_length=3, n_epochs=1
+                input_chunk_length=12, output_chunk_length=3, n_epochs=1, **tfm_kwargs
             )
             model.fit(series)
             pred = model.predict(7)
-            self.assertEqual(len(pred), 7)
+            assert len(pred) == 7
             pred = model.predict(2)
-            self.assertEqual(len(pred), 2)
-            self.assertEqual(pred.width, 1)
+            assert len(pred) == 2
+            assert pred.width == 1
             pred = model.predict(4)
-            self.assertEqual(len(pred), 4)
-            self.assertEqual(pred.width, 1)
+            assert len(pred) == 4
+            assert pred.width == 1
 
         def test_pred_length(self):
             series = tg.linear_timeseries(length=100)

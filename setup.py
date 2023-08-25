@@ -10,7 +10,9 @@ def read_requirements(path):
 base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
 
-all_reqs = base_reqs + torch_reqs
+# Note: Prophet, LightGBM, Catboost are not included in darts package by default
+
+reqs = base_reqs + torch_reqs
 
 with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -28,7 +30,7 @@ PROJECT_URLS = {
 
 setup(
     name="darts",
-    version="0.24.0",
+    version="0.25.0",
     description="A python library for easy manipulation and forecasting of time series.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -38,7 +40,7 @@ setup(
     maintainer_email="darts@unit8.co",
     license="Apache License 2.0",
     packages=find_packages(),
-    install_requires=all_reqs,
+    install_requires=reqs,
     package_data={
         "darts": ["py.typed"],
     },

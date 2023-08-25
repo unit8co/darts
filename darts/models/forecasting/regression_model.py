@@ -29,6 +29,11 @@ if their static covariates do not have the same size, the shorter ones are padde
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -54,16 +59,6 @@ from darts.utils.utils import (
 )
 
 logger = get_logger(__name__)
-
-try:
-    from catboost import CatBoostRegressor
-except ModuleNotFoundError:
-    logger.warning(
-        "The catboost module could not be imported. "
-        "To enable support for CatBoostRegressor, "
-        "follow the instruction in the README: "
-        "https://github.com/unit8co/darts/blob/master/INSTALL.md"
-    )
 
 
 class RegressionModel(GlobalForecastingModel):
@@ -533,7 +528,7 @@ class RegressionModel(GlobalForecastingModel):
                     self.model = MultiOutputRegressor(
                         self.model, n_jobs=n_jobs_multioutput_wrapper
                     )
-                elif isinstance(self.model, CatBoostRegressor):
+                elif self.model.__class__.__name__ == "CatBoostRegressor":
                     if (
                         self.model.get_params()["loss_function"]
                         == "RMSEWithUncertainty"
@@ -907,6 +902,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
         overlap_end: bool = False,
@@ -959,6 +955,7 @@ class RegressionModel(GlobalForecastingModel):
                 future_covariates=future_covariates,
                 num_samples=num_samples,
                 start=start,
+                start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
@@ -973,6 +970,7 @@ class RegressionModel(GlobalForecastingModel):
                 future_covariates=future_covariates,
                 num_samples=num_samples,
                 start=start,
+                start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,

@@ -1,11 +1,10 @@
-import shutil
-import tempfile
-
+import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -30,8 +29,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TransformerModelTestCase(DartsBaseTestClass):
-        __test__ = True
+    class TestTransformerModel:
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
@@ -54,80 +52,82 @@ if TORCH_AVAILABLE:
             custom_decoder=None,
         )
 
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
-
-        def test_fit(self):
+        def test_fit(self, tmpdir_module):
             # Test fit-save-load cycle
             model2 = TransformerModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 n_epochs=2,
                 model_name="unittest-model-transformer",
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_module,
                 save_checkpoints=True,
                 force_reset=True,
+                **tfm_kwargs
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
                 model_name="unittest-model-transformer",
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_module,
                 best=False,
+                map_location="cpu",
             )
             pred1 = model2.predict(n=6)
             pred2 = model_loaded.predict(n=6)
 
             # Two models with the same parameters should deterministically yield the same output
-            self.assertEqual(sum(pred1.values() - pred2.values()), 0.0)
+            np.testing.assert_array_equal(pred1.values(), pred2.values())
 
             # Another random model should not
             model3 = TransformerModel(
-                input_chunk_length=1, output_chunk_length=1, n_epochs=1
+                input_chunk_length=1, output_chunk_length=1, n_epochs=1, **tfm_kwargs
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
-            self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.0)
+            assert not np.array_equal(pred1.values(), pred3.values())
 
             # test short predict
             pred4 = model3.predict(n=1)
-            self.assertEqual(len(pred4), 1)
+            assert len(pred4) == 1
 
             # test validation series input
             model3.fit(self.series[:60], val_series=self.series[60:])
             pred4 = model3.predict(n=6)
-            self.assertEqual(len(pred4), 6)
+            assert len(pred4) == 6
 
         def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(
-                input_chunk_length=1, output_chunk_length=3, n_epochs=1
+                input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
             )
             model.fit(series)
             pred = model.predict(7)
-            self.assertEqual(len(pred), 7)
+            assert len(pred) == 7
             pred = model.predict(2)
-            self.assertEqual(len(pred), 2)
-            self.assertEqual(pred.width, 1)
+            assert len(pred) == 2
+            assert pred.width == 1
             pred = model.predict(4)
-            self.assertEqual(len(pred), 4)
-            self.assertEqual(pred.width, 1)
+            assert len(pred) == 4
+            assert pred.width == 1
 
         def test_pred_length(self):
             series = tg.linear_timeseries(length=100)
             self.helper_test_pred_length(TransformerModel, series)
 
         def test_activations(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model1 = TransformerModel(
-                    input_chunk_length=1, output_chunk_length=1, activation="invalid"
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    activation="invalid",
+                    **tfm_kwargs
                 )
                 model1.fit(self.series, epochs=1)
 
             # internal activation function uses PyTorch TransformerEncoderLayer
             model2 = TransformerModel(
-                input_chunk_length=1, output_chunk_length=1, activation="gelu"
+                input_chunk_length=1,
+                output_chunk_length=1,
+                activation="gelu",
+                **tfm_kwargs
             )
             model2.fit(self.series, epochs=1)
             assert isinstance(
@@ -139,7 +139,10 @@ if TORCH_AVAILABLE:
 
             # glue variant FFN uses our custom _FeedForwardEncoderLayer
             model3 = TransformerModel(
-                input_chunk_length=1, output_chunk_length=1, activation="SwiGLU"
+                input_chunk_length=1,
+                output_chunk_length=1,
+                activation="SwiGLU",
+                **tfm_kwargs
             )
             model3.fit(self.series, epochs=1)
             assert isinstance(
@@ -155,16 +158,24 @@ if TORCH_AVAILABLE:
             base_model = TransformerModel
 
             # default norm_type is None
-            model0 = base_model(input_chunk_length=1, output_chunk_length=1)
+            model0 = base_model(
+                input_chunk_length=1, output_chunk_length=1, **tfm_kwargs
+            )
             y0 = model0.fit(self.series, epochs=1)
 
             model1 = base_model(
-                input_chunk_length=1, output_chunk_length=1, norm_type="RMSNorm"
+                input_chunk_length=1,
+                output_chunk_length=1,
+                norm_type="RMSNorm",
+                **tfm_kwargs
             )
             y1 = model1.fit(self.series, epochs=1)
 
             model2 = base_model(
-                input_chunk_length=1, output_chunk_length=1, norm_type=nn.LayerNorm
+                input_chunk_length=1,
+                output_chunk_length=1,
+                norm_type=nn.LayerNorm,
+                **tfm_kwargs
             )
             y2 = model2.fit(self.series, epochs=1)
 
@@ -173,6 +184,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 activation="gelu",
                 norm_type="RMSNorm",
+                **tfm_kwargs
             )
             y3 = model3.fit(self.series, epochs=1)
 
@@ -181,8 +193,11 @@ if TORCH_AVAILABLE:
             assert y0 != y3
             assert y1 != y3
 
-            with self.assertRaises(AttributeError):
+            with pytest.raises(AttributeError):
                 model4 = base_model(
-                    input_chunk_length=1, output_chunk_length=1, norm_type="invalid"
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    norm_type="invalid",
+                    **tfm_kwargs
                 )
                 model4.fit(self.series, epochs=1)

@@ -1,10 +1,8 @@
-import shutil
-import tempfile
-
 import numpy as np
+import pytest
 
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -21,15 +19,9 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class NbeatsNhitsModelTestCase(DartsBaseTestClass):
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
-
+    class TestNbeatsNhitsModel:
         def test_creation(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 # if a list is passed to the `layer_widths` argument, it must have a length equal to `num_stacks`
                 NBEATSModel(
                     input_chunk_length=1,
@@ -38,7 +30,7 @@ if TORCH_AVAILABLE:
                     layer_widths=[1, 2],
                 )
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 NHiTSModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -60,6 +52,7 @@ if TORCH_AVAILABLE:
                     num_blocks=1,
                     layer_widths=20,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -73,14 +66,15 @@ if TORCH_AVAILABLE:
                     num_blocks=1,
                     layer_widths=20,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
-                self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+                assert abs(pred2 - 10) < abs(pred - 10)
 
                 # test short predict
                 pred3 = model2.predict(n=1)
-                self.assertEqual(len(pred3), 1)
+                assert len(pred3) == 1
 
         def test_multivariate(self):
             # testing a 2-variate linear ts, first one from 0 to 1, second one from 0 to 0.5, length 100
@@ -94,6 +88,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=20,
                     random_state=42,
+                    **tfm_kwargs
                 )
 
                 model.fit(series_multivariate)
@@ -101,10 +96,8 @@ if TORCH_AVAILABLE:
 
                 # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
                 # We just test if the given result is not too far on average.
-                self.assertTrue(
-                    abs(
-                        np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03
-                    )
+                assert abs(
+                    np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03
                 )
 
                 # Test Covariates
@@ -116,6 +109,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=4,
                     n_epochs=5,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model.fit(series_multivariate, past_covariates=series_covariates)
 
@@ -123,12 +117,12 @@ if TORCH_AVAILABLE:
                     n=3, series=series_multivariate, past_covariates=series_covariates
                 ).values()
 
-                self.assertEqual(len(res), 3)
-                self.assertTrue(abs(np.average(res)) < 5)
+                assert len(res) == 3
+                assert abs(np.average(res)) < 5
 
         def test_nhits_sampling_sizes(self):
             # providing bad sizes or shapes should fail
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
 
                 # wrong number of coeffs for stacks and blocks
                 NHiTSModel(
@@ -139,7 +133,7 @@ if TORCH_AVAILABLE:
                     pooling_kernel_sizes=((1,), (1,)),
                     n_freq_downsample=((1,), (1,)),
                 )
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 NHiTSModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -166,9 +160,9 @@ if TORCH_AVAILABLE:
                 num_stacks=2,
                 num_blocks=2,
             )
-            self.assertEqual(model.n_freq_downsample[-1][-1], 1)
+            assert model.n_freq_downsample[-1][-1] == 1
 
-        def test_logtensorboard(self):
+        def test_logtensorboard(self, tmpdir_module):
             ts = tg.constant_timeseries(length=50, value=10)
 
             # testing if both the modes (generic and interpretable) runs with tensorboard
@@ -180,9 +174,12 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=1,
                     log_tensorboard=True,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_module,
                     generic_architecture=architecture,
-                    pl_trainer_kwargs={"log_every_n_steps": 1},
+                    pl_trainer_kwargs={
+                        "log_every_n_steps": 1,
+                        **tfm_kwargs["pl_trainer_kwargs"],
+                    },
                 )
                 model.fit(ts)
                 model.predict(n=2)
@@ -200,10 +197,11 @@ if TORCH_AVAILABLE:
                     layer_widths=20,
                     random_state=42,
                     activation="LeakyReLU",
+                    **tfm_kwargs
                 )
                 model.fit(ts)
 
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     model = model_cls(
                         input_chunk_length=1,
                         output_chunk_length=1,
@@ -213,5 +211,6 @@ if TORCH_AVAILABLE:
                         layer_widths=20,
                         random_state=42,
                         activation="invalid",
+                        **tfm_kwargs
                     )
                     model.fit(ts)

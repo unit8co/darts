@@ -511,7 +511,6 @@ def granger_causality_tests(
     ts_effect: TimeSeries,
     maxlag: int,
     addconst: bool = True,
-    verbose: bool = True,
 ) -> None:
     """
     Provides four tests for granger non causality of 2 time series using
@@ -532,8 +531,6 @@ def granger_causality_tests(
         If an iterable, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
-    verbose
-        Print results.
 
     Returns
     -------
@@ -583,7 +580,6 @@ def granger_causality_tests(
         ),
         maxlag,
         addconst,
-        verbose,
     )
 
 

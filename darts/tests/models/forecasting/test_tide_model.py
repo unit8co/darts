@@ -1,13 +1,10 @@
-import shutil
-import tempfile
-
 import numpy as np
 import pandas as pd
 import pytest
 
 from darts import concatenate
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -26,15 +23,9 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TiDEModelModelTestCase(DartsBaseTestClass):
+    class TestTiDEModel:
         np.random.seed(42)
         torch.manual_seed(42)
-
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
 
         def test_creation(self):
             model = TiDEModel(
@@ -43,7 +34,7 @@ if TORCH_AVAILABLE:
                 likelihood=GaussianLikelihood(),
             )
 
-            self.assertEqual(model.input_chunk_length, 1)
+            assert model.input_chunk_length == 1
 
         def test_fit(self):
             large_ts = tg.constant_timeseries(length=100, value=1000)
@@ -54,6 +45,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 random_state=42,
+                **tfm_kwargs
             )
 
             model.fit(large_ts[:98])
@@ -65,17 +57,18 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 random_state=42,
+                **tfm_kwargs
             )
 
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
-            self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+            assert abs(pred2 - 10) < abs(pred - 10)
 
             # test short predict
             pred3 = model2.predict(n=1)
-            self.assertEqual(len(pred3), 1)
+            assert len(pred3) == 1
 
-        def test_logtensorboard(self):
+        def test_logtensorboard(self, tmpdir_module):
             ts = tg.constant_timeseries(length=50, value=10)
 
             # Test basic fit and predict
@@ -84,8 +77,11 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=1,
                 log_tensorboard=True,
-                work_dir=self.temp_work_dir,
-                pl_trainer_kwargs={"log_every_n_steps": 1},
+                work_dir=tmpdir_module,
+                pl_trainer_kwargs={
+                    "log_every_n_steps": 1,
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
             model.fit(ts)
             model.predict(n=2)
@@ -98,6 +94,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
                 use_reversible_instance_norm=False,
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -106,6 +103,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
                 use_reversible_instance_norm=True,
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -116,6 +114,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -126,6 +125,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"past": "hour"}},
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -140,6 +140,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
                     use_reversible_instance_norm=enable_rin,
+                    **tfm_kwargs
                 )
                 model.fit(ts_time_index, ts_time_index, verbose=False, epochs=1)
 
@@ -149,6 +150,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
                     use_reversible_instance_norm=enable_rin,
+                    **tfm_kwargs
                 )
                 model.fit(
                     ts_time_index, ts_time_index, ts_time_index, verbose=False, epochs=1
@@ -171,7 +173,10 @@ if TORCH_AVAILABLE:
                 input_chunk_length=3,
                 output_chunk_length=4,
                 add_encoders={"cyclic": {"future": "hour"}},
-                pl_trainer_kwargs={"fast_dev_run": True},
+                pl_trainer_kwargs={
+                    "fast_dev_run": True,
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
             model.fit(target_multi, verbose=False)
 
@@ -198,6 +203,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 use_static_covariates=False,
                 n_epochs=1,
+                **tfm_kwargs
             )
             model.fit(target_multi)
             preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
@@ -208,6 +214,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 use_static_covariates=False,
                 n_epochs=1,
+                **tfm_kwargs
             )
             model.fit(target_multi.with_static_covariates(None))
             preds = model.predict(n=2, series=target_multi)

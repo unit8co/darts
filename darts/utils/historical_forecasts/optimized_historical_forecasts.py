@@ -1,5 +1,10 @@
 from typing import List, Optional, Sequence, Union
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
@@ -20,6 +25,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     num_samples: int = 1,
     start: Optional[Union[pd.Timestamp, float, int]] = None,
+    start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
     stride: int = 1,
     overlap_end: bool = False,
@@ -63,6 +69,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             start=start,
+            start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
             freq=freq,
@@ -85,7 +92,9 @@ def _optimized_historical_forecasts_regression_last_points_only(
             hist_fct_fc_end -= shift * unit
 
         X, times = create_lagged_prediction_data(
-            target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
+            target_series=None
+            if len(model.lags.get("target", [])) == 0
+            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
             else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
@@ -154,6 +163,7 @@ def _optimized_historical_forecasts_regression_all_points(
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     num_samples: int = 1,
     start: Optional[Union[pd.Timestamp, float, int]] = None,
+    start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
     stride: int = 1,
     overlap_end: bool = False,
@@ -197,6 +207,7 @@ def _optimized_historical_forecasts_regression_all_points(
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             start=start,
+            start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
             freq=freq,
@@ -226,7 +237,9 @@ def _optimized_historical_forecasts_regression_all_points(
                 hist_fct_fc_end += shift_end * unit
 
         X, _ = create_lagged_prediction_data(
-            target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
+            target_series=None
+            if len(model.lags.get("target", [])) == 0
+            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
             else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
