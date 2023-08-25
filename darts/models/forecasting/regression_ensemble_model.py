@@ -130,8 +130,8 @@ class RegressionEnsembleModel(EnsembleModel):
 
         raise_if(
             train_n_points_too_big,
-            "`regression_train_n_points` parameter too big (must be smaller or "
-            "equal to the number of points in training_series)",
+            "`regression_train_n_points` parameter too big (must be strictly smaller than "
+            "the number of points in training_series)",
             logger,
         )
 
@@ -217,7 +217,11 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
     ]:
         extreme_lags_ = super().extreme_lags
-        return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
+        # shift min_target_lag in the past to account for the regression model training set
+        if extreme_lags_[0] is None:
+            return (-self.train_n_points,) + extreme_lags_[1:]
+        else:
+            return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
     @property
     def output_chunk_length(self) -> int:

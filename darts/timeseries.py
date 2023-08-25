@@ -216,7 +216,7 @@ class TimeSeries:
                     logger,
                 )
         else:
-            self._freq = self._time_index.step
+            self._freq: int = self._time_index.step
             self._freq_str = None
 
         # check static covariates
@@ -709,6 +709,9 @@ class TimeSeries:
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
+
+        if series_df.columns.name:
+            series_df.columns.name = None
 
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
@@ -2100,7 +2103,7 @@ class TimeSeries:
                 )
             raise_if_not(
                 0 <= point_index < len(self),
-                "point (int) should be a valid index in series",
+                f"The index corresponding to the provided point ({point}) should be a valid index in series",
                 logger,
             )
         elif isinstance(point, pd.Timestamp):
@@ -2139,8 +2142,8 @@ class TimeSeries:
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
             In case of a `float`, the parameter will be treated as the proportion of the time series
             that should lie before the point.
-            In the case of `int`, the parameter will be treated as an integer index to the time index of
-            `series`. Will raise a ValueError if not a valid index in `series`
+            In case of `int`, the parameter will be treated as an integer index to the time index of
+            `series`. Will raise a ValueError if not a valid index in `series`.
             In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
             is present in the series time index, otherwise will raise a ValueError.
         """
