@@ -84,31 +84,33 @@ class RegressionModel(GlobalForecastingModel):
         Parameters
         ----------
         lags
-            Lagged target values used to predict the next time step.
-            If an integer is given the last `lags` past lags are used (from -1 backward).
-            If a list of integers, each lag must be < 0.
-            If a dictionnary, the keys must be the components' name  (first series when using multiple series) and
-            the values corresponds to the lags (integer or list of integers). The key 'default_lags' can be used to
-            provide fallback lags values for un-specified components. An error will be raised if some components are
-            missing and the 'default_lags' key is not present in the dictionnary.
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step.
-            If an integer is given the last `lags_past_covariates` past lags are used (inclusive, starting from lag -1).
-            If a list of integers, each lag must be < 0.
-            If a dictionnary, the keys must be the components' name  (first series when using multiple series) and
-            the values corresponds to the lags (integer or list of integers). The key 'default_lags' can be used to
-            provide fallback lags values for un-specified components. An error will be raised if some components are
-            missing and the 'default_lags' key is not present in the dictionnary.
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step.
-            If a tuple (past, future) is given the last `past` lags in the past are used (inclusive, starting from
-            lag -1) along with the first `future` future lags (starting from 0 - the prediction time - up to
-            `future - 1` included).
-            If a list of integer, the values will be used as is.
-            If a dictionnary, the keys must be the components' name  (first series when using multiple series) and
-            the values corresponds to the lags (integer or list of integers). The key 'default_lags' can be used to
-            provide fallback lags values for un-specified components. An error will be raised if some components are
-            missing and the 'default_lags' key is not present in the dictionnary.
+            Lagged `future_covariates` values used to predict the next time step/s.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0`
+            corresponds the first predicted time step of each sample.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         output_chunk_length
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
