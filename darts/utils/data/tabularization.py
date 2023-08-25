@@ -331,13 +331,9 @@ def create_lagged_training_data(
     output_chunk_length: int,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    lags: Optional[Union[Sequence[int], Dict[str, Sequence[int]]]] = None,
-    lags_past_covariates: Optional[
-        Union[Sequence[int], Dict[str, Sequence[int]]]
-    ] = None,
-    lags_future_covariates: Optional[
-        Union[Sequence[int], Dict[str, Sequence[int]]]
-    ] = None,
+    lags: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
+    lags_past_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
+    lags_future_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
     uses_static_covariates: bool = True,
     last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     max_samples_per_ts: Optional[int] = None,

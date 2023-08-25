@@ -542,7 +542,7 @@ class TestRegressionModels:
         ]
         assert list(training_labels[0]) == [82, 182, 282]
 
-        # lags defined using dictionnaries
+        # lags defined using dictionaries
         # cannot use 'default_lags' because it's converted in `fit()`, before calling `_created_lagged_data`
         model_instance = RegressionModel(
             lags={"0-trgt-0": [-4, -3], "0-trgt-1": [-3, -2], "0-trgt-2": [-2, -1]},
