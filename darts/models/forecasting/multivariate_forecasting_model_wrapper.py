@@ -124,6 +124,7 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
     def supports_static_covariates(self) -> bool:
         return self.model.supports_static_covariates
 
+    @property
     def _is_probabilistic(self) -> bool:
         """
         A MultivariateForecastingModelWrapper is probabilistic if the base_model
