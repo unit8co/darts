@@ -29,6 +29,7 @@ import pandas as pd
 
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
@@ -569,6 +570,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        scaler: Scaler = None,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -669,6 +671,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``False``
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+        scaler
+            Parameter Scaler applied to each historical forecast.
 
         Returns
         -------
@@ -805,6 +809,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 verbose=verbose,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                scaler=scaler,
             )
 
         if len(series) == 1:
@@ -914,24 +919,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length_ and len(train_series) > train_length_:
                     train_series = train_series[-train_length_:]
 
-                # testing `retrain` to exclude `False` and `0`
-                if (
+                forecast_time_index_correct = (
                     retrain
                     and historical_forecasts_time_index_train is not None
                     and historical_forecasts_time_index_train[0]
                     <= pred_time
                     <= historical_forecasts_time_index_train[-1]
-                ):
+                )
+                is_retrain_func = retrain_func(
+                    counter=_counter_train,
+                    pred_time=pred_time,
+                    train_series=train_series,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
+                )
+                is_scalar_used = (
+                    scaler is not None
+                    and forecast_time_index_correct
+                    and is_retrain_func
+                )
+                # testing `retrain` to exclude `False` and `0`
+                if forecast_time_index_correct:
                     # retrain_func processes the series that would be used for training
-                    if retrain_func(
-                        counter=_counter_train,
-                        pred_time=pred_time,
-                        train_series=train_series,
-                        past_covariates=past_covariates_,
-                        future_covariates=future_covariates_,
-                    ):
+                    if is_retrain_func:
                         # avoid fitting the same model multiple times
                         model = model.untrained_model()
+                        if is_scalar_used:
+                            train_series = scaler.fit_transform(train_series)
+
                         model._fit_wrapper(
                             series=train_series,
                             past_covariates=past_covariates_,
@@ -987,6 +1002,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     verbose=verbose,
                     predict_likelihood_parameters=predict_likelihood_parameters,
                 )
+                if is_scalar_used:
+                    forecast = scaler.inverse_transform(forecast)
+
                 if forecast_components is None:
                     forecast_components = forecast.columns
 
@@ -1900,6 +1918,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        scaler=None,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:

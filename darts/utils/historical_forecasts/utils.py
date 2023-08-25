@@ -1,9 +1,12 @@
+import math
+from copy import copy
 from types import SimpleNamespace
 from typing import Any, Callable, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
+from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.timeseries_generation import generate_index
@@ -620,3 +623,33 @@ def _get_historical_forecast_boundaries(
         hist_fct_fc_start,
         hist_fct_fc_end,
     )
+
+
+def window_fit_transform_array(scaler: Scaler, X: np.ndarray, stride: int):
+    time_dim_size = X.shape[0]
+    return np.array(
+        [
+            copy(scaler).fit_transform(TimeSeries.from_values(X[:i])).data_array()
+            for i in range(1, math.ceil(time_dim_size / stride))
+        ]
+    ).reshape(X.shape)
+
+
+def window_scaled_forecasts(scaler: Scaler, X: np.ndarray, y: np.ndarray):
+    n_forecasts = y.shape[0]
+    y_shape = y.shape
+
+    scaling_inputs = [
+        TimeSeries.from_values(np.expand_dims(X[i], axis=1)) for i in range(n_forecasts)
+    ]
+    scaled_forecasts = np.array(
+        [
+            copy(scaler)
+            .fit(scaling_inputs[: i + 1])
+            .transform(TimeSeries.from_values(np.expand_dims(y[i], axis=1)))
+            .data_array()
+            for i in range(n_forecasts)
+        ]
+    ).reshape(y_shape)
+
+    return scaled_forecasts

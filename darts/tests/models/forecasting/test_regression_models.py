@@ -16,6 +16,7 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
+from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
@@ -1139,16 +1140,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         mutli_models_modes = [True, False]
         for mode in mutli_models_modes:
             model = self.models[1](lags=5, multi_models=mode)
+            model.fit(self.sine_univariate1)
             result = model.historical_forecasts(
                 series=self.sine_univariate1,
                 future_covariates=None,
                 start=0.8,
                 forecast_horizon=1,
                 stride=1,
-                retrain=True,
+                retrain=False,
                 overlap_end=False,
                 last_points_only=True,
                 verbose=False,
+                scaler=Scaler(),
             )
             self.assertEqual(len(result), 21)
 
@@ -1163,6 +1166,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 overlap_end=False,
                 last_points_only=True,
                 verbose=False,
+                scaler=Scaler(),
             )
             self.assertEqual(len(result), 21)
 
@@ -1179,6 +1183,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 overlap_end=False,
                 last_points_only=True,
                 verbose=False,
+                scaler=Scaler(),
             )
             self.assertEqual(len(result), 21)
 

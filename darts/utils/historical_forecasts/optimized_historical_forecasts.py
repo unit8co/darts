@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
+from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_prediction_data
@@ -25,6 +26,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
+    scaler: Scaler = None,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -34,6 +36,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
+
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
@@ -106,7 +109,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
         )
 
         # stride can be applied directly (same for input and historical forecasts)
-        X = X[0][::stride, :, 0]
+        X = X[0][::stride, :, 0]  # shape ()
 
         # repeat rows for probabilistic forecast
         forecast = model._predict_and_sample(
@@ -115,6 +118,9 @@ def _optimized_historical_forecasts_regression_last_points_only(
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
+
+        # transpose to
+        # (k, (forecastable_index_length-1)*num_samples, n_component, 1)
         # where k = output_chunk length if multi_models, 1 otherwise
 
         # reshape into (forecasted indexes, n_components, n_samples), components are interleaved
@@ -130,22 +136,26 @@ def _optimized_historical_forecasts_regression_last_points_only(
                 :,
             ]
 
-        forecasts_list.append(
-            TimeSeries.from_times_and_values(
-                times=times[0]
-                if stride == 1 and model.output_chunk_length == 1
-                else generate_index(
-                    start=hist_fct_start + (forecast_horizon - 1) * freq,
-                    length=forecast.shape[0],
-                    freq=freq * stride,
-                    name=series_.time_index.name,
-                ),
-                values=forecast,
-                columns=forecast_components,
-                static_covariates=series_.static_covariates,
-                hierarchy=series_.hierarchy,
-            )
+        forecast_value = TimeSeries.from_times_and_values(
+            times=times[0]
+            if stride == 1 and model.output_chunk_length == 1
+            else generate_index(
+                start=hist_fct_start + (forecast_horizon - 1) * freq,
+                length=forecast.shape[0],
+                freq=freq * stride,
+                name=series_.time_index.name,
+            ),
+            values=forecast,
+            columns=forecast_components,
+            static_covariates=series_.static_covariates,
+            hierarchy=series_.hierarchy,
         )
+        is_scaler_used = len(model.lags.get("target", [])) != 0 and scaler is not None
+        if is_scaler_used:
+            scaling_values = series_[:hist_fct_tgt_end]
+            forecast_value = scaler.fit(scaling_values).transform(forecast_value)
+        forecasts_list.append(forecast_value)
+
     return forecasts_list if len(series) > 1 else forecasts_list[0]
 
 
@@ -161,6 +171,7 @@ def _optimized_historical_forecasts_regression_all_points(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
+    scaler: Scaler = None,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -313,15 +324,19 @@ def _optimized_historical_forecasts_regression_all_points(
         for idx_ftc, step_fct in enumerate(
             range(0, forecast.shape[0] * stride, stride)
         ):
-            forecasts_.append(
-                TimeSeries.from_times_and_values(
-                    times=new_times[step_fct : step_fct + forecast_horizon],
-                    values=forecast[idx_ftc],
-                    columns=forecast_components,
-                    static_covariates=series_.static_covariates,
-                    hierarchy=series_.hierarchy,
-                )
+            forecast_value = TimeSeries.from_times_and_values(
+                times=new_times[step_fct : step_fct + forecast_horizon],
+                values=forecast[idx_ftc],
+                columns=forecast_components,
+                static_covariates=series_.static_covariates,
+                hierarchy=series_.hierarchy,
             )
-
+            is_scaler_used = (
+                len(model.lags.get("target", [])) != 0 and scaler is not None
+            )
+            if is_scaler_used:
+                scaling_values = series_[:hist_fct_tgt_end]
+                forecast_value = scaler.fit(scaling_values).transform(forecast_value)
+            forecasts_.append(forecast_value)
         forecasts_list.append(forecasts_)
     return forecasts_list if len(series) > 1 else forecasts_list[0]
