@@ -89,7 +89,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.explainability.shap_explainer import ShapExplainer
+        >>> from darts.explainability.tft_explainer import TFTExplainer
         >>> from darts.models import TFTModel
         >>> series = AirPassengersDataset().load()
         >>> model = TFTModel(
