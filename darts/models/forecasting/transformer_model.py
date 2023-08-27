@@ -9,6 +9,7 @@ from typing import Optional, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import Transformer
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.components import glu_variants, layer_norm_variants
@@ -280,36 +281,29 @@ class _TransformerModule(PLPastCovariatesModule):
 
         self.decoder = nn.Linear(d_model, self.target_size * self.nr_params)
 
-    def _permute_transformer_inputs(self, data):
-        # '_TimeSeriesSequentialDataset' stores time series in the
-        # (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
-        # module needs it the (input_chunk_length, batch_size, input_size) format.
-        # Therefore, the first two dimensions need to be swapped.
-        return data.permute(1, 0, 2)
-
     def forward(self, x_in: Tuple):
         """
         During training (teacher forcing) x_in = tuple(past_target + past_covariates, static_covariates, future_targets)
         During inference x_in = tuple(past_target + past_covariates, static_covariates)
+
+        '_TimeSeriesSequentialDataset' stores time series in the
+        (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
+        module needs it the (input_chunk_length, batch_size, input_size) format.
+        Therefore, the first two dimensions need to be swapped.
         """
-        data = x_in[0]
+        src = x_in[0].permute(1, 0, 2)
         pad_size = (0, self.input_size - self.target_size)
 
         # start token consists only of target series, past covariates are substituted with 0 padding
-        start_token = self._permute_transformer_inputs(data[:, -1:, : self.target_size])
+        start_token = src[-1:, :, : self.target_size]
         start_token_padded = F.pad(start_token, pad_size)
 
         if len(x_in) == 3:
-            src, _, tgt = x_in
-            src = self._permute_transformer_inputs(src)
-            tgt_permuted = self._permute_transformer_inputs(tgt)
-            tgt_padded = F.pad(tgt_permuted, pad_size)
-            tgt = torch.cat([start_token_padded, tgt_padded], dim=0)
+            tgt = x_in[-1].permute(1, 0, 2)
+            tgt = F.pad(tgt, pad_size)
+            tgt = torch.cat([start_token_padded, tgt], dim=0)
             return self._prediction_step(src, tgt)[:, :-1, :, :]
 
-        data, _ = x_in
-
-        src = self._permute_transformer_inputs(data)
         tgt = start_token_padded
 
         predictions = []
@@ -319,7 +313,7 @@ class _TransformerModule(PLPastCovariatesModule):
             tgt = torch.cat(
                 [tgt, F.pad(pred.mean(dim=2).unsqueeze(dim=0), pad_size)],
                 dim=0,
-            )  # take average of quantiles
+            )  # take average of samples
         return torch.stack(predictions, dim=1)
 
     def _prediction_step(self, src: torch.Tensor, tgt: torch.Tensor):
@@ -333,15 +327,9 @@ class _TransformerModule(PLPastCovariatesModule):
         src = self.positional_encoding(src)
         tgt = self.positional_encoding(tgt)
 
-        tgt_mask = torch.triu(
-            torch.full(
-                (target_length, target_length),
-                float("-inf"),
-                device=device,
-                dtype=tensor_type,
-            ),
-            diagonal=1,
-        )
+        tgt_mask = Transformer.generate_square_subsequent_mask(
+            target_length, device
+        ).to(dtype=tensor_type)
 
         x = self.transformer(src=src, tgt=tgt, tgt_mask=tgt_mask)
         out = self.decoder(x)
@@ -349,7 +337,7 @@ class _TransformerModule(PLPastCovariatesModule):
         # Here we change the data format
         # from (1, batch_size, output_chunk_length * output_size)
         # to (batch_size, output_chunk_length, output_size, nr_params)
-        predictions = self._permute_transformer_inputs(out)
+        predictions = out.permute(1, 0, 2)
         predictions = predictions.view(
             -1, target_length, self.target_size, self.nr_params
         )
@@ -418,7 +406,7 @@ class TransformerModel(PastCovariatesTorchModel):
         The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
         very suitable to be trained with GPUs.
 
-        The transformer architecture implemented here is based on [1]_.
+        The transformer architecture implemented here is based on [1]_ and uses teacher forcing [2]_.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
 
@@ -442,7 +430,7 @@ class TransformerModel(PastCovariatesTorchModel):
             Fraction of neurons affected by Dropout (default=0.1).
         activation
             The activation function of encoder/decoder intermediate layer, (default='relu').
-            can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
+            can be one of the glu variant's FeedForward Network (FFN)[3]. A feedforward network is a
             fully-connected layer with an activation. The glu variant's FeedForward Network are a series
             of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
             "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
@@ -586,18 +574,8 @@ class TransformerModel(PastCovariatesTorchModel):
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
         and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
         pages 6000-6010. https://arxiv.org/abs/1706.03762.
-        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
-
-        Notes
-        -----
-        Disclaimer:
-        This current implementation is fully functional and can already produce some good predictions. However,
-        it is still limited in how it uses the Transformer architecture because the `tgt` input of
-        `torch.nn.Transformer` is not utlized to its full extent. Currently, we simply pass the last value of the
-        `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
-        should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
-        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
-        added to it. Of course, the training of the model would have to be adapted accordingly.
+        .. [2] https://towardsdatascience.com/what-is-teacher-forcing-3da6217fed1c.
+        ..[3] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
