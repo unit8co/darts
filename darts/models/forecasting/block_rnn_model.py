@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
@@ -101,6 +104,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
             last = feature
         self.fc = nn.Sequential(*feats)
 
+    @io_processor
     def forward(self, x_in: Tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)

@@ -11,7 +11,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
@@ -231,6 +234,7 @@ class _TCNModule(PLPastCovariatesModule):
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
+    @io_processor
     def forward(self, x_in: Tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)

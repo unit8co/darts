@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
-from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLMixedCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 
@@ -106,6 +109,7 @@ class _NLinearModule(PLMixedCovariatesModule):
                 layer_in_dim_static_cov, layer_out_dim
             )
 
+    @io_processor
     def forward(
         self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):

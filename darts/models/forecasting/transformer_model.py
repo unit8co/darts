@@ -16,7 +16,10 @@ from darts.models.components.transformer import (
     CustomFeedForwardDecoderLayer,
     CustomFeedForwardEncoderLayer,
 )
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
@@ -290,6 +293,7 @@ class _TransformerModule(PLPastCovariatesModule):
 
         return src, tgt
 
+    @io_processor
     def forward(self, x_in: Tuple):
         data, _ = x_in
         # Here we create 'src' and 'tgt', the inputs for the encoder and decoder

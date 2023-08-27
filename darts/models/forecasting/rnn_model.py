@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLDualCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLDualCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
@@ -86,6 +89,7 @@ class _RNNModule(PLDualCovariatesModule):
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
 
+    @io_processor
     def forward(
         self, x_in: Tuple, h: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:

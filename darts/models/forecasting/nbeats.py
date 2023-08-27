@@ -11,7 +11,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not, raise_log
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.torch import MonteCarloDropout
 
@@ -490,6 +493,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
         self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
 
+    @io_processor
     def forward(self, x_in: Tuple):
         x, _ = x_in
 
