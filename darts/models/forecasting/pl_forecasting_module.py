@@ -68,7 +68,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        train_sample_shape: Tuple = None,
+        train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
             Union[torchmetrics.Metric, torchmetrics.MetricCollection]
@@ -149,7 +149,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
         self.train_sample_shape = train_sample_shape
-        self.n_targets = train_sample_shape[0][1]
+        self.n_targets = (
+            train_sample_shape[0][1] if train_sample_shape is not None else 1
+        )
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
