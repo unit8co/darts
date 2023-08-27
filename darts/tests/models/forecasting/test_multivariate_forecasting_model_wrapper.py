@@ -21,7 +21,6 @@ from darts.models import (
     StatsForecastAutoTheta,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -49,7 +48,7 @@ future_covariates_models = [
 ]
 
 
-class MultivariateForecastingModelWrapperTestCase(DartsBaseTestClass):
+class TestMultivariateForecastingModelWrapper:
     RANDOM_SEED = 42
 
     ts_length = 50
@@ -99,8 +98,8 @@ class MultivariateForecastingModelWrapperTestCase(DartsBaseTestClass):
             preds = self.trained_model_predictions(
                 model, self.n_pred, combination, future_covariates
             )
-            self.assertTrue(isinstance(preds, TimeSeries))
-            self.assertTrue(preds.n_components == combination.n_components)
+            assert isinstance(preds, TimeSeries)
+            assert preds.n_components == combination.n_components
 
     def trained_model_predictions(self, base_model, n, series, future_covariates):
         model = MultivariateForecastingModelWrapper(base_model)
