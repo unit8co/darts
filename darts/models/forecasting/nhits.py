@@ -556,6 +556,9 @@ class NHiTSModel(PastCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
