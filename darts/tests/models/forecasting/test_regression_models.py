@@ -1596,41 +1596,47 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        [
-            ({"lags": [-3, -2, -1]}, {"lags": {"gaussian": 3}}),
-            ({"lags": 3}, {"lags": {"gaussian": 3, "sine": 3}}),
-            ({"lags_past_covariates": 2}, {"lags_past_covariates": {"lin_past": 2}}),
-            (
-                {"lags": 5, "lags_future_covariates": [-2, 3]},
-                {
-                    "lags": {
-                        "gaussian": [-5, -4, -3, -2, -1],
-                        "sine": [-5, -4, -3, -2, -1],
+        itertools.product(
+            [
+                ({"lags": [-3, -2, -1]}, {"lags": {"gaussian": 3}}),
+                ({"lags": 3}, {"lags": {"gaussian": 3, "sine": 3}}),
+                (
+                    {"lags_past_covariates": 2},
+                    {"lags_past_covariates": {"lin_past": 2}},
+                ),
+                (
+                    {"lags": 5, "lags_future_covariates": [-2, 3]},
+                    {
+                        "lags": {
+                            "gaussian": [-5, -4, -3, -2, -1],
+                            "sine": [-5, -4, -3, -2, -1],
+                        },
+                        "lags_future_covariates": {
+                            "lin_future": [-2, 3],
+                            "sine_future": [-2, 3],
+                        },
                     },
-                    "lags_future_covariates": {
-                        "lin_future": [-2, 3],
-                        "sine_future": [-2, 3],
+                ),
+                (
+                    {"lags": 5, "lags_future_covariates": [-2, 3]},
+                    {
+                        "lags": {
+                            "gaussian": [-5, -4, -3, -2, -1],
+                            "sine": [-5, -4, -3, -2, -1],
+                        },
+                        "lags_future_covariates": {
+                            "sine_future": [-2, 3],
+                            "default_lags": [-2, 3],
+                        },
                     },
-                },
-            ),
-            (
-                {"lags": 5, "lags_future_covariates": [-2, 3]},
-                {
-                    "lags": {
-                        "gaussian": [-5, -4, -3, -2, -1],
-                        "sine": [-5, -4, -3, -2, -1],
-                    },
-                    "lags_future_covariates": {
-                        "sine_future": [-2, 3],
-                        "default_lags": [-2, 3],
-                    },
-                },
-            ),
-        ],
+                ),
+            ],
+            [True, False],
+        ),
     )
     def test_component_specific_lags(self, config):
         """Verify that the same lags, defined using int/list or dictionnaries yield the same results"""
-        list_lags, dict_lags = config
+        (list_lags, dict_lags), multiple_series = config
         multivar_target = "lags" in dict_lags and len(dict_lags["lags"]) > 1
         multivar_future_cov = (
             "lags_future_covariates" in dict_lags
@@ -1641,6 +1647,16 @@ class TestRegressionModels:
         series = tg.gaussian_timeseries(length=20, column_name="gaussian")
         if multivar_target:
             series = series.stack(tg.sine_timeseries(length=20, column_name="sine"))
+        if multiple_series:
+            # second series have different component names
+            series = [
+                series,
+                series.with_columns_renamed(
+                    ["gaussian", "sine"][: series.width],
+                    ["other", "names"][: series.width],
+                )
+                + 10,
+            ]
 
         future_cov = tg.linear_timeseries(length=30, column_name="lin_future")
         if multivar_future_cov:
@@ -1667,14 +1683,14 @@ class TestRegressionModels:
         )
 
         # n == output_chunk_length
-        pred = model.predict(1)
-        pred2 = model2.predict(1)
+        pred = model.predict(1, series=series[0] if multiple_series else None)
+        pred2 = model2.predict(1, series=series[0] if multiple_series else None)
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
 
         # n > output_chunk_length
-        pred = model.predict(3)
-        pred2 = model2.predict(3)
+        pred = model.predict(3, series=series[0] if multiple_series else None)
+        pred2 = model2.predict(3, series=series[0] if multiple_series else None)
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
 
