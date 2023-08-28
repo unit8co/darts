@@ -324,6 +324,7 @@ class RegressionModel(GlobalForecastingModel):
                         logger,
                     )
 
+                # extracting min and max lags va
                 if min_lags is None:
                     min_lags = tmp_components_lags[comp_name][0]
                 else:
