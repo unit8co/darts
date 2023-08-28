@@ -215,101 +215,102 @@ class RegressionModel(GlobalForecastingModel):
         attributes contain only the extreme values
         If the lags are provided as integer, list, tuple or dictionary containing only the 'default_lags' keys, the lags
         values are contained in the self.lags attribute and the self.component_lags is an empty dictionary.
-
-        `lags` and `lags_past_covariates` are processed using the same local functions,
-        `lags_future_covariates` is processed with different local functions
         """
+        processed_lags: Dict[str, List[int]] = dict()
+        processed_component_lags: Dict[str, Dict[str, List[int]]] = dict()
+        for lags_values, lags_name, lags_abbrev in zip(
+            [lags, lags_past_covariates, lags_future_covariates],
+            ["lags", "lags_past_covariates", "lags_future_covariates"],
+            ["target", "past", "future"],
+        ):
+            if lags_values is None:
+                continue
 
-        def _process_int_lags(lags: int, lags_name: str) -> List[int]:
-            raise_if_not(
-                lags > 0, f"`{lags_name}` must be strictly positive. Given: {lags}."
-            )
-            return list(range(-lags, 0))
-
-        def _process_list_lags(lags: list, lags_name: str) -> List[int]:
-            for lag in lags:
+            # check type of argument before converting to dictionary
+            if not isinstance(lags_values, dict):
                 raise_if(
-                    not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `{lags_name}` must be a strictly negative integer. Given: {lags}.",
+                    lags_name == "lags_future_covariates"
+                    and not isinstance(lags_values, (tuple, list)),
+                    f"`lags_future_covariates` must be of type tuple, list or dict."
+                    f"Given: {type(lags_values)}.",
                 )
-            return sorted(lags)
 
-        def _process_tuple_future_lags(
-            lags_future_covariates: Tuple[int, int], lags_name: str
-        ) -> List[int]:
-            raise_if_not(
-                len(lags_future_covariates) == 2
-                and isinstance(lags_future_covariates[0], int)
-                and isinstance(lags_future_covariates[1], int),
-                f"`{lags_name}` tuple must be of length 2, and must contain two integers",
-                logger,
-            )
-
-            raise_if(
-                isinstance(lags_future_covariates[0], bool)
-                or isinstance(lags_future_covariates[1], bool),
-                f"`{lags_name}` tuple must contain integers, not bool",
-                logger,
-            )
-
-            raise_if_not(
-                lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"`{lags_name}` tuple must contain positive integers. Given: {lags_future_covariates}.",
-            )
-            raise_if(
-                lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0,
-                f"`{lags_name}` tuple cannot be (0, 0) as it corresponds to an empty list of lags.",
-                logger,
-            )
-            return list(range(-lags_future_covariates[0], lags_future_covariates[1]))
-
-        def _process_list_future_lags(
-            lags_future_covariates: List[int], lags_name: str
-        ) -> List[int]:
-            for lag in lags_future_covariates:
                 raise_if(
-                    not isinstance(lag, int) or isinstance(lag, bool),
-                    f"Every element of `{lags_name}` must be an integer. Given: {lags_future_covariates}.",
+                    lags_name in ["lags", "lags_past_covariates"]
+                    and not isinstance(lags_values, (int, list)),
+                    f"`{lags_name}` must be of type int, list or dict."
+                    f"Given: {type(lags_values)}.",
                 )
-            return sorted(lags_future_covariates)
 
-        def _process_dict_lags(
-            lags: dict, lags_name: str
-        ) -> Tuple[List[int], Dict[str, List[int]]]:
+                lags_values = {"default_lags": lags_values}
 
-            raise_if_not(
-                len(lags) > 0,
-                f"When passed as a dictionary, `{lags_name}` must contain at least one key.",
-                logger,
-            )
+            elif len(lags_values) == 0:
+                raise_log(
+                    ValueError(
+                        f"When passed as a dictionary, `{lags_name}` must contain at least one key."
+                    ),
+                    logger,
+                )
 
             invalid_type = False
             supported_types = ""
             min_lags = None
             max_lags = None
-            components_lags: Dict[str, List[int]] = dict()
-            for comp_name, comp_lags in lags.items():
+            tmp_components_lags: Dict[str, List[int]] = dict()
+            for comp_name, comp_lags in lags_values.items():
                 if lags_name == "lags_future_covariates":
                     if isinstance(comp_lags, tuple):
-                        components_lags[comp_name] = _process_tuple_future_lags(
-                            comp_lags, f"`{lags_name}` for component {comp_name}"
+                        raise_if_not(
+                            len(comp_lags) == 2
+                            and isinstance(comp_lags[0], int)
+                            and isinstance(comp_lags[1], int),
+                            f"`{lags_name}` tuple must be of length 2, and must contain two integers",
+                            logger,
+                        )
+
+                        raise_if(
+                            isinstance(comp_lags[0], bool)
+                            or isinstance(comp_lags[1], bool),
+                            f"`{lags_name}` tuple must contain integers, not bool",
+                            logger,
+                        )
+
+                        raise_if_not(
+                            comp_lags[0] >= 0 and comp_lags[1] >= 0,
+                            f"`{lags_name}` tuple must contain positive integers. Given: {comp_lags}.",
+                        )
+                        raise_if(
+                            comp_lags[0] == 0 and comp_lags[1] == 0,
+                            f"`{lags_name}` tuple cannot be (0, 0) as it corresponds to an empty list of lags.",
+                            logger,
+                        )
+                        tmp_components_lags[comp_name] = list(
+                            range(-comp_lags[0], comp_lags[1])
                         )
                     elif isinstance(comp_lags, list):
-                        components_lags[comp_name] = _process_list_future_lags(
-                            comp_lags, f"`{lags_name}` for component {comp_name}"
-                        )
+                        for lag in comp_lags:
+                            raise_if(
+                                not isinstance(lag, int) or isinstance(lag, bool),
+                                f"`{lags_name}` list must contain only integers. Given: {comp_lags}.",
+                            )
+                        tmp_components_lags[comp_name] = sorted(comp_lags)
                     else:
                         invalid_type = True
                         supported_types = "tuple or a list"
                 else:
                     if isinstance(comp_lags, int):
-                        components_lags[comp_name] = _process_int_lags(
-                            comp_lags, f"`{lags_name}` for component {comp_name}"
+                        raise_if_not(
+                            comp_lags > 0,
+                            f"`{lags_name}` integer must be strictly positive . Given: {comp_lags}.",
                         )
+                        tmp_components_lags[comp_name] = list(range(-comp_lags, 0))
                     elif isinstance(comp_lags, list):
-                        components_lags[comp_name] = _process_list_lags(
-                            comp_lags, f"`{lags_name}` for component {comp_name}"
-                        )
+                        for lag in comp_lags:
+                            raise_if(
+                                not isinstance(lag, int) or (lag >= 0),
+                                f"`{lags_name}` list must contain only strictly negative integers. Given: {comp_lags}.",
+                            )
+                        tmp_components_lags[comp_name] = sorted(comp_lags)
                     else:
                         invalid_type = True
                         supported_types = "strictly positive integer or a list"
@@ -317,98 +318,29 @@ class RegressionModel(GlobalForecastingModel):
                 if invalid_type:
                     raise_log(
                         ValueError(
-                            f"When passed as a dictionary, `{lags_name}` for component {comp_name} must be either a "
+                            f"When passed in a dictionary, `{lags_name}` for component {comp_name} must be either a "
                             f"{supported_types}, received : {type(comp_lags)}."
                         ),
                         logger,
                     )
 
                 if min_lags is None:
-                    min_lags = components_lags[comp_name][0]
+                    min_lags = tmp_components_lags[comp_name][0]
                 else:
-                    min_lags = min(min_lags, components_lags[comp_name][0])
+                    min_lags = min(min_lags, tmp_components_lags[comp_name][0])
 
                 if max_lags is None:
-                    max_lags = components_lags[comp_name][-1]
+                    max_lags = tmp_components_lags[comp_name][-1]
                 else:
-                    max_lags = max(max_lags, components_lags[comp_name][-1])
+                    max_lags = max(max_lags, tmp_components_lags[comp_name][-1])
 
-            # revert to lags shared across components logic
-            if list(components_lags.keys()) == ["default_lags"]:
-                return components_lags["default_lags"], {}
+            # revert to shared lags logic when applicable
+            if list(tmp_components_lags.keys()) == ["default_lags"]:
+                processed_lags[lags_abbrev] = tmp_components_lags["default_lags"]
             else:
-                return [min_lags, max_lags], components_lags
+                processed_lags[lags_abbrev] = [min_lags, max_lags]
+                processed_component_lags[lags_abbrev] = tmp_components_lags
 
-        # perform the type and sanity checks
-        lags_type_error_msg = []
-        processed_lags: Dict[str, List[int]] = dict()
-        processed_component_lags: Dict[str, Dict[str, List[int]]] = dict()
-        if lags is None:
-            pass
-        elif isinstance(lags, int):
-            processed_lags["target"] = _process_int_lags(lags, "lags")
-        elif isinstance(lags, list):
-            processed_lags["target"] = _process_list_lags(lags, "lags")
-        elif isinstance(lags, dict):
-            conv_lags = _process_dict_lags(lags, "lags")
-            # dummy, used to compute the extreme lags
-            processed_lags["target"] = conv_lags[0]
-            # actual lags
-            processed_component_lags["target"] = conv_lags[1]
-        else:
-            lags_type_error_msg.append(
-                f"`lags` must be of type int, list or dict." f"Given: {type(lags)}."
-            )
-
-        if lags_past_covariates is None:
-            pass
-        elif isinstance(lags_past_covariates, int):
-            processed_lags["past"] = _process_int_lags(
-                lags_past_covariates, "lags_past_covariates"
-            )
-        elif isinstance(lags_past_covariates, list):
-            processed_lags["past"] = _process_list_lags(
-                lags_past_covariates, "lags_past_covariates"
-            )
-        elif isinstance(lags_past_covariates, dict):
-            conv_lags = _process_dict_lags(lags_past_covariates, "lags_past_covariates")
-            # dummy, used to compute the extreme lags
-            processed_lags["past"] = conv_lags[0]
-            # actual lags
-            processed_component_lags["past"] = conv_lags[1]
-        else:
-            lags_type_error_msg.append(
-                f"`lags_past_covariates` must be of type int, list or dict."
-                f"Given: {type(lags_past_covariates)}."
-            )
-
-        if lags_future_covariates is None:
-            pass
-        elif isinstance(lags_future_covariates, tuple):
-            processed_lags["future"] = _process_tuple_future_lags(
-                lags_future_covariates, "lags_future_covariates"
-            )
-        elif isinstance(lags_future_covariates, list):
-            processed_lags["future"] = _process_list_future_lags(
-                lags_future_covariates, "lags_future_covariates"
-            )
-        elif isinstance(lags_future_covariates, dict):
-            conv_lags = _process_dict_lags(
-                lags_future_covariates, "lags_future_covariates"
-            )
-            # dummy, used to compute the extreme lags
-            processed_lags["future"] = conv_lags[0]
-            # actual lags
-            processed_component_lags["future"] = conv_lags[1]
-        else:
-            lags_type_error_msg.append(
-                f"`lags_future_covariates` must be of type tuple, list or dict. "
-                f"Given: {type(lags_future_covariates)}."
-            )
-
-        # error message for all the invalid types
-        if len(lags_type_error_msg) > 0:
-            raise_log(ValueError("\n".join(lags_type_error_msg)), logger)
         return processed_lags, processed_component_lags
 
     def _get_lags(self, lags_type: str):
