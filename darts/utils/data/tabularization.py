@@ -475,9 +475,9 @@ def create_lagged_prediction_data(
     target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    lags: Optional[Sequence[int]] = None,
-    lags_past_covariates: Optional[Sequence[int]] = None,
-    lags_future_covariates: Optional[Sequence[int]] = None,
+    lags: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
+    lags_past_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
+    lags_future_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
     uses_static_covariates: bool = True,
     last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     max_samples_per_ts: Optional[int] = None,
@@ -508,15 +508,18 @@ def create_lagged_prediction_data(
         Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
         auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
         `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
-        the current value).
+        the current value). If the lags are provided as a dictionary, the lags values are specific to each
+        component in the target series.
     lags_past_covariates
         Optionally, the lags of `past_covariates` to be used as features. Like `lags`, each lag value is assumed to
-        be less than or equal to -1.
+        be less than or equal to -1. If the lags are provided as a dictionary, the lags values are specific to each
+        component in the past covariates series.
     lags_future_covariates
         Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and `lags_past_covariates`,
         `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at
         time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use
-        values *before* time `t` to predict target at time `t`).
+        values *before* time `t` to predict target at time `t`). If the lags are provided as a dictionary, the lags
+        values are specific to each component in the future covariates series.
     uses_static_covariates
         Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
         have identical shapes across all target series.
@@ -793,7 +796,7 @@ def create_lagged_component_names(
 
 
 def _create_lagged_data_by_moving_window(
-    target_series: TimeSeries,
+    target_series: Optional[TimeSeries],
     output_chunk_length: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
