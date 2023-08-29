@@ -14,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.explainability.explainability_result import ShapExplainabilityResult
-from darts.explainability.shap_explainer import ShapExplainer
+from darts.explainability.shap_explainer import MIN_BACKGROUND_SAMPLE, ShapExplainer
 from darts.models import (
     CatBoostModel,
     ExponentialSmoothing,
@@ -24,6 +24,7 @@ from darts.models import (
     RegressionModel,
     XGBModel,
 )
+from darts.utils.timeseries_generation import linear_timeseries
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
@@ -799,3 +800,38 @@ class TestShapExplainer:
         for explained_forecast in explanation_results.explained_forecasts:
             comps_out = explained_forecast[1]["price"].columns.tolist()
             assert comps_out[-1] == "type_statcov_target_price"
+
+    def test_shap_regressor_component_specific_lags(self):
+        model = LinearRegressionModel(
+            lags={"price": [-3, -2], "power": [-1]},
+            output_chunk_length=1,
+        )
+        # multivariate ts as short as possible
+        min_ts_length = MIN_BACKGROUND_SAMPLE * np.abs(min(model.lags["target"]))
+        ts = linear_timeseries(
+            start_value=1,
+            end_value=min_ts_length,
+            length=min_ts_length,
+            column_name="price",
+        ).stack(
+            linear_timeseries(
+                start_value=102,
+                end_value=100 + 2 * min_ts_length,
+                length=min_ts_length,
+                column_name="power",
+            )
+        )
+        model.fit(ts)
+        shap_explain = ShapExplainer(model)
+
+        # one column per lag, grouped by components
+        expected_df = pd.DataFrame(
+            data=np.stack(
+                [np.arange(1, 29), np.arange(3, 31), np.arange(106, 161, 2)], axis=1
+            ),
+            columns=["price_target_lag-3", "price_target_lag-2", "power_target_lag-1"],
+        )
+
+        # check that the appropriate lags are extracted
+        assert all(shap_explain.explainers.background_X == expected_df)
+        assert model.lagged_feature_names == list(expected_df.columns)
