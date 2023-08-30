@@ -201,7 +201,7 @@ class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self,
         forecasting_models: List[ForecastingModel],
-        retrain_forecasting_models: bool = True,
+        train_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
         """Naive combination model
@@ -217,9 +217,9 @@ class NaiveEnsembleModel(EnsembleModel):
         forecasting_models
             List of forecasting models whose predictions to ensemble
         train_forecasting_models
-            Whether to train the `forecasting_models` from scratch. If `False`, the models are not trained when calling `fit()`
-            and `predict()` can be called directly (only supported if all the `forecasting_models` are pretrained
-            `GlobalForecastingModels`).
+            Whether to train the `forecasting_models` from scratch. If `False`, the models are not trained when calling
+            `fit()` and `predict()` can be called directly (only supported if all the `forecasting_models` are
+            pretrained `GlobalForecastingModels`). Default: ``True``.
         show_warnings
             Whether to show warnings related to models covariates support.
         """
@@ -227,12 +227,12 @@ class NaiveEnsembleModel(EnsembleModel):
             forecasting_models=forecasting_models,
             train_num_samples=1,
             train_samples_reduction=None,
-            retrain_forecasting_models=retrain_forecasting_models,
+            train_forecasting_models=train_forecasting_models,
             show_warnings=show_warnings,
         )
 
         # ensemble model initialised with trained global models can directly call predict()
-        if self.all_trained and not retrain_forecasting_models:
+        if self.all_trained and not train_forecasting_models:
             self._fit_called = True
 
     def fit(
@@ -246,22 +246,12 @@ class NaiveEnsembleModel(EnsembleModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        if self.retrain_forecasting_models:
-            # Some models may need to be 'reset' to allow being retrained from scratch, especially torch-based models
-            self.forecasting_models: List[ForecastingModel] = [
-                model.untrained_model() for model in self.forecasting_models
-            ]
+        if self.train_forecasting_models:
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
                     past_covariates=past_covariates,
-                    future_covariates=future_covariates
-                )
-        # update training_series attribute to make predict() behave as expected
-        else:
-            for model in self.forecasting_models:
-                model.training_series = (
-                    series if isinstance(series, TimeSeries) else None
+                    future_covariates=future_covariates,
                 )
 
         return self
@@ -281,9 +271,6 @@ class NaiveEnsembleModel(EnsembleModel):
             "are probabilistic and fitting the same likelihood.",
             logger,
         )
-
-        if series is None:
-            series = self.training_series
 
         if isinstance(predictions, Sequence):
             return [

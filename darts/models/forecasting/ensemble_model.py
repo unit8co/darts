@@ -3,7 +3,6 @@ Ensemble Model Base Class
 """
 
 from abc import abstractmethod
-from functools import reduce
 from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -12,7 +11,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
+from darts.timeseries import TimeSeries, concatenate
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -54,7 +53,7 @@ class EnsembleModel(GlobalForecastingModel):
         forecasting_models: List[ForecastingModel],
         train_num_samples: int,
         train_samples_reduction: Optional[Union[str, float]],
-        retrain_forecasting_models: bool = True,
+        train_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
         raise_if_not(
@@ -100,7 +99,7 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
-        if retrain_forecasting_models:
+        if train_forecasting_models:
             # prevent issues with pytorch-lightning trainer during retraining
             raise_if(
                 some_trained,
@@ -157,7 +156,7 @@ class EnsembleModel(GlobalForecastingModel):
         self.forecasting_models = forecasting_models
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
-        self.retrain_forecasting_models = retrain_forecasting_models
+        self.train_forecasting_models = train_forecasting_models
         self.show_warnings = show_warnings
 
         if show_warnings:
@@ -230,7 +229,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _stack_ts_seq(self, predictions):
         # stacks list of predictions into one multivariate timeseries
-        return reduce(lambda a, b: a.stack(b), predictions)
+        return concatenate(predictions, axis=1)
 
     def _stack_ts_multiseq(self, predictions_list):
         # stacks multiple sequences of timeseries elementwise
@@ -300,6 +299,11 @@ class EnsembleModel(GlobalForecastingModel):
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
+
+        # ensure forecasting models all rely on the same series during inference
+        # sanity check are performed by super().predict()
+        if series is None:
+            series = self.training_series
 
         # for single-level ensemble, probabilistic forecast is obtained directly from forecasting models
         if self.train_samples_reduction is None:

@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.metrics import rmse
+from darts.metrics import mape, rmse
 from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
@@ -145,7 +145,7 @@ class TestRegressionEnsembleModels:
         model_ens = RegressionEnsembleModel(
             forecasting_models=[linreg1, linreg2],
             regression_train_n_points=10,
-            retrain_forecasting_models=False,
+            train_forecasting_models=False,
         )
         model_ens.fit(self.sine_series[:45])
         model_ens.predict(5)
@@ -155,12 +155,12 @@ class TestRegressionEnsembleModels:
             RegressionEnsembleModel(
                 forecasting_models=[linreg1, linreg2],
                 regression_train_n_points=10,
-                retrain_forecasting_models=True,
+                train_forecasting_models=True,
             )
         model_ens_ft = RegressionEnsembleModel(
             forecasting_models=[linreg1.untrained_model(), linreg2.untrained_model()],
             regression_train_n_points=10,
-            retrain_forecasting_models=True,
+            train_forecasting_models=True,
         )
         model_ens_ft.fit(self.sine_series[:45])
         model_ens_ft.predict(5)
@@ -199,7 +199,7 @@ class TestRegressionEnsembleModels:
         ensemble = RegressionEnsembleModel(
             forecasting_models=forecasting_models,
             regression_train_n_points=-1,
-            retrain_forecasting_models=False,
+            train_forecasting_models=False,
         )
         ensemble.fit(self.combined)
 
@@ -224,15 +224,55 @@ class TestRegressionEnsembleModels:
         )
 
         ensemble = RegressionEnsembleModel([model1], 5)
+        # forecasting model is retrained from scratch with the entire series once the regression model is trained
         ensemble.fit(self.combined)
-
         model1_fitted = ensemble.forecasting_models[0]
-        forecast1 = model1_fitted.predict(10)
-
+        forecast1 = model1_fitted.predict(3)
+        # train torch model outside of ensemble model
         model2.fit(self.combined)
-        forecast2 = model2.predict(10)
+        forecast2 = model2.predict(3)
 
-        assert round(abs(sum(forecast1.values() - forecast2.values())[0] - 0.0), 2) == 0
+        assert model1_fitted.training_series.time_index.equals(
+            model2.training_series.time_index
+        )
+        assert forecast1.time_index.equals(forecast2.time_index)
+        np.testing.assert_array_almost_equal(forecast1.values(), forecast2.values())
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    @pytest.mark.parametrize("config", [(1, 1), (5, 2)])
+    def test_train_with_historical_forecasts(self, config):
+        """
+        Training regression model of ensemble with output from historical forecasts instead of predict should
+        yield better results when the forecasting models are global and regression_train_n_points >> ocl.
+        """
+        ocl1, ocl2 = config
+
+        train, val = self.combined.split_after(self.combined.time_index[-10])
+
+        ensemble_hist_fct = RegressionEnsembleModel(
+            [
+                LinearRegressionModel(lags=5, output_chunk_length=ocl1),
+                LinearRegressionModel(lags=2, output_chunk_length=ocl2),
+            ],
+            regression_train_n_points=25,
+            train_using_historical_forecasts=True,
+        )
+        ensemble_hist_fct.fit(train)
+        pred_hist_fct = ensemble_hist_fct.predict(len(val))
+
+        ensemble_predict = RegressionEnsembleModel(
+            [
+                LinearRegressionModel(lags=5, output_chunk_length=ocl1),
+                LinearRegressionModel(lags=2, output_chunk_length=ocl2),
+            ],
+            regression_train_n_points=25,
+            train_using_historical_forecasts=False,
+        )
+        ensemble_predict.fit(train)
+        pred_predict = ensemble_predict.predict(len(val))
+
+        assert mape(pred_hist_fct, val) < mape(pred_predict, val)
+        assert rmse(pred_hist_fct, val) < rmse(pred_predict, val)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_univar(self):

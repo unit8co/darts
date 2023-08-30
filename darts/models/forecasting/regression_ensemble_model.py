@@ -6,13 +6,14 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 """
 from typing import List, Optional, Sequence, Tuple, Union
 
+import numpy as np
+
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
-from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-from darts.timeseries import TimeSeries
+from darts.timeseries import TimeSeries, concatenate
 from darts.utils.utils import seq2series, series2seq
 
 logger = get_logger(__name__)
@@ -26,7 +27,7 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_model=None,
         regression_train_num_samples: int = 1,
         regression_train_samples_reduction: Optional[Union[str, float]] = "median",
-        retrain_forecasting_models: bool = True,
+        train_forecasting_models: bool = True,
         train_using_historical_forecasts: bool = False,
         show_warnings: bool = True,
     ):
@@ -53,7 +54,7 @@ class RegressionEnsembleModel(EnsembleModel):
             List of forecasting models whose predictions to ensemble
         regression_train_n_points
             The number of points to use to train the regression model. Can be set to `-1` to use the entire series
-            to train the regressor if `forecasting_models` are already fitted and `retrain_forecasting_models=False`.
+            to train the regressor if `forecasting_models` are already fitted and `train_forecasting_models=False`.
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
@@ -73,13 +74,15 @@ class RegressionEnsembleModel(EnsembleModel):
             If `forecasting_models` are probabilistic and `regression_train_num_samples` > 1, method used to
             reduce the samples before passing them to the regression model. Possible values: "mean", "median"
             or float value corresponding to the desired quantile. Default: "median"
-        retrain_forecasting_models
+        train_forecasting_models
             If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
             if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
         train_using_historical_forecasts
-            If set to `True`, use `historical_forecasts()` to generate the forecasting models' predictions used to train the regression
-            model in `fit()`. Available and highly recommended when `forecasting_models` contains only
-            `GlobalForecastingModels`. Default: ``False``.
+            If set to `True`, use `historical_forecasts()` to generate the forecasting models' predictions used to
+            train the regression model in `fit()`. Available when `forecasting_models` contains only
+            `GlobalForecastingModels` with `output_chunk_length` multiple of `regression_train_n_points` and
+            recommended when `regression_train_n_points` is considerably greater than `output_chunk_length`.
+            Default: ``False``.
         show_warnings
             Whether to show warnings related to forecasting_models covariates support.
         References
@@ -90,7 +93,7 @@ class RegressionEnsembleModel(EnsembleModel):
             forecasting_models=forecasting_models,
             train_num_samples=regression_train_num_samples,
             train_samples_reduction=regression_train_samples_reduction,
-            retrain_forecasting_models=retrain_forecasting_models,
+            train_forecasting_models=train_forecasting_models,
             show_warnings=show_warnings,
         )
 
@@ -116,13 +119,16 @@ class RegressionEnsembleModel(EnsembleModel):
 
         self.regression_model: RegressionModel = regression_model
 
-        raise_if(
-            regression_train_n_points == -1
-            and not (self.all_trained and (not retrain_forecasting_models)),
-            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
-            "all `forecasting_models` are already fitted.",
-            logger,
-        )
+        if regression_train_n_points == -1:
+            raise_if_not(
+                self.all_trained and (not train_forecasting_models),
+                "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
+                "all `forecasting_models` are already fitted.",
+                logger,
+            )
+        else:
+            # can perform this check without knowing the training series length
+            self._check_ocl_multiple_train_n_point(regression_train_n_points)
 
         self.train_n_points = regression_train_n_points
 
@@ -142,6 +148,18 @@ class RegressionEnsembleModel(EnsembleModel):
         right = [ts[-n:] for ts in ts_sequence]
         return left, right
 
+    def _check_ocl_multiple_train_n_point(self, train_n_points: int):
+        ocl_multiple_train_n_points = [
+            np.abs(train_n_points) % m.output_chunk_length == 0
+            for m in self.forecasting_models
+        ]
+        raise_if_not(
+            all(ocl_multiple_train_n_points),
+            f"Some forecasting model `output_chunk_length` are not multiple of `regression_train_n_points` "
+            f"({train_n_points}) preventing the alignement of the forecasting models' historical forecasts.",
+            logger,
+        )
+
     def _make_multiple_historical_forecasts(
         self,
         train_n_points: int,
@@ -155,11 +173,19 @@ class RegressionEnsembleModel(EnsembleModel):
         For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
         produce better forecasts than `predict()`.
 
-        train_n_points are generated, starting from the end of the series
+        To get as close as possible to the predictions generated by the forecasting models during inference,
+        `historical_forecasts` forecast horizon is equal to each model output_chunk_length.
+
+        train_n_points are generated, starting from the end of the series.
         """
+        # rerun constructor check, in case regression_train_n_points was -1
+        self._check_ocl_multiple_train_n_point(train_n_points)
+
         is_single_series = isinstance(series, TimeSeries) or series is None
-        predictions = [
-            model.historical_forecasts(
+        predictions = []
+        for model in self.forecasting_models:
+            # TODO: use last_points_only=True when output_chunk_length=1
+            tmp_pred = model.historical_forecasts(
                 series=series,
                 past_covariates=past_covariates
                 if model.supports_past_covariates
@@ -167,17 +193,19 @@ class RegressionEnsembleModel(EnsembleModel):
                 future_covariates=future_covariates
                 if model.supports_future_covariates
                 else None,
+                forecast_horizon=model.output_chunk_length,
+                stride=model.output_chunk_length,
                 num_samples=num_samples if model._is_probabilistic else 1,
                 start=-train_n_points,
                 start_format="index",
                 retrain=False,
                 overlap_end=True,
-                last_points_only=True,
+                last_points_only=False,
                 show_warnings=self.show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
-            for model in self.forecasting_models
-        ]
+
+            predictions.append(concatenate(tmp_pred, axis=0))
 
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
@@ -195,15 +223,13 @@ class RegressionEnsembleModel(EnsembleModel):
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
         are used to train the regression model.
 
-        If `forecasting_models` contains fitted `GlobalForecastingModels` and `retrain_forecasting_model=False`,
+        If `forecasting_models` contains fitted `GlobalForecastingModels` and `train_forecasting_model=False`,
         only the regression model will be trained.
 
         Parameters
@@ -230,9 +256,10 @@ class RegressionEnsembleModel(EnsembleModel):
             )
             # shift by the forecasting models' largest input length
             all_shifts = []
-                # when it's not clearly defined, extreme_lags returns
-                # min_train_serie_length for the LocalForecastingModels
-                min_target_lag, _, _, _, _, _ = m.extreme_lags
+            # when it's not clearly defined, extreme_lags returns
+            # min_train_serie_length for the LocalForecastingModels
+            for model in self.forecasting_models:
+                min_target_lag, _, _, _, _, _ = model.extreme_lags
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 
@@ -268,17 +295,13 @@ class RegressionEnsembleModel(EnsembleModel):
                 self.train_n_points, series
             )
 
-        if self.retrain_forecasting_models:
+        if self.train_forecasting_models:
             for model in self.forecasting_models:
                 # maximize covariate usage
                 model._fit_wrapper(
                     series=forecast_training,
-                    past_covariates=past_covariates
-                    if model.supports_past_covariates
-                    else None,
-                    future_covariates=future_covariates
-                    if model.supports_future_covariates
-                    else None,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
                 )
 
         if self.train_using_historical_forecasts:
@@ -304,26 +327,17 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         # prepare the forecasting models for further predicting by fitting them with the entire data
-        if self.retrain_forecasting_models:
+        if self.train_forecasting_models:
             # Some models may need to be 'reset' to allow being retrained from scratch, especially torch-based models
             self.forecasting_models: List[ForecastingModel] = [
                 model.untrained_model() for model in self.forecasting_models
             ]
-
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates
-                    if model.supports_past_covariates
-                    else None,
-                    future_covariates=future_covariates
-                    if model.supports_future_covariates
-                    else None,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
                 )
-        # update training_series attribute to make predict() behave as expected
-        else:
-            for model in self.forecasting_models:
-                model.training_series = series if is_single_series else None
         return self
 
     def ensemble(
