@@ -28,8 +28,9 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         but typically requires more time on the first call, because it relies
         on Numba and jit compilation.
 
-        This model accepts the same arguments as the `statsforecast ETS
-        <https://nixtla.github.io/statsforecast/models.html#ets>`_. package.
+        We refer to the `statsforecast AutoTheta documentation
+        <https://nixtla.github.io/statsforecast/src/core/models.html#autoets>`_
+        for the exhaustive documentation of the arguments.
 
         In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first
         regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
@@ -46,7 +47,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
             terminology of Hyndman et al. (2002). Possible values are:
 
             * "A" or "M" for error state,
-            * "N", "A" or "Ad" for trend state,
+            * "N", "A" or "M" for trend state,
             * "N", "A" or "M" for season state.
 
             For instance, "ANN" means additive error, no trend and no seasonality.
@@ -72,6 +73,10 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+
+        .. note::
+            Positional and keyword arguments can be used to pass additional parameters to statsforecast's `AutoETS`
+            constructor, such as ``prediction_intervals`` to compute the conformal prediction intervals.
 
         Examples
         --------
@@ -122,7 +127,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         super()._predict(n, future_covariates, num_samples)
         forecast_dict = self.model.predict(
             h=n,
-            level=(one_sigma_rule,),  # ask one std for the confidence interval
+            level=[one_sigma_rule],  # ask one std for the confidence interval
         )
 
         mu_ets, std = unpack_sf_dict(forecast_dict)

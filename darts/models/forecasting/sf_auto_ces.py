@@ -18,17 +18,27 @@ class StatsForecastAutoCES(LocalForecastingModel):
         <https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074>
 
         We refer to the `statsforecast AutoCES documentation
-        <https://nixtla.github.io/statsforecast/models.html#autoces>`_
-        for the documentation of the arguments.
+        <https://nixtla.github.io/statsforecast/src/core/models.html#autoces>`_
+        for the exhaustive documentation of the arguments.
 
         Parameters
         ----------
-        autoces_args
-            Positional arguments for ``statsforecasts.models.AutoCES``.
-        autoces_kwargs
-            Keyword arguments for ``statsforecasts.models.AutoCES``.
+        season_length
+            Number of observations per cycle. Default: 1.
+        model
+            Single-character string identifying kind of CES model:
 
-            ..
+            * "N" for simple CES without seasonality,
+            * "S" for simple simple seasonality (lagged CES),
+            * "P" for partial seasonality (without complex part),
+            * "F" for full seasonality (lagged CES with both real and complex seasonality).
+
+            Furthermore, the character "Z" is a placeholder telling statsforecast
+            to search for the best parameter. Default: "Z".
+
+        .. note::
+            Positional and keyword arguments can be used to pass additional parameters to statsforecast's `AutoCES`
+            constructor, such as ``prediction_intervals`` to compute the conformal prediction intervals.
 
         Examples
         --------
