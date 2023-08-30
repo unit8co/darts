@@ -33,7 +33,7 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         ----------
         autotheta_args
             Positional arguments for ``statsforecasts.models.AutoTheta``.
-        autothta_kwargs
+        autotheta_kwargs
             Keyword arguments for ``statsforecasts.models.AutoTheta``.
 
         Examples
