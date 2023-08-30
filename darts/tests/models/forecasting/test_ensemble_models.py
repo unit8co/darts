@@ -83,7 +83,7 @@ class TestEnsembleModels:
         # both global trained, retrain = True
         with pytest.raises(ValueError):
             # models need to be explicitely reset before retraining them
-            model_ens_retrain = NaiveEnsembleModel(
+            NaiveEnsembleModel(
                 [global_model, global_model], retrain_forecasting_models=True
             )
         model_ens_retrain = NaiveEnsembleModel(

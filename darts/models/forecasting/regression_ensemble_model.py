@@ -77,7 +77,7 @@ class RegressionEnsembleModel(EnsembleModel):
             If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
             if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
         train_using_historical_forecasts
-            If set to `True`, use `historical_forecasts()` to generate the covariates used to train the regression
+            If set to `True`, use `historical_forecasts()` to generate the forecasting models' predictions used to train the regression
             model in `fit()`. Available and highly recommended when `forecasting_models` contains only
             `GlobalForecastingModels`. Default: ``False``.
         show_warnings
@@ -119,8 +119,8 @@ class RegressionEnsembleModel(EnsembleModel):
         raise_if(
             regression_train_n_points == -1
             and not (self.all_trained and (not retrain_forecasting_models)),
-            "`regression_train_n_points` can be set to `-1` only if `retrain_forecasting_model=False` and "
-            "all the `forecasting_models` are already fitted.",
+            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
+            "all `forecasting_models` are already fitted.",
             logger,
         )
 
@@ -128,7 +128,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         raise_if(
             train_using_historical_forecasts and not self.is_global_ensemble,
-            "`train_using_historical_forecasts=True` is available only when all the models contained in "
+            "`train_using_historical_forecasts=True` is only available when all "
             "`forecasting_models` are global.",
             logger,
         )
@@ -153,7 +153,7 @@ class RegressionEnsembleModel(EnsembleModel):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
-        producebetter forecasts than `predict()`.
+        produce better forecasts than `predict()`.
 
         train_n_points are generated, starting from the end of the series
         """
@@ -194,14 +194,14 @@ class RegressionEnsembleModel(EnsembleModel):
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], None]
+            Union[TimeSeries, Sequence[TimeSeries]]
         ] = None,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
-        are used to train the regressor model.
+        are used to train the regression model.
 
         If `forecasting_models` contains fitted `GlobalForecastingModels` and `retrain_forecasting_model=False`,
         only the regression model will be trained.
@@ -228,24 +228,13 @@ class RegressionEnsembleModel(EnsembleModel):
             self.train_n_points = (
                 len(series) if is_single_series else min(len(ts) for ts in series)
             )
-            # shift by the greatest forecasting models input length
+            # shift by the forecasting models' largest input length
             all_shifts = []
-            for m in self.forecasting_models:
-                if isinstance(m, TorchForecastingModel):
-                    all_shifts.append(m.input_chunk_length)
-                else:
-                    # when it's not clearly defined, extreme_lags returns
-                    # min_train_serie_length for the LocalForecastingModels
-                    (
-                        min_target_lag,
-                        max_target_lag,
-                        min_past_cov_lag,
-                        max_past_cov_lag,
-                        min_future_cov_lag,
-                        max_future_cov_lag,
-                    ) = m.extreme_lags
-                    if min_target_lag is not None:
-                        all_shifts.append(-min_target_lag)
+                # when it's not clearly defined, extreme_lags returns
+                # min_train_serie_length for the LocalForecastingModels
+                min_target_lag, _, _, _, _, _ = m.extreme_lags
+                if min_target_lag is not None:
+                    all_shifts.append(-min_target_lag)
 
             self.train_n_points -= max(all_shifts)
             raise_if(

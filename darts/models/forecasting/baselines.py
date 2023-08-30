@@ -216,14 +216,10 @@ class NaiveEnsembleModel(EnsembleModel):
         ----------
         forecasting_models
             List of forecasting models whose predictions to ensemble
-        retrain_forecasting_models
-            If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
-            if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
-
-            .. note::
-                if `forecasting_models` are already fitted and `retrain_forecasting_models=False`, `predict()`
-                can be called directly by the `NaiveEnsembleModel` (without calling `fit()`).
-            ..
+        train_forecasting_models
+            Whether to train the `forecasting_models` from scratch. If `False`, the models are not trained when calling `fit()`
+            and `predict()` can be called directly (only supported if all the `forecasting_models` are pretrained
+            `GlobalForecastingModels`).
         show_warnings
             Whether to show warnings related to models covariates support.
         """
@@ -258,12 +254,8 @@ class NaiveEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates
-                    if model.supports_past_covariates
-                    else None,
+                    past_covariates=past_covariates,
                     future_covariates=future_covariates
-                    if model.supports_future_covariates
-                    else None,
                 )
         # update training_series attribute to make predict() behave as expected
         else:
