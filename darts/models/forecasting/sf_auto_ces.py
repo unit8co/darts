@@ -23,29 +23,17 @@ class StatsForecastAutoCES(LocalForecastingModel):
 
         Parameters
         ----------
-        season_length
-            Number of observations per cycle. Default: 1.
-        model
-            Single-character string identifying kind of CES model:
-
-            * "N" for simple CES without seasonality,
-            * "S" for simple simple seasonality (lagged CES),
-            * "P" for partial seasonality (without complex part),
-            * "F" for full seasonality (lagged CES with both real and complex seasonality).
-
-            Furthermore, the character "Z" is a placeholder telling statsforecast
-            to search for the best parameter. Default: "Z".
-
-        .. note::
-            Positional and keyword arguments can be used to pass additional parameters to statsforecast's `AutoCES`
-            constructor, such as ``prediction_intervals`` to compute the conformal prediction intervals.
+        autoces_args
+            Positional arguments for ``statsforecasts.models.AutoCES``.
+        autoces_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoCES``.
 
         Examples
         --------
         >>> from darts.models import StatsForecastAutoCES
         >>> from darts.datasets import AirPassengersDataset
         >>> series = AirPassengersDataset().load()
-        >>> model = StatsForecastAutoCES(season_length=12)
+        >>> model = StatsForecastAutoCES(season_length=12, model="Z")
         >>> model.fit(series[:-36])
         >>> pred = model.predict(36, num_samples=100)
         """

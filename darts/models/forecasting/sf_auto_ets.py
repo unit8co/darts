@@ -20,7 +20,9 @@ from darts.models.forecasting.forecasting_model import (
 
 
 class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
-    def __init__(self, *ets_args, add_encoders: Optional[dict] = None, **ets_kwargs):
+    def __init__(
+        self, *autoets_args, add_encoders: Optional[dict] = None, **autoets_kwargs
+    ):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
@@ -40,19 +42,8 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
 
         Parameters
         ----------
-        season_length
-            Number of observations per cycle. Default: 1.
-        model
-            Three-character string identifying method using the framework
-            terminology of Hyndman et al. (2002). Possible values are:
-
-            * "A" or "M" for error state,
-            * "N", "A" or "M" for trend state,
-            * "N", "A" or "M" for season state.
-
-            For instance, "ANN" means additive error, no trend and no seasonality.
-            Furthermore, the character "Z" is a placeholder telling statsforecast
-            to search for the best model using AICs. Default: "ZZZ".
+        autoets_args
+            Positional arguments for ``statsforecasts.models.AutoETS``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -73,10 +64,8 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
-
-        .. note::
-            Positional and keyword arguments can be used to pass additional parameters to statsforecast's `AutoETS`
-            constructor, such as ``prediction_intervals`` to compute the conformal prediction intervals.
+        autoets_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoETS``.
 
         Examples
         --------
@@ -88,7 +77,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         >>> pred = model.predict(36)
         """
         super().__init__(add_encoders=add_encoders)
-        self.model = SFAutoETS(*ets_args, **ets_kwargs)
+        self.model = SFAutoETS(*autoets_args, **autoets_kwargs)
         self._linreg = None
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):

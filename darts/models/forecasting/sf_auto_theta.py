@@ -31,12 +31,10 @@ class StatsForecastAutoTheta(LocalForecastingModel):
 
         Parameters
         ----------
-        season_length
-            Number of observations per cycle. Default: 1.
-
-        .. note::
-            Positional and keyword arguments can be used to pass additional parameters to statsforecast's `AutoTheta`
-            constructor, such as ``prediction_intervals`` to compute the conformal prediction intervals.
+        autotheta_args
+            Positional arguments for ``statsforecasts.models.AutoTheta``.
+        autothta_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoTheta``.
 
         Examples
         --------

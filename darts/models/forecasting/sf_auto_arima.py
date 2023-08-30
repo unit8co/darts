@@ -37,6 +37,8 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
 
         Parameters
         ----------
+        autoarima_args
+            Positional arguments for ``statsforecasts.models.AutoARIMA``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -57,10 +59,8 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
-
-        .. note::
-            Positional and keyword arguments can be used to pass additional parameters to statsforecast's `AutoARIMA`
-            constructor, such as ``prediction_intervals`` to compute the conformal prediction intervals.
+        autoarima_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoARIMA``.
 
         Examples
         --------
