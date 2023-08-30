@@ -28,7 +28,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         but typically requires more time on the first call, because it relies
         on Numba and jit compilation.
 
-        We refer to the `statsforecast AutoTheta documentation
+        We refer to the `statsforecast AutoETS documentation
         <https://nixtla.github.io/statsforecast/src/core/models.html#autoets>`_
         for the exhaustive documentation of the arguments.
 
