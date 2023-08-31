@@ -1,7 +1,5 @@
 import os
-import shutil
-import tempfile
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from unittest.mock import patch
 
 import numpy as np
@@ -13,7 +11,8 @@ from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.conftest import tfm_kwargs
+from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -41,29 +40,23 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TestTorchForecastingModel(DartsBaseTestClass):
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+    class TestTorchForecastingModel:
+        times = pd.date_range("20130101", "20130410")
+        pd_series = pd.Series(range(100), index=times)
+        series = TimeSeries.from_series(pd_series)
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            self.series = TimeSeries.from_series(pd_series)
-
-            df = pd.DataFrame({"var1": range(100), "var2": range(100)}, index=times)
-            self.multivariate_series = TimeSeries.from_dataframe(df)
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
+        df = pd.DataFrame({"var1": range(100), "var2": range(100)}, index=times)
+        multivariate_series = TimeSeries.from_dataframe(df)
 
         def test_save_model_parameters(self):
             # check if re-created model has same params as original
-            model = RNNModel(12, "RNN", 10, 10)
-            self.assertTrue(model._model_params, model.untrained_model()._model_params)
+            model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+            assert model._model_params, model.untrained_model()._model_params
 
         @patch(
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
         )
-        def test_suppress_automatic_save(self, patch_save_model):
+        def test_suppress_automatic_save(self, patch_save_model, tmpdir_fn):
             model_name = "test_model"
             model1 = RNNModel(
                 12,
@@ -71,8 +64,9 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=False,
+                **tfm_kwargs,
             )
             model2 = RNNModel(
                 12,
@@ -80,9 +74,10 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 force_reset=True,
                 save_checkpoints=False,
+                **tfm_kwargs,
             )
 
             model1.fit(self.series, epochs=1)
@@ -93,13 +88,13 @@ if TORCH_AVAILABLE:
 
             patch_save_model.assert_not_called()
 
-            model1.save(path=os.path.join(self.temp_work_dir, model_name))
+            model1.save(path=os.path.join(tmpdir_fn, model_name))
             patch_save_model.assert_called()
 
-        def test_manual_save_and_load(self):
+        def test_manual_save_and_load(self, tmpdir_fn):
             """validate manual save with automatic save files by comparing output between the two"""
 
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "test_save_manual"
             auto_name = "test_save_automatic"
             model_manual_save = RNNModel(
@@ -108,9 +103,10 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=manual_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=False,
                 random_state=42,
+                **tfm_kwargs,
             )
             model_auto_save = RNNModel(
                 12,
@@ -118,9 +114,10 @@ if TORCH_AVAILABLE:
                 10,
                 10,
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=True,
                 random_state=42,
+                **tfm_kwargs,
             )
 
             # save model without training
@@ -128,30 +125,27 @@ if TORCH_AVAILABLE:
             no_training_ckpt_path = os.path.join(model_dir, no_training_ckpt)
             model_manual_save.save(no_training_ckpt_path)
             # check that model object file was created
-            self.assertTrue(os.path.exists(no_training_ckpt_path))
+            assert os.path.exists(no_training_ckpt_path)
             # check that the PyTorch Ligthning ckpt does not exist
-            self.assertFalse(os.path.exists(no_training_ckpt_path + ".ckpt"))
+            assert not os.path.exists(no_training_ckpt_path + ".ckpt")
             # informative exception about `fit()` not called
-            with self.assertRaises(
-                ValueError,
-                msg="The model must be fit before calling predict(). "
-                "For global models, if predict() is called without specifying a series, "
-                "the model must have been fit on a single training series.",
-            ):
+            with pytest.raises(ValueError) as err:
                 no_train_model = RNNModel.load(no_training_ckpt_path)
                 no_train_model.predict(n=4)
+            assert str(err.value) == (
+                "Input `series` must be provided. This is the result either from "
+                "fitting on multiple series, or from not having fit the model yet."
+            )
 
             model_manual_save.fit(self.series, epochs=1)
             model_auto_save.fit(self.series, epochs=1)
 
             # check that file was not created with manual save
-            self.assertFalse(
-                os.path.exists(os.path.join(model_dir, manual_name, "checkpoints"))
+            assert not os.path.exists(
+                os.path.join(model_dir, manual_name, "checkpoints")
             )
             # check that file was created with automatic save
-            self.assertTrue(
-                os.path.exists(os.path.join(model_dir, auto_name, "checkpoints"))
-            )
+            assert os.path.exists(os.path.join(model_dir, auto_name, "checkpoints"))
 
             # create manually saved model checkpoints folder
             checkpoint_path_manual = os.path.join(model_dir, manual_name)
@@ -168,30 +162,26 @@ if TORCH_AVAILABLE:
 
             # save manually saved model
             model_manual_save.save(model_path_manual)
-            self.assertTrue(os.path.exists(model_path_manual))
+            assert os.path.exists(model_path_manual)
 
             # check that the PTL checkpoint path is also there
-            self.assertTrue(os.path.exists(model_path_manual_ckpt))
+            assert os.path.exists(model_path_manual_ckpt)
 
             # load manual save model and compare with automatic model results
             model_manual_save = RNNModel.load(model_path_manual, map_location="cpu")
             model_manual_save.to_cpu()
-            self.assertEqual(
-                model_manual_save.predict(n=4), model_auto_save.predict(n=4)
-            )
+            assert model_manual_save.predict(n=4) == model_auto_save.predict(n=4)
 
             # load automatically saved model with manual load() and load_from_checkpoint()
             model_auto_save1 = RNNModel.load_from_checkpoint(
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=False,
                 map_location="cpu",
             )
             model_auto_save1.to_cpu()
             # compare loaded checkpoint with manual save
-            self.assertEqual(
-                model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
-            )
+            assert model_manual_save.predict(n=4) == model_auto_save1.predict(n=4)
 
             # save() model directly after load_from_checkpoint()
             checkpoint_file_name_2 = "checkpoint_1.pth.tar"
@@ -205,7 +195,7 @@ if TORCH_AVAILABLE:
             )
             model_auto_save2 = RNNModel.load_from_checkpoint(
                 model_name=auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=False,
                 map_location="cpu",
             )
@@ -213,18 +203,18 @@ if TORCH_AVAILABLE:
             model_auto_save2.save(model_path_manual_2)
 
             # assert original .ckpt checkpoint was correctly copied
-            self.assertTrue(os.path.exists(model_path_manual_ckpt_2))
+            assert os.path.exists(model_path_manual_ckpt_2)
 
             model_chained_load_save = RNNModel.load(
                 model_path_manual_2, map_location="cpu"
             )
 
             # compare chained load_from_checkpoint() save() with manual save
-            self.assertEqual(
-                model_chained_load_save.predict(n=4), model_manual_save.predict(n=4)
+            assert model_chained_load_save.predict(n=4) == model_manual_save.predict(
+                n=4
             )
 
-        def test_valid_save_and_load_weights_with_different_params(self):
+        def test_valid_save_and_load_weights_with_different_params(self, tmpdir_fn):
             """
             Verify that save/load does not break encoders.
 
@@ -235,10 +225,13 @@ if TORCH_AVAILABLE:
 
             def create_model(**kwargs):
                 return DLinearModel(
-                    input_chunk_length=4, output_chunk_length=1, **kwargs
+                    input_chunk_length=4,
+                    output_chunk_length=1,
+                    **kwargs,
+                    **tfm_kwargs,
                 )
 
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             # create manually saved model checkpoints folder
             checkpoint_path_manual = os.path.join(model_dir, manual_name)
@@ -254,14 +247,13 @@ if TORCH_AVAILABLE:
             kwargs_valid = [
                 {"optimizer_cls": torch.optim.SGD},
                 {"optimizer_kwargs": {"lr": 0.1}},
-                {"pl_trainer_kwargs": {"accelerator": "cpu"}},
             ]
             # check that all models can be created with different valid kwargs
             for kwargs_ in kwargs_valid:
                 model_new = create_model(**kwargs_)
                 model_new.load_weights(model_path_manual)
 
-        def test_save_and_load_weights_w_encoders(self):
+        def test_save_and_load_weights_w_encoders(self, tmpdir_fn):
             """
             Verify that save/load does not break encoders.
 
@@ -269,25 +261,7 @@ if TORCH_AVAILABLE:
             for all but one test.
             Note: Using DLinear since it supports both past and future covariates
             """
-
-            def create_DLinearModel(
-                model_name: str,
-                save_checkpoints: bool = False,
-                add_encoders: Dict = None,
-            ):
-                return DLinearModel(
-                    input_chunk_length=4,
-                    output_chunk_length=1,
-                    kernel_size=5,
-                    model_name=model_name,
-                    add_encoders=add_encoders,
-                    work_dir=self.temp_work_dir,
-                    save_checkpoints=save_checkpoints,
-                    random_state=42,
-                    force_reset=True,
-                )
-
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             auto_name = "save_auto"
             auto_name_other = "save_auto_other"
@@ -324,44 +298,54 @@ if TORCH_AVAILABLE:
                 "transformer": Scaler(),
             }
 
-            model_auto_save = create_DLinearModel(
-                auto_name, save_checkpoints=True, add_encoders=encoders_past
+            model_auto_save = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name=auto_name,
+                save_checkpoints=True,
+                add_encoders=encoders_past,
             )
             model_auto_save.fit(self.series, epochs=1)
 
-            model_manual_save = create_DLinearModel(
-                manual_name, save_checkpoints=False, add_encoders=encoders_past
+            model_manual_save = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name=manual_name,
+                save_checkpoints=False,
+                add_encoders=encoders_past,
             )
             model_manual_save.fit(self.series, epochs=1)
             model_manual_save.save(model_path_manual)
 
-            model_auto_save_other = create_DLinearModel(
-                auto_name_other, save_checkpoints=True, add_encoders=encoders_other_past
+            model_auto_save_other = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name=auto_name_other,
+                save_checkpoints=True,
+                add_encoders=encoders_other_past,
             )
             model_auto_save_other.fit(self.series, epochs=1)
 
             # prediction are different when using different encoders
-            self.assertNotEqual(
-                model_auto_save.predict(n=4),
-                model_auto_save_other.predict(n=4),
-            )
+            assert model_auto_save.predict(n=4) != model_auto_save_other.predict(n=4)
 
             # model with undeclared encoders
-            model_no_enc = create_DLinearModel("no_encoder", add_encoders=None)
+            model_no_enc = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn, model_name="no_encoder", add_encoders=None
+            )
             # weights were trained with encoders, new model must be instantiated with encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_no_enc.load_weights_from_checkpoint(
                     auto_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
                     load_encoders=False,
+                    map_location="cpu",
                 )
             # overwritte undeclared encoders
             model_no_enc.load_weights_from_checkpoint(
                 auto_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=False,
                 load_encoders=True,
+                map_location="cpu",
             )
             self.helper_equality_encoders(
                 model_auto_save.add_encoders, model_no_enc.add_encoders
@@ -370,42 +354,64 @@ if TORCH_AVAILABLE:
                 model_auto_save.add_encoders, model_no_enc.add_encoders
             )
             # cannot directly verify equality between encoders, using predict as proxy
-            self.assertEqual(
-                model_auto_save.predict(n=4),
-                model_no_enc.predict(n=4, series=self.series),
+            assert model_auto_save.predict(n=4) == model_no_enc.predict(
+                n=4, series=self.series
             )
 
             # model with identical encoders (fittable)
-            model_same_enc_noload = create_DLinearModel(
-                "same_encoder_noload", add_encoders=encoders_past
+            model_same_enc_noload = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_noload",
+                add_encoders=encoders_past,
             )
-            model_same_enc_noload.load_weights(model_path_manual, load_encoders=False)
+            model_same_enc_noload.load_weights(
+                model_path_manual,
+                load_encoders=False,
+                map_location="cpu",
+            )
             # cannot predict because of un-fitted encoder
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_same_enc_noload.predict(n=4, series=self.series)
 
-            model_same_enc_load = create_DLinearModel(
-                "same_encoder_load", add_encoders=encoders_past
+            model_same_enc_load = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_load",
+                add_encoders=encoders_past,
             )
-            model_same_enc_load.load_weights(model_path_manual, load_encoders=True)
-            self.assertEqual(
-                model_manual_save.predict(n=4),
-                model_same_enc_load.predict(n=4, series=self.series),
+            model_same_enc_load.load_weights(
+                model_path_manual,
+                load_encoders=True,
+                map_location="cpu",
+            )
+            assert model_manual_save.predict(n=4) == model_same_enc_load.predict(
+                n=4, series=self.series
             )
 
             # model with different encoders (fittable)
-            model_other_enc_load = create_DLinearModel(
-                "other_encoder_load", add_encoders=encoders_other_past
+            model_other_enc_load = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="other_encoder_load",
+                add_encoders=encoders_other_past,
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
-                model_other_enc_load.load_weights(model_path_manual, load_encoders=True)
+            with pytest.raises(ValueError):
+                model_other_enc_load.load_weights(
+                    model_path_manual,
+                    load_encoders=True,
+                    map_location="cpu",
+                )
 
             # model with different encoders but same dimensions (fittable)
-            model_other_enc_noload = create_DLinearModel(
-                "other_encoder_noload", add_encoders=encoders_other_past
+            model_other_enc_noload = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="other_encoder_noload",
+                add_encoders=encoders_other_past,
             )
-            model_other_enc_noload.load_weights(model_path_manual, load_encoders=False)
+            model_other_enc_noload.load_weights(
+                model_path_manual,
+                load_encoders=False,
+                map_location="cpu",
+            )
             self.helper_equality_encoders(
                 model_other_enc_noload.add_encoders, encoders_other_past
             )
@@ -413,11 +419,9 @@ if TORCH_AVAILABLE:
                 model_other_enc_noload.add_encoders, encoders_other_past
             )
             # new encoders were instantiated
-            self.assertTrue(
-                isinstance(model_other_enc_noload.encoders, SequentialEncoder)
-            )
+            assert isinstance(model_other_enc_noload.encoders, SequentialEncoder)
             # since fit() was not called, new fittable encoders were not trained
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_other_enc_noload.predict(n=4, series=self.series)
 
             # predict() can be called after fit()
@@ -425,11 +429,15 @@ if TORCH_AVAILABLE:
             model_other_enc_noload.predict(n=4, series=self.series)
 
             # model with same encoders but no scaler (non-fittable)
-            model_new_enc_noscaler_noload = create_DLinearModel(
-                "same_encoder_noscaler", add_encoders=encoders_past_noscaler
+            model_new_enc_noscaler_noload = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_noscaler",
+                add_encoders=encoders_past_noscaler,
             )
             model_new_enc_noscaler_noload.load_weights(
-                model_path_manual, load_encoders=False
+                model_path_manual,
+                load_encoders=False,
+                map_location="cpu",
             )
 
             self.helper_equality_encoders(
@@ -442,21 +450,26 @@ if TORCH_AVAILABLE:
             model_new_enc_noscaler_noload.predict(n=4, series=self.series)
 
             # model with same encoders but different transformer (fittable)
-            model_new_enc_other_transformer = create_DLinearModel(
-                "same_encoder_other_transform",
+            model_new_enc_other_transformer = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_encoder_other_transform",
                 add_encoders=encoders_past_other_transformer,
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_other_transformer.load_weights(
-                    model_path_manual, load_encoders=True
+                    model_path_manual,
+                    load_encoders=True,
+                    map_location="cpu",
                 )
 
             model_new_enc_other_transformer.load_weights(
-                model_path_manual, load_encoders=False
+                model_path_manual,
+                load_encoders=False,
+                map_location="cpu",
             )
             # since fit() was not called, new fittable encoders were not trained
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_other_transformer.predict(n=4, series=self.series)
 
             # predict() can be called after fit()
@@ -464,34 +477,48 @@ if TORCH_AVAILABLE:
             model_new_enc_other_transformer.predict(n=4, series=self.series)
 
             # model with encoders containing more components (fittable)
-            model_new_enc_2_past = create_DLinearModel(
-                "encoder_2_components_past", add_encoders=encoders_2_past
+            model_new_enc_2_past = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="encoder_2_components_past",
+                add_encoders=encoders_2_past,
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
-                model_new_enc_2_past.load_weights(model_path_manual, load_encoders=True)
-            # new encoders have one additional past component
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_2_past.load_weights(
-                    model_path_manual, load_encoders=False
+                    model_path_manual,
+                    load_encoders=True,
+                    map_location="cpu",
+                )
+            # new encoders have one additional past component
+            with pytest.raises(ValueError):
+                model_new_enc_2_past.load_weights(
+                    model_path_manual,
+                    load_encoders=False,
+                    map_location="cpu",
                 )
 
             # model with encoders containing past and future covs (fittable)
-            model_new_enc_past_n_future = create_DLinearModel(
-                "encoder_past_n_future", add_encoders=encoders_past_n_future
+            model_new_enc_past_n_future = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="encoder_past_n_future",
+                add_encoders=encoders_past_n_future,
             )
             # cannot overwritte different declared encoders
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_past_n_future.load_weights(
-                    model_path_manual, load_encoders=True
+                    model_path_manual,
+                    load_encoders=True,
+                    map_location="cpu",
                 )
             # identical past components, but different future components
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_new_enc_past_n_future.load_weights(
-                    model_path_manual, load_encoders=False
+                    model_path_manual,
+                    load_encoders=False,
+                    map_location="cpu",
                 )
 
-        def test_save_and_load_weights_w_likelihood(self):
+        def test_save_and_load_weights_w_likelihood(self, tmpdir_fn):
             """
             Verify that save/load does not break likelihood.
 
@@ -499,25 +526,7 @@ if TORCH_AVAILABLE:
             for all but one test.
             Note: Using DLinear since it supports both past and future covariates
             """
-
-            def create_DLinearModel(
-                model_name: str,
-                save_checkpoints: bool = False,
-                likelihood: Likelihood = None,
-            ):
-                return DLinearModel(
-                    input_chunk_length=4,
-                    output_chunk_length=1,
-                    kernel_size=5,
-                    model_name=model_name,
-                    work_dir=self.temp_work_dir,
-                    save_checkpoints=save_checkpoints,
-                    likelihood=likelihood,
-                    random_state=42,
-                    force_reset=True,
-                )
-
-            model_dir = os.path.join(self.temp_work_dir)
+            model_dir = os.path.join(tmpdir_fn)
             manual_name = "save_manual"
             auto_name = "save_auto"
             # create manually saved model checkpoints folder
@@ -528,16 +537,18 @@ if TORCH_AVAILABLE:
                 checkpoint_path_manual, checkpoint_file_name
             )
 
-            model_auto_save = create_DLinearModel(
-                auto_name,
+            model_auto_save = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name=auto_name,
                 save_checkpoints=True,
                 likelihood=GaussianLikelihood(prior_mu=0.5),
             )
             model_auto_save.fit(self.series, epochs=1)
             pred_auto = model_auto_save.predict(n=4, series=self.series)
 
-            model_manual_save = create_DLinearModel(
-                manual_name,
+            model_manual_save = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name=manual_name,
                 save_checkpoints=False,
                 likelihood=GaussianLikelihood(prior_mu=0.5),
             )
@@ -546,77 +557,194 @@ if TORCH_AVAILABLE:
             pred_manual = model_manual_save.predict(n=4, series=self.series)
 
             # predictions are identical when using the same likelihood
-            self.assertTrue(np.array_equal(pred_auto.values(), pred_manual.values()))
+            assert np.array_equal(pred_auto.values(), pred_manual.values())
 
             # model with identical likelihood
-            model_same_likelihood = create_DLinearModel(
-                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            model_same_likelihood = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood",
+                likelihood=GaussianLikelihood(prior_mu=0.5),
             )
-            model_same_likelihood.load_weights(model_path_manual)
+            model_same_likelihood.load_weights(model_path_manual, map_location="cpu")
             model_same_likelihood.predict(n=4, series=self.series)
             # cannot check predictions since this model is not fitted, random state is different
 
             # loading models weights with respective methods
-            model_manual_same_likelihood = create_DLinearModel(
-                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            model_manual_same_likelihood = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood",
+                likelihood=GaussianLikelihood(prior_mu=0.5),
             )
-            model_manual_same_likelihood.load_weights(model_path_manual)
+            model_manual_same_likelihood.load_weights(
+                model_path_manual, map_location="cpu"
+            )
             preds_manual_from_weights = model_manual_same_likelihood.predict(
                 n=4, series=self.series
             )
 
-            model_auto_same_likelihood = create_DLinearModel(
-                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            model_auto_same_likelihood = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood",
+                likelihood=GaussianLikelihood(prior_mu=0.5),
             )
             model_auto_same_likelihood.load_weights_from_checkpoint(
-                auto_name,
-                work_dir=self.temp_work_dir,
-                best=False,
+                auto_name, work_dir=tmpdir_fn, best=False, map_location="cpu"
             )
             preds_auto_from_weights = model_auto_same_likelihood.predict(
                 n=4, series=self.series
             )
             # check that weights from checkpoint give identical predictions as weights from manual save
-            self.assertTrue(preds_manual_from_weights == preds_auto_from_weights)
-
-            # model with no likelihood
-            model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
-            with self.assertRaises(ValueError):
+            assert preds_manual_from_weights == preds_auto_from_weights
+            # model with explicitely no likelihood
+            model_no_likelihood = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn, model_name="no_likelihood", likelihood=None
+            )
+            with pytest.raises(ValueError) as error_msg:
                 model_no_likelihood.load_weights_from_checkpoint(
                     auto_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
+                    map_location="cpu",
                 )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
+
+            # model with missing likelihood (as if user forgot them)
+            model_no_likelihood_bis = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                model_name="no_likelihood_bis",
+                add_encoders=None,
+                work_dir=tmpdir_fn,
+                save_checkpoints=False,
+                random_state=42,
+                force_reset=True,
+                n_epochs=1,
+                # likelihood=likelihood,
+                **tfm_kwargs,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                model_no_likelihood_bis.load_weights_from_checkpoint(
+                    auto_name,
+                    work_dir=tmpdir_fn,
+                    best=False,
+                    map_location="cpu",
+                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "missing"
+            )
 
             # model with a different likelihood
-            model_other_likelihood = create_DLinearModel(
-                "other_likelihood", likelihood=LaplaceLikelihood()
+            model_other_likelihood = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="other_likelihood",
+                likelihood=LaplaceLikelihood(),
             )
-            with self.assertRaises(ValueError):
-                model_other_likelihood.load_weights(model_path_manual)
+            with pytest.raises(ValueError) as error_msg:
+                model_other_likelihood.load_weights(
+                    model_path_manual, map_location="cpu"
+                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
 
             # model with the same likelihood but different parameters
-            model_same_likelihood_other_prior = create_DLinearModel(
-                "same_likelihood_other_prior", likelihood=GaussianLikelihood()
+            model_same_likelihood_other_prior = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                model_name="same_likelihood_other_prior",
+                likelihood=GaussianLikelihood(),
             )
-            with self.assertRaises(ValueError):
-                model_same_likelihood_other_prior.load_weights(model_path_manual)
+            with pytest.raises(ValueError) as error_msg:
+                model_same_likelihood_other_prior.load_weights(
+                    model_path_manual, map_location="cpu"
+                )
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
 
-        def test_create_instance_new_model_no_name_set(self):
-            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
-            # no exception is raised
-            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
+        def test_load_weights_params_check(self, tmpdir_fn):
+            """
+            Verify that the method comparing the parameters between the saved model and the loading model
+            behave as expected, used to return meaningful error message instead of the torch.load ones.
+            """
+            model_name = "params_check"
+            ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
+            # barebone model
+            model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                n_epochs=1,
+            )
+            model.fit(self.series[:10])
+            model.save(ckpt_path)
+
+            # identical model
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+            )
+            loading_model.load_weights(ckpt_path)
+
+            # different optimizer
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                optimizer_cls=torch.optim.AdamW,
+            )
+            loading_model.load_weights(ckpt_path)
+
+            # different pl_trainer_kwargs
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                pl_trainer_kwargs={"enable_model_summary": False},
+            )
+            loading_model.load_weights(ckpt_path)
+
+            # different input_chunk_length (tfm parameter)
+            loading_model = DLinearModel(
+                input_chunk_length=4 + 1,
+                output_chunk_length=1,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                loading_model.load_weights(ckpt_path)
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
+
+            # different kernel size (cls specific parameter)
+            loading_model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                kernel_size=10,
+            )
+            with pytest.raises(ValueError) as error_msg:
+                loading_model.load_weights(ckpt_path)
+            assert str(error_msg.value).startswith(
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+                "incorrect"
+            )
+
+        def test_create_instance_new_model_no_name_set(self, tmpdir_fn):
+            RNNModel(12, "RNN", 10, 10, work_dir=tmpdir_fn, **tfm_kwargs)
             # no exception is raised
 
-        def test_create_instance_existing_model_with_name_no_fit(self):
+        def test_create_instance_existing_model_with_name_no_fit(self, tmpdir_fn):
             model_name = "test_model"
             RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
-            )
-            # no exception is raised
-
-            RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+                12,
+                "RNN",
+                10,
+                10,
+                work_dir=tmpdir_fn,
+                model_name=model_name,
+                **tfm_kwargs,
             )
             # no exception is raised
 
@@ -624,11 +752,17 @@ if TORCH_AVAILABLE:
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
         )
         def test_create_instance_existing_model_with_name_force(
-            self, patch_reset_model
+            self, patch_reset_model, tmpdir_fn
         ):
             model_name = "test_model"
             RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+                12,
+                "RNN",
+                10,
+                10,
+                work_dir=tmpdir_fn,
+                model_name=model_name,
+                **tfm_kwargs,
             )
             # no exception is raised
             # since no fit, there is no data stored for the model, hence `force_reset` does noting
@@ -638,9 +772,10 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 force_reset=True,
+                **tfm_kwargs,
             )
             patch_reset_model.assert_not_called()
 
@@ -648,7 +783,7 @@ if TORCH_AVAILABLE:
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
         )
         def test_create_instance_existing_model_with_name_force_fit_with_reset(
-            self, patch_reset_model
+            self, patch_reset_model, tmpdir_fn
         ):
             model_name = "test_model"
             model1 = RNNModel(
@@ -656,9 +791,10 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
+                **tfm_kwargs,
             )
             # no exception is raised
 
@@ -669,10 +805,11 @@ if TORCH_AVAILABLE:
                 "RNN",
                 10,
                 10,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
                 force_reset=True,
+                **tfm_kwargs,
             )
             patch_reset_model.assert_called_once()
 
@@ -683,52 +820,72 @@ if TORCH_AVAILABLE:
         # n_epochs=20, fit|epochs=None, epochs_trained=0 - train for 20 epochs
         def test_train_from_0_n_epochs_20_no_fit_epochs(self):
             model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **tfm_kwargs,
             )
 
             model1.fit(self.series)
 
-            self.assertEqual(20, model1.epochs_trained)
+            assert 20 == model1.epochs_trained
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=20 - train for another 20 epochs
         def test_train_from_20_n_epochs_40_no_fit_epochs(self):
             model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **tfm_kwargs,
             )
 
             model1.fit(self.series)
-            self.assertEqual(20, model1.epochs_trained)
+            assert 20 == model1.epochs_trained
 
             model1.fit(self.series)
-            self.assertEqual(20, model1.epochs_trained)
+            assert 20 == model1.epochs_trained
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=10 - train for another 20 epochs
         def test_train_from_10_n_epochs_20_no_fit_epochs(self):
             model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **tfm_kwargs,
             )
 
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
             model1.fit(self.series, epochs=10)
-            self.assertEqual(10, model1.epochs_trained)
+            assert 10 == model1.epochs_trained
 
             model1.fit(self.series)
-            self.assertEqual(20, model1.epochs_trained)
+            assert 20 == model1.epochs_trained
 
         # n_epochs = 20, fit|epochs=15, epochs_trained=10 - train for 15 epochs
         def test_train_from_10_n_epochs_20_fit_15_epochs(self):
             model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **tfm_kwargs,
             )
 
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
             model1.fit(self.series, epochs=10)
-            self.assertEqual(10, model1.epochs_trained)
+            assert 10 == model1.epochs_trained
 
             model1.fit(self.series, epochs=15)
-            self.assertEqual(15, model1.epochs_trained)
+            assert 15 == model1.epochs_trained
 
-        def test_load_weights_from_checkpoint(self):
+        def test_load_weights_from_checkpoint(self, tmpdir_fn):
             ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
@@ -739,10 +896,11 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=True,
                 model_name=original_model_name,
                 random_state=1,
+                **tfm_kwargs,
             )
             model.fit(ts_training)
             original_preds = model.predict(10)
@@ -755,30 +913,33 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=retrained_model_name,
                 random_state=1,
+                **tfm_kwargs,
             )
             model_rt.load_weights_from_checkpoint(
-                model_name=original_model_name, work_dir=self.temp_work_dir, best=False
+                model_name=original_model_name,
+                work_dir=tmpdir_fn,
+                best=False,
+                map_location="cpu",
             )
 
             # must indicate series otherwise self.training_series must be saved in checkpoint
             loaded_preds = model_rt.predict(10, ts_training)
             # save/load checkpoint should produce identical predictions
-            self.assertEqual(original_preds, loaded_preds)
+            assert original_preds == loaded_preds
 
             model_rt.fit(ts_training)
             retrained_preds = model_rt.predict(10)
             retrained_mape = mape(retrained_preds, ts_test)
-            self.assertTrue(
-                retrained_mape < original_mape,
+            assert retrained_mape < original_mape, (
                 f"Retrained model has a greater error (mape) than the original model, "
-                f"respectively {retrained_mape} and {original_mape}",
+                f"respectively {retrained_mape} and {original_mape}"
             )
 
             # raise Exception when trying to load ckpt weights in different architecture
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 model_rt = RNNModel(
                     12,
                     "RNN",
@@ -787,26 +948,23 @@ if TORCH_AVAILABLE:
                 )
                 model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
+                    map_location="cpu",
                 )
 
             # raise Exception when trying to pass `weights_only`=True to `torch.load()`
-            with self.assertRaises(ValueError):
-                model_rt = RNNModel(
-                    12,
-                    "RNN",
-                    5,
-                    5,
-                )
+            with pytest.raises(ValueError):
+                model_rt = RNNModel(12, "RNN", 5, 5, **tfm_kwargs)
                 model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
-                    work_dir=self.temp_work_dir,
+                    work_dir=tmpdir_fn,
                     best=False,
                     weights_only=True,
+                    map_location="cpu",
                 )
 
-        def test_load_weights(self):
+        def test_load_weights(self, tmpdir_fn):
             ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
@@ -817,13 +975,14 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 save_checkpoints=False,
                 model_name=original_model_name,
                 random_state=1,
+                **tfm_kwargs,
             )
             model.fit(ts_training)
-            path_manual_save = os.path.join(self.temp_work_dir, "RNN_manual_save.pt")
+            path_manual_save = os.path.join(tmpdir_fn, "RNN_manual_save.pt")
             model.save(path_manual_save)
             original_preds = model.predict(10)
             original_mape = mape(original_preds, ts_test)
@@ -835,62 +994,45 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=5,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=retrained_model_name,
                 random_state=1,
+                **tfm_kwargs,
             )
-            model_rt.load_weights(path=path_manual_save)
+            model_rt.load_weights(path=path_manual_save, map_location="cpu")
 
             # must indicate series otherwise self.training_series must be saved in checkpoint
             loaded_preds = model_rt.predict(10, ts_training)
             # save/load checkpoint should produce identical predictions
-            self.assertEqual(original_preds, loaded_preds)
+            assert original_preds == loaded_preds
 
             model_rt.fit(ts_training)
             retrained_preds = model_rt.predict(10)
             retrained_mape = mape(retrained_preds, ts_test)
-            self.assertTrue(
-                retrained_mape < original_mape,
+            assert retrained_mape < original_mape, (
                 f"Retrained model has a greater mape error than the original model, "
-                f"respectively {retrained_mape} and {original_mape}",
+                f"respectively {retrained_mape} and {original_mape}"
             )
 
-        def test_multi_steps_pipeline(self):
+        def test_multi_steps_pipeline(self, tmpdir_fn):
             ts_training, ts_val = self.series.split_before(75)
             pretrain_model_name = "pre-train"
             retrained_model_name = "re-train"
 
-            def create_RNNModel(model_name: str):
-                return RNNModel(
-                    input_chunk_length=4,
-                    hidden_dim=3,
-                    add_encoders={
-                        "cyclic": {"past": ["month"]},
-                        "datetime_attribute": {
-                            "past": ["hour"],
-                        },
-                        "transformer": Scaler(),
-                    },
-                    n_epochs=2,
-                    model_name=model_name,
-                    work_dir=self.temp_work_dir,
-                    force_reset=True,
-                    save_checkpoints=True,
-                )
-
             # pretraining
-            model = create_RNNModel(pretrain_model_name)
+            model = self.helper_create_RNNModel(pretrain_model_name, tmpdir_fn)
             model.fit(
                 ts_training,
                 val_series=ts_val,
             )
 
             # finetuning
-            model = create_RNNModel(retrained_model_name)
+            model = self.helper_create_RNNModel(retrained_model_name, tmpdir_fn)
             model.load_weights_from_checkpoint(
                 model_name=pretrain_model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=True,
+                map_location="cpu",
             )
             model.fit(
                 ts_training,
@@ -900,12 +1042,13 @@ if TORCH_AVAILABLE:
             # prediction
             model = model.load_from_checkpoint(
                 model_name=retrained_model_name,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 best=True,
+                map_location="cpu",
             )
             model.predict(4, series=ts_training)
 
-        def test_load_from_checkpoint_w_custom_loss(self):
+        def test_load_from_checkpoint_w_custom_loss(self, tmpdir_fn):
             model_name = "pretraining_custom_loss"
             # model with a custom loss
             model = RNNModel(
@@ -914,53 +1057,59 @@ if TORCH_AVAILABLE:
                 5,
                 1,
                 n_epochs=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
                 force_reset=True,
                 loss_fn=torch.nn.L1Loss(),
+                **tfm_kwargs,
             )
             model.fit(self.series)
 
             loaded_model = RNNModel.load_from_checkpoint(
-                model_name, self.temp_work_dir, best=False
+                model_name, tmpdir_fn, best=False, map_location="cpu"
             )
             # custom loss function should be properly restored from ckpt
-            self.assertTrue(isinstance(loaded_model.model.criterion, torch.nn.L1Loss))
+            assert isinstance(loaded_model.model.criterion, torch.nn.L1Loss)
 
             loaded_model.fit(self.series, epochs=2)
             # calling fit() should not impact the loss function
-            self.assertTrue(isinstance(loaded_model.model.criterion, torch.nn.L1Loss))
+            assert isinstance(loaded_model.model.criterion, torch.nn.L1Loss)
 
-        def test_load_from_checkpoint_w_metrics(self):
+        def test_load_from_checkpoint_w_metrics(self, tmpdir_fn):
             model_name = "pretraining_metrics"
             # model with one torch_metrics
+            pl_trainer_kwargs = dict(
+                {"logger": DummyLogger(), "log_every_n_steps": 1},
+                **tfm_kwargs["pl_trainer_kwargs"],
+            )
             model = RNNModel(
                 12,
                 "RNN",
                 5,
                 1,
                 n_epochs=1,
-                work_dir=self.temp_work_dir,
+                work_dir=tmpdir_fn,
                 model_name=model_name,
                 save_checkpoints=True,
                 force_reset=True,
                 torch_metrics=MeanAbsolutePercentageError(),
-                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+                pl_trainer_kwargs=pl_trainer_kwargs,
             )
             model.fit(self.series)
             # check train_metrics before loading
-            self.assertTrue(isinstance(model.model.train_metrics, MetricCollection))
-            self.assertEqual(len(model.model.train_metrics), 1)
+            assert isinstance(model.model.train_metrics, MetricCollection)
+            assert len(model.model.train_metrics) == 1
 
             loaded_model = RNNModel.load_from_checkpoint(
-                model_name, self.temp_work_dir, best=False
+                model_name,
+                tmpdir_fn,
+                best=False,
+                map_location="cpu",
             )
             # custom loss function should be properly restored from ckpt torchmetrics.Metric
-            self.assertTrue(
-                isinstance(loaded_model.model.train_metrics, MetricCollection)
-            )
-            self.assertEqual(len(loaded_model.model.train_metrics), 1)
+            assert isinstance(loaded_model.model.train_metrics, MetricCollection)
+            assert len(loaded_model.model.train_metrics) == 1
 
         def test_optimizers(self):
 
@@ -977,6 +1126,7 @@ if TORCH_AVAILABLE:
                     10,
                     optimizer_cls=optim_cls,
                     optimizer_kwargs=optim_kwargs,
+                    **tfm_kwargs,
                 )
                 # should not raise an error
                 model.fit(self.series, epochs=1)
@@ -1000,6 +1150,7 @@ if TORCH_AVAILABLE:
                     10,
                     lr_scheduler_cls=lr_scheduler_cls,
                     lr_scheduler_kwargs=lr_scheduler_kwargs,
+                    **tfm_kwargs,
                 )
                 # should not raise an error
                 model.fit(self.series, epochs=1)
@@ -1012,7 +1163,7 @@ if TORCH_AVAILABLE:
             _ = RNNModel(12, "RNN", 10, 10, **valid_kwarg)
 
             # invalid params should raise an error
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
 
         def test_metrics(self):
@@ -1021,6 +1172,11 @@ if TORCH_AVAILABLE:
                 [MeanAbsolutePercentageError(), MeanAbsoluteError()]
             )
 
+            model_kwargs = {
+                "logger": DummyLogger(),
+                "log_every_n_steps": 1,
+                **tfm_kwargs["pl_trainer_kwargs"],
+            }
             # test single metric
             model = RNNModel(
                 12,
@@ -1029,7 +1185,7 @@ if TORCH_AVAILABLE:
                 10,
                 n_epochs=1,
                 torch_metrics=metric,
-                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+                pl_trainer_kwargs=model_kwargs,
             )
             model.fit(self.series)
 
@@ -1041,7 +1197,7 @@ if TORCH_AVAILABLE:
                 10,
                 n_epochs=1,
                 torch_metrics=metric_collection,
-                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+                pl_trainer_kwargs=model_kwargs,
             )
             model.fit(self.series)
 
@@ -1053,7 +1209,7 @@ if TORCH_AVAILABLE:
                 10,
                 n_epochs=1,
                 torch_metrics=metric,
-                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+                pl_trainer_kwargs=model_kwargs,
             )
             model.fit(self.multivariate_series)
 
@@ -1062,7 +1218,11 @@ if TORCH_AVAILABLE:
             metric_collection = MetricCollection(
                 [MeanAbsolutePercentageError(), MeanAbsoluteError()]
             )
-
+            model_kwargs = {
+                "logger": DummyLogger(),
+                "log_every_n_steps": 1,
+                **tfm_kwargs["pl_trainer_kwargs"],
+            }
             # test single metric
             model = RNNModel(
                 12,
@@ -1072,7 +1232,7 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
                 torch_metrics=metric,
-                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+                pl_trainer_kwargs=model_kwargs,
             )
             model.fit(self.series)
 
@@ -1085,7 +1245,7 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
                 torch_metrics=metric_collection,
-                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+                pl_trainer_kwargs=model_kwargs,
             )
             model.fit(self.series)
 
@@ -1098,22 +1258,28 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
                 torch_metrics=metric_collection,
-                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+                pl_trainer_kwargs=model_kwargs,
             )
             model.fit(self.multivariate_series)
 
         def test_invalid_metrics(self):
             torch_metrics = ["invalid"]
-            with self.assertRaises(AttributeError):
+            with pytest.raises(AttributeError):
                 model = RNNModel(
-                    12, "RNN", 10, 10, n_epochs=1, torch_metrics=torch_metrics
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    n_epochs=1,
+                    torch_metrics=torch_metrics,
+                    **tfm_kwargs,
                 )
                 model.fit(self.series)
 
         @pytest.mark.slow
         def test_lr_find(self):
             train_series, val_series = self.series[:-40], self.series[-40:]
-            model = RNNModel(12, "RNN", 10, 10, random_state=42)
+            model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
             # find the learning rate
             res = model.lr_find(series=train_series, val_series=val_series, epochs=50)
             assert isinstance(res, _LRFinder)
@@ -1126,7 +1292,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=3, series=self.series)
 
             # check that results are reproducible
-            model = RNNModel(12, "RNN", 10, 10, random_state=42)
+            model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
             res2 = model.lr_find(series=train_series, val_series=val_series, epochs=50)
             assert res.suggestion() == res2.suggestion()
 
@@ -1144,12 +1310,79 @@ if TORCH_AVAILABLE:
                     random_state=42,
                     optimizer_cls=torch.optim.Adam,
                     optimizer_kwargs={"lr": lr},
+                    **tfm_kwargs,
                 )
                 model.fit(train_series)
                 scores[lr_name] = mape(
                     val_series, model.predict(len(val_series), series=train_series)
                 )
             assert scores["worst"] > scores["suggested"]
+
+        def test_encoders(self, tmpdir_fn):
+            series = linear_timeseries(length=10)
+            pc = linear_timeseries(length=12)
+            fc = linear_timeseries(length=13)
+            # 1 == output_chunk_length, 3 > output_chunk_length
+            ns = [1, 3]
+
+            model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                },
+            )
+            model.fit(series)
+            for n in ns:
+                _ = model.predict(n=n)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, future_covariates=fc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+            model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                },
+            )
+            for n in ns:
+                model.fit(series, past_covariates=pc)
+                _ = model.predict(n=n)
+                _ = model.predict(n=n, past_covariates=pc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, future_covariates=fc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+            model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                },
+            )
+            for n in ns:
+                model.fit(series, future_covariates=fc)
+                _ = model.predict(n=n)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc)
+                _ = model.predict(n=n, future_covariates=fc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+            model = self.helper_create_DLinearModel(
+                work_dir=tmpdir_fn,
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                },
+            )
+            for n in ns:
+                model.fit(series, past_covariates=pc, future_covariates=fc)
+                _ = model.predict(n=n)
+                _ = model.predict(n=n, past_covariates=pc)
+                _ = model.predict(n=n, future_covariates=fc)
+                _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
         def helper_equality_encoders(
             self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
@@ -1158,10 +1391,9 @@ if TORCH_AVAILABLE:
                 first_encoders = {}
             if second_encoders is None:
                 second_encoders = {}
-            self.assertEqual(
-                {k: v for k, v in first_encoders.items() if k != "transformer"},
-                {k: v for k, v in second_encoders.items() if k != "transformer"},
-            )
+            assert {k: v for k, v in first_encoders.items() if k != "transformer"} == {
+                k: v for k, v in second_encoders.items() if k != "transformer"
+            }
 
         def helper_equality_encoders_transfo(
             self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
@@ -1170,7 +1402,48 @@ if TORCH_AVAILABLE:
                 first_encoders = {}
             if second_encoders is None:
                 second_encoders = {}
-            self.assertEqual(
-                type(first_encoders.get("transformer", None)),
-                type(second_encoders.get("transformer", None)),
+            assert (
+                first_encoders.get("transformer", None).__class__
+                == second_encoders.get("transformer", None).__class__
+            )
+
+        def helper_create_RNNModel(self, model_name: str, tmpdir_fn):
+            return RNNModel(
+                input_chunk_length=4,
+                hidden_dim=3,
+                add_encoders={
+                    "cyclic": {"past": ["month"]},
+                    "datetime_attribute": {
+                        "past": ["hour"],
+                    },
+                    "transformer": Scaler(),
+                },
+                n_epochs=2,
+                model_name=model_name,
+                work_dir=tmpdir_fn,
+                force_reset=True,
+                save_checkpoints=True,
+                **tfm_kwargs,
+            )
+
+        def helper_create_DLinearModel(
+            self,
+            work_dir: Optional[str] = None,
+            model_name: str = "unitest_model",
+            add_encoders: Optional[Dict] = None,
+            save_checkpoints: bool = False,
+            likelihood: Optional[Likelihood] = None,
+        ):
+            return DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                model_name=model_name,
+                add_encoders=add_encoders,
+                work_dir=work_dir,
+                save_checkpoints=save_checkpoints,
+                random_state=42,
+                force_reset=True,
+                n_epochs=1,
+                likelihood=likelihood,
+                **tfm_kwargs,
             )

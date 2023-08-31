@@ -12,10 +12,9 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    from darts.tests.base_test_class import DartsBaseTestClass
     from darts.utils.losses import MAELoss, MapeLoss, SmapeLoss
 
-    class LossesTestCase(DartsBaseTestClass):
+    class TestLosses:
         x = torch.tensor([1.1, 2.2, 0.6345, -1.436])
         y = torch.tensor([1.5, 0.5])
 
@@ -26,8 +25,8 @@ if TORCH_AVAILABLE:
             lval = loss_fn(y_hat, self.y)
             lval.backward()
 
-            self.assertTrue(torch.allclose(lval, exp_loss_val, atol=1e-3))
-            self.assertTrue(torch.allclose(W.grad, exp_w_grad, atol=1e-3))
+            assert torch.allclose(lval, exp_loss_val, atol=1e-3)
+            assert torch.allclose(W.grad, exp_w_grad, atol=1e-3)
 
         def test_smape_loss(self):
             exp_val = torch.tensor(0.7753)

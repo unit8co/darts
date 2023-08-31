@@ -359,9 +359,10 @@ class TiDEModel(MixedCovariatesTorchModel):
         multilayer perceptron (MLP)-based encoder-decoders without attention.
 
         The model is implemented as a :class:`MixedCovariatesTorchModel`, which means that it supports
-        both past and future covariates, as well as static covariates. At this time the model does not support
-        probabilistic forecasts. The original paper does not consider the use of past covariates, so we assume
-        that they are passed to the encoder as-is.
+        both past and future covariates, as well as static covariates. Probabilistic forecasting is supported through
+        the use of a `likelihood` instead of a `loss_fn`.
+        The original paper does not describe how past covariates are treated in detail, so we assume that they are
+        passed to the encoder as-is.
 
         The encoder and decoder are implemented as a series of residual blocks. The number of residual blocks in
         the encoder and decoder can be controlled via ``num_encoder_layers`` and ``num_decoder_layers`` respectively.
@@ -548,14 +549,6 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.use_reversible_instance_norm = use_reversible_instance_norm
         self.dropout = dropout
 
-    @property
-    def supports_static_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
     ) -> torch.nn.Module:
@@ -609,3 +602,21 @@ class TiDEModel(MixedCovariatesTorchModel):
             dropout=self.dropout,
             **self.pl_module_params,
         )
+
+    @property
+    def supports_static_covariates(self) -> bool:
+        return True
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    def predict(self, n, *args, **kwargs):
+        # since we have future covariates, the inference dataset for future input must be at least of length
+        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
+        # `input_chunk_length`.
+
+        if n >= self.output_chunk_length:
+            return super().predict(n, *args, **kwargs)
+        else:
+            return super().predict(self.output_chunk_length, *args, **kwargs)[:n]

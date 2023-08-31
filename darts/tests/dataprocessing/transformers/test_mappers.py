@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import pandas as pd
 
@@ -8,7 +6,7 @@ from darts.dataprocessing.transformers.mappers import InvertibleMapper, Mapper
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
 
-class MappersTestCase(unittest.TestCase):
+class TestMappers:
     @staticmethod
     def func(x):
         return x + 10
@@ -59,7 +57,7 @@ class MappersTestCase(unittest.TestCase):
 
         for to_transform, expected_output in test_cases:
             transformed = self.plus_ten.transform(to_transform)
-            self.assertEqual(transformed, expected_output)
+            assert transformed == expected_output
 
     def test_invertible_mapper(self):
         test_cases = [(self.zeroes), ([self.zeroes, self.tens])]
@@ -67,7 +65,7 @@ class MappersTestCase(unittest.TestCase):
         for data in test_cases:
             transformed = self.plus_ten_invertible.transform(data)
             back = self.plus_ten_invertible.inverse_transform(transformed)
-            self.assertEqual(back, data)
+            assert back == data
 
     def test_mapper_with_timestamp(self):
 
@@ -87,7 +85,7 @@ class MappersTestCase(unittest.TestCase):
                 expected_output = expected_output.with_columns_renamed(
                     expected_output.components[0], transformed.components[0]
                 )
-            self.assertEqual(transformed, expected_output)
+            assert transformed == expected_output
 
     def test_invertible_mapper_with_timestamp(self):
 
@@ -96,7 +94,7 @@ class MappersTestCase(unittest.TestCase):
         for data in test_cases:
             transformed = self.subtract_month_invertible.transform(data)
             back = self.subtract_month_invertible.inverse_transform(transformed)
-            self.assertEqual(back, data)
+            assert back == data
 
     def test_invertible_mappers_on_stochastic_series(self):
         vals = np.random.rand(10, 2, 100) + 2
