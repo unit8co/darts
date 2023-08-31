@@ -27,7 +27,6 @@ from darts.models import (
     RegressionModel,
     XGBModel,
 )
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
 
@@ -1019,10 +1018,32 @@ class TestRegressionModels:
     def test_fit(self, config):
         # test fitting both on univariate and multivariate timeseries
         model, mode, series = config
+        # auto-regression but past_covariates does not extend enough in the future
         with pytest.raises(ValueError):
             model_instance = model(lags=4, lags_past_covariates=4, multi_models=mode)
             model_instance.fit(series=series, past_covariates=self.sine_multivariate1)
             model_instance.predict(n=10)
+
+        # inconsistent number of components in series Sequence[TimeSeries]
+        with pytest.raises(ValueError) as err:
+            model_instance = model(lags=4, multi_models=mode)
+            model_instance.fit(series=[series.stack(series + 10), series])
+            assert (
+                str(err.value)
+                == "Expected 2 components but received 1 components at index 1 of `series`"
+            )
+
+        # inconsistent number of components in past_covariates Sequence[TimeSeries]
+        with pytest.raises(ValueError) as err:
+            model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
+            model_instance.fit(
+                series=[series, series + 10],
+                past_covariates=[self.sine_univariate1, self.sine_multivariate1],
+            )
+            assert (
+                str(err.value)
+                == "Expected 1 components but received 2 components at index 1 of `past_covariates`"
+            )
 
         model_instance = model(lags=12, multi_models=mode)
         model_instance.fit(series=series)
@@ -2468,29 +2489,34 @@ class TestProbabilisticRegressionModels:
     @pytest.mark.parametrize(
         "config", itertools.product(models_cls_kwargs_errs, [True, False])
     )
-    def test_probabilistic_forecast_accuracy(self, config):
+    def test_probabilistic_forecast_accuracy_univariate(self, config):
         (model_cls, model_kwargs, err), mode = config
         model_kwargs["multi_models"] = mode
+        model = model_cls(**model_kwargs)
         self.helper_test_probabilistic_forecast_accuracy(
-            model_cls,
-            model_kwargs,
+            model,
             err,
             self.constant_ts,
             self.constant_noisy_ts,
         )
-        if issubclass(model_cls, GlobalForecastingModel):
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize(
+        "config", itertools.product(models_cls_kwargs_errs, [True, False])
+    )
+    def test_probabilistic_forecast_accuracy_multivariate(self, config):
+        (model_cls, model_kwargs, err), mode = config
+        model_kwargs["multi_models"] = mode
+        model = model_cls(**model_kwargs)
+        if model.supports_multivariate:
             self.helper_test_probabilistic_forecast_accuracy(
-                model_cls,
-                model_kwargs,
+                model,
                 err,
                 self.constant_multivar_ts,
                 self.constant_noisy_multivar_ts,
             )
 
-    def helper_test_probabilistic_forecast_accuracy(
-        self, model_cls, model_kwargs, err, ts, noisy_ts
-    ):
-        model = model_cls(**model_kwargs)
+    def helper_test_probabilistic_forecast_accuracy(self, model, err, ts, noisy_ts):
         model.fit(noisy_ts[:100])
         pred = model.predict(n=100, num_samples=100)
 

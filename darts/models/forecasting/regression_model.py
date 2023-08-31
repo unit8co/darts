@@ -489,13 +489,20 @@ class RegressionModel(GlobalForecastingModel):
             else features.shape[1]
         )
         for i, (X_i, y_i) in enumerate(zip(features, labels)):
-            # number of components inconsistency, cannot determine from which argument without iterating
-            raise_if(
-                expected_nb_feat != X_i.shape[1],
-                "When `series`, `past_covariates` or `future_covariates` is provided as a `Sequence[TimeSeries]`, "
-                "all the `TimeSeries` in the `Sequence` must have the same number of components.",
-                logger,
-            )
+            # TODO: account for scenario where two wrong shapes can silently hide the problem
+            if expected_nb_feat != X_i.shape[1]:
+                shape_error_msg = []
+                for ts, cov_name, arg_name in zip(
+                    [target_series, past_covariates, future_covariates],
+                    ["target", "past", "future"],
+                    ["series", "past_covariates", "future_covariates"],
+                ):
+                    if ts is not None and ts[i].width != self.input_dim[cov_name]:
+                        shape_error_msg.append(
+                            f"Expected {self.input_dim[cov_name]} components but received "
+                            f"{target_series[i].width} components at index {i} of `{arg_name}`."
+                        )
+                raise_log(ValueError("\n".join(shape_error_msg)), logger)
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
 
