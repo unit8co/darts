@@ -119,16 +119,13 @@ class RegressionEnsembleModel(EnsembleModel):
 
         self.regression_model: RegressionModel = regression_model
 
-        if regression_train_n_points == -1:
-            raise_if_not(
-                self.all_trained and (not train_forecasting_models),
-                "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
-                "all `forecasting_models` are already fitted.",
-                logger,
-            )
-        else:
-            # can perform this check without knowing the training series length
-            self._check_ocl_multiple_train_n_point(regression_train_n_points)
+        raise_if(
+            regression_train_n_points == -1
+            and not (self.all_trained and (not train_forecasting_models)),
+            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
+            "all `forecasting_models` are already fitted.",
+            logger,
+        )
 
         self.train_n_points = regression_train_n_points
 
@@ -179,7 +176,7 @@ class RegressionEnsembleModel(EnsembleModel):
         train_n_points are generated, starting from the end of the series.
         """
         # rerun constructor check, in case regression_train_n_points was -1
-        self._check_ocl_multiple_train_n_point(train_n_points)
+        # self._check_ocl_multiple_train_n_point(train_n_points)
 
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = []
@@ -206,6 +203,11 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
             predictions.append(concatenate(tmp_pred, axis=0))
+
+        # shifting the start to make train_n_points multiple of ocl, if it works, say nothing
+        # check the first and last common dates across forecasting models historical forecast
+        # slice the predictions accordingly, even if it means that there are less than train_n_points
+        # warning with a vague message output_chunk_length%train_n_points or covariates lengths
 
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
