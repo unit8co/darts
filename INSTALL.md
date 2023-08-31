@@ -3,7 +3,7 @@
 Below, we detail how to install Darts using either `conda` or `pip`.
 
 ## From PyPI
-Install Darts with all models expect the ones from optional dependencies (Prophet, LightGBM, CatBoost, see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
+Install Darts with all models except the ones from optional dependencies (Prophet, LightGBM, CatBoost, see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
 
 If this fails on your platform, please follow the official installation 
 guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
@@ -30,7 +30,7 @@ As some models have relatively heavy dependencies, we provide four conda-forge p
 
 * Install Darts with all available models: `conda install -c conda-forge -c pytorch u8darts-all`
 * Install core only (without neural networks, Prophet, LightGBM and Catboost): `conda install -c conda-forge u8darts`
-* Install core + Prophet + LightGBM + CatBoost: `conda install -c conda-forege u8darts-notorch`
+* Install core + Prophet + LightGBM + CatBoost: `conda install -c conda-forge u8darts-notorch`
 * Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
 
 
