@@ -322,7 +322,12 @@ class TestLocalForecastingModels:
         n = 3
 
         target = self.ts_gaussian[:-3]
-        add_encoders = {"custom": {"future": [lambda x: x.dayofweek]}}
+
+        # encoder must be named function for pickling
+        def extract_dayofweek(index):
+            return index.dayofweek
+
+        add_encoders = {"custom": {"future": [extract_dayofweek]}}
 
         series = (
             target
