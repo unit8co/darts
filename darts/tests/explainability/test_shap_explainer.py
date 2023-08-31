@@ -30,6 +30,11 @@ lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
 
+def extract_year(index):
+    """Return year of time index entry, normalized"""
+    return (index.year - 1950) / 50
+
+
 class TestShapExplainer:
     np.random.seed(42)
 
@@ -38,7 +43,7 @@ class TestShapExplainer:
         "cyclic": {"past": ["month", "day"]},
         "datetime_attribute": {"future": ["hour", "dayofweek"]},
         "position": {"past": ["relative"], "future": ["relative"]},
-        "custom": {"past": [lambda idx: (idx.year - 1950) / 50]},
+        "custom": {"past": [extract_year]},
         "transformer": Scaler(scaler),
     }
 
