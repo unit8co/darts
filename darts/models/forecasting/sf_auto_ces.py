@@ -18,8 +18,8 @@ class StatsForecastAutoCES(LocalForecastingModel):
         <https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074>
 
         We refer to the `statsforecast AutoCES documentation
-        <https://nixtla.github.io/statsforecast/models.html#autoces>`_
-        for the documentation of the arguments.
+        <https://nixtla.github.io/statsforecast/src/core/models.html#autoces>`_
+        for the exhaustive documentation of the arguments.
 
         Parameters
         ----------
@@ -28,14 +28,12 @@ class StatsForecastAutoCES(LocalForecastingModel):
         autoces_kwargs
             Keyword arguments for ``statsforecasts.models.AutoCES``.
 
-            ..
-
         Examples
         --------
         >>> from darts.models import StatsForecastAutoCES
         >>> from darts.datasets import AirPassengersDataset
         >>> series = AirPassengersDataset().load()
-        >>> model = StatsForecastAutoCES(season_length=12)
+        >>> model = StatsForecastAutoCES(season_length=12, model="Z")
         >>> model.fit(series[:-36])
         >>> pred = model.predict(36, num_samples=100)
         """

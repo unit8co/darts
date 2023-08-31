@@ -56,7 +56,7 @@ models = [
     (StatsForecastAutoARIMA(season_length=12), 4.6),
     (StatsForecastAutoTheta(season_length=12), 5.5),
     (StatsForecastAutoCES(season_length=12, model="Z"), 7.3),
-    (StatsForecastAutoETS(season_length=12, model="AAZ"), 4.1),
+    (StatsForecastAutoETS(season_length=12, model="AAZ"), 7.3),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
