@@ -456,7 +456,11 @@ class RegressionModel(GlobalForecastingModel):
         return last_valid_pred_time
 
     def _create_lagged_data(
-        self, target_series, past_covariates, future_covariates, max_samples_per_ts
+        self,
+        target_series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries],
+        future_covariates: Sequence[TimeSeries],
+        max_samples_per_ts: int,
     ):
         (
             features,
@@ -479,7 +483,19 @@ class RegressionModel(GlobalForecastingModel):
             concatenate=False,
         )
 
+        expected_nb_feat = (
+            features[0].shape[1]
+            if isinstance(features, Sequence)
+            else features.shape[1]
+        )
         for i, (X_i, y_i) in enumerate(zip(features, labels)):
+            # number of components inconsistency, cannot determine from which argument without iterating
+            raise_if(
+                expected_nb_feat != X_i.shape[1],
+                "When `series`, `past_covariates` or `future_covariates` is provided as a `Sequence[TimeSeries]`, "
+                "all the `TimeSeries` in the `Sequence` must have the same number of components.",
+                logger,
+            )
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
 
@@ -490,10 +506,10 @@ class RegressionModel(GlobalForecastingModel):
 
     def _fit_model(
         self,
-        target_series,
-        past_covariates,
-        future_covariates,
-        max_samples_per_ts,
+        target_series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries],
+        future_covariates: Sequence[TimeSeries],
+        max_samples_per_ts: int,
         **kwargs,
     ):
         """
