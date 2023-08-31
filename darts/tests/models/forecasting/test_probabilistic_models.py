@@ -209,26 +209,27 @@ class TestProbabilisticModels:
     constant_noisy_ts_short = constant_noisy_ts[:30]
 
     @pytest.mark.slow
-    def test_fit_predict_determinism(self):
-        for model_cls, model_kwargs, _, _ in models_cls_kwargs_errs:
-            if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
-                fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
-            else:
-                fit_kwargs = {}
-            # whether the first predictions of two models initiated with the same random state are the same
-            model = model_cls(**model_kwargs)
-            model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-            pred1 = model.predict(n=10, num_samples=2).values()
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    def test_fit_predict_determinism(self, config):
+        model_cls, model_kwargs, _, _ = config
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+        # whether the first predictions of two models initiated with the same random state are the same
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
+        pred1 = model.predict(n=10, num_samples=2).values()
 
-            model = model_cls(**model_kwargs)
-            model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-            pred2 = model.predict(n=10, num_samples=2).values()
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
+        pred2 = model.predict(n=10, num_samples=2).values()
 
-            assert (pred1 == pred2).all()
+        assert (pred1 == pred2).all()
 
-            # test whether the next prediction of the same model is different
-            pred3 = model.predict(n=10, num_samples=2).values()
-            assert (pred2 != pred3).any()
+        # test whether the next prediction of the same model is different
+        pred3 = model.predict(n=10, num_samples=2).values()
+        assert (pred2 != pred3).any()
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_probabilistic_forecast_accuracy_univariate(self, config):
