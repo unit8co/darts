@@ -1647,6 +1647,15 @@ class TestRegressionModels:
         series = tg.gaussian_timeseries(length=20, column_name="gaussian")
         if multivar_target:
             series = series.stack(tg.sine_timeseries(length=20, column_name="sine"))
+
+        future_cov = tg.linear_timeseries(length=30, column_name="lin_future")
+        if multivar_future_cov:
+            future_cov = future_cov.stack(
+                tg.sine_timeseries(length=30, column_name="sine_future")
+            )
+
+        past_cov = tg.linear_timeseries(length=30, column_name="lin_past")
+
         if multiple_series:
             # second series have different component names
             series = [
@@ -1658,13 +1667,9 @@ class TestRegressionModels:
                 + 10,
             ]
 
-        future_cov = tg.linear_timeseries(length=30, column_name="lin_future")
-        if multivar_future_cov:
-            future_cov = future_cov.stack(
-                tg.sine_timeseries(length=30, column_name="sine_future")
-            )
+            past_cov = [past_cov, past_cov]
 
-        past_cov = tg.linear_timeseries(length=30, column_name="lin_past")
+            future_cov = [future_cov, future_cov]
 
         # the lags are identical across the components for each series
         model = LinearRegressionModel(**list_lags)
@@ -1683,14 +1688,50 @@ class TestRegressionModels:
         )
 
         # n == output_chunk_length
-        pred = model.predict(1, series=series[0] if multiple_series else None)
-        pred2 = model2.predict(1, series=series[0] if multiple_series else None)
+        pred = model.predict(
+            1,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model.supports_future_covariates
+            else None,
+        )
+        pred2 = model2.predict(
+            1,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model2.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model2.supports_future_covariates
+            else None,
+        )
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
 
         # n > output_chunk_length
-        pred = model.predict(3, series=series[0] if multiple_series else None)
-        pred2 = model2.predict(3, series=series[0] if multiple_series else None)
+        pred = model.predict(
+            3,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model.supports_future_covariates
+            else None,
+        )
+        pred2 = model2.predict(
+            3,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model2.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model2.supports_future_covariates
+            else None,
+        )
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
 
