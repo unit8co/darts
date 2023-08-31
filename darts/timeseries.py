@@ -5166,7 +5166,7 @@ def concatenate(
         if not consecutive_time_axes:
             raise_if_not(
                 ignore_time_axis,
-                "When concatenating over time axis, all series need to be contiguous"
+                "When concatenating over time axis, all series need to be contiguous "
                 "in the time dimension. Use `ignore_time_axis=True` to override "
                 "this behavior and concatenate the series by extending the time axis "
                 "of the first series.",
