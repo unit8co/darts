@@ -20,7 +20,9 @@ from darts.models.forecasting.forecasting_model import (
 
 
 class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
-    def __init__(self, *ets_args, add_encoders: Optional[dict] = None, **ets_kwargs):
+    def __init__(
+        self, *autoets_args, add_encoders: Optional[dict] = None, **autoets_kwargs
+    ):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
@@ -28,8 +30,9 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         but typically requires more time on the first call, because it relies
         on Numba and jit compilation.
 
-        This model accepts the same arguments as the `statsforecast ETS
-        <https://nixtla.github.io/statsforecast/models.html#ets>`_. package.
+        We refer to the `statsforecast AutoETS documentation
+        <https://nixtla.github.io/statsforecast/src/core/models.html#autoets>`_
+        for the exhaustive documentation of the arguments.
 
         In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first
         regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
@@ -39,19 +42,8 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
 
         Parameters
         ----------
-        season_length
-            Number of observations per cycle. Default: 1.
-        model
-            Three-character string identifying method using the framework
-            terminology of Hyndman et al. (2002). Possible values are:
-
-            * "A" or "M" for error state,
-            * "N", "A" or "Ad" for trend state,
-            * "N", "A" or "M" for season state.
-
-            For instance, "ANN" means additive error, no trend and no seasonality.
-            Furthermore, the character "Z" is a placeholder telling statsforecast
-            to search for the best model using AICs. Default: "ZZZ".
+        autoets_args
+            Positional arguments for ``statsforecasts.models.AutoETS``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -72,6 +64,8 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+        autoets_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoETS``.
 
         Examples
         --------
@@ -83,7 +77,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         >>> pred = model.predict(36)
         """
         super().__init__(add_encoders=add_encoders)
-        self.model = SFAutoETS(*ets_args, **ets_kwargs)
+        self.model = SFAutoETS(*autoets_args, **autoets_kwargs)
         self._linreg = None
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
@@ -122,7 +116,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         super()._predict(n, future_covariates, num_samples)
         forecast_dict = self.model.predict(
             h=n,
-            level=(one_sigma_rule,),  # ask one std for the confidence interval
+            level=[one_sigma_rule],  # ask one std for the confidence interval
         )
 
         mu_ets, std = unpack_sf_dict(forecast_dict)
