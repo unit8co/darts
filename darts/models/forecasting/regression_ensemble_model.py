@@ -125,7 +125,8 @@ class RegressionEnsembleModel(EnsembleModel):
             logger,
         )
 
-        self.train_n_points = regression_train_n_points
+        # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
+        self.train_n_points: Union[int, List[int]] = regression_train_n_points
 
         raise_if(
             train_using_historical_forecasts
@@ -139,10 +140,12 @@ class RegressionEnsembleModel(EnsembleModel):
         self.train_using_historical_forecasts = train_using_historical_forecasts
 
     def _split_multi_ts_sequence(
-        self, n: int, ts_sequence: Sequence[TimeSeries]
+        self, n: Union[int, List[int]], ts_sequence: Sequence[TimeSeries]
     ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
-        left = [ts[:-n] for ts in ts_sequence]
-        right = [ts[-n:] for ts in ts_sequence]
+        if isinstance(n, int):
+            n = [n] * len(ts_sequence)
+        left = [ts[:-n_] for ts, n_ in zip(ts_sequence, n)]
+        right = [ts[-n_:] for ts, n_ in zip(ts_sequence, n)]
         return left, right
 
     def _make_multiple_historical_forecasts(
@@ -269,10 +272,12 @@ class RegressionEnsembleModel(EnsembleModel):
         # spare train_n_points points to serve as regression target
         is_single_series = isinstance(series, TimeSeries)
         if self.train_n_points == -1:
-            # take the longest possible time index
-            self.train_n_points = (
-                len(series) if is_single_series else min(len(ts) for ts in series)
-            )
+            if is_single_series:
+                train_n_points = [len(series)]
+            else:
+                # maximize each series usage
+                train_n_points = [len(ts) for ts in series]
+
             # shift by the forecasting models' largest input length
             all_shifts = []
             # when it's not clearly defined, extreme_lags returns
@@ -282,16 +287,31 @@ class RegressionEnsembleModel(EnsembleModel):
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 
-            self.train_n_points -= max(all_shifts)
+            input_shift = max(all_shifts)
+            idx_series_too_short = []
+            tmp_train_n_points = []
+            for idx, ts_length in enumerate(train_n_points):
+                ajusted_length = ts_length - input_shift
+                if ajusted_length < 0:
+                    idx_series_too_short.append(idx)
+                else:
+                    tmp_train_n_points.append(ajusted_length)
+
             raise_if(
-                self.train_n_points < 0,
-                f"`series` is too short to train the regression model due to the number of values "
-                f"necessary to produce one prediction : {max(all_shifts)}.",
+                len(idx_series_too_short) > 0,
+                f"TimeSeries at indexes {idx_series_too_short} of `series` are too short to train the regression "
+                f"model due to the number of values necessary to produce one prediction : {input_shift}.",
                 logger,
             )
 
+            if is_single_series:
+                self.train_n_points = tmp_train_n_points[0]
+            else:
+                self.train_n_points = tmp_train_n_points
+
             train_n_points_too_big = False
         else:
+            # self.train_n_points is necessarily an integer
             if is_single_series:
                 train_n_points_too_big = len(series) <= self.train_n_points
             else:
