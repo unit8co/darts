@@ -1428,10 +1428,15 @@ if TORCH_AVAILABLE:
 
             # univariate with RIN
             model_rin.fit(self.series)
-            assert model_rin.model.use_reversible_instance_norm
-            assert isinstance(model_rin.model.rin, RINorm)
-            assert model_rin.model.rin.input_dim == self.series.n_components
-
+            if issubclass(model_cls, RNNModel):
+                # RNNModel will not use RIN
+                assert not model_rin.model.use_reversible_instance_norm
+                assert model_rin.model.rin is None
+                return
+            else:
+                assert model_rin.model.use_reversible_instance_norm
+                assert isinstance(model_rin.model.rin, RINorm)
+                assert model_rin.model.rin.input_dim == self.series.n_components
             # multivariate with RIN
             model_rin_mv = model_rin.untrained_model()
             model_rin_mv.fit(self.multivariate_series)
