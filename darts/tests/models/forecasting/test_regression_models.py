@@ -1025,25 +1025,29 @@ class TestRegressionModels:
             model_instance.predict(n=10)
 
         # inconsistent number of components in series Sequence[TimeSeries]
+        training_series = [series.stack(series + 10), series]
         with pytest.raises(ValueError) as err:
             model_instance = model(lags=4, multi_models=mode)
-            model_instance.fit(series=[series.stack(series + 10), series])
-            assert (
-                str(err.value)
-                == "Expected 2 components but received 1 components at index 1 of `series`"
-            )
+            model_instance.fit(series=training_series)
+        assert (
+            str(err.value)
+            == f"Expected {training_series[0].width} components but received {training_series[1].width} "
+            f"components at index 1 of `series`."
+        )
 
         # inconsistent number of components in past_covariates Sequence[TimeSeries]
+        training_past_covs = [series, series.stack(series * 2)]
         with pytest.raises(ValueError) as err:
             model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
             model_instance.fit(
                 series=[series, series + 10],
-                past_covariates=[self.sine_univariate1, self.sine_multivariate1],
+                past_covariates=training_past_covs,
             )
-            assert (
-                str(err.value)
-                == "Expected 1 components but received 2 components at index 1 of `past_covariates`"
-            )
+        assert (
+            str(err.value)
+            == f"Expected {training_past_covs[0].width} components but received {training_past_covs[1].width} "
+            f"components at index 1 of `past_covariates`."
+        )
 
         model_instance = model(lags=12, multi_models=mode)
         model_instance.fit(series=series)

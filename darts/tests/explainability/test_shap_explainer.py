@@ -830,13 +830,25 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(model)
 
         # one column per lag, grouped by components
+        expected_columns = [
+            "price_target_lag-3",
+            "price_target_lag-2",
+            "power_target_lag-1",
+        ]
         expected_df = pd.DataFrame(
             data=np.stack(
                 [np.arange(1, 29), np.arange(3, 31), np.arange(106, 161, 2)], axis=1
             ),
-            columns=["price_target_lag-3", "price_target_lag-2", "power_target_lag-1"],
+            columns=expected_columns,
         )
 
         # check that the appropriate lags are extracted
         assert all(shap_explain.explainers.background_X == expected_df)
         assert model.lagged_feature_names == list(expected_df.columns)
+
+        # check that explain() can be called
+        explanation_results = shap_explain.explain()
+        plt.close()
+        for comp in ts.components:
+            comps_out = explanation_results.explained_forecasts[1][comp].columns
+            assert all(comps_out == expected_columns)

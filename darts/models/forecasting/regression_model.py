@@ -229,24 +229,9 @@ class RegressionModel(GlobalForecastingModel):
             if lags_values is None:
                 continue
 
-            # check type of argument before converting to dictionary
+            # converting to dictionary to run sanity checks
             if not isinstance(lags_values, dict):
-                raise_if(
-                    lags_name == "lags_future_covariates"
-                    and not isinstance(lags_values, (tuple, list)),
-                    f"`lags_future_covariates` must be of type tuple, list or dict."
-                    f"Given: {type(lags_values)}.",
-                )
-
-                raise_if(
-                    lags_name in ["lags", "lags_past_covariates"]
-                    and not isinstance(lags_values, (int, list)),
-                    f"`{lags_name}` must be of type int, list or dict."
-                    f"Given: {type(lags_values)}.",
-                )
-
                 lags_values = {"default_lags": lags_values}
-
             elif len(lags_values) == 0:
                 raise_log(
                     ValueError(
@@ -267,24 +252,26 @@ class RegressionModel(GlobalForecastingModel):
                             len(comp_lags) == 2
                             and isinstance(comp_lags[0], int)
                             and isinstance(comp_lags[1], int),
-                            f"`{lags_name}` tuple must be of length 2, and must contain two integers",
+                            f"`{lags_name}` - `{comp_name}`: tuple must be of length 2, and must contain two integers",
                             logger,
                         )
 
                         raise_if(
                             isinstance(comp_lags[0], bool)
                             or isinstance(comp_lags[1], bool),
-                            f"`{lags_name}` tuple must contain integers, not bool",
+                            f"`{lags_name}` - `{comp_name}`: tuple must contain integers, not bool",
                             logger,
                         )
 
                         raise_if_not(
                             comp_lags[0] >= 0 and comp_lags[1] >= 0,
-                            f"`{lags_name}` tuple must contain positive integers. Given: {comp_lags}.",
+                            f"`{lags_name}` - `{comp_name}`: tuple must contain positive integers. Given: {comp_lags}.",
+                            logger,
                         )
                         raise_if(
                             comp_lags[0] == 0 and comp_lags[1] == 0,
-                            f"`{lags_name}` tuple cannot be (0, 0) as it corresponds to an empty list of lags.",
+                            f"`{lags_name}` - `{comp_name}`: tuple cannot be (0, 0) as it corresponds to an empty "
+                            f"list of lags.",
                             logger,
                         )
                         tmp_components_lags[comp_name] = list(
@@ -294,7 +281,8 @@ class RegressionModel(GlobalForecastingModel):
                         for lag in comp_lags:
                             raise_if(
                                 not isinstance(lag, int) or isinstance(lag, bool),
-                                f"`{lags_name}` list must contain only integers. Given: {comp_lags}.",
+                                f"`{lags_name}` - `{comp_name}`: list must contain only integers. Given: {comp_lags}.",
+                                logger,
                             )
                         tmp_components_lags[comp_name] = sorted(comp_lags)
                     else:
@@ -304,14 +292,17 @@ class RegressionModel(GlobalForecastingModel):
                     if isinstance(comp_lags, int):
                         raise_if_not(
                             comp_lags > 0,
-                            f"`{lags_name}` integer must be strictly positive . Given: {comp_lags}.",
+                            f"`{lags_name}` - `{comp_name}`: integer must be strictly positive . Given: {comp_lags}.",
+                            logger,
                         )
                         tmp_components_lags[comp_name] = list(range(-comp_lags, 0))
                     elif isinstance(comp_lags, list):
                         for lag in comp_lags:
                             raise_if(
                                 not isinstance(lag, int) or (lag >= 0),
-                                f"`{lags_name}` list must contain only strictly negative integers. Given: {comp_lags}.",
+                                f"`{lags_name}` - `{comp_name}`: list must contain only strictly negative integers. "
+                                f"Given: {comp_lags}.",
+                                logger,
                             )
                         tmp_components_lags[comp_name] = sorted(comp_lags)
                     else:
@@ -321,8 +312,8 @@ class RegressionModel(GlobalForecastingModel):
                 if invalid_type:
                     raise_log(
                         ValueError(
-                            f"When passed in a dictionary, `{lags_name}` for component {comp_name} must be either a "
-                            f"{supported_types}, received : {type(comp_lags)}."
+                            f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
+                            f"Gived : {type(comp_lags)}."
                         ),
                         logger,
                     )
@@ -500,7 +491,7 @@ class RegressionModel(GlobalForecastingModel):
                     if ts is not None and ts[i].width != self.input_dim[cov_name]:
                         shape_error_msg.append(
                             f"Expected {self.input_dim[cov_name]} components but received "
-                            f"{target_series[i].width} components at index {i} of `{arg_name}`."
+                            f"{ts[i].width} components at index {i} of `{arg_name}`."
                         )
                 raise_log(ValueError("\n".join(shape_error_msg)), logger)
             features[i] = X_i[:, :, 0]
