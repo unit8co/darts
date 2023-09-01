@@ -167,16 +167,20 @@ class RegressionEnsembleModel(EnsembleModel):
         """
         is_single_series = isinstance(series, TimeSeries)
         series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
         predictions = []
         for model in self.forecasting_models:
-            # shift historical forecast start to align last prediction with the end of the regression training series
-            if model.output_chunk_length is not None:
-                start_hist_forecasts = (
-                    train_n_points + train_n_points % model.output_chunk_length
-                )
-            else:
-                start_hist_forecasts = train_n_points
+            start_hist_forecasts = train_n_points
+            # shift so that the last time point is aligned with the end of the target series
+            if (
+                model.output_chunk_length is not None
+                and train_n_points % model.output_chunk_length != 0
+            ):
+                start_hist_forecasts += model.output_chunk_length
 
+            # TODO: why is the historical forecasts shorted than expected, missing max_fcov_lags values
+            # at the end of the prediction...
             tmp_pred = model.historical_forecasts(
                 series=series,
                 past_covariates=past_covariates
@@ -196,6 +200,14 @@ class RegressionEnsembleModel(EnsembleModel):
                 show_warnings=self.show_warnings,
                 predict_likelihood_parameters=False,
             )
+            concat_pred = concatenate(tmp_pred, axis=0)
+
+            print("time indexes")
+            print(series[0][-train_n_points:].time_index)
+            print(concat_pred.time_index)
+
+            print("length predicted vocs", len(concat_pred))
+
             # concatenate the strided predictions of output_chunk_length values each
             if is_single_series:
                 predictions.append([concatenate(tmp_pred, axis=0)])
@@ -352,6 +364,10 @@ class RegressionEnsembleModel(EnsembleModel):
                 num_samples=self.train_num_samples,
             )
 
+            print("forecast model 1", len(predictions[0][0]))
+            print("forecast model 2", len(predictions[1][0]))
+            print("regression target", len(regression_target))
+
             # slice the regression model training series to match generated covariates
             enough_predictions = []
             tmp_regression_target = []
@@ -365,6 +381,8 @@ class RegressionEnsembleModel(EnsembleModel):
                     enough_predictions.append(True)
                     tmp_regression_target.append(target_ts)
                 else:
+                    print("TARGET", len(target_ts), target_ts.time_index)
+                    print("COV", len(covs_ts), covs_ts.time_index)
                     enough_predictions.append(False)
                     # regression model only have lags_future_covariates=[0], no need
                     # to account for target lags
@@ -393,6 +411,9 @@ class RegressionEnsembleModel(EnsembleModel):
                 future_covariates=future_covariates,
                 num_samples=self.train_num_samples,
             )
+
+        print("###", len(regression_target))
+        print("$$$", len(predictions))
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(
