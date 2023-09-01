@@ -6,8 +6,6 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 """
 from typing import List, Optional, Sequence, Tuple, Union
 
-import numpy as np
-
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
@@ -145,26 +143,13 @@ class RegressionEnsembleModel(EnsembleModel):
         right = [ts[-n:] for ts in ts_sequence]
         return left, right
 
-    def _check_ocl_multiple_train_n_point(self, train_n_points: int):
-        ocl_multiple_train_n_points = [
-            np.abs(train_n_points) % m.output_chunk_length == 0
-            for m in self.forecasting_models
-        ]
-        raise_if_not(
-            all(ocl_multiple_train_n_points),
-            f"Some forecasting model `output_chunk_length` are not multiple of `regression_train_n_points` "
-            f"({train_n_points}) preventing the alignement of the forecasting models' historical forecasts.",
-            logger,
-        )
-
     def _make_multiple_historical_forecasts(
         self,
         train_n_points: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
@@ -175,13 +160,18 @@ class RegressionEnsembleModel(EnsembleModel):
 
         train_n_points are generated, starting from the end of the series.
         """
-        # rerun constructor check, in case regression_train_n_points was -1
-        # self._check_ocl_multiple_train_n_point(train_n_points)
-
-        is_single_series = isinstance(series, TimeSeries) or series is None
+        is_single_series = isinstance(series, TimeSeries)
+        series = series2seq(series)
         predictions = []
         for model in self.forecasting_models:
-            # TODO: use last_points_only=True when output_chunk_length=1
+            # shift historical forecast start to align last prediction with the end of the regression training series
+            if model.output_chunk_length is not None:
+                start_hist_forecasts = (
+                    train_n_points + train_n_points % model.output_chunk_length
+                )
+            else:
+                start_hist_forecasts = train_n_points
+
             tmp_pred = model.historical_forecasts(
                 series=series,
                 past_covariates=past_covariates
@@ -193,21 +183,46 @@ class RegressionEnsembleModel(EnsembleModel):
                 forecast_horizon=model.output_chunk_length,
                 stride=model.output_chunk_length,
                 num_samples=num_samples if model._is_probabilistic else 1,
-                start=-train_n_points,
+                start=-start_hist_forecasts,
                 start_format="index",
                 retrain=False,
                 overlap_end=True,
                 last_points_only=False,
                 show_warnings=self.show_warnings,
-                predict_likelihood_parameters=predict_likelihood_parameters,
+                predict_likelihood_parameters=False,
+            )
+            # concatenate the strided predictions of output_chunk_length values each
+            if is_single_series:
+                predictions.append([concatenate(tmp_pred, axis=0)])
+            else:
+                predictions.append(
+                    [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
+                )
+
+        # historical forecast might not have been able to produce self.train_n_points for all the models
+        # and won't raise any warning or error.
+        shared_start_time = [[] for _ in range(len(series))]
+        shared_end_time = [[] for _ in range(len(series))]
+        for prediction in predictions:
+            for idx_pred, pred in enumerate(prediction):
+                shared_start_time[idx_pred].append(pred.start_time())
+                shared_end_time[idx_pred].append(pred.end_time())
+
+        # find shared boundaries
+        shared_start_time = [max(preds_start) for preds_start in shared_start_time]
+        shared_end_time = [min(preds_end) for preds_end in shared_end_time]
+
+        tmp_predictions = []
+        # slice the forecasts, training series-wise, to align them
+        for prediction in predictions:
+            tmp_predictions.append(
+                [
+                    ts[shared_start_time[idx] : shared_end_time[idx]]
+                    for idx, ts in enumerate(prediction)
+                ]
             )
 
-            predictions.append(concatenate(tmp_pred, axis=0))
-
-        # shifting the start to make train_n_points multiple of ocl, if it works, say nothing
-        # check the first and last common dates across forecasting models historical forecast
-        # slice the predictions accordingly, even if it means that there are less than train_n_points
-        # warning with a vague message output_chunk_length%train_n_points or covariates lengths
+        predictions = [seq2series(prediction) for prediction in tmp_predictions]
 
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
@@ -314,6 +329,37 @@ class RegressionEnsembleModel(EnsembleModel):
                 future_covariates=future_covariates,
                 num_samples=self.train_num_samples,
             )
+
+            # slice the regression model training series to match generated covariates
+            enough_predictions = []
+            tmp_regression_target = []
+            predictions = series2seq(predictions)
+            regression_target = series2seq(regression_target)
+            for target_ts, covs_ts in zip(regression_target, predictions):
+                if (
+                    target_ts.start_time() == covs_ts.start_time()
+                    and target_ts.end_time() == covs_ts.end_time()
+                ):
+                    enough_predictions.append(True)
+                    tmp_regression_target.append(target_ts)
+                else:
+                    enough_predictions.append(False)
+                    tmp_regression_target.append(
+                        target_ts[covs_ts.start_time() : covs_ts.end_time()]
+                    )
+            regression_target = tmp_regression_target
+
+            if is_single_series:
+                regression_target = seq2series(regression_target)
+                predictions = seq2series(predictions)
+
+            # inform user that the regression model will be trained with less values
+            if not all(enough_predictions):
+                logger.warning(
+                    "The forecasting models' predictions could not be generated for all the points "
+                    "in the regression model training series. This can be caused either by the "
+                    "length of the covariates or the output_chunk_length of the forecasting models."
+                )
         else:
             predictions = self._make_multiple_predictions(
                 n=self.train_n_points,
