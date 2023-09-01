@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 - `TimeSeries` with a `RangeIndex` starting in the negative start are now supported by `historical_forecasts`. [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou).
 - Added a new argument `start_format` to `historical_forecasts()`, `backtest()` and `gridsearch` that allows to use an integer `start` either as the index position or index value/label for `series` indexed with a `pd.RangeIndex`. [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou).
+- Reduced the size of the Darts docker image `unit8/darts:latest`, and included all optional models as well as dev requirements. [#1878](https://github.com/unit8co/darts/pull/1878) by [Alex Colpitts](https://github.com/alexcolpitts96). 
 - Improvements to `EnsembleModel`:
   - 🔴 Renamed `EnsembleModel` and `NaiveEnsembleModel` constructor argument `models` to `forecasting_models`. [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
   - `EnsembleModel`, `RegressionEnsembleModel` and `NaiveEnsembleModel` accept pretrained `GlobalForecastingModel` as `forecasting_models` to facilitate ensembling of deep learning models. [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
@@ -22,6 +23,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `RegressionEnsembleModel.extreme_lags` when the forecasting models have only covariates lags. [#1942](https://github.com/unit8co/darts/pull/1942) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug when using `TFTExplainer` with a `TFTModel` running on GPU. [#1949](https://github.com/unit8co/darts/pull/1949) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug in `TorchForecastingModel.load_weights()` that raised an error when loading the weights from a valid architecture. [#1952](https://github.com/unit8co/darts/pull/1952) by [Antoine Madrona](https://github.com/madtoinou).
+- 🔴 Dropped support for lambda functions in `add_encoders`’s “custom” encoder in favor of named functions to ensure that models can be exported. [#1957](https://github.com/unit8co/darts/pull/1957) by [Antoine Madrona]
 - Properly raising an error when an `EnsembleModel` containing at least one `LocalForecastingModel` is calling `historical_forecasts` with `retrain=False`.  [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:

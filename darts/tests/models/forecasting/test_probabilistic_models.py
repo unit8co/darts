@@ -17,7 +17,6 @@ from darts.models import (
     NotImportedModule,
     XGBModel,
 )
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
@@ -67,9 +66,10 @@ except ImportError:
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
+# model_cls, model_kwargs, err_univariate, err_multivariate
 models_cls_kwargs_errs = [
-    (ExponentialSmoothing, {}, 0.3),
-    (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03),
+    (ExponentialSmoothing, {}, 0.3, None),
+    (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
 ]
 
 models_cls_kwargs_errs += [
@@ -82,7 +82,8 @@ models_cls_kwargs_errs += [
             "use_arma_errors": False,
             "random_state": 42,
         },
-        0.3,
+        0.04,
+        None,
     ),
     (
         TBATS,
@@ -93,7 +94,8 @@ models_cls_kwargs_errs += [
             "use_arma_errors": False,
             "random_state": 42,
         },
-        0.3,
+        0.04,
+        0.04,
     ),
 ]
 
@@ -109,6 +111,7 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
+            0.02,
             0.04,
         ),
         (
@@ -121,7 +124,8 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
-            0.08,
+            0.06,
+            0.05,
         ),
         (
             BlockRNNModel,
@@ -133,6 +137,7 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
+            0.03,
             0.04,
         ),
         (
@@ -145,7 +150,8 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
-            0.2,
+            0.03,
+            0.04,
         ),
         (
             NBEATSModel,
@@ -157,7 +163,8 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
-            0.3,
+            0.15,
+            0.26,
         ),
         (
             TFTModel,
@@ -170,6 +177,7 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
+            0.02,
             0.1,
         ),
         (
@@ -182,7 +190,8 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
-            0.05,
+            0.06,
+            0.1,
         ),
     ]
 
@@ -200,45 +209,51 @@ class TestProbabilisticModels:
     constant_noisy_ts_short = constant_noisy_ts[:30]
 
     @pytest.mark.slow
-    def test_fit_predict_determinism(self):
-        for model_cls, model_kwargs, _ in models_cls_kwargs_errs:
-            if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
-                fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
-            else:
-                fit_kwargs = {}
-            # whether the first predictions of two models initiated with the same random state are the same
-            model = model_cls(**model_kwargs)
-            model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-            pred1 = model.predict(n=10, num_samples=2).values()
-
-            model = model_cls(**model_kwargs)
-            model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-            pred2 = model.predict(n=10, num_samples=2).values()
-
-            assert (pred1 == pred2).all()
-
-            # test whether the next prediction of the same model is different
-            pred3 = model.predict(n=10, num_samples=2).values()
-            assert (pred2 != pred3).any()
-
-    def test_probabilistic_forecast_accuracy(self):
-        for model_cls, model_kwargs, err in models_cls_kwargs_errs:
-            self.helper_test_probabilistic_forecast_accuracy(
-                model_cls, model_kwargs, err, self.constant_ts, self.constant_noisy_ts
-            )
-            if issubclass(model_cls, GlobalForecastingModel):
-                self.helper_test_probabilistic_forecast_accuracy(
-                    model_cls,
-                    model_kwargs,
-                    err,
-                    self.constant_multivar_ts,
-                    self.constant_noisy_multivar_ts,
-                )
-
-    def helper_test_probabilistic_forecast_accuracy(
-        self, model_cls, model_kwargs, err, ts, noisy_ts
-    ):
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    def test_fit_predict_determinism(self, config):
+        model_cls, model_kwargs, _, _ = config
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+        # whether the first predictions of two models initiated with the same random state are the same
         model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
+        pred1 = model.predict(n=10, num_samples=2).values()
+
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
+        pred2 = model.predict(n=10, num_samples=2).values()
+
+        assert (pred1 == pred2).all()
+
+        # test whether the next prediction of the same model is different
+        pred3 = model.predict(n=10, num_samples=2).values()
+        assert (pred2 != pred3).any()
+
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    def test_probabilistic_forecast_accuracy_univariate(self, config):
+        """Test on univariate series"""
+        model_cls, model_kwargs, err, _ = config
+        model = model_cls(**model_kwargs)
+        self.helper_test_probabilistic_forecast_accuracy(
+            model, err, self.constant_ts, self.constant_noisy_ts
+        )
+
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    def test_probabilistic_forecast_accuracy_multivariate(self, config):
+        """Test on multivariate series, when supported"""
+        model_cls, model_kwargs, _, err = config
+        model = model_cls(**model_kwargs)
+        if model.supports_multivariate:
+            self.helper_test_probabilistic_forecast_accuracy(
+                model,
+                err,
+                self.constant_multivar_ts,
+                self.constant_noisy_multivar_ts,
+            )
+
+    def helper_test_probabilistic_forecast_accuracy(self, model, err, ts, noisy_ts):
         model.fit(noisy_ts[:100])
         pred = model.predict(n=100, num_samples=100)
 
