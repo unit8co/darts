@@ -193,14 +193,12 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         # convert lags arguments to list of int
-        processed_lags, processed_component_lags = self._generate_lags(
+        self.lags, self.component_lags = self._generate_lags(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
         )
 
-        self.lags = processed_lags
-        self.component_lags = processed_component_lags
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 

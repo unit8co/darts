@@ -545,7 +545,7 @@ class TestRegressionModels:
         # cannot use 'default_lags' because it's converted in `fit()`, before calling `_created_lagged_data`
         model_instance = RegressionModel(
             lags={"0-trgt-0": [-4, -3], "0-trgt-1": [-3, -2], "0-trgt-2": [-2, -1]},
-            lags_past_covariates={"0-pcov-0": [-10], "0-pvoc-1": [-7]},
+            lags_past_covariates={"0-pcov-0": [-10], "0-pcov-1": [-7]},
             lags_future_covariates={"0-fcov-0": (2, 2)},
             multi_models=mode,
         )
