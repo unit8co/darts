@@ -732,6 +732,8 @@ class NBEATSModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] https://openreview.net/forum?id=r1ecqn4YwB
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

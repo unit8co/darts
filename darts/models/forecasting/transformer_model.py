@@ -410,7 +410,7 @@ class TransformerModel(PastCovariatesTorchModel):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
             It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
@@ -523,7 +523,9 @@ class TransformerModel(PastCovariatesTorchModel):
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
         and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
         pages 6000-6010. https://arxiv.org/abs/1706.03762.
-        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
+        .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
+        .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Notes
         -----

@@ -434,6 +434,8 @@ class TCNModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] https://arxiv.org/abs/1803.01271
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
 
         raise_if_not(

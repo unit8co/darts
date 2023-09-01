@@ -669,6 +669,8 @@ class NHiTSModel(PastCovariatesTorchModel):
         ----------
         .. [1] C. Challu et al. "N-HiTS: Neural Hierarchical Interpolation for Time Series Forecasting",
                https://arxiv.org/abs/2201.12886
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

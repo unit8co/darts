@@ -769,7 +769,7 @@ class TFTModel(MixedCovariatesTorchModel):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
             It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
@@ -880,7 +880,9 @@ class TFTModel(MixedCovariatesTorchModel):
         References
         ----------
         .. [1] https://arxiv.org/pdf/1912.09363.pdf
-        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
+        .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
+        .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:

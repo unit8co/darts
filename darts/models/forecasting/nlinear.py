@@ -361,6 +361,8 @@ class NLinearModel(MixedCovariatesTorchModel):
         ----------
         .. [1] Zeng, A., Chen, M., Zhang, L., & Xu, Q. (2022).
                Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
