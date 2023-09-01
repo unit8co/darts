@@ -51,7 +51,7 @@ class RegressionEnsembleModel(EnsembleModel):
         forecasting_models
             List of forecasting models whose predictions to ensemble
         regression_train_n_points
-            The number of points to use to train the regression model. Can be set to `-1` to use the entire series
+            The number of points per series to use to train the regression model. Can be set to `-1` to use the entire series
             to train the regressor if `forecasting_models` are already fitted and `train_forecasting_models=False`.
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
@@ -78,8 +78,8 @@ class RegressionEnsembleModel(EnsembleModel):
         train_using_historical_forecasts
             If set to `True`, use `historical_forecasts()` to generate the forecasting models' predictions used to
             train the regression model in `fit()`. Available when `forecasting_models` contains only
-            `GlobalForecastingModels` with `output_chunk_length` multiple of `regression_train_n_points` and
-            recommended when `regression_train_n_points` is considerably greater than `output_chunk_length`.
+            `GlobalForecastingModels`. Recommended when `regression_train_n_points` is greater than 
+            `output_chunk_length` of the underlying `forecasting_models`.
             Default: ``False``.
         show_warnings
             Whether to show warnings related to forecasting_models covariates support.
