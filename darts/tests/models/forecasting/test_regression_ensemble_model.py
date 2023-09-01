@@ -238,13 +238,18 @@ class TestRegressionEnsembleModels:
         assert forecast1.time_index.equals(forecast2.time_index)
         np.testing.assert_array_almost_equal(forecast1.values(), forecast2.values())
 
-    @pytest.mark.parametrize("config", [(1, 1), (5, 2), (4, 3)])
+    @pytest.mark.parametrize("config", [(1, 1, 20), (5, 2, 20), (4, 3, 19)])
     def test_train_with_historical_forecasts(self, config):
         """
         Training regression model of ensemble with output from historical forecasts instead of predict should
         yield better results when the forecasting models are global and regression_train_n_points >> ocl.
+
+        If the ocl of the forecasting models is not a multiple of the regression_train_n_points, the regression
+        model might be trained with less points.
         """
-        ocl1, ocl2 = config
+        ocl1, ocl2, expected_train_length = config
+        # using the same number of train points
+        regression_train_n_points = 20
         train, val = self.combined.split_after(self.combined.time_index[-10])
 
         # using predict to generate the future covs for the ensemble model
@@ -253,11 +258,16 @@ class TestRegressionEnsembleModels:
                 LinearRegressionModel(lags=5, output_chunk_length=ocl1),
                 LinearRegressionModel(lags=2, output_chunk_length=ocl2),
             ],
-            regression_train_n_points=20,
+            regression_train_n_points=regression_train_n_points,
             train_using_historical_forecasts=False,
         )
         ensemble_predict.fit(train)
         pred_predict = ensemble_predict.predict(len(val))
+
+        assert (
+            len(ensemble_predict.regression_model.training_series)
+            == regression_train_n_points
+        )
 
         # using historical forecasts to generate the future covs for the ensemble model
         ensemble_hist_fct = RegressionEnsembleModel(
@@ -265,11 +275,17 @@ class TestRegressionEnsembleModels:
                 LinearRegressionModel(lags=5, output_chunk_length=ocl1),
                 LinearRegressionModel(lags=2, output_chunk_length=ocl2),
             ],
-            regression_train_n_points=20,
+            regression_train_n_points=regression_train_n_points,
             train_using_historical_forecasts=True,
         )
         ensemble_hist_fct.fit(train)
         pred_hist_fct = ensemble_hist_fct.predict(len(val))
+
+        # training series might be shorter because of historical forecast constraints
+        assert (
+            len(ensemble_hist_fct.regression_model.training_series)
+            == expected_train_length
+        )
 
         assert mape(pred_hist_fct, val) < mape(pred_predict, val)
         assert rmse(pred_hist_fct, val) < rmse(pred_predict, val)
