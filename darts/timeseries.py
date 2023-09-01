@@ -21,9 +21,9 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Have a monotonically increasing time index, without holes (without missing dates)
     - Contain numeric types only
     - Have distinct components/columns names
-    - Have a well defined frequency (
-    `date offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
-    for ``DateTimeIndex``, and step size for ``RangeIndex``)
+    - Have a well defined frequency (`date offset aliases
+    <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
+    for ``DateTimeIndex``, or step size for ``RangeIndex``)
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
