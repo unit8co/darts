@@ -344,14 +344,17 @@ class RegressionEnsembleModel(EnsembleModel):
                     tmp_regression_target.append(target_ts)
                 else:
                     enough_predictions.append(False)
+                    # regression model only have lags_future_covariates=[0], no need
+                    # to account for target lags
                     tmp_regression_target.append(
                         target_ts[covs_ts.start_time() : covs_ts.end_time()]
                     )
-            regression_target = tmp_regression_target
 
             if is_single_series:
-                regression_target = seq2series(regression_target)
+                regression_target = seq2series(tmp_regression_target)
                 predictions = seq2series(predictions)
+            else:
+                regression_target = tmp_regression_target
 
             # inform user that the regression model will be trained with less values
             if not all(enough_predictions):
