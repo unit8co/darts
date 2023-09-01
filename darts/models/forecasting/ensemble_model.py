@@ -289,6 +289,13 @@ class EnsembleModel(GlobalForecastingModel):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        # ensure forecasting models all rely on the same series during inference
+        if series is None:
+            series = self.training_series
+        if past_covariates is None:
+            past_covariates = self.past_covariate_series
+        if future_covariates is None:
+            future_covariates = self.future_covariate_series
 
         super().predict(
             n=n,
@@ -299,11 +306,6 @@ class EnsembleModel(GlobalForecastingModel):
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
-
-        # ensure forecasting models all rely on the same series during inference
-        # sanity check are performed by super().predict()
-        if series is None:
-            series = self.training_series
 
         # for single-level ensemble, probabilistic forecast is obtained directly from forecasting models
         if self.train_samples_reduction is None:
