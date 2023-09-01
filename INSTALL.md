@@ -3,7 +3,7 @@
 Below, we detail how to install Darts using either `conda` or `pip`.
 
 ## From PyPI
-Install darts with all models expect the ones from optional dependencies (Prophet, LightGBM, CatBoost, see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
+Install Darts with all models except the ones from optional dependencies (Prophet, LightGBM, CatBoost, see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
 
 If this fails on your platform, please follow the official installation 
 guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
@@ -11,15 +11,12 @@ guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installi
 As some dependencies are relatively big or involve non-Python dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
-* Install darts with all available models: `pip install u8darts[all]`
+* Install Darts with all available models: `pip install "u8darts[all]"`
 * Install core only (without neural networks, Prophet, LightGBM and Catboost): `pip install u8darts`
 * Install core + Prophet + LightGBM + CatBoost: `pip install "u8darts[notorch]"`
 * Install core + neural networks (PyTorch): `pip install "u8darts[torch]"` (equivalent to `pip install darts`)
 
 ## From conda-forge
-Currently only the x86_64 architecture with Python 3.8-3.10
-is fully supported with conda; consider using PyPI if you are running into troubles.
-
 Create a conda environment (e.g., for Python 3.10):
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
@@ -31,18 +28,17 @@ Activate the environment
 
 As some models have relatively heavy dependencies, we provide four conda-forge packages:
 
-* Install darts with all available models: `conda install -c conda-forge -c pytorch u8darts-all`
+* Install Darts with all available models: `conda install -c conda-forge -c pytorch u8darts-all`
 * Install core only (without neural networks, Prophet, LightGBM and Catboost): `conda install -c conda-forge u8darts`
-* Install core + Prophet + LightGBM + CatBoost: `pip install "u8darts-notorch"`
+* Install core + Prophet + LightGBM + CatBoost: `conda install -c conda-forge u8darts-notorch`
 * Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
 
 
 ## Other Information
 
 ### Enabling Optional Dependencies
-By default, as of 0.25.0, `darts` does not have Prophet, CatBoost, and LightGBM as dependencies anymore, because their 
-build processes were too often causing issues. If you want to use any of Darts' `Prophet`, `CatBoostModel`, and 
-`LightGBMModel`, you will need to manually install the corresponding packages.  
+As of version 0.25.0, the default `darts` package does not install Prophet, CatBoost, and LightGBM dependencies anymore, because their 
+build processes were too often causing issues. We continue supporting the model wrappers `Prophet`, `CatBoostModel`, and `LightGBMModel` in Darts though. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).  
 
 #### Prophet
 Install the `prophet` package (version 1.1.1 or more recent) using the [Prophet install guide](https://facebook.github.io/prophet/docs/installation.html#python)
@@ -57,52 +53,26 @@ Install the `lightgbm` package (version 3.2.0 or more recent) using the [LightGB
 Darts relies on PyTorch for the neural network models.
 For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
 
-### Using an emulated x64 environment on Apple Silicon.
-The installation of `darts` has been tested to work on Apple silicon (M1) (Python 3.10, OSX Ventura 13.2.1).
 
-If you run into issues, you can always use rosetta to run in an (intel) emulated x64 environment:
+### From Docker:
+We also provide a Docker image with everything set up for you. For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
 
-Before you start make sure that you have rosetta2 installed by running: 
-
+Pull the latest Darts image.
 ```bash
-pgrep oahd
-``` 
-
-If you see a process id you are ready to go, as internally rosetta is known as oah.
-
-If pgrep doesn't return any id then install rosetta2:
-
-```bash
-softwareupdate --install-rosetta
+docker pull unit8/darts:latest
 ```
 
-Below are the necessary instructions to create and configure the environment:
-- Install conda if you haven't done so (e.g., with miniforge : `brew install miniforge`).
-- Create the x_64 environment : `CONDA_SUBDIR=osx-64 conda create -n env_name python=3.10 pip`
-- Activate the environment: `conda activate env_name`
-- Configure the environment : `conda env config vars set CONDA_SUBDIR=osx-64`
-- Deactivate and reactivate the environment:
-  ```bash
-  conda deactivate
-  conda activate env_name
-  ```
-- Install darts: `pip install darts`
-
-### Running the examples only, without installing:
-
-If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
-To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
+To run it in interactive mode:
 ```bash
-./gradlew docker && ./gradlew dockerRun
+docker run -it -p 8888:8888 unit8/darts:latest bash
 ```
-If you are having M1/M2 chipset then you should change the default platform: (unfortunately not all libraries support ARM architecture)
+
+After that, you can also launch a Jupyter lab / notebook session:
 ```bash
-DOCKER_DEFAULT_PLATFORM=linux/amd64 ./gradlew docker && ./gradlew dockerRun
+jupyter lab --ip 0.0.0.0 --no-browser --allow-root
 ```
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
-
-For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
 
 
 ## Tests
