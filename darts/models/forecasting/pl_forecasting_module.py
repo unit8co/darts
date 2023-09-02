@@ -124,8 +124,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
             It is only applied to the features of the target series and not the covariates.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__()
 
