@@ -26,12 +26,43 @@ try:
         MetricCollection,
     )
 
-    from darts.models import DLinearModel, RNNModel
+    from darts.models import (
+        BlockRNNModel,
+        DLinearModel,
+        NBEATSModel,
+        NHiTSModel,
+        NLinearModel,
+        RNNModel,
+        TCNModel,
+        TFTModel,
+        TiDEModel,
+        TransformerModel,
+    )
+    from darts.models.components.layer_norm_variants import RINorm
     from darts.utils.likelihood_models import (
         GaussianLikelihood,
         LaplaceLikelihood,
         Likelihood,
     )
+
+    kwargs = {
+        "input_chunk_length": 10,
+        "output_chunk_length": 1,
+        "n_epochs": 1,
+        "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
+    }
+    models = [
+        (BlockRNNModel, kwargs),
+        (DLinearModel, kwargs),
+        (NBEATSModel, kwargs),
+        (NHiTSModel, kwargs),
+        (NLinearModel, kwargs),
+        (RNNModel, {"training_length": 2, **kwargs}),
+        (TCNModel, kwargs),
+        (TFTModel, {"add_relative_index": 2, **kwargs}),
+        (TiDEModel, kwargs),
+        (TransformerModel, kwargs),
+    ]
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -1383,6 +1414,38 @@ if TORCH_AVAILABLE:
                 _ = model.predict(n=n, past_covariates=pc)
                 _ = model.predict(n=n, future_covariates=fc)
                 _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+        @pytest.mark.parametrize("model_config", models)
+        def test_rin(self, model_config):
+            model_cls, kwargs = model_config
+            model_no_rin = model_cls(use_reversible_instance_norm=False, **kwargs)
+            model_rin = model_cls(use_reversible_instance_norm=True, **kwargs)
+
+            # univariate no RIN
+            model_no_rin.fit(self.series)
+            assert not model_no_rin.model.use_reversible_instance_norm
+            assert model_no_rin.model.rin is None
+
+            # univariate with RIN
+            model_rin.fit(self.series)
+            if issubclass(model_cls, RNNModel):
+                # RNNModel will not use RIN
+                assert not model_rin.model.use_reversible_instance_norm
+                assert model_rin.model.rin is None
+                return
+            else:
+                assert model_rin.model.use_reversible_instance_norm
+                assert isinstance(model_rin.model.rin, RINorm)
+                assert model_rin.model.rin.input_dim == self.series.n_components
+            # multivariate with RIN
+            model_rin_mv = model_rin.untrained_model()
+            model_rin_mv.fit(self.multivariate_series)
+            assert model_rin_mv.model.use_reversible_instance_norm
+            assert isinstance(model_rin_mv.model.rin, RINorm)
+            assert (
+                model_rin_mv.model.rin.input_dim
+                == self.multivariate_series.n_components
+            )
 
         def helper_equality_encoders(
             self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]

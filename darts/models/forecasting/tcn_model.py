@@ -11,7 +11,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
@@ -231,6 +234,7 @@ class _TCNModule(PLPastCovariatesModule):
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
+    @io_processor
     def forward(self, x_in: Tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
@@ -317,6 +321,9 @@ class TCNModel(PastCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -427,6 +434,8 @@ class TCNModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] https://arxiv.org/abs/1803.01271
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
 
         raise_if_not(
