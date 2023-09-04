@@ -1396,7 +1396,7 @@ class TestCreateLaggedPredictionData:
                     use_moving_windows=use_moving_windows,
                 )
             assert (
-                "`lags` must be a `Sequence` containing only `int` values less than 0."
+                "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
             ) == str(err.value)
             # Test invalid `lags_past_covariates` values:
             with pytest.raises(ValueError) as err:
@@ -1407,7 +1407,7 @@ class TestCreateLaggedPredictionData:
                     use_moving_windows=use_moving_windows,
                 )
             assert (
-                "`lags_past_covariates` must be a `Sequence` containing only `int` values less than 0."
+                "`lags_past_covariates` must be a `Sequence` or `Dict` containing only `int` values less than 0."
             ) == str(err.value)
             # This should *not* throw an error:
             create_lagged_prediction_data(
