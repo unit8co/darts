@@ -199,7 +199,6 @@ class RegressionModel(GlobalForecastingModel):
             lags_future_covariates=lags_future_covariates,
         )
 
-
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
     def _generate_lags(
