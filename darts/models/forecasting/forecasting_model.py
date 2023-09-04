@@ -2303,7 +2303,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """
 
         if future_covariates is not None:
-            self.future_covariate_series = future_covariates
             if not series.has_same_time_as(future_covariates):
                 # fit() expects future_covariates to have same time as the target, so we intersect it here
                 future_covariates = future_covariates.slice_intersect(series)
@@ -2364,10 +2363,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """
 
         super().predict(n, num_samples)
-
-        # retrieve the future covariate series saved in fit()
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = self.future_covariate_series
 
         # avoid generating encodings again if subclass has already generated them
         if not self._supress_generate_predict_encoding:
