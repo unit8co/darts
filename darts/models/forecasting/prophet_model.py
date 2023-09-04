@@ -135,24 +135,28 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import Prophet
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dt_attr
         >>> series = AirPassengersDataset().load()
-        >>> # supplying the seasonality information to improve accuracy
+        >>> # optionally, one-hot encode the months as a future covariates
+        >>> future_cov = dt_attr(series, "month", one_hot=True, add_length=6)
+        >>> # adding a seasonality (yearly and weekly are included by default) and holidays
         >>> model = Prophet(
-                        add_seasonalities={
-                            'name':"yearly_seasonality",
-                            'seasonal_periods':12,
-                            'fourier_order':20
-                            },
-                        )
-        >>> model.fit(target)
+        >>>   add_seasonalities={
+        >>>       'name':"quarterly_seasonality",
+        >>>       'seasonal_periods':4,
+        >>>       'fourier_order':5
+        >>>       },
+        >>>   country_holidays="US"
+        >>>   )
+        >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
-        array([[469.84025187],
-               [465.97709479],
-               [493.98029195],
-               [493.66439198],
-               [498.16068783],
-               [540.44780324]])
+        array([[472.26891239],
+               [467.56955721],
+               [494.47230467],
+               [493.10568429],
+               [497.54686113],
+               [539.11716811]])
         """
 
         super().__init__(add_encoders=add_encoders)

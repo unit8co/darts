@@ -513,7 +513,7 @@ class TransformerModel(PastCovariatesTorchModel):
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
         and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
         pages 6000-6010. https://arxiv.org/abs/1706.03762.
-        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
+        .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
 
         Notes
         -----
@@ -533,13 +533,13 @@ class TransformerModel(PastCovariatesTorchModel):
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
         >>> model = TransformerModel(
-        >>>             input_chunk_length=6,
-        >>>             output_chunk_length=6,
-        >>>             n_epochs=20
-        >>>             )
+        >>>   input_chunk_length=6,
+        >>>   output_chunk_length=6,
+        >>>   n_epochs=20
+        >>>   )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
         >>> pred.values()

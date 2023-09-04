@@ -410,17 +410,17 @@ class DLinearModel(MixedCovariatesTorchModel):
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
-        >>> # future temperatures (pretending this component is a forecast)
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
         >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
         >>> # values corresponding to the forecasted period
         >>> model = DLinearModel(
-                        input_chunk_length=6,
-                        output_chunk_length=6,
-                        n_epochs=20,
-                        )
+        >>>   input_chunk_length=6,
+        >>>   output_chunk_length=6,
+        >>>   n_epochs=20,
+        >>>   )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()

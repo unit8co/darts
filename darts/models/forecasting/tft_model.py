@@ -870,7 +870,7 @@ class TFTModel(MixedCovariatesTorchModel):
         References
         ----------
         .. [1] https://arxiv.org/pdf/1912.09363.pdf
-        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
+        .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
 
         Examples
         --------
@@ -879,25 +879,31 @@ class TFTModel(MixedCovariatesTorchModel):
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> # optionally, past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
         >>> # future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
+        >>> # by default, TFTModel is trained using a `QuantileRegression`
         >>> model = TFTModel(
-        >>>             input_chunk_length=6,
-        >>>             output_chunk_length=6,
-        >>>             n_epochs=5,
-        >>>             )
-        >>> # future_covariates is mandatory for `TFTModel`
+        >>>   input_chunk_length=6,
+        >>>   output_chunk_length=6,
+        >>>   n_epochs=5,
+        >>>   )
+        >>> # future_covariates are mandatory for `TFTModel`
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
-        >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.09969039],
-               [0.27813781],
-               [0.45841935],
-               [0.15467635],
-               [0.17572287],
-               [0.55062653]])
+        >>> # using `num_samples > 1`, the model generates a probabilistic forecast
+        >>> pred = model.predict(6, num_samples=100)
+        >>> # shape : (forecast horizon, components, num_samples)
+        >>> pred.all_values().shape
+        (6, 1, 100)
+        >>> # showing the first 3 samples for each timestamp
+        >>> pred.all_values()[:,:,:3]
+        array([[[-0.06414202, -0.7188093 ,  0.52541292]],
+               [[ 0.02928407, -0.40867163,  1.19650033]],
+               [[ 0.77252372, -0.50859694,  0.360166  ]],
+               [[ 0.9586113 ,  1.24147138, -0.01625545]],
+               [[ 1.06863863,  0.2987822 , -0.69213369]],
+               [[-0.83076568, -0.25780816, -0.28318784]]])
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:

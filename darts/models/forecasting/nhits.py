@@ -667,15 +667,15 @@ class NHiTSModel(PastCovariatesTorchModel):
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
         >>> # increasing the number of blocks
         >>> model = NHiTSModel(
-                        input_chunk_length=6,
-                        output_chunk_length=6,
-                        num_blocks=2,
-                        n_epochs=5,
-                        )
+        >>>   input_chunk_length=6,
+        >>>   output_chunk_length=6,
+        >>>   num_blocks=2,
+        >>>   n_epochs=5,
+        >>>   )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
         >>> pred.values()

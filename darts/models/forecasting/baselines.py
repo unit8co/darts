@@ -286,19 +286,19 @@ class NaiveEnsembleModel(EnsembleModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import NaiveEnsembleModel, NaiveSeasonal, NaiveDrift
+        >>> from darts.models import NaiveEnsembleModel, NaiveSeasonal, LinearRegressionModel
         >>> series = AirPassengersDataset().load()
-        >>> # combine two naive models
-        >>> model = NaiveEnsembleModel([NaiveSeasonal(K=12), NaiveDrift()])
+        >>> # defining the ensemble
+        >>> model = NaiveEnsembleModel([NaiveSeasonal(K=12), LinearRegressionModel(lags=4)])
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()
-        array([[425.61888112],
-               [413.73776224],
-               [428.85664336],
-               [450.97552448],
-               [457.59440559],
-               [490.21328671]])
+        array([[439.23152974],
+               [431.41161602],
+               [439.72888401],
+               [453.70180806],
+               [454.96757177],
+               [485.16604194]])
         """
         super().__init__(
             models=models,

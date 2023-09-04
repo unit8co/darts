@@ -74,16 +74,16 @@ class ExponentialSmoothing(LocalForecastingModel):
         >>> from darts.utils.utils import ModelMode, SeasonalityMode
         >>> series = AirPassengersDataset().load()
         >>> # using Holt's exponential smoothing
-        >>> model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.NONE)
+        >>> model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.MULTIPLICATIVE)
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()
-        array([[433.86437351],
-               [435.92662262],
-               [437.98887173],
-               [440.05112085],
-               [442.11336996],
-               [444.17561907]])
+        array([[445.24283838],
+               [418.22618932],
+               [465.31305075],
+               [494.95129261],
+               [505.4770514 ],
+               [573.31519186]])
         """
         super().__init__()
         self.trend = trend

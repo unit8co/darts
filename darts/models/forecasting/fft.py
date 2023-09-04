@@ -260,10 +260,10 @@ class FFT(LocalForecastingModel):
         >>> series = AirPassengersDataset().load()
         >>> # increase the number of frequency and use a polynomial trend of degree 2
         >>> model = FFT(
-                    nr_freqs_to_keep=20,
-                    trend= "poly",
-                    trend_poly_degree=2
-                    )
+        >>>   nr_freqs_to_keep=20,
+        >>>   trend= "poly",
+        >>>   trend_poly_degree=2
+        >>>   )
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()

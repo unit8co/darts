@@ -730,15 +730,15 @@ class NBEATSModel(PastCovariatesTorchModel):
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # past observed rainfall (pretending to be unknown beyond index 100)
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
         >>> # changing the activation function of the encoder/decoder to LeakyReLU
         >>> model = NBEATSModel(
-                        input_chunk_length=6,
-                        output_chunk_length=6,
-                        n_epochs=5,
-                        activation='LeakyReLU'
-                        )
+        >>>   input_chunk_length=6,
+        >>>   output_chunk_length=6,
+        >>>   n_epochs=5,
+        >>>   activation='LeakyReLU'
+        >>>   )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
         >>> pred.values()

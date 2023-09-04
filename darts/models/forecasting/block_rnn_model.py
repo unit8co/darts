@@ -74,27 +74,6 @@ class _BlockRNNModule(PLPastCovariatesModule):
         -------
         y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
             Tensor containing the prediction at the last time step of the sequence.
-
-        Examples
-        --------
-        >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import BlockRNNModel
-        >>> series = AirPassengersDataset().load()
-        >>> model = BlockRNNModel(
-        >>>             input_chunk_length=12,
-        >>>             output_chunk_length=6,
-        >>>             n_rnn_layers=2,
-        >>>             n_epochs=50,
-        >>>             )
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[5.66264695],
-               [6.0170242 ],
-               [6.95271513],
-               [5.65220405],
-               [6.96427217],
-               [6.21813972]])
         """
 
         super().__init__(**kwargs)
@@ -317,6 +296,30 @@ class BlockRNNModel(PastCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import BlockRNNModel
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries as dt_attr
+        >>> series = AirPassengersDataset().load()
+        >>> # optionnaly, one-hot encode the months as a past covariates
+        >>> past_cov = dt_attr(series, "month")
+        >>> model = BlockRNNModel(
+        >>>   input_chunk_length=12,
+        >>>   output_chunk_length=6,
+        >>>   n_rnn_layers=2,
+        >>>   n_epochs=50,
+        >>>   )
+        >>> model.fit(series, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[5.6068386 ],
+               [6.10806508],
+               [6.48818782],
+               [5.30463617],
+               [5.24570622],
+               [6.42277716]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

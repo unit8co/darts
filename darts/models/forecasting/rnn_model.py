@@ -391,15 +391,15 @@ class RNNModel(DualCovariatesTorchModel):
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # future temperatures (pretending this component is a forecast)
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
         >>> # `training_length` > `input_chunk_length` to mimic inference constraints
         >>> model = RNNModel(
-                        model="RNN",
-                        input_chunk_length=6,
-                        training_length=18,
-                        n_epochs=20,
-                        )
+        >>>   model="RNN",
+        >>>   input_chunk_length=6,
+        >>>   training_length=18,
+        >>>   n_epochs=20,
+        >>>   )
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
