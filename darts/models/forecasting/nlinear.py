@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
-from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLMixedCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 
@@ -106,6 +109,7 @@ class _NLinearModule(PLMixedCovariatesModule):
                 layer_in_dim_static_cov, layer_out_dim
             )
 
+    @io_processor
     def forward(
         self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):
@@ -246,6 +250,9 @@ class NLinearModel(MixedCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -286,11 +293,14 @@ class NLinearModel(MixedCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'past': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -351,6 +361,8 @@ class NLinearModel(MixedCovariatesTorchModel):
         ----------
         .. [1] Zeng, A., Chen, M., Zhang, L., & Xu, Q. (2022).
                Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------

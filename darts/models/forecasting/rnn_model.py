@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLDualCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLDualCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
@@ -86,6 +89,7 @@ class _RNNModule(PLDualCovariatesModule):
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
 
+    @io_processor
     def forward(
         self, x_in: Tuple, h: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -321,11 +325,14 @@ class RNNModel(DualCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'past': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -413,12 +420,15 @@ class RNNModel(DualCovariatesTorchModel):
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
 
-        if model_kwargs.get("output_chunk_length") is not None:
-            logger.warning(
-                "ignoring user defined `output_chunk_length`. RNNModel uses a fixed `output_chunk_length=1`."
-            )
-
-        model_kwargs["output_chunk_length"] = 1
+        for kwarg, default_value in zip(
+            ["output_chunk_length", "use_reversible_instance_norm"], [1, False]
+        ):
+            if model_kwargs.get(kwarg) is not None:
+                logger.warning(
+                    f"ignoring user defined `{kwarg}`. RNNModel uses a fixed "
+                    f"`{kwarg}={default_value}`."
+                )
+            model_kwargs[kwarg] = default_value
 
         super().__init__(**self._extract_torch_model_params(**model_kwargs))
 
