@@ -38,6 +38,7 @@ if TORCH_AVAILABLE:
             input_size=1,
             input_chunk_length=1,
             output_chunk_length=1,
+            train_sample_shape=((1, 1),),
             output_size=1,
             nr_params=1,
             d_model=512,
