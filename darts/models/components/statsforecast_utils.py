@@ -1,8 +1,3 @@
-"""
-StatsForecast utils
------------
-"""
-
 import numpy as np
 
 # In a normal distribution, 68.27 percentage of values lie within one standard deviation of the mean
