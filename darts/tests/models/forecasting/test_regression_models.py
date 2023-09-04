@@ -590,6 +590,27 @@ class TestRegressionModels:
             20098,  # future cov; target + 20'000
         ]
 
+        # checking the name of the lagged features
+        model_instance.fit(
+            series=self.target_series[0],
+            past_covariates=self.past_covariates[0],
+            future_covariates=self.future_covariates[0],
+        )
+        assert model_instance.lagged_feature_names == [
+            "0-trgt-0_target_lag-4",
+            "0-trgt-0_target_lag-3",
+            "0-trgt-1_target_lag-3",
+            "0-trgt-1_target_lag-2",
+            "0-trgt-2_target_lag-2",
+            "0-trgt-2_target_lag-1",
+            "0-pcov-0_pastcov_lag-10",
+            "0-pcov-1_pastcov_lag-7",
+            "0-fcov-0_futcov_lag-2",
+            "0-fcov-0_futcov_lag-1",
+            "0-fcov-0_futcov_lag0",
+            "0-fcov-0_futcov_lag1",
+        ]
+
     @pytest.mark.parametrize("mode", [True, False])
     def test_prediction_data_creation(self, mode):
         # assigning correct names to variables
