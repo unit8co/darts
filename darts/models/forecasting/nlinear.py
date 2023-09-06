@@ -151,10 +151,6 @@ class _NLinearModule(PLMixedCovariatesModule):
                 batch, self.output_chunk_length, self.output_dim * self.nr_params
             )
 
-            if self.normalize:
-                # make sure to only copy nr_params * number_of_targets
-                x = x + seq_last[:, :, : x.shape[-1]]
-
             if self.future_cov_dim != 0:
                 # x_future might be shorter than output_chunk_length when n < output_chunk_length
                 # so we need to pad it with zeros at the end to match the output_chunk_length
