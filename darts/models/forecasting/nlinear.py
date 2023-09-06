@@ -142,8 +142,11 @@ class _NLinearModule(PLMixedCovariatesModule):
             x = x.permute(0, 2, 1, 3)
         else:
             if self.normalize:
-                seq_last = x[:, -1:, :].detach()  # (batch, 1, in_dim)
+                # get last values only for target features
+                # x has shape (batch, input_chunk_length, n targets + n past covs + n future covs)
+                seq_last = x[:, -1:, :self.output_dim].detach()
                 x = x - seq_last
+
 
             x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
             x = x.view(
@@ -176,7 +179,8 @@ class _NLinearModule(PLMixedCovariatesModule):
                 )
 
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
-
+            if self.normalize:
+                x = x + seq_last.view(seq_last.shape + (1,))
         return x
 
 
