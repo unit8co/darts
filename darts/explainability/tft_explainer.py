@@ -89,7 +89,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.explainability.shap_explainer import ShapExplainer
+        >>> from darts.explainability.tft_explainer import TFTExplainer
         >>> from darts.models import TFTModel
         >>> series = AirPassengersDataset().load()
         >>> model = TFTModel(
@@ -207,7 +207,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         # get the weights and the attention head from the trained model for the prediction
         # aggregate over attention heads
         attention_heads = (
-            self.model.model._attn_out_weights.detach().numpy().sum(axis=-2)
+            self.model.model._attn_out_weights.detach().cpu().numpy().sum(axis=-2)
         )
         # get the variable importances (pd.DataFrame with rows corresponding to the number of input series)
         encoder_importance = self._encoder_importance
@@ -501,7 +501,8 @@ class TFTExplainer(_ForecastingModelExplainer):
 
         # transform the encoder/decoder weights to percentages, rounded to n_decimals
         weights_percentage = (
-            weight.detach().numpy().mean(axis=1).squeeze(axis=1).round(n_decimals) * 100
+            weight.detach().cpu().numpy().mean(axis=1).squeeze(axis=1).round(n_decimals)
+            * 100
         )
         # create a dataframe with the variable names and the weights
         name_mapping = self._name_mapping

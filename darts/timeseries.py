@@ -42,6 +42,7 @@ from copy import deepcopy
 from inspect import signature
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -215,7 +216,7 @@ class TimeSeries:
                     logger,
                 )
         else:
-            self._freq = self._time_index.step
+            self._freq: int = self._time_index.step
             self._freq_str = None
 
         # check static covariates
@@ -708,6 +709,9 @@ class TimeSeries:
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
+
+        if series_df.columns.name:
+            series_df.columns.name = None
 
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
@@ -2099,7 +2103,7 @@ class TimeSeries:
                 )
             raise_if_not(
                 0 <= point_index < len(self),
-                "point (int) should be a valid index in series",
+                f"The index corresponding to the provided point ({point}) should be a valid index in series",
                 logger,
             )
         elif isinstance(point, pd.Timestamp):
@@ -2138,8 +2142,8 @@ class TimeSeries:
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
             In case of a `float`, the parameter will be treated as the proportion of the time series
             that should lie before the point.
-            In the case of `int`, the parameter will be treated as an integer index to the time index of
-            `series`. Will raise a ValueError if not a valid index in `series`
+            In case of `int`, the parameter will be treated as an integer index to the time index of
+            `series`. Will raise a ValueError if not a valid index in `series`.
             In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
             is present in the series time index, otherwise will raise a ValueError.
         """
@@ -3063,7 +3067,7 @@ class TimeSeries:
 
             'backfill': use NEXT valid observation to fill.
         kwargs
-            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where
+            some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more informations, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
@@ -3085,7 +3089,7 @@ class TimeSeries:
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
-        >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
+        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30T"))
         >>> print(resampled_ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
                       dtype='datetime64[ns]', name='time', freq='H')
@@ -3696,9 +3700,10 @@ class TimeSeries:
         default_formatting: bool = True,
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
+        ax: Optional[matplotlib.axes.Axes] = None,
         *args,
         **kwargs,
-    ):
+    ) -> matplotlib.axes.Axes:
         """Plot the series.
 
         This is a wrapper method around :func:`xarray.DataArray.plot()`.
@@ -3706,7 +3711,7 @@ class TimeSeries:
         Parameters
         ----------
         new_plot
-            whether to spawn a new Figure
+            Whether to spawn a new axis to plot on. See also parameter `ax`.
         central_quantile
             The quantile (between 0 and 1) to plot as a "central" value, if the series is stochastic (i.e., if
             it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
@@ -3729,10 +3734,18 @@ class TimeSeries:
             the series, the labels will be mapped to the components in order.
         max_nr_components
             The maximum number of components of a series to plot. -1 means all components will be plotted.
+        ax
+            Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
+            `new_plot=True`, will create a new axis.
         args
             some positional arguments for the `plot()` method
         kwargs
             some keyword arguments for the `plot()` method
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
         """
         alpha_confidence_intvls = 0.25
 
@@ -3750,12 +3763,11 @@ class TimeSeries:
                 logger,
             )
 
-        fig = (
-            plt.figure()
-            if new_plot
-            else (kwargs["figure"] if "figure" in kwargs else plt.gcf())
-        )
-        kwargs["figure"] = fig
+        if new_plot:
+            fig, ax = plt.subplots()
+        else:
+            if ax is None:
+                ax = plt.gca()
 
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
@@ -3788,10 +3800,6 @@ class TimeSeries:
 
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
-
-            if i > 0:
-                kwargs["figure"] = plt.gcf()
-
             comp = self._xa.sel(component=c)
 
             if comp.sample.size > 1:
@@ -3818,18 +3826,18 @@ class TimeSeries:
             kwargs["label"] = label_to_use
 
             if central_series.shape[0] > 1:
-                p = central_series.plot(*args, **kwargs)
+                p = central_series.plot(*args, ax=ax, **kwargs)
             # empty TimeSeries
             elif central_series.shape[0] == 0:
-                p = plt.plot(
+                p = ax.plot(
                     [],
                     [],
                     *args,
                     **kwargs,
                 )
-                plt.xlabel(self.time_index.name)
+                ax.set_xlabel(self.time_index.name)
             else:
-                p = plt.plot(
+                p = ax.plot(
                     [self.start_time()],
                     central_series.values[0],
                     "o",
@@ -3848,7 +3856,7 @@ class TimeSeries:
                 low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
                 high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
                 if low_series.shape[0] > 1:
-                    plt.fill_between(
+                    ax.fill_between(
                         self.time_index,
                         low_series,
                         high_series,
@@ -3860,7 +3868,7 @@ class TimeSeries:
                         ),
                     )
                 else:
-                    plt.plot(
+                    ax.plot(
                         [self.start_time(), self.start_time()],
                         [low_series.values[0], high_series.values[0]],
                         "-+",
@@ -3868,8 +3876,9 @@ class TimeSeries:
                         lw=2,
                     )
 
-        plt.legend()
-        plt.title(self._xa.name)
+        ax.legend()
+        ax.set_title(self._xa.name)
+        return ax
 
     def with_columns_renamed(
         self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]
@@ -5157,7 +5166,7 @@ def concatenate(
         if not consecutive_time_axes:
             raise_if_not(
                 ignore_time_axis,
-                "When concatenating over time axis, all series need to be contiguous"
+                "When concatenating over time axis, all series need to be contiguous "
                 "in the time dimension. Use `ignore_time_axis=True` to override "
                 "this behavior and concatenate the series by extending the time axis "
                 "of the first series.",

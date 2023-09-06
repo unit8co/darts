@@ -1362,6 +1362,7 @@ class SequentialEncoder(Encoder):
         ValueError
             1) if the outermost key is other than (`past`, `future`)
             2) if the innermost values are other than type `str` or `Sequence`
+            3) if any of entry in the innermost values is a lambda function
         """
         if not params:
             return [], []
@@ -1377,9 +1378,7 @@ class SequentialEncoder(Encoder):
             logger,
         )
 
-        encoders = {
-            enc: params.get(enc, None) for enc in ENCODER_KEYS if params.get(enc, None)
-        }
+        encoders = {enc: params[enc] for enc in ENCODER_KEYS if params.get(enc, None)}
 
         # check input for invalid temporal types
         invalid_time_params = list()
@@ -1395,6 +1394,8 @@ class SequentialEncoder(Encoder):
             logger,
         )
 
+        # check that encoders are not lambda functions (not pickable)
+        lambda_func_encoders = set()
         # convert into tuples of (encoder string identifier, encoder attribute)
         past_encoders, future_encoders = list(), list()
         for enc, enc_params in encoders.items():
@@ -1413,6 +1414,18 @@ class SequentialEncoder(Encoder):
                         past_encoders.append((encoder_id, attr))
                     else:
                         future_encoders.append((encoder_id, attr))
+
+                    if isinstance(attr, Callable) and attr.__name__ == "<lambda>":
+                        lambda_func_encoders.add(enc)
+
+        raise_if(
+            len(lambda_func_encoders) > 0,
+            f"Encountered lambda function in the following `add_encoders` entries : {lambda_func_encoders} "
+            f"at model creation. "
+            f"In order to prevent issues when saving the model, these encoders must be converted to "
+            f"named functions.",
+            logger,
+        )
 
         for temp_enc, takes_temp, temp in [
             (past_encoders, self.takes_past_covariates, "past"),

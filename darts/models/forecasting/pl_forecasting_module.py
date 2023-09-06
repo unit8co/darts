@@ -12,6 +12,7 @@ import torchmetrics
 from joblib import Parallel, delayed
 
 from darts.logging import get_logger, raise_if, raise_log
+from darts.models.components.layer_norm_variants import RINorm
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.timeseries_generation import _build_forecast_series
@@ -22,6 +23,43 @@ logger = get_logger(__name__)
 # Check whether we are running pytorch-lightning >= 1.6.0 or not:
 tokens = pl.__version__.split(".")
 pl_160_or_above = int(tokens[0]) > 1 or int(tokens[0]) == 1 and int(tokens[1]) >= 6
+
+
+def io_processor(forward):
+    """Applies some input / output processing to PLForecastingModule.forward.
+    Note that this wrapper must be added to each of PLForecastinModule's subclasses forward methods.
+    Here is an example how to add the decorator:
+
+    ```python
+        @io_processor
+        def forward(self, *args, **kwargs)
+            pass
+    ```
+
+    Applies
+    -------
+    Reversible Instance Normalization
+        normalizes batch input target features, and inverse transform the forward output back to the original scale
+    """
+
+    def forward_wrapper(self, *args, **kwargs):
+        if not self.use_reversible_instance_norm:
+            return forward(self, *args, **kwargs)
+
+        # x is input batch tuple which by definition has the past features in the first element starting with the
+        # first n target features
+        x: Tuple = args[0][0]
+        # apply reversible instance normalization
+        x[:, :, : self.n_targets] = self.rin(x[:, :, : self.n_targets])
+        # run the forward pass
+        out = forward(self, *((x, *args[0][1:]), *args[1:]), **kwargs)
+        # inverse transform target output back to original scale; by definition the first output
+        if isinstance(out, tuple):
+            return self.rin.inverse(out[0]), *out[1:]
+        else:
+            return self.rin.inverse(out)
+
+    return forward_wrapper
 
 
 class PLForecastingModule(pl.LightningModule, ABC):
@@ -40,6 +78,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
+        use_reversible_instance_norm: bool = False,
     ) -> None:
         """
         PyTorch Lightning-based Forecasting Module.
@@ -84,11 +123,19 @@ class PLForecastingModule(pl.LightningModule, ABC):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__()
 
         # save hyper parameters for saving/loading
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["loss_fn", "torch_metrics"])
 
         raise_if(
             input_chunk_length is None or output_chunk_length is None,
@@ -107,6 +154,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
         self.train_sample_shape = train_sample_shape
+        self.n_targets = (
+            train_sample_shape[0][1] if train_sample_shape is not None else 1
+        )
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
@@ -120,6 +170,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         torch_metrics = self.configure_torch_metrics(torch_metrics)
         self.train_metrics = torch_metrics.clone(prefix="train_")
         self.val_metrics = torch_metrics.clone(prefix="val_")
+
+        # reversible instance norm
+        self.use_reversible_instance_norm = use_reversible_instance_norm
+        if use_reversible_instance_norm:
+            self.rin = RINorm(input_dim=self.n_targets)
+        else:
+            self.rin = None
 
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
@@ -397,12 +454,33 @@ class PLForecastingModule(pl.LightningModule, ABC):
         checkpoint["model_dtype"] = self.dtype
         # we must save the shape of the input to be able to instanciate the model without calling fit_from_dataset
         checkpoint["train_sample_shape"] = self.train_sample_shape
+        # we must save the loss to properly restore it when resuming training
+        checkpoint["loss_fn"] = self.criterion
+        # we must save the metrics to continue outputing them when resuming training
+        checkpoint["torch_metrics_train"] = self.train_metrics
+        checkpoint["torch_metrics_val"] = self.val_metrics
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
         # before parameters are loaded by PyTorch-Lightning
         dtype = checkpoint["model_dtype"]
         self.to_dtype(dtype)
+
+        # restoring attributes necessary to resume from training properly
+        if (
+            "loss_fn" in checkpoint.keys()
+            and "torch_metrics_train" in checkpoint.keys()
+        ):
+            self.criterion = checkpoint["loss_fn"]
+            self.train_metrics = checkpoint["torch_metrics_train"]
+            self.val_metrics = checkpoint["torch_metrics_val"]
+        else:
+            # explicitly indicate to the user that there is a bug
+            logger.warning(
+                "This checkpoint was generated with darts <= 0.24.0, if a custom loss "
+                "was used to train the model, it won't be properly loaded. Similarly, "
+                "the torch metrics won't be restored from the checkpoint."
+            )
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""

@@ -32,15 +32,13 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         It is probabilistic, whereas :class:`AutoARIMA` is not.
 
         We refer to the `statsforecast AutoARIMA documentation
-        <https://nixtla.github.io/statsforecast/models.html#arima-methods>`_
-        for the documentation of the arguments.
+        <https://nixtla.github.io/statsforecast/src/core/models.html#autoarima>`_
+        for the exhaustive documentation of the arguments.
 
         Parameters
         ----------
         autoarima_args
             Positional arguments for ``statsforecasts.models.AutoARIMA``.
-        autoarima_kwargs
-            Keyword arguments for ``statsforecasts.models.AutoARIMA``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -61,6 +59,8 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+        autoarima_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoARIMA``.
 
         Examples
         --------
