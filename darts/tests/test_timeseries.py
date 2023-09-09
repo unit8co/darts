@@ -764,7 +764,7 @@ class TestTimeSeries:
         # should not fail if nr samples is not the same:
         series.with_values(np.random.rand(5, 10, 2))
 
-    def test_diff(self):
+    def test_cumsum(self):
         cumsum1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().cumsum())
         # cumsum on cumsum2 should be equal to n=2 cumsum on series 1
         cumsum2 = TimeSeries.from_dataframe(cumsum1.pd_dataframe().cumsum())
@@ -778,7 +778,7 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             self.series1.diff(n=0.2)
 
-    def test_cumsum(self):
+    def test_diff(self):
         diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())
         diff2 = TimeSeries.from_dataframe(diff1.pd_dataframe().diff())
         diff1_no_na = TimeSeries.from_dataframe(diff1.pd_dataframe().dropna())
