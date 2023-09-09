@@ -2597,6 +2597,29 @@ class TimeSeries:
             new_xa = _compute_diff(new_xa)
         return self.__class__(new_xa)
 
+    def cumsum(self, n: Optional[int] = 1) -> Self:
+        """
+        Return a cumulatively summed time series. This is the opposite operation of diff().
+
+        Parameters
+        ----------
+        n
+            Optionally, a positive integer indicating the number of steps (default = 1).
+            For instance, n=2 will cumulatively sum twice.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed after cumulative sum.
+        """
+        if not isinstance(n, int) or n < 1:
+            raise_log(ValueError("'n' must be a positive integer >= 1."), logger)
+        new_xa = self._xa.copy()
+        new_xa = new_xa.cumsum(axis=0)  # 0 is the time axis
+        for _ in range(n - 1):
+            new_xa = new_xa.cumsum(axis=0)
+        return self.__class__(new_xa)
+
     def has_same_time_as(self, other: "TimeSeries") -> bool:
         """
         Checks whether this series has the same time index as `other`.
