@@ -84,21 +84,21 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import ARIMA
-        >>> from darts.utils.timeseries_generation import holidays_timeseries
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # optionally, encode the holidays as a future covariates
-        >>> future_cov = holidays_timeseries(series.time_index, "US", add_length=6)
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
         >>> # define ARIMA parameters
         >>> model = ARIMA(p=12, d=1, q=2)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[447.94644074],
-               [414.35377794],
-               [437.74584582],
-               [477.87154457],
-               [498.54135753],
-               [554.29890434]])
+        array([[451.36489334],
+               [416.88972829],
+               [443.10520391],
+               [481.07892911],
+               [502.11286509],
+               [555.50153984]])
         """
         super().__init__(add_encoders=add_encoders)
         self.order = p, d, q

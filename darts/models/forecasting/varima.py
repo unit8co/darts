@@ -79,12 +79,12 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         >>> from darts.utils.timeseries_generation import holidays_timeseries
         >>> # forecasting the High UseFul Load ("HUFL") and Oil Temperature ("OT")
         >>> series = ETTh2Dataset().load()[:500][["HUFL", "OT"]]
-        >>> # optionally, encode the holidays as a future covariates
+        >>> # optionally, use some future covariates; e.g. encode each timestep whether it is on a holiday
         >>> future_cov = holidays_timeseries(series.time_index, "CN", add_length=6)
         >>> # no clear trend in the dataset
         >>> model = VARIMA(trend="n")
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> # the two targets are predicted together
         >>> pred.values()
         array([[48.11846185, 47.94272629],

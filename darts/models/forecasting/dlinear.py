@@ -429,10 +429,10 @@ class DLinearModel(MixedCovariatesTorchModel):
         >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
         >>> # values corresponding to the forecasted period
         >>> model = DLinearModel(
-        >>>   input_chunk_length=6,
-        >>>   output_chunk_length=6,
-        >>>   n_epochs=20,
-        >>>   )
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20,
+        >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
@@ -442,6 +442,11 @@ class DLinearModel(MixedCovariatesTorchModel):
                [666.06625381],
                [665.8529289 ],
                [665.75320573]])
+
+        .. note::
+            This simple usage example produces poor forecasts. In order to obtain better performance, user should
+            transform the input data, increase the number of epochs, use a validation set, optimize the hyper-
+            parameters, ...
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

@@ -683,11 +683,11 @@ class NHiTSModel(PastCovariatesTorchModel):
         >>> past_cov = series['rain (mm)'][:100]
         >>> # increasing the number of blocks
         >>> model = NHiTSModel(
-        >>>   input_chunk_length=6,
-        >>>   output_chunk_length=6,
-        >>>   num_blocks=2,
-        >>>   n_epochs=5,
-        >>>   )
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     num_blocks=2,
+        >>>     n_epochs=5,
+        >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
         >>> pred.values()

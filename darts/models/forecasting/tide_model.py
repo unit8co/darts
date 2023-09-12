@@ -532,10 +532,10 @@ class TiDEModel(MixedCovariatesTorchModel):
         >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
         >>> model = TiDEModel(
-        >>>   input_chunk_length=6,
-        >>>   output_chunk_length=6,
-        >>>   n_epochs=20
-        >>>   )
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20
+        >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
@@ -545,6 +545,10 @@ class TiDEModel(MixedCovariatesTorchModel):
                [1005.10790392],
                [ 998.90537286],
                [1005.91534452]])
+
+        .. note::
+            `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`_ presents
+            techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

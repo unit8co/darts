@@ -78,9 +78,12 @@ class RegressionEnsembleModel(EnsembleModel):
         >>> from darts.models import RegressionEnsembleModel, NaiveSeasonal, LinearRegressionModel
         >>> series = AirPassengersDataset().load()
         >>> model = RegressionEnsembleModel(
-              forecasting_models = [NaiveSeasonal(K=12), LinearRegressionModel(lags=4)],
-              regression_train_n_points=20
-              )
+        >>>     forecasting_models = [
+        >>>         NaiveSeasonal(K=12),
+        >>>         LinearRegressionModel(lags=4)
+        >>>     ],
+        >>>     regression_train_n_points=20
+        >>> )
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()

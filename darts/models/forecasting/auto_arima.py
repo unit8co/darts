@@ -69,19 +69,19 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         >>> from darts.models import AutoARIMA
         >>> from darts.utils.timeseries_generation import holidays_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # optionally, encode the holidays as a future covariates
-        >>> future_cov = holidays_timeseries(series.time_index, "US", add_length=6)
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
         >>> # define some boundaries for the parameters
         >>> model = AutoARIMA(start_p=8, max_p=12, start_q=1)
         >>> model.fit(series, future_covariates=future_cov)
-        >>> pred = model.predict(6)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[447.66109213],
-               [414.24345894],
-               [440.96002246],
-               [483.5631593 ],
-               [505.61540834],
-               [562.53749429]])
+        array([[449.79716178],
+               [416.31180633],
+               [445.28005229],
+               [485.27121314],
+               [507.61787454],
+               [561.26993332]])
         """
         super().__init__(add_encoders=add_encoders)
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)

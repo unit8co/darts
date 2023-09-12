@@ -109,13 +109,13 @@ class RandomForest(RegressionModel):
         >>> future_cov = series['T (degC)'][:106]
         >>> # random forest with 200 trees trained with MAE
         >>> model = RandomForest(
-        >>>   lags=12,
-        >>>   lags_past_covariates=12,
-        >>>   lags_future_covariates=[0,1,2,3,4,5],
-        >>>   output_chunk_length=6,
-        >>>   n_estimators=200,
-        >>>   criterion="absolute_error",
-        >>>   )
+        >>>     lags=12,
+        >>>     lags_past_covariates=12,
+        >>>     lags_future_covariates=[0,1,2,3,4,5],
+        >>>     output_chunk_length=6,
+        >>>     n_estimators=200,
+        >>>     criterion="absolute_error",
+        >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()

@@ -548,10 +548,10 @@ class TransformerModel(PastCovariatesTorchModel):
         >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
         >>> model = TransformerModel(
-        >>>   input_chunk_length=6,
-        >>>   output_chunk_length=6,
-        >>>   n_epochs=20
-        >>>   )
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20
+        >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
@@ -561,6 +561,11 @@ class TransformerModel(PastCovariatesTorchModel):
                [6.48695488],
                [7.63158655],
                [5.65417736]])
+
+        .. note::
+            `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`_
+            presents techniques that can be used to improve the forecasts quality compared to this simple usage
+            example.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

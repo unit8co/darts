@@ -402,11 +402,11 @@ class RNNModel(DualCovariatesTorchModel):
         >>> future_cov = series['T (degC)'][:106]
         >>> # `training_length` > `input_chunk_length` to mimic inference constraints
         >>> model = RNNModel(
-        >>>   model="RNN",
-        >>>   input_chunk_length=6,
-        >>>   training_length=18,
-        >>>   n_epochs=20,
-        >>>   )
+        >>>     model="RNN",
+        >>>     input_chunk_length=6,
+        >>>     training_length=18,
+        >>>     n_epochs=20,
+        >>> )
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
@@ -416,6 +416,10 @@ class RNNModel(DualCovariatesTorchModel):
                [ 0.13277921],
                [ 0.02523252],
                [-0.01829086]])
+
+        .. note::
+            `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
+            that can be used to improve the forecasts quality compared to this simple usage example.
         """
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}

@@ -80,21 +80,26 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import KalmanForecaster
-        >>> from darts.utils.timeseries_generation import holidays_timeseries
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # optionally, encode the holidays as a future covariates
-        >>> future_cov = holidays_timeseries(series.time_index, "US", add_length=6)
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
         >>> # increasing the size of the state vector
         >>> model = KalmanForecaster(dim_x=12)
         >>> model.fit(series, future_covariates=future_cov)
-        >>> pred = model.predict(6)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[446.14067242],
-               [419.48270858],
-               [456.67694119],
-               [481.59399823],
-               [511.5273642 ],
-               [574.9500178 ]])
+        array([[474.40680728],
+               [440.51801726],
+               [461.94512461],
+               [494.42090089],
+               [528.6436328 ],
+               [590.30647185]])
+
+        .. note::
+            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`_
+            presents techniques that can be used to improve the forecasts quality compared to this simple usage
+            example.
         """
         super().__init__(add_encoders=add_encoders)
         self.dim_x = dim_x

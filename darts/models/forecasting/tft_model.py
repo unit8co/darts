@@ -895,15 +895,15 @@ class TFTModel(MixedCovariatesTorchModel):
         >>> past_cov = series['rain (mm)'][:100]
         >>> # future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
-        >>> # by default, TFTModel is trained using a `QuantileRegression`
+        >>> # by default, TFTModel is trained using a `QuantileRegression` making it a probabilistic forecasting model
         >>> model = TFTModel(
-        >>>   input_chunk_length=6,
-        >>>   output_chunk_length=6,
-        >>>   n_epochs=5,
-        >>>   )
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=5,
+        >>> )
         >>> # future_covariates are mandatory for `TFTModel`
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
-        >>> # using `num_samples > 1`, the model generates a probabilistic forecast
+        >>> # TFTModel is probabilistic by definition; using `num_samples >> 1` to generate probabilistic forecasts
         >>> pred = model.predict(6, num_samples=100)
         >>> # shape : (forecast horizon, components, num_samples)
         >>> pred.all_values().shape
@@ -916,6 +916,10 @@ class TFTModel(MixedCovariatesTorchModel):
                [[ 0.9586113 ,  1.24147138, -0.01625545]],
                [[ 1.06863863,  0.2987822 , -0.69213369]],
                [[-0.83076568, -0.25780816, -0.28318784]]])
+
+        .. note::
+            `TFT example notebook <https://unit8co.github.io/darts/examples/13-TFT-examples.html>`_ presents
+            techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:

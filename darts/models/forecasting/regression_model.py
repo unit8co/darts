@@ -144,12 +144,12 @@ class RegressionModel(GlobalForecastingModel):
         >>> future_cov = series['T (degC)'][:106]
         >>> # wrap around the sklearn Ridge model
         >>> model = RegressionModel(
-        >>>   model=Ridge(),
-        >>>   lags=12,
-        >>>   lags_past_covariates=4,
-        >>>   lags_future_covariates=(0,6),
-        >>>   output_chunk_length=6
-        >>>   )
+        >>>     model=Ridge(),
+        >>>     lags=12,
+        >>>     lags_past_covariates=4,
+        >>>     lags_future_covariates=(0,6),
+        >>>     output_chunk_length=6
+        >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()

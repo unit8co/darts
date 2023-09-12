@@ -112,11 +112,11 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
         >>> # values corresponding to the forecasted period
         >>> model = CatBoostModel(
-        >>>   lags=12,
-        >>>   lags_past_covariates=12,
-        >>>   lags_future_covariates=[0,1,2,3,4,5],
-        >>>   output_chunk_length=6
-        >>>   )
+        >>>     lags=12,
+        >>>     lags_past_covariates=12,
+        >>>     lags_future_covariates=[0,1,2,3,4,5],
+        >>>     output_chunk_length=6
+        >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
