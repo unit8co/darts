@@ -177,7 +177,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import TBATS
+        >>> from darts.models import TBATS # or BATS
         >>> series = AirPassengersDataset().load()
         >>> # based on preliminary analysis, the series contains a trend
         >>> model = TBATS(use_trend=True)
