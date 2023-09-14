@@ -178,14 +178,10 @@ class TestRegressionModels:
         LinearRegressionModel, likelihood="poisson", random_state=42
     )
     PoissonXGBModel = partialclass(
-        XGBModel,
-        likelihood="poisson",
-        random_state=42,
+        XGBModel, likelihood="poisson", random_state=42, tree_method="exact"
     )
     QuantileXGBModel = partialclass(
-        XGBModel,
-        likelihood="quantile",
-        random_state=42,
+        XGBModel, likelihood="quantile", random_state=42, tree_method="exact"
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend(
@@ -1286,10 +1282,24 @@ class TestRegressionModels:
         lags = 4
 
         models = [
-            XGBModel(lags=lags, output_chunk_length=1, multi_models=True),
-            XGBModel(lags=lags, output_chunk_length=1, multi_models=False),
-            XGBModel(lags=lags, output_chunk_length=2, multi_models=True),
-            XGBModel(lags=lags, output_chunk_length=2, multi_models=False),
+            XGBModel(
+                lags=lags, output_chunk_length=1, multi_models=True, tree_method="exact"
+            ),
+            XGBModel(
+                lags=lags,
+                output_chunk_length=1,
+                multi_models=False,
+                tree_method="exact",
+            ),
+            XGBModel(
+                lags=lags, output_chunk_length=2, multi_models=True, tree_method="exact"
+            ),
+            XGBModel(
+                lags=lags,
+                output_chunk_length=2,
+                multi_models=False,
+                tree_method="exact",
+            ),
         ]
         if lgbm_available:
             models += [
