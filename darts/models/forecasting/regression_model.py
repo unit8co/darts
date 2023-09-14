@@ -60,13 +60,18 @@ from darts.utils.utils import (
 
 logger = get_logger(__name__)
 
+LAGS_TYPE = Union[int, List[int], Dict[str, Union[int, List[int]]]]
+FUTURE_LAGS_TYPE = Union[
+    Tuple[int, int], List[int], Dict[str, Union[Tuple[int, int], List[int]]]
+]
+
 
 class RegressionModel(GlobalForecastingModel):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        lags: Optional[LAGS_TYPE] = None,
+        lags_past_covariates: Optional[LAGS_TYPE] = None,
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
         add_encoders: Optional[dict] = None,
         model=None,
@@ -79,17 +84,33 @@ class RegressionModel(GlobalForecastingModel):
         Parameters
         ----------
         lags
-            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise, a list of integers with lags is required (each lag must be < 0).
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
-            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
-            with lags < 0 is required.
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
-            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
-            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
-            of integers with lags is required.
+            Lagged `future_covariates` values used to predict the next time step/s.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0`
+            corresponds the first predicted time step of each sample.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         output_chunk_length
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
@@ -165,6 +186,7 @@ class RegressionModel(GlobalForecastingModel):
 
         self.model = model
         self.lags: Dict[str, List[int]] = {}
+        self.component_lags: Dict[str, Dict[str, List[int]]] = {}
         self.input_dim = None
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
@@ -200,94 +222,158 @@ class RegressionModel(GlobalForecastingModel):
             "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
         )
 
-        lags_type_checks = [
-            (lags, "lags"),
-            (lags_past_covariates, "lags_past_covariates"),
-        ]
-
-        for _lags, lags_name in lags_type_checks:
-            raise_if_not(
-                isinstance(_lags, (int, list)) or _lags is None,
-                f"`{lags_name}` must be of type int or list. Given: {type(_lags)}.",
-            )
-            raise_if(
-                isinstance(_lags, bool),
-                f"`{lags_name}` must be of type int or list, not bool.",
-            )
-
-        raise_if_not(
-            isinstance(lags_future_covariates, (tuple, list))
-            or lags_future_covariates is None,
-            f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.",
+        # convert lags arguments to list of int
+        self.lags, self.component_lags = self._generate_lags(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
         )
 
-        if isinstance(lags_future_covariates, tuple):
-            raise_if_not(
-                len(lags_future_covariates) == 2
-                and isinstance(lags_future_covariates[0], int)
-                and isinstance(lags_future_covariates[1], int),
-                "`lags_future_covariates` tuple must be of length 2, and must contain two integers",
-            )
-            raise_if(
-                isinstance(lags_future_covariates[0], bool)
-                or isinstance(lags_future_covariates[1], bool),
-                "`lags_future_covariates` tuple must contain integers, not bool",
-            )
-
-        # set lags
-        if isinstance(lags, int):
-            raise_if_not(lags > 0, f"`lags` must be strictly positive. Given: {lags}.")
-            # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
-            self.lags["target"] = list(range(-lags, 0))
-        elif isinstance(lags, list):
-            for lag in lags:
-                raise_if(
-                    not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `lags` must be a strictly negative integer. Given: {lags}.",
-                )
-            if lags:
-                self.lags["target"] = sorted(lags)
-
-        if isinstance(lags_past_covariates, int):
-            raise_if_not(
-                lags_past_covariates > 0,
-                f"`lags_past_covariates` must be an integer > 0. Given: {lags_past_covariates}.",
-            )
-            self.lags["past"] = list(range(-lags_past_covariates, 0))
-        elif isinstance(lags_past_covariates, list):
-            for lag in lags_past_covariates:
-                raise_if(
-                    not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `lags_covariates` must be an integer < 0. Given: {lags_past_covariates}.",
-                )
-            if lags_past_covariates:
-                self.lags["past"] = sorted(lags_past_covariates)
-
-        if isinstance(lags_future_covariates, tuple):
-            raise_if_not(
-                lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"`lags_future_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
-            )
-            if (
-                lags_future_covariates[0] is not None
-                and lags_future_covariates[1] is not None
-            ):
-                if not (
-                    lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0
-                ):
-                    self.lags["future"] = list(
-                        range(-lags_future_covariates[0], lags_future_covariates[1])
-                    )
-        elif isinstance(lags_future_covariates, list):
-            for lag in lags_future_covariates:
-                raise_if(
-                    not isinstance(lag, int) or isinstance(lag, bool),
-                    f"Every element of `lags_future_covariates` must be an integer. Given: {lags_future_covariates}.",
-                )
-            if lags_future_covariates:
-                self.lags["future"] = sorted(lags_future_covariates)
-
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
+
+    def _generate_lags(
+        self,
+        lags: Optional[LAGS_TYPE],
+        lags_past_covariates: Optional[LAGS_TYPE],
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE],
+    ) -> Tuple[Dict[str, List[int]], Dict[str, Dict[str, List[int]]]]:
+        """
+        Based on the type of the argument and the nature of the covariates, perform some sanity checks before
+        converting the lags to a list of integer.
+
+        If lags are provided as a dictionary, the lags values are contained in self.component_lags and the self.lags
+        attributes contain only the extreme values
+        If the lags are provided as integer, list, tuple or dictionary containing only the 'default_lags' keys, the lags
+        values are contained in the self.lags attribute and the self.component_lags is an empty dictionary.
+        """
+        processed_lags: Dict[str, List[int]] = dict()
+        processed_component_lags: Dict[str, Dict[str, List[int]]] = dict()
+        for lags_values, lags_name, lags_abbrev in zip(
+            [lags, lags_past_covariates, lags_future_covariates],
+            ["lags", "lags_past_covariates", "lags_future_covariates"],
+            ["target", "past", "future"],
+        ):
+            if lags_values is None:
+                continue
+
+            # converting to dictionary to run sanity checks
+            if not isinstance(lags_values, dict):
+                lags_values = {"default_lags": lags_values}
+            elif len(lags_values) == 0:
+                raise_log(
+                    ValueError(
+                        f"When passed as a dictionary, `{lags_name}` must contain at least one key."
+                    ),
+                    logger,
+                )
+
+            invalid_type = False
+            supported_types = ""
+            min_lags = None
+            max_lags = None
+            tmp_components_lags: Dict[str, List[int]] = dict()
+            for comp_name, comp_lags in lags_values.items():
+                if lags_name == "lags_future_covariates":
+                    if isinstance(comp_lags, tuple):
+                        raise_if_not(
+                            len(comp_lags) == 2
+                            and isinstance(comp_lags[0], int)
+                            and isinstance(comp_lags[1], int),
+                            f"`{lags_name}` - `{comp_name}`: tuple must be of length 2, and must contain two integers",
+                            logger,
+                        )
+
+                        raise_if(
+                            isinstance(comp_lags[0], bool)
+                            or isinstance(comp_lags[1], bool),
+                            f"`{lags_name}` - `{comp_name}`: tuple must contain integers, not bool",
+                            logger,
+                        )
+
+                        raise_if_not(
+                            comp_lags[0] >= 0 and comp_lags[1] >= 0,
+                            f"`{lags_name}` - `{comp_name}`: tuple must contain positive integers. Given: {comp_lags}.",
+                            logger,
+                        )
+                        raise_if(
+                            comp_lags[0] == 0 and comp_lags[1] == 0,
+                            f"`{lags_name}` - `{comp_name}`: tuple cannot be (0, 0) as it corresponds to an empty "
+                            f"list of lags.",
+                            logger,
+                        )
+                        tmp_components_lags[comp_name] = list(
+                            range(-comp_lags[0], comp_lags[1])
+                        )
+                    elif isinstance(comp_lags, list):
+                        for lag in comp_lags:
+                            raise_if(
+                                not isinstance(lag, int) or isinstance(lag, bool),
+                                f"`{lags_name}` - `{comp_name}`: list must contain only integers. Given: {comp_lags}.",
+                                logger,
+                            )
+                        tmp_components_lags[comp_name] = sorted(comp_lags)
+                    else:
+                        invalid_type = True
+                        supported_types = "tuple or a list"
+                else:
+                    if isinstance(comp_lags, int):
+                        raise_if_not(
+                            comp_lags > 0,
+                            f"`{lags_name}` - `{comp_name}`: integer must be strictly positive . Given: {comp_lags}.",
+                            logger,
+                        )
+                        tmp_components_lags[comp_name] = list(range(-comp_lags, 0))
+                    elif isinstance(comp_lags, list):
+                        for lag in comp_lags:
+                            raise_if(
+                                not isinstance(lag, int) or (lag >= 0),
+                                f"`{lags_name}` - `{comp_name}`: list must contain only strictly negative integers. "
+                                f"Given: {comp_lags}.",
+                                logger,
+                            )
+                        tmp_components_lags[comp_name] = sorted(comp_lags)
+                    else:
+                        invalid_type = True
+                        supported_types = "strictly positive integer or a list"
+
+                if invalid_type:
+                    raise_log(
+                        ValueError(
+                            f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
+                            f"Gived : {type(comp_lags)}."
+                        ),
+                        logger,
+                    )
+
+                # extracting min and max lags va
+                if min_lags is None:
+                    min_lags = tmp_components_lags[comp_name][0]
+                else:
+                    min_lags = min(min_lags, tmp_components_lags[comp_name][0])
+
+                if max_lags is None:
+                    max_lags = tmp_components_lags[comp_name][-1]
+                else:
+                    max_lags = max(max_lags, tmp_components_lags[comp_name][-1])
+
+            # revert to shared lags logic when applicable
+            if list(tmp_components_lags.keys()) == ["default_lags"]:
+                processed_lags[lags_abbrev] = tmp_components_lags["default_lags"]
+            else:
+                processed_lags[lags_abbrev] = [min_lags, max_lags]
+                processed_component_lags[lags_abbrev] = tmp_components_lags
+
+        return processed_lags, processed_component_lags
+
+    def _get_lags(self, lags_type: str):
+        """
+        If lags were specified in a component-wise manner, they are contained in self.component_lags and
+        the values in self.lags should be ignored as they correspond just the extreme values.
+        """
+        if lags_type in self.component_lags:
+            return self.component_lags[lags_type]
+        else:
+            return self.lags.get(lags_type)
 
     @property
     def _model_encoder_settings(
@@ -328,16 +414,12 @@ class RegressionModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
     ]:
-        min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
+        min_target_lag = self.lags["target"][0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1
-        min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
-        max_past_cov_lag = self.lags.get("past")[-1] if "past" in self.lags else None
-        min_future_cov_lag = (
-            self.lags.get("future")[0] if "future" in self.lags else None
-        )
-        max_future_cov_lag = (
-            self.lags.get("future")[-1] if "future" in self.lags else None
-        )
+        min_past_cov_lag = self.lags["past"][0] if "past" in self.lags else None
+        max_past_cov_lag = self.lags["past"][-1] if "past" in self.lags else None
+        min_future_cov_lag = self.lags["future"][0] if "future" in self.lags else None
+        max_future_cov_lag = self.lags["future"][-1] if "future" in self.lags else None
         return (
             min_target_lag,
             max_target_lag,
@@ -392,12 +474,12 @@ class RegressionModel(GlobalForecastingModel):
         return last_valid_pred_time
 
     def _create_lagged_data(
-        self, target_series, past_covariates, future_covariates, max_samples_per_ts
+        self,
+        target_series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries],
+        future_covariates: Sequence[TimeSeries],
+        max_samples_per_ts: int,
     ):
-        lags = self.lags.get("target")
-        lags_past_covariates = self.lags.get("past")
-        lags_future_covariates = self.lags.get("future")
-
         (
             features,
             labels,
@@ -408,9 +490,9 @@ class RegressionModel(GlobalForecastingModel):
             output_chunk_length=self.output_chunk_length,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
+            lags=self._get_lags("target"),
+            lags_past_covariates=self._get_lags("past"),
+            lags_future_covariates=self._get_lags("future"),
             uses_static_covariates=self.uses_static_covariates,
             last_static_covariates_shape=None,
             max_samples_per_ts=max_samples_per_ts,
@@ -419,7 +501,26 @@ class RegressionModel(GlobalForecastingModel):
             concatenate=False,
         )
 
+        expected_nb_feat = (
+            features[0].shape[1]
+            if isinstance(features, Sequence)
+            else features.shape[1]
+        )
         for i, (X_i, y_i) in enumerate(zip(features, labels)):
+            # TODO: account for scenario where two wrong shapes can silently hide the problem
+            if expected_nb_feat != X_i.shape[1]:
+                shape_error_msg = []
+                for ts, cov_name, arg_name in zip(
+                    [target_series, past_covariates, future_covariates],
+                    ["target", "past", "future"],
+                    ["series", "past_covariates", "future_covariates"],
+                ):
+                    if ts is not None and ts[i].width != self.input_dim[cov_name]:
+                        shape_error_msg.append(
+                            f"Expected {self.input_dim[cov_name]} components but received "
+                            f"{ts[i].width} components at index {i} of `{arg_name}`."
+                        )
+                raise_log(ValueError("\n".join(shape_error_msg)), logger)
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
 
@@ -430,10 +531,10 @@ class RegressionModel(GlobalForecastingModel):
 
     def _fit_model(
         self,
-        target_series,
-        past_covariates,
-        future_covariates,
-        max_samples_per_ts,
+        target_series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries],
+        future_covariates: Sequence[TimeSeries],
+        max_samples_per_ts: int,
         **kwargs,
     ):
         """
@@ -458,9 +559,9 @@ class RegressionModel(GlobalForecastingModel):
             target_series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags=self.lags.get("target"),
-            lags_past_covariates=self.lags.get("past"),
-            lags_future_covariates=self.lags.get("future"),
+            lags=self._get_lags("target"),
+            lags_past_covariates=self._get_lags("past"),
+            lags_future_covariates=self._get_lags("future"),
             output_chunk_length=self.output_chunk_length,
             concatenate=False,
             use_static_covariates=self.uses_static_covariates,
@@ -582,6 +683,52 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
         )
+        variate2arg = {
+            "target": "lags",
+            "past": "lags_past_covariates",
+            "future": "lags_future_covariates",
+        }
+
+        # if provided, component-wise lags must be defined for all the components of the first series
+        component_lags_error_msg = []
+        for variate_type, variate in zip(
+            ["target", "past", "future"], [series, past_covariates, future_covariates]
+        ):
+            if variate_type not in self.component_lags:
+                continue
+
+            # ignore the fallback lags entry
+            provided_components = set(self.component_lags[variate_type].keys())
+            required_components = set(variate[0].components)
+
+            wrong_components = list(
+                provided_components - {"default_lags"} - required_components
+            )
+            missing_keys = list(required_components - provided_components)
+            # lags were specified for unrecognized components
+            if len(wrong_components) > 0:
+                component_lags_error_msg.append(
+                    f"The `{variate2arg[variate_type]}` dictionary specifies lags for components that are not "
+                    f"present in the series : {wrong_components}. They must be removed to avoid any ambiguity."
+                )
+            elif len(missing_keys) > 0 and "default_lags" not in provided_components:
+                component_lags_error_msg.append(
+                    f"The {variate2arg[variate_type]} dictionary is missing the lags for the following components "
+                    f"present in the series: {missing_keys}. The key 'default_lags' can be used to provide lags for "
+                    f"all the non-explicitely defined components."
+                )
+            else:
+                # reorder the components based on the input series, insert the default when necessary
+                self.component_lags[variate_type] = {
+                    comp_name: self.component_lags[variate_type][comp_name]
+                    if comp_name in self.component_lags[variate_type]
+                    else self.component_lags[variate_type]["default_lags"]
+                    for comp_name in variate[0].components
+                }
+
+        # single error message for all the lags arguments
+        if len(component_lags_error_msg) > 0:
+            raise_log(ValueError("\n".join(component_lags_error_msg)), logger)
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
@@ -783,23 +930,61 @@ class RegressionModel(GlobalForecastingModel):
                     series_matrix = np.concatenate(
                         [series_matrix, predictions[-1]], axis=1
                     )
-                np_X.append(
-                    series_matrix[
-                        :,
-                        [
-                            lag - (shift + last_step_shift)
-                            for lag in self.lags["target"]
-                        ],
-                    ].reshape(len(series) * num_samples, -1)
-                )
+                # component-wise lags
+                if "target" in self.component_lags:
+                    tmp_X = [
+                        series_matrix[
+                            :,
+                            [lag - (shift + last_step_shift) for lag in comp_lags],
+                            comp_i,
+                        ]
+                        for comp_i, (comp, comp_lags) in enumerate(
+                            self.component_lags["target"].items()
+                        )
+                    ]
+                    # values are grouped by component
+                    np_X.append(
+                        np.concatenate(tmp_X, axis=1).reshape(
+                            len(series) * num_samples, -1
+                        )
+                    )
+                else:
+                    # values are grouped by lags
+                    np_X.append(
+                        series_matrix[
+                            :,
+                            [
+                                lag - (shift + last_step_shift)
+                                for lag in self.lags["target"]
+                            ],
+                        ].reshape(len(series) * num_samples, -1)
+                    )
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
             for cov_type in ["past", "future"]:
                 if cov_type in covariate_matrices:
-                    np_X.append(
-                        covariate_matrices[cov_type][
-                            :, relative_cov_lags[cov_type] + t_pred
-                        ].reshape(len(series) * num_samples, -1)
-                    )
+                    # component-wise lags
+                    if cov_type in self.component_lags:
+                        tmp_X = [
+                            covariate_matrices[cov_type][
+                                :,
+                                np.array(comp_lags) - self.lags[cov_type][0] + t_pred,
+                                comp_i,
+                            ]
+                            for comp_i, (comp, comp_lags) in enumerate(
+                                self.component_lags[cov_type].items()
+                            )
+                        ]
+                        np_X.append(
+                            np.concatenate(tmp_X, axis=1).reshape(
+                                len(series) * num_samples, -1
+                            )
+                        )
+                    else:
+                        np_X.append(
+                            covariate_matrices[cov_type][
+                                :, relative_cov_lags[cov_type] + t_pred
+                            ].reshape(len(series) * num_samples, -1)
+                        )
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
