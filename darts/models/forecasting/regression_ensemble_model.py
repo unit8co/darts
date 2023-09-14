@@ -174,6 +174,7 @@ class RegressionEnsembleModel(EnsembleModel):
         self,
         train_n_points: int,
         series: Union[TimeSeries, Sequence[TimeSeries]],
+        direct_predictions: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
@@ -189,17 +190,23 @@ class RegressionEnsembleModel(EnsembleModel):
         """
         is_single_series = isinstance(series, TimeSeries)
         series = series2seq(series)
+        direct_predictions = series2seq(direct_predictions)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        n_components = series[0].n_components
+        model_predict_cols = direct_predictions[0].columns.tolist()
+
         predictions = []
-        for model in self.forecasting_models:
+        for m_idx, model in enumerate(self.forecasting_models):
+            # we start historical fc at multiple of the output length before the end.
             n_ocl_back = train_n_points // model.output_chunk_length
-            if train_n_points % model.output_chunk_length:
-                n_ocl_back += 1
             start_hist_forecasts = n_ocl_back * model.output_chunk_length
 
-            # TODO: why is the historical forecasts shorted than expected, missing max_fcov_lags values
-            # at the end of the prediction...
+            # we use the precomputed `direct_prediction` to fill any missing prediction
+            # timesteps at the beginning (if train_n_points is not perfectly divisible by output length)
+            missing_steps = train_n_points % model.output_chunk_length
+
             tmp_pred = model.historical_forecasts(
                 series=series,
                 past_covariates=past_covariates
@@ -219,45 +226,38 @@ class RegressionEnsembleModel(EnsembleModel):
                 show_warnings=self.show_warnings,
                 predict_likelihood_parameters=False,
             )
-            concat_pred = concatenate(tmp_pred, axis=0)
-
-            print("time indexes")
-            print(series[0][-train_n_points:].time_index)
-            print(concat_pred.time_index)
-
-            print("length predicted vocs", len(concat_pred))
-
             # concatenate the strided predictions of output_chunk_length values each
             if is_single_series:
-                predictions.append([concatenate(tmp_pred, axis=0)])
+                tmp_pred = [concatenate(tmp_pred, axis=0)]
             else:
-                predictions.append(
-                    [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
-                )
+                tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
 
-        # historical forecast might not have been able to produce self.train_n_points for all the models
-        # and won't raise any warning or error.
-        shared_start_time = [[] for _ in range(len(series))]
-        shared_end_time = [[] for _ in range(len(series))]
-        for prediction in predictions:
-            for idx_pred, pred in enumerate(prediction):
-                shared_start_time[idx_pred].append(pred.start_time())
-                shared_end_time[idx_pred].append(pred.end_time())
-
-        # find shared boundaries
-        shared_start_time = [max(preds_start) for preds_start in shared_start_time]
-        shared_end_time = [min(preds_end) for preds_end in shared_end_time]
+            # add the missing steps at beginning by taking the first values of precomputed predictions
+            if missing_steps:
+                # add the missing steps at beginning by taking the first values of precomputed predictions
+                # get the model's direct (uni/multivariate) predictions
+                pred_cols = model_predict_cols[
+                    m_idx * n_components : (m_idx + 1) * n_components
+                ]
+                hfc_cols = tmp_pred[0].columns.tolist()
+                tmp_pred = [
+                    concatenate(
+                        [
+                            preds_dir[:missing_steps][pred_cols].with_columns_renamed(
+                                pred_cols, hfc_cols
+                            ),
+                            preds_hfc,
+                        ],
+                        axis=0,
+                    )
+                    for preds_dir, preds_hfc in zip(direct_predictions, tmp_pred)
+                ]
+            predictions.append(tmp_pred)
 
         tmp_predictions = []
         # slice the forecasts, training series-wise, to align them
         for prediction in predictions:
-            tmp_predictions.append(
-                [
-                    ts[shared_start_time[idx] : shared_end_time[idx]]
-                    for idx, ts in enumerate(prediction)
-                ]
-            )
-
+            tmp_predictions.append([ts for idx, ts in enumerate(prediction)])
         predictions = [seq2series(prediction) for prediction in tmp_predictions]
 
         # reduce the probabilistics series
@@ -374,65 +374,25 @@ class RegressionEnsembleModel(EnsembleModel):
                     future_covariates=future_covariates,
                 )
 
+        # we can call direct prediction in any case. Even if we overwrite with historical
+        # forecasts later on, it serves as a input validation
+        predictions = self._make_multiple_predictions(
+            n=self.train_n_points,
+            series=forecast_training,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=self.train_num_samples,
+        )
+
         if self.train_using_historical_forecasts:
             predictions = self._make_multiple_historical_forecasts(
                 train_n_points=self.train_n_points,
                 series=series,
+                direct_predictions=predictions,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 num_samples=self.train_num_samples,
             )
-
-            print("forecast model 1", len(predictions[0][0]))
-            print("forecast model 2", len(predictions[1][0]))
-            print("regression target", len(regression_target))
-
-            # slice the regression model training series to match generated covariates
-            enough_predictions = []
-            tmp_regression_target = []
-            predictions = series2seq(predictions)
-            regression_target = series2seq(regression_target)
-            for target_ts, covs_ts in zip(regression_target, predictions):
-                if (
-                    target_ts.start_time() == covs_ts.start_time()
-                    and target_ts.end_time() == covs_ts.end_time()
-                ):
-                    enough_predictions.append(True)
-                    tmp_regression_target.append(target_ts)
-                else:
-                    print("TARGET", len(target_ts), target_ts.time_index)
-                    print("COV", len(covs_ts), covs_ts.time_index)
-                    enough_predictions.append(False)
-                    # regression model only have lags_future_covariates=[0], no need
-                    # to account for target lags
-                    tmp_regression_target.append(
-                        target_ts[covs_ts.start_time() : covs_ts.end_time()]
-                    )
-
-            if is_single_series:
-                regression_target = seq2series(tmp_regression_target)
-                predictions = seq2series(predictions)
-            else:
-                regression_target = tmp_regression_target
-
-            # inform user that the regression model will be trained with less values
-            if not all(enough_predictions):
-                logger.warning(
-                    "The forecasting models' predictions could not be generated for all the points "
-                    "in the regression model training series. This can be caused either by the "
-                    "length of the covariates or the output_chunk_length of the forecasting models."
-                )
-        else:
-            predictions = self._make_multiple_predictions(
-                n=self.train_n_points,
-                series=forecast_training,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=self.train_num_samples,
-            )
-
-        print("###", len(regression_target))
-        print("$$$", len(predictions))
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(

@@ -462,17 +462,6 @@ class RegressionModel(GlobalForecastingModel):
 
         return self.model.estimators_[horizon + target_dim]
 
-    def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
-        # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
-        extra_shift = max(0, max(lags[-1] for lags in self.lags.values()))
-
-        if overlap_end:
-            last_valid_pred_time = series.time_index[-1 - extra_shift]
-        else:
-            last_valid_pred_time = series.time_index[-forecast_horizon - extra_shift]
-
-        return last_valid_pred_time
-
     def _create_lagged_data(
         self,
         target_series: Sequence[TimeSeries],
