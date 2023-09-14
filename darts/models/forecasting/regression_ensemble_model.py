@@ -153,8 +153,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         raise_if(
             train_using_historical_forecasts
-            and (not self.is_global_ensemble)
-            and (not self.all_trained),
+            and (not self.is_global_ensemble or not self.all_trained),
             "`train_using_historical_forecasts=True` is only available when all "
             "`forecasting_models` are pre-trained global models.",
             logger,
@@ -194,13 +193,10 @@ class RegressionEnsembleModel(EnsembleModel):
         future_covariates = series2seq(future_covariates)
         predictions = []
         for model in self.forecasting_models:
-            start_hist_forecasts = train_n_points
-            # shift so that the last time point is aligned with the end of the target series
-            if (
-                model.output_chunk_length is not None
-                and train_n_points % model.output_chunk_length != 0
-            ):
-                start_hist_forecasts += model.output_chunk_length
+            n_ocl_back = train_n_points // model.output_chunk_length
+            if train_n_points % model.output_chunk_length:
+                n_ocl_back += 1
+            start_hist_forecasts = n_ocl_back * model.output_chunk_length
 
             # TODO: why is the historical forecasts shorted than expected, missing max_fcov_lags values
             # at the end of the prediction...
@@ -216,9 +212,9 @@ class RegressionEnsembleModel(EnsembleModel):
                 stride=model.output_chunk_length,
                 num_samples=num_samples if model._is_probabilistic else 1,
                 start=-start_hist_forecasts,
-                start_format="index",
+                start_format="position",
                 retrain=False,
-                overlap_end=True,
+                overlap_end=False,
                 last_points_only=False,
                 show_warnings=self.show_warnings,
                 predict_likelihood_parameters=False,
