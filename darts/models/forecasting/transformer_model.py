@@ -532,11 +532,40 @@ class TransformerModel(PastCovariatesTorchModel):
         Disclaimer:
         This current implementation is fully functional and can already produce some good predictions. However,
         it is still limited in how it uses the Transformer architecture because the `tgt` input of
-        `torch.nn.Transformer` is not utlized to its full extent. Currently, we simply pass the last value of the
+        `torch.nn.Transformer` is not utilized to its full extent. Currently, we simply pass the last value of the
         `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
         should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
         sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
         added to it. Of course, the training of the model would have to be adapted accordingly.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import TransformerModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> model = TransformerModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[5.40498034],
+               [5.36561899],
+               [5.80616883],
+               [6.48695488],
+               [7.63158655],
+               [5.65417736]])
+
+        .. note::
+            `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`_
+            presents techniques that can be used to improve the forecasts quality compared to this simple usage
+            example.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
