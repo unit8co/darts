@@ -30,12 +30,20 @@ class StatsForecastAutoCES(LocalForecastingModel):
 
         Examples
         --------
-        >>> from darts.models import StatsForecastAutoCES
         >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import StatsForecastAutoCES
         >>> series = AirPassengersDataset().load()
+        >>> # define StatsForecastAutoCES parameters
         >>> model = StatsForecastAutoCES(season_length=12, model="Z")
-        >>> model.fit(series[:-36])
-        >>> pred = model.predict(36, num_samples=100)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[453.03417969],
+               [429.34039307],
+               [488.64471436],
+               [500.28955078],
+               [519.79962158],
+               [586.47503662]])
         """
         super().__init__()
         self.model = SFAutoCES(*autoces_args, **autoces_kwargs)

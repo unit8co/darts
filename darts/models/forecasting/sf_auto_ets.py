@@ -56,11 +56,14 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'future': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -71,10 +74,21 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import StatsForecastAutoETS
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define StatsForecastAutoETS parameters
         >>> model = StatsForecastAutoETS(season_length=12, model="AZZ")
-        >>> model.fit(series[:-36])
-        >>> pred = model.predict(36)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> pred.values()
+        array([[441.40323676],
+               [415.09871431],
+               [448.90785391],
+               [491.38584654],
+               [493.11817462],
+               [549.88974472]])
         """
         super().__init__(add_encoders=add_encoders)
         self.model = SFAutoETS(*autoets_args, **autoets_kwargs)

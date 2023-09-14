@@ -28,11 +28,17 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
-        cap: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        cap: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
-        floor: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        floor: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
         **prophet_kwargs,
     ):
@@ -92,11 +98,14 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'future': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -124,6 +133,32 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import Prophet
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
+        >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # adding a seasonality (daily, weekly and yearly are included by default) and holidays
+        >>> model = Prophet(
+        >>>     add_seasonalities={
+        >>>         'name':"quarterly_seasonality",
+        >>>         'seasonal_periods':4,
+        >>>         'fourier_order':5
+        >>>         },
+        >>> )
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[472.26891239],
+               [467.56955721],
+               [494.47230467],
+               [493.10568429],
+               [497.54686113],
+               [539.11716811]])
         """
 
         super().__init__(add_encoders=add_encoders)
