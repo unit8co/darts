@@ -152,10 +152,9 @@ class RegressionEnsembleModel(EnsembleModel):
         self.train_n_points: Union[int, List[int]] = regression_train_n_points
 
         raise_if(
-            train_using_historical_forecasts
-            and (not self.is_global_ensemble or not self.all_trained),
+            train_using_historical_forecasts and not self.is_global_ensemble,
             "`train_using_historical_forecasts=True` is only available when all "
-            "`forecasting_models` are pre-trained global models.",
+            "`forecasting_models` are global models.",
             logger,
         )
 
