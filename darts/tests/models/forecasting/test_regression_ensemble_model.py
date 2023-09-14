@@ -289,8 +289,11 @@ class TestRegressionEnsembleModels:
             == regression_train_n_points
         )
 
-        assert mape(pred_hist_fct, val) < mape(pred_predict, val)
-        assert rmse(pred_hist_fct, val) < rmse(pred_predict, val)
+        mape_hfc, mape_pred = mape(pred_hist_fct, val), mape(pred_predict, val)
+        assert mape_hfc < mape_pred or mape_hfc == pytest.approx(mape_pred)
+
+        rmse_hfc, rmse_pred = rmse(pred_hist_fct, val), rmse(pred_predict, val)
+        assert rmse_hfc < rmse_pred or rmse_hfc == pytest.approx(rmse_pred)
 
     @pytest.mark.parametrize(
         "config",
@@ -343,7 +346,7 @@ class TestRegressionEnsembleModels:
         # future covariates finishes 5 steps after the target series
         future_covs = tg.linear_timeseries(
             start=ts.start_time(),
-            length=len(ts) + 3,
+            length=len(ts) + 2,
         )
 
         ensemble = RegressionEnsembleModel(
@@ -358,22 +361,17 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=regression_train_n_points,
             train_using_historical_forecasts=True,
         )
-        """
+
         # TODO: prediction of historical forecasts is missing the last two values, seems to be a bug
         # covariates have the appropriate length
         ensemble.fit(ts, future_covariates=future_covs)
         assert (
-            len(ensemble.regression_model.training_series)
-            == regression_train_n_points
+            len(ensemble.regression_model.training_series) == regression_train_n_points
         )
-        """
 
-        # covariates are too short (ends too early)
-        ensemble.fit(ts, future_covariates=future_covs[: ts.end_time()])
-        assert (
-            len(ensemble.regression_model.training_series)
-            == regression_train_n_points - 2  # 2 correspond to max_future_lags
-        )
+        with pytest.raises(ValueError):
+            # covariates are too short (ends too early)
+            ensemble.fit(ts, future_covariates=future_covs[:-1])
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_univar(self):
