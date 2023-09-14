@@ -67,12 +67,23 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
 
         Examples
         --------
-        >>> from darts.models import StatsForecastAutoARIMA
         >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import StatsForecastAutoARIMA
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define StatsForecastAutoARIMA parameters
         >>> model = StatsForecastAutoARIMA(season_length=12)
-        >>> model.fit(series[:-36])
-        >>> pred = model.predict(36, num_samples=100)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> pred.values()
+        array([[450.55179949],
+               [415.00597806],
+               [454.61353249],
+               [486.51218795],
+               [504.09229632],
+               [555.06463942]])
         """
         super().__init__(add_encoders=add_encoders)
         self.model = SFAutoARIMA(*autoarima_args, **autoarima_kwargs)
