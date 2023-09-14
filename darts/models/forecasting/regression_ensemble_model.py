@@ -51,8 +51,9 @@ class RegressionEnsembleModel(EnsembleModel):
         forecasting_models
             List of forecasting models whose predictions to ensemble
         regression_train_n_points
-            The number of points per series to use to train the regression model. Can be set to `-1` to use the entire series
-            to train the regressor if `forecasting_models` are already fitted and `train_forecasting_models=False`.
+            The number of points per series to use to train the regression model. Can be set to `-1` to use the
+            entire series to train the regressor if `forecasting_models` are already fitted and
+            `train_forecasting_models=False`.
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
@@ -78,7 +79,7 @@ class RegressionEnsembleModel(EnsembleModel):
         train_using_historical_forecasts
             If set to `True`, use `historical_forecasts()` to generate the forecasting models' predictions used to
             train the regression model in `fit()`. Available when `forecasting_models` contains only
-            `GlobalForecastingModels`. Recommended when `regression_train_n_points` is greater than 
+            `GlobalForecastingModels`. Recommended when `regression_train_n_points` is greater than
             `output_chunk_length` of the underlying `forecasting_models`.
             Default: ``False``.
         show_warnings
@@ -86,6 +87,28 @@ class RegressionEnsembleModel(EnsembleModel):
         References
         ----------
         .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import RegressionEnsembleModel, NaiveSeasonal, LinearRegressionModel
+        >>> series = AirPassengersDataset().load()
+        >>> model = RegressionEnsembleModel(
+        >>>     forecasting_models = [
+        >>>         NaiveSeasonal(K=12),
+        >>>         LinearRegressionModel(lags=4)
+        >>>     ],
+        >>>     regression_train_n_points=20
+        >>> )
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[494.24050364],
+               [464.3869697 ],
+               [496.53180506],
+               [544.82269341],
+               [557.35256055],
+               [630.24334385]])
         """
         super().__init__(
             forecasting_models=forecasting_models,

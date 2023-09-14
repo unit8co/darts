@@ -66,6 +66,24 @@ class ExponentialSmoothing(LocalForecastingModel):
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
             See `the documentation
             <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import ExponentialSmoothing
+        >>> from darts.utils.utils import ModelMode, SeasonalityMode
+        >>> series = AirPassengersDataset().load()
+        >>> # using Holt's exponential smoothing
+        >>> model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.MULTIPLICATIVE)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[445.24283838],
+               [418.22618932],
+               [465.31305075],
+               [494.95129261],
+               [505.4770514 ],
+               [573.31519186]])
         """
         super().__init__()
         self.trend = trend

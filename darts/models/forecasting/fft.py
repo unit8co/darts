@@ -253,6 +253,30 @@ class FFT(LocalForecastingModel):
         global trend, and do not perform any frequency filtering:
 
         >>> FFT(required_matches={'month'}, trend='exp')
+
+        Simple usage example, using one of the dataset available in darts
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import FFT
+        >>> series = AirPassengersDataset().load()
+        >>> # increase the number of frequency and use a polynomial trend of degree 2
+        >>> model = FFT(
+        >>>     nr_freqs_to_keep=20,
+        >>>     trend= "poly",
+        >>>     trend_poly_degree=2
+        >>> )
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[471.79323146],
+               [494.6381425 ],
+               [504.5659999 ],
+               [515.82463265],
+               [520.59404623],
+               [547.26720705]])
+
+        .. note::
+            `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`_ presents techniques
+            that can be used to improve the forecasts quality compared to this simple usage example.
         """
         super().__init__()
         self.nr_freqs_to_keep = nr_freqs_to_keep

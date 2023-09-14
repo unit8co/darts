@@ -58,11 +58,14 @@ class Croston(FutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'future': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -74,6 +77,23 @@ class Croston(FutureCovariatesLocalForecastingModel):
         .. [2] Ruud H. Teunter, Aris A. Syntetos, and M. Zied Babai.
                Intermittent demand: Linking forecasting to inventory obsolescence.
                European Journal of Operational Research, 214(3):606 – 615, 2011.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import Croston
+        >>> series = AirPassengersDataset().load()
+        >>> # use the optimized version to automatically select best alpha parameter
+        >>> model = Croston(version="optimized")
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[461.7666],
+               [461.7666],
+               [461.7666],
+               [461.7666],
+               [461.7666],
+               [461.7666]])
         """
         super().__init__(add_encoders=add_encoders)
         raise_if_not(
