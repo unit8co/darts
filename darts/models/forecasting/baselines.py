@@ -26,6 +26,22 @@ class NaiveMean(LocalForecastingModel):
 
         This model has no parameter, and always predicts the
         mean value of the training series.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveMean
+        >>> series = AirPassengersDataset().load()
+        >>> model = NaiveMean()
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111]])
         """
         super().__init__()
         self.mean_val = None
@@ -63,6 +79,23 @@ class NaiveSeasonal(LocalForecastingModel):
         ----------
         K
             the number of last time steps of the training set to repeat
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveSeasonal
+        >>> series = AirPassengersDataset().load()
+        # prior analysis suggested seasonality of 12
+        >>> model = NaiveSeasonal(K=12)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[417.],
+               [391.],
+               [419.],
+               [461.],
+               [472.],
+               [535.]])
         """
         super().__init__()
         self.last_k_vals = None
@@ -106,6 +139,22 @@ class NaiveDrift(LocalForecastingModel):
         and extends it in the future. For a training series of length :math:`T`, we have:
 
         .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveDrift
+        >>> series = AirPassengersDataset().load()
+        >>> model = NaiveDrift()
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[434.23776224],
+               [436.47552448],
+               [438.71328671],
+               [440.95104895],
+               [443.18881119],
+               [445.42657343]])
         """
         super().__init__()
 
@@ -147,6 +196,22 @@ class NaiveMovingAverage(LocalForecastingModel):
         ----------
         input_chunk_length
             The size of the sliding window used to calculate the moving average
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveMovingAverage
+        >>> series = AirPassengersDataset().load()
+        # using the average of the last 6 months
+        >>> model = NaiveMovingAverage(input_chunk_length=6)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[503.16666667],
+               [483.36111111],
+               [462.9212963 ],
+               [455.40817901],
+               [454.47620885],
+               [465.22224366]])
         """
         super().__init__()
         self.input_chunk_length = input_chunk_length
@@ -217,6 +282,23 @@ class NaiveEnsembleModel(EnsembleModel):
             List of forecasting models whose predictions to ensemble
         show_warnings
             Whether to show warnings related to models covariates support.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveEnsembleModel, NaiveSeasonal, LinearRegressionModel
+        >>> series = AirPassengersDataset().load()
+        >>> # defining the ensemble
+        >>> model = NaiveEnsembleModel([NaiveSeasonal(K=12), LinearRegressionModel(lags=4)])
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[439.23152974],
+               [431.41161602],
+               [439.72888401],
+               [453.70180806],
+               [454.96757177],
+               [485.16604194]])
         """
         super().__init__(
             models=models,

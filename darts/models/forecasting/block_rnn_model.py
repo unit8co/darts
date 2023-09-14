@@ -311,6 +311,36 @@ class BlockRNNModel(PastCovariatesTorchModel):
         ----------
         .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import BlockRNNModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> model = BlockRNNModel(
+        >>>     input_chunk_length=12,
+        >>>     output_chunk_length=6,
+        >>>     n_rnn_layers=2,
+        >>>     n_epochs=50,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[4.97979827],
+               [3.9707572 ],
+               [5.27869295],
+               [5.19697244],
+               [5.28424783],
+               [5.22497681]])
+
+        .. note::
+            `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
+            that can be used to improve the forecasts quality compared to this simple usage example.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
