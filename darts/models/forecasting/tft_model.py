@@ -883,6 +883,43 @@ class TFTModel(MixedCovariatesTorchModel):
         .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import TFTModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # by default, TFTModel is trained using a `QuantileRegression` making it a probabilistic forecasting model
+        >>> model = TFTModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=5,
+        >>> )
+        >>> # future_covariates are mandatory for `TFTModel`
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> # TFTModel is probabilistic by definition; using `num_samples >> 1` to generate probabilistic forecasts
+        >>> pred = model.predict(6, num_samples=100)
+        >>> # shape : (forecast horizon, components, num_samples)
+        >>> pred.all_values().shape
+        (6, 1, 100)
+        >>> # showing the first 3 samples for each timestamp
+        >>> pred.all_values()[:,:,:3]
+        array([[[-0.06414202, -0.7188093 ,  0.52541292]],
+               [[ 0.02928407, -0.40867163,  1.19650033]],
+               [[ 0.77252372, -0.50859694,  0.360166  ]],
+               [[ 0.9586113 ,  1.24147138, -0.01625545]],
+               [[ 1.06863863,  0.2987822 , -0.69213369]],
+               [[-0.83076568, -0.25780816, -0.28318784]]])
+
+        .. note::
+            `TFT example notebook <https://unit8co.github.io/darts/examples/13-TFT-examples.html>`_ presents
+            techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:

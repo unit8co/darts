@@ -115,6 +115,36 @@ class RandomForest(RegressionModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import RandomForest
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # random forest with 200 trees trained with MAE
+        >>> model = RandomForest(
+        >>>     lags=12,
+        >>>     lags_past_covariates=12,
+        >>>     lags_future_covariates=[0,1,2,3,4,5],
+        >>>     output_chunk_length=6,
+        >>>     n_estimators=200,
+        >>>     criterion="absolute_error",
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[1006.29805],
+               [1006.23675],
+               [1006.17325],
+               [1006.10295],
+               [1006.06505],
+               [1006.05465]])
         """
         self.n_estimators = n_estimators
         self.max_depth = max_depth

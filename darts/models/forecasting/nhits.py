@@ -671,6 +671,32 @@ class NHiTSModel(PastCovariatesTorchModel):
                https://arxiv.org/abs/2201.12886
         .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NHiTSModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # increasing the number of blocks
+        >>> model = NHiTSModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     num_blocks=2,
+        >>>     n_epochs=5,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[958.2354389 ],
+               [939.23201079],
+               [987.51425784],
+               [919.41209025],
+               [925.09583093],
+               [938.95625528]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

@@ -150,6 +150,36 @@ class RegressionModel(GlobalForecastingModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import RegressionModel
+        >>> from sklearn.linear_model import Ridge
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # wrap around the sklearn Ridge model
+        >>> model = RegressionModel(
+        >>>     model=Ridge(),
+        >>>     lags=12,
+        >>>     lags_past_covariates=4,
+        >>>     lags_future_covariates=(0,6),
+        >>>     output_chunk_length=6
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[1005.73340676],
+               [1005.71159051],
+               [1005.7322616 ],
+               [1005.76314504],
+               [1005.82204348],
+               [1005.89100967]])
         """
 
         super().__init__(add_encoders=add_encoders)

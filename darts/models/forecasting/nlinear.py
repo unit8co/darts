@@ -362,6 +362,34 @@ class NLinearModel(MixedCovariatesTorchModel):
                Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.
         .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NLinearModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> # values corresponding to the forecasted period
+        >>> model = NLinearModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[429.56117169],
+               [428.93264096],
+               [428.35210616],
+               [428.13154426],
+               [427.98781641],
+               [428.00325481]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
