@@ -71,11 +71,14 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'future': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
