@@ -914,7 +914,9 @@ class RegressionModel(GlobalForecastingModel):
                     ]
                     # values are grouped by component
                     np_X.append(
-                        np.concatenate(tmp_X).reshape(len(series) * num_samples, -1)
+                        np.concatenate(tmp_X, axis=1).reshape(
+                            len(series) * num_samples, -1
+                        )
                     )
                 else:
                     # values are grouped by lags
@@ -943,7 +945,9 @@ class RegressionModel(GlobalForecastingModel):
                             )
                         ]
                         np_X.append(
-                            np.concatenate(tmp_X).reshape(len(series) * num_samples, -1)
+                            np.concatenate(tmp_X, axis=1).reshape(
+                                len(series) * num_samples, -1
+                            )
                         )
                     else:
                         np_X.append(

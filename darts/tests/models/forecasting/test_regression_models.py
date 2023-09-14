@@ -1680,7 +1680,7 @@ class TestRegressionModels:
             [True, False],
         ),
     )
-    def test_component_specific_lags(self, config):
+    def test_component_specific_lags_forecasts(self, config):
         """Verify that the same lags, defined using int/list or dictionnaries yield the same results"""
         (list_lags, dict_lags), multiple_series = config
         multivar_target = "lags" in dict_lags and len(dict_lags["lags"]) > 1
@@ -1712,9 +1712,7 @@ class TestRegressionModels:
                 )
                 + 10,
             ]
-
             past_cov = [past_cov, past_cov]
-
             future_cov = [future_cov, future_cov]
 
         # the lags are identical across the components for each series
@@ -1780,6 +1778,100 @@ class TestRegressionModels:
         )
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                {"lags": {"gaussian": [-1, -3], "sine": [-2, -4, -6]}},
+                {"lags_past_covariates": {"default_lags": 2}},
+                {
+                    "lags": {
+                        "gaussian": [-5, -2, -1],
+                        "sine": [-2, -1],
+                    },
+                    "lags_future_covariates": {
+                        "lin_future": (1, 4),
+                        "default_lags": (2, 2),
+                    },
+                },
+                {
+                    "lags": {
+                        "default_lags": [-5, -4],
+                    },
+                    "lags_future_covariates": {
+                        "sine_future": (1, 1),
+                        "default_lags": [-2, 4, 6, 7, 8],
+                    },
+                },
+            ],
+            [True, False],
+        ),
+    )
+    def test_component_specific_lags(self, config):
+        """Checking various combination of component-specific lags"""
+        (dict_lags, multiple_series) = config
+        multivar_target = "lags" in dict_lags and len(dict_lags["lags"]) > 1
+        multivar_future_cov = (
+            "lags_future_covariates" in dict_lags
+            and len(dict_lags["lags_future_covariates"]) > 1
+        )
+
+        # create series based on the model parameters
+        series = tg.gaussian_timeseries(length=20, column_name="gaussian")
+        if multivar_target:
+            series = series.stack(tg.sine_timeseries(length=20, column_name="sine"))
+
+        future_cov = tg.linear_timeseries(length=30, column_name="lin_future")
+        if multivar_future_cov:
+            future_cov = future_cov.stack(
+                tg.sine_timeseries(length=30, column_name="sine_future")
+            )
+
+        past_cov = tg.linear_timeseries(length=30, column_name="lin_past")
+
+        if multiple_series:
+            # second series have different component names
+            series = [
+                series,
+                series.with_columns_renamed(
+                    ["gaussian", "sine"][: series.width],
+                    ["other", "names"][: series.width],
+                )
+                + 10,
+            ]
+            past_cov = [past_cov, past_cov]
+            future_cov = [future_cov, future_cov]
+
+        model = LinearRegressionModel(**dict_lags, output_chunk_length=4)
+        model.fit(
+            series=series,
+            past_covariates=past_cov if model.supports_past_covariates else None,
+            future_covariates=future_cov if model.supports_future_covariates else None,
+        )
+        # n < output_chunk_length
+        model.predict(
+            1,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model.supports_future_covariates
+            else None,
+        )
+
+        # n > output_chunk_length
+        model.predict(
+            7,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model.supports_future_covariates
+            else None,
+        )
 
     @pytest.mark.parametrize(
         "config",
