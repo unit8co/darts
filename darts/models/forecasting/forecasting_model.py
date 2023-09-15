@@ -539,12 +539,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series = args[0]
         _historical_forecasts_general_checks(self, series, kwargs)
 
-    def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
+    def _get_last_prediction_time(
+        self,
+        series,
+        forecast_horizon,
+        overlap_end,
+        last_possible_time_index,
+    ):
+        # when overlap_end=True, we can simply use the precomputed last possible prediction start point
         if overlap_end:
-            last_valid_pred_time = series.time_index[-1]
-        else:
-            last_valid_pred_time = series.time_index[-forecast_horizon]
+            return last_possible_time_index
 
+        # otherwise, we have to step `forecast_horizon` steps back.
+        last_valid_pred_time = series.time_index[-forecast_horizon]
+        # additionally, we check whether the `last_possible_time_index` was shifted back from the overall
+        # maximum possible prediction start point (which is by definition the first time step after the
+        # end of the target series) due to too short covariates.
+        covariates_shift = last_possible_time_index - (series.end_time() + series.freq)
+        if covariates_shift:
+            last_valid_pred_time = (
+                last_valid_pred_time + covariates_shift + 2 * series.freq
+            )
         return last_valid_pred_time
 
     def _check_optimizable_historical_forecasts(
@@ -922,7 +937,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
                 # drop everything after `pred_time` to train on / predict with shifting input
-                train_series = series_.drop_after(pred_time)
+                if pred_time <= series_.end_time():
+                    train_series = series_.drop_after(pred_time)
+                else:
+                    train_series = series_
 
                 # optionally, apply moving window (instead of expanding window)
                 if train_length_ and len(train_series) > train_length_:

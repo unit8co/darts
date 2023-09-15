@@ -938,7 +938,7 @@ class TestHistoricalforecast:
         ), f"Model {model_cls} did not return a list of historical forecasts"
         theorical_forecast_length = (
             self.ts_val_length
-            - (bounds[0] + bounds[1])  # train sample length
+            - (bounds[0] + bounds[1] - 1)  # train sample length
             - 0  # with overlap_end=True, we are not restricted by the end of the series or horizon
         )
         assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
@@ -969,6 +969,11 @@ class TestHistoricalforecast:
             )  # overlap_end=False -> if entire horizon is available, we can predict 1
         )
         assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
+        assert (
+            forecasts[0].end_time()
+            == forecasts[1].end_time()
+            == self.ts_pass_val.end_time()
+        )
 
         model = model_cls(
             random_state=0,
@@ -990,10 +995,15 @@ class TestHistoricalforecast:
         ), f"Model {model_cls} did not return a list of historical forecasts"
         theorical_forecast_length = (
             self.ts_val_length
-            - bounds[0]  # prediction input sample length
+            - (bounds[0] - 1)  # prediction input sample length
             - 0  # overlap_end=False -> we are not restricted by the end of the series or horizon
         )
         assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
+        assert (
+            forecasts[0].end_time()
+            == forecasts[1].end_time()
+            == self.ts_pass_val.end_time() + forecast_hrz * self.ts_pass_val.freq
+        )
 
     @pytest.mark.parametrize("model_config", models_reg_cov_cls_kwargs)
     def test_regression_auto_start_multiple_with_cov_retrain(self, model_config):
@@ -1591,15 +1601,17 @@ class TestHistoricalforecast:
             last_points_only=False,
             overlap_end=True,
         )
+        # because of overlap_end, we get an additional prediction
         # generate the same predictions manually
         preds = []
-        for n_i in range(n):
+        for n_i in range(n + 1):
+            right = -(n - n_i) if n_i < 3 else len(self.ts_pass_train)
             preds.append(
                 model.predict(
                     n=2,
-                    series=self.ts_pass_train[: -(n - n_i)],
+                    series=self.ts_pass_train[:right],
                     predict_likelihood_parameters=True,
                 )
             )
         assert preds == hist_fc
-        assert len(hist_fc) == n
+        assert len(hist_fc) == n + 1
