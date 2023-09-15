@@ -142,7 +142,12 @@ if TORCH_AVAILABLE:
                     use_reversible_instance_norm=enable_rin,
                     **tfm_kwargs
                 )
-                model.fit(ts_time_index, ts_time_index, verbose=False, epochs=1)
+                model.fit(
+                    ts_time_index,
+                    past_covariates=ts_time_index,
+                    verbose=False,
+                    epochs=1,
+                )
 
                 # test with past_covariates and future_covariates timeseries
                 model = TiDEModel(
@@ -153,7 +158,11 @@ if TORCH_AVAILABLE:
                     **tfm_kwargs
                 )
                 model.fit(
-                    ts_time_index, ts_time_index, ts_time_index, verbose=False, epochs=1
+                    ts_time_index,
+                    past_covariates=ts_time_index,
+                    future_covariates=ts_time_index,
+                    verbose=False,
+                    epochs=1,
                 )
 
         def test_static_covariates_support(self):

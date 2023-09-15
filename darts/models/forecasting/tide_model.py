@@ -107,7 +107,7 @@ class _TideModule(PLMixedCovariatesModule):
         temporal_decoder_hidden
             The width of the hidden layers in the temporal decoder.
         temporal_width
-            The width of the future covariate embedding space.
+            The width of the past and/or future covariate embedding space.
         use_layer_norm
             Whether to use layer normalization in the Residual Blocks.
         dropout
@@ -131,6 +131,7 @@ class _TideModule(PLMixedCovariatesModule):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.past_cov_dim = input_dim - output_dim - future_cov_dim
         self.future_cov_dim = future_cov_dim
         self.static_cov_dim = static_cov_dim
         self.nr_params = nr_params
@@ -143,26 +144,41 @@ class _TideModule(PLMixedCovariatesModule):
         self.dropout = dropout
         self.temporal_width = temporal_width
 
-        # residual block for input feature projection
-        # this is only needed when covariates are used
+        # residual block for past covariates feature projection
+        # this is only needed when past covariates are used
+        if self.past_cov_dim:
+            self.past_cov_projection = _ResidualBlock(
+                input_dim=self.past_cov_dim,
+                output_dim=temporal_width,
+                hidden_size=hidden_size,
+                use_layer_norm=use_layer_norm,
+                dropout=dropout,
+            )
+            past_covariates_flat_dim = self.input_chunk_length * self.temporal_width
+        else:
+            self.past_cov_projection = None
+            past_covariates_flat_dim = 0
+
+        # residual block for future covariates feature projection
+        # this is only needed when future covariates are used
         if future_cov_dim:
-            self.feature_projection = _ResidualBlock(
+            self.future_cov_projection = _ResidualBlock(
                 input_dim=future_cov_dim,
                 output_dim=temporal_width,
                 hidden_size=hidden_size,
                 use_layer_norm=use_layer_norm,
                 dropout=dropout,
             )
+            historical_future_covariates_flat_dim = (
+                self.input_chunk_length + self.output_chunk_length
+            ) * self.temporal_width
         else:
-            self.feature_projection = None
+            self.future_cov_projection = None
+            historical_future_covariates_flat_dim = 0
 
-        # original paper doesn't specify how to use past covariates
-        # we assume that they pass them raw to the encoder
-        historical_future_covariates_flat_dim = (
-            self.input_chunk_length + self.output_chunk_length
-        ) * (self.temporal_width if future_cov_dim > 0 else 0)
         encoder_dim = (
-            self.input_chunk_length * (input_dim - future_cov_dim)
+            self.input_chunk_length * output_dim
+            + past_covariates_flat_dim
             + historical_future_covariates_flat_dim
             + static_cov_dim
         )
@@ -246,44 +262,47 @@ class _TideModule(PLMixedCovariatesModule):
 
         x_lookback = x[:, :, : self.output_dim]
 
-        # future covariates need to be extracted from x and stacked with historical future covariates
+        # feature projection for future covariates:
+        # historical future covariates need to be extracted from x and stacked with part of future covariates
         if self.future_cov_dim > 0:
-            x_dynamic_covariates = torch.cat(
+            x_dynamic_future_covariates = torch.cat(
                 [
-                    x_future_covariates,
                     x[
                         :,
                         :,
                         None if self.future_cov_dim == 0 else -self.future_cov_dim :,
                     ],
+                    x_future_covariates,
                 ],
                 dim=1,
             )
 
-            # project input features across all input time steps
-            x_dynamic_covariates_proj = self.feature_projection(x_dynamic_covariates)
-
+            # project input features across all input and output time steps
+            x_dynamic_future_covariates_proj = self.future_cov_projection(
+                x_dynamic_future_covariates
+            )
         else:
-            x_dynamic_covariates = None
-            x_dynamic_covariates_proj = None
+            x_dynamic_future_covariates_proj = None
 
-        # extract past covariates, if they exist
-        if self.input_dim - self.output_dim - self.future_cov_dim > 0:
-            x_past_covariates = x[
+        # feature projection for past covariates
+        if self.past_cov_dim > 0:
+            x_dynamic_past_covariates = x[
                 :,
                 :,
-                self.output_dim : None
-                if self.future_cov_dim == 0
-                else -self.future_cov_dim :,
+                self.output_dim : self.output_dim + self.past_cov_dim,
             ]
+            # project input features across all input time steps
+            x_dynamic_past_covariates_proj = self.past_cov_projection(
+                x_dynamic_past_covariates
+            )
         else:
-            x_past_covariates = None
+            x_dynamic_past_covariates_proj = None
 
         # setup input to encoder
         encoded = [
             x_lookback,
-            x_past_covariates,
-            x_dynamic_covariates_proj,
+            x_dynamic_past_covariates_proj,
+            x_dynamic_future_covariates_proj,
             x_static_covariates,
         ]
         encoded = [t.flatten(start_dim=1) for t in encoded if t is not None]
@@ -299,7 +318,7 @@ class _TideModule(PLMixedCovariatesModule):
         # stack and temporally decode with future covariate last output steps
         temporal_decoder_input = [
             decoded,
-            x_dynamic_covariates_proj[:, -self.output_chunk_length :, :]
+            x_dynamic_future_covariates_proj[:, -self.output_chunk_length :, :]
             if self.future_cov_dim > 0
             else None,
         ]
@@ -370,7 +389,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         hidden_size
             The width of the layers in the residual blocks of the encoder and decoder.
         temporal_width
-            The width of the layers in the future covariate projection residual block.
+            The width of the layers in the past and/or future covariate projection residual block.
         temporal_decoder_hidden
             The width of the layers in the temporal decoder.
         use_layer_norm
