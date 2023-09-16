@@ -244,9 +244,6 @@ class TestRegressionEnsembleModels:
         Training regression model of ensemble with output from historical forecasts instead of predict should
         yield better results when the forecasting models are global and regression_train_n_points >> ocl.
 
-        If the ocl of the forecasting models is not a multiple of the regression_train_n_points, the regression
-        model might be trained with less points.
-
         config[0] : both ocl = 1
         config[1] : both ocl are multiple of regression_train_n_points
         config[2] : ocl1 is multiple, ocl2 is not but series is long enough to shift the historical forecats start
@@ -305,10 +302,6 @@ class TestRegressionEnsembleModels:
     )
     def test_train_with_historical_forecasts_with_covs(self, config):
         """
-        When the output_chunk_length of the forecasting models are not multiple of regression_train_n_points and
-        train_using_historical_forecasts=True, the operation used to align the historical forecasts might reduce
-        the number of points available to train the regression model of the ensemble.
-
         config[0] : both ocl = 1, covs are long enough
         config[1] : both ocl are multiple, covs are long enough
         config[2] : ocl1 multiple, ocl2 not multiple
@@ -362,7 +355,6 @@ class TestRegressionEnsembleModels:
             train_using_historical_forecasts=True,
         )
 
-        # TODO: prediction of historical forecasts is missing the last two values, seems to be a bug
         # covariates have the appropriate length
         ensemble.fit(ts, future_covariates=future_covs)
         assert (

@@ -1016,8 +1016,8 @@ class TestHistoricalforecast:
         ), f"Model {model_cls} did not return a list of historical forecasts"
         theorical_forecast_length = (
             self.ts_val_length
-            - (bounds[0] + bounds[1] - 1)  # train sample length
-            - 0  # with overlap_end=True, we are not restricted by the end of the series or horizon
+            - (bounds[0] + bounds[1])  # train sample length
+            + 1  # with overlap_end=True, we are not restricted by the end of the series or horizon
         )
         assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
 
@@ -1073,8 +1073,8 @@ class TestHistoricalforecast:
         ), f"Model {model_cls} did not return a list of historical forecasts"
         theorical_forecast_length = (
             self.ts_val_length
-            - (bounds[0] - 1)  # prediction input sample length
-            - 0  # overlap_end=False -> we are not restricted by the end of the series or horizon
+            - bounds[0]  # prediction input sample length
+            + 1  # overlap_end=True -> last possible prediction start is one step after end of target
         )
         assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
         assert (
