@@ -827,7 +827,7 @@ class TestHistoricalforecast:
         list(
             itertools.product(
                 [False, True],  # use covariates
-                [False, True],  # last points only
+                [True, False],  # last points only
                 [False, True],  # overlap end
                 [1, 3],  # stride
                 [
