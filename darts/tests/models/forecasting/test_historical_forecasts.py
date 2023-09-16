@@ -829,6 +829,7 @@ class TestHistoricalforecast:
                 [False, True],  # use covariates
                 [False, True],  # last points only
                 [False, True],  # overlap end
+                [1, 3],  # stride
                 [
                     3,  # horizon < ocl
                     5,  # horizon == ocl
@@ -838,7 +839,7 @@ class TestHistoricalforecast:
         ),
     )
     def test_optimized_historical_forecasts_regression_with_encoders(self, config):
-        use_covs, last_points_only, overlap_end, horizon, multi_models = config
+        use_covs, last_points_only, overlap_end, stride, horizon, multi_models = config
         lags = 3
         ocl = 5
         len_val_series = 10 if multi_models else 10 + (ocl - 1)
@@ -880,6 +881,7 @@ class TestHistoricalforecast:
             retrain=False,
             last_points_only=last_points_only,
             overlap_end=overlap_end,
+            stride=stride,
             forecast_horizon=horizon,
             enable_optimization=False,
         )
@@ -890,6 +892,7 @@ class TestHistoricalforecast:
             future_covariates=[fc],
             last_points_only=last_points_only,
             overlap_end=overlap_end,
+            stride=stride,
             forecast_horizon=horizon,
         )
 
@@ -929,6 +932,13 @@ class TestHistoricalforecast:
                     n_pred_series_expected -= ocl - 1
                 else:
                     n_pred_points_expected -= ocl - 1
+
+        # to make it simple in case of stride, we assume that non-optimized hist fc returns correct results
+        if stride > 1:
+            n_pred_series_expected = len(hist_fct)
+            n_pred_points_expected = len(hist_fct[0])
+            first_ts_expected = hist_fct[0].start_time()
+            last_ts_expected = hist_fct[-1].end_time()
 
         # check length match between optimized and default hist fc
         assert len(opti_hist_fct) == n_pred_series_expected
