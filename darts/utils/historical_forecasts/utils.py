@@ -63,15 +63,21 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         if not isinstance(n.start, (float, int, np.int64, pd.Timestamp)):
             raise_log(
                 TypeError(
-                    "`start` must be either `float`, `int`, `pd.Timestamp` or `None`"
+                    "`start` must be either `float`, `int`, `pd.Timestamp` or `None`."
                 ),
                 logger,
             )
 
+        if n.start_format not in ["position", "value"]:
+            raise_log(
+                ValueError(
+                    f"`start_format` must be on of ['position', 'value']. Received '{n.start_format}'."
+                )
+            )
         if n.start_format == "position":
             raise_if_not(
                 isinstance(n.start, (int, np.int64)),
-                f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}",
+                f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}.",
                 logger,
             )
 
@@ -408,6 +414,7 @@ def _adjust_historical_forecasts_time_index(
         series,
         forecast_horizon,
         overlap_end,
+        latest_possible_prediction_start=historical_forecasts_time_index[-1],
     )
 
     historical_forecasts_time_index = (
