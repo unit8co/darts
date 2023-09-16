@@ -544,22 +544,35 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series,
         forecast_horizon,
         overlap_end,
-        last_possible_time_index,
+        latest_possible_prediction_start,
     ):
         # when overlap_end=True, we can simply use the precomputed last possible prediction start point
         if overlap_end:
-            return last_possible_time_index
+            return latest_possible_prediction_start
 
-        # otherwise, we have to step `forecast_horizon` steps back.
-        last_valid_pred_time = series.time_index[-forecast_horizon]
-        # additionally, we check whether the `last_possible_time_index` was shifted back from the overall
-        # maximum possible prediction start point (which is by definition the first time step after the
-        # end of the target series) due to too short covariates.
-        covariates_shift = last_possible_time_index - (series.end_time() + series.freq)
-        if covariates_shift:
-            last_valid_pred_time = (
-                last_valid_pred_time + covariates_shift + 2 * series.freq
+        # (1) otherwise, we have to step `forecast_horizon` steps back.
+        # (2) additionally, we check whether the `latest_possible_prediction_start` was shifted back
+        # from the overall theoretical latest possible prediction start point (which is by definition
+        # the first time step after the end of the target series) due to too short covariates.
+        theoretical_latest_prediction_start = series.end_time() + series.freq
+        if latest_possible_prediction_start == theoretical_latest_prediction_start:
+            # (1)
+            last_valid_pred_time = series.time_index[-forecast_horizon]
+        else:
+            # (2)
+            covariates_shift = (
+                len(
+                    generate_index(
+                        start=latest_possible_prediction_start,
+                        end=theoretical_latest_prediction_start,
+                        freq=series.freq,
+                    )
+                )
+                - 2
             )
+            last_valid_pred_time = series.time_index[
+                -(forecast_horizon + covariates_shift)
+            ]
         return last_valid_pred_time
 
     def _check_optimizable_historical_forecasts(

@@ -414,7 +414,7 @@ def _adjust_historical_forecasts_time_index(
         series,
         forecast_horizon,
         overlap_end,
-        last_possible_time_index=historical_forecasts_time_index[-1],
+        latest_possible_prediction_start=historical_forecasts_time_index[-1],
     )
 
     historical_forecasts_time_index = (
