@@ -294,11 +294,7 @@ class TestRegressionEnsembleModels:
 
     @pytest.mark.parametrize(
         "config",
-        [
-            (1, 1),
-            # (5, 2),
-            # (4, 3)
-        ],
+        [(1, 1), (5, 2), (4, 3)],
     )
     def test_train_with_historical_forecasts_with_covs(self, config):
         """
