@@ -822,18 +822,40 @@ class TestHistoricalforecast:
                             fct.all_values(), opti_fct.all_values()
                         )
 
-    @pytest.mark.parametrize("use_covs", [False, True])
-    def test_optimized_historical_forecasts_regression_with_encoders(self, use_covs):
-        series_train, series_val = self.ts_pass_train, self.ts_pass_val
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [False, True],  # use covariates
+                [False, True],  # last points only
+                [False, True],  # overlap end
+                [
+                    3,  # horizon < ocl
+                    5,  # horizon == ocl
+                ],
+                [True, False],  # multi models
+            )
+        ),
+    )
+    def test_optimized_historical_forecasts_regression_with_encoders(self, config):
+        use_covs, last_points_only, overlap_end, horizon, multi_models = config
+        lags = 3
+        ocl = 5
+        len_val_series = 10 if multi_models else 10 + (ocl - 1)
+        series_train, series_val = (
+            self.ts_pass_train[:10],
+            self.ts_pass_val[:len_val_series],
+        )
         model = LinearRegressionModel(
-            lags=3,
+            lags=lags,
             lags_past_covariates=2,
             lags_future_covariates=[2, 3],
             add_encoders={
                 "cyclic": {"future": ["month"]},
                 "datetime_attribute": {"past": ["dayofweek"]},
             },
-            output_chunk_length=5,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
         )
         if use_covs:
             pc = tg.gaussian_timeseries(
@@ -852,27 +874,73 @@ class TestHistoricalforecast:
         model.fit(self.ts_pass_train, past_covariates=pc, future_covariates=fc)
 
         hist_fct = model.historical_forecasts(
-            series=self.ts_pass_val,
+            series=series_val,
             past_covariates=pc,
             future_covariates=fc,
             retrain=False,
-            last_points_only=True,
-            forecast_horizon=5,
+            last_points_only=last_points_only,
+            overlap_end=overlap_end,
+            forecast_horizon=horizon,
             enable_optimization=False,
         )
 
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=[self.ts_pass_val],
+            series=[series_val],
             past_covariates=[pc],
             future_covariates=[fc],
-            last_points_only=True,
-            forecast_horizon=5,
+            last_points_only=last_points_only,
+            overlap_end=overlap_end,
+            forecast_horizon=horizon,
         )
 
-        assert (hist_fct.time_index == opti_hist_fct.time_index).all()
-        np.testing.assert_array_almost_equal(
-            hist_fct.all_values(), opti_hist_fct.all_values()
-        )
+        if not isinstance(hist_fct, list):
+            hist_fct = [hist_fct]
+            opti_hist_fct = [opti_hist_fct]
+
+        if not last_points_only and overlap_end:
+            n_pred_series_expected = 8
+            n_pred_points_expected = horizon
+            first_ts_expected = series_val.time_index[lags]
+            last_ts_expected = series_val.end_time() + series_val.freq * horizon
+        elif not last_points_only:  # overlap_end = False
+            n_pred_series_expected = len(series_val) - lags - horizon + 1
+            n_pred_points_expected = horizon
+            first_ts_expected = series_val.time_index[lags]
+            last_ts_expected = series_val.end_time()
+        elif overlap_end:  # last_points_only = True
+            n_pred_series_expected = 1
+            n_pred_points_expected = 8
+            first_ts_expected = (
+                series_val.time_index[lags] + (horizon - 1) * series_val.freq
+            )
+            last_ts_expected = series_val.end_time() + series_val.freq * horizon
+        else:  # last_points_only = True, overlap_end = False
+            n_pred_series_expected = 1
+            n_pred_points_expected = len(series_val) - lags - horizon + 1
+            first_ts_expected = (
+                series_val.time_index[lags] + (horizon - 1) * series_val.freq
+            )
+            last_ts_expected = series_val.end_time()
+
+        if not multi_models:
+            first_ts_expected += series_val.freq * (ocl - 1)
+            if not overlap_end:
+                if not last_points_only:
+                    n_pred_series_expected -= ocl - 1
+                else:
+                    n_pred_points_expected -= ocl - 1
+
+        # check length match between optimized and default hist fc
+        assert len(opti_hist_fct) == n_pred_series_expected
+        assert len(hist_fct) == len(opti_hist_fct)
+        # check hist fc start
+        assert opti_hist_fct[0].start_time() == first_ts_expected
+        # check hist fc end
+        assert opti_hist_fct[-1].end_time() == last_ts_expected
+        for hfc, ohfc in zip(hist_fct, opti_hist_fct):
+            assert len(ohfc) == n_pred_points_expected
+            assert (hfc.time_index == ohfc.time_index).all()
+            np.testing.assert_array_almost_equal(hfc.all_values(), ohfc.all_values())
 
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
