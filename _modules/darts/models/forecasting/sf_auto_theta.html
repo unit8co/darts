@@ -193,8 +193,8 @@
 <span class="sd">        It is probabilistic, whereas :class:`FourTheta` is not.</span>
 
 <span class="sd">        We refer to the `statsforecast AutoTheta documentation</span>
-<span class="sd">        &lt;https://nixtla.github.io/statsforecast/models.html#autotheta&gt;`_</span>
-<span class="sd">        for the documentation of the arguments.</span>
+<span class="sd">        &lt;https://nixtla.github.io/statsforecast/src/core/models.html#autotheta&gt;`_</span>
+<span class="sd">        for the exhaustive documentation of the arguments.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -203,16 +203,22 @@
 <span class="sd">        autotheta_kwargs</span>
 <span class="sd">            Keyword arguments for ``statsforecasts.models.AutoTheta``.</span>
 
-<span class="sd">            ..</span>
-
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoTheta</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoTheta</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoTheta parameters</span>
 <span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoTheta(season_length=12)</span>
-<span class="sd">        &gt;&gt;&gt; model.fit(series[:-36])</span>
-<span class="sd">        &gt;&gt;&gt; pred = model.predict(36, num_samples=100)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[442.94078295],</span>
+<span class="sd">               [432.22936898],</span>
+<span class="sd">               [495.30609727],</span>
+<span class="sd">               [482.30625563],</span>
+<span class="sd">               [487.49312172],</span>
+<span class="sd">               [555.57902659]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoTheta</span><span class="p">(</span><span class="o">*</span><span class="n">autotheta_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autotheta_kwargs</span><span class="p">)</span>

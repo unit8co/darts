@@ -191,6 +191,11 @@
 <span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">sample</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
@@ -701,12 +706,40 @@
         <span class="n">series</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">_historical_forecasts_general_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_last_prediction_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="p">,</span> <span class="n">overlap_end</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_get_last_prediction_time</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">,</span>
+        <span class="n">forecast_horizon</span><span class="p">,</span>
+        <span class="n">overlap_end</span><span class="p">,</span>
+        <span class="n">latest_possible_prediction_start</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># when overlap_end=True, we can simply use the precomputed last possible prediction start point</span>
         <span class="k">if</span> <span class="n">overlap_end</span><span class="p">:</span>
-            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_horizon</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">latest_possible_prediction_start</span>
 
+        <span class="c1"># (1) otherwise, we have to step `forecast_horizon` steps back.</span>
+        <span class="c1"># (2) additionally, we check whether the `latest_possible_prediction_start` was shifted back</span>
+        <span class="c1"># from the overall theoretical latest possible prediction start point (which is by definition</span>
+        <span class="c1"># the first time step after the end of the target series) due to too short covariates.</span>
+        <span class="n">theoretical_latest_prediction_start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span>
+        <span class="k">if</span> <span class="n">latest_possible_prediction_start</span> <span class="o">==</span> <span class="n">theoretical_latest_prediction_start</span><span class="p">:</span>
+            <span class="c1"># (1)</span>
+            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_horizon</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># (2)</span>
+            <span class="n">covariates_shift</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span>
+                    <span class="n">generate_index</span><span class="p">(</span>
+                        <span class="n">start</span><span class="o">=</span><span class="n">latest_possible_prediction_start</span><span class="p">,</span>
+                        <span class="n">end</span><span class="o">=</span><span class="n">theoretical_latest_prediction_start</span><span class="p">,</span>
+                        <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="o">-</span> <span class="mi">2</span>
+            <span class="p">)</span>
+            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span>
+                <span class="o">-</span><span class="p">(</span><span class="n">forecast_horizon</span> <span class="o">+</span> <span class="n">covariates_shift</span><span class="p">)</span>
+            <span class="p">]</span>
         <span class="k">return</span> <span class="n">last_valid_pred_time</span>
 
     <span class="k">def</span> <span class="nf">_check_optimizable_historical_forecasts</span><span class="p">(</span>
@@ -727,6 +760,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">train_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -776,15 +810,14 @@
 <span class="sd">            steps available, all steps up until prediction time are used, as in default case. Needs to be at least</span>
 <span class="sd">            `min_train_series_length`.</span>
 <span class="sd">        start</span>
-<span class="sd">            Optionally, the first point in time at which a prediction is computed for a future time.</span>
-<span class="sd">            This parameter supports: ``float``, ``int`` and ``pandas.Timestamp``, and ``None``.</span>
-<span class="sd">            If a ``float``, the parameter will be treated as the proportion of the time series</span>
-<span class="sd">            that should lie before the first prediction point.</span>
-<span class="sd">            If an ``int``, the parameter will be treated as an integer index to the time index of</span>
-<span class="sd">            `series` that will be used as first prediction time.</span>
-<span class="sd">            If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time</span>
-<span class="sd">            directly.</span>
-<span class="sd">            If ``None``, the first prediction time will automatically be set to:</span>
+<span class="sd">            Optionally, the first point in time at which a prediction is computed. This parameter supports:</span>
+<span class="sd">            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.</span>
+<span class="sd">            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.</span>
+<span class="sd">            If an ``int``, it is either the index position of the first prediction point for `series` with a</span>
+<span class="sd">            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to</span>
+<span class="sd">            the index position with `start_format=&quot;position&quot;`.</span>
+<span class="sd">            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.</span>
+<span class="sd">            If ``None``, the first prediction point will automatically be set to:</span>
 
 <span class="sd">            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first</span>
 <span class="sd">              predictable point is earlier than the first trainable point.</span>
@@ -795,6 +828,13 @@
 <span class="sd">            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.</span>
 <span class="sd">            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter</span>
 <span class="sd">            (default behavior with ``None``) and start at the first trainable/predictable point.</span>
+<span class="sd">        start_format</span>
+<span class="sd">            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a</span>
+<span class="sd">            `pd.RangeIndex`.</span>
+<span class="sd">            If set to &#39;position&#39;, `start` corresponds to the index position of the first predicted point and can range</span>
+<span class="sd">            from `(-len(series), len(series) - 1)`.</span>
+<span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
+<span class="sd">            an error if the value is not in `series`&#39; index. Default: ``&#39;value&#39;``</span>
 <span class="sd">        forecast_horizon</span>
 <span class="sd">            The forecast horizon for the predictions.</span>
 <span class="sd">        stride</span>
@@ -965,6 +1005,7 @@
                 <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
                 <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
                 <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
                 <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
                 <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
                 <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
@@ -1043,6 +1084,7 @@
                 <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
                 <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
                 <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -1075,7 +1117,10 @@
             <span class="c1"># iterate and forecast</span>
             <span class="k">for</span> <span class="n">_counter</span><span class="p">,</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterator</span><span class="p">):</span>
                 <span class="c1"># drop everything after `pred_time` to train on / predict with shifting input</span>
-                <span class="n">train_series</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pred_time</span> <span class="o">&lt;=</span> <span class="n">series_</span><span class="o">.</span><span class="n">end_time</span><span class="p">():</span>
+                    <span class="n">train_series</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">train_series</span> <span class="o">=</span> <span class="n">series_</span>
 
                 <span class="c1"># optionally, apply moving window (instead of expanding window)</span>
                 <span class="k">if</span> <span class="n">train_length_</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">train_length_</span><span class="p">:</span>
@@ -1197,6 +1242,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">train_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1252,25 +1298,31 @@
 <span class="sd">            steps available, all steps up until prediction time are used, as in default case. Needs to be at least</span>
 <span class="sd">            `min_train_series_length`.</span>
 <span class="sd">        start</span>
-<span class="sd">            Optionally, the first point in time at which a prediction is computed for a future time.</span>
-<span class="sd">            This parameter supports: ``float``, ``int`` and ``pandas.Timestamp``, and ``None``.</span>
-<span class="sd">            If a ``float``, the parameter will be treated as the proportion of the time series</span>
-<span class="sd">            that should lie before the first prediction point.</span>
-<span class="sd">            If an ``int``, the parameter will be treated as an integer index to the time index of</span>
-<span class="sd">            `series` that will be used as first prediction time.</span>
-<span class="sd">            If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time</span>
-<span class="sd">            directly.</span>
-<span class="sd">            If ``None``, the first prediction time will automatically be set to:</span>
-<span class="sd">                 - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first</span>
-<span class="sd">                 predictable point is earlier than the first trainable point.</span>
+<span class="sd">            Optionally, the first point in time at which a prediction is computed. This parameter supports:</span>
+<span class="sd">            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.</span>
+<span class="sd">            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.</span>
+<span class="sd">            If an ``int``, it is either the index position of the first prediction point for `series` with a</span>
+<span class="sd">            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to</span>
+<span class="sd">            the index position with `start_format=&quot;position&quot;`.</span>
+<span class="sd">            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.</span>
+<span class="sd">            If ``None``, the first prediction point will automatically be set to:</span>
 
-<span class="sd">                 - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),</span>
-<span class="sd">                 or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.</span>
+<span class="sd">            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first</span>
+<span class="sd">              predictable point is earlier than the first trainable point.</span>
+<span class="sd">            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),</span>
+<span class="sd">              or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.</span>
+<span class="sd">            - the first trainable point (given `train_length`) otherwise</span>
 
-<span class="sd">                 - the first trainable point (given `train_length`) otherwise</span>
 <span class="sd">            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.</span>
 <span class="sd">            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter</span>
 <span class="sd">            (default behavior with ``None``) and start at the first trainable/predictable point.</span>
+<span class="sd">        start_format</span>
+<span class="sd">            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a</span>
+<span class="sd">            `pd.RangeIndex`.</span>
+<span class="sd">            If set to &#39;position&#39;, `start` corresponds to the index position of the first predicted point and can range</span>
+<span class="sd">            from `(-len(series), len(series) - 1)`.</span>
+<span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
+<span class="sd">            an error if the value is not in `series`&#39; index. Default: ``&#39;value&#39;``</span>
 <span class="sd">        forecast_horizon</span>
 <span class="sd">            The forecast horizon for the point predictions.</span>
 <span class="sd">        stride</span>
@@ -1327,6 +1379,7 @@
                 <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
                 <span class="n">train_length</span><span class="o">=</span><span class="n">train_length</span><span class="p">,</span>
                 <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
                 <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
                 <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
                 <span class="n">retrain</span><span class="o">=</span><span class="n">retrain</span><span class="p">,</span>
@@ -1377,6 +1430,7 @@
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
         <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">val_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1442,17 +1496,38 @@
 <span class="sd">        forecast_horizon</span>
 <span class="sd">            The integer value of the forecasting horizon. Activates expanding window mode.</span>
 <span class="sd">        stride</span>
-<span class="sd">            The number of time steps between two consecutive predictions. Only used in expanding window mode.</span>
+<span class="sd">            Only used in expanding window mode. The number of time steps between two consecutive predictions.</span>
 <span class="sd">        start</span>
-<span class="sd">            The ``int``, ``float`` or ``pandas.Timestamp`` that represents the starting point in the time index</span>
-<span class="sd">            of `series` from which predictions will be made to evaluate the model.</span>
-<span class="sd">            For a detailed description of how the different data types are interpreted, please see the documentation</span>
-<span class="sd">            for `ForecastingModel.backtest`. Only used in expanding window mode.</span>
+<span class="sd">            Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.</span>
+<span class="sd">            This parameter supports: ``float``, ``int``, ``pandas.Timestamp``, and ``None``.</span>
+<span class="sd">            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.</span>
+<span class="sd">            If an ``int``, it is either the index position of the first prediction point for `series` with a</span>
+<span class="sd">            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to</span>
+<span class="sd">            the index position with `start_format=&quot;position&quot;`.</span>
+<span class="sd">            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.</span>
+<span class="sd">            If ``None``, the first prediction point will automatically be set to:</span>
+
+<span class="sd">            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first</span>
+<span class="sd">              predictable point is earlier than the first trainable point.</span>
+<span class="sd">            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),</span>
+<span class="sd">              or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.</span>
+<span class="sd">            - the first trainable point (given `train_length`) otherwise</span>
+
+<span class="sd">            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.</span>
+<span class="sd">            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter</span>
+<span class="sd">            (default behavior with ``None``) and start at the first trainable/predictable point.</span>
+<span class="sd">        start_format</span>
+<span class="sd">            Only used in expanding window mode. Defines the `start` format. Only effective when `start` is an integer</span>
+<span class="sd">            and `series` is indexed with a `pd.RangeIndex`.</span>
+<span class="sd">            If set to &#39;position&#39;, `start` corresponds to the index position of the first predicted point and can range</span>
+<span class="sd">            from `(-len(series), len(series) - 1)`.</span>
+<span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
+<span class="sd">            an error if the value is not in `series`&#39; index. Default: ``&#39;value&#39;``</span>
 <span class="sd">        last_points_only</span>
-<span class="sd">            Whether to use the whole forecasts or only the last point of each forecast to compute the error. Only used</span>
-<span class="sd">            in expanding window mode.</span>
+<span class="sd">            Only used in expanding window mode. Whether to use the whole forecasts or only the last point of each</span>
+<span class="sd">            forecast to compute the error.</span>
 <span class="sd">        show_warnings</span>
-<span class="sd">            Whether to show warnings related to the `start` parameter. Only used in expanding window mode.</span>
+<span class="sd">            Only used in expanding window mode. Whether to show warnings related to the `start` parameter.</span>
 <span class="sd">        val_series</span>
 <span class="sd">            The TimeSeries instance used for validation in split mode. If provided, this series must start right after</span>
 <span class="sd">            the end of `series`; so that a proper comparison of the forecast can be made.</span>
@@ -1553,6 +1628,7 @@
                     <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
                     <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                     <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                    <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
                     <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
                     <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
                     <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
@@ -2060,6 +2136,7 @@
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2316,13 +2393,13 @@
     <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span><span class="p">:</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;predict_likelihood_parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span>
@@ -2338,9 +2415,9 @@
 
     <span class="k">def</span> <span class="nf">_fit_wrapper</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
             <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>

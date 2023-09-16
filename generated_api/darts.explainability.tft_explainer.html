@@ -496,11 +496,6 @@
    </i>
   </label>
   <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
-     StatsForecast utils
-    </a>
-   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -882,7 +877,7 @@ for the explanations. The same requirements apply as for <cite>background_series
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.explainability.shap_explainer</span> <span class="kn">import</span> <span class="n">ShapExplainer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.explainability.tft_explainer</span> <span class="kn">import</span> <span class="n">TFTExplainer</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TFTModel</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span>

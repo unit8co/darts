@@ -178,7 +178,10 @@
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLPastCovariatesModule</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PLPastCovariatesModule</span><span class="p">,</span>
+    <span class="n">io_processor</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">MonteCarloDropout</span>
 
@@ -657,6 +660,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_g</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
+    <span class="nd">@io_processor</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
         <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
 
@@ -783,6 +787,9 @@
 <span class="sd">            to using a constant learning rate. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        use_reversible_instance_norm</span>
+<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.</span>
+<span class="sd">            It is only applied to the features of the target series and not the covariates.</span>
 <span class="sd">        batch_size</span>
 <span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
 <span class="sd">        n_epochs</span>
@@ -823,11 +830,14 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
@@ -889,6 +899,39 @@
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] https://openreview.net/forum?id=r1ecqn4YwB</span>
+<span class="sd">        .. [2] T. Kim et al. &quot;Reversible Instance Normalization for Accurate Time-Series Forecasting against</span>
+<span class="sd">                Distribution Shift&quot;, https://openreview.net/forum?id=cGDAkQo1C0p</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import NBEATSModel</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use past observed rainfall (pretending to be unknown beyond index 100)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;rain (mm)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # changing the activation function of the encoder/decoder to LeakyReLU</span>
+<span class="sd">        &gt;&gt;&gt; model = NBEATSModel(</span>
+<span class="sd">        &gt;&gt;&gt;     input_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     n_epochs=5,</span>
+<span class="sd">        &gt;&gt;&gt;     activation=&#39;LeakyReLU&#39;</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[ 929.78509085],</span>
+<span class="sd">               [1013.66339481],</span>
+<span class="sd">               [ 999.8843893 ],</span>
+<span class="sd">               [ 892.66032082],</span>
+<span class="sd">               [ 921.09781534],</span>
+<span class="sd">               [ 950.37965429]])</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            `NBEATS example notebook &lt;https://unit8co.github.io/darts/examples/07-NBEATS-examples.html&gt;`_</span>
+<span class="sd">            presents techniques that can be used to improve the forecasts quality compared to this simple usage</span>
+<span class="sd">            example.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_extract_torch_model_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
 

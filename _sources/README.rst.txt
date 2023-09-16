@@ -414,13 +414,13 @@ on bringing more models and features.
      - 🟥 🟥 🟥
      - 🟩 🟥
      - 🟥
-   * - `Prophet <file:///Users/dennisbader/projects/unit8/darts/docs/build/html/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet>`_ (see `install notes <https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet>`_\ )
+   * - `Prophet <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet>`_ (see `install notes <https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet>`_\ )
      - `Prophet repo <https://github.com/facebook/prophet>`_
      - 🟩 🟥
      - 🟥 🟩 🟥
      - 🟩 🟥
      - 🟥
-   * - `FFT <file:///Users/dennisbader/projects/unit8/darts/docs/build/html/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT>`_ (Fast Fourier Transform)
+   * - `FFT <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT>`_ (Fast Fourier Transform)
      - 
      - 🟩 🟥
      - 🟥 🟥 🟥

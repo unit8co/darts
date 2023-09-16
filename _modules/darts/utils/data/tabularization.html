@@ -168,12 +168,14 @@
 <span></span><span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
 <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">inf</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -192,9 +194,9 @@
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">last_static_covariates_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -319,15 +321,18 @@
 <span class="sd">        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,</span>
 <span class="sd">        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.</span>
 <span class="sd">        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from</span>
-<span class="sd">        the current value).</span>
+<span class="sd">        the current value). If the lags are provided as a dictionary, the lags values are specific to each</span>
+<span class="sd">        component in the target series.</span>
 <span class="sd">    lags_past_covariates</span>
 <span class="sd">        Optionally, the lags of `past_covariates` to be used as features. Like `lags`, each lag value is assumed to</span>
-<span class="sd">        be less than or equal to -1.</span>
+<span class="sd">        be less than or equal to -1. If the lags are provided as a dictionary, the lags values are specific to each</span>
+<span class="sd">        component in the past covariates series.</span>
 <span class="sd">    lags_future_covariates</span>
 <span class="sd">        Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and</span>
 <span class="sd">        `lags_past_covariates`, `lags_future_covariates` values can be positive (i.e. use values *after* time `t`</span>
 <span class="sd">        to predict target at time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or</span>
-<span class="sd">        negative (i.e. use values *before* time `t` to predict target at time `t`).</span>
+<span class="sd">        negative (i.e. use values *before* time `t` to predict target at time `t`). If the lags are provided as</span>
+<span class="sd">        a dictionary, the lags values are specific to each component in the future covariates series.</span>
 <span class="sd">    uses_static_covariates</span>
 <span class="sd">        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must</span>
 <span class="sd">        have identical shapes across all target series.</span>
@@ -496,9 +501,9 @@
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">last_static_covariates_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -537,15 +542,18 @@
 <span class="sd">        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,</span>
 <span class="sd">        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.</span>
 <span class="sd">        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from</span>
-<span class="sd">        the current value).</span>
+<span class="sd">        the current value). If the lags are provided as a dictionary, the lags values are specific to each</span>
+<span class="sd">        component in the target series.</span>
 <span class="sd">    lags_past_covariates</span>
 <span class="sd">        Optionally, the lags of `past_covariates` to be used as features. Like `lags`, each lag value is assumed to</span>
-<span class="sd">        be less than or equal to -1.</span>
+<span class="sd">        be less than or equal to -1. If the lags are provided as a dictionary, the lags values are specific to each</span>
+<span class="sd">        component in the past covariates series.</span>
 <span class="sd">    lags_future_covariates</span>
 <span class="sd">        Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and `lags_past_covariates`,</span>
 <span class="sd">        `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at</span>
 <span class="sd">        time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use values</span>
-<span class="sd">        *before* time `t` to predict target at time `t`).</span>
+<span class="sd">        *before* time `t` to predict target at time `t`). If the lags are provided as a dictionary, the lags values</span>
+<span class="sd">        are specific to each component in the future covariates series.</span>
 <span class="sd">    uses_static_covariates</span>
 <span class="sd">        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must</span>
 <span class="sd">        have identical shapes across all target series.</span>
@@ -634,9 +642,9 @@
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">last_static_covariates_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -667,15 +675,18 @@
 <span class="sd">        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,</span>
 <span class="sd">        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.</span>
 <span class="sd">        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from</span>
-<span class="sd">        the current value).</span>
+<span class="sd">        the current value). If the lags are provided as a dictionary, the lags values are specific to each</span>
+<span class="sd">        component in the target series.</span>
 <span class="sd">    lags_past_covariates</span>
 <span class="sd">        Optionally, the lags of `past_covariates` to be used as features. Like `lags`, each lag value is assumed to</span>
-<span class="sd">        be less than or equal to -1.</span>
+<span class="sd">        be less than or equal to -1. If the lags are provided as a dictionary, the lags values are specific to each</span>
+<span class="sd">        component in the past covariates series.</span>
 <span class="sd">    lags_future_covariates</span>
 <span class="sd">        Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and `lags_past_covariates`,</span>
 <span class="sd">        `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at</span>
 <span class="sd">        time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use</span>
-<span class="sd">        values *before* time `t` to predict target at time `t`).</span>
+<span class="sd">        values *before* time `t` to predict target at time `t`). If the lags are provided as a dictionary, the lags</span>
+<span class="sd">        values are specific to each component in the future covariates series.</span>
 <span class="sd">    uses_static_covariates</span>
 <span class="sd">        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must</span>
 <span class="sd">        have identical shapes across all target series.</span>
@@ -749,11 +760,11 @@
 
 
 <div class="viewcode-block" id="add_static_covariates_to_lagged_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.add_static_covariates_to_lagged_data">[docs]</a><span class="k">def</span> <span class="nf">add_static_covariates_to_lagged_data</span><span class="p">(</span>
-    <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]],</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">last_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Add static covariates to the features&#39; table for RegressionModels.</span>
 <span class="sd">    If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static</span>
@@ -843,9 +854,9 @@
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">concatenate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -854,11 +865,16 @@
 <span class="sd">    Helper function called to retrieve the name of the features and labels arrays created with</span>
 <span class="sd">    `create_lagged_data()`. The order of the features is the following:</span>
 
-<span class="sd">    Along the `n_lagged_features` axis, `X` has the following structure (for `*_lags=[-2,-1]` and</span>
-<span class="sd">    `*_series.n_components = 2`):</span>
+<span class="sd">    Along the `n_lagged_features` axis, `X` has the following structure:</span>
 <span class="sd">        lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates</span>
-<span class="sd">    where each `lagged_*` has the following structure:</span>
+
+<span class="sd">    For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),</span>
+<span class="sd">    each `lagged_*` has the following structure (grouped by lags):</span>
 <span class="sd">        comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1</span>
+<span class="sd">    For `*_lags={&#39;comp0&#39;:[-2, -1], &#39;comp1&#39;:[-5, -3]}` and `*_series.n_components = 2` (component-</span>
+<span class="sd">    specific lags), each `lagged_*` has the following structure (grouped by components):</span>
+<span class="sd">        comp0_*_lag-2 | comp0_*_lag-1 | comp1_*_lag_-5 | comp1_*_lag-3</span>
+
 <span class="sd">    and for static covariates (2 static covariates acting on 2 target components):</span>
 <span class="sd">        cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1</span>
 
@@ -910,11 +926,17 @@
             <span class="k">continue</span>
 
         <span class="n">components</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">variate</span><span class="p">)</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-        <span class="n">lagged_feature_names</span> <span class="o">+=</span> <span class="p">[</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">variate_type</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">variate_lags</span>
-            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">components</span>
-        <span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variate_lags</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+                <span class="n">lagged_feature_names</span> <span class="o">+=</span> <span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">variate_type</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">variate_lags</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lagged_feature_names</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">variate_type</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">variate_lags</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">components</span>
+            <span class="p">]</span>
 
         <span class="k">if</span> <span class="n">variate_type</span> <span class="o">==</span> <span class="s2">&quot;target&quot;</span> <span class="ow">and</span> <span class="n">lags</span><span class="p">:</span>
             <span class="n">label_feature_names</span> <span class="o">=</span> <span class="p">[</span>
@@ -941,13 +963,13 @@
 
 
 <span class="k">def</span> <span class="nf">_create_lagged_data_by_moving_window</span><span class="p">(</span>
-    <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
-    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
-    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
+    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
+    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
     <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="n">multi_models</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">check_inputs</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -1058,7 +1080,14 @@
             <span class="c1"># Within each window, the `-1` indexed value (i.e. the value at the very end of</span>
             <span class="c1"># the window) corresponds to time `t - min_lag_i`. The negative index of the time</span>
             <span class="c1"># `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:</span>
-            <span class="n">lags_to_extract</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lags_i</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="o">+</span> <span class="n">min_lag_i</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_i</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">lags_to_extract</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lags_i</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="o">+</span> <span class="n">min_lag_i</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Lags are grouped by component, extracted from the same window</span>
+                <span class="n">lags_to_extract</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">comp_lags</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="o">+</span> <span class="n">min_lag_i</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="k">for</span> <span class="n">comp_lags</span> <span class="ow">in</span> <span class="n">lags_i</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                <span class="p">]</span>
             <span class="n">lagged_vals</span> <span class="o">=</span> <span class="n">_extract_lagged_vals_from_windows</span><span class="p">(</span><span class="n">windows</span><span class="p">,</span> <span class="n">lags_to_extract</span><span class="p">)</span>
             <span class="n">X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lagged_vals</span><span class="p">)</span>
         <span class="c1"># Cache `start_time_idx` for label creation:</span>
@@ -1095,7 +1124,8 @@
 
 
 <span class="k">def</span> <span class="nf">_extract_lagged_vals_from_windows</span><span class="p">(</span>
-    <span class="n">windows</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">lags_to_extract</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">windows</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">lags_to_extract</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function called by `_create_lagged_data_by_moving_window` that</span>
@@ -1105,19 +1135,34 @@
 <span class="sd">    is done such that the order of elements along axis 1 matches the pattern</span>
 <span class="sd">    described in the docstring of `create_lagged_data`.</span>
 
-<span class="sd">    If `lags_to_extract` is specified, then only those values within each window that</span>
+<span class="sd">    If `lags_to_extract` is not specified, all of the values within each window is extracted.</span>
+<span class="sd">    If `lags_to_extract` is specified as an np.ndarray, then only those values within each window that</span>
 <span class="sd">    are indexed by `lags_to_extract` will be returned. In such cases, the shape of the returned</span>
 <span class="sd">    lagged values is `(num_windows, num_components * lags_to_extract.size, num_series)`. For example,</span>
 <span class="sd">    if `lags_to_extract = [-2]`, only the second-to-last values within each window will be extracted.</span>
-<span class="sd">    If `lags_to_extract` is not specified, all of the values within each window is extracted.</span>
+<span class="sd">    If `lags_to_extract` is specified as a list of np.ndarray, the values will be extracted using the</span>
+<span class="sd">    lags provided for each component. In such cases, the shape of the returned lagged values is</span>
+<span class="sd">    `(num_windows, sum([comp_lags.size for comp_lags in lags_to_extract]), num_series)`. For example,</span>
+<span class="sd">    if `lags_to_extract = [[-2, -1], [-1]]`, the second-to-last and last values of the first component</span>
+<span class="sd">    and the last values of the second component within each window will be extracted.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># windows.shape = (num_windows, num_components, num_samples, window_len):</span>
-    <span class="k">if</span> <span class="n">lags_to_extract</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">windows</span> <span class="o">=</span> <span class="n">windows</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">lags_to_extract</span><span class="p">]</span>
-    <span class="c1"># windows.shape = (num_windows, window_len, num_components, num_samples):</span>
-    <span class="n">windows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">windows</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-    <span class="c1"># lagged_vals.shape = (num_windows, num_components*window_len, num_samples):</span>
-    <span class="n">lagged_vals</span> <span class="o">=</span> <span class="n">windows</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">windows</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">windows</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_to_extract</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="c1"># iterate over the components-specific lags</span>
+        <span class="n">comp_windows</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">windows</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="n">comp_lags_to_extract</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">comp_lags_to_extract</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lags_to_extract</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="c1"># windows.shape = (sum(lags_len) across components, num_windows, num_samples):</span>
+        <span class="n">windows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">comp_windows</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">lagged_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">windows</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">lags_to_extract</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">windows</span> <span class="o">=</span> <span class="n">windows</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">lags_to_extract</span><span class="p">]</span>
+        <span class="c1"># windows.shape = (num_windows, window_len, num_components, num_samples):</span>
+        <span class="n">windows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">windows</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="c1"># lagged_vals.shape = (num_windows, num_components*window_len, num_samples):</span>
+        <span class="n">lagged_vals</span> <span class="o">=</span> <span class="n">windows</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">windows</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">windows</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
     <span class="k">return</span> <span class="n">lagged_vals</span>
 
 
@@ -1248,9 +1293,9 @@
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">is_training</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">return_min_and_max_lags</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1365,6 +1410,9 @@
 <span class="sd">        Optionally, specifies whether the largest magnitude lag value for each series should also be returned along with</span>
 <span class="sd">        the &#39;eligible&#39; feature times</span>
 
+<span class="sd">    Note: if the lags are provided as a dictionary for the target series or any of the covariates series, the</span>
+<span class="sd">    component-specific lags are grouped into a single list to compute the corresponding feature time.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    feature_times</span>
@@ -1410,6 +1458,10 @@
         <span class="p">[</span><span class="n">target_series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span>
         <span class="p">[</span><span class="n">lags</span><span class="p">,</span> <span class="n">lags_past_covariates</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="p">],</span>
     <span class="p">):</span>
+        <span class="c1"># union of the component-specific lags, unsorted</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_i</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">lags_i</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">lags_i</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+
         <span class="k">if</span> <span class="n">check_inputs</span> <span class="ow">and</span> <span class="p">(</span><span class="n">series_i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
             <span class="n">_check_series_length</span><span class="p">(</span>
                 <span class="n">series_i</span><span class="p">,</span>
@@ -1758,9 +1810,9 @@
 
 
 <span class="k">def</span> <span class="nf">_check_lags</span><span class="p">(</span>
-    <span class="n">lags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
+    <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
+    <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Throws `ValueError` if any `lag` values aren&#39;t negative OR if no lags have been specified.</span>
@@ -1773,9 +1825,13 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">lags_is_none</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
             <span class="n">is_target_or_past</span> <span class="o">=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span>
             <span class="n">max_lag</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">is_target_or_past</span> <span class="k">else</span> <span class="n">inf</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_i</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">lags_i</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">lags_i</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+
             <span class="n">raise_if</span><span class="p">(</span>
                 <span class="nb">any</span><span class="p">((</span><span class="n">lag</span> <span class="o">&gt;</span> <span class="n">max_lag</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lag</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags_i</span><span class="p">),</span>
-                <span class="sa">f</span><span class="s2">&quot;`lags</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">` must be a `Sequence` containing only `int` values less than </span><span class="si">{</span><span class="n">max_lag</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;`lags</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">` must be a `Sequence` or `Dict` containing only `int` values less than </span><span class="si">{</span><span class="n">max_lag</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
     <span class="n">raise_if</span><span class="p">(</span>
         <span class="nb">all</span><span class="p">(</span><span class="n">lags_is_none</span><span class="p">),</span>

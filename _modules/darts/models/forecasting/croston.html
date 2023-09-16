@@ -225,11 +225,14 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
@@ -241,6 +244,23 @@
 <span class="sd">        .. [2] Ruud H. Teunter, Aris A. Syntetos, and M. Zied Babai.</span>
 <span class="sd">               Intermittent demand: Linking forecasting to inventory obsolescence.</span>
 <span class="sd">               European Journal of Operational Research, 214(3):606 – 615, 2011.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import Croston</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # use the optimized version to automatically select best alpha parameter</span>
+<span class="sd">        &gt;&gt;&gt; model = Croston(version=&quot;optimized&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[461.7666],</span>
+<span class="sd">               [461.7666],</span>
+<span class="sd">               [461.7666],</span>
+<span class="sd">               [461.7666],</span>
+<span class="sd">               [461.7666],</span>
+<span class="sd">               [461.7666]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span>

@@ -234,14 +234,42 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import KalmanForecaster</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import datetime_attribute_timeseries</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = datetime_attribute_timeseries(series, &quot;month&quot;, cyclic=True, add_length=6)</span>
+<span class="sd">        &gt;&gt;&gt; # increasing the size of the state vector</span>
+<span class="sd">        &gt;&gt;&gt; model = KalmanForecaster(dim_x=12)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[474.40680728],</span>
+<span class="sd">               [440.51801726],</span>
+<span class="sd">               [461.94512461],</span>
+<span class="sd">               [494.42090089],</span>
+<span class="sd">               [528.6436328 ],</span>
+<span class="sd">               [590.30647185]])</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            `Kalman example notebook &lt;https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html&gt;`_</span>
+<span class="sd">            presents techniques that can be used to improve the forecasts quality compared to this simple usage</span>
+<span class="sd">            example.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim_x</span> <span class="o">=</span> <span class="n">dim_x</span>

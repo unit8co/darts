@@ -899,9 +899,9 @@
 
     <span class="k">def</span> <span class="nf">_create_regression_model_shap_X</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">target_series</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">,</span>
-        <span class="n">future_covariates</span><span class="p">,</span>
+        <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="n">n_samples</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
@@ -913,9 +913,9 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">lags_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
-        <span class="n">lags_past_covariates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;past&quot;</span><span class="p">)</span>
-        <span class="n">lags_future_covariates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;future&quot;</span><span class="p">)</span>
+        <span class="n">lags_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_lags</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
+        <span class="n">lags_past_covariates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_lags</span><span class="p">(</span><span class="s2">&quot;past&quot;</span><span class="p">)</span>
+        <span class="n">lags_future_covariates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_lags</span><span class="p">(</span><span class="s2">&quot;future&quot;</span><span class="p">)</span>
 
         <span class="n">X</span><span class="p">,</span> <span class="n">indexes</span> <span class="o">=</span> <span class="n">create_lagged_prediction_data</span><span class="p">(</span>
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span> <span class="k">if</span> <span class="n">lags_list</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>

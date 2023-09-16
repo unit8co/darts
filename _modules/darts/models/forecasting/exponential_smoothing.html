@@ -233,6 +233,24 @@
 <span class="sd">            :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.</span>
 <span class="sd">            See `the documentation</span>
 <span class="sd">            &lt;https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html&gt;`_.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import ExponentialSmoothing</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.utils import ModelMode, SeasonalityMode</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # using Holt&#39;s exponential smoothing</span>
+<span class="sd">        &gt;&gt;&gt; model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.MULTIPLICATIVE)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[445.24283838],</span>
+<span class="sd">               [418.22618932],</span>
+<span class="sd">               [465.31305075],</span>
+<span class="sd">               [494.95129261],</span>
+<span class="sd">               [505.4770514 ],</span>
+<span class="sd">               [573.31519186]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">=</span> <span class="n">trend</span>

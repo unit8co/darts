@@ -256,7 +256,7 @@
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
-<span class="sd">        &gt;&gt;&gt; from darts.explainability.shap_explainer import ShapExplainer</span>
+<span class="sd">        &gt;&gt;&gt; from darts.explainability.tft_explainer import TFTExplainer</span>
 <span class="sd">        &gt;&gt;&gt; from darts.models import TFTModel</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
 <span class="sd">        &gt;&gt;&gt; model = TFTModel(</span>
@@ -374,7 +374,7 @@
         <span class="c1"># get the weights and the attention head from the trained model for the prediction</span>
         <span class="c1"># aggregate over attention heads</span>
         <span class="n">attention_heads</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_attn_out_weights</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_attn_out_weights</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="c1"># get the variable importances (pd.DataFrame with rows corresponding to the number of input series)</span>
         <span class="n">encoder_importance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder_importance</span>
@@ -668,7 +668,8 @@
 
         <span class="c1"># transform the encoder/decoder weights to percentages, rounded to n_decimals</span>
         <span class="n">weights_percentage</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">weight</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">n_decimals</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+            <span class="n">weight</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">n_decimals</span><span class="p">)</span>
+            <span class="o">*</span> <span class="mi">100</span>
         <span class="p">)</span>
         <span class="c1"># create a dataframe with the variable names and the weights</span>
         <span class="n">name_mapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_mapping</span>

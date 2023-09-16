@@ -175,9 +175,11 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.models.components.layer_norm_variants</span> <span class="kn">import</span> <span class="n">RINorm</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLMixedCovariatesModule</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PLMixedCovariatesModule</span><span class="p">,</span>
+    <span class="n">io_processor</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
 
 <span class="n">MixedCovariatesTrainTensorType</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span>
@@ -242,9 +244,9 @@
         <span class="n">decoder_output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">temporal_decoder_hidden</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">temporal_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">temporal_width_past</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">temporal_width_future</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">use_layer_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="n">use_reversible_instance_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -272,12 +274,12 @@
 <span class="sd">            The width of the hidden layers in the encoder/decoder Residual Blocks.</span>
 <span class="sd">        temporal_decoder_hidden</span>
 <span class="sd">            The width of the hidden layers in the temporal decoder.</span>
-<span class="sd">        temporal_width</span>
+<span class="sd">        temporal_width_past</span>
+<span class="sd">            The width of the past covariate embedding space.</span>
+<span class="sd">        temporal_width_future</span>
 <span class="sd">            The width of the future covariate embedding space.</span>
 <span class="sd">        use_layer_norm</span>
 <span class="sd">            Whether to use layer normalization in the Residual Blocks.</span>
-<span class="sd">        use_reversible_instance_norm</span>
-<span class="sd">            Whether to use reversible instance normalization.</span>
 <span class="sd">        dropout</span>
 <span class="sd">            Dropout probability</span>
 <span class="sd">        **kwargs</span>
@@ -299,6 +301,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span> <span class="o">=</span> <span class="n">input_dim</span> <span class="o">-</span> <span class="n">output_dim</span> <span class="o">-</span> <span class="n">future_cov_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">=</span> <span class="n">future_cov_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">static_cov_dim</span> <span class="o">=</span> <span class="n">static_cov_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
@@ -308,30 +311,53 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_decoder_hidden</span> <span class="o">=</span> <span class="n">temporal_decoder_hidden</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_layer_norm</span> <span class="o">=</span> <span class="n">use_layer_norm</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">use_reversible_instance_norm</span> <span class="o">=</span> <span class="n">use_reversible_instance_norm</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width</span> <span class="o">=</span> <span class="n">temporal_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span> <span class="o">=</span> <span class="n">temporal_width_past</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span> <span class="o">=</span> <span class="n">temporal_width_future</span>
 
-        <span class="c1"># residual block for input feature projection</span>
-        <span class="c1"># this is only needed when covariates are used</span>
-        <span class="k">if</span> <span class="n">future_cov_dim</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">feature_projection</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
-                <span class="n">input_dim</span><span class="o">=</span><span class="n">future_cov_dim</span><span class="p">,</span>
-                <span class="n">output_dim</span><span class="o">=</span><span class="n">temporal_width</span><span class="p">,</span>
+        <span class="c1"># past covariates handling: either feature projection, raw features, or no features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_projection</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span> <span class="ow">and</span> <span class="n">temporal_width_past</span><span class="p">:</span>
+            <span class="c1"># residual block for past covariates feature projection</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_projection</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
+                <span class="n">input_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span><span class="p">,</span>
+                <span class="n">output_dim</span><span class="o">=</span><span class="n">temporal_width_past</span><span class="p">,</span>
                 <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
                 <span class="n">use_layer_norm</span><span class="o">=</span><span class="n">use_layer_norm</span><span class="p">,</span>
                 <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="n">past_covariates_flat_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">*</span> <span class="n">temporal_width_past</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span><span class="p">:</span>
+            <span class="c1"># skip projection and use raw features</span>
+            <span class="n">past_covariates_flat_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">feature_projection</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">past_covariates_flat_dim</span> <span class="o">=</span> <span class="mi">0</span>
 
-        <span class="c1"># original paper doesn&#39;t specify how to use past covariates</span>
-        <span class="c1"># we assume that they pass them raw to the encoder</span>
-        <span class="n">historical_future_covariates_flat_dim</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
-        <span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width</span> <span class="k">if</span> <span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># future covariates handling: either feature projection, raw features, or no features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_projection</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">future_cov_dim</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span><span class="p">:</span>
+            <span class="c1"># residual block for future covariates feature projection</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_projection</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
+                <span class="n">input_dim</span><span class="o">=</span><span class="n">future_cov_dim</span><span class="p">,</span>
+                <span class="n">output_dim</span><span class="o">=</span><span class="n">temporal_width_future</span><span class="p">,</span>
+                <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="n">use_layer_norm</span><span class="o">=</span><span class="n">use_layer_norm</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">historical_future_covariates_flat_dim</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+            <span class="p">)</span> <span class="o">*</span> <span class="n">temporal_width_future</span>
+        <span class="k">elif</span> <span class="n">future_cov_dim</span><span class="p">:</span>
+            <span class="c1"># skip projection and use raw features</span>
+            <span class="n">historical_future_covariates_flat_dim</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+            <span class="p">)</span> <span class="o">*</span> <span class="n">future_cov_dim</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">historical_future_covariates_flat_dim</span> <span class="o">=</span> <span class="mi">0</span>
+
         <span class="n">encoder_dim</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_dim</span> <span class="o">-</span> <span class="n">future_cov_dim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">*</span> <span class="n">output_dim</span>
+            <span class="o">+</span> <span class="n">past_covariates_flat_dim</span>
             <span class="o">+</span> <span class="n">historical_future_covariates_flat_dim</span>
             <span class="o">+</span> <span class="n">static_cov_dim</span>
         <span class="p">)</span>
@@ -379,9 +405,14 @@
             <span class="p">),</span>
         <span class="p">)</span>
 
+        <span class="n">decoder_input_dim</span> <span class="o">=</span> <span class="n">decoder_output_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
+        <span class="k">if</span> <span class="n">temporal_width_future</span> <span class="ow">and</span> <span class="n">future_cov_dim</span><span class="p">:</span>
+            <span class="n">decoder_input_dim</span> <span class="o">+=</span> <span class="n">temporal_width_future</span>
+        <span class="k">elif</span> <span class="n">future_cov_dim</span><span class="p">:</span>
+            <span class="n">decoder_input_dim</span> <span class="o">+=</span> <span class="n">future_cov_dim</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_decoder</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
-            <span class="n">input_dim</span><span class="o">=</span><span class="n">decoder_output_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
-            <span class="o">+</span> <span class="p">(</span><span class="n">temporal_width</span> <span class="k">if</span> <span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">input_dim</span><span class="o">=</span><span class="n">decoder_input_dim</span><span class="p">,</span>
             <span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="n">temporal_decoder_hidden</span><span class="p">,</span>
             <span class="n">use_layer_norm</span><span class="o">=</span><span class="n">use_layer_norm</span><span class="p">,</span>
@@ -392,11 +423,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_reversible_instance_norm</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">rin</span> <span class="o">=</span> <span class="n">RINorm</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">rin</span> <span class="o">=</span> <span class="kc">None</span>
-
+    <span class="nd">@io_processor</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
@@ -417,49 +444,51 @@
         <span class="c1"># x_static_covariates has shape (batch_size, static_cov_dim)</span>
         <span class="n">x</span><span class="p">,</span> <span class="n">x_future_covariates</span><span class="p">,</span> <span class="n">x_static_covariates</span> <span class="o">=</span> <span class="n">x_in</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_reversible_instance_norm</span><span class="p">:</span>
-            <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rin</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">])</span>
-
         <span class="n">x_lookback</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">]</span>
 
-        <span class="c1"># future covariates need to be extracted from x and stacked with historical future covariates</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">x_dynamic_covariates</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+        <span class="c1"># future covariates: feature projection or raw features</span>
+        <span class="c1"># historical future covariates need to be extracted from x and stacked with part of future covariates</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span><span class="p">:</span>
+            <span class="n">x_dynamic_future_covariates</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
                 <span class="p">[</span>
-                    <span class="n">x_future_covariates</span><span class="p">,</span>
                     <span class="n">x</span><span class="p">[</span>
                         <span class="p">:,</span>
                         <span class="p">:,</span>
                         <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="p">:,</span>
                     <span class="p">],</span>
+                    <span class="n">x_future_covariates</span><span class="p">,</span>
                 <span class="p">],</span>
                 <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="p">)</span>
-
-            <span class="c1"># project input features across all input time steps</span>
-            <span class="n">x_dynamic_covariates_proj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_projection</span><span class="p">(</span><span class="n">x_dynamic_covariates</span><span class="p">)</span>
-
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span><span class="p">:</span>
+                <span class="c1"># project input features across all input and output time steps</span>
+                <span class="n">x_dynamic_future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_projection</span><span class="p">(</span>
+                    <span class="n">x_dynamic_future_covariates</span>
+                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">x_dynamic_covariates</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">x_dynamic_covariates_proj</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">x_dynamic_future_covariates</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># extract past covariates, if they exist</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">x_past_covariates</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span>
+        <span class="c1"># past covariates: feature projection or raw features</span>
+        <span class="c1"># the past covariates are embedded in `x`</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span><span class="p">:</span>
+            <span class="n">x_dynamic_past_covariates</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span>
                 <span class="p">:,</span>
                 <span class="p">:,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="p">:</span> <span class="kc">None</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">==</span> <span class="mi">0</span>
-                <span class="k">else</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="p">:,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span><span class="p">,</span>
             <span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span><span class="p">:</span>
+                <span class="c1"># project input features across all input time steps</span>
+                <span class="n">x_dynamic_past_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_projection</span><span class="p">(</span>
+                    <span class="n">x_dynamic_past_covariates</span>
+                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">x_past_covariates</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">x_dynamic_past_covariates</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># setup input to encoder</span>
         <span class="n">encoded</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">x_lookback</span><span class="p">,</span>
-            <span class="n">x_past_covariates</span><span class="p">,</span>
-            <span class="n">x_dynamic_covariates_proj</span><span class="p">,</span>
+            <span class="n">x_dynamic_past_covariates</span><span class="p">,</span>
+            <span class="n">x_dynamic_future_covariates</span><span class="p">,</span>
             <span class="n">x_static_covariates</span><span class="p">,</span>
         <span class="p">]</span>
         <span class="n">encoded</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">start_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">encoded</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
@@ -475,7 +504,7 @@
         <span class="c1"># stack and temporally decode with future covariate last output steps</span>
         <span class="n">temporal_decoder_input</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">decoded</span><span class="p">,</span>
-            <span class="n">x_dynamic_covariates_proj</span><span class="p">[:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="n">x_dynamic_future_covariates</span><span class="p">[:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="p">:,</span> <span class="p">:]</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span>
             <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">]</span>
@@ -495,10 +524,6 @@
         <span class="p">)</span>  <span class="c1"># skip.view(temporal_decoded.shape)</span>
 
         <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_reversible_instance_norm</span><span class="p">:</span>
-            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rin</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-
         <span class="k">return</span> <span class="n">y</span>
 
 
@@ -511,10 +536,10 @@
         <span class="n">num_decoder_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">decoder_output_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
         <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
-        <span class="n">temporal_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">temporal_width_past</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">temporal_width_future</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
         <span class="n">temporal_decoder_hidden</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
         <span class="n">use_layer_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">use_reversible_instance_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -550,15 +575,16 @@
 <span class="sd">            The dimensionality of the output of the decoder.</span>
 <span class="sd">        hidden_size</span>
 <span class="sd">            The width of the layers in the residual blocks of the encoder and decoder.</span>
-<span class="sd">        temporal_width</span>
-<span class="sd">            The width of the layers in the future covariate projection residual block.</span>
+<span class="sd">        temporal_width_past</span>
+<span class="sd">            The width of the layers in the past covariate projection residual block. If `0`,</span>
+<span class="sd">            will bypass feature projection and use the raw feature data.</span>
+<span class="sd">        temporal_width_future</span>
+<span class="sd">            The width of the layers in the future covariate projection residual block. If `0`,</span>
+<span class="sd">            will bypass feature projection and use the raw feature data.</span>
 <span class="sd">        temporal_decoder_hidden</span>
 <span class="sd">            The width of the layers in the temporal decoder.</span>
 <span class="sd">        use_layer_norm</span>
 <span class="sd">            Whether to use layer normalization in the residual blocks.</span>
-<span class="sd">        use_reversible_instance_norm</span>
-<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.</span>
-<span class="sd">            It is only applied to the features of the target series and not the covariates.</span>
 <span class="sd">        dropout</span>
 <span class="sd">            The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout</span>
 <span class="sd">            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at</span>
@@ -588,6 +614,9 @@
 <span class="sd">            to using a constant learning rate. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        use_reversible_instance_norm</span>
+<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.</span>
+<span class="sd">            It is only applied to the features of the target series and not the covariates.</span>
 <span class="sd">        batch_size</span>
 <span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
 <span class="sd">        n_epochs</span>
@@ -628,11 +657,14 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
@@ -697,7 +729,44 @@
 <span class="sd">                http://arxiv.org/abs/2304.08424</span>
 <span class="sd">        .. [2] T. Kim et al. &quot;Reversible Instance Normalization for Accurate Time-Series Forecasting against</span>
 <span class="sd">                Distribution Shift&quot;, https://openreview.net/forum?id=cGDAkQo1C0p</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import TiDEModel</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use past observed rainfall (pretending to be unknown beyond index 100)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;rain (mm)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use future temperatures (pretending this component is a forecast)</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = series[&#39;T (degC)&#39;][:106]</span>
+<span class="sd">        &gt;&gt;&gt; model = TiDEModel(</span>
+<span class="sd">        &gt;&gt;&gt;     input_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     n_epochs=20</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[1008.1667634 ],</span>
+<span class="sd">               [ 997.08337201],</span>
+<span class="sd">               [1017.72035839],</span>
+<span class="sd">               [1005.10790392],</span>
+<span class="sd">               [ 998.90537286],</span>
+<span class="sd">               [1005.91534452]])</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            `TiDE example notebook &lt;https://unit8co.github.io/darts/examples/18-TiDE-examples.html&gt;`_ presents</span>
+<span class="sd">            techniques that can be used to improve the forecasts quality compared to this simple usage example.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">temporal_width_past</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">temporal_width_future</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`temporal_width_past` and `temporal_width_future` must be &gt;= 0.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_extract_torch_model_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
 
         <span class="c1"># extract pytorch lightning module kwargs</span>
@@ -707,13 +776,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_decoder_layers</span> <span class="o">=</span> <span class="n">num_decoder_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder_output_dim</span> <span class="o">=</span> <span class="n">decoder_output_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width</span> <span class="o">=</span> <span class="n">temporal_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span> <span class="o">=</span> <span class="n">temporal_width_past</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span> <span class="o">=</span> <span class="n">temporal_width_future</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_decoder_hidden</span> <span class="o">=</span> <span class="n">temporal_decoder_hidden</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_considers_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">use_layer_norm</span> <span class="o">=</span> <span class="n">use_layer_norm</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">use_reversible_instance_norm</span> <span class="o">=</span> <span class="n">use_reversible_instance_norm</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
 
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span>
@@ -752,6 +821,18 @@
 
         <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
 
+        <span class="n">past_cov_dim</span> <span class="o">=</span> <span class="n">input_dim</span> <span class="o">-</span> <span class="n">output_dim</span> <span class="o">-</span> <span class="n">future_cov_dim</span>
+        <span class="k">if</span> <span class="n">past_cov_dim</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span> <span class="o">&gt;=</span> <span class="n">past_cov_dim</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;number of `past_covariates` features is &lt;= `temporal_width_past`, leading to feature expansion.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;number of covariates: </span><span class="si">{</span><span class="n">past_cov_dim</span><span class="si">}</span><span class="s2">, `temporal_width_past=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span><span class="si">}</span><span class="s2">`.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">future_cov_dim</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span> <span class="o">&gt;=</span> <span class="n">future_cov_dim</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;number of `future_covariates` features is &lt;= `temporal_width_future`, leading to feature expansion.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;number of covariates: </span><span class="si">{</span><span class="n">future_cov_dim</span><span class="si">}</span><span class="s2">, `temporal_width_future=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span><span class="si">}</span><span class="s2">`.&quot;</span>
+            <span class="p">)</span>
+
         <span class="k">return</span> <span class="n">_TideModule</span><span class="p">(</span>
             <span class="n">input_dim</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
             <span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
@@ -762,10 +843,10 @@
             <span class="n">num_decoder_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_decoder_layers</span><span class="p">,</span>
             <span class="n">decoder_output_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">decoder_output_dim</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
-            <span class="n">temporal_width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width</span><span class="p">,</span>
+            <span class="n">temporal_width_past</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span><span class="p">,</span>
+            <span class="n">temporal_width_future</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span><span class="p">,</span>
             <span class="n">temporal_decoder_hidden</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_decoder_hidden</span><span class="p">,</span>
             <span class="n">use_layer_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">use_layer_norm</span><span class="p">,</span>
-            <span class="n">use_reversible_instance_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">use_reversible_instance_norm</span><span class="p">,</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
         <span class="p">)</span>

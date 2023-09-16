@@ -39,7 +39,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Filtering and predicting using the darts filters" href="10-Kalman-filter-examples.html" />
+    <link rel="next" title="Ensembling Models" href="19-EnsembleModel-examples.html" />
     <link rel="prev" title="Temporal Fusion Transformer" href="13-TFT-examples.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -261,6 +261,13 @@
  <li class="toctree-l1 current active">
   <a class="current reference internal" href="#">
    TimeSeries Deep Encoder
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="19-EnsembleModel-examples.html">
+   Ensembling Models
   </a>
  </li>
 </ul>
@@ -662,7 +669,7 @@ div.rendered_html tbody tr:hover {
 <ul class="simple">
 <li><p><strong>Gradient clipping:</strong> Mitigates exploding gradients during backpropagation by setting an upper limit on the gradient for a batch.</p></li>
 <li><p><strong>Learning rate:</strong> The majority of the learning done by a model is in the earlier epochs. As training goes on it is often helpful to reduce the learning rate to fine-tune the model. That being said, it can also lead to significant overfitting.</p></li>
-<li><p><strong>Early stopping:</strong> To avoid overfitting, we can use early stopping. It monitors a metric on the validation set and stops training once the metric is not improving anymore based on custom condition.</p></li>
+<li><p><strong>Early stopping:</strong> To avoid overfitting, we can use early stopping. It monitors a metric on the validation set and stops training once the metric is not improving anymore based on a custom condition.</p></li>
 </ul>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -765,7 +772,7 @@ div.rendered_html tbody tr:hover {
 <section id="Model-configuration">
 <h1>Model configuration<a class="headerlink" href="#Model-configuration" title="Permalink to this headline">¶</a></h1>
 <p>Using the already established shared arguments, we can see that the default parameters for NHiTS and TiDE are used. The only exception is that TiDE is tested both with and without <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">Reversible Instance Normalization</a>.</p>
-<p>We then iterate through the model dictionary and train all of the models. When using early stopping it is important to save checkpoints. This allows for us to continue past the best model configuration and then restore the optimal weights once training has completed.</p>
+<p>We then iterate through the model dictionary and train all of the models. When using early stopping it is important to save checkpoints. This allows us to continue past the best model configuration and then restore the optimal weights once training has been completed.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
@@ -911,10 +918,10 @@ div.rendered_html tbody tr:hover {
             <p class="prev-next-title">Temporal Fusion Transformer</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="10-Kalman-filter-examples.html" title="next page">
+    <a class='right-next' id="next-link" href="19-EnsembleModel-examples.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Filtering and predicting using the darts filters</p>
+        <p class="prev-next-title">Ensembling Models</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

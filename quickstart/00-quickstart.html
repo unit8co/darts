@@ -1754,11 +1754,16 @@ HPU available: False, using: 0 HPUs
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">encoders</span> <span class="o">=</span> <span class="p">{</span>
+<span></span><span class="k">def</span> <span class="nf">extract_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract the year each time index entry and normalized it.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span>
+
+
+<span class="n">encoders</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;cyclic&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;month&quot;</span><span class="p">]},</span>
     <span class="s2">&quot;datetime_attribute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;hour&quot;</span><span class="p">,</span> <span class="s2">&quot;dayofweek&quot;</span><span class="p">]},</span>
     <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;past&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;absolute&quot;</span><span class="p">],</span> <span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;relative&quot;</span><span class="p">]},</span>
-    <span class="s2">&quot;custom&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;past&quot;</span><span class="p">:</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">idx</span><span class="p">:</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span><span class="p">]},</span>
+    <span class="s2">&quot;custom&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;past&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">extract_year</span><span class="p">]},</span>
     <span class="s2">&quot;transformer&quot;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">(),</span>
 <span class="p">}</span>
 </pre></div>
@@ -1773,7 +1778,7 @@ HPU available: False, using: 0 HPUs
 <li><p>An additional custom function of the year should be used as past covariates.</p></li>
 <li><p>All the above covariates should be scaled using a <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>, which will be fit upon calling the model <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function and used afterwards to transform the covariates.</p></li>
 </ul>
-<p>We refer to <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.SequentialEncoder">the API doc</a> for more informations about how to use encoders.</p>
+<p>We refer to <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.SequentialEncoder">the API doc</a> for more informations about how to use encoders. Note that lambda functions cannot be used as they are not pickable.</p>
 <p>To replicate our example with month and year used as past covariates with N-BEATS, we can use some encoders as follows:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
@@ -2441,7 +2446,7 @@ rho-risk at quantile 0.95: 0.01
 
 <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">NaiveDrift</span><span class="p">(),</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">12</span><span class="p">)]</span>
 
-<span class="n">ensemble_model</span> <span class="o">=</span> <span class="n">NaiveEnsembleModel</span><span class="p">(</span><span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">)</span>
+<span class="n">ensemble_model</span> <span class="o">=</span> <span class="n">NaiveEnsembleModel</span><span class="p">(</span><span class="n">forecasting_models</span><span class="o">=</span><span class="n">models</span><span class="p">)</span>
 
 <span class="n">backtest</span> <span class="o">=</span> <span class="n">ensemble_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">series_air</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>

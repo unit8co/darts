@@ -187,7 +187,9 @@
 
 
 <div class="viewcode-block" id="StatsForecastAutoETS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS">[docs]</a><span class="k">class</span> <span class="nc">StatsForecastAutoETS</span><span class="p">(</span><span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">ets_args</span><span class="p">,</span> <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">ets_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">autoets_args</span><span class="p">,</span> <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">autoets_kwargs</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;ETS based on `Statsforecasts package</span>
 <span class="sd">        &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
 
@@ -195,8 +197,9 @@
 <span class="sd">        but typically requires more time on the first call, because it relies</span>
 <span class="sd">        on Numba and jit compilation.</span>
 
-<span class="sd">        This model accepts the same arguments as the `statsforecast ETS</span>
-<span class="sd">        &lt;https://nixtla.github.io/statsforecast/models.html#ets&gt;`_. package.</span>
+<span class="sd">        We refer to the `statsforecast AutoETS documentation</span>
+<span class="sd">        &lt;https://nixtla.github.io/statsforecast/src/core/models.html#autoets&gt;`_</span>
+<span class="sd">        for the exhaustive documentation of the arguments.</span>
 
 <span class="sd">        In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first</span>
 <span class="sd">        regressing the series against the future covariates using the :class:&#39;LinearRegressionModel&#39; model and then</span>
@@ -206,19 +209,8 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        season_length</span>
-<span class="sd">            Number of observations per cycle. Default: 1.</span>
-<span class="sd">        model</span>
-<span class="sd">            Three-character string identifying method using the framework</span>
-<span class="sd">            terminology of Hyndman et al. (2002). Possible values are:</span>
-
-<span class="sd">            * &quot;A&quot; or &quot;M&quot; for error state,</span>
-<span class="sd">            * &quot;N&quot;, &quot;A&quot; or &quot;Ad&quot; for trend state,</span>
-<span class="sd">            * &quot;N&quot;, &quot;A&quot; or &quot;M&quot; for season state.</span>
-
-<span class="sd">            For instance, &quot;ANN&quot; means additive error, no trend and no seasonality.</span>
-<span class="sd">            Furthermore, the character &quot;Z&quot; is a placeholder telling statsforecast</span>
-<span class="sd">            to search for the best model using AICs. Default: &quot;ZZZ&quot;.</span>
+<span class="sd">        autoets_args</span>
+<span class="sd">            Positional arguments for ``statsforecasts.models.AutoETS``.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -231,26 +223,42 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
+<span class="sd">        autoets_kwargs</span>
+<span class="sd">            Keyword arguments for ``statsforecasts.models.AutoETS``.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
 <span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoETS</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import datetime_attribute_timeseries</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = datetime_attribute_timeseries(series, &quot;month&quot;, cyclic=True, add_length=6)</span>
+<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoETS parameters</span>
 <span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoETS(season_length=12, model=&quot;AZZ&quot;)</span>
-<span class="sd">        &gt;&gt;&gt; model.fit(series[:-36])</span>
-<span class="sd">        &gt;&gt;&gt; pred = model.predict(36)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[441.40323676],</span>
+<span class="sd">               [415.09871431],</span>
+<span class="sd">               [448.90785391],</span>
+<span class="sd">               [491.38584654],</span>
+<span class="sd">               [493.11817462],</span>
+<span class="sd">               [549.88974472]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoETS</span><span class="p">(</span><span class="o">*</span><span class="n">ets_args</span><span class="p">,</span> <span class="o">**</span><span class="n">ets_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoETS</span><span class="p">(</span><span class="o">*</span><span class="n">autoets_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoets_kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_linreg</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
@@ -289,7 +297,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
         <span class="n">forecast_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
             <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="p">(</span><span class="n">one_sigma_rule</span><span class="p">,),</span>  <span class="c1"># ask one std for the confidence interval</span>
+            <span class="n">level</span><span class="o">=</span><span class="p">[</span><span class="n">one_sigma_rule</span><span class="p">],</span>  <span class="c1"># ask one std for the confidence interval</span>
         <span class="p">)</span>
 
         <span class="n">mu_ets</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">unpack_sf_dict</span><span class="p">(</span><span class="n">forecast_dict</span><span class="p">)</span>

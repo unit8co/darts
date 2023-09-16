@@ -176,7 +176,10 @@
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLMixedCovariatesModule</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PLMixedCovariatesModule</span><span class="p">,</span>
+    <span class="n">io_processor</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
 
 
@@ -273,6 +276,7 @@
                 <span class="n">layer_in_dim_static_cov</span><span class="p">,</span> <span class="n">layer_out_dim</span>
             <span class="p">)</span>
 
+    <span class="nd">@io_processor</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
     <span class="p">):</span>
@@ -305,16 +309,14 @@
             <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span>
-                <span class="n">seq_last</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>  <span class="c1"># (batch, 1, in_dim)</span>
+                <span class="c1"># get last values only for target features</span>
+                <span class="n">seq_last</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
                 <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">seq_last</span>
 
             <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># (batch, out_len * out_dim * nr_params)</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
                 <span class="n">batch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
             <span class="p">)</span>
-
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span>
-                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">seq_last</span>  <span class="c1"># Note: works only when nr_params == 1</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="c1"># x_future might be shorter than output_chunk_length when n &lt; output_chunk_length</span>
@@ -338,7 +340,8 @@
                 <span class="p">)</span>
 
             <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">)</span>
-
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">seq_last</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">seq_last</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
         <span class="k">return</span> <span class="n">x</span>
 
 
@@ -413,6 +416,9 @@
 <span class="sd">            to using a constant learning rate. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        use_reversible_instance_norm</span>
+<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.</span>
+<span class="sd">            It is only applied to the features of the target series and not the covariates.</span>
 <span class="sd">        batch_size</span>
 <span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
 <span class="sd">        n_epochs</span>
@@ -453,11 +459,14 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
@@ -518,6 +527,36 @@
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] Zeng, A., Chen, M., Zhang, L., &amp; Xu, Q. (2022).</span>
 <span class="sd">               Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.</span>
+<span class="sd">        .. [2] T. Kim et al. &quot;Reversible Instance Normalization for Accurate Time-Series Forecasting against</span>
+<span class="sd">                Distribution Shift&quot;, https://openreview.net/forum?id=cGDAkQo1C0p</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import NLinearModel</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use past observed rainfall (pretending to be unknown beyond index 100)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;rain (mm)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use future temperatures (pretending this component is a forecast)</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = series[&#39;T (degC)&#39;][:106]</span>
+<span class="sd">        &gt;&gt;&gt; # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature</span>
+<span class="sd">        &gt;&gt;&gt; # values corresponding to the forecasted period</span>
+<span class="sd">        &gt;&gt;&gt; model = NLinearModel(</span>
+<span class="sd">        &gt;&gt;&gt;     input_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     n_epochs=20,</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[429.56117169],</span>
+<span class="sd">               [428.93264096],</span>
+<span class="sd">               [428.35210616],</span>
+<span class="sd">               [428.13154426],</span>
+<span class="sd">               [427.98781641],</span>
+<span class="sd">               [428.00325481]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_extract_torch_model_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
 

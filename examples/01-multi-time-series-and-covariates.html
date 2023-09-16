@@ -266,6 +266,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="19-EnsembleModel-examples.html">
+   Ensembling Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="10-Kalman-filter-examples.html">
    Filtering and predicting using the darts filters
   </a>
@@ -1477,7 +1484,7 @@ MAE (RNN) = 0.10
 </section>
 <section id="Comments-on-training-using-multivariate-series">
 <h2>Comments on training using multivariate series<a class="headerlink" href="#Comments-on-training-using-multivariate-series" title="Permalink to this headline">¶</a></h2>
-<p>All the features shown ealier on univariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, notably using covariates (past and future) or sequence of serie, are of course also compatible with multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (just make sure that the model used actually support them).</p>
+<p>All the features shown ealier on univariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, notably using covariates (past and future) or sequence of series, are of course also compatible with multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (just make sure that the model used actually supports them).</p>
 <p>Furthermore, the models supporting multivariates series might use different approaches. <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> for example, uses a specialized module to select the relevant features whereas <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> flatten the serie’s components into an univariate serie and rely on its fully connected layers to capture the interactions between the features.</p>
 </section>
 </section>

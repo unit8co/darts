@@ -199,15 +199,13 @@
 <span class="sd">        It is probabilistic, whereas :class:`AutoARIMA` is not.</span>
 
 <span class="sd">        We refer to the `statsforecast AutoARIMA documentation</span>
-<span class="sd">        &lt;https://nixtla.github.io/statsforecast/models.html#arima-methods&gt;`_</span>
-<span class="sd">        for the documentation of the arguments.</span>
+<span class="sd">        &lt;https://nixtla.github.io/statsforecast/src/core/models.html#autoarima&gt;`_</span>
+<span class="sd">        for the exhaustive documentation of the arguments.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        autoarima_args</span>
 <span class="sd">            Positional arguments for ``statsforecasts.models.AutoARIMA``.</span>
-<span class="sd">        autoarima_kwargs</span>
-<span class="sd">            Keyword arguments for ``statsforecasts.models.AutoARIMA``.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -220,23 +218,39 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
+<span class="sd">        autoarima_kwargs</span>
+<span class="sd">            Keyword arguments for ``statsforecasts.models.AutoARIMA``.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoARIMA</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoARIMA</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import datetime_attribute_timeseries</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = datetime_attribute_timeseries(series, &quot;month&quot;, cyclic=True, add_length=6)</span>
+<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoARIMA parameters</span>
 <span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoARIMA(season_length=12)</span>
-<span class="sd">        &gt;&gt;&gt; model.fit(series[:-36])</span>
-<span class="sd">        &gt;&gt;&gt; pred = model.predict(36, num_samples=100)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[450.55179949],</span>
+<span class="sd">               [415.00597806],</span>
+<span class="sd">               [454.61353249],</span>
+<span class="sd">               [486.51218795],</span>
+<span class="sd">               [504.09229632],</span>
+<span class="sd">               [555.06463942]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoARIMA</span><span class="p">(</span><span class="o">*</span><span class="n">autoarima_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoarima_kwargs</span><span class="p">)</span>

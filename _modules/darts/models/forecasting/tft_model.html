@@ -182,7 +182,10 @@
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.components</span> <span class="kn">import</span> <span class="n">glu_variants</span><span class="p">,</span> <span class="n">layer_norm_variants</span>
 <span class="kn">from</span> <span class="nn">darts.models.components.glu_variants</span> <span class="kn">import</span> <span class="n">GLU_FFN</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLMixedCovariatesModule</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PLMixedCovariatesModule</span><span class="p">,</span>
+    <span class="n">io_processor</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.tft_submodels</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">_GateAddNorm</span><span class="p">,</span>
     <span class="n">_GatedResidualNetwork</span><span class="p">,</span>
@@ -615,6 +618,7 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">mask</span>
 
+    <span class="nd">@io_processor</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
@@ -931,6 +935,9 @@
 <span class="sd">            to using a constant learning rate. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        use_reversible_instance_norm</span>
+<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.</span>
+<span class="sd">            It is only applied to the features of the target series and not the covariates.</span>
 <span class="sd">        batch_size</span>
 <span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
 <span class="sd">        n_epochs</span>
@@ -971,11 +978,14 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
@@ -1037,7 +1047,46 @@
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] https://arxiv.org/pdf/1912.09363.pdf</span>
-<span class="sd">        ..[2] Shazeer, Noam, &quot;GLU Variants Improve Transformer&quot;, 2020. arVix https://arxiv.org/abs/2002.05202.</span>
+<span class="sd">        .. [2] Shazeer, Noam, &quot;GLU Variants Improve Transformer&quot;, 2020. arVix https://arxiv.org/abs/2002.05202.</span>
+<span class="sd">        .. [3] T. Kim et al. &quot;Reversible Instance Normalization for Accurate Time-Series Forecasting against</span>
+<span class="sd">                Distribution Shift&quot;, https://openreview.net/forum?id=cGDAkQo1C0p</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import TFTModel</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, past observed rainfall (pretending to be unknown beyond index 100)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;rain (mm)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # future temperatures (pretending this component is a forecast)</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = series[&#39;T (degC)&#39;][:106]</span>
+<span class="sd">        &gt;&gt;&gt; # by default, TFTModel is trained using a `QuantileRegression` making it a probabilistic forecasting model</span>
+<span class="sd">        &gt;&gt;&gt; model = TFTModel(</span>
+<span class="sd">        &gt;&gt;&gt;     input_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     n_epochs=5,</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; # future_covariates are mandatory for `TFTModel`</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; # TFTModel is probabilistic by definition; using `num_samples &gt;&gt; 1` to generate probabilistic forecasts</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6, num_samples=100)</span>
+<span class="sd">        &gt;&gt;&gt; # shape : (forecast horizon, components, num_samples)</span>
+<span class="sd">        &gt;&gt;&gt; pred.all_values().shape</span>
+<span class="sd">        (6, 1, 100)</span>
+<span class="sd">        &gt;&gt;&gt; # showing the first 3 samples for each timestamp</span>
+<span class="sd">        &gt;&gt;&gt; pred.all_values()[:,:,:3]</span>
+<span class="sd">        array([[[-0.06414202, -0.7188093 ,  0.52541292]],</span>
+<span class="sd">               [[ 0.02928407, -0.40867163,  1.19650033]],</span>
+<span class="sd">               [[ 0.77252372, -0.50859694,  0.360166  ]],</span>
+<span class="sd">               [[ 0.9586113 ,  1.24147138, -0.01625545]],</span>
+<span class="sd">               [[ 1.06863863,  0.2987822 , -0.69213369]],</span>
+<span class="sd">               [[-0.83076568, -0.25780816, -0.28318784]]])</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            `TFT example notebook &lt;https://unit8co.github.io/darts/examples/13-TFT-examples.html&gt;`_ presents</span>
+<span class="sd">            techniques that can be used to improve the forecasts quality compared to this simple usage example.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">loss_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

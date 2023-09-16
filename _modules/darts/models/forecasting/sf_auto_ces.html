@@ -185,8 +185,8 @@
 <span class="sd">        &lt;https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074&gt;</span>
 
 <span class="sd">        We refer to the `statsforecast AutoCES documentation</span>
-<span class="sd">        &lt;https://nixtla.github.io/statsforecast/models.html#autoces&gt;`_</span>
-<span class="sd">        for the documentation of the arguments.</span>
+<span class="sd">        &lt;https://nixtla.github.io/statsforecast/src/core/models.html#autoces&gt;`_</span>
+<span class="sd">        for the exhaustive documentation of the arguments.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -195,16 +195,22 @@
 <span class="sd">        autoces_kwargs</span>
 <span class="sd">            Keyword arguments for ``statsforecasts.models.AutoCES``.</span>
 
-<span class="sd">            ..</span>
-
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoCES</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoCES</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
-<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoCES(season_length=12)</span>
-<span class="sd">        &gt;&gt;&gt; model.fit(series[:-36])</span>
-<span class="sd">        &gt;&gt;&gt; pred = model.predict(36, num_samples=100)</span>
+<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoCES parameters</span>
+<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoCES(season_length=12, model=&quot;Z&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[453.03417969],</span>
+<span class="sd">               [429.34039307],</span>
+<span class="sd">               [488.64471436],</span>
+<span class="sd">               [500.28955078],</span>
+<span class="sd">               [519.79962158],</span>
+<span class="sd">               [586.47503662]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoCES</span><span class="p">(</span><span class="o">*</span><span class="n">autoces_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoces_kwargs</span><span class="p">)</span>

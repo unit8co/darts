@@ -188,9 +188,9 @@
 <span class="sd">    - Have a monotonically increasing time index, without holes (without missing dates)</span>
 <span class="sd">    - Contain numeric types only</span>
 <span class="sd">    - Have distinct components/columns names</span>
-<span class="sd">    - Have a well defined frequency (</span>
-<span class="sd">    `date offset aliases &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases&gt;`_</span>
-<span class="sd">    for ``DateTimeIndex``, and step size for ``RangeIndex``)</span>
+<span class="sd">    - Have a well defined frequency (`date offset aliases</span>
+<span class="sd">      &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases&gt;`_</span>
+<span class="sd">      for ``DateTimeIndex``, or step size for ``RangeIndex``)</span>
 <span class="sd">    - Have static covariates consistent with their components, or no static covariates</span>
 <span class="sd">    - Have a hierarchy consistent with their components, or no hierarchy</span>
 
@@ -383,7 +383,7 @@
                     <span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">step</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">step</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_freq_str</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># check static covariates</span>
@@ -876,6 +876,9 @@
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
             <span class="n">time_index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">time_col</span> <span class="k">if</span> <span class="n">time_col</span> <span class="k">else</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">series_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="n">series_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
             <span class="n">series_df</span><span class="o">.</span><span class="n">values</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span>
@@ -2267,7 +2270,7 @@
                 <span class="p">)</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">point_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
-                <span class="s2">&quot;point (int) should be a valid index in series&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;The index corresponding to the provided point (</span><span class="si">{</span><span class="n">point</span><span class="si">}</span><span class="s2">) should be a valid index in series&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
@@ -2306,8 +2309,8 @@
 <span class="sd">            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
 <span class="sd">            In case of a `float`, the parameter will be treated as the proportion of the time series</span>
 <span class="sd">            that should lie before the point.</span>
-<span class="sd">            In the case of `int`, the parameter will be treated as an integer index to the time index of</span>
-<span class="sd">            `series`. Will raise a ValueError if not a valid index in `series`</span>
+<span class="sd">            In case of `int`, the parameter will be treated as an integer index to the time index of</span>
+<span class="sd">            `series`. Will raise a ValueError if not a valid index in `series`.</span>
 <span class="sd">            In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp</span>
 <span class="sd">            is present in the series time index, otherwise will raise a ValueError.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -2734,7 +2737,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
-<span class="sd">            A TimeSeries constructed after differencing.</span>
+<span class="sd">            A new TimeSeries, with the differenced values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;n&#39; must be a positive integer &gt;= 1.&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
@@ -2760,6 +2763,17 @@
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
             <span class="n">new_xa</span> <span class="o">=</span> <span class="n">_compute_diff</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.cumsum"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.cumsum">[docs]</a>    <span class="k">def</span> <span class="nf">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the cumulative sum of the time series along the time axis.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A new TimeSeries, with the cumulatively summed values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="TimeSeries.has_same_time_as"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.has_same_time_as">[docs]</a>    <span class="k">def</span> <span class="nf">has_same_time_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -5330,7 +5344,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">consecutive_time_axes</span><span class="p">:</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="n">ignore_time_axis</span><span class="p">,</span>
-                <span class="s2">&quot;When concatenating over time axis, all series need to be contiguous&quot;</span>
+                <span class="s2">&quot;When concatenating over time axis, all series need to be contiguous &quot;</span>
                 <span class="s2">&quot;in the time dimension. Use `ignore_time_axis=True` to override &quot;</span>
                 <span class="s2">&quot;this behavior and concatenate the series by extending the time axis &quot;</span>
                 <span class="s2">&quot;of the first series.&quot;</span><span class="p">,</span>

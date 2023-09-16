@@ -225,6 +225,23 @@
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] `Unmasking the Theta method &lt;https://robjhyndman.com/papers/Theta.pdf`</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import Theta</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # using the canonical Theta method</span>
+<span class="sd">        &gt;&gt;&gt; model = Theta(theta=2)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[442.7256909 ],</span>
+<span class="sd">               [433.74381763],</span>
+<span class="sd">               [494.54534585],</span>
+<span class="sd">               [480.36937856],</span>
+<span class="sd">               [481.06675142],</span>
+<span class="sd">               [545.80068173]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -417,6 +434,22 @@
 <span class="sd">        -----</span>
 <span class="sd">        Even though this model is an improvement of :class:`Theta`, it is a naive</span>
 <span class="sd">        implementation of the algorithm, which can potentially be slower.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import FourTheta</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; model = FourTheta(theta=2)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[443.3949283 ],</span>
+<span class="sd">               [434.39769555],</span>
+<span class="sd">               [495.28886231],</span>
+<span class="sd">               [481.08962991],</span>
+<span class="sd">               [481.78610361],</span>
+<span class="sd">               [546.61463773]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>

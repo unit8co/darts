@@ -496,11 +496,6 @@
    </i>
   </label>
   <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
-     StatsForecast utils
-    </a>
-   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -845,7 +840,7 @@
   <span class="target" id="module-darts.models.forecasting.pl_forecasting_module"></span><p>This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLDualCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLDualCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLDualCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_reversible_instance_norm=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLDualCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -881,7 +876,16 @@ will be used. Default: <code class="docutils literal notranslate"><span class="p
 <li><p><strong>lr_scheduler_cls</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_LRScheduler</span></code>]) – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
 to using a constant learning rate. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>lr_scheduler_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]) – Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>use_reversible_instance_norm</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use reversible instance normalization <cite>RINorm</cite> against distribution shift as shown in <a class="reference internal" href="#r4e8a8bfbd3c9-1" id="id1">[1]</a>.
+It is only applied to the features of the target series and not the covariates.</p></li>
 </ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r4e8a8bfbd3c9-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>T. Kim et al. “Reversible Instance Normalization for Accurate Time-Series Forecasting against
+Distribution Shift”, <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">https://openreview.net/forum?id=cGDAkQo1C0p</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
@@ -1647,9 +1651,9 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_sharded_model">
 <span class="sig-name descname"><span class="pre">configure_sharded_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_sharded_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins,
-where we’d like to shard the model instantly, which is useful for extremely large models which can save
-memory and initialization time.</p>
+<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins, where
+we’d like to shard the model instantly, which is useful for extremely large models which can save memory and
+initialization time.</p>
 <p>This hook is called during each of fit/val/test/predict stages in the same process, so ensure that
 implementation of this hook is idempotent.</p>
 <dl class="field-list simple">
@@ -1685,8 +1689,8 @@ implementation of this hook is idempotent.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.cuda">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.cuda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves all model parameters and buffers to the GPU. This also makes associated parameters and buffers
-different objects. So it should be called before constructing optimizer if the module will live on GPU
-while being optimized.</p>
+different objects. So it should be called before constructing optimizer if the module will live on GPU while
+being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – If specified, all parameters will be copied to that device. If <cite>None</cite>, the current CUDA device
@@ -2029,8 +2033,8 @@ path or resolves to something that is not an
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.hparams">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hparams</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.utilities.parsing.AttributeDict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">MutableMapping</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.hparams" title="Permalink to this definition">¶</a></dt>
-<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user.
-For the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
+<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user. For
+the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AttributeDict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code>]</p>
@@ -2354,8 +2358,7 @@ for each scheduler based on its <code class="docutils literal notranslate"><span
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.lr_schedulers">
 <span class="sig-name descname"><span class="pre">lr_schedulers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.lr_schedulers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual
-optimization.</p>
+<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]</p>
@@ -2691,7 +2694,7 @@ Data-Parallel support will come in near future.</p>
 <span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.on_before_optimizer_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p>
 <p>If using gradient accumulation, the hook is called once the gradients have been accumulated.
-See: <a href="#id1"><span class="problematic" id="id2">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
+See: <a href="#id2"><span class="problematic" id="id3">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
 <p>If using AMP, the loss will be unscaled before calling this hook.
 See these <a class="reference external" href="https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-unscaled-gradients">docs</a>
 for more information on the scaling of gradients.</p>
@@ -2903,8 +2906,8 @@ There is no need for you to restore anything regarding training.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.on_save_checkpoint">
 <span class="sig-name descname"><span class="pre">on_save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.on_save_checkpoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want
-to save.</p>
+<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want to
+save.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – The full checkpoint dictionary before it gets dumped to a file.
@@ -3420,8 +3423,8 @@ There is no need to set it yourself.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.prepare_data">
 <span class="sig-name descname"><span class="pre">prepare_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.prepare_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use this to download and prepare data. Downloading and saving data with multiple processes (distributed
-settings) will result in corrupted data. Lightning ensures this method is called only within a single
-process, so you can safely add your downloading logic within.</p>
+settings) will result in corrupted data. Lightning ensures this method is called only within a single process,
+so you can safely add your downloading logic within.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>DO NOT set state to the model (use <code class="docutils literal notranslate"><span class="pre">setup</span></code> instead)
@@ -3966,9 +3969,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.setup">
 <span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when
-you need to build models dynamically or adjust something about them. This hook is called on every process
-when using DDP.</p>
+<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
+need to build models dynamically or adjust something about them. This hook is called on every process when
+using DDP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>stage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">'fit'</span></code>, <code class="docutils literal notranslate"><span class="pre">'validate'</span></code>, <code class="docutils literal notranslate"><span class="pre">'test'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'predict'</span></code></p>
@@ -4327,8 +4330,8 @@ defined or not.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.toggle_optimizer">
 <span class="sig-name descname"><span class="pre">toggle_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.toggle_optimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step
-to prevent dangling gradients in multiple-optimizer setup.</p>
+<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step to
+prevent dangling gradients in multiple-optimizer setup.</p>
 <p>It works with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.untoggle_optimizer" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.untoggle_optimizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">untoggle_optimizer()</span></code></a> to make sure <code class="docutils literal notranslate"><span class="pre">param_requires_grad_state</span></code> is properly reset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -4368,7 +4371,7 @@ mode (<code class="docutils literal notranslate"><span class="pre">False</span><
 <dd><p>An iterable or collection of iterables specifying training samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id3"><span class="problematic" id="id4">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id4"><span class="problematic" id="id5">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>For data processing use the following pattern:</p>
 <blockquote>
@@ -4543,7 +4546,7 @@ Data-Parallel support will come in near future.</p>
 <dd><p>An iterable or collection of iterables specifying validation samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id5"><span class="problematic" id="id6">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id6"><span class="problematic" id="id7">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>It’s recommended that all data downloads and preparation happen in <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.prepare_data" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a>.</p>
 <ul class="simple">
@@ -4625,7 +4628,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLForecastingModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLForecastingModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_reversible_instance_norm=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytorch_lightning.core.module.LightningModule</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -4661,7 +4664,16 @@ will be used. Default: <code class="docutils literal notranslate"><span class="p
 <li><p><strong>lr_scheduler_cls</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_LRScheduler</span></code>]) – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
 to using a constant learning rate. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>lr_scheduler_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]) – Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>use_reversible_instance_norm</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use reversible instance normalization <cite>RINorm</cite> against distribution shift as shown in <a class="reference internal" href="#r2cae03939c19-1" id="id8">[1]</a>.
+It is only applied to the features of the target series and not the covariates.</p></li>
 </ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r2cae03939c19-1"><span class="brackets"><a class="fn-backref" href="#id8">1</a></span></dt>
+<dd><p>T. Kim et al. “Reversible Instance Normalization for Accurate Time-Series Forecasting against
+Distribution Shift”, <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">https://openreview.net/forum?id=cGDAkQo1C0p</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
@@ -5427,9 +5439,9 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_sharded_model">
 <span class="sig-name descname"><span class="pre">configure_sharded_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_sharded_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins,
-where we’d like to shard the model instantly, which is useful for extremely large models which can save
-memory and initialization time.</p>
+<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins, where
+we’d like to shard the model instantly, which is useful for extremely large models which can save memory and
+initialization time.</p>
 <p>This hook is called during each of fit/val/test/predict stages in the same process, so ensure that
 implementation of this hook is idempotent.</p>
 <dl class="field-list simple">
@@ -5465,8 +5477,8 @@ implementation of this hook is idempotent.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.cuda">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.cuda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves all model parameters and buffers to the GPU. This also makes associated parameters and buffers
-different objects. So it should be called before constructing optimizer if the module will live on GPU
-while being optimized.</p>
+different objects. So it should be called before constructing optimizer if the module will live on GPU while
+being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – If specified, all parameters will be copied to that device. If <cite>None</cite>, the current CUDA device
@@ -5809,8 +5821,8 @@ path or resolves to something that is not an
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.hparams">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hparams</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.utilities.parsing.AttributeDict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">MutableMapping</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.hparams" title="Permalink to this definition">¶</a></dt>
-<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user.
-For the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
+<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user. For
+the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AttributeDict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code>]</p>
@@ -6134,8 +6146,7 @@ for each scheduler based on its <code class="docutils literal notranslate"><span
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.lr_schedulers">
 <span class="sig-name descname"><span class="pre">lr_schedulers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.lr_schedulers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual
-optimization.</p>
+<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]</p>
@@ -6471,7 +6482,7 @@ Data-Parallel support will come in near future.</p>
 <span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_before_optimizer_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p>
 <p>If using gradient accumulation, the hook is called once the gradients have been accumulated.
-See: <a href="#id7"><span class="problematic" id="id8">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
+See: <a href="#id9"><span class="problematic" id="id10">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
 <p>If using AMP, the loss will be unscaled before calling this hook.
 See these <a class="reference external" href="https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-unscaled-gradients">docs</a>
 for more information on the scaling of gradients.</p>
@@ -6683,8 +6694,8 @@ There is no need for you to restore anything regarding training.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_save_checkpoint">
 <span class="sig-name descname"><span class="pre">on_save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.on_save_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_save_checkpoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want
-to save.</p>
+<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want to
+save.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – The full checkpoint dictionary before it gets dumped to a file.
@@ -7200,8 +7211,8 @@ There is no need to set it yourself.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.prepare_data">
 <span class="sig-name descname"><span class="pre">prepare_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.prepare_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use this to download and prepare data. Downloading and saving data with multiple processes (distributed
-settings) will result in corrupted data. Lightning ensures this method is called only within a single
-process, so you can safely add your downloading logic within.</p>
+settings) will result in corrupted data. Lightning ensures this method is called only within a single process,
+so you can safely add your downloading logic within.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>DO NOT set state to the model (use <code class="docutils literal notranslate"><span class="pre">setup</span></code> instead)
@@ -7746,9 +7757,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.setup">
 <span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when
-you need to build models dynamically or adjust something about them. This hook is called on every process
-when using DDP.</p>
+<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
+need to build models dynamically or adjust something about them. This hook is called on every process when
+using DDP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>stage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">'fit'</span></code>, <code class="docutils literal notranslate"><span class="pre">'validate'</span></code>, <code class="docutils literal notranslate"><span class="pre">'test'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'predict'</span></code></p>
@@ -8107,8 +8118,8 @@ defined or not.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.toggle_optimizer">
 <span class="sig-name descname"><span class="pre">toggle_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.toggle_optimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step
-to prevent dangling gradients in multiple-optimizer setup.</p>
+<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step to
+prevent dangling gradients in multiple-optimizer setup.</p>
 <p>It works with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.untoggle_optimizer" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.untoggle_optimizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">untoggle_optimizer()</span></code></a> to make sure <code class="docutils literal notranslate"><span class="pre">param_requires_grad_state</span></code> is properly reset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -8148,7 +8159,7 @@ mode (<code class="docutils literal notranslate"><span class="pre">False</span><
 <dd><p>An iterable or collection of iterables specifying training samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id9"><span class="problematic" id="id10">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id11"><span class="problematic" id="id12">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>For data processing use the following pattern:</p>
 <blockquote>
@@ -8323,7 +8334,7 @@ Data-Parallel support will come in near future.</p>
 <dd><p>An iterable or collection of iterables specifying validation samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id11"><span class="problematic" id="id12">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id13"><span class="problematic" id="id14">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>It’s recommended that all data downloads and preparation happen in <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.prepare_data" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a>.</p>
 <ul class="simple">
@@ -8405,7 +8416,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLFutureCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLFutureCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLFutureCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_reversible_instance_norm=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLFutureCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -8441,7 +8452,16 @@ will be used. Default: <code class="docutils literal notranslate"><span class="p
 <li><p><strong>lr_scheduler_cls</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_LRScheduler</span></code>]) – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
 to using a constant learning rate. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>lr_scheduler_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]) – Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>use_reversible_instance_norm</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use reversible instance normalization <cite>RINorm</cite> against distribution shift as shown in <a class="reference internal" href="#r0fdf7d5ba27f-1" id="id15">[1]</a>.
+It is only applied to the features of the target series and not the covariates.</p></li>
 </ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r0fdf7d5ba27f-1"><span class="brackets"><a class="fn-backref" href="#id15">1</a></span></dt>
+<dd><p>T. Kim et al. “Reversible Instance Normalization for Accurate Time-Series Forecasting against
+Distribution Shift”, <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">https://openreview.net/forum?id=cGDAkQo1C0p</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
@@ -9212,9 +9232,9 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_sharded_model">
 <span class="sig-name descname"><span class="pre">configure_sharded_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_sharded_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins,
-where we’d like to shard the model instantly, which is useful for extremely large models which can save
-memory and initialization time.</p>
+<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins, where
+we’d like to shard the model instantly, which is useful for extremely large models which can save memory and
+initialization time.</p>
 <p>This hook is called during each of fit/val/test/predict stages in the same process, so ensure that
 implementation of this hook is idempotent.</p>
 <dl class="field-list simple">
@@ -9250,8 +9270,8 @@ implementation of this hook is idempotent.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.cuda">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.cuda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves all model parameters and buffers to the GPU. This also makes associated parameters and buffers
-different objects. So it should be called before constructing optimizer if the module will live on GPU
-while being optimized.</p>
+different objects. So it should be called before constructing optimizer if the module will live on GPU while
+being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – If specified, all parameters will be copied to that device. If <cite>None</cite>, the current CUDA device
@@ -9594,8 +9614,8 @@ path or resolves to something that is not an
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.hparams">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hparams</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.utilities.parsing.AttributeDict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">MutableMapping</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.hparams" title="Permalink to this definition">¶</a></dt>
-<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user.
-For the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
+<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user. For
+the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AttributeDict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code>]</p>
@@ -9919,8 +9939,7 @@ for each scheduler based on its <code class="docutils literal notranslate"><span
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.lr_schedulers">
 <span class="sig-name descname"><span class="pre">lr_schedulers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.lr_schedulers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual
-optimization.</p>
+<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]</p>
@@ -10256,7 +10275,7 @@ Data-Parallel support will come in near future.</p>
 <span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.on_before_optimizer_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p>
 <p>If using gradient accumulation, the hook is called once the gradients have been accumulated.
-See: <a href="#id13"><span class="problematic" id="id14">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
+See: <a href="#id16"><span class="problematic" id="id17">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
 <p>If using AMP, the loss will be unscaled before calling this hook.
 See these <a class="reference external" href="https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-unscaled-gradients">docs</a>
 for more information on the scaling of gradients.</p>
@@ -10468,8 +10487,8 @@ There is no need for you to restore anything regarding training.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.on_save_checkpoint">
 <span class="sig-name descname"><span class="pre">on_save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.on_save_checkpoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want
-to save.</p>
+<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want to
+save.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – The full checkpoint dictionary before it gets dumped to a file.
@@ -11010,8 +11029,8 @@ There is no need to set it yourself.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.prepare_data">
 <span class="sig-name descname"><span class="pre">prepare_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.prepare_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use this to download and prepare data. Downloading and saving data with multiple processes (distributed
-settings) will result in corrupted data. Lightning ensures this method is called only within a single
-process, so you can safely add your downloading logic within.</p>
+settings) will result in corrupted data. Lightning ensures this method is called only within a single process,
+so you can safely add your downloading logic within.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>DO NOT set state to the model (use <code class="docutils literal notranslate"><span class="pre">setup</span></code> instead)
@@ -11561,9 +11580,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.setup">
 <span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when
-you need to build models dynamically or adjust something about them. This hook is called on every process
-when using DDP.</p>
+<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
+need to build models dynamically or adjust something about them. This hook is called on every process when
+using DDP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>stage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">'fit'</span></code>, <code class="docutils literal notranslate"><span class="pre">'validate'</span></code>, <code class="docutils literal notranslate"><span class="pre">'test'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'predict'</span></code></p>
@@ -11922,8 +11941,8 @@ defined or not.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.toggle_optimizer">
 <span class="sig-name descname"><span class="pre">toggle_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.toggle_optimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step
-to prevent dangling gradients in multiple-optimizer setup.</p>
+<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step to
+prevent dangling gradients in multiple-optimizer setup.</p>
 <p>It works with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.untoggle_optimizer" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.untoggle_optimizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">untoggle_optimizer()</span></code></a> to make sure <code class="docutils literal notranslate"><span class="pre">param_requires_grad_state</span></code> is properly reset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -11963,7 +11982,7 @@ mode (<code class="docutils literal notranslate"><span class="pre">False</span><
 <dd><p>An iterable or collection of iterables specifying training samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id15"><span class="problematic" id="id16">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id18"><span class="problematic" id="id19">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>For data processing use the following pattern:</p>
 <blockquote>
@@ -12138,7 +12157,7 @@ Data-Parallel support will come in near future.</p>
 <dd><p>An iterable or collection of iterables specifying validation samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id17"><span class="problematic" id="id18">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id20"><span class="problematic" id="id21">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>It’s recommended that all data downloads and preparation happen in <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.prepare_data" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a>.</p>
 <ul class="simple">
@@ -12220,7 +12239,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLMixedCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLMixedCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLMixedCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_reversible_instance_norm=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLMixedCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -12256,7 +12275,16 @@ will be used. Default: <code class="docutils literal notranslate"><span class="p
 <li><p><strong>lr_scheduler_cls</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_LRScheduler</span></code>]) – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
 to using a constant learning rate. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>lr_scheduler_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]) – Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>use_reversible_instance_norm</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use reversible instance normalization <cite>RINorm</cite> against distribution shift as shown in <a class="reference internal" href="#rbce702062bef-1" id="id22">[1]</a>.
+It is only applied to the features of the target series and not the covariates.</p></li>
 </ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rbce702062bef-1"><span class="brackets"><a class="fn-backref" href="#id22">1</a></span></dt>
+<dd><p>T. Kim et al. “Reversible Instance Normalization for Accurate Time-Series Forecasting against
+Distribution Shift”, <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">https://openreview.net/forum?id=cGDAkQo1C0p</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
@@ -13027,9 +13055,9 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_sharded_model">
 <span class="sig-name descname"><span class="pre">configure_sharded_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_sharded_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins,
-where we’d like to shard the model instantly, which is useful for extremely large models which can save
-memory and initialization time.</p>
+<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins, where
+we’d like to shard the model instantly, which is useful for extremely large models which can save memory and
+initialization time.</p>
 <p>This hook is called during each of fit/val/test/predict stages in the same process, so ensure that
 implementation of this hook is idempotent.</p>
 <dl class="field-list simple">
@@ -13065,8 +13093,8 @@ implementation of this hook is idempotent.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.cuda">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.cuda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves all model parameters and buffers to the GPU. This also makes associated parameters and buffers
-different objects. So it should be called before constructing optimizer if the module will live on GPU
-while being optimized.</p>
+different objects. So it should be called before constructing optimizer if the module will live on GPU while
+being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – If specified, all parameters will be copied to that device. If <cite>None</cite>, the current CUDA device
@@ -13409,8 +13437,8 @@ path or resolves to something that is not an
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.hparams">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hparams</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.utilities.parsing.AttributeDict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">MutableMapping</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.hparams" title="Permalink to this definition">¶</a></dt>
-<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user.
-For the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
+<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user. For
+the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AttributeDict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code>]</p>
@@ -13734,8 +13762,7 @@ for each scheduler based on its <code class="docutils literal notranslate"><span
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.lr_schedulers">
 <span class="sig-name descname"><span class="pre">lr_schedulers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.lr_schedulers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual
-optimization.</p>
+<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]</p>
@@ -14071,7 +14098,7 @@ Data-Parallel support will come in near future.</p>
 <span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.on_before_optimizer_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p>
 <p>If using gradient accumulation, the hook is called once the gradients have been accumulated.
-See: <a href="#id19"><span class="problematic" id="id20">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
+See: <a href="#id23"><span class="problematic" id="id24">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
 <p>If using AMP, the loss will be unscaled before calling this hook.
 See these <a class="reference external" href="https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-unscaled-gradients">docs</a>
 for more information on the scaling of gradients.</p>
@@ -14283,8 +14310,8 @@ There is no need for you to restore anything regarding training.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.on_save_checkpoint">
 <span class="sig-name descname"><span class="pre">on_save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.on_save_checkpoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want
-to save.</p>
+<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want to
+save.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – The full checkpoint dictionary before it gets dumped to a file.
@@ -14825,8 +14852,8 @@ There is no need to set it yourself.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.prepare_data">
 <span class="sig-name descname"><span class="pre">prepare_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.prepare_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use this to download and prepare data. Downloading and saving data with multiple processes (distributed
-settings) will result in corrupted data. Lightning ensures this method is called only within a single
-process, so you can safely add your downloading logic within.</p>
+settings) will result in corrupted data. Lightning ensures this method is called only within a single process,
+so you can safely add your downloading logic within.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>DO NOT set state to the model (use <code class="docutils literal notranslate"><span class="pre">setup</span></code> instead)
@@ -15376,9 +15403,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.setup">
 <span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when
-you need to build models dynamically or adjust something about them. This hook is called on every process
-when using DDP.</p>
+<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
+need to build models dynamically or adjust something about them. This hook is called on every process when
+using DDP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>stage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">'fit'</span></code>, <code class="docutils literal notranslate"><span class="pre">'validate'</span></code>, <code class="docutils literal notranslate"><span class="pre">'test'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'predict'</span></code></p>
@@ -15737,8 +15764,8 @@ defined or not.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.toggle_optimizer">
 <span class="sig-name descname"><span class="pre">toggle_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.toggle_optimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step
-to prevent dangling gradients in multiple-optimizer setup.</p>
+<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step to
+prevent dangling gradients in multiple-optimizer setup.</p>
 <p>It works with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.untoggle_optimizer" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.untoggle_optimizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">untoggle_optimizer()</span></code></a> to make sure <code class="docutils literal notranslate"><span class="pre">param_requires_grad_state</span></code> is properly reset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -15778,7 +15805,7 @@ mode (<code class="docutils literal notranslate"><span class="pre">False</span><
 <dd><p>An iterable or collection of iterables specifying training samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id21"><span class="problematic" id="id22">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id25"><span class="problematic" id="id26">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>For data processing use the following pattern:</p>
 <blockquote>
@@ -15953,7 +15980,7 @@ Data-Parallel support will come in near future.</p>
 <dd><p>An iterable or collection of iterables specifying validation samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id23"><span class="problematic" id="id24">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id27"><span class="problematic" id="id28">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>It’s recommended that all data downloads and preparation happen in <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.prepare_data" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a>.</p>
 <ul class="simple">
@@ -16035,7 +16062,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLPastCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLPastCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLPastCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_reversible_instance_norm=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLPastCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -16071,7 +16098,16 @@ will be used. Default: <code class="docutils literal notranslate"><span class="p
 <li><p><strong>lr_scheduler_cls</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_LRScheduler</span></code>]) – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
 to using a constant learning rate. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>lr_scheduler_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]) – Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>use_reversible_instance_norm</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use reversible instance normalization <cite>RINorm</cite> against distribution shift as shown in <a class="reference internal" href="#r9944a583435e-1" id="id29">[1]</a>.
+It is only applied to the features of the target series and not the covariates.</p></li>
 </ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r9944a583435e-1"><span class="brackets"><a class="fn-backref" href="#id29">1</a></span></dt>
+<dd><p>T. Kim et al. “Reversible Instance Normalization for Accurate Time-Series Forecasting against
+Distribution Shift”, <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">https://openreview.net/forum?id=cGDAkQo1C0p</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
@@ -16842,9 +16878,9 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_sharded_model">
 <span class="sig-name descname"><span class="pre">configure_sharded_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_sharded_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins,
-where we’d like to shard the model instantly, which is useful for extremely large models which can save
-memory and initialization time.</p>
+<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins, where
+we’d like to shard the model instantly, which is useful for extremely large models which can save memory and
+initialization time.</p>
 <p>This hook is called during each of fit/val/test/predict stages in the same process, so ensure that
 implementation of this hook is idempotent.</p>
 <dl class="field-list simple">
@@ -16880,8 +16916,8 @@ implementation of this hook is idempotent.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.cuda">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.cuda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves all model parameters and buffers to the GPU. This also makes associated parameters and buffers
-different objects. So it should be called before constructing optimizer if the module will live on GPU
-while being optimized.</p>
+different objects. So it should be called before constructing optimizer if the module will live on GPU while
+being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – If specified, all parameters will be copied to that device. If <cite>None</cite>, the current CUDA device
@@ -17224,8 +17260,8 @@ path or resolves to something that is not an
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.hparams">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hparams</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.utilities.parsing.AttributeDict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">MutableMapping</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.hparams" title="Permalink to this definition">¶</a></dt>
-<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user.
-For the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
+<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user. For
+the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AttributeDict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code>]</p>
@@ -17549,8 +17585,7 @@ for each scheduler based on its <code class="docutils literal notranslate"><span
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.lr_schedulers">
 <span class="sig-name descname"><span class="pre">lr_schedulers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.lr_schedulers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual
-optimization.</p>
+<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]</p>
@@ -17886,7 +17921,7 @@ Data-Parallel support will come in near future.</p>
 <span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.on_before_optimizer_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p>
 <p>If using gradient accumulation, the hook is called once the gradients have been accumulated.
-See: <a href="#id25"><span class="problematic" id="id26">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
+See: <a href="#id30"><span class="problematic" id="id31">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
 <p>If using AMP, the loss will be unscaled before calling this hook.
 See these <a class="reference external" href="https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-unscaled-gradients">docs</a>
 for more information on the scaling of gradients.</p>
@@ -18098,8 +18133,8 @@ There is no need for you to restore anything regarding training.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.on_save_checkpoint">
 <span class="sig-name descname"><span class="pre">on_save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.on_save_checkpoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want
-to save.</p>
+<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want to
+save.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – The full checkpoint dictionary before it gets dumped to a file.
@@ -18640,8 +18675,8 @@ There is no need to set it yourself.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.prepare_data">
 <span class="sig-name descname"><span class="pre">prepare_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.prepare_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use this to download and prepare data. Downloading and saving data with multiple processes (distributed
-settings) will result in corrupted data. Lightning ensures this method is called only within a single
-process, so you can safely add your downloading logic within.</p>
+settings) will result in corrupted data. Lightning ensures this method is called only within a single process,
+so you can safely add your downloading logic within.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>DO NOT set state to the model (use <code class="docutils literal notranslate"><span class="pre">setup</span></code> instead)
@@ -19191,9 +19226,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.setup">
 <span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when
-you need to build models dynamically or adjust something about them. This hook is called on every process
-when using DDP.</p>
+<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
+need to build models dynamically or adjust something about them. This hook is called on every process when
+using DDP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>stage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">'fit'</span></code>, <code class="docutils literal notranslate"><span class="pre">'validate'</span></code>, <code class="docutils literal notranslate"><span class="pre">'test'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'predict'</span></code></p>
@@ -19552,8 +19587,8 @@ defined or not.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.toggle_optimizer">
 <span class="sig-name descname"><span class="pre">toggle_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.toggle_optimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step
-to prevent dangling gradients in multiple-optimizer setup.</p>
+<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step to
+prevent dangling gradients in multiple-optimizer setup.</p>
 <p>It works with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.untoggle_optimizer" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.untoggle_optimizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">untoggle_optimizer()</span></code></a> to make sure <code class="docutils literal notranslate"><span class="pre">param_requires_grad_state</span></code> is properly reset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -19593,7 +19628,7 @@ mode (<code class="docutils literal notranslate"><span class="pre">False</span><
 <dd><p>An iterable or collection of iterables specifying training samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id27"><span class="problematic" id="id28">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id32"><span class="problematic" id="id33">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>For data processing use the following pattern:</p>
 <blockquote>
@@ -19768,7 +19803,7 @@ Data-Parallel support will come in near future.</p>
 <dd><p>An iterable or collection of iterables specifying validation samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id29"><span class="problematic" id="id30">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id34"><span class="problematic" id="id35">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>It’s recommended that all data downloads and preparation happen in <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.prepare_data" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a>.</p>
 <ul class="simple">
@@ -19850,7 +19885,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLSplitCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLSplitCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLSplitCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_sample_shape=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_reversible_instance_norm=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLSplitCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -19886,7 +19921,16 @@ will be used. Default: <code class="docutils literal notranslate"><span class="p
 <li><p><strong>lr_scheduler_cls</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_LRScheduler</span></code>]) – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
 to using a constant learning rate. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>lr_scheduler_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]) – Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>use_reversible_instance_norm</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use reversible instance normalization <cite>RINorm</cite> against distribution shift as shown in <a class="reference internal" href="#r581ea62de027-1" id="id36">[1]</a>.
+It is only applied to the features of the target series and not the covariates.</p></li>
 </ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r581ea62de027-1"><span class="brackets"><a class="fn-backref" href="#id36">1</a></span></dt>
+<dd><p>T. Kim et al. “Reversible Instance Normalization for Accurate Time-Series Forecasting against
+Distribution Shift”, <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">https://openreview.net/forum?id=cGDAkQo1C0p</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
@@ -20657,9 +20701,9 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_sharded_model">
 <span class="sig-name descname"><span class="pre">configure_sharded_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_sharded_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins,
-where we’d like to shard the model instantly, which is useful for extremely large models which can save
-memory and initialization time.</p>
+<dd><p>Hook to create modules in a distributed aware context. This is useful for when using sharded plugins, where
+we’d like to shard the model instantly, which is useful for extremely large models which can save memory and
+initialization time.</p>
 <p>This hook is called during each of fit/val/test/predict stages in the same process, so ensure that
 implementation of this hook is idempotent.</p>
 <dl class="field-list simple">
@@ -20695,8 +20739,8 @@ implementation of this hook is idempotent.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.cuda">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.cuda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves all model parameters and buffers to the GPU. This also makes associated parameters and buffers
-different objects. So it should be called before constructing optimizer if the module will live on GPU
-while being optimized.</p>
+different objects. So it should be called before constructing optimizer if the module will live on GPU while
+being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – If specified, all parameters will be copied to that device. If <cite>None</cite>, the current CUDA device
@@ -21039,8 +21083,8 @@ path or resolves to something that is not an
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.hparams">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hparams</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.utilities.parsing.AttributeDict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">MutableMapping</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.hparams" title="Permalink to this definition">¶</a></dt>
-<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user.
-For the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
+<dd><p>The collection of hyperparameters saved with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.save_hyperparameters" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.save_hyperparameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code></a>. It is mutable by the user. For
+the frozen set of initial hyperparameters, use <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.hparams_initial" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.hparams_initial"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hparams_initial</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AttributeDict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code>]</p>
@@ -21364,8 +21408,7 @@ for each scheduler based on its <code class="docutils literal notranslate"><span
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.lr_schedulers">
 <span class="sig-name descname"><span class="pre">lr_schedulers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.lr_schedulers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual
-optimization.</p>
+<dd><p>Returns the learning rate scheduler(s) that are being used during training. Useful for manual optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ReduceLROnPlateau</span></code>]</p>
@@ -21701,7 +21744,7 @@ Data-Parallel support will come in near future.</p>
 <span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.on_before_optimizer_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p>
 <p>If using gradient accumulation, the hook is called once the gradients have been accumulated.
-See: <a href="#id31"><span class="problematic" id="id32">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
+See: <a href="#id37"><span class="problematic" id="id38">:paramref:`~pytorch_lightning.trainer.Trainer.accumulate_grad_batches`</span></a>.</p>
 <p>If using AMP, the loss will be unscaled before calling this hook.
 See these <a class="reference external" href="https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-unscaled-gradients">docs</a>
 for more information on the scaling of gradients.</p>
@@ -21913,8 +21956,8 @@ There is no need for you to restore anything regarding training.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.on_save_checkpoint">
 <span class="sig-name descname"><span class="pre">on_save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.on_save_checkpoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want
-to save.</p>
+<dd><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want to
+save.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – The full checkpoint dictionary before it gets dumped to a file.
@@ -22455,8 +22498,8 @@ There is no need to set it yourself.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.prepare_data">
 <span class="sig-name descname"><span class="pre">prepare_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.prepare_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use this to download and prepare data. Downloading and saving data with multiple processes (distributed
-settings) will result in corrupted data. Lightning ensures this method is called only within a single
-process, so you can safely add your downloading logic within.</p>
+settings) will result in corrupted data. Lightning ensures this method is called only within a single process,
+so you can safely add your downloading logic within.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>DO NOT set state to the model (use <code class="docutils literal notranslate"><span class="pre">setup</span></code> instead)
@@ -23006,9 +23049,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.setup">
 <span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when
-you need to build models dynamically or adjust something about them. This hook is called on every process
-when using DDP.</p>
+<dd><p>Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
+need to build models dynamically or adjust something about them. This hook is called on every process when
+using DDP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>stage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">'fit'</span></code>, <code class="docutils literal notranslate"><span class="pre">'validate'</span></code>, <code class="docutils literal notranslate"><span class="pre">'test'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'predict'</span></code></p>
@@ -23367,8 +23410,8 @@ defined or not.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.toggle_optimizer">
 <span class="sig-name descname"><span class="pre">toggle_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.toggle_optimizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step
-to prevent dangling gradients in multiple-optimizer setup.</p>
+<dd><p>Makes sure only the gradients of the current optimizer’s parameters are calculated in the training step to
+prevent dangling gradients in multiple-optimizer setup.</p>
 <p>It works with <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.untoggle_optimizer" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.untoggle_optimizer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">untoggle_optimizer()</span></code></a> to make sure <code class="docutils literal notranslate"><span class="pre">param_requires_grad_state</span></code> is properly reset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -23408,7 +23451,7 @@ mode (<code class="docutils literal notranslate"><span class="pre">False</span><
 <dd><p>An iterable or collection of iterables specifying training samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id33"><span class="problematic" id="id34">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id39"><span class="problematic" id="id40">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>For data processing use the following pattern:</p>
 <blockquote>
@@ -23583,7 +23626,7 @@ Data-Parallel support will come in near future.</p>
 <dd><p>An iterable or collection of iterables specifying validation samples.</p>
 <p>For more information about multiple dataloaders, see this <span class="xref std std-ref">section</span>.</p>
 <p>The dataloader you return will not be reloaded unless you set
-<a href="#id35"><span class="problematic" id="id36">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
+<a href="#id41"><span class="problematic" id="id42">:paramref:`~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_n_epochs`</span></a> to
 a positive integer.</p>
 <p>It’s recommended that all data downloads and preparation happen in <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.prepare_data" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a>.</p>
 <ul class="simple">
@@ -23661,6 +23704,23 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.io_processor">
+<span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">io_processor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forward</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#io_processor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.io_processor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies some input / output processing to PLForecastingModule.forward.
+Note that this wrapper must be added to each of PLForecastinModule’s subclasses forward methods.
+Here is an example how to add the decorator:</p>
+<dl>
+<dt><a href="#id43"><span class="problematic" id="id44">``</span></a><a href="#id45"><span class="problematic" id="id46">`</span></a>python</dt><dd><p>&#64;io_processor
+def forward(self, <a href="#id47"><span class="problematic" id="id48">*</span></a>args, <a href="#id49"><span class="problematic" id="id50">**</span></a>kwargs)</p>
+<blockquote>
+<div><p>pass</p>
+</div></blockquote>
+</dd>
+</dl>
+<p><a href="#id51"><span class="problematic" id="id52">``</span></a><a href="#id53"><span class="problematic" id="id54">`</span></a></p>
 </dd></dl>
 
 

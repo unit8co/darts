@@ -230,14 +230,39 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import ETTh2Dataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import VARIMA</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import holidays_timeseries</span>
+<span class="sd">        &gt;&gt;&gt; # forecasting the High UseFul Load (&quot;HUFL&quot;) and Oil Temperature (&quot;OT&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; series = ETTh2Dataset().load()[:500][[&quot;HUFL&quot;, &quot;OT&quot;]]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use some future covariates; e.g. encode each timestep whether it is on a holiday</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = holidays_timeseries(series.time_index, &quot;CN&quot;, add_length=6)</span>
+<span class="sd">        &gt;&gt;&gt; # no clear trend in the dataset</span>
+<span class="sd">        &gt;&gt;&gt; model = VARIMA(trend=&quot;n&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; # the two targets are predicted together</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[48.11846185, 47.94272629],</span>
+<span class="sd">               [49.85314633, 47.97713346],</span>
+<span class="sd">               [51.16145791, 47.99804203],</span>
+<span class="sd">               [52.14674087, 48.00872598],</span>
+<span class="sd">               [52.88729152, 48.01166578],</span>
+<span class="sd">               [53.44242919, 48.00874069]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">p</span>

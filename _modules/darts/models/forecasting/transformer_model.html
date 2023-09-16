@@ -183,7 +183,10 @@
     <span class="n">CustomFeedForwardDecoderLayer</span><span class="p">,</span>
     <span class="n">CustomFeedForwardEncoderLayer</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLPastCovariatesModule</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PLPastCovariatesModule</span><span class="p">,</span>
+    <span class="n">io_processor</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -457,6 +460,7 @@
 
         <span class="k">return</span> <span class="n">src</span><span class="p">,</span> <span class="n">tgt</span>
 
+    <span class="nd">@io_processor</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
         <span class="n">data</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
         <span class="c1"># Here we create &#39;src&#39; and &#39;tgt&#39;, the inputs for the encoder and decoder</span>
@@ -572,6 +576,9 @@
 <span class="sd">            to using a constant learning rate. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        use_reversible_instance_norm</span>
+<span class="sd">            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.</span>
+<span class="sd">            It is only applied to the features of the target series and not the covariates.</span>
 <span class="sd">        batch_size</span>
 <span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
 <span class="sd">        n_epochs</span>
@@ -612,11 +619,14 @@
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
 
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
-<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
@@ -680,18 +690,49 @@
 <span class="sd">        .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,</span>
 <span class="sd">        and Illia Polosukhin, &quot;Attention Is All You Need&quot;, 2017. In Advances in Neural Information Processing Systems,</span>
 <span class="sd">        pages 6000-6010. https://arxiv.org/abs/1706.03762.</span>
-<span class="sd">        ..[2] Shazeer, Noam, &quot;GLU Variants Improve Transformer&quot;, 2020. arVix https://arxiv.org/abs/2002.05202.</span>
+<span class="sd">        .. [2] Shazeer, Noam, &quot;GLU Variants Improve Transformer&quot;, 2020. arVix https://arxiv.org/abs/2002.05202.</span>
+<span class="sd">        .. [3] T. Kim et al. &quot;Reversible Instance Normalization for Accurate Time-Series Forecasting against</span>
+<span class="sd">                Distribution Shift&quot;, https://openreview.net/forum?id=cGDAkQo1C0p</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
 <span class="sd">        Disclaimer:</span>
 <span class="sd">        This current implementation is fully functional and can already produce some good predictions. However,</span>
 <span class="sd">        it is still limited in how it uses the Transformer architecture because the `tgt` input of</span>
-<span class="sd">        `torch.nn.Transformer` is not utlized to its full extent. Currently, we simply pass the last value of the</span>
+<span class="sd">        `torch.nn.Transformer` is not utilized to its full extent. Currently, we simply pass the last value of the</span>
 <span class="sd">        `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we</span>
 <span class="sd">        should allow the model to consume its own output as part of the `tgt` argument, such that when predicting</span>
 <span class="sd">        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be</span>
 <span class="sd">        added to it. Of course, the training of the model would have to be adapted accordingly.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import TransformerModel</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use past observed rainfall (pretending to be unknown beyond index 100)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;rain (mm)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; model = TransformerModel(</span>
+<span class="sd">        &gt;&gt;&gt;     input_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     n_epochs=20</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[5.40498034],</span>
+<span class="sd">               [5.36561899],</span>
+<span class="sd">               [5.80616883],</span>
+<span class="sd">               [6.48695488],</span>
+<span class="sd">               [7.63158655],</span>
+<span class="sd">               [5.65417736]])</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            `Transformer example notebook &lt;https://unit8co.github.io/darts/examples/06-Transformer-examples.html&gt;`_</span>
+<span class="sd">            presents techniques that can be used to improve the forecasts quality compared to this simple usage</span>
+<span class="sd">            example.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_extract_torch_model_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
 

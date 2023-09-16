@@ -340,6 +340,23 @@
 <span class="sd">            See https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Sets the underlying random seed at model initialization time.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import TBATS # or BATS</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # based on preliminary analysis, the series contains a trend</span>
+<span class="sd">        &gt;&gt;&gt; model = TBATS(use_trend=True)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[448.29856017],</span>
+<span class="sd">               [439.42215052],</span>
+<span class="sd">               [507.73465028],</span>
+<span class="sd">               [493.03751671],</span>
+<span class="sd">               [498.85885374],</span>
+<span class="sd">               [564.64871897]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
