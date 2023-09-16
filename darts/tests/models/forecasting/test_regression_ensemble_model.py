@@ -186,10 +186,11 @@ class TestRegressionEnsembleModels:
             ensemble.fit(self.combined)
 
         # using regression_train_n_point=-1 without pretraining
-        with pytest.raises(ValueError):
-            RegressionEnsembleModel(
-                self.get_global_models(), regression_train_n_points=-1
-            )
+        if TORCH_AVAILABLE:
+            with pytest.raises(ValueError):
+                RegressionEnsembleModel(
+                    self.get_global_models(), regression_train_n_points=-1
+                )
 
         # using regression_train_n_point=-1 with pretraining
         forecasting_models = [
