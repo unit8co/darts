@@ -278,7 +278,11 @@ def _optimized_historical_forecasts_regression_all_points(
                 num_samples,
             )
 
-            if forecast_horizon == model.output_chunk_length and forecast_horizon > 1:
+            if (
+                forecast_horizon == model.output_chunk_length
+                and forecast_horizon > 1
+                and not overlap_end
+            ):
                 forecast = forecast[:-shift_end:stride]
             # only keep the prediction of the first forecast_horizon sub-models
             else:
@@ -304,7 +308,7 @@ def _optimized_historical_forecasts_regression_all_points(
                     :,
                 ]
             # apply stride, remove the last windows
-            elif forecast_horizon > 1:
+            elif forecast_horizon > 1 and not overlap_end:
                 forecast = forecast[: -forecast_horizon + 1 : stride, 0, 0, :, :, :]
             # apply stride
             else:

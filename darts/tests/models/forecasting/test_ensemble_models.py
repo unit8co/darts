@@ -45,7 +45,7 @@ class TestEnsembleModels:
         model = NaiveDrift()
         _ = NaiveEnsembleModel([model])
 
-        # trained models should raise error
+        # trained local models should raise error
         model.fit(self.series1)
         with pytest.raises(ValueError):
             NaiveEnsembleModel([model])
@@ -53,9 +53,53 @@ class TestEnsembleModels:
         # an untrained ensemble model should also give untrained underlying models
         model_ens = NaiveEnsembleModel([NaiveDrift()])
         model_ens.fit(self.series1)
-        assert model_ens.models[0]._fit_called
+        assert model_ens.forecasting_models[0]._fit_called
         new_model = model_ens.untrained_model()
-        assert not new_model.models[0]._fit_called
+        assert not new_model.forecasting_models[0]._fit_called
+
+    def test_trained_models(self):
+        """EnsembleModels can be instantiated with pre-trained GlobalForecastingModels"""
+        local_model = NaiveDrift()
+        global_model = LinearRegressionModel(lags=2)
+        local_model.fit(self.series1)
+        global_model.fit(self.series1)
+
+        # local and global trained
+        with pytest.raises(ValueError):
+            NaiveEnsembleModel([local_model, global_model])
+
+        # local untrained, global trained
+        with pytest.raises(ValueError):
+            NaiveEnsembleModel([local_model.untrained_model(), global_model])
+
+        # local trained, global untrained
+        with pytest.raises(ValueError):
+            NaiveEnsembleModel([local_model, global_model.untrained_model()])
+
+        # global trained, global untrained
+        with pytest.raises(ValueError):
+            NaiveEnsembleModel([global_model, global_model.untrained_model()])
+
+        # both global trained, retrain = True
+        with pytest.raises(ValueError):
+            # models need to be explicitely reset before retraining them
+            NaiveEnsembleModel(
+                [global_model, global_model], train_forecasting_models=True
+            )
+        model_ens_retrain = NaiveEnsembleModel(
+            [global_model.untrained_model(), global_model.untrained_model()],
+            train_forecasting_models=True,
+        )
+        with pytest.raises(ValueError):
+            model_ens_retrain.predict(1, series=self.series1)
+        model_ens_retrain.fit(self.series1)
+        model_ens_retrain.predict(1, series=self.series1)
+
+        # both global trained, retrain = False
+        model_ens_no_retrain = NaiveEnsembleModel(
+            [global_model, global_model], train_forecasting_models=False
+        )
+        model_ens_no_retrain.predict(1, series=self.series1)
 
     def test_extreme_lag_inference(self):
         ensemble = NaiveEnsembleModel([NaiveDrift()])
@@ -493,7 +537,7 @@ class TestEnsembleModels:
     def get_global_ensemble_model(output_chunk_length=5):
         lags = [-1, -2, -5]
         return NaiveEnsembleModel(
-            models=[
+            forecasting_models=[
                 LinearRegressionModel(
                     lags=lags,
                     lags_past_covariates=lags,

@@ -20,6 +20,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - All `RegressionModel`s now support component/column-specific lags for target, past, and future covariates series. [#1962](https://github.com/unit8co/darts/pull/1962) by [Antoine Madrona](https://github.com/madtoinou).
 - Added method `TimeSeries.cumsum()` to get the cumulative sum of the time series along the time axis. [#1988](https://github.com/unit8co/darts/pull/1988) by [Eliot Zubkoff](https://github.com/Eliotdoesprogramming).
 - 🔴 Added past covariates feature projection to `TiDEModel` with parameter `temporal_width_past` following the advice of the model architect. Parameter `temporal_width` was renamed to `temporal_width_future`. Additionally, added the option to bypass the feature projection with `temporal_width_past/future=0`. [#1993](https://github.com/unit8co/darts/pull/1993) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `EnsembleModel`:
+  - 🔴 Renamed `EnsembleModel` and `NaiveEnsembleModel` constructor argument `models` to `forecasting_models`. [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
+  - `EnsembleModel`, `RegressionEnsembleModel` and `NaiveEnsembleModel` accept pretrained `GlobalForecastingModel` as `forecasting_models` to avoid re-training when ensembling. [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Fixed**
 - Fixed a bug in `TimeSeries.from_dataframe()` when using a pandas.DataFrame with `df.columns.name != None`. [#1938](https://github.com/unit8co/darts/pull/1938) by [Antoine Madrona](https://github.com/madtoinou).
@@ -28,6 +31,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `TorchForecastingModel.load_weights()` that raised an error when loading the weights from a valid architecture. [#1952](https://github.com/unit8co/darts/pull/1952) by [Antoine Madrona](https://github.com/madtoinou).
 - 🔴 Dropped support for lambda functions in `add_encoders`’s “custom” encoder in favor of named functions to ensure that models can be exported. [#1957](https://github.com/unit8co/darts/pull/1957) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in `NLinearModel` where `normalize=True` and past covariates could not be used at the same time. [#1873](https://github.com/unit8co/darts/pull/1873) by [Eliot Zubkoff](https://github.com/Eliotdoesprogramming).
+- Properly raising an error when an `EnsembleModel` containing at least one `LocalForecastingModel` is calling `historical_forecasts` with `retrain=False`.  [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:
 
