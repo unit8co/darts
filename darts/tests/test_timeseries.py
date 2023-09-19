@@ -764,6 +764,26 @@ class TestTimeSeries:
         # should not fail if nr samples is not the same:
         series.with_values(np.random.rand(5, 10, 2))
 
+    def test_cumsum(self):
+        cumsum_expected = TimeSeries.from_dataframe(
+            self.series1.pd_dataframe().cumsum()
+        )
+        # univariate deterministic
+        assert self.series1.cumsum() == TimeSeries.from_dataframe(
+            self.series1.pd_dataframe().cumsum()
+        )
+        # multivariate deterministic
+        assert self.series1.stack(self.series1).cumsum() == cumsum_expected.stack(
+            cumsum_expected
+        )
+        # multivariate stochastic
+        # shape = (time steps, components, samples)
+        ts = TimeSeries.from_values(np.random.random((10, 2, 10)))
+        np.testing.assert_array_equal(
+            ts.cumsum().all_values(copy=False),
+            np.cumsum(ts.all_values(copy=False), axis=0),
+        )
+
     def test_diff(self):
         diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())
         diff2 = TimeSeries.from_dataframe(diff1.pd_dataframe().diff())

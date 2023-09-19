@@ -21,9 +21,9 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Have a monotonically increasing time index, without holes (without missing dates)
     - Contain numeric types only
     - Have distinct components/columns names
-    - Have a well defined frequency (
-    `date offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
-    for ``DateTimeIndex``, and step size for ``RangeIndex``)
+    - Have a well defined frequency (`date offset aliases
+      <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
+      for ``DateTimeIndex``, or step size for ``RangeIndex``)
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
@@ -2570,7 +2570,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A TimeSeries constructed after differencing.
+            A new TimeSeries, with the differenced values.
         """
         if not isinstance(n, int) or n < 1:
             raise_log(ValueError("'n' must be a positive integer >= 1."), logger)
@@ -2596,6 +2596,17 @@ class TimeSeries:
         for _ in range(n - 1):
             new_xa = _compute_diff(new_xa)
         return self.__class__(new_xa)
+
+    def cumsum(self) -> Self:
+        """
+        Returns the cumulative sum of the time series along the time axis.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, with the cumulatively summed values.
+        """
+        return self.__class__(self._xa.copy().cumsum(axis=0))
 
     def has_same_time_as(self, other: "TimeSeries") -> bool:
         """
@@ -5166,7 +5177,7 @@ def concatenate(
         if not consecutive_time_axes:
             raise_if_not(
                 ignore_time_axis,
-                "When concatenating over time axis, all series need to be contiguous"
+                "When concatenating over time axis, all series need to be contiguous "
                 "in the time dimension. Use `ignore_time_axis=True` to override "
                 "this behavior and concatenate the series by extending the time axis "
                 "of the first series.",

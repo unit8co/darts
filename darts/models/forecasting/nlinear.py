@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
-from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLMixedCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 
@@ -106,6 +109,7 @@ class _NLinearModule(PLMixedCovariatesModule):
                 layer_in_dim_static_cov, layer_out_dim
             )
 
+    @io_processor
     def forward(
         self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):
@@ -138,16 +142,14 @@ class _NLinearModule(PLMixedCovariatesModule):
             x = x.permute(0, 2, 1, 3)
         else:
             if self.normalize:
-                seq_last = x[:, -1:, :].detach()  # (batch, 1, in_dim)
+                # get last values only for target features
+                seq_last = x[:, -1:, : self.output_dim].detach()
                 x = x - seq_last
 
             x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
             x = x.view(
                 batch, self.output_chunk_length, self.output_dim * self.nr_params
             )
-
-            if self.normalize:
-                x = x + seq_last  # Note: works only when nr_params == 1
 
             if self.future_cov_dim != 0:
                 # x_future might be shorter than output_chunk_length when n < output_chunk_length
@@ -171,7 +173,8 @@ class _NLinearModule(PLMixedCovariatesModule):
                 )
 
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
-
+            if self.normalize:
+                x = x + seq_last.view(seq_last.shape + (1,))
         return x
 
 
@@ -246,6 +249,9 @@ class NLinearModel(MixedCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -286,11 +292,14 @@ class NLinearModel(MixedCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'past': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -351,6 +360,36 @@ class NLinearModel(MixedCovariatesTorchModel):
         ----------
         .. [1] Zeng, A., Chen, M., Zhang, L., & Xu, Q. (2022).
                Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NLinearModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> # values corresponding to the forecasted period
+        >>> model = NLinearModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[429.56117169],
+               [428.93264096],
+               [428.35210616],
+               [428.13154426],
+               [427.98781641],
+               [428.00325481]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

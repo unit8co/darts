@@ -167,6 +167,16 @@ TiDE model example notebook:
 
    examples/18-TiDE-examples.ipynb
 
+Ensemble Models
+=============================
+
+Ensemble models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/19-EnsembleModel-examples.ipynb
+
 Kalman Filter Model
 ===================
 
