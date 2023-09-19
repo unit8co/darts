@@ -118,6 +118,54 @@ if TORCH_AVAILABLE:
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
+            model = TiDEModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
+                **tfm_kwargs
+            )
+            model.fit(ts_time_index, verbose=False, epochs=1)
+
+        @pytest.mark.parametrize("temporal_widths", [(-1, 1), (1, -1)])
+        def test_failing_future_and_past_temporal_widths(self, temporal_widths):
+            # invalid temporal widths
+            with pytest.raises(ValueError):
+                TiDEModel(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    temporal_width_past=temporal_widths[0],
+                    temporal_width_future=temporal_widths[1],
+                    **tfm_kwargs
+                )
+
+        @pytest.mark.parametrize(
+            "temporal_widths",
+            [
+                (2, 2),  # feature projection to same amount of features
+                (1, 2),  # past: feature reduction, future: same amount of features
+                (2, 1),  # past: same amount of features, future: feature reduction
+                (3, 3),  # feature expansion
+                (0, 2),  # bypass past feature projection
+                (2, 0),  # bypass future feature projection
+                (0, 0),  # bypass all feature projection
+            ],
+        )
+        def test_future_and_past_temporal_widths(self, temporal_widths):
+            ts_time_index = tg.sine_timeseries(length=2, freq="h")
+
+            # feature projection to 2 features (same amount as input features)
+            model = TiDEModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                temporal_width_past=temporal_widths[0],
+                temporal_width_future=temporal_widths[1],
+                add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
+                **tfm_kwargs
+            )
+            model.fit(ts_time_index, verbose=False, epochs=1)
+            assert model.model.temporal_width_past == temporal_widths[0]
+            assert model.model.temporal_width_future == temporal_widths[1]
+
         def test_past_covariate_handling(self):
             ts_time_index = tg.sine_timeseries(length=2, freq="h")
 
@@ -142,7 +190,12 @@ if TORCH_AVAILABLE:
                     use_reversible_instance_norm=enable_rin,
                     **tfm_kwargs
                 )
-                model.fit(ts_time_index, ts_time_index, verbose=False, epochs=1)
+                model.fit(
+                    ts_time_index,
+                    past_covariates=ts_time_index,
+                    verbose=False,
+                    epochs=1,
+                )
 
                 # test with past_covariates and future_covariates timeseries
                 model = TiDEModel(
@@ -153,7 +206,11 @@ if TORCH_AVAILABLE:
                     **tfm_kwargs
                 )
                 model.fit(
-                    ts_time_index, ts_time_index, ts_time_index, verbose=False, epochs=1
+                    ts_time_index,
+                    past_covariates=ts_time_index,
+                    future_covariates=ts_time_index,
+                    verbose=False,
+                    epochs=1,
                 )
 
         def test_static_covariates_support(self):

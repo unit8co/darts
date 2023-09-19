@@ -63,14 +63,39 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'future': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import ETTh2Dataset
+        >>> from darts.models import VARIMA
+        >>> from darts.utils.timeseries_generation import holidays_timeseries
+        >>> # forecasting the High UseFul Load ("HUFL") and Oil Temperature ("OT")
+        >>> series = ETTh2Dataset().load()[:500][["HUFL", "OT"]]
+        >>> # optionally, use some future covariates; e.g. encode each timestep whether it is on a holiday
+        >>> future_cov = holidays_timeseries(series.time_index, "CN", add_length=6)
+        >>> # no clear trend in the dataset
+        >>> model = VARIMA(trend="n")
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> # the two targets are predicted together
+        >>> pred.values()
+        array([[48.11846185, 47.94272629],
+               [49.85314633, 47.97713346],
+               [51.16145791, 47.99804203],
+               [52.14674087, 48.00872598],
+               [52.88729152, 48.01166578],
+               [53.44242919, 48.00874069]])
         """
         super().__init__(add_encoders=add_encoders)
         self.p = p

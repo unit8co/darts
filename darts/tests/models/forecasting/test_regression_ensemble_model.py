@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.metrics import rmse
+from darts.metrics import mape, rmse
 from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
@@ -61,7 +61,7 @@ class TestRegressionEnsembleModels:
     ts_cov1 = ts_cov1.pd_dataframe()
     ts_cov1.columns = ["Periodic", "Gaussian"]
     ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
-    ts_sum1 = ts_periodic + ts_gaussian
+    ts_sum1: TimeSeries = ts_periodic + ts_gaussian
 
     ts_cov2 = ts_sum1.stack(ts_random_walk)
     ts_sum2 = ts_sum1 + ts_random_walk
@@ -89,7 +89,7 @@ class TestRegressionEnsembleModels:
         ]
 
     @staticmethod
-    def get_global_ensembe_model(output_chunk_length=5):
+    def get_global_ensemble_model(output_chunk_length=5):
         lags = [-1, -2, -5]
         return RegressionEnsembleModel(
             forecasting_models=[
@@ -135,6 +135,36 @@ class TestRegressionEnsembleModels:
             model.fit(series=self.combined)
             model.predict(10)
 
+    def test_accept_pretrain_global_models(self):
+        linreg1 = LinearRegressionModel(lags=1)
+        linreg2 = LinearRegressionModel(lags=2)
+
+        linreg1.fit(self.lin_series[:30])
+        linreg2.fit(self.lin_series[:30])
+
+        model_ens = RegressionEnsembleModel(
+            forecasting_models=[linreg1, linreg2],
+            regression_train_n_points=10,
+            train_forecasting_models=False,
+        )
+        model_ens.fit(self.sine_series[:45])
+        model_ens.predict(5)
+
+        # retrain_forecasting_models=True requires all the model to be reset
+        with pytest.raises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=[linreg1, linreg2],
+                regression_train_n_points=10,
+                train_forecasting_models=True,
+            )
+        model_ens_ft = RegressionEnsembleModel(
+            forecasting_models=[linreg1.untrained_model(), linreg2.untrained_model()],
+            regression_train_n_points=10,
+            train_forecasting_models=True,
+        )
+        model_ens_ft.fit(self.sine_series[:45])
+        model_ens_ft.predict(5)
+
     def test_train_n_points(self):
         regr = LinearRegressionModel(lags_future_covariates=[0])
 
@@ -155,6 +185,28 @@ class TestRegressionEnsembleModels:
         with pytest.raises(ValueError):
             ensemble.fit(self.combined)
 
+        # using regression_train_n_point=-1 without pretraining
+        if TORCH_AVAILABLE:
+            with pytest.raises(ValueError):
+                RegressionEnsembleModel(
+                    self.get_global_models(), regression_train_n_points=-1
+                )
+
+        # using regression_train_n_point=-1 with pretraining
+        forecasting_models = [
+            LinearRegressionModel(lags=1).fit(self.sine_series),
+            LinearRegressionModel(lags=3).fit(self.sine_series),
+        ]
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=forecasting_models,
+            regression_train_n_points=-1,
+            train_forecasting_models=False,
+        )
+        ensemble.fit(self.combined)
+
+        # 3 values are necessary to predict the first value for the 2nd forecasting model
+        assert ensemble.regression_model.training_series == self.combined[3:]
+
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_torch_models_retrain(self):
         model1 = BlockRNNModel(
@@ -173,15 +225,142 @@ class TestRegressionEnsembleModels:
         )
 
         ensemble = RegressionEnsembleModel([model1], 5)
+        # forecasting model is retrained from scratch with the entire series once the regression model is trained
         ensemble.fit(self.combined)
-
-        model1_fitted = ensemble.models[0]
-        forecast1 = model1_fitted.predict(10)
-
+        model1_fitted = ensemble.forecasting_models[0]
+        forecast1 = model1_fitted.predict(3)
+        # train torch model outside of ensemble model
         model2.fit(self.combined)
-        forecast2 = model2.predict(10)
+        forecast2 = model2.predict(3)
 
-        assert round(abs(sum(forecast1.values() - forecast2.values())[0] - 0.0), 2) == 0
+        assert model1_fitted.training_series.time_index.equals(
+            model2.training_series.time_index
+        )
+        assert forecast1.time_index.equals(forecast2.time_index)
+        np.testing.assert_array_almost_equal(forecast1.values(), forecast2.values())
+
+    @pytest.mark.parametrize("config", [(1, 1), (5, 2), (4, 3)])
+    def test_train_with_historical_forecasts_no_covs(self, config):
+        """
+        Training regression model of ensemble with output from historical forecasts instead of predict should
+        yield better results when the forecasting models are global and regression_train_n_points >> ocl.
+
+        config[0] : both ocl = 1
+        config[1] : both ocl are multiple of regression_train_n_points
+        config[2] : ocl1 is multiple, ocl2 is not but series is long enough to shift the historical forecats start
+        """
+        ocl1, ocl2 = config
+        regression_train_n_points = 20
+        train, val = self.combined.split_after(self.combined.time_index[-10])
+
+        # using predict to generate the future covs for the ensemble model
+        ensemble_predict = RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(lags=5, output_chunk_length=ocl1),
+                LinearRegressionModel(lags=2, output_chunk_length=ocl2),
+            ],
+            regression_train_n_points=regression_train_n_points,
+            train_using_historical_forecasts=False,
+        )
+        ensemble_predict.fit(train)
+        pred_predict = ensemble_predict.predict(len(val))
+
+        assert (
+            len(ensemble_predict.regression_model.training_series)
+            == regression_train_n_points
+        )
+
+        # using historical forecasts to generate the future covs for the ensemble model
+        ensemble_hist_fct = RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(lags=5, output_chunk_length=ocl1),
+                LinearRegressionModel(lags=2, output_chunk_length=ocl2),
+            ],
+            regression_train_n_points=regression_train_n_points,
+            train_using_historical_forecasts=True,
+        )
+        ensemble_hist_fct.fit(train)
+        pred_hist_fct = ensemble_hist_fct.predict(len(val))
+
+        assert (
+            len(ensemble_hist_fct.regression_model.training_series)
+            == regression_train_n_points
+        )
+
+        mape_hfc, mape_pred = mape(pred_hist_fct, val), mape(pred_predict, val)
+        assert mape_hfc < mape_pred or mape_hfc == pytest.approx(mape_pred)
+
+        rmse_hfc, rmse_pred = rmse(pred_hist_fct, val), rmse(pred_predict, val)
+        assert rmse_hfc < rmse_pred or rmse_hfc == pytest.approx(rmse_pred)
+
+    @pytest.mark.parametrize(
+        "config",
+        [(1, 1), (5, 2), (4, 3)],
+    )
+    def test_train_with_historical_forecasts_with_covs(self, config):
+        """
+        config[0] : both ocl = 1, covs are long enough
+        config[1] : both ocl are multiple, covs are long enough
+        config[2] : ocl1 multiple, ocl2 not multiple
+        """
+        ocl1, ocl2 = config
+        regression_train_n_points = 10
+        # shortening the series to make test simpler, 10 for forecasting models, 20 for the regression model
+        ts = self.combined[:30]
+
+        # past covariates starts 5 steps before the target series
+        past_covs = tg.linear_timeseries(
+            start=ts.start_time() - 5 * ts.freq,
+            length=len(ts) + 5,
+        )
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(
+                    lags=5, lags_past_covariates=5, output_chunk_length=ocl1
+                ),
+                LinearRegressionModel(
+                    lags=2, lags_past_covariates=5, output_chunk_length=ocl2
+                ),
+            ],
+            regression_train_n_points=regression_train_n_points,
+            train_using_historical_forecasts=True,
+        )
+        # covariates have the appropriate length
+        ensemble.fit(ts, past_covariates=past_covs)
+        assert (
+            len(ensemble.regression_model.training_series) == regression_train_n_points
+        )
+        # since past covariates extend far in the past, they are available for the regression model
+
+        # future covariates finishes 5 steps after the target series
+        future_covs = tg.linear_timeseries(
+            start=ts.start_time(),
+            length=len(ts) + 2,
+        )
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(
+                    lags=2, lags_future_covariates=[1, 2], output_chunk_length=ocl1
+                ),
+                LinearRegressionModel(
+                    lags=1, lags_future_covariates=[1, 2], output_chunk_length=ocl2
+                ),
+            ],
+            regression_train_n_points=regression_train_n_points,
+            train_using_historical_forecasts=True,
+        )
+
+        # covariates have the appropriate length
+        ensemble.fit(ts, future_covariates=future_covs)
+        assert (
+            len(ensemble.regression_model.training_series) == regression_train_n_points
+        )
+
+        with pytest.raises(ValueError):
+            # covariates are too short (ends too early)
+            ensemble.fit(ts, future_covariates=future_covs[:-1])
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_univar(self):
@@ -217,7 +396,7 @@ class TestRegressionEnsembleModels:
         # expected number of coefs is lags*components -> we have 1 lag for each target (1 comp)
         # and future covs (2 comp)
         expected_coefs = len(self.sine_series.components) + len(self.ts_cov1.components)
-        assert len(ensemble_models[0].model.coef_) == expected_coefs
+        assert len(ensemble.forecasting_models[0].model.coef_) == expected_coefs
         ensemble.predict(10, self.sine_series, future_covariates=self.ts_cov1)
 
     def test_predict_with_target(self):
@@ -225,7 +404,7 @@ class TestRegressionEnsembleModels:
         series_short = series_long[:25]
 
         # train with a single series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit(series_short, past_covariates=series_long)
         # predict after end of train series
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
@@ -247,7 +426,7 @@ class TestRegressionEnsembleModels:
         assert isinstance(preds, list) and len(preds) == 1
 
         # train with multiple series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
         with pytest.raises(ValueError):
             # predict without passing series should raise an error
@@ -368,7 +547,9 @@ class TestRegressionEnsembleModels:
             [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
         )
         ensemble.fit(self.sine_series)
-        assert max(m_.min_train_series_length for m_ in ensemble.models) == 10
+        assert (
+            max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
+        )
         # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
         ensemble.backtest(self.sine_series)

@@ -173,6 +173,23 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
             See https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
         random_state
             Sets the underlying random seed at model initialization time.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import TBATS # or BATS
+        >>> series = AirPassengersDataset().load()
+        >>> # based on preliminary analysis, the series contains a trend
+        >>> model = TBATS(use_trend=True)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[448.29856017],
+               [439.42215052],
+               [507.73465028],
+               [493.03751671],
+               [498.85885374],
+               [564.64871897]])
         """
         super().__init__()
 
