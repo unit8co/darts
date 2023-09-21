@@ -143,7 +143,6 @@ class _TCNModule(PLPastCovariatesModule):
 
         """PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
-
         Parameters
         ----------
         input_size
@@ -174,10 +173,8 @@ class _TCNModule(PLPastCovariatesModule):
 
         Outputs
         -------
-        y of shape `(batch_size, input_chunk_length, target_size, nr_params)`
-            Tensor containing the predictions of the next 'output_chunk_length' points in the last
-            'output_chunk_length' entries of the tensor. The entries before contain the data points
-            leading up to the first prediction, all in chronological order.
+        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
+            Tensor containing the predictions of the next 'output_chunk_length' points.
         """
 
         super().__init__(**kwargs)
