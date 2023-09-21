@@ -9,6 +9,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 [Full Changelog](https://github.com/unit8co/darts/compare/0.26.0...master)
 
 ### For users of the library:
+
+**Fixed**
+- Fixed an issue where `TCNModel` training included the last (input_chunk_length - output_chunk_length) target points in the loss computation. [#2006](https://github.com/unit8co/darts/pull/2006) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 ## [0.26.0](https://github.com/unit8co/darts/tree/0.26.0) (2023-09-16)
