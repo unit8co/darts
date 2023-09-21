@@ -1479,13 +1479,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return [ts for batch in predictions for ts in batch]
 
     @property
-    def first_prediction_index(self) -> int:
-        """
-        Returns the index of the first predicted within the output of self.model.
-        """
-        return 0
-
-    @property
     def min_train_series_length(self) -> int:
         """
         Class property defining the minimum required length for the training series;

@@ -4,7 +4,7 @@ Temporal Convolutional Network
 """
 
 import math
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -16,8 +16,6 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.timeseries import TimeSeries
-from darts.utils.data import PastCovariatesShiftedDataset
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -139,7 +137,6 @@ class _TCNModule(PLPastCovariatesModule):
         weight_norm: bool,
         target_size: int,
         nr_params: int,
-        target_length: int,
         dropout: float,
         **kwargs
     ):
@@ -155,8 +152,6 @@ class _TCNModule(PLPastCovariatesModule):
             The dimensionality of the output time series.
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
-        target_length
-            Number of time steps the torch module will predict into the future at once.
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -191,7 +186,6 @@ class _TCNModule(PLPastCovariatesModule):
         self.input_size = input_size
         self.n_filters = num_filters
         self.kernel_size = kernel_size
-        self.target_length = target_length
         self.target_size = target_size
         self.nr_params = nr_params
         self.dilation_base = dilation_base
@@ -249,11 +243,7 @@ class _TCNModule(PLPastCovariatesModule):
             batch_size, self.input_chunk_length, self.target_size, self.nr_params
         )
 
-        return x
-
-    @property
-    def first_prediction_index(self) -> int:
-        return -self.output_chunk_length
+        return x[:, -self.output_chunk_length :, :, :]
 
 
 class TCNModel(PastCovariatesTorchModel):
@@ -510,25 +500,7 @@ class TCNModel(PastCovariatesTorchModel):
             num_filters=self.num_filters,
             num_layers=self.num_layers,
             dilation_base=self.dilation_base,
-            target_length=self.output_chunk_length,
             dropout=self.dropout,
             weight_norm=self.weight_norm,
             **self.pl_module_params,
-        )
-
-    def _build_train_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
-    ) -> PastCovariatesShiftedDataset:
-
-        return PastCovariatesShiftedDataset(
-            target_series=target,
-            covariates=past_covariates,
-            length=self.input_chunk_length,
-            shift=self.output_chunk_length,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
         )
