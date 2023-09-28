@@ -31,7 +31,13 @@ from abc import ABC, abstractmethod
 from glob import glob
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
@@ -75,6 +81,7 @@ from darts.utils.data.training_dataset import (
     SplitCovariatesTrainingDataset,
     TrainingDataset,
 )
+from darts.utils.historical_forecasts import _process_historical_forecast_input
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.utils.utils import get_single_series, seq2series, series2seq
@@ -1971,15 +1978,40 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
-    def supports_optimized_historical_forecasts(self) -> bool:
-        return True
-
-    @property
     def _is_probabilistic(self) -> bool:
         return (
             self.model._is_probabilistic
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
+        )
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Optional[Sequence[TimeSeries]],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
+        """
+        TODO: support forecast_horizon > output_chunk_length (auto-regression)
+        """
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
         )
 
     def _load_encoders(

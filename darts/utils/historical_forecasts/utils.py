@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Sequence, Tuple, Union
 
 try:
     from typing import Literal
@@ -693,3 +693,42 @@ def _check_optimizable_historical_forecasts_global_models(
             )
 
     return False
+
+
+def _process_historical_forecast_input(
+    model,
+    series: Optional[Sequence[TimeSeries]],
+    past_covariates: Optional[Sequence[TimeSeries]] = None,
+    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    forecast_horizon: int = 1,
+):
+    if not model._fit_called:
+        raise_log(
+            ValueError("Model has not been fit yet."),
+            logger,
+        )
+    if forecast_horizon > model.output_chunk_length:
+        raise_log(
+            ValueError(
+                "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
+                "supported in this optimized routine."
+            ),
+            logger,
+        )
+
+    # manage covariates, usually handled by RegressionModel.predict()
+    if past_covariates is None and model.past_covariate_series is not None:
+        past_covariates = [model.past_covariate_series] * len(series)
+    if future_covariates is None and model.future_covariate_series is not None:
+        future_covariates = [model.future_covariate_series] * len(series)
+
+    model._verify_static_covariates(series[0].static_covariates)
+
+    if model.encoders.encoding_available:
+        past_covariates, future_covariates = model.generate_fit_predict_encodings(
+            n=forecast_horizon,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+    return series, past_covariates, future_covariates

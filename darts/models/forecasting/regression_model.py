@@ -49,6 +49,7 @@ from darts.utils.data.tabularization import (
 from darts.utils.historical_forecasts import (
     _optimized_historical_forecasts_regression_all_points,
     _optimized_historical_forecasts_regression_last_points_only,
+    _process_historical_forecast_input,
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import (
@@ -1088,35 +1089,13 @@ class RegressionModel(GlobalForecastingModel):
         """
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
-        if not self._fit_called:
-            raise_log(
-                ValueError("Model has not been fit yet."),
-                logger,
-            )
-        if forecast_horizon > self.output_chunk_length:
-            raise_log(
-                ValueError(
-                    "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
-                    "supported in this optimized routine."
-                ),
-                logger,
-            )
-
-        # manage covariates, usually handled by RegressionModel.predict()
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = [self.past_covariate_series] * len(series)
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = [self.future_covariate_series] * len(series)
-
-        self._verify_static_covariates(series[0].static_covariates)
-
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.generate_fit_predict_encodings(
-                n=forecast_horizon,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-            )
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+        )
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
