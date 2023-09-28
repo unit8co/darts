@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 try:
     from typing import Literal
@@ -1066,41 +1066,6 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
-
-    @property
-    def supports_optimized_historical_forecasts(self) -> bool:
-        return True
-
-    def _check_optimizable_historical_forecasts(
-        self,
-        forecast_horizon: int,
-        retrain: Union[bool, int, Callable[..., bool]],
-        show_warnings=bool,
-    ) -> bool:
-        """
-        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= self.output_chunk_length`
-        (no auto-regression required).
-        """
-
-        supported_retrain = (retrain is False) or (retrain == 0)
-        supported_forecast_horizon = forecast_horizon <= self.output_chunk_length
-        if supported_retrain and supported_forecast_horizon:
-            return True
-
-        if show_warnings:
-            if not supported_retrain:
-                logger.warning(
-                    "`enable_optimization=True` is ignored because `retrain` is not `False`"
-                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-                )
-            if not supported_forecast_horizon:
-                logger.warning(
-                    "`enable_optimization=True` is ignored because "
-                    "`forecast_horizon > self.output_chunk_length`."
-                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-                )
-
-        return False
 
     def _optimized_historical_forecasts(
         self,

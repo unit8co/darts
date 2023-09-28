@@ -661,3 +661,35 @@ def _get_historical_forecast_boundaries(
         hist_fct_fc_start,
         hist_fct_fc_end,
     )
+
+
+def _check_optimizable_historical_forecasts_global_models(
+    model,
+    forecast_horizon: int,
+    retrain: Union[bool, int, Callable[..., bool]],
+    show_warnings=bool,
+) -> bool:
+    """
+    Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
+    (no auto-regression required).
+    """
+
+    supported_retrain = (retrain is False) or (retrain == 0)
+    supported_forecast_horizon = forecast_horizon <= model.output_chunk_length
+    if supported_retrain and supported_forecast_horizon:
+        return True
+
+    if show_warnings:
+        if not supported_retrain:
+            logger.warning(
+                "`enable_optimization=True` is ignored because `retrain` is not `False`"
+                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+            )
+        if not supported_forecast_horizon:
+            logger.warning(
+                "`enable_optimization=True` is ignored because "
+                "`forecast_horizon > model.output_chunk_length`."
+                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+            )
+
+    return False

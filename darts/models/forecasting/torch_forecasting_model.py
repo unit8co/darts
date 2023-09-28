@@ -1971,6 +1971,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        return True
+
+    @property
     def _is_probabilistic(self) -> bool:
         return (
             self.model._is_probabilistic
