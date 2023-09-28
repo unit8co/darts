@@ -139,18 +139,15 @@ class TestEncoder:
         ]
 
         valid_encoder_args = {"cyclic": {"past": ["month"]}}
-        encoders = self.helper_encoder_from_model(
-            add_encoder_dict=valid_encoder_args, takes_future_covariates=False
-        )
+        encoders = self.helper_encoder_from_model(add_encoder_dict=valid_encoder_args)
         assert len(encoders.past_encoders) == 1
         assert len(encoders.future_encoders) == 0
 
-        # test invalid encoder kwarg at model creation
+        # test invalid encoder kwargs at model creation
         bad_encoder = {"no_encoder": {"past": ["month"]}}
         with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_encoder)
 
-        # test invalid kwargs at model creation
         bad_time = {"cyclic": {"ppast": ["month"]}}
         with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_time)
@@ -162,6 +159,10 @@ class TestEncoder:
         bad_type = {"cyclic": {"past": 1}}
         with pytest.raises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_type)
+
+        bad_callable = {"custom": {"past": [lambda idx: idx.month]}}
+        with pytest.raises(ValueError):
+            _ = self.helper_encoder_from_model(add_encoder_dict=bad_callable)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_encoder_sequence_train(self):
@@ -291,9 +292,7 @@ class TestEncoder:
         for fc, fc_in in zip(future_covs_pred, expected_future_idx_ts):
             assert fc.time_index.equals(fc_in.time_index)
 
-    def helper_encoder_from_model(
-        self, add_encoder_dict, takes_past_covariates=True, takes_future_covariates=True
-    ):
+    def helper_encoder_from_model(self, add_encoder_dict):
         """extracts encoders from parameters at model creation"""
         model = TFTModel(
             input_chunk_length=self.input_chunk_length,
@@ -467,6 +466,13 @@ class TestEncoder:
         ts = tg.linear_timeseries(length=24, freq="MS")
         covs = tg.linear_timeseries(length=24, freq="MS")
 
+        # encoders must be named function for pickling
+        def extract_month(index):
+            return index.month
+
+        def extract_year(index):
+            return index.year
+
         input_chunk_length = 12
         output_chunk_length = 6
         add_encoders = {
@@ -480,8 +486,8 @@ class TestEncoder:
                 "future": ["relative"],
             },
             "custom": {
-                "past": [lambda idx: idx.month, lambda idx: idx.year],
-                "future": [lambda idx: idx.month, lambda idx: idx.year],
+                "past": [extract_month, extract_year],
+                "future": [extract_month, extract_year],
             },
             "transformer": Scaler(),
         }
@@ -887,11 +893,18 @@ class TestEncoder:
         input_chunk_length = 12
         output_chunk_length = 6
 
+        # encoders must be named functions for pickling
+        def index_year(index):
+            return index.year
+
+        def index_year_shifted(index):
+            return index.year - 1
+
         # ===> test callable index encoder <===
         encoder_params = {
             "custom": {
-                "past": [lambda index: index.year, lambda index: index.year - 1],
-                "future": [lambda index: index.year],
+                "past": [index_year, index_year_shifted],
+                "future": [index_year],
             }
         }
         encs = SequentialEncoder(

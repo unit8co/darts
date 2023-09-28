@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLDualCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLDualCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
@@ -86,6 +89,7 @@ class _RNNModule(PLDualCovariatesModule):
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
 
+    @io_processor
     def forward(
         self, x_in: Tuple, h: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -321,11 +325,14 @@ class RNNModel(DualCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'past': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -383,16 +390,49 @@ class RNNModel(DualCovariatesTorchModel):
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import RNNModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # `training_length` > `input_chunk_length` to mimic inference constraints
+        >>> model = RNNModel(
+        >>>     model="RNN",
+        >>>     input_chunk_length=6,
+        >>>     training_length=18,
+        >>>     n_epochs=20,
+        >>> )
+        >>> model.fit(target, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[ 3.18922903],
+               [ 1.17791019],
+               [ 0.39992814],
+               [ 0.13277921],
+               [ 0.02523252],
+               [-0.01829086]])
+
+        .. note::
+            `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
+            that can be used to improve the forecasts quality compared to this simple usage example.
         """
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
 
-        if model_kwargs.get("output_chunk_length") is not None:
-            logger.warning(
-                "ignoring user defined `output_chunk_length`. RNNModel uses a fixed `output_chunk_length=1`."
-            )
-
-        model_kwargs["output_chunk_length"] = 1
+        for kwarg, default_value in zip(
+            ["output_chunk_length", "use_reversible_instance_norm"], [1, False]
+        ):
+            if model_kwargs.get(kwarg) is not None:
+                logger.warning(
+                    f"ignoring user defined `{kwarg}`. RNNModel uses a fixed "
+                    f"`{kwarg}={default_value}`."
+                )
+            model_kwargs[kwarg] = default_value
 
         super().__init__(**self._extract_torch_model_params(**model_kwargs))
 
