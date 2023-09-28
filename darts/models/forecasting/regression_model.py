@@ -47,8 +47,8 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.historical_forecasts import (
-    _optimized_historical_forecasts_regression_all_points,
-    _optimized_historical_forecasts_regression_last_points_only,
+    _optimized_historical_forecasts_all_points,
+    _optimized_historical_forecasts_last_points_only,
     _process_historical_forecast_input,
 )
 from darts.utils.multioutput import MultiOutputRegressor
@@ -1099,7 +1099,7 @@ class RegressionModel(GlobalForecastingModel):
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
-            return _optimized_historical_forecasts_regression_last_points_only(
+            return _optimized_historical_forecasts_last_points_only(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,
@@ -1114,7 +1114,7 @@ class RegressionModel(GlobalForecastingModel):
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
         else:
-            return _optimized_historical_forecasts_regression_all_points(
+            return _optimized_historical_forecasts_all_points(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,

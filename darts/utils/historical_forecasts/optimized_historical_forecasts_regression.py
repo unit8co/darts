@@ -18,7 +18,7 @@ from darts.utils.timeseries_generation import generate_index
 logger = get_logger(__name__)
 
 
-def _optimized_historical_forecasts_regression_last_points_only(
+def _optimized_historical_forecasts_last_points_only(
     model,
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -156,7 +156,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
     return forecasts_list if len(series) > 1 else forecasts_list[0]
 
 
-def _optimized_historical_forecasts_regression_all_points(
+def _optimized_historical_forecasts_all_points(
     model,
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,

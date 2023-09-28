@@ -82,6 +82,9 @@ from darts.utils.data.training_dataset import (
     TrainingDataset,
 )
 from darts.utils.historical_forecasts import _process_historical_forecast_input
+from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
+    _optimized_historical_forecasts_last_points_only,
+)
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.utils.utils import get_single_series, seq2series, series2seq
@@ -569,6 +572,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> InferenceDataset:
         """
         Each model must specify the default training dataset to use.
@@ -1335,6 +1340,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n=n,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            stride=0,
+            bounds=None,
         )
 
         predictions = self.predict_from_dataset(
@@ -2013,6 +2020,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
         )
+        return _optimized_historical_forecasts_last_points_only(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            overlap_end=overlap_end,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            verbose=verbose,
+        )
 
     def _load_encoders(
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
@@ -2325,6 +2347,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> PastCovariatesInferenceDataset:
         raise_if_not(
             future_covariates is None,
@@ -2424,6 +2448,8 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> FutureCovariatesInferenceDataset:
         raise_if_not(
             past_covariates is None,
@@ -2517,6 +2543,8 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> DualCovariatesInferenceDataset:
         return DualCovariatesInferenceDataset(
             target_series=target,
@@ -2605,6 +2633,8 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> MixedCovariatesInferenceDataset:
         return MixedCovariatesInferenceDataset(
             target_series=target,
@@ -2691,6 +2721,8 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> SplitCovariatesInferenceDataset:
         return SplitCovariatesInferenceDataset(
             target_series=target,

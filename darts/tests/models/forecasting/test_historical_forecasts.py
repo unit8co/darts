@@ -952,6 +952,124 @@ class TestHistoricalforecast:
             assert (hfc.time_index == ohfc.time_index).all()
             np.testing.assert_array_almost_equal(hfc.all_values(), ohfc.all_values())
 
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [False, True],  # use covariates
+                [True, False],  # last points only
+                [False, True],  # overlap end
+                [1, 3],  # stride
+                [
+                    3,  # horizon < ocl
+                    5,  # horizon == ocl
+                ],
+            )
+        ),
+    )
+    def test_optimized_historical_forecasts_torch_with_encoders(self, config):
+        use_covs, last_points_only, overlap_end, stride, horizon = config
+        icl = 3
+        ocl = 5
+        len_val_series = 10
+        series_train, series_val = (
+            self.ts_pass_train[:10],
+            self.ts_pass_val[:len_val_series],
+        )
+        model = NLinearModel(
+            input_chunk_length=icl,
+            add_encoders={
+                "cyclic": {"future": ["month"]},
+                "datetime_attribute": {"past": ["dayofweek"]},
+            },
+            output_chunk_length=ocl,
+        )
+        if use_covs:
+            pc = tg.gaussian_timeseries(
+                start=series_train.start_time() - 2 * series_train.freq,
+                end=series_val.end_time(),
+                freq=series_train.freq,
+            )
+            fc = tg.gaussian_timeseries(
+                start=series_train.start_time() + 3 * series_train.freq,
+                end=series_val.end_time() + 4 * series_train.freq,
+                freq=series_train.freq,
+            )
+        else:
+            pc, fc = None, None
+
+        model.fit(self.ts_pass_train, past_covariates=pc, future_covariates=fc)
+
+        hist_fct = model.historical_forecasts(
+            series=series_val,
+            past_covariates=pc,
+            future_covariates=fc,
+            retrain=False,
+            last_points_only=last_points_only,
+            overlap_end=overlap_end,
+            stride=stride,
+            forecast_horizon=horizon,
+            enable_optimization=False,
+        )
+
+        opti_hist_fct = model._optimized_historical_forecasts(
+            series=[series_val],
+            past_covariates=[pc],
+            future_covariates=[fc],
+            last_points_only=last_points_only,
+            overlap_end=overlap_end,
+            stride=stride,
+            forecast_horizon=horizon,
+        )
+
+        if not isinstance(hist_fct, list):
+            hist_fct = [hist_fct]
+            opti_hist_fct = [opti_hist_fct]
+
+        if not last_points_only and overlap_end:
+            n_pred_series_expected = 8
+            n_pred_points_expected = horizon
+            first_ts_expected = series_val.time_index[icl]
+            last_ts_expected = series_val.end_time() + series_val.freq * horizon
+        elif not last_points_only:  # overlap_end = False
+            n_pred_series_expected = len(series_val) - icl - horizon + 1
+            n_pred_points_expected = horizon
+            first_ts_expected = series_val.time_index[icl]
+            last_ts_expected = series_val.end_time()
+        elif overlap_end:  # last_points_only = True
+            n_pred_series_expected = 1
+            n_pred_points_expected = 8
+            first_ts_expected = (
+                series_val.time_index[icl] + (horizon - 1) * series_val.freq
+            )
+            last_ts_expected = series_val.end_time() + series_val.freq * horizon
+        else:  # last_points_only = True, overlap_end = False
+            n_pred_series_expected = 1
+            n_pred_points_expected = len(series_val) - icl - horizon + 1
+            first_ts_expected = (
+                series_val.time_index[icl] + (horizon - 1) * series_val.freq
+            )
+            last_ts_expected = series_val.end_time()
+
+        # to make it simple in case of stride, we assume that non-optimized hist fc returns correct results
+        if stride > 1:
+            n_pred_series_expected = len(hist_fct)
+            n_pred_points_expected = len(hist_fct[0])
+            first_ts_expected = hist_fct[0].start_time()
+            last_ts_expected = hist_fct[-1].end_time()
+
+        # check length match between optimized and default hist fc
+        assert len(opti_hist_fct) == n_pred_series_expected
+        assert len(hist_fct) == len(opti_hist_fct)
+        # check hist fc start
+        assert opti_hist_fct[0].start_time() == first_ts_expected
+        # check hist fc end
+        assert opti_hist_fct[-1].end_time() == last_ts_expected
+        for hfc, ohfc in zip(hist_fct, opti_hist_fct):
+            assert len(ohfc) == n_pred_points_expected
+            assert (hfc.time_index == ohfc.time_index).all()
+            np.testing.assert_array_almost_equal(hfc.all_values(), ohfc.all_values())
+
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)

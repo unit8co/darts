@@ -10,9 +10,11 @@ import numpy as np
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_log
 
 from .utils import CovariateType
+
+logger = get_logger(__name__)
 
 
 class InferenceDataset(ABC, Dataset):
@@ -54,10 +56,13 @@ class InferenceDataset(ABC, Dataset):
             else CovariateType.FUTURE
         )
 
-        raise_if_not(
-            main_covariate_type in [CovariateType.PAST, CovariateType.FUTURE],
-            "`main_covariate_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`",
-        )
+        if main_covariate_type not in [CovariateType.PAST, CovariateType.FUTURE]:
+            raise_log(
+                ValueError(
+                    "`main_covariate_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`"
+                ),
+                logger=logger,
+            )
 
         # we need to use the time index (datetime or integer) here to match the index with the covariate series
         past_start = target_series.time_index[-input_chunk_length]
@@ -78,21 +83,27 @@ class InferenceDataset(ABC, Dataset):
         case_start = (
             future_start if covariate_type is CovariateType.FUTURE else past_start
         )
-        raise_if_not(
-            covariate_series.start_time() <= case_start,
-            f"For the given forecasting case, the provided {main_covariate_type.value} covariates at dataset index "
-            f"`{target_idx}` do not extend far enough into the past. The {main_covariate_type.value} covariates "
-            f"must start at time step `{case_start}`, whereas now they start at time step "
-            f"`{covariate_series.start_time()}`.",
-        )
-        raise_if_not(
-            covariate_series.end_time() >= future_end,
-            f"For the given forecasting horizon `n={n}`, the provided {main_covariate_type.value} covariates "
-            f"at dataset index `{target_idx}` do not extend far enough into the future. As `"
-            f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
-            f"` the {main_covariate_type.value} covariates must end at time step `{future_end}`, "
-            f"whereas now they end at time step `{covariate_series.end_time()}`.",
-        )
+        if not covariate_series.start_time() <= case_start:
+            raise_log(
+                ValueError(
+                    f"For the given forecasting case, the provided {main_covariate_type.value} covariates at "
+                    f"dataset index `{target_idx}` do not extend far enough into the past. The "
+                    f"{main_covariate_type.value} covariates must start at time step `{case_start}`, whereas now "
+                    f"they start at time step `{covariate_series.start_time()}`."
+                ),
+                logger=logger,
+            )
+        if not covariate_series.end_time() >= future_end:
+            raise_log(
+                ValueError(
+                    f"For the given forecasting horizon `n={n}`, the provided {main_covariate_type.value} covariates "
+                    f"at dataset index `{target_idx}` do not extend far enough into the future. As `"
+                    f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
+                    f"` the {main_covariate_type.value} covariates must end at time step `{future_end}`, "
+                    f"whereas now they end at time step `{covariate_series.end_time()}`."
+                ),
+                logger=logger,
+            )
 
         # extract the index position (index) from time_index value
         covariate_start = covariate_series.time_index.get_loc(past_start)
@@ -106,6 +117,8 @@ class GenericInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
@@ -153,13 +166,29 @@ class GenericInferenceDataset(InferenceDataset):
         self.output_chunk_length = output_chunk_length
         self.use_static_covariates = use_static_covariates
 
-        raise_if_not(
-            (covariates is None or len(self.target_series) == len(self.covariates)),
-            "The number of target series must be equal to the number of covariates.",
-        )
+        if not (covariates is None or len(self.target_series) == len(self.covariates)):
+            raise_log(
+                ValueError(
+                    "The number of target series must be equal to the number of covariates."
+                ),
+                logger=logger,
+            )
+
+        if (bounds is not None and stride == 0) or (bounds is None and stride > 0):
+            raise_log(
+                ValueError(
+                    "Must supply either both `stride` and `bounds`, or none of them."
+                ),
+                logger=logger,
+            )
+
+        if bounds is None:
+            self.len_preds = len(self.target_series)
+        else:
+            self.len_preds = [(right - left) // stride for (right, left) in bounds]
 
     def __len__(self):
-        return len(self.target_series)
+        return self.len_preds
 
     def __getitem__(
         self, idx: int
@@ -171,10 +200,13 @@ class GenericInferenceDataset(InferenceDataset):
         TimeSeries,
     ]:
         target_series = self.target_series[idx]
-        raise_if_not(
-            len(target_series) >= self.input_chunk_length,
-            f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length}).",
-        )
+        if not len(target_series) >= self.input_chunk_length:
+            raise_log(
+                ValueError(
+                    f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length})."
+                ),
+                logger=logger,
+            )
 
         # extract past target values
         past_target = target_series.random_component_values(copy=False)[
@@ -240,6 +272,8 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
@@ -276,6 +310,8 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=covariate_type,
@@ -303,6 +339,8 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
         input_chunk_length: int = 12,
         covariate_type: CovariateType = CovariateType.FUTURE,
         use_static_covariates: bool = True,
@@ -330,6 +368,8 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=n,
             covariate_type=covariate_type,
@@ -352,6 +392,8 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         use_static_covariates: bool = True,
@@ -382,6 +424,8 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=CovariateType.HISTORIC_FUTURE,
@@ -393,6 +437,8 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
@@ -434,6 +480,8 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         use_static_covariates: bool = True,
@@ -470,6 +518,8 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=past_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=CovariateType.PAST,
@@ -481,6 +531,8 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             use_static_covariates=use_static_covariates,
@@ -527,6 +579,8 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[Sequence[Tuple[int, int]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         use_static_covariates: bool = True,
@@ -562,6 +616,8 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=past_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=CovariateType.PAST,
@@ -573,6 +629,8 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
