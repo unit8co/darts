@@ -83,7 +83,7 @@ from darts.utils.data.training_dataset import (
 )
 from darts.utils.historical_forecasts import _process_historical_forecast_input
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
-    _optimized_historical_forecasts_last_points_only,
+    _optimized_historical_forecasts,
 )
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
@@ -1522,7 +1522,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
             elif elem is None:
                 aggregated.append(None)
-            elif isinstance(elem, TimeSeries):
+            else:
                 aggregated.append([sample[i] for sample in batch])
         return tuple(aggregated)
 
@@ -2020,7 +2020,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
         )
-        return _optimized_historical_forecasts_last_points_only(
+        return _optimized_historical_forecasts(
             model=self,
             series=series,
             past_covariates=past_covariates,
@@ -2031,6 +2031,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             forecast_horizon=forecast_horizon,
             stride=stride,
             overlap_end=overlap_end,
+            last_points_only=last_points_only,
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
             verbose=verbose,
@@ -2359,6 +2360,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             target_series=target,
             covariates=past_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,
@@ -2460,6 +2463,8 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             target_series=target,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2550,6 +2555,8 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             target_series=target,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,
@@ -2641,6 +2648,8 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,
@@ -2729,6 +2738,8 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,

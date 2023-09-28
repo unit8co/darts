@@ -3,10 +3,12 @@ Inference Dataset
 -----------------
 """
 
+import bisect
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
@@ -41,7 +43,8 @@ class InferenceDataset(ABC, Dataset):
     @staticmethod
     def _covariate_indexer(
         target_idx: int,
-        target_series: TimeSeries,
+        past_start: Union[pd.Timestamp, int],
+        past_end: Union[pd.Timestamp, int],
         covariate_series: TimeSeries,
         covariate_type: CovariateType,
         input_chunk_length: int,
@@ -65,15 +68,15 @@ class InferenceDataset(ABC, Dataset):
             )
 
         # we need to use the time index (datetime or integer) here to match the index with the covariate series
-        past_start = target_series.time_index[-input_chunk_length]
-        past_end = target_series.time_index[-1]
         if main_covariate_type is CovariateType.PAST:
-            future_end = past_end + max(0, n - output_chunk_length) * target_series.freq
+            future_end = (
+                past_end + max(0, n - output_chunk_length) * covariate_series.freq
+            )
         else:  # CovariateType.FUTURE
-            future_end = past_end + max(n, output_chunk_length) * target_series.freq
+            future_end = past_end + max(n, output_chunk_length) * covariate_series.freq
 
         future_start = (
-            past_end + target_series.freq if future_end != past_end else future_end
+            past_end + covariate_series.freq if future_end != past_end else future_end
         )
 
         if input_chunk_length == 0:  # for regression ensemble models
@@ -182,13 +185,28 @@ class GenericInferenceDataset(InferenceDataset):
                 logger=logger,
             )
 
+        self.stride = stride
         if bounds is None:
+            self.bounds = bounds
+            self.cum_lengths = None
             self.len_preds = len(self.target_series)
         else:
-            self.len_preds = [(right - left) // stride for (right, left) in bounds]
+            self.bounds = np.array(bounds)
+            self.cum_lengths = np.cumsum(np.diff(self.bounds) // stride + 1)
+            self.len_preds = self.cum_lengths[-1]
 
     def __len__(self):
         return self.len_preds
+
+    @staticmethod
+    def find_list_index(index, cumulative_lengths, bounds, stride):
+        list_index = bisect.bisect_right(cumulative_lengths, index)
+        bound_left = bounds[list_index, 0]
+        if list_index == 0:
+            stride_idx = index * stride
+        else:
+            stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
+        return list_index, bound_left + stride_idx
 
     def __getitem__(
         self, idx: int
@@ -198,8 +216,24 @@ class GenericInferenceDataset(InferenceDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
-        target_series = self.target_series[idx]
+        if self.bounds is None:
+            series_idx, target_start_idx, target_end_idx = (
+                idx,
+                -self.input_chunk_length,
+                None,
+            )
+        else:
+            series_idx, target_end_idx = self.find_list_index(
+                idx,
+                self.cum_lengths,
+                self.bounds,
+                self.stride,
+            )
+            target_start_idx = target_end_idx - self.input_chunk_length
+
+        target_series = self.target_series[series_idx]
         if not len(target_series) >= self.input_chunk_length:
             raise_log(
                 ValueError(
@@ -209,18 +243,24 @@ class GenericInferenceDataset(InferenceDataset):
             )
 
         # extract past target values
+        past_end = target_series.time_index[
+            target_end_idx - 1 if target_end_idx is not None else -1
+        ]
         past_target = target_series.random_component_values(copy=False)[
-            -self.input_chunk_length :
+            target_start_idx:target_end_idx
         ]
 
         # optionally, extract covariates
         past_covariate, future_covariate = None, None
-        covariate_series = None if self.covariates is None else self.covariates[idx]
+        covariate_series = (
+            None if self.covariates is None else self.covariates[series_idx]
+        )
         if covariate_series is not None:
             # get start and end indices (integer) of the covariates including historic and future parts
             covariate_start, covariate_end = self._covariate_indexer(
-                target_idx=idx,
-                target_series=target_series,
+                target_idx=series_idx,
+                past_start=target_series.time_index[target_start_idx],
+                past_end=past_end,
                 covariate_series=covariate_series,
                 covariate_type=self.covariate_type,
                 input_chunk_length=self.input_chunk_length,
@@ -263,6 +303,7 @@ class GenericInferenceDataset(InferenceDataset):
             future_covariate,
             static_covariate,
             target_series,
+            past_end + target_series.freq,
         )
 
 
@@ -329,6 +370,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
         return self.ds[idx]
 
@@ -381,9 +423,28 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
-        past_target, _, future_covariate, static_covariate, target_series = self.ds[idx]
-        return past_target, future_covariate, static_covariate, target_series
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        TimeSeries,
+        Union[pd.Timestamp, int],
+    ]:
+        (
+            past_target,
+            _,
+            future_covariate,
+            static_covariate,
+            target_series,
+            pred_point,
+        ) = self.ds[idx]
+        return (
+            past_target,
+            future_covariate,
+            static_covariate,
+            target_series,
+            pred_point,
+        )
 
 
 class DualCovariatesInferenceDataset(InferenceDataset):
@@ -455,6 +516,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
         (
             past_target,
@@ -462,14 +524,16 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             _,
             static_covariate,
             ts_target,
+            pred_point,
         ) = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             historic_future_covariate,
             future_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         )
 
 
@@ -551,6 +615,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
 
         (
@@ -559,8 +624,9 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         ) = self.ds_past[idx]
-        _, historic_future_covariate, future_covariate, _, _ = self.ds_future[idx]
+        _, historic_future_covariate, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
@@ -569,6 +635,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         )
 
 
@@ -648,6 +715,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
 
         (
@@ -656,8 +724,9 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         ) = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
@@ -665,4 +734,5 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         )

@@ -488,6 +488,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         custom_components: Union[List[str], None] = None,
         with_static_covs: bool = True,
         with_hierarchy: bool = True,
+        pred_start: Optional[Union[pd.Timestamp, int]] = None,
     ) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
@@ -505,6 +506,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If set to False, do not copy the input_series `static_covariates` attribute
         with_hierarchy
             If set to False, do not copy the input_series `hierarchy` attribute
+        pred_start
+            Optionally, give a custom prediction start point.
+
         Returns
         -------
         TimeSeries
@@ -519,6 +523,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             custom_components,
             with_static_covs,
             with_hierarchy,
+            pred_start,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:

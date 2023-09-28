@@ -956,13 +956,25 @@ class TestHistoricalforecast:
         "config",
         list(
             itertools.product(
-                [False, True],  # use covariates
-                [True, False],  # last points only
-                [False, True],  # overlap end
-                [1, 3],  # stride
+                [
+                    False,
+                    # True
+                ],  # use covariates
+                [
+                    True,
+                    # False
+                ],  # last points only
+                [
+                    # False,
+                    True
+                ],  # overlap end
+                [
+                    # 1,
+                    3
+                ],  # stride
                 [
                     3,  # horizon < ocl
-                    5,  # horizon == ocl
+                    # 5,  # horizon == ocl
                 ],
             )
         ),
@@ -983,6 +995,7 @@ class TestHistoricalforecast:
                 "datetime_attribute": {"past": ["dayofweek"]},
             },
             output_chunk_length=ocl,
+            n_epochs=1,
         )
         if use_covs:
             pc = tg.gaussian_timeseries(

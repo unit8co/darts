@@ -18,7 +18,7 @@ from darts.utils.timeseries_generation import generate_index
 logger = get_logger(__name__)
 
 
-def _optimized_historical_forecasts_last_points_only(
+def _optimized_historical_forecasts(
     model,
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -29,6 +29,7 @@ def _optimized_historical_forecasts_last_points_only(
     forecast_horizon: int = 1,
     stride: int = 1,
     overlap_end: bool = False,
+    last_points_only: bool = True,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     verbose: bool = False,
@@ -36,7 +37,7 @@ def _optimized_historical_forecasts_last_points_only(
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
     """
-    Optimized historical forecasts for RegressionModel with last_points_only = True
+    Optimized historical forecasts for TorchForecastingModels
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
@@ -69,14 +70,24 @@ def _optimized_historical_forecasts_last_points_only(
             freq=series_.freq,
             show_warnings=show_warnings,
         )
-        bounds.append(
-            (
-                series_.get_index_at_point(hist_fct_start),
-                series_.get_index_at_point(hist_fct_end),
-            )
-        )
+        left_bound = series_.get_index_at_point(hist_fct_start)
+        right_bound = series_.get_index_at_point(hist_fct_end)
 
-    model.super().predict(
+        # we might have some steps that are too long considering stride
+        steps_too_long = (right_bound - left_bound) % stride
+        if steps_too_long:
+            right_bound -= steps_too_long
+
+        bounds.append((left_bound, right_bound))
+
+    # TODO: is there a better way to call the super().predict() from TorchForecastingModel, without having to
+    #  import it? (avoid circular imports)
+    tfm_cls = [
+        cls
+        for cls in model.__class__.__mro__
+        if cls.__name__ == "TorchForecastingModel"
+    ][0]
+    super(tfm_cls, model).predict(
         forecast_horizon,
         series,
         past_covariates,
@@ -101,6 +112,20 @@ def _optimized_historical_forecasts_last_points_only(
         verbose=verbose,
         predict_likelihood_parameters=predict_likelihood_parameters,
     )
+    if last_points_only:
+        predictions = TimeSeries.from_times_and_values(
+            times=generate_index(
+                start=predictions[0].end_time(),
+                length=len(predictions),
+                freq=predictions[0].freq * stride,
+            ),
+            values=np.concatenate(
+                [p.all_values(copy=False)[-1, :, :] for p in predictions], axis=0
+            ),
+            columns=predictions[0].columns,
+            static_covariates=predictions[0].static_covariates,
+            hierarchy=predictions[0].hierarchy,
+        )
     return predictions
 
 
