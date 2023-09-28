@@ -348,7 +348,6 @@ class _TransformerModule(PLPastCovariatesModule):
 
         return predictions
 
-    # Allow teacher forcing
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
         train_batch = list(train_batch)
@@ -410,7 +409,7 @@ class TransformerModel(PastCovariatesTorchModel):
         The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
         very suitable to be trained with GPUs.
 
-        The transformer architecture implemented here is based on [1]_ and uses teacher forcing [2]_.
+        The transformer architecture implemented here is based on [1]_ abd uses teacher forcing [4]_.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
 
@@ -513,14 +512,11 @@ class TransformerModel(PastCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
-                def encode_year(idx):
-                    return (idx.year - 1950) / 50
-
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [encode_year]},
+                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
             ..
@@ -587,6 +583,7 @@ class TransformerModel(PastCovariatesTorchModel):
         .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+        .. [4] Teacher Forcing PyTorch tutorial: https://github.com/pytorch/examples/tree/main/word_language_model
 
         Examples
         --------
