@@ -987,13 +987,13 @@ class TestHistoricalforecast:
         )
         if use_covs:
             pc = tg.gaussian_timeseries(
-                start=series_train.start_time() - 2 * series_train.freq,
+                start=series_train.start_time(),
                 end=series_val.end_time(),
                 freq=series_train.freq,
             )
             fc = tg.gaussian_timeseries(
-                start=series_train.start_time() + 3 * series_train.freq,
-                end=series_val.end_time() + 4 * series_train.freq,
+                start=series_train.start_time(),
+                end=series_val.end_time() + ocl * series_train.freq,
                 freq=series_train.freq,
             )
         else:
