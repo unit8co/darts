@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 try:
     from typing import Literal
@@ -47,6 +47,7 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.historical_forecasts import (
+    _check_optimizable_historical_forecasts_global_models,
     _optimized_historical_forecasts_all_points,
     _optimized_historical_forecasts_last_points_only,
     _process_historical_forecast_input,
@@ -1068,6 +1069,24 @@ class RegressionModel(GlobalForecastingModel):
     def supports_static_covariates(self) -> bool:
         return True
 
+    def _check_optimizable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings: bool,
+    ) -> bool:
+        """
+        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
+        (no auto-regression required).
+        """
+        return _check_optimizable_historical_forecasts_global_models(
+            model=self,
+            forecast_horizon=forecast_horizon,
+            retrain=retrain,
+            show_warnings=show_warnings,
+            allow_autoregression=False,
+        )
+
     def _optimized_historical_forecasts(
         self,
         series: Optional[Sequence[TimeSeries]],
@@ -1095,6 +1114,7 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
+            allow_autoregression=False,
         )
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?

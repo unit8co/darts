@@ -965,6 +965,7 @@ class TestHistoricalforecast:
                 [
                     3,  # horizon < ocl
                     5,  # horizon == ocl
+                    7,  # horizon > ocl -> autoregression
                 ],
                 [False, True],  # use integer indexed series
                 [False, True],  # use multi-series
@@ -1018,12 +1019,12 @@ class TestHistoricalforecast:
         if use_covs:
             pc = tg.gaussian_timeseries(
                 start=series_train.start_time(),
-                end=series_val.end_time(),
+                end=series_val.end_time() + max(0, horizon - ocl) * series_train.freq,
                 freq=series_train.freq,
             )
             fc = tg.gaussian_timeseries(
                 start=series_train.start_time(),
-                end=series_val.end_time() + ocl * series_train.freq,
+                end=series_val.end_time() + max(ocl, horizon) * series_train.freq,
                 freq=series_train.freq,
             )
         else:

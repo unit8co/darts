@@ -671,7 +671,8 @@ def _check_optimizable_historical_forecasts_global_models(
     model,
     forecast_horizon: int,
     retrain: Union[bool, int, Callable[..., bool]],
-    show_warnings=bool,
+    show_warnings: bool,
+    allow_autoregression: bool,
 ) -> bool:
     """
     Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
@@ -679,8 +680,10 @@ def _check_optimizable_historical_forecasts_global_models(
     """
 
     supported_retrain = (retrain is False) or (retrain == 0)
-    supported_forecast_horizon = forecast_horizon <= model.output_chunk_length
-    if supported_retrain and supported_forecast_horizon:
+    is_autoregressive = forecast_horizon > model.output_chunk_length
+    if supported_retrain and (
+        not is_autoregressive or (is_autoregressive and allow_autoregression)
+    ):
         return True
 
     if show_warnings:
@@ -689,7 +692,7 @@ def _check_optimizable_historical_forecasts_global_models(
                 "`enable_optimization=True` is ignored because `retrain` is not `False`"
                 "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
             )
-        if not supported_forecast_horizon:
+        if is_autoregressive:
             logger.warning(
                 "`enable_optimization=True` is ignored because "
                 "`forecast_horizon > model.output_chunk_length`."
@@ -705,13 +708,15 @@ def _process_historical_forecast_input(
     past_covariates: Optional[Sequence[TimeSeries]] = None,
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     forecast_horizon: int = 1,
+    allow_autoregression: bool = False,
 ):
     if not model._fit_called:
         raise_log(
             ValueError("Model has not been fit yet."),
             logger,
         )
-    if forecast_horizon > model.output_chunk_length:
+
+    if not allow_autoregression and forecast_horizon > model.output_chunk_length:
         raise_log(
             ValueError(
                 "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "

@@ -29,7 +29,7 @@ import shutil
 import sys
 from abc import ABC, abstractmethod
 from glob import glob
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 try:
     from typing import Literal
@@ -81,7 +81,10 @@ from darts.utils.data.training_dataset import (
     SplitCovariatesTrainingDataset,
     TrainingDataset,
 )
-from darts.utils.historical_forecasts import _process_historical_forecast_input
+from darts.utils.historical_forecasts import (
+    _check_optimizable_historical_forecasts_global_models,
+    _process_historical_forecast_input,
+)
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _optimized_historical_forecasts,
 )
@@ -1992,6 +1995,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else True  # all torch models can be probabilistic (via Dropout)
         )
 
+    def _check_optimizable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings: bool,
+    ) -> bool:
+        """
+        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
+        (no auto-regression required).
+        """
+        return _check_optimizable_historical_forecasts_global_models(
+            model=self,
+            forecast_horizon=forecast_horizon,
+            retrain=retrain,
+            show_warnings=show_warnings,
+            allow_autoregression=True,
+        )
+
     def _optimized_historical_forecasts(
         self,
         series: Optional[Sequence[TimeSeries]],
@@ -2020,6 +2041,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
+            allow_autoregression=True,
         )
         forecasts_list = _optimized_historical_forecasts(
             model=self,
