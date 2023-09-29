@@ -2031,10 +2031,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
-        """
-        TODO: support forecast_horizon > output_chunk_length (auto-regression)
-        """
-        called_with_single_series = isinstance(series, TimeSeries)
         series, past_covariates, future_covariates = _process_historical_forecast_input(
             model=self,
             series=series,
@@ -2059,7 +2055,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             predict_likelihood_parameters=predict_likelihood_parameters,
             verbose=verbose,
         )
-        return forecasts_list if not called_with_single_series else forecasts_list[0]
+        return forecasts_list
 
     def _load_encoders(
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
