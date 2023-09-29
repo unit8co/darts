@@ -13,6 +13,7 @@ from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 
 from .utils import CovariateType
 
@@ -121,7 +122,7 @@ class GenericInferenceDataset(InferenceDataset):
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
@@ -191,12 +192,11 @@ class GenericInferenceDataset(InferenceDataset):
             self.cum_lengths = None
             self.len_preds = len(self.target_series)
         else:
-            bounds = np.array(bounds)
-            # we might have some steps that are too long considering stride
-            steps_too_long = (bounds[:, 1] - bounds[:, 0]) % stride
-            bounds[:, 1] -= steps_too_long
-            self.bounds = bounds
-            self.cum_lengths = np.cumsum(np.diff(self.bounds) // stride + 1)
+            self.bounds, self.cum_lengths = _process_predict_start_points_bounds(
+                series=target_series,
+                bounds=bounds,
+                stride=stride,
+            )
             self.len_preds = self.cum_lengths[-1]
 
     def __len__(self):
@@ -318,7 +318,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
@@ -386,7 +386,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         covariate_type: CovariateType = CovariateType.FUTURE,
         use_static_covariates: bool = True,
@@ -458,7 +458,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         use_static_covariates: bool = True,
@@ -549,7 +549,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         use_static_covariates: bool = True,
@@ -651,7 +651,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         use_static_covariates: bool = True,

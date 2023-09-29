@@ -573,7 +573,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
     ) -> InferenceDataset:
         """
         Each model must specify the default training dataset to use.
@@ -2013,6 +2013,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
+        called_with_single_series = isinstance(series, TimeSeries)
         series, past_covariates, future_covariates = _process_historical_forecast_input(
             model=self,
             series=series,
@@ -2020,7 +2021,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
         )
-        return _optimized_historical_forecasts(
+        forecasts_list = _optimized_historical_forecasts(
             model=self,
             series=series,
             past_covariates=past_covariates,
@@ -2036,6 +2037,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             predict_likelihood_parameters=predict_likelihood_parameters,
             verbose=verbose,
         )
+        return forecasts_list if not called_with_single_series else forecasts_list[0]
 
     def _load_encoders(
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
@@ -2349,7 +2351,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
     ) -> PastCovariatesInferenceDataset:
         raise_if_not(
             future_covariates is None,
@@ -2452,7 +2454,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
     ) -> FutureCovariatesInferenceDataset:
         raise_if_not(
             past_covariates is None,
@@ -2549,7 +2551,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
     ) -> DualCovariatesInferenceDataset:
         return DualCovariatesInferenceDataset(
             target_series=target,
@@ -2641,7 +2643,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
     ) -> MixedCovariatesInferenceDataset:
         return MixedCovariatesInferenceDataset(
             target_series=target,
@@ -2731,7 +2733,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
-        bounds: Optional[Sequence[Tuple[int, int]]] = None,
+        bounds: Optional[np.ndarray] = None,
     ) -> SplitCovariatesInferenceDataset:
         return SplitCovariatesInferenceDataset(
             target_series=target,

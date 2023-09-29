@@ -8,6 +8,7 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
 
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
@@ -27,6 +28,7 @@ TimeIndex = Union[
 def _historical_forecasts_general_checks(model, series, kwargs):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
+
     Parameters
     ----------
     model
@@ -740,3 +742,38 @@ def _process_historical_forecast_input(
             future_covariates=future_covariates,
         )
     return series, past_covariates, future_covariates
+
+
+def _process_predict_start_points_bounds(
+    series: Sequence[TimeSeries], bounds: ArrayLike, stride: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Processes the historical forecastable time index bounds (earliest, and latest possible prediction
+    start points).
+
+    Parameters
+    ----------
+    bounds
+        An array of shape (n series, 2), with the left and right prediction start point bounds per series.
+    stride
+        The number of time steps between two consecutive predictions.
+
+    Returns
+    -------
+    (np.ndarray, np.ndarray)
+        The adjusted bounds: the right bounds are adjusted to be a multiple of 'stride' ahead of the left bounds.
+        The number of resulting predicted series per input series respecting stride and bounds.
+    """
+    bounds = bounds if isinstance(bounds, np.ndarray) else np.array(bounds)
+    if not bounds.shape == (len(series), 2):
+        raise_log(
+            ValueError(
+                "`bounds` must be an array like with shape `(n target series, 2)`, "
+                "with the start and end bounds of each series"
+            ),
+            logger=logger,
+        )
+    # we might have some steps that are too long considering stride
+    steps_too_long = (bounds[:, 1] - bounds[:, 0]) % stride
+    bounds[:, 1] -= steps_too_long
+    cum_lengths = np.cumsum(np.diff(bounds) // stride + 1)
+    return bounds, cum_lengths

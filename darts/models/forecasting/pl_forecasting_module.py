@@ -184,6 +184,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
         self.pred_n_jobs: Optional[int] = None
+        self.predict_likelihood_parameters: Optional[bool] = None
 
     @property
     def first_prediction_index(self) -> int:
