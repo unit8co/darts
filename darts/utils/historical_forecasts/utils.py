@@ -629,27 +629,35 @@ def _get_historical_forecast_boundaries(
     if min_target_lag is not None:
         hist_fct_tgt_start += min_target_lag * freq
     hist_fct_tgt_end -= 1 * freq
+
     # past lags are <= 0
-    hist_fct_pc_start, hist_fct_pc_end = historical_forecasts_time_index
+    hist_fct_pc_start, hist_fct_pc_end = None, None
     if min_past_cov_lag is not None:
-        hist_fct_pc_start += min_past_cov_lag * freq
+        hist_fct_pc_start = historical_forecasts_time_index[0] + min_past_cov_lag * freq
     if max_past_cov_lag is not None:
-        hist_fct_pc_end += max_past_cov_lag * freq
+        hist_fct_pc_end = historical_forecasts_time_index[1] + max_past_cov_lag * freq
+
     # future lags can be anything
-    hist_fct_fc_start, hist_fct_fc_end = historical_forecasts_time_index
+    hist_fct_fc_start, hist_fct_fc_end = None, None
     if min_future_cov_lag is not None:
-        hist_fct_fc_start += min_future_cov_lag * freq
+        hist_fct_fc_start = (
+            historical_forecasts_time_index[0] + min_future_cov_lag * freq
+        )
     if max_future_cov_lag is not None:
-        hist_fct_fc_end += max_future_cov_lag * freq
+        hist_fct_fc_end = historical_forecasts_time_index[1] + max_future_cov_lag * freq
 
     # convert actual integer index values (points) to positional index, make end bound inclusive
     if series.has_range_index:
         hist_fct_tgt_start = series.get_index_at_point(hist_fct_tgt_start)
         hist_fct_tgt_end = series.get_index_at_point(hist_fct_tgt_end) + 1
-        hist_fct_pc_start = series.get_index_at_point(hist_fct_pc_start)
-        hist_fct_pc_end = series.get_index_at_point(hist_fct_pc_end) + 1
-        hist_fct_fc_start = series.get_index_at_point(hist_fct_fc_start)
-        hist_fct_fc_end = series.get_index_at_point(hist_fct_fc_end) + 1
+        if hist_fct_pc_start is not None:
+            hist_fct_pc_start = past_covariates.get_index_at_point(hist_fct_pc_start)
+        if hist_fct_pc_end is not None:
+            hist_fct_pc_end = past_covariates.get_index_at_point(hist_fct_pc_end) + 1
+        if hist_fct_fc_start is not None:
+            hist_fct_fc_start = future_covariates.get_index_at_point(hist_fct_fc_start)
+        if hist_fct_fc_end is not None:
+            hist_fct_fc_end = future_covariates.get_index_at_point(hist_fct_fc_end) + 1
 
     return (
         historical_forecasts_time_index[0],

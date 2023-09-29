@@ -964,11 +964,12 @@ class TestHistoricalforecast:
                     3,  # horizon < ocl
                     5,  # horizon == ocl
                 ],
+                [False, True],  # use integer indexed series
             )
         ),
     )
     def test_optimized_historical_forecasts_torch_with_encoders(self, config):
-        use_covs, last_points_only, overlap_end, stride, horizon = config
+        use_covs, last_points_only, overlap_end, stride, horizon, use_int_idx = config
         icl = 3
         ocl = 5
         len_val_series = 10
@@ -976,11 +977,28 @@ class TestHistoricalforecast:
             self.ts_pass_train[:10],
             self.ts_pass_val[:len_val_series],
         )
+        if use_int_idx:
+            series_train = TimeSeries.from_values(
+                series_train.all_values(), columns=series_train.columns
+            )
+            series_val = TimeSeries.from_times_and_values(
+                values=series_val.all_values(),
+                times=pd.RangeIndex(
+                    start=series_train.end_time() + series_train.freq,
+                    stop=series_train.end_time()
+                    + (len(series_val) + 1) * series_train.freq,
+                    step=series_train.freq,
+                ),
+                columns=series_train.columns,
+            )
+
+        def f_encoder(idx):
+            return idx.month if not use_int_idx else idx
+
         model = NLinearModel(
             input_chunk_length=icl,
             add_encoders={
-                "cyclic": {"future": ["month"]},
-                "datetime_attribute": {"past": ["dayofweek"]},
+                "custom": {"past": [f_encoder], "future": [f_encoder]},
             },
             output_chunk_length=ocl,
             n_epochs=1,
@@ -999,7 +1017,7 @@ class TestHistoricalforecast:
         else:
             pc, fc = None, None
 
-        model.fit(self.ts_pass_train, past_covariates=pc, future_covariates=fc)
+        model.fit(series_train, past_covariates=pc, future_covariates=fc)
 
         hist_fct = model.historical_forecasts(
             series=series_val,
