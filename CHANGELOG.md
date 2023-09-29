@@ -9,6 +9,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 [Full Changelog](https://github.com/unit8co/darts/compare/0.26.0...master)
 
 ### For users of the library:
+**Improved**
+- 🚀🚀 Optimized `historical_forecasts()` for pre-trained `TorchForecastingModel`. [#2013](https://github.com/unit8co/darts/pull/2013) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 ## [0.26.0](https://github.com/unit8co/darts/tree/0.26.0) (2023-09-16)
