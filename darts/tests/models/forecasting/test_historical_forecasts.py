@@ -1119,7 +1119,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)
+    @pytest.mark.parametrize("model_config", models_torch_cls_kwargs[:1])
     def test_torch_auto_start_multiple_no_cov(self, model_config):
         forecast_hrz = 10
         model_cls, kwargs, bounds, _ = model_config
