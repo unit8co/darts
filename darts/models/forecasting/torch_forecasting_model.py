@@ -2227,9 +2227,13 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     """
     For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
     that training/inference datasets have target and covariates in first and second position to do the checks.
+
+    - `train_sample` comes with last dimension (static covs, target TimeSeries)
+    - `predict_sample` comes with last dimensions (..., static covs, target TimeSeries, first prediction time stamp)
+
     """
     tgt_train, cov_train, static_train = train_sample[:2] + (train_sample[-2],)
-    tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-2],)
+    tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-3],)
     raise_if_not(
         tgt_train.shape[-1] == tgt_pred.shape[-1],
         "The provided target has a dimension (width) that does not match the dimension "

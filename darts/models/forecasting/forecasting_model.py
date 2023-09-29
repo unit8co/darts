@@ -1047,7 +1047,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     forecasts.append(forecast)
 
-            if last_points_only:
+            if last_points_only and forecast:
                 forecasts_list.append(
                     TimeSeries.from_times_and_values(
                         generate_index(

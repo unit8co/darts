@@ -1119,7 +1119,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    @pytest.mark.parametrize("model_config", models_torch_cls_kwargs[:1])
+    @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)
     def test_torch_auto_start_multiple_no_cov(self, model_config):
         forecast_hrz = 10
         model_cls, kwargs, bounds, _ = model_config
@@ -1826,7 +1826,9 @@ class TestHistoricalforecast:
                 )
             )
         preds = darts.concatenate(preds)
-        assert np.all(preds.values() == hist_fc.values())
+        np.testing.assert_array_almost_equal(
+            preds.all_values(copy=False), hist_fc.all_values(copy=False)
+        )
 
         # check equal results between predict and hist fc with higher output_chunk_length and horizon,
         # and last_points_only=False
@@ -1856,5 +1858,10 @@ class TestHistoricalforecast:
                     predict_likelihood_parameters=True,
                 )
             )
-        assert preds == hist_fc
-        assert len(hist_fc) == n + 1
+        for p, hfc in zip(preds, hist_fc):
+            assert p.columns.equals(hfc.columns)
+            assert p.time_index.equals(hfc.time_index)
+            np.testing.assert_array_almost_equal(
+                p.all_values(copy=False), hfc.all_values(copy=False)
+            )
+            assert len(hist_fc) == n + 1

@@ -133,7 +133,7 @@ def _optimized_historical_forecasts(
                     freq=preds[0].freq * stride,
                 ),
                 values=np.concatenate(
-                    [p.all_values(copy=False)[-1, :, :] for p in preds], axis=0
+                    [p.all_values(copy=False)[-1:, :, :] for p in preds], axis=0
                 ),
                 columns=preds[0].columns,
                 static_covariates=preds[0].static_covariates,
