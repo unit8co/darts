@@ -191,7 +191,11 @@ class GenericInferenceDataset(InferenceDataset):
             self.cum_lengths = None
             self.len_preds = len(self.target_series)
         else:
-            self.bounds = np.array(bounds)
+            bounds = np.array(bounds)
+            # we might have some steps that are too long considering stride
+            steps_too_long = (bounds[:, 1] - bounds[:, 0]) % stride
+            bounds[:, 1] -= steps_too_long
+            self.bounds = bounds
             self.cum_lengths = np.cumsum(np.diff(self.bounds) // stride + 1)
             self.len_preds = self.cum_lengths[-1]
 

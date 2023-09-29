@@ -71,13 +71,11 @@ def _optimized_historical_forecasts(
             show_warnings=show_warnings,
         )
         left_bound = series_.get_index_at_point(hist_fct_start)
-        right_bound = series_.get_index_at_point(hist_fct_end)
-
-        # we might have some steps that are too long considering stride
-        steps_too_long = (right_bound - left_bound) % stride
-        if steps_too_long:
-            right_bound -= steps_too_long
-
+        # latest possible prediction start is one time step after end of target series
+        if hist_fct_end > series_.end_time():
+            right_bound = len(series_)
+        else:
+            right_bound = series_.get_index_at_point(hist_fct_end)
         bounds.append((left_bound, right_bound))
 
     # TODO: is there a better way to call the super().predict() from TorchForecastingModel, without having to

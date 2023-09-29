@@ -956,25 +956,13 @@ class TestHistoricalforecast:
         "config",
         list(
             itertools.product(
-                [
-                    False,
-                    # True
-                ],  # use covariates
-                [
-                    True,
-                    # False
-                ],  # last points only
-                [
-                    # False,
-                    True
-                ],  # overlap end
-                [
-                    # 1,
-                    3
-                ],  # stride
+                [False, True],  # use covariates
+                [True, False],  # last points only
+                [False, True],  # overlap end
+                [1, 3],  # stride
                 [
                     3,  # horizon < ocl
-                    # 5,  # horizon == ocl
+                    5,  # horizon == ocl
                 ],
             )
         ),
