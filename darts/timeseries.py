@@ -3749,8 +3749,8 @@ class TimeSeries:
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
         alpha
-            Optional, if `None` and probalistic value is 1 if if `None` and probalistic value is 0.25.
-            Otherwise will set alpha to provided value. Value must be between 0 and 1.
+             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            probabilistic series.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3827,9 +3827,6 @@ class TimeSeries:
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
             if not self.is_deterministic:
                 kwargs["alpha"] = 1
-            elif "alpha" in kwargs:
-                kwargs["alpha"] = alpha
-
             if custom_labels:
                 label_to_use = label[i]
             else:
