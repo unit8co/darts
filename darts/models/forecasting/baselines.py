@@ -4,11 +4,12 @@ Baseline Models
 
 A collection of simple benchmark models for univariate series.
 """
+from abc import ABC, abstractmethod
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
@@ -20,7 +21,132 @@ from darts.utils.utils import seq2series, series2seq
 logger = get_logger(__name__)
 
 
-class NaiveMean(GlobalForecastingModel):
+class BaselineModel(GlobalForecastingModel, ABC):
+    def __init__(self):
+        super().__init__(add_encoders=None)
+
+    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> "BaselineModel":
+        """Fit/train the model on a (or potentially multiple) series.
+        This method is only implemented for naive baseline models to provide a unified fit/predict API with other
+        forecasting models.
+
+        The models are not really trained on the input, but they store the training `series` in case only a single
+        `TimeSeries` was passed. This allows to call `predict()` without having to pass the single `series`.
+
+        All baseline models compute the forecasts for each series directly when calling `predict()`.
+
+        Parameters
+        ----------
+        series
+            One or several target time series. The model will be trained to forecast these time series.
+            The series may or may not be multivariate, but if multiple series are provided
+            they must have the same number of components.
+
+        Returns
+        -------
+        self
+            Fitted model.
+        """
+        series = seq2series(series)
+        super().fit(series=series)
+        self._fit_model(series=series)
+
+    @abstractmethod
+    def _fit_model(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> None:
+        """Must implement the fit logic and checks for each sub model."""
+        pass
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Forecasts values for `n` time steps after the end of the series.
+
+        If :func:`fit()` has been called with only one ``TimeSeries`` as argument, then the `series` argument of
+        this function is optional, and it will simply produce the next `horizon` time steps forecast.
+
+        If :func:`fit()` has been called with `series` specified as a ``Sequence[TimeSeries]`` (i.e., the model
+        has been trained on multiple time series), the `series` argument must be specified.
+
+        When the `series` argument is specified, this function will compute the next `n` time steps forecasts
+        for the simple series (or for each series in the sequence) given by `series`.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series
+            The series whose future values will be predicted.
+
+        Returns
+        -------
+        Union[TimeSeries, Sequence[TimeSeries]]
+            If `series` is not specified, this function returns a single time series containing the `n`
+            next points after then end of the training series.
+            If `series` is given and is a simple ``TimeSeries``, this function returns the `n` next points
+            after the end of `series`.
+            If `series` is given and is a sequence of several time series, this function returns
+            a sequence where each element contains the corresponding `n` points forecasts.
+        """
+        if series is None:
+            # then there must be a single TS, and that was saved in super().fit as self.training_series
+            if self.training_series is None:
+                raise_log(
+                    ValueError(
+                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                        "or from not having fit the model yet."
+                    ),
+                    logger,
+                )
+            series = self.training_series
+
+        called_with_single_series = True if isinstance(series, TimeSeries) else False
+
+        series = series2seq(series)
+        super().predict(n=n, series=series, num_samples=num_samples)
+        predictions = self._predict(n=n, series=series, num_samples=num_samples)
+        return predictions[0] if called_with_single_series else predictions
+
+    @abstractmethod
+    def _predict(
+        self, n: int, series: Sequence[TimeSeries] = None, num_samples: int = 1
+    ) -> Sequence[TimeSeries]:
+        pass
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        return -self.min_train_series_length, -1, None, None, None, None
+
+    @property
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        bool,
+        bool,
+        Optional[List[int]],
+        Optional[List[int]],
+    ]:
+        """Baseline models do not support covariates and therefore also no encoders."""
+        return None, None, False, False, None, None
+
+    def supports_multivariate(self) -> bool:
+        return True
+
+
+class NaiveMean(BaselineModel):
     def __init__(self):
         """Naive Mean Model
 
@@ -44,97 +170,26 @@ class NaiveMean(GlobalForecastingModel):
               [280.29861111]])
         """
         super().__init__()
-        self.mean_val = None
 
-    @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-    ]:
-        min_target_lag = self.lags["target"][0] if "target" in self.lags else None
-        max_target_lag = self.output_chunk_length - 1
-        min_past_cov_lag = None
-        max_past_cov_lag = None
-        min_future_cov_lag = None
-        max_future_cov_lag = None
-        return (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        )
+    def _fit_model(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> None:
+        super()._fit_model(series)
 
-    def _model_encoder_settings(
-        self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
-        target_lags = self.lags.get("target", [0])
-        lags_past_covariates = self.lags.get("past", None)
-        if lags_past_covariates is not None:
-            lags_past_covariates = [
-                min(lags_past_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_past_covariates),
-            ]
-        lags_future_covariates = self.lags.get("future", None)
-        if lags_future_covariates is not None:
-            lags_future_covariates = [
-                min(lags_future_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_future_covariates),
-            ]
-        return (
-            abs(min(target_lags)),
-            self.output_chunk_length,
-            lags_past_covariates is not None,
-            lags_future_covariates is not None,
-            lags_past_covariates,
-            lags_future_covariates,
-        )
-
-    def supports_multivariate(self) -> bool:
-        return True
-
-    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
-        if isinstance(series, Sequence):
-            self._fit_called = True
-        else:
-            super().fit(series)
-
-        return self
-
-    def predict(
-        self,
-        n: int,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        num_samples: int = 1,
-        verbose: bool = False,
-    ):
-        series = series2seq(series)
+    def _predict(
+        self, n: int, series: Sequence[TimeSeries] = None, num_samples: int = 1
+    ) -> Sequence[TimeSeries]:
         predictions = []
-        for pred in series:
-            self.mean_val = np.mean(pred.values(copy=False), axis=0)
-            super().predict(n, num_samples)
-            forecast = np.tile(self.mean_val, (n, 1))
+        for series_ in series:
+            mean_val = np.mean(series_.values(copy=False), axis=0)
             predictions.append(
                 self._build_forecast_series(
-                    points_preds=forecast,
-                    input_series=pred,
+                    points_preds=np.tile(mean_val, (n, 1)),
+                    input_series=series_,
                 )
             )
-        predictions = seq2series(predictions)
-        called_with_single_series = True if isinstance(series, TimeSeries) else False
-        return predictions[0] if called_with_single_series else predictions
+        return predictions
 
 
-class NaiveSeasonal(GlobalForecastingModel):
+class NaiveSeasonal(BaselineModel):
     def __init__(self, K: int = 1):
         """Naive Seasonal Model
 
@@ -165,111 +220,33 @@ class NaiveSeasonal(GlobalForecastingModel):
                [535.]])
         """
         super().__init__()
-        self.last_k_vals = None
         self.K = K
 
-    @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-    ]:
-        min_target_lag = self.lags["target"][0] if "target" in self.lags else None
-        max_target_lag = self.output_chunk_length - 1
-        min_past_cov_lag = None
-        max_past_cov_lag = None
-        min_future_cov_lag = None
-        max_future_cov_lag = None
-        return (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        )
+    def _fit_model(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> None:
 
-    def _model_encoder_settings(
-        self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
-        target_lags = self.lags.get("target", [0])
-        lags_past_covariates = self.lags.get("past", None)
-        if lags_past_covariates is not None:
-            lags_past_covariates = [
-                min(lags_past_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_past_covariates),
-            ]
-        lags_future_covariates = self.lags.get("future", None)
-        if lags_future_covariates is not None:
-            lags_future_covariates = [
-                min(lags_future_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_future_covariates),
-            ]
-        return (
-            abs(min(target_lags)),
-            self.output_chunk_length,
-            lags_past_covariates is not None,
-            lags_future_covariates is not None,
-            lags_past_covariates,
-            lags_future_covariates,
-        )
+        super()._fit_model(series)
 
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
-    def min_train_series_length(self):
-        return max(self.K, 3)
-
-    def fit(self, series: [TimeSeries, Sequence[TimeSeries]]):
-
-        if isinstance(series, Sequence):
-            self._fit_called = True
-        else:
-            super().fit(series)
-
-            raise_if_not(
-                len(series) >= self.K,
-                f"The time series requires at least K={self.K} points",
-                logger,
-            )
-
-        return self
-
-    def predict(
+    def _predict(
         self,
         n: int,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
-        verbose: bool = False,
     ):
-        super().predict(n, num_samples)
-
-        series = series2seq(series)
         predictions = []
-        for pred in series:
-            self.last_k_vals = pred.values(copy=False)[-self.K :, :]
-            forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
+        for series_ in series:
+            last_k_vals = series_.values(copy=False)[-self.K :, :]
+            forecast = np.array([last_k_vals[i % self.K, :] for i in range(n)])
 
         predictions.append(
             self._build_forecast_series(
                 points_preds=forecast,
-                input_series=pred,
+                input_series=series_,
             )
         )
-        predictions = seq2series(predictions)
-        called_with_single_series = True if isinstance(series, TimeSeries) else False
-        return predictions[0] if called_with_single_series else predictions
+        return predictions
 
 
-class NaiveDrift(GlobalForecastingModel):
+class NaiveDrift(BaselineModel):
     def __init__(self):
         """
         Naive Drift Model
@@ -297,105 +274,35 @@ class NaiveDrift(GlobalForecastingModel):
         """
         super().__init__()
 
-    @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-    ]:
-        min_target_lag = self.lags["target"][0] if "target" in self.lags else None
-        max_target_lag = self.output_chunk_length - 1
-        min_past_cov_lag = None
-        max_past_cov_lag = None
-        min_future_cov_lag = None
-        max_future_cov_lag = None
-        return (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        )
+    def _fit_model(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> None:
+        super()._fit_model(series)
 
-    def _model_encoder_settings(
-        self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
-        target_lags = self.lags.get("target", [0])
-        lags_past_covariates = self.lags.get("past", None)
-        if lags_past_covariates is not None:
-            lags_past_covariates = [
-                min(lags_past_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_past_covariates),
-            ]
-        lags_future_covariates = self.lags.get("future", None)
-        if lags_future_covariates is not None:
-            lags_future_covariates = [
-                min(lags_future_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_future_covariates),
-            ]
-        return (
-            abs(min(target_lags)),
-            self.output_chunk_length,
-            lags_past_covariates is not None,
-            lags_future_covariates is not None,
-            lags_past_covariates,
-            lags_future_covariates,
-        )
+    def _predict(
+        self, n: int, series: Sequence[TimeSeries] = None, num_samples: int = 1
+    ) -> Sequence[TimeSeries]:
 
-    def supports_multivariate(self) -> bool:
-        return True
+        super()._predict(n, num_samples)
 
-    def fit(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        if isinstance(series, Sequence):
-            self._fit_called = True
-        else:
-            assert series.n_samples == 1, "This model expects deterministic time series"
-            super().fit(series)
-        return self
-
-    def predict(
-        self,
-        n: int,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        num_samples: int = 1,
-        verbose: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        super().predict(n, num_samples)
-
-        series = series2seq(series)
         predictions = []
 
-        for pred in series:
+        for series_ in series:
             first, last = (
-                pred.first_values(),
-                pred.last_values(),
+                series_.first_values(),
+                series_.last_values(),
             )
-            slope = (last - first) / (len(pred) - 1)
+            slope = (last - first) / (len(series_) - 1)
             last_value = last + slope * n
-            forecast = np.linspace(last, last_value, num=n + 1)[1:]
 
             predictions.append(
                 self._build_forecast_series(
-                    points_preds=forecast,
-                    input_series=pred,
+                    points_preds=np.linspace(last, last_value, num=n + 1)[1:],
+                    input_series=series_,
                 )
             )
-        predictions = seq2series(predictions)
-        called_with_single_series = True if isinstance(series, TimeSeries) else False
-        return predictions[0] if called_with_single_series else predictions
+        return predictions
 
 
-class NaiveMovingAverage(GlobalForecastingModel):
+class NaiveMovingAverage(BaselineModel):
     def __init__(self, input_chunk_length: int = 1):
         """Naive Moving Average Model
 
@@ -424,106 +331,29 @@ class NaiveMovingAverage(GlobalForecastingModel):
         """
         super().__init__()
         self.input_chunk_length = input_chunk_length
-        self.rolling_window = None
 
-    @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-    ]:
-        min_target_lag = self.lags["target"][0] if "target" in self.lags else None
-        max_target_lag = self.output_chunk_length - 1
-        min_past_cov_lag = None
-        max_past_cov_lag = None
-        min_future_cov_lag = None
-        max_future_cov_lag = None
-        return (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        )
+    def _fit_model(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> None:
+        super()._fit_model(series)
 
-    def _model_encoder_settings(
-        self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
-        target_lags = self.lags.get("target", [0])
-        lags_past_covariates = self.lags.get("past", None)
-        if lags_past_covariates is not None:
-            lags_past_covariates = [
-                min(lags_past_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_past_covariates),
-            ]
-        lags_future_covariates = self.lags.get("future", None)
-        if lags_future_covariates is not None:
-            lags_future_covariates = [
-                min(lags_future_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
-                max(lags_future_covariates),
-            ]
-        return (
-            abs(min(target_lags)),
-            self.output_chunk_length,
-            lags_past_covariates is not None,
-            lags_future_covariates is not None,
-            lags_past_covariates,
-            lags_future_covariates,
-        )
+    def _predict(
+        self, n: int, series: Sequence[TimeSeries] = None, num_samples: int = 1
+    ) -> Sequence[TimeSeries]:
 
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
-    def min_train_series_length(self):
-        return self.input_chunk_length
-
-    def __str__(self):
-        return f"NaiveMovingAverage({self.input_chunk_length})"
-
-    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
-        if isinstance(series, Sequence):
-            self._fit_called = True
-        else:
-            super().fit(series)
-            raise_if_not(
-                series.is_deterministic,
-                "This model expects deterministic time series",
-                logger,
-            )
-
-        return self
-
-    def predict(
-        self,
-        n: int,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        num_samples: int = 1,
-        verbose: bool = False,
-    ):
-        super().predict(n, num_samples)
+        super()._predict(n, num_samples)
 
         series = series2seq(series)
         predictions = []
 
-        for pred in series:
-            self.rolling_window = pred[-self.input_chunk_length :].values(copy=False)
+        for series_ in series:
+            rolling_window = series_[-self.input_chunk_length :].values(copy=False)
             predictions_with_observations = np.concatenate(
                 (
-                    self.rolling_window,
-                    np.zeros(shape=(n, self.rolling_window.shape[1])),
+                    rolling_window,
+                    np.zeros(shape=(n, rolling_window.shape[1])),
                 ),
                 axis=0,
             )
-            rolling_sum = sum(self.rolling_window)
+            rolling_sum = sum(rolling_window)
 
             chunk_length = self.input_chunk_length
             for i in range(chunk_length, chunk_length + n):
@@ -531,16 +361,14 @@ class NaiveMovingAverage(GlobalForecastingModel):
                 predictions_with_observations[i] = prediction
                 lost_value = predictions_with_observations[i - chunk_length]
                 rolling_sum += prediction - lost_value
-            forecast = predictions_with_observations[-n:]
+
             predictions.append(
                 self._build_forecast_series(
-                    points_preds=forecast,
-                    input_series=pred,
+                    points_preds=predictions_with_observations[-n:],
+                    input_series=series_,
                 )
             )
-        predictions = seq2series(predictions)
-        called_with_single_series = True if isinstance(series, TimeSeries) else False
-        return predictions[0] if called_with_single_series else predictions
+        return predictions
 
 
 class NaiveEnsembleModel(EnsembleModel):
