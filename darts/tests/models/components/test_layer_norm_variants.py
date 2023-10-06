@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from darts.logging import get_logger
 
@@ -20,9 +21,8 @@ if TORCH_AVAILABLE:
         RINorm,
         RMSNorm,
     )
-    from darts.tests.base_test_class import DartsBaseTestClass
 
-    class LayerNormVariantsTestCase(DartsBaseTestClass):
+    class TestLayerNormVariants:
         def test_lnv(self):
             for layer_norm in [RMSNorm, LayerNorm, LayerNormNoBias]:
                 ln = layer_norm(4)
@@ -49,5 +49,5 @@ if TORCH_AVAILABLE:
 
             # try invalid input_dim
             rin = RINorm(input_dim=3, affine=True)
-            with self.assertRaises(RuntimeError):
+            with pytest.raises(RuntimeError):
                 x_norm = rin(x)

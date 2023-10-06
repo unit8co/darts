@@ -202,11 +202,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'past': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -1743,6 +1746,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         best: bool = True,
         strict: bool = True,
         load_encoders: bool = True,
+        skip_checks: bool = False,
         **kwargs,
     ):
         """
@@ -1757,6 +1761,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         For manually saved model, consider using :meth:`load() <TorchForecastingModel.load()>` or
         :meth:`load_weights() <TorchForecastingModel.load_weights()>` instead.
+
+        Note: This method needs to be able to access the darts model checkpoint (.pt) in order to load the encoders
+        and perform sanity checks on the model parameters.
 
         Parameters
         ----------
@@ -1777,6 +1784,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         load_encoders
             If set, will load the encoders from the model to enable direct call of fit() or predict().
             Default: ``True``.
+        skip_checks
+            If set, will disable the loading of the encoders and the sanity checks on model parameters
+            (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -1787,6 +1797,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "weights_only" in kwargs.keys() and kwargs["weights_only"],
             "Passing `weights_only=True` to `torch.load` will disrupt this"
             " method sanity checks.",
+            logger,
+        )
+
+        raise_if(
+            skip_checks and load_encoders,
+            "`skip-checks` and `load_encoders` are mutually exclusive parameters and cannot be both "
+            "set to `True`.",
             logger,
         )
 
@@ -1816,39 +1833,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         ckpt_path = os.path.join(checkpoint_dir, file_name)
         ckpt = torch.load(ckpt_path, **kwargs)
-        ckpt_hyper_params = ckpt["hyper_parameters"]
-
-        # verify that the arguments passed to the constructor match those of the checkpoint
-        # add_encoders is checked in _load_encoders()
-        skipped_params = list(
-            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
-        ) + [
-            "loss_fn",
-            "torch_metrics",
-            "optimizer_cls",
-            "optimizer_kwargs",
-            "lr_scheduler_cls",
-            "lr_scheduler_kwargs",
-        ]
-        for param_key, param_value in self.model_params.items():
-            # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
-            if (
-                param_key in ckpt_hyper_params.keys()
-                and param_key not in skipped_params
-            ):
-                # some parameters must be converted
-                if isinstance(ckpt_hyper_params[param_key], list) and not isinstance(
-                    param_value, list
-                ):
-                    param_value = [param_value] * len(ckpt_hyper_params[param_key])
-
-                raise_if(
-                    param_value != ckpt_hyper_params[param_key],
-                    f"The values of the hyper parameter {param_key} should be identical between "
-                    f"the instantiated model ({param_value}) and the loaded checkpoint "
-                    f"({ckpt_hyper_params[param_key]}). Please adjust the model accordingly.",
-                    logger,
-                )
 
         # indicate to the user than checkpoints generated with darts <= 0.23.1 are not supported
         raise_if_not(
@@ -1867,16 +1851,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ]
         self.train_sample = tuple(mock_train_sample)
 
-        # updating model attributes before self._init_model() which create new ckpt
-        tfm_save_file_path = os.path.join(tfm_save_file_dir, tfm_save_file_name)
-        with open(tfm_save_file_path, "rb") as tfm_save_file:
-            tfm_save: TorchForecastingModel = torch.load(
-                tfm_save_file, map_location=kwargs.get("map_location", None)
-            )
+        if not skip_checks:
+            # path to the tfm checkpoint (darts model, .pt extension)
+            tfm_save_file_path = os.path.join(tfm_save_file_dir, tfm_save_file_name)
+            if not os.path.exists(tfm_save_file_path):
+                raise_log(
+                    FileNotFoundError(
+                        f"Could not find {tfm_save_file_path}, necessary to load the encoders "
+                        f"and run sanity checks on the model parameters."
+                    ),
+                    logger,
+                )
+
+            # updating model attributes before self._init_model() which create new tfm ckpt
+            with open(tfm_save_file_path, "rb") as tfm_save_file:
+                tfm_save: TorchForecastingModel = torch.load(
+                    tfm_save_file, map_location=kwargs.get("map_location", None)
+                )
+
             # encoders are necessary for direct inference
             self.encoders, self.add_encoders = self._load_encoders(
                 tfm_save, load_encoders
             )
+
+            # meaningful error message if parameters are incompatible with the ckpt weights
+            self._check_ckpt_parameters(tfm_save)
 
         # instanciate the model without having to call `fit_from_dataset`
         self.model = self._init_model()
@@ -1887,9 +1886,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # update the fit_called attribute to allow for direct inference
         self._fit_called = True
 
-    def load_weights(self, path: str, load_encoders: bool = True, **kwargs):
+    def load_weights(
+        self, path: str, load_encoders: bool = True, skip_checks: bool = False, **kwargs
+    ):
         """
         Loads the weights from a manually saved model (saved with :meth:`save() <TorchForecastingModel.save()>`).
+
+        Note: This method needs to be able to access the darts model checkpoint (.pt) in order to load the encoders
+        and perform sanity checks on the model parameters.
 
         Parameters
         ----------
@@ -1899,6 +1903,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         load_encoders
             If set, will load the encoders from the model to enable direct call of fit() or predict().
             Default: ``True``.
+        skip_checks
+            If set, will disable the loading of the encoders and the sanity checks on model parameters
+            (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -1916,6 +1923,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.load_weights_from_checkpoint(
             file_name=path_ptl_ckpt,
             load_encoders=load_encoders,
+            skip_checks=skip_checks,
             **kwargs,
         )
 
@@ -2057,6 +2065,75 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     )
 
         return new_encoders, new_add_encoders
+
+    def _check_ckpt_parameters(self, tfm_save):
+        """
+        Check that the positional parameters used to instantiate the new model loading the weights match those
+        of the saved model, to return meaningful messages in case of discrepancies.
+        """
+        # parameters unrelated to the weights shape
+        skipped_params = list(
+            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
+        ) + [
+            "loss_fn",
+            "torch_metrics",
+            "optimizer_cls",
+            "optimizer_kwargs",
+            "lr_scheduler_cls",
+            "lr_scheduler_kwargs",
+        ]
+        # model_params can be missing some kwargs
+        params_to_check = set(tfm_save.model_params.keys()).union(
+            self.model_params.keys()
+        ) - set(skipped_params)
+
+        incorrect_params = []
+        missing_params = []
+        for param_key in params_to_check:
+            # param was not used at loading model creation
+            if param_key not in self.model_params.keys():
+                missing_params.append((param_key, tfm_save.model_params[param_key]))
+            # new param was used at loading model creation
+            elif param_key not in tfm_save.model_params.keys():
+                incorrect_params.append(
+                    (
+                        param_key,
+                        None,
+                        self.model_params[param_key],
+                    )
+                )
+            # param was different at loading model creation
+            elif self.model_params[param_key] != tfm_save.model_params[param_key]:
+                # NOTE: for TFTModel, default is None but converted to `QuantileRegression()`
+                incorrect_params.append(
+                    (
+                        param_key,
+                        tfm_save.model_params[param_key],
+                        self.model_params[param_key],
+                    )
+                )
+
+        # at least one discrepancy was detected
+        if len(missing_params) + len(incorrect_params) > 0:
+            msg = [
+                "The values of the hyper-parameters in the model and loaded checkpoint should be identical."
+            ]
+
+            # warning messages formated to facilate copy-pasting
+            if len(missing_params) > 0:
+                msg += ["missing :"]
+                msg += [
+                    f"   - {param}={exp_val}" for (param, exp_val) in missing_params
+                ]
+
+            if len(incorrect_params) > 0:
+                msg += ["incorrect :"]
+                msg += [
+                    f"   - found {param}={cur_val}, should be {param}={exp_val}"
+                    for (param, exp_val, cur_val) in incorrect_params
+                ]
+
+            raise_log(ValueError("\n".join(msg)), logger)
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer

@@ -1,15 +1,15 @@
-import unittest
 from copy import deepcopy
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BoxCox, Mapper
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
-class BoxCoxTestCase(unittest.TestCase):
+class TestBoxCox:
 
     sine_series = sine_timeseries(length=50, value_y_offset=5, value_frequency=0.05)
     lin_series = linear_timeseries(start_value=1, end_value=10, length=50)
@@ -19,13 +19,13 @@ class BoxCoxTestCase(unittest.TestCase):
         boxcox = BoxCox(lmbda=0.3)
 
         boxcox.fit(self.multi_series)
-        self.assertEqual(boxcox._fitted_params, [[0.3, 0.3]])
+        assert boxcox._fitted_params == [[0.3, 0.3]]
 
         boxcox = BoxCox(lmbda=[0.3, 0.4])
         boxcox.fit(self.multi_series)
-        self.assertEqual(boxcox._fitted_params, [[0.3, 0.4]])
+        assert boxcox._fitted_params == [[0.3, 0.4]]
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             boxcox = BoxCox(lmbda=[0.2, 0.4, 0.5])
             boxcox.fit(self.multi_series)
 
@@ -37,7 +37,7 @@ class BoxCoxTestCase(unittest.TestCase):
         boxcox.fit(self.multi_series)
         lmbda2 = boxcox._fitted_params[0].tolist()
 
-        self.assertNotEqual(lmbda1, lmbda2)
+        assert lmbda1 != lmbda2
 
     def test_boxcox_transform(self):
         log_mapper = Mapper(lambda x: np.log(x))
@@ -96,9 +96,9 @@ class BoxCoxTestCase(unittest.TestCase):
         box_cox.fit(self.lin_series)
         lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
-        self.assertNotEqual(
-            lambda1, lambda2, "Lambdas should change when the transformer is retrained"
-        )
+        assert (
+            lambda1 != lambda2
+        ), "Lambdas should change when the transformer is retrained"
 
     def test_multivariate_stochastic_series(self):
         transformer = BoxCox()
@@ -125,4 +125,4 @@ class BoxCoxTestCase(unittest.TestCase):
             .fit([self.sine_series, self.lin_series])
             ._fitted_params
         )
-        self.assertEqual(local_params, global_params)
+        assert local_params == global_params

@@ -14,9 +14,8 @@ except ImportError:
 if TORCH_AVAILABLE:
     from darts.models.components import glu_variants
     from darts.models.components.glu_variants import GLU_FFN
-    from darts.tests.base_test_class import DartsBaseTestClass
 
-    class FFNTestCase(DartsBaseTestClass):
+    class TestFFN:
         def test_ffn(self):
             for FeedForward_network in GLU_FFN:
                 self.feed_forward_block = getattr(glu_variants, FeedForward_network)(

@@ -2,16 +2,15 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.models import ExponentialSmoothing
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 
-class ExponentialSmoothingTestCase(DartsBaseTestClass):
+class TestExponentialSmoothing:
     def helper_test_seasonality_inference(self, freq_string, expected_seasonal_periods):
         series = tg.sine_timeseries(length=200, freq=freq_string)
         model = ExponentialSmoothing()
         model.fit(series)
-        self.assertEqual(model.seasonal_periods, expected_seasonal_periods)
+        assert model.seasonal_periods == expected_seasonal_periods
 
     def test_seasonality_inference(self):
 
@@ -31,7 +30,7 @@ class ExponentialSmoothingTestCase(DartsBaseTestClass):
         series = TimeSeries.from_values(np.arange(1, 30, 1))
         model = ExponentialSmoothing()
         model.fit(series)
-        self.assertEqual(model.seasonal_periods, 12)
+        assert model.seasonal_periods == 12
 
         # test whether a model that inferred a seasonality period before will do it again for a new series
         series1 = tg.sine_timeseries(length=100, freq="M")
@@ -39,4 +38,4 @@ class ExponentialSmoothingTestCase(DartsBaseTestClass):
         model = ExponentialSmoothing()
         model.fit(series1)
         model.fit(series2)
-        self.assertEqual(model.seasonal_periods, 7)
+        assert model.seasonal_periods == 7
