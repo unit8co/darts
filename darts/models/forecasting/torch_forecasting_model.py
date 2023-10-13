@@ -41,6 +41,7 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.callbacks import ProgressBar
 from torch import Tensor
 from torch.utils.data import DataLoader
 
@@ -523,7 +524,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return trainer
 
         trainer_params = {key: val for key, val in self.trainer_params.items()}
-        if verbose is not None:
+        has_progress_bar = any(
+            [isinstance(cb, ProgressBar) for cb in trainer_params.get("callbacks", [])]
+        )
+        # we ignore `verbose` if `trainer` has a progress bar, to avoid errors from lightning
+        if verbose is not None and not has_progress_bar:
             trainer_params["enable_model_summary"] = (
                 verbose if model.epochs_trained == 0 else False
             )
@@ -668,7 +673,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
             override Darts' default trainer.
         verbose
-            Optionally, whether to print progress.
+            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            `pl_trainer_kwargs`.
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -898,7 +904,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
             override Darts' default trainer.
         verbose
-            Optionally, whether to print progress.
+            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            `pl_trainer_kwargs`.
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -1140,7 +1147,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
             override Darts' default trainer.
         verbose
-            Optionally, whether to print progress.
+            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            `pl_trainer_kwargs`.
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -1264,7 +1272,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch_size
             Size of batches during prediction. Defaults to the models' training ``batch_size`` value.
         verbose
-            Optionally, whether to print progress.
+            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            `pl_trainer_kwargs`.
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size
@@ -1403,7 +1412,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch_size
             Size of batches during prediction. Defaults to the models ``batch_size`` value.
         verbose
-            Optionally, whether to print progress.
+            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            `pl_trainer_kwargs`.
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size

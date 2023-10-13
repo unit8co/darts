@@ -9,8 +9,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 [Full Changelog](https://github.com/unit8co/darts/compare/0.26.0...master)
 
 ### For users of the library:
+
 **Improved**
-- 🚀🚀 Optimized `historical_forecasts()` for pre-trained `TorchForecastingModel`. [#2013](https://github.com/unit8co/darts/pull/2013) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `TorchForecastingModel`:
+  - 🚀🚀 Optimized `historical_forecasts()` for pre-trained `TorchForecastingModel`. [#2013](https://github.com/unit8co/darts/pull/2013) by [Dennis Bader](https://github.com/dennisbader).
+  - Added callback `darts.utils.callbacks.TFMProgressBar` to customize at which model stages to display the progress bar. [#2020](https://github.com/unit8co/darts/pull/2020) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to documentation:
+  - Adapted the example notebooks to properly apply data transformers and avoid look-ahead bias. [#2020](https://github.com/unit8co/darts/pull/2020) by [Samriddhi Singh](https://github.com/SimTheGreat). 
 
 ### For developers of the library:
 
