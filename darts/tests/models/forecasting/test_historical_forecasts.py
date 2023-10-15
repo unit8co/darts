@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import darts
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
@@ -1248,6 +1248,42 @@ class TestHistoricalforecast:
             == forecasts[1].end_time()
             == self.ts_pass_val.end_time() + forecast_hrz * self.ts_pass_val.freq
         )
+
+    def test_hist_fc_end_exact_with_covs(self):
+        model = LinearRegressionModel(
+            lags=2,
+            lags_past_covariates=2,
+            lags_future_covariates=(2, 1),
+            output_chunk_length=2,
+        )
+        series = tg.sine_timeseries(length=10)
+        model.fit(series, past_covariates=series, future_covariates=series)
+        fc = model.historical_forecasts(
+            series,
+            past_covariates=series[:-2],
+            future_covariates=series,
+            forecast_horizon=2,
+            stride=2,
+            overlap_end=False,
+            last_points_only=True,
+            retrain=False,
+        )
+        assert len(fc) == 4
+        assert fc.end_time() == series.end_time()
+
+        fc = model.historical_forecasts(
+            series,
+            past_covariates=series[:-2],
+            future_covariates=series,
+            forecast_horizon=2,
+            stride=2,
+            overlap_end=False,
+            last_points_only=False,
+            retrain=False,
+        )
+        fc = concatenate(fc)
+        assert len(fc) == 8
+        assert fc.end_time() == series.end_time()
 
     @pytest.mark.parametrize("model_config", models_reg_cov_cls_kwargs)
     def test_regression_auto_start_multiple_with_cov_retrain(self, model_config):

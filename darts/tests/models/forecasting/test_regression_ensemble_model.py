@@ -360,7 +360,7 @@ class TestRegressionEnsembleModels:
 
         with pytest.raises(ValueError):
             # covariates are too short (ends too early)
-            ensemble.fit(ts, future_covariates=future_covs[:-1])
+            ensemble.fit(ts, future_covariates=future_covs[: -min(ocl1, ocl2)])
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_univar(self):
