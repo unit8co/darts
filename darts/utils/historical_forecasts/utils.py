@@ -268,11 +268,21 @@ def _get_historical_forecastable_time_index(
         timestamp is a timestamp that has a training sample of length at least ``self.training_sample_length``
             preceding it.
 
+    Additionally, it accounts for auto-regression (forecast_horizon > model.output_chunk_length , and overlap_end.
+        - In case of auto-regression, we have to step back the last possible predictable/trainable time step if the
+          covariates are too short
+        - In case overlap_end=False, the latest possible predictable/trainable time step is shifted back if a
+          prediction starting from that point would go beyond the end of `series`.
+
 
     Parameters
     ----------
     series
         A target series.
+    forecast_horizon
+        The forecast horizon for the predictions.
+    overlap_end
+        Whether the returned forecasts can go beyond the series' end or not.
     past_covariates
         Optionally, a past covariates.
     future_covariates
