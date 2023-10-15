@@ -1305,11 +1305,12 @@ class TestHistoricalforecast:
             if max_future_cov_lag is not None and max_future_cov_lag > 0
             else 0
         )
-        # length input - biggest past lag - biggest future lag - forecast horizon - output_chunk_length
+        # length input - largest past lag - forecast horizon - max(largest future lag, output_chunk_length)
         theorical_retrain_forecast_length = len(self.ts_pass_val) - (
-            -past_lag + future_lag + forecast_hrz + kwargs.get("output_chunk_length", 1)
+            -past_lag
+            + forecast_hrz
+            + max(future_lag + 1, kwargs.get("output_chunk_length", 1))
         )
-
         assert (
             len(forecasts_retrain[0])
             == len(forecasts_retrain[1])
@@ -1331,7 +1332,11 @@ class TestHistoricalforecast:
         assert forecasts_retrain[0].start_time() == expected_start
 
         # end is shifted back by the biggest future lag
-        expected_end = self.ts_pass_val.end_time() - future_lag * self.ts_pass_val.freq
+        if model.output_chunk_length - 1 > future_lag:
+            shift = 0
+        else:
+            shift = future_lag
+        expected_end = self.ts_pass_val.end_time() - shift * self.ts_pass_val.freq
         assert forecasts_retrain[0].end_time() == expected_end
 
     @pytest.mark.parametrize("model_config", models_reg_cov_cls_kwargs)
@@ -1407,8 +1412,9 @@ class TestHistoricalforecast:
         )
         assert forecasts_no_retrain[0].start_time() == expected_start
 
-        # end is shifted by the biggest future lag
-        expected_end = self.ts_pass_val.end_time() - future_lag * self.ts_pass_val.freq
+        # end is shifted by the biggest future lag if future lag > output_chunk_length
+        shift_back = future_lag if future_lag + 1 > model.output_chunk_length else 0
+        expected_end = self.ts_pass_val.end_time() - shift_back * self.ts_pass_val.freq
         assert forecasts_no_retrain[0].end_time() == expected_end
 
     @pytest.mark.slow

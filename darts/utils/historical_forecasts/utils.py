@@ -243,6 +243,8 @@ def _historical_forecasts_start_warnings(
 def _get_historical_forecastable_time_index(
     model,
     series: TimeSeries,
+    forecast_horizon: int,
+    overlap_end: bool,
     past_covariates: Optional[TimeSeries] = None,
     future_covariates: Optional[TimeSeries] = None,
     is_training: Optional[bool] = False,
@@ -290,26 +292,35 @@ def _get_historical_forecastable_time_index(
     >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
     >>> model.fit(train_series)
     >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-01-01', '2000-01-10'), np.arange(10))
-    >>> model._get_historical_forecastable_time_index(series=series, is_training=False)
-    DatetimeIndex(['2000-01-04', '2000-01-05', '2000-01-06', '2000-01-07',
-            '2000-01-08', '2000-01-09', '2000-01-10'],
-            dtype='datetime64[ns]', freq='D')
+    >>> model._get_historical_forecastable_time_index(series=series, is_training=False, forecast_horizon=1)
+    DatetimeIndex(
+            ['2000-01-04', '2000-01-05', '2000-01-06', '2000-01-07', '2000-01-08', '2000-01-09', '2000-01-10'],
+            dtype='datetime64[ns]', freq='D'
+    )
     >>> model._get_historical_forecastable_time_index(series=series, is_training=True)
-    DatetimeIndex(['2000-01-06', '2000-01-08', '2000-01-09', '2000-01-10'],
-            dtype='datetime64[ns]', freq='D')
-
+    DatetimeIndex(['2000-01-06', '2000-01-08', '2000-01-09', '2000-01-10'], dtype='datetime64[ns]', freq='D')
     >>> model = NBEATSModel(input_chunk_length=3, output_chunk_length=3)
     >>> model.fit(train_series, train_past_covariates)
     >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-10-01', '2000-10-09'), np.arange(8))
-    >>> past_covariates = TimeSeries.from_times_and_values(pd.date_range('2000-10-03', '2000-10-20'),
-    np.arange(18))
-    >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
-    is_training=False)
+    >>> past_covariates = TimeSeries.from_times_and_values(
+    >>>     pd.date_range('2000-10-03', '2000-10-20'),
+    >>>     np.arange(18)
+    >>> )
+    >>> model._get_historical_forecastable_time_index(
+    >>>     series=series,
+    >>>     past_covariates=past_covariates,
+    >>>     is_training=False,
+    >>>     forecast_horizon=1,
+    >>> )
     DatetimeIndex(['2000-10-06', '2000-10-07', '2000-10-08', '2000-10-09'], dtype='datetime64[ns]', freq='D')
-    >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
-    is_training=True)
-    DatetimeIndex(['2000-10-09'], dtype='datetime64[ns]', freq='D') # Only one point is trainable, and
-    # corresponds to the first point after we reach a common subset of timestamps of training_sample_length length.
+    >>>  # Only one point is trainable; it corresponds to the first point after we reach a common subset of
+    >>> # timestamps of training_sample_length length.
+    >>> model._get_historical_forecastable_time_index(
+    >>>     series=series,
+    >>>     past_covariates=past_covariates,
+    >>>     is_training=True,
+    >>> )
+    DatetimeIndex(['2000-10-09'], dtype='datetime64[ns]', freq='D')
     """
 
     (
@@ -321,59 +332,76 @@ def _get_historical_forecastable_time_index(
         max_future_cov_lag,
     ) = model.extreme_lags
 
+    # max_target_lag < 0 are local models which can predict for n (horizon) -> infinity (no auto-regression)
+    is_autoregression = max_target_lag >= 0 and forecast_horizon > max_target_lag + 1
+
     if min_target_lag is None:
         min_target_lag = 0
 
     # longest possible time index for target
-    start = (
-        series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
-        if is_training
-        else series.start_time() - min_target_lag * series.freq
-    )
+    if is_training:
+        start = (
+            series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
+        )
+    else:
+        start = series.start_time() - min_target_lag * series.freq
     end = series.end_time() + 1 * series.freq
 
     intersect_ = (start, end)
 
     # longest possible time index for past covariates
     if (min_past_cov_lag is not None) and (past_covariates is not None):
-        start_pc = (
-            past_covariates.start_time()
-            - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
-            if is_training
-            else past_covariates.start_time() - min_past_cov_lag * past_covariates.freq
-        )
-        end_pc = past_covariates.end_time() - max_past_cov_lag * past_covariates.freq
-        tmp_ = (start_pc, end_pc)
-
-        if intersect_ is not None:
-            intersect_ = (
-                max([intersect_[0], tmp_[0]]),
-                min([intersect_[1], tmp_[1]]),
+        if is_training:
+            start_pc = (
+                past_covariates.start_time()
+                - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
             )
         else:
-            intersect_ = tmp_
+            start_pc = (
+                past_covariates.start_time() - min_past_cov_lag * past_covariates.freq
+            )
+
+        shift_pc_end = max_past_cov_lag
+        if is_autoregression:
+            # we step back in case of auto-regression
+            shift_pc_end += forecast_horizon - (max_target_lag + 1)
+        end_pc = past_covariates.end_time() - shift_pc_end * past_covariates.freq
+
+        intersect_ = (
+            max([intersect_[0], start_pc]),
+            min([intersect_[1], end_pc]),
+        )
 
     # longest possible time index for future covariates
     if (min_future_cov_lag is not None) and (future_covariates is not None):
-        start_fc = (
-            future_covariates.start_time()
-            - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
-            if is_training
-            else future_covariates.start_time()
-            - min_future_cov_lag * future_covariates.freq
-        )
-        end_fc = (
-            future_covariates.end_time() - max_future_cov_lag * future_covariates.freq
-        )
-        tmp_ = (start_fc, end_fc)
-
-        if intersect_ is not None:
-            intersect_ = (
-                max([intersect_[0], tmp_[0]]),
-                min([intersect_[1], tmp_[1]]),
+        if is_training:
+            start_fc = (
+                future_covariates.start_time()
+                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
             )
         else:
-            intersect_ = tmp_
+            start_fc = (
+                future_covariates.start_time()
+                - min_future_cov_lag * future_covariates.freq
+            )
+
+        shift_fc_end = max_future_cov_lag
+        if is_autoregression:
+            # we step back in case of auto-regression
+            shift_fc_end += forecast_horizon - (max_target_lag + 1)
+        end_fc = future_covariates.end_time() - shift_fc_end * future_covariates.freq
+
+        intersect_ = (
+            max([intersect_[0], start_fc]),
+            min([intersect_[1], end_fc]),
+        )
+
+    # overlap_end = True -> predictions must not go beyond end of target series
+    if (
+        not overlap_end
+        and intersect_[1] + (forecast_horizon - 1) * series.freq > series.end_time()
+    ):
+        intersect_ = (intersect_[0], end - forecast_horizon * series.freq)
 
     # end comes before the start
     if intersect_[1] < intersect_[0]:
@@ -397,12 +425,9 @@ def _get_historical_forecastable_time_index(
 
 
 def _adjust_historical_forecasts_time_index(
-    model,
     series: TimeSeries,
     series_idx: int,
     historical_forecasts_time_index: TimeIndex,
-    forecast_horizon: int,
-    overlap_end: bool,
     start: Optional[Union[pd.Timestamp, float, int]],
     start_format: Literal["position", "value"],
     show_warnings: bool,
@@ -411,19 +436,6 @@ def _adjust_historical_forecasts_time_index(
     Shrink the beginning and end of the historical forecasts time index based on the values of `start`,
     `forecast_horizon` and `overlap_end`.
     """
-    # shift the end of the forecastable index based on `overlap_end`` and `forecast_horizon``
-    last_valid_pred_time = model._get_last_prediction_time(
-        series,
-        forecast_horizon,
-        overlap_end,
-        latest_possible_prediction_start=historical_forecasts_time_index[-1],
-    )
-
-    historical_forecasts_time_index = (
-        historical_forecasts_time_index[0],
-        min(historical_forecasts_time_index[-1], last_valid_pred_time),
-    )
-
     # when applicable, shift the start of the forecastable index based on `start`
     if start is not None:
         if start_format == "value":
@@ -458,13 +470,17 @@ def _get_historical_forecast_predict_index(
     series_idx: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
+    forecast_horizon: int,
+    overlap_end: bool,
 ) -> TimeIndex:
     """Obtain the boundaries of the predictable time indices, raise an exception if None"""
     historical_forecasts_time_index = _get_historical_forecastable_time_index(
-        model,
-        series,
-        past_covariates,
-        future_covariates,
+        model=model,
+        series=series,
+        forecast_horizon=forecast_horizon,
+        overlap_end=overlap_end,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
         is_training=False,
         reduce_to_bounds=True,
     )
@@ -488,16 +504,20 @@ def _get_historical_forecast_train_index(
     series_idx: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
+    forecast_horizon: int,
+    overlap_end: bool,
 ) -> TimeIndex:
     """
     Obtain the boundaries of the time indices usable for training, raise an exception if training is required and
     no indices are available.
     """
     historical_forecasts_time_index = _get_historical_forecastable_time_index(
-        model,
-        series,
-        past_covariates,
-        future_covariates,
+        model=model,
+        series=series,
+        forecast_horizon=forecast_horizon,
+        overlap_end=overlap_end,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
         is_training=True,
         reduce_to_bounds=True,
     )
@@ -600,17 +620,20 @@ def _get_historical_forecast_boundaries(
     """
     # obtain forecastable indexes boundaries, as values from the time index
     historical_forecasts_time_index = _get_historical_forecast_predict_index(
-        model, series, series_idx, past_covariates, future_covariates
+        model,
+        series,
+        series_idx,
+        past_covariates,
+        future_covariates,
+        forecast_horizon,
+        overlap_end,
     )
 
     # adjust boundaries based on start, forecast_horizon and overlap_end
     historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
-        model=model,
         series=series,
         series_idx=series_idx,
         historical_forecasts_time_index=historical_forecasts_time_index,
-        forecast_horizon=forecast_horizon,
-        overlap_end=overlap_end,
         start=start,
         start_format=start_format,
         show_warnings=show_warnings,
@@ -648,12 +671,16 @@ def _get_historical_forecast_boundaries(
     if series.has_range_index:
         hist_fct_tgt_start = series.get_index_at_point(hist_fct_tgt_start)
         hist_fct_tgt_end = series.get_index_at_point(hist_fct_tgt_end) + 1
-        pc_series = past_covariates if past_covariates is not None else series
-        hist_fct_pc_start = pc_series.get_index_at_point(hist_fct_pc_start)
-        hist_fct_pc_end = pc_series.get_index_at_point(hist_fct_pc_end) + 1
-        fc_series = future_covariates if future_covariates is not None else series
-        hist_fct_fc_start = fc_series.get_index_at_point(hist_fct_fc_start)
-        hist_fct_fc_end = fc_series.get_index_at_point(hist_fct_fc_end) + 1
+        if past_covariates is not None:
+            hist_fct_pc_start = past_covariates.get_index_at_point(hist_fct_pc_start)
+            hist_fct_pc_end = past_covariates.get_index_at_point(hist_fct_pc_end) + 1
+        else:
+            hist_fct_pc_start, hist_fct_pc_end = None, None
+        if future_covariates is not None:
+            hist_fct_fc_start = future_covariates.get_index_at_point(hist_fct_fc_start)
+            hist_fct_fc_end = future_covariates.get_index_at_point(hist_fct_fc_end) + 1
+        else:
+            hist_fct_fc_start, hist_fct_fc_end = None, None
 
     return (
         historical_forecasts_time_index[0],

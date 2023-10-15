@@ -551,7 +551,7 @@ class TestRegressionEnsembleModels:
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
         # -10 comes from the maximum minimum train series length of all models
-        assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
+        assert ensemble.extreme_lags == (-10 - regr_train_n, -1, None, None, None, None)
         ensemble.backtest(self.sine_series)
 
     def test_extreme_lags(self):
