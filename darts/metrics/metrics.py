@@ -737,7 +737,6 @@ def mase(
         intersect: bool,
         reduction: Callable[[np.ndarray], float],
     ):
-
         raise_if_not(
             actual_series.width == pred_series.width,
             "The two TimeSeries instances must have the same width.",
@@ -811,7 +810,6 @@ def mase(
     elif isinstance(actual_series, Sequence) and isinstance(
         actual_series[0], TimeSeries
     ):
-
         raise_if_not(
             isinstance(pred_series, Sequence)
             and isinstance(pred_series[0], TimeSeries),
@@ -1134,7 +1132,6 @@ def rho_risk(
     n_jobs: int = 1,
     verbose: bool = False
 ) -> float:
-
     """:math:`\\rho`-risk (rho-risk or quantile risk).
 
     Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions
@@ -1289,3 +1286,189 @@ def quantile_loss(
     errors = y - y_hat
     losses = np.maximum((tau - 1) * errors, tau * errors)
     return losses.mean()
+
+
+def rmsse(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    m: Optional[int] = 1,
+    intersect: bool = True,
+    *,
+    reduction: Callable[[np.ndarray], float] = np.mean,
+    inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+    n_jobs: int = 1,
+    verbose: bool = False
+) -> Union[float, np.ndarray]:
+    """Root Mean Squared Scaled Error (RMSSE).
+
+    See `Root Mean Squared Scaled Error (RMSSE)
+    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_
+    for details about the RMSSE and how it is computed.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    insample
+        The training series used to forecast `pred_series` .
+        This series serves to compute the scale of the error obtained by a naive forecaster on the training data.
+    m
+        Optionally, the seasonality to use for differencing.
+        `m=1` corresponds to the non-seasonal RMSSE, whereas `m>1` corresponds to seasonal RMSSE.
+        If `m=None`, it will be tentatively inferred
+        from the auto-correlation function (ACF). It will fall back to a value of 1 if this fails.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate ``TimeSeries`` instances.
+    inter_reduction
+        Function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        ``Sequence[TimeSeries]``. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of ``TimeSeries`` received in input. Example: ``inter_reduction=np.mean``, will return the average of the
+        pairwise metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelizing operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Raises
+    ------
+    ValueError
+        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` )
+
+    Returns
+    -------
+    float
+        The Root Mean Squared Scaled Error (RMSSE)
+    """
+
+    def _multivariate_rmsse(
+        actual_series: TimeSeries,
+        pred_series: TimeSeries,
+        insample: TimeSeries,
+        m: int,
+        intersect: bool,
+        reduction: Callable[[np.ndarray], float],
+    ):
+        raise_if_not(
+            actual_series.width == pred_series.width,
+            "The two TimeSeries instances must have the same width.",
+            logger,
+        )
+        raise_if_not(
+            actual_series.width == insample.width,
+            "The insample TimeSeries must have the same width as the other series.",
+            logger,
+        )
+        raise_if_not(
+            insample.end_time() + insample.freq == pred_series.start_time(),
+            "The pred_series must be the forecast of the insample series",
+            logger,
+        )
+
+        insample_ = (
+            insample.quantile_timeseries(quantile=0.5)
+            if insample.is_stochastic
+            else insample
+        )
+
+        value_list = []
+        for i in range(actual_series.width):
+            # old implementation of mase on univariate TimeSeries
+            if m is None:
+                test_season, m = check_seasonality(insample)
+                if not test_season:
+                    warn(
+                        "No seasonality found when computing RMSSE. Fixing the period to 1.",
+                        UserWarning,
+                    )
+                    m = 1
+
+            y_true, y_hat = _get_values_or_raise(
+                actual_series.univariate_component(i),
+                pred_series.univariate_component(i),
+                intersect,
+                remove_nan_union=False,
+            )
+
+            x_t = insample_.univariate_component(i).values()
+            errors = y_true - y_hat
+            scale = np.sqrt(np.mean(np.square(x_t[m:] - x_t[:-m])))
+            raise_if_not(
+                not np.isclose(scale, 0),
+                "cannot use RMSSE with periodical signals",
+                logger,
+            )
+            value_list.append(np.sqrt(np.mean(np.square(errors))) / scale)
+
+        return reduction(value_list)
+
+    if isinstance(actual_series, TimeSeries):
+        raise_if_not(
+            isinstance(pred_series, TimeSeries),
+            "Expecting pred_series to be TimeSeries",
+        )
+        raise_if_not(
+            isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries"
+        )
+        return _multivariate_rmsse(
+            actual_series=actual_series,
+            pred_series=pred_series,
+            insample=insample,
+            m=m,
+            intersect=intersect,
+            reduction=reduction,
+        )
+
+    elif isinstance(actual_series, Sequence) and isinstance(
+        actual_series[0], TimeSeries
+    ):
+        raise_if_not(
+            isinstance(pred_series, Sequence)
+            and isinstance(pred_series[0], TimeSeries),
+            "Expecting pred_series to be a Sequence[TimeSeries]",
+        )
+        raise_if_not(
+            isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
+            "Expecting insample to be a Sequence[TimeSeries]",
+        )
+        raise_if_not(
+            len(pred_series) == len(actual_series)
+            and len(pred_series) == len(insample),
+            "The TimeSeries sequences must have the same length.",
+            logger,
+        )
+
+        raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
+        raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
+
+        iterator = _build_tqdm_iterator(
+            iterable=zip(actual_series, pred_series, insample),
+            verbose=verbose,
+            total=len(actual_series),
+        )
+
+        value_list = _parallel_apply(
+            iterator=iterator,
+            fn=_multivariate_rmsse,
+            n_jobs=n_jobs,
+            fn_args=dict(),
+            fn_kwargs={"m": m, "intersect": intersect, "reduction": reduction},
+        )
+        return inter_reduction(value_list)
+    else:
+        raise_log(
+            ValueError(
+                "Input type not supported, only TimeSeries and Sequence[TimeSeries] are accepted."
+            )
+        )
