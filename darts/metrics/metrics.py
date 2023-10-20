@@ -1384,7 +1384,6 @@ def rmsse(
 
         value_list = []
         for i in range(actual_series.width):
-            # old implementation of mase on univariate TimeSeries
             if m is None:
                 test_season, m = check_seasonality(insample)
                 if not test_season:
@@ -1394,22 +1393,30 @@ def rmsse(
                     )
                     m = 1
 
-            y_true, y_hat = _get_values_or_raise(
-                actual_series.univariate_component(i),
-                pred_series.univariate_component(i),
-                intersect,
-                remove_nan_union=False,
-            )
+            # y_true, y_hat = _get_values_or_raise(
+            #    actual_series.univariate_component(i),
+            #    pred_series.univariate_component(i),
+            #    intersect,
+            #    remove_nan_union=False,
+            # )
 
             x_t = insample_.univariate_component(i).values()
-            errors = y_true - y_hat
+            # errors = y_true - y_hat
             scale = np.sqrt(np.mean(np.square(x_t[m:] - x_t[:-m])))
             raise_if_not(
                 not np.isclose(scale, 0),
                 "cannot use RMSSE with periodical signals",
                 logger,
             )
-            value_list.append(np.sqrt(np.mean(np.square(errors))) / scale)
+            # value_list.append(np.sqrt(np.mean(np.square(errors))) / scale)
+            value_list.append(
+                rmse(
+                    actual_series.univariate_component(i),
+                    pred_series.univariate_component(i),
+                    intersect=intersect,
+                )
+                / scale
+            )
 
         return reduction(value_list)
 
