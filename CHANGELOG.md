@@ -10,6 +10,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Improved**
+- Improvements to `TorchForecastingModel`:
+  - Added callback `darts.utils.callbacks.TFMProgressBar` to customize at which model stages to display the progress bar. [#2020](https://github.com/unit8co/darts/pull/2020) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to documentation:
+  - Adapted the example notebooks to properly apply data transformers and avoid look-ahead bias. [#2020](https://github.com/unit8co/darts/pull/2020) by [Samriddhi Singh](https://github.com/SimTheGreat). 
+
 **Fixed**
 - Fixed an issue where `TCNModel` training included the last (input_chunk_length - output_chunk_length) target points in the loss computation. [#2006](https://github.com/unit8co/darts/pull/2006) by [Dennis Bader](https://github.com/dennisbader).
 
