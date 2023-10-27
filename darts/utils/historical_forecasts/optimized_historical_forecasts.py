@@ -93,7 +93,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
 
         X, times = create_lagged_prediction_data(
             target_series=None
-            if len(model.lags.get("target", [])) == 0
+            if model._get_lags("target") is None
             else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
@@ -101,9 +101,9 @@ def _optimized_historical_forecasts_regression_last_points_only(
             future_covariates=None
             if future_covariates_ is None
             else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
-            lags=model.lags.get("target", None),
-            lags_past_covariates=model.lags.get("past", None),
-            lags_future_covariates=model.lags.get("future", None),
+            lags=model._get_lags("target"),
+            lags_past_covariates=model._get_lags("past"),
+            lags_future_covariates=model._get_lags("future"),
             uses_static_covariates=model.uses_static_covariates,
             last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
@@ -238,7 +238,7 @@ def _optimized_historical_forecasts_regression_all_points(
 
         X, _ = create_lagged_prediction_data(
             target_series=None
-            if len(model.lags.get("target", [])) == 0
+            if model._get_lags("target") is None
             else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
@@ -246,9 +246,9 @@ def _optimized_historical_forecasts_regression_all_points(
             future_covariates=None
             if future_covariates_ is None
             else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
-            lags=model.lags.get("target", None),
-            lags_past_covariates=model.lags.get("past", None),
-            lags_future_covariates=model.lags.get("future", None),
+            lags=model._get_lags("target"),
+            lags_past_covariates=model._get_lags("past"),
+            lags_future_covariates=model._get_lags("future"),
             uses_static_covariates=model.uses_static_covariates,
             last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
