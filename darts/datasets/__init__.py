@@ -5,8 +5,9 @@ Datasets
 A few popular time series datasets
 """
 
+import os
 from pathlib import Path
-from typing import List
+from typing import List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -813,3 +814,131 @@ class WeatherDataset(DatasetLoaderCSV):
         Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
         """
         return [TimeSeries.from_series(series[label]) for label in series]
+
+
+class EnergyConsumptionZurichDataset(DatasetLoaderCSV):
+    """
+    Energy Consumption of households & SMEs (low voltage) and businesses & services (medium voltage) [1]_ in the city of Zurich.
+    The dataset frequency is 15 minutes and it resampled to hourly frequency when loading it with the weather covariates.
+
+    The dataset can be enriched with covariates : measurements from three weather stations in Zurich [2]_, with hourly frequency.
+
+    Both datasets are updated in real-time (hourly), but only the values between 2015 and 2022 are retained.
+
+    Components Descriptions:
+
+    * Value_NE5 : Households & SMEs consumption (low voltage, grid level 7) in kWh
+    * Value_NE7 : Business and services consumption (medium voltage, grid level 5) in kWh
+    * Hr [%Hr] : Relative humidity
+    * RainDur [min] : Precipitation period
+    * T [°C] : Temperature
+    * WD [°] : Wind direction
+    * WVv [m/s] : Vectoriel wind speed
+    * p [hPa] : Air pressure
+    * WVs [m/s] : Scalar wind speed
+    * StrGlo [W/m2] : Global radiation
+
+    Note: before 2018, the scalar speeds were calculated from the 30 minutes vector data.
+
+    References
+    ----------
+    .. [1] https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich
+    .. [2] https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte
+    """
+
+    def __init__(self):
+        def pre_process_dataset(dataset_path):
+            """Limit the time axis in order to have a fixed hash"""
+            df = pd.read_csv(dataset_path)
+            # convert time index
+            df["Timestamp"] = (
+                df["Timestamp"]
+                .apply(pd.to_datetime, utc=True, format="ISO8601")
+                .apply(lambda x: x.tz_convert(None))
+            )
+            # extract pre-determined period
+            df = df.loc[
+                (pd.Timestamp("2015-01-01") <= df["Timestamp"])
+                & (df["Timestamp"] <= pd.Timestamp("2022-12-31"))
+            ]
+            # export without the numerical index
+            df.to_csv(self._get_path_dataset(), index=False)
+
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "zurich_energy_consumption.csv",
+                uri="https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich/download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv",
+                hash="917b1b776e7c755009761d03324d1493",
+                header_time="Timestamp",
+                freq="15min",
+                format_time="%Y-%m-%d %H:%M:%S",
+                pre_process_csv_fn=pre_process_dataset,
+            )
+        )
+
+    def load(
+        self,
+        with_covariates: bool = False,
+        weather_station: Literal[
+            "Zch_Stampfenbachstrasse", "Zch_Schimmelstrasse", "Zch_Rosengartenstrasse"
+        ] = "Zch_Stampfenbachstrasse",
+    ):
+        """Load the dataset with or without the weather information"""
+        series = super().load()
+        if not with_covariates:
+            return series
+        else:
+            return self.add_covariates(series, weather_station)
+
+    def process_covariates(self, weather_station: str):
+        """Concatenate the yearly csv files into a single dataframe and reshape it"""
+        base_url = "https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte/download/"
+        filenames = [f"ugz_ogd_meteo_h1_{year}.csv" for year in range(2015, 2023)]
+        df_weather = pd.concat([pd.read_csv(base_url + fname) for fname in filenames])
+
+        # retain only one weather station
+        df_weather = df_weather.loc[df_weather["Standort"] == weather_station]
+        df_weather.drop(columns="Standort", inplace=True)
+
+        # rename components
+        columns_names = [
+            f"{param} [{unit}]"
+            for param, unit in zip(df_weather.Parameter[:8], df_weather.Einheit[:8])
+        ]
+        df_weather = df_weather.pivot(
+            index=["Datum"], columns=["Parameter"], values=["Wert"]
+        )
+        df_weather.columns = df_weather.columns.to_flat_index()
+        df_weather.columns = columns_names
+
+        # move time index to the columns
+        df_weather.reset_index(inplace=True)
+
+        # convert time index
+        df_weather["Datum"] = (
+            df_weather["Datum"]
+            .apply(pd.to_datetime)
+            .apply(lambda x: x.tz_convert(None))
+        )
+
+        return df_weather
+
+    def add_covariates(self, series: TimeSeries, weather_station: str):
+        """Load the weather dataset and concatenate it with the energy consumption dataset after resampling it"""
+        path_covariates_dataset = os.path.join(
+            self._root_path, self._metadata.name.replace(".csv", "_covariates.csv")
+        )
+        if os.path.exists(path_covariates_dataset):
+            df_weather = pd.read_csv(path_covariates_dataset)
+        else:
+            df_weather = self.process_covariates(weather_station)
+            df_weather.to_csv(path_covariates_dataset, index=False)
+
+        # create covariate series
+        covariates = TimeSeries.from_dataframe(df_weather, time_col="Datum")
+        covariates = covariates[series.start_time() : series.end_time()]
+
+        # convert energy series to hourly frequency
+        series = series.resample(freq="H")
+
+        return series.stack(covariates)
