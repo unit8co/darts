@@ -11,6 +11,7 @@ from darts.datasets import (
     AusBeerDataset,
     AustralianTourismDataset,
     ElectricityDataset,
+    EnergyConsumptionZurichDataset,
     EnergyDataset,
     ETTh1Dataset,
     ETTh2Dataset,
@@ -66,11 +67,39 @@ datasets = [
     ExchangeRateDataset,
     TrafficDataset,
     WeatherDataset,
+    EnergyConsumptionZurichDataset,
 ]
 
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
 
-width_datasets = [1, 1, 96, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370, 262]
+width_datasets = [
+    1,
+    1,
+    96,
+    28,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    7,
+    7,
+    7,
+    7,
+    370,
+    262,
+    11,
+    8,
+    862,
+    21,
+    2,
+]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(

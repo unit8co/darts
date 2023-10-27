@@ -141,8 +141,7 @@ class DatasetLoader(ABC):
     def _download_zip_dataset(self):
         if self._metadata.pre_process_csv_fn:
             logger.warning("Loading a ZIP file does not use the pre_process_csv_fn")
-        if self._metadata.pre_process_zipped_csv_fn is None:
-            raise ValueError("pre_process_zipped_csv_fn is not defined")
+
         os.makedirs(self._root_path, exist_ok=True)
         try:
             request = requests.get(self._metadata.uri)
