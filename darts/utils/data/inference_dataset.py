@@ -147,13 +147,13 @@ class GenericInferenceDataset(InferenceDataset):
             were used during training, the same type of cavariates must be supplied at prediction.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
         bounds
             Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
-        stride
-            Optionally, the number of time steps between two consecutive predictions. Can only be used together
-            with `bounds`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
@@ -348,13 +348,13 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with past-observed covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
         bounds
             Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
-        stride
-            Optionally, the number of time steps between two consecutive predictions. Can only be used together
-            with `bounds`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
@@ -417,13 +417,13 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
         bounds
             Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
-        stride
-            Optionally, the number of time steps between two consecutive predictions. Can only be used together
-            with `bounds`.
         input_chunk_length
             The length of the target series the model takes as input.
         use_static_covariates
@@ -496,13 +496,13 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
         bounds
             Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
-        stride
-            Optionally, the number of time steps between two consecutive predictions. Can only be used together
-            with `bounds`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
@@ -600,13 +600,13 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
         bounds
             Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
-        stride
-            Optionally, the number of time steps between two consecutive predictions. Can only be used together
-            with `bounds`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
@@ -708,13 +708,13 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
         bounds
             Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
-        stride
-            Optionally, the number of time steps between two consecutive predictions. Can only be used together
-            with `bounds`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length

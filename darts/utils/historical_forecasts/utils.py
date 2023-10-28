@@ -712,27 +712,26 @@ def _check_optimizable_historical_forecasts_global_models(
     allow_autoregression: bool,
 ) -> bool:
     """
-    Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
-    (no auto-regression required).
+    Historical forecast can be optimized only if `retrain=False`. If `allow_autoregression=False`, historical forecasts
+    can be optimized only if `forecast_horizon <= model.output_chunk_length` (no auto-regression required).
     """
 
-    supported_retrain = (retrain is False) or (retrain == 0)
+    retrain_off = (retrain is False) or (retrain == 0)
     is_autoregressive = forecast_horizon > model.output_chunk_length
-    if supported_retrain and (
+    if retrain_off and (
         not is_autoregressive or (is_autoregressive and allow_autoregression)
     ):
         return True
 
     if show_warnings:
-        if not supported_retrain:
+        if not retrain_off:
             logger.warning(
-                "`enable_optimization=True` is ignored because `retrain` is not `False`"
+                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`."
                 "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
             )
         if is_autoregressive:
             logger.warning(
-                "`enable_optimization=True` is ignored because "
-                "`forecast_horizon > model.output_chunk_length`."
+                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`."
                 "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
             )
 
