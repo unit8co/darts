@@ -2041,6 +2041,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
+        """
+        For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
+        datasets for each forecastable index and series.
+        """
         series, past_covariates, future_covariates = _process_historical_forecast_input(
             model=self,
             series=series,

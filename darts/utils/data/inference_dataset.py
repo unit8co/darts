@@ -151,7 +151,7 @@ class GenericInferenceDataset(InferenceDataset):
             Optionally, the number of time steps between two consecutive predictions. Can only be used together
             with `bounds`.
         bounds
-            Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
         input_chunk_length
@@ -352,7 +352,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             Optionally, the number of time steps between two consecutive predictions. Can only be used together
             with `bounds`.
         bounds
-            Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
         input_chunk_length
@@ -421,7 +421,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             Optionally, the number of time steps between two consecutive predictions. Can only be used together
             with `bounds`.
         bounds
-            Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
         input_chunk_length
@@ -500,7 +500,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             Optionally, the number of time steps between two consecutive predictions. Can only be used together
             with `bounds`.
         bounds
-            Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
         input_chunk_length
@@ -604,7 +604,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             Optionally, the number of time steps between two consecutive predictions. Can only be used together
             with `bounds`.
         bounds
-            Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
         input_chunk_length
@@ -712,7 +712,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             Optionally, the number of time steps between two consecutive predictions. Can only be used together
             with `bounds`.
         bounds
-            Optionally. an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
         input_chunk_length

@@ -225,6 +225,7 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         # convert lags arguments to list of int
+        # lags attribute should always be accessed with self._get_lags(), not self.lags.get()
         self.lags, self.component_lags = self._generate_lags(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
@@ -375,7 +376,7 @@ class RegressionModel(GlobalForecastingModel):
         if lags_type in self.component_lags:
             return self.component_lags[lags_type]
         else:
-            return self.lags.get(lags_type)
+            return self.lags.get(lags_type, None)
 
     @property
     def _model_encoder_settings(
@@ -1106,6 +1107,11 @@ class RegressionModel(GlobalForecastingModel):
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
         """
+        For RegressionModels we create the lagged prediction data once per series using a moving window.
+        With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
+        forecastable index and series.
+        Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.
+
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
         series, past_covariates, future_covariates = _process_historical_forecast_input(
