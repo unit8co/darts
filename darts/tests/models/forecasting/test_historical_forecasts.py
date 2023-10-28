@@ -952,6 +952,57 @@ class TestHistoricalforecast:
             assert (hfc.time_index == ohfc.time_index).all()
             np.testing.assert_array_almost_equal(hfc.all_values(), ohfc.all_values())
 
+    def test_optimized_historical_forecasts_regression_with_component_specific_lags(
+        self,
+    ):
+        horizon = 1
+        lags = 3
+        len_val_series = 10
+        series_train, series_val = (
+            self.ts_pass_train[:10],
+            self.ts_pass_val[:len_val_series],
+        )
+        model = LinearRegressionModel(
+            lags=lags,
+            lags_past_covariates={"default_lags": 2, "darts_enc_pc_dta_dayofweek": 1},
+            lags_future_covariates=[2, 3],
+            add_encoders={
+                "cyclic": {"future": ["month"]},
+                "datetime_attribute": {"past": ["dayofweek"]},
+            },
+        )
+        model.fit(series_train)
+        hist_fct = model.historical_forecasts(
+            series=series_val,
+            retrain=False,
+            enable_optimization=False,
+        )
+
+        opti_hist_fct = model._optimized_historical_forecasts(series=[series_val])
+
+        if not isinstance(hist_fct, list):
+            hist_fct = [hist_fct]
+            opti_hist_fct = [opti_hist_fct]
+
+        n_pred_series_expected = 1
+        n_pred_points_expected = len(series_val) - lags - horizon + 1
+        first_ts_expected = (
+            series_val.time_index[lags] + (horizon - 1) * series_val.freq
+        )
+        last_ts_expected = series_val.end_time()
+
+        # check length match between optimized and default hist fc
+        assert len(opti_hist_fct) == n_pred_series_expected
+        assert len(hist_fct) == len(opti_hist_fct)
+        # check hist fc start
+        assert opti_hist_fct[0].start_time() == first_ts_expected
+        # check hist fc end
+        assert opti_hist_fct[-1].end_time() == last_ts_expected
+        for hfc, ohfc in zip(hist_fct, opti_hist_fct):
+            assert len(ohfc) == n_pred_points_expected
+            assert (hfc.time_index == ohfc.time_index).all()
+            np.testing.assert_array_almost_equal(hfc.all_values(), ohfc.all_values())
+
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)

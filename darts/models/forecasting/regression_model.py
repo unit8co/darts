@@ -223,6 +223,7 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         # convert lags arguments to list of int
+        # lags attribute should always be accessed with self._get_lags(), not self.lags.get()
         self.lags, self.component_lags = self._generate_lags(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
@@ -373,7 +374,7 @@ class RegressionModel(GlobalForecastingModel):
         if lags_type in self.component_lags:
             return self.component_lags[lags_type]
         else:
-            return self.lags.get(lags_type)
+            return self.lags.get(lags_type, None)
 
     @property
     def _model_encoder_settings(
