@@ -753,6 +753,7 @@ def _build_forecast_series(
     custom_columns: List[str] = None,
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
+    pred_start: Optional[Union[pd.Timestamp, int]] = None,
 ) -> TimeSeries:
     """
     Builds a forecast time series starting after the end of an input time series, with the
@@ -770,6 +771,9 @@ def _build_forecast_series(
         If set to False, do not copy the input_series `static_covariates` attribute
     with_hierarchy
         If set to False, do not copy the input_series `hierarchy` attribute
+    pred_start
+        Optionally, give a custom prediction start point.
+
     Returns
     -------
     TimeSeries
@@ -780,7 +784,12 @@ def _build_forecast_series(
         if isinstance(points_preds, np.ndarray)
         else len(points_preds[0])
     )
-    time_index = _generate_new_dates(time_index_length, input_series=input_series)
+
+    time_index = _generate_new_dates(
+        time_index_length,
+        input_series=input_series,
+        start=pred_start,
+    )
     values = (
         points_preds
         if isinstance(points_preds, np.ndarray)
@@ -798,13 +807,14 @@ def _build_forecast_series(
 
 
 def _generate_new_dates(
-    n: int, input_series: TimeSeries
+    n: int, input_series: TimeSeries, start: Optional[Union[pd.Timestamp, int]] = None
 ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """
     Generates `n` new dates after the end of the specified series
     """
-    last = input_series.end_time()
-    start = last + input_series.freq
+    if start is None:
+        last = input_series.end_time()
+        start = last + input_series.freq
     return generate_index(
         start=start, freq=input_series.freq, length=n, name=input_series.time_dim
     )

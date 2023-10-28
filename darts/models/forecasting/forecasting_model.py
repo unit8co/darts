@@ -487,6 +487,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         custom_components: Union[List[str], None] = None,
         with_static_covs: bool = True,
         with_hierarchy: bool = True,
+        pred_start: Optional[Union[pd.Timestamp, int]] = None,
     ) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
@@ -504,6 +505,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If set to False, do not copy the input_series `static_covariates` attribute
         with_hierarchy
             If set to False, do not copy the input_series `hierarchy` attribute
+        pred_start
+            Optionally, give a custom prediction start point.
+
         Returns
         -------
         TimeSeries
@@ -518,6 +522,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             custom_components,
             with_static_covs,
             with_hierarchy,
+            pred_start,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -546,40 +551,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         overlap_end,
         latest_possible_prediction_start,
     ):
-        # when overlap_end=True, we can simply use the precomputed last possible prediction start point
+        # if `overlap_end` is True, we can use the pre-computed latest possible first prediction point
         if overlap_end:
             return latest_possible_prediction_start
 
-        # (1) otherwise, we have to step `forecast_horizon` steps back.
-        # (2) additionally, we check whether the `latest_possible_prediction_start` was shifted back
-        # from the overall theoretical latest possible prediction start point (which is by definition
-        # the first time step after the end of the target series) due to too short covariates.
-        theoretical_latest_prediction_start = series.end_time() + series.freq
-        if latest_possible_prediction_start == theoretical_latest_prediction_start:
-            # (1)
-            last_valid_pred_time = series.time_index[-forecast_horizon]
-        else:
-            # (2)
-            covariates_shift = (
-                len(
-                    generate_index(
-                        start=latest_possible_prediction_start,
-                        end=theoretical_latest_prediction_start,
-                        freq=series.freq,
-                    )
-                )
-                - 2
-            )
-            last_valid_pred_time = series.time_index[
-                -(forecast_horizon + covariates_shift)
-            ]
-        return last_valid_pred_time
+        # otherwise, the upper bound for the last time step of the last prediction is the end of the target series
+        return series.time_index[-forecast_horizon]
 
     def _check_optimizable_historical_forecasts(
         self,
         forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
-        show_warnings=bool,
+        show_warnings: bool,
     ) -> bool:
         """By default, historical forecasts cannot be optimized"""
         return False
@@ -863,7 +846,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # predictable time indexes (assuming model is already trained)
             historical_forecasts_time_index_predict = (
                 _get_historical_forecast_predict_index(
-                    model, series_, idx, past_covariates_, future_covariates_
+                    model,
+                    series_,
+                    idx,
+                    past_covariates_,
+                    future_covariates_,
+                    forecast_horizon,
+                    overlap_end,
                 )
             )
 
@@ -876,6 +865,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         idx,
                         past_covariates_,
                         future_covariates_,
+                        forecast_horizon,
+                        overlap_end,
                     )
                 )
 
@@ -910,12 +901,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
             historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
-                model=model,
                 series=series_,
                 series_idx=idx,
                 historical_forecasts_time_index=historical_forecasts_time_index,
-                forecast_horizon=forecast_horizon,
-                overlap_end=overlap_end,
                 start=start,
                 start_format=start_format,
                 show_warnings=show_warnings,
@@ -1041,7 +1029,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     forecasts.append(forecast)
 
-            if last_points_only:
+            if last_points_only and last_points_values:
                 forecasts_list.append(
                     TimeSeries.from_times_and_values(
                         generate_index(
@@ -2263,6 +2251,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
+        return True
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        """
+        Whether the model supports optimized historical forecasts
+        """
         return True
 
     def _sanity_check_predict_likelihood_parameters(
