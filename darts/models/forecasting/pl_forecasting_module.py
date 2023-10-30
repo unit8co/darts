@@ -184,6 +184,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
         self.pred_n_jobs: Optional[int] = None
+        self.predict_likelihood_parameters: Optional[bool] = None
 
     @property
     def first_prediction_index(self) -> int:
@@ -241,7 +242,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         dataloader_idx
             the dataloader index
         """
-        input_data_tuple, batch_input_series = batch[:-1], batch[-1]
+        input_data_tuple, batch_input_series, batch_pred_starts = (
+            batch[:-2],
+            batch[-2],
+            batch[-1],
+        )
 
         # number of individual series to be predicted in current batch
         num_series = input_data_tuple[0].shape[0]
@@ -303,8 +308,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 else None,
                 with_static_covs=False if self.predict_likelihood_parameters else True,
                 with_hierarchy=False if self.predict_likelihood_parameters else True,
+                pred_start=pred_start,
             )
-            for batch_idx, input_series in enumerate(batch_input_series)
+            for batch_idx, (input_series, pred_start) in enumerate(
+                zip(batch_input_series, batch_pred_starts)
+            )
         )
         return ts_forecasts
 
