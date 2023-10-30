@@ -157,17 +157,7 @@ class TestShapExplainer:
         with pytest.raises(ValueError):
             ShapExplainer(m)
 
-        # For now, multi_models=False not allowed
-        m = LinearRegressionModel(lags=1, output_chunk_length=2, multi_models=False)
-        m.fit(
-            series=self.target_ts,
-        )
-        with pytest.raises(ValueError):
-            ShapExplainer(
-                m,
-                self.target_ts,
-            )
-
+        # Model using covariates
         m = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
@@ -175,13 +165,11 @@ class TestShapExplainer:
             output_chunk_length=4,
             add_encoders=self.add_encoders,
         )
-
         m.fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
-
         # Should have the same number of target, past and futures in the respective lists
         with pytest.raises(ValueError):
             ShapExplainer(
@@ -290,20 +278,22 @@ class TestShapExplainer:
         )
 
         shap_explain = ShapExplainer(m)
+        # horizon > output_chunk_length
         with pytest.raises(ValueError):
-            _ = shap_explain.explain(horizons=[1, 5])  # horizon > output_chunk_length
+            _ = shap_explain.explain(horizons=[1, 5])
+        # invalid component name
         with pytest.raises(ValueError):
-            _ = shap_explain.explain(
-                horizons=[1, 2], target_components=["test"]
-            )  # wrong name
+            _ = shap_explain.explain(horizons=[1, 2], target_components=["test"])
 
         results = shap_explain.explain()
+        # horizon > output_chunk_length
         with pytest.raises(ValueError):
             results.get_explanation(horizon=5, component="price")
         with pytest.raises(ValueError):
             results.get_feature_values(horizon=5, component="price")
         with pytest.raises(ValueError):
             results.get_shap_explanation_object(horizon=5, component="price")
+        # invalid component name
         with pytest.raises(ValueError):
             results.get_explanation(horizon=1, component="test")
         with pytest.raises(ValueError):
@@ -312,12 +302,14 @@ class TestShapExplainer:
             results.get_shap_explanation_object(horizon=1, component="test")
 
         results = shap_explain.explain(horizons=[1, 3], target_components=["power"])
+        # wrong horizon
         with pytest.raises(ValueError):
             results.get_explanation(horizon=2, component="power")
         with pytest.raises(ValueError):
             results.get_feature_values(horizon=2, component="power")
         with pytest.raises(ValueError):
             results.get_shap_explanation_object(horizon=2, component="power")
+        # invalid component name
         with pytest.raises(ValueError):
             results.get_explanation(horizon=1, component="test")
         with pytest.raises(ValueError):
@@ -852,3 +844,64 @@ class TestShapExplainer:
         for comp in ts.components:
             comps_out = explanation_results.explained_forecasts[1][comp].columns
             assert all(comps_out == expected_columns)
+
+    # TODO: support multivariate
+    @pytest.mark.parametrize("univariate", [True])
+    def test_compare_multi_models_shap_values(self, univariate: bool):
+        """
+        For model created with multi_models=False, the same set of coefficients is used to forecasts all the
+        timestamps by shifting the input features by model.output_chunk_length-1. The shap values must hence
+        be sliced to match the appropriate input values.
+
+        For the last value in the horizon, the shap values should be identical to the values obtained with
+        multi_models=True since the coefficients and inputs are exactly identical.
+
+        For LinearRegressionModel, using "interventional" feature pertubation, the shap values can be computed
+        manually from the features and coefficients values with: shap_feat_i = coef[i] * (x[i] - X.mean(0)[i])
+        """
+        if univariate:
+            ts = self.target_ts["price"]
+        else:
+            ts = self.target_ts
+
+        models = {
+            "multi_models": LinearRegressionModel(
+                lags=6,
+                output_chunk_length=3,
+                multi_models=True,
+            ),
+            "single_model": LinearRegressionModel(
+                lags=6,
+                output_chunk_length=3,
+                multi_models=False,
+            ),
+        }
+
+        shap_values = {}
+        for model_name, model in models.items():
+            model.fit(ts)
+            explainer = ShapExplainer(model)
+            shap_values[model_name] = explainer.summary_plot(
+                show=False, target_components="price"
+            )
+
+        # linear regression coefficients
+        np.testing.assert_almost_equal(
+            models["multi_models"].model.coef_[-1], models["single_model"].model.coef_
+        )
+        # shap values
+        np.testing.assert_almost_equal(
+            shap_values["multi_models"][-1].values,
+            shap_values["single_model"][-1].values,
+        )
+        # input features
+        np.testing.assert_almost_equal(
+            shap_values["multi_models"][-1].data, shap_values["single_model"][-1].data
+        )
+        # base values
+        np.testing.assert_almost_equal(
+            shap_values["multi_models"][-1].base_values,
+            shap_values["single_model"][-1].base_values,
+        )
+
+        # TODO: compare expected shap values with values generated by explainer

@@ -25,7 +25,7 @@ each of the (lagged) series.
 """
 
 from enum import Enum
-from typing import Dict, NewType, Optional, Sequence, Union
+from typing import Dict, List, NewType, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -137,16 +137,6 @@ class ShapExplainer(_ForecastingModelExplainer):
             raise_log(
                 ValueError(
                     "Invalid `model` type. Currently, only models of type `RegressionModel` are supported."
-                ),
-                logger,
-            )
-
-        if not model.multi_models:
-            raise_log(
-                ValueError(
-                    "Invalid `multi_models` value `False`. Currently, "
-                    "ShapExplainer only supports RegressionModels "
-                    "with `multi_models=True`."
                 ),
                 logger,
             )
@@ -325,6 +315,7 @@ class ShapExplainer(_ForecastingModelExplainer):
                 foreground_ts,
                 foreground_past_cov_ts,
                 foreground_future_cov_ts,
+                is_foreground_series=True,
                 train=False,
             )
 
@@ -375,7 +366,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         num_samples: Optional[int] = None,
         plot_type: Optional[str] = "dot",
         **kwargs,
-    ):
+    ) -> List[shap.Explanation]:
         """
         Display a shap plot summary for each horizon and each component dimension of the target.
         This method reuses the initial background data as foreground (potentially sampled) to give a general importance
@@ -395,6 +386,11 @@ class ShapExplainer(_ForecastingModelExplainer):
             for the sake of performance.
         plot_type
             Optionally, specify which of the shap library plot type to use. Can be one of ``'dot', 'bar', 'violin'``.
+
+        Returns
+        -------
+        shap_explanations
+            A list containing the raw Explanations for the horizons and components plotted
         """
 
         horizons, target_components = self._process_horizons_and_targets(
@@ -412,15 +408,34 @@ class ShapExplainer(_ForecastingModelExplainer):
             foreground_X_sampled, horizons, target_components
         )
 
+        # extract shap values of the positions effectively forecasted by the sub-model
+        stride_sampled_foreground = False
+        if self.model.output_chunk_length > 1:
+            stride_sampled_foreground = True
+            tmp_shaps = {}
+            for h, components_shap in shaps_.items():
+                tmp_shaps[h] = {}
+                for comp_name, shap_values in components_shap.items():
+                    tmp_shaps[h][comp_name] = shap_values[
+                        h - 1 :: self.model.output_chunk_length
+                    ]
+            shaps_ = tmp_shaps
+
+        shap_explanations = []
         for t in target_components:
             for h in horizons:
+                shap_explanations.append(shaps_[h][t])
                 plt.title("Target: `{}` - Horizon: {}".format(t, "t+" + str(h)))
                 shap.summary_plot(
                     shaps_[h][t],
-                    foreground_X_sampled,
+                    foreground_X_sampled[h - 1 :: self.model.output_chunk_length]
+                    if stride_sampled_foreground
+                    else foreground_X_sampled,
                     plot_type=plot_type,
                     **kwargs,
                 )
+
+        return shap_explanations
 
     def force_plot_from_ts(
         self,
@@ -486,7 +501,11 @@ class ShapExplainer(_ForecastingModelExplainer):
         horizon, target_component = horizons[0], target_components[0]
 
         foreground_X = self.explainers._create_regression_model_shap_X(
-            foreground_series, foreground_past_covariates, foreground_future_covariates
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+            train=False,
+            is_foreground_series=True,
         )
 
         shap_ = self.explainers.shap_explanations(
@@ -569,6 +588,7 @@ class _RegressionShapExplainers:
 
         self.model = model
         self.target_dim = self.model.input_dim["target"]
+        # forecasting model is wrapped in MultiOutputRegressor
         self.is_multioutputregressor = isinstance(
             self.model.model, MultiOutputRegressor
         )
@@ -583,18 +603,19 @@ class _RegressionShapExplainers:
         self.background_past_covariates = background_past_covariates
         self.background_future_covariates = background_future_covariates
 
-        self.single_output = False
-        if self.n == 1 and self.target_dim == 1:
-            self.single_output = True
+        # model forecasts a single horizon for one component
+        self.single_output = self.n == 1 and self.target_dim == 1
 
         self.background_X = self._create_regression_model_shap_X(
             self.background_series,
             self.background_past_covariates,
             self.background_future_covariates,
-            background_num_samples,
+            is_foreground_series=False,
+            n_samples=background_num_samples,
             train=True,
         )
 
+        # one forecaster & explainer per component
         if self.is_multioutputregressor:
             self.explainers = {}
             for i in range(self.n):
@@ -610,14 +631,14 @@ class _RegressionShapExplainers:
             self.explainers = self._build_explainer_sklearn(
                 self.model.model, self.background_X, self.shap_method, **kwargs
             )
+        # TODO: self.multi_models==False and multivariate
 
     def shap_explanations(
         self,
-        foreground_X,
+        foreground_X: pd.DataFrame,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
     ) -> Dict[int, Dict[str, shap.Explanation]]:
-
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
         - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
@@ -634,12 +655,29 @@ class _RegressionShapExplainers:
             Optionally, a list of strings with the target components we want to explain.
 
         """
-
-        # create a unified dictionary between multiOutputRegressor estimators and
-        # native multiOutput estimators
         shap_explanations = {}
-        if self.is_multioutputregressor:
+        # multi_models=False relies on single explainer
+        if not self.model.multi_models:
+            shap_explanation_tmp = self.explainers(foreground_X)
+            for h in horizons:
+                tmp_n = {}
+                for t_idx, t in enumerate(target_components):
+                    if t not in target_components:
+                        continue
+                    if not self.single_output:
+                        tmp_t = shap.Explanation(shap_explanation_tmp.values[:, :])
+                        tmp_t.data = shap_explanation_tmp.data
+                        tmp_t.base_values = shap_explanation_tmp.base_values[
+                            :,
+                        ].ravel()
 
+                    tmp_t.feature_names = shap_explanation_tmp.feature_names
+                    tmp_t.time_index = foreground_X.index
+                    tmp_n[t] = tmp_t
+                shap_explanations[h] = tmp_n
+        # MultiOutputRegressor relies on a dictionnary of explainers
+        # self.explainers = { horizon: {component: model} }
+        elif self.is_multioutputregressor:
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(self.target_components):
@@ -650,8 +688,8 @@ class _RegressionShapExplainers:
                     explainer.time_index = foreground_X.index
                     tmp_n[t] = explainer
                 shap_explanations[h] = tmp_n
+        # native multioutput model relies on a single explainer
         else:
-            # the native multioutput forces us to recompute all horizons and targets
             shap_explanation_tmp = self.explainers(foreground_X)
             for h in horizons:
                 tmp_n = {}
@@ -735,15 +773,15 @@ class _RegressionShapExplainers:
         target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        n_samples=None,
-        train=False,
+        is_foreground_series: bool,
+        n_samples: Optional[int] = None,
+        train: bool = False,
     ) -> pd.DataFrame:
         """
         Creates the shap format input for regression models.
         The output is a pandas DataFrame representing all lags of different covariates, and with adequate
         column names in order to map feature / shap values.
         It uses create_lagged_data also used in RegressionModel to build the tabular dataset.
-
         """
 
         lags_list = self.model._get_lags("target")
@@ -766,6 +804,16 @@ class _RegressionShapExplainers:
         )
         # Remove sample axis:
         X = X[:, :, 0]
+
+        raise_if(
+            is_foreground_series
+            and (not self.model.multi_models)
+            and (X.shape[0] < self.model.output_chunk_length),
+            f"Provided foreground series is too short to generate samples for the forecasting model created "
+            f"with `multi_model=False`, the series must contain at least {self.model.min_train_series_length} "
+            f"timesteps.",
+            logger,
+        )
 
         if train:
             X = pd.DataFrame(X)
