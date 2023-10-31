@@ -190,6 +190,7 @@ class RegressionModel(GlobalForecastingModel):
         self.lags: Dict[str, List[int]] = {}
         self.component_lags: Dict[str, Dict[str, List[int]]] = {}
         self.input_dim = None
+        # TODO: overwrite the value if output_chunk_length == 1?
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
@@ -457,13 +458,28 @@ class RegressionModel(GlobalForecastingModel):
     def output_chunk_length(self) -> int:
         return self._output_chunk_length
 
-    def get_multioutput_estimator(self, horizon, target_dim):
+    def get_multioutput_estimator(self, horizon: int, target_dim: int):
+        """
+        Return estimator corresponding to the horizon and target component. horizon should be between
+        0 and output_chunk_length, target_dim between 0 and self.input_dim["target"].
+
+        sklearn.MultiOuputRegressor is :
+        - one dimensional when target is multivariate with output_chunk_length=1
+        - one dimensional when the target is univariate with output_chunk_length > 1 and multi_models=True
+        - two dimensional when the target is multivariate with output_chunk_length > 1 and multi_models=True,
+        with the models ordered as [comp0_horizon0, comp1_horizon0, ..., comp0_horizonX, comp1_horizonX]
+        """
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
             "The sklearn model is not a MultiOutputRegressor object.",
         )
-
-        return self.model.estimators_[horizon + target_dim]
+        # one model per horizon and target component
+        if self.multi_models:
+            idx_estimator = horizon * self.input_dim["target"] + target_dim
+            return self.model.estimators_[idx_estimator]
+        # one model per target component
+        else:
+            return self.model.estimators_[target_dim]
 
     def _create_lagged_data(
         self,
