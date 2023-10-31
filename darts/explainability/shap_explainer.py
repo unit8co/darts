@@ -427,10 +427,13 @@ class ShapExplainer(_ForecastingModelExplainer):
                 shap_explanations.append(shaps_[h][t])
                 plt.title("Target: `{}` - Horizon: {}".format(t, "t+" + str(h)))
                 shap.summary_plot(
-                    shaps_[h][t],
-                    foreground_X_sampled[h - 1 :: self.model.output_chunk_length]
+                    shap_values=shaps_[h][t],
+                    features=foreground_X_sampled[
+                        h - 1 :: self.model.output_chunk_length
+                    ]
                     if stride_sampled_foreground
                     else foreground_X_sampled,
+                    feature_names=foreground_X_sampled.columns,
                     plot_type=plot_type,
                     **kwargs,
                 )
@@ -512,11 +515,10 @@ class ShapExplainer(_ForecastingModelExplainer):
             foreground_X, [horizon], [target_component]
         )
 
-        return shap.force_plot(
+        return shap.plots.force(
             base_value=shap_[horizon][target_component],
             features=foreground_X,
             out_names=target_component,
-            **kwargs,
         )
 
 
@@ -622,7 +624,10 @@ class _RegressionShapExplainers:
                 self.explainers[i] = {}
                 for j in range(self.target_dim):
                     self.explainers[i][j] = self._build_explainer_sklearn(
-                        self.model.get_multioutput_estimator(horizon=i, target_dim=j),
+                        self.model.get_multioutput_estimator(
+                            horizon_step=i if self.model.multi_models else 0,
+                            component_idx=j,
+                        ),
                         self.background_X,
                         self.shap_method,
                         **kwargs,
@@ -631,7 +636,6 @@ class _RegressionShapExplainers:
             self.explainers = self._build_explainer_sklearn(
                 self.model.model, self.background_X, self.shap_method, **kwargs
             )
-        # TODO: self.multi_models==False and multivariate
 
     def shap_explanations(
         self,
@@ -643,6 +647,7 @@ class _RegressionShapExplainers:
         Return a dictionary of dictionaries of shap.Explanation instances:
         - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
         - the second dimension corresponds to each component of the target time series.
+
         Parameters
         ----------
         foreground_X
@@ -654,30 +659,15 @@ class _RegressionShapExplainers:
         target_components
             Optionally, a list of strings with the target components we want to explain.
 
+        Returns
+        -------
+        shap_explanations
+            A dictionnary containing shap.Explanations for each horizon
         """
         shap_explanations = {}
-        # multi_models=False relies on single explainer
-        if not self.model.multi_models:
-            shap_explanation_tmp = self.explainers(foreground_X)
-            for h in horizons:
-                tmp_n = {}
-                for t_idx, t in enumerate(target_components):
-                    if t not in target_components:
-                        continue
-                    if not self.single_output:
-                        tmp_t = shap.Explanation(shap_explanation_tmp.values[:, :])
-                        tmp_t.data = shap_explanation_tmp.data
-                        tmp_t.base_values = shap_explanation_tmp.base_values[
-                            :,
-                        ].ravel()
-
-                    tmp_t.feature_names = shap_explanation_tmp.feature_names
-                    tmp_t.time_index = foreground_X.index
-                    tmp_n[t] = tmp_t
-                shap_explanations[h] = tmp_n
         # MultiOutputRegressor relies on a dictionnary of explainers
         # self.explainers = { horizon: {component: model} }
-        elif self.is_multioutputregressor:
+        if self.is_multioutputregressor:
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(self.target_components):
@@ -688,8 +678,8 @@ class _RegressionShapExplainers:
                     explainer.time_index = foreground_X.index
                     tmp_n[t] = explainer
                 shap_explanations[h] = tmp_n
-        # native multioutput model relies on a single explainer
-        else:
+        # single explainer but one sub-model per horizon step
+        elif self.model.multi_models:
             shap_explanation_tmp = self.explainers(foreground_X)
             for h in horizons:
                 tmp_n = {}
@@ -708,7 +698,30 @@ class _RegressionShapExplainers:
                         ].ravel()
                     else:
                         tmp_t = shap_explanation_tmp
-                        tmp_t.base_values = shap_explanation_tmp.base_values.ravel()
+
+                    tmp_t.feature_names = shap_explanation_tmp.feature_names
+                    tmp_t.time_index = foreground_X.index
+                    tmp_n[t] = tmp_t
+                shap_explanations[h] = tmp_n
+        # single explainer, all horizon steps are forecasted by the same model
+        else:
+            shap_explanation_tmp = self.explainers(foreground_X)
+            for h in horizons:
+                tmp_n = {}
+                for t_idx, t in enumerate(target_components):
+                    if t not in target_components:
+                        continue
+                    # extract shap values of the component
+                    if self.target_dim > 1:
+                        tmp_t = shap.Explanation(
+                            shap_explanation_tmp.values[:, :, t_idx]
+                        )
+                        tmp_t.data = shap_explanation_tmp.data
+                        tmp_t.base_values = shap_explanation_tmp.base_values[
+                            :, t_idx
+                        ].ravel()
+                    else:
+                        tmp_t = shap_explanation_tmp
 
                     tmp_t.feature_names = shap_explanation_tmp.feature_names
                     tmp_t.time_index = foreground_X.index

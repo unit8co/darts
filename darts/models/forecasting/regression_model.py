@@ -458,28 +458,45 @@ class RegressionModel(GlobalForecastingModel):
     def output_chunk_length(self) -> int:
         return self._output_chunk_length
 
-    def get_multioutput_estimator(self, horizon: int, target_dim: int):
+    def get_multioutput_estimator(self, horizon_step: int, component_idx: int):
         """
-        Return estimator corresponding to the horizon and target component. horizon should be between
-        0 and output_chunk_length, target_dim between 0 and self.input_dim["target"].
+        Return estimator corresponding to the provided horizon and target component.
 
         sklearn.MultiOuputRegressor is :
         - one dimensional when target is multivariate with output_chunk_length=1
         - one dimensional when the target is univariate with output_chunk_length > 1 and multi_models=True
         - two dimensional when the target is multivariate with output_chunk_length > 1 and multi_models=True,
         with the models ordered as [comp0_horizon0, comp1_horizon0, ..., comp0_horizonX, comp1_horizonX]
+
+        Parameters
+        ----------
+        horizon_step
+            Integer corresponding to the step of the horizon being forecasted
+        component_idx
+            Integer corresponding to the index of the component being forecasted
         """
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
             "The sklearn model is not a MultiOutputRegressor object.",
+            logger,
+        )
+        raise_if_not(
+            0 <= horizon_step < self.output_chunk_length,
+            "`horizon` should be greater than 0 and strictly smaller than output_chunk_length.",
+            logger,
+        )
+        raise_if_not(
+            0 <= component_idx < self.input_dim["target"],
+            "`target_dim` should be greater than 0 and strictly smaller than self.input_dim['target'].",
+            logger,
         )
         # one model per horizon and target component
         if self.multi_models:
-            idx_estimator = horizon * self.input_dim["target"] + target_dim
+            idx_estimator = horizon_step * self.input_dim["target"] + component_idx
             return self.model.estimators_[idx_estimator]
         # one model per target component
         else:
-            return self.model.estimators_[target_dim]
+            return self.model.estimators_[component_idx]
 
     def _create_lagged_data(
         self,
