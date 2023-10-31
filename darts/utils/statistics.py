@@ -304,7 +304,7 @@ def remove_seasonality(
         Defaults to "naive"
     kwargs
         Other keyword arguments are passed down to the decomposition method.
-     Returns
+    Returns
     -------
     TimeSeries
         A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
