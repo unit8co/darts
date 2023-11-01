@@ -1,6 +1,5 @@
 """
 TorchForecastingModel
----------------------
 
 This file contains several abstract classes:
 
