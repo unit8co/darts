@@ -26,6 +26,22 @@ class NaiveMean(LocalForecastingModel):
 
         This model has no parameter, and always predicts the
         mean value of the training series.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveMean
+        >>> series = AirPassengersDataset().load()
+        >>> model = NaiveMean()
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111]])
         """
         super().__init__()
         self.mean_val = None
@@ -63,6 +79,23 @@ class NaiveSeasonal(LocalForecastingModel):
         ----------
         K
             the number of last time steps of the training set to repeat
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveSeasonal
+        >>> series = AirPassengersDataset().load()
+        # prior analysis suggested seasonality of 12
+        >>> model = NaiveSeasonal(K=12)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[417.],
+               [391.],
+               [419.],
+               [461.],
+               [472.],
+               [535.]])
         """
         super().__init__()
         self.last_k_vals = None
@@ -106,6 +139,22 @@ class NaiveDrift(LocalForecastingModel):
         and extends it in the future. For a training series of length :math:`T`, we have:
 
         .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveDrift
+        >>> series = AirPassengersDataset().load()
+        >>> model = NaiveDrift()
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[434.23776224],
+               [436.47552448],
+               [438.71328671],
+               [440.95104895],
+               [443.18881119],
+               [445.42657343]])
         """
         super().__init__()
 
@@ -147,6 +196,22 @@ class NaiveMovingAverage(LocalForecastingModel):
         ----------
         input_chunk_length
             The size of the sliding window used to calculate the moving average
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveMovingAverage
+        >>> series = AirPassengersDataset().load()
+        # using the average of the last 6 months
+        >>> model = NaiveMovingAverage(input_chunk_length=6)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[503.16666667],
+               [483.36111111],
+               [462.9212963 ],
+               [455.40817901],
+               [454.47620885],
+               [465.22224366]])
         """
         super().__init__()
         self.input_chunk_length = input_chunk_length
@@ -200,7 +265,8 @@ class NaiveMovingAverage(LocalForecastingModel):
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        models: List[ForecastingModel],
+        forecasting_models: List[ForecastingModel],
+        train_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
         """Naive combination model
@@ -213,17 +279,43 @@ class NaiveEnsembleModel(EnsembleModel):
 
         Parameters
         ----------
-        models
+        forecasting_models
             List of forecasting models whose predictions to ensemble
+        train_forecasting_models
+            Whether to train the `forecasting_models` from scratch. If `False`, the models are not trained when calling
+            `fit()` and `predict()` can be called directly (only supported if all the `forecasting_models` are
+            pretrained `GlobalForecastingModels`). Default: ``True``.
         show_warnings
             Whether to show warnings related to models covariates support.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import NaiveEnsembleModel, NaiveSeasonal, LinearRegressionModel
+        >>> series = AirPassengersDataset().load()
+        >>> # defining the ensemble
+        >>> model = NaiveEnsembleModel([NaiveSeasonal(K=12), LinearRegressionModel(lags=4)])
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[439.23152974],
+               [431.41161602],
+               [439.72888401],
+               [453.70180806],
+               [454.96757177],
+               [485.16604194]])
         """
         super().__init__(
-            models=models,
-            train_num_samples=None,
+            forecasting_models=forecasting_models,
+            train_num_samples=1,
             train_samples_reduction=None,
+            train_forecasting_models=train_forecasting_models,
             show_warnings=show_warnings,
         )
+
+        # ensemble model initialised with trained global models can directly call predict()
+        if self.all_trained and not train_forecasting_models:
+            self._fit_called = True
 
     def fit(
         self,
@@ -236,13 +328,13 @@ class NaiveEnsembleModel(EnsembleModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        for model in self.models:
-            kwargs = dict(series=series)
-            if model.supports_past_covariates:
-                kwargs["past_covariates"] = past_covariates
-            if model.supports_future_covariates:
-                kwargs["future_covariates"] = future_covariates
-            model.fit(**kwargs)
+        if self.train_forecasting_models:
+            for model in self.forecasting_models:
+                model._fit_wrapper(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                )
 
         return self
 
@@ -262,9 +354,6 @@ class NaiveEnsembleModel(EnsembleModel):
             logger,
         )
 
-        if series is None:
-            series = self.training_series
-
         if isinstance(predictions, Sequence):
             return [
                 self._target_average(p, ts)
@@ -281,7 +370,7 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def _target_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
         """Average across the components, keep n_samples, rename components"""
-        n_forecasting_models = len(self.models)
+        n_forecasting_models = len(self.forecasting_models)
         n_components = series.n_components
         prediction_values = prediction.all_values(copy=False)
         target_values = np.zeros(
@@ -309,12 +398,12 @@ class NaiveEnsembleModel(EnsembleModel):
     def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
         """Average across the components after grouping by likelihood parameter, rename components"""
         # str or torch Likelihood
-        likelihood = getattr(self.models[0], "likelihood")
+        likelihood = getattr(self.forecasting_models[0], "likelihood")
         if isinstance(likelihood, str):
-            likelihood_n_params = self.models[0].num_parameters
+            likelihood_n_params = self.forecasting_models[0].num_parameters
         else:  # Likelihood
             likelihood_n_params = likelihood.num_parameters
-        n_forecasting_models = len(self.models)
+        n_forecasting_models = len(self.forecasting_models)
         n_components = series.n_components
         # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
         prediction_values = prediction.values(copy=False)

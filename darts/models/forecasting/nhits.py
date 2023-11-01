@@ -11,7 +11,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.torch import MonteCarloDropout
 
@@ -417,6 +420,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         # on this params (the last block backcast is not part of the final output of the net).
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
+    @io_processor
     def forward(self, x_in: Tuple):
         x, _ = x_in
 
@@ -552,6 +556,9 @@ class NHiTSModel(PastCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -592,11 +599,14 @@ class NHiTSModel(PastCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'past': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -659,6 +669,34 @@ class NHiTSModel(PastCovariatesTorchModel):
         ----------
         .. [1] C. Challu et al. "N-HiTS: Neural Hierarchical Interpolation for Time Series Forecasting",
                https://arxiv.org/abs/2201.12886
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NHiTSModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # increasing the number of blocks
+        >>> model = NHiTSModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     num_blocks=2,
+        >>>     n_epochs=5,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[958.2354389 ],
+               [939.23201079],
+               [987.51425784],
+               [919.41209025],
+               [925.09583093],
+               [938.95625528]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

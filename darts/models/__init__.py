@@ -39,8 +39,6 @@ try:
     from darts.models.forecasting.tft_model import TFTModel
     from darts.models.forecasting.tide_model import TiDEModel
     from darts.models.forecasting.transformer_model import TransformerModel
-
-
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based models not available. "
@@ -51,17 +49,17 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.lgbm import LightGBMModel
 except ModuleNotFoundError:
-    LightGBMModel = NotImportedModule(module_name="LightGBM")
+    LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
 except ImportError:
-    Prophet = NotImportedModule(module_name="Prophet")
+    Prophet = NotImportedModule(module_name="Prophet", warn=False)
 
 try:
     from darts.models.forecasting.catboost_model import CatBoostModel
 except ModuleNotFoundError:
-    CatBoostModel = NotImportedModule(module_name="CatBoost")
+    CatBoostModel = NotImportedModule(module_name="CatBoost", warn=False)
 
 try:
     from darts.models.forecasting.croston import Croston

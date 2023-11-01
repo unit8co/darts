@@ -1,7 +1,5 @@
 import copy
 import os
-import shutil
-import tempfile
 
 import numpy as np
 import pandas as pd
@@ -9,61 +7,49 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, STATIC_COV_TAG
 from darts.utils.timeseries_generation import generate_index, linear_timeseries
 
 
-class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        n_groups = 5
-        len_ts = 10
-        times = (
-            pd.concat(
-                [
-                    pd.DataFrame(
-                        generate_index(start=pd.Timestamp(2010, 1, 1), length=len_ts)
-                    )
-                ]
-                * n_groups,
-                axis=0,
-            )
-            .reset_index(drop=True)
-            .rename(columns={0: "times"})
-        )
-
-        x = pd.DataFrame(np.random.randn(n_groups * len_ts, 3), columns=["a", "b", "c"])
-        static_multivar = pd.DataFrame(
+def setup_test_case():
+    n_groups = 5
+    len_ts = 10
+    times = (
+        pd.concat(
             [
-                [i, 0 if j < (len_ts // 2) else 1]
-                for i in range(n_groups)
-                for j in range(len_ts)
-            ],
-            columns=["st1", "st2"],
+                pd.DataFrame(
+                    generate_index(start=pd.Timestamp(2010, 1, 1), length=len_ts)
+                )
+            ]
+            * n_groups,
+            axis=0,
         )
+        .reset_index(drop=True)
+        .rename(columns={0: "times"})
+    )
 
-        df_long_multi = pd.DataFrame(
-            pd.concat([times, x, static_multivar], axis=1),
-        )
-        df_long_multi.loc[:, "constant"] = 1
-        df_long_uni = df_long_multi.drop(columns=["st2"])
+    x = pd.DataFrame(np.random.randn(n_groups * len_ts, 3), columns=["a", "b", "c"])
+    static_multivar = pd.DataFrame(
+        [
+            [i, 0 if j < (len_ts // 2) else 1]
+            for i in range(n_groups)
+            for j in range(len_ts)
+        ],
+        columns=["st1", "st2"],
+    )
 
-        cls.n_groups = n_groups
-        cls.len_ts = len_ts
-        cls.df_long_multi = df_long_multi
-        cls.df_long_uni = df_long_uni
+    df_long_multi = pd.DataFrame(
+        pd.concat([times, x, static_multivar], axis=1),
+    )
+    df_long_multi.loc[:, "constant"] = 1
+    df_long_uni = df_long_multi.drop(columns=["st2"])
+    return n_groups, len_ts, df_long_uni, df_long_multi
 
-    def setUp(self):
-        self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 
-    def tearDown(self):
-        super().tearDown()
-        shutil.rmtree(self.temp_work_dir)
+class TestTimeSeriesStaticCovariate:
+    n_groups, len_ts, df_long_uni, df_long_multi = setup_test_case()
 
-    def test_ts_from_x(self):
+    def test_ts_from_x(self, tmpdir_module):
         ts = linear_timeseries(length=10).with_static_covariates(
             pd.Series([0.0, 1.0], index=["st1", "st2"])
         )
@@ -101,8 +87,8 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             ),
         )
 
-        f_csv = os.path.join(self.temp_work_dir, "temp_ts.csv")
-        f_pkl = os.path.join(self.temp_work_dir, "temp_ts.pkl")
+        f_csv = os.path.join(tmpdir_module, "temp_ts.csv")
+        f_pkl = os.path.join(tmpdir_module, "temp_ts.pkl")
         ts.to_csv(f_csv)
         ts.to_pickle(f_pkl)
         ts_json = ts.to_json()

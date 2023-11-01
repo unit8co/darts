@@ -732,9 +732,9 @@ class _RegressionShapExplainers:
 
     def _create_regression_model_shap_X(
         self,
-        target_series,
-        past_covariates,
-        future_covariates,
+        target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
         n_samples=None,
         train=False,
     ) -> pd.DataFrame:
@@ -746,14 +746,16 @@ class _RegressionShapExplainers:
 
         """
 
-        lags_list = self.model.lags.get("target")
-        lags_past_covariates_list = self.model.lags.get("past")
-        lags_future_covariates_list = self.model.lags.get("future")
+        lags_list = self.model._get_lags("target")
+        lags_past_covariates_list = self.model._get_lags("past")
+        lags_future_covariates_list = self.model._get_lags("future")
 
         X, indexes = create_lagged_prediction_data(
-            target_series=target_series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
+            target_series=target_series if lags_list else None,
+            past_covariates=past_covariates if lags_past_covariates_list else None,
+            future_covariates=future_covariates
+            if lags_future_covariates_list
+            else None,
             lags=lags_list,
             lags_past_covariates=lags_past_covariates_list if past_covariates else None,
             lags_future_covariates=lags_future_covariates_list

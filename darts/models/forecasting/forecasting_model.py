@@ -24,6 +24,11 @@ from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 
@@ -482,6 +487,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         custom_components: Union[List[str], None] = None,
         with_static_covs: bool = True,
         with_hierarchy: bool = True,
+        pred_start: Optional[Union[pd.Timestamp, int]] = None,
     ) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
@@ -499,6 +505,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If set to False, do not copy the input_series `static_covariates` attribute
         with_hierarchy
             If set to False, do not copy the input_series `hierarchy` attribute
+        pred_start
+            Optionally, give a custom prediction start point.
+
         Returns
         -------
         TimeSeries
@@ -513,6 +522,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             custom_components,
             with_static_covs,
             with_hierarchy,
+            pred_start,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -534,19 +544,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series = args[0]
         _historical_forecasts_general_checks(self, series, kwargs)
 
-    def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
+    def _get_last_prediction_time(
+        self,
+        series,
+        forecast_horizon,
+        overlap_end,
+        latest_possible_prediction_start,
+    ):
+        # if `overlap_end` is True, we can use the pre-computed latest possible first prediction point
         if overlap_end:
-            last_valid_pred_time = series.time_index[-1]
-        else:
-            last_valid_pred_time = series.time_index[-forecast_horizon]
+            return latest_possible_prediction_start
 
-        return last_valid_pred_time
+        # otherwise, the upper bound for the last time step of the last prediction is the end of the target series
+        return series.time_index[-forecast_horizon]
 
     def _check_optimizable_historical_forecasts(
         self,
         forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
-        show_warnings=bool,
+        show_warnings: bool,
     ) -> bool:
         """By default, historical forecasts cannot be optimized"""
         return False
@@ -560,6 +576,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -609,15 +626,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             steps available, all steps up until prediction time are used, as in default case. Needs to be at least
             `min_train_series_length`.
         start
-            Optionally, the first point in time at which a prediction is computed for a future time.
-            This parameter supports: ``float``, ``int`` and ``pandas.Timestamp``, and ``None``.
-            If a ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            If an ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time
-            directly.
-            If ``None``, the first prediction time will automatically be set to:
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
 
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
               predictable point is earlier than the first trainable point.
@@ -628,6 +644,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         forecast_horizon
             The forecast horizon for the predictions.
         stride
@@ -798,6 +821,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 future_covariates=future_covariates,
                 num_samples=num_samples,
                 start=start,
+                start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
@@ -822,7 +846,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # predictable time indexes (assuming model is already trained)
             historical_forecasts_time_index_predict = (
                 _get_historical_forecast_predict_index(
-                    model, series_, idx, past_covariates_, future_covariates_
+                    model,
+                    series_,
+                    idx,
+                    past_covariates_,
+                    future_covariates_,
+                    forecast_horizon,
+                    overlap_end,
                 )
             )
 
@@ -835,6 +865,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         idx,
                         past_covariates_,
                         future_covariates_,
+                        forecast_horizon,
+                        overlap_end,
                     )
                 )
 
@@ -869,13 +901,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
             historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
-                model=model,
                 series=series_,
                 series_idx=idx,
                 historical_forecasts_time_index=historical_forecasts_time_index,
-                forecast_horizon=forecast_horizon,
-                overlap_end=overlap_end,
                 start=start,
+                start_format=start_format,
                 show_warnings=show_warnings,
             )
 
@@ -908,7 +938,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
                 # drop everything after `pred_time` to train on / predict with shifting input
-                train_series = series_.drop_after(pred_time)
+                if pred_time <= series_.end_time():
+                    train_series = series_.drop_after(pred_time)
+                else:
+                    train_series = series_
 
                 # optionally, apply moving window (instead of expanding window)
                 if train_length_ and len(train_series) > train_length_:
@@ -996,7 +1029,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     forecasts.append(forecast)
 
-            if last_points_only:
+            if last_points_only and last_points_values:
                 forecasts_list.append(
                     TimeSeries.from_times_and_values(
                         generate_index(
@@ -1030,6 +1063,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -1085,25 +1119,31 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             steps available, all steps up until prediction time are used, as in default case. Needs to be at least
             `min_train_series_length`.
         start
-            Optionally, the first point in time at which a prediction is computed for a future time.
-            This parameter supports: ``float``, ``int`` and ``pandas.Timestamp``, and ``None``.
-            If a ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            If an ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time
-            directly.
-            If ``None``, the first prediction time will automatically be set to:
-                 - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
-                 predictable point is earlier than the first trainable point.
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
 
-                 - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
-                 or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
 
-                 - the first trainable point (given `train_length`) otherwise
             Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         forecast_horizon
             The forecast horizon for the point predictions.
         stride
@@ -1160,6 +1200,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 num_samples=num_samples,
                 train_length=train_length,
                 start=start,
+                start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 retrain=retrain,
@@ -1210,6 +1251,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon: Optional[int] = None,
         stride: int = 1,
         start: Union[pd.Timestamp, float, int] = 0.5,
+        start_format: Literal["position", "value"] = "value",
         last_points_only: bool = False,
         show_warnings: bool = True,
         val_series: Optional[TimeSeries] = None,
@@ -1275,17 +1317,38 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon
             The integer value of the forecasting horizon. Activates expanding window mode.
         stride
-            The number of time steps between two consecutive predictions. Only used in expanding window mode.
+            Only used in expanding window mode. The number of time steps between two consecutive predictions.
         start
-            The ``int``, ``float`` or ``pandas.Timestamp`` that represents the starting point in the time index
-            of `series` from which predictions will be made to evaluate the model.
-            For a detailed description of how the different data types are interpreted, please see the documentation
-            for `ForecastingModel.backtest`. Only used in expanding window mode.
+            Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.
+            This parameter supports: ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+            (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Only used in expanding window mode. Defines the `start` format. Only effective when `start` is an integer
+            and `series` is indexed with a `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         last_points_only
-            Whether to use the whole forecasts or only the last point of each forecast to compute the error. Only used
-            in expanding window mode.
+            Only used in expanding window mode. Whether to use the whole forecasts or only the last point of each
+            forecast to compute the error.
         show_warnings
-            Whether to show warnings related to the `start` parameter. Only used in expanding window mode.
+            Only used in expanding window mode. Whether to show warnings related to the `start` parameter.
         val_series
             The TimeSeries instance used for validation in split mode. If provided, this series must start right after
             the end of `series`; so that a proper comparison of the forecast can be made.
@@ -1386,6 +1449,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates=future_covariates,
                     num_samples=1,
                     start=start,
+                    start_format=start_format,
                     forecast_horizon=forecast_horizon,
                     stride=stride,
                     metric=metric,
@@ -1893,6 +1957,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
         overlap_end: bool = False,
@@ -2149,13 +2214,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def _predict_wrapper(
         self,
         n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
-    ) -> TimeSeries:
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
             kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
@@ -2171,9 +2236,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     def _fit_wrapper(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
     ):
         self.fit(
             series=series,
@@ -2186,6 +2251,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
+        return True
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        """
+        Whether the model supports optimized historical forecasts
+        """
         return True
 
     def _sanity_check_predict_likelihood_parameters(

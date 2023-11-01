@@ -1,4 +1,3 @@
-import unittest
 from unittest.mock import Mock
 
 import numpy as np
@@ -8,14 +7,13 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import NotImportedModule, Prophet
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 
-@unittest.skipUnless(not isinstance(Prophet, NotImportedModule), "requires prophet")
-class ProphetTestCase(DartsBaseTestClass):
+@pytest.mark.skipif(isinstance(Prophet, NotImportedModule), reason="requires prophet")
+class TestProphet:
     def test_add_seasonality_calls(self):
         # test if adding seasonality at model creation and with method model.add_seasonality() are equal
         kwargs_mandatory = {
@@ -39,23 +37,23 @@ class ProphetTestCase(DartsBaseTestClass):
         model1 = Prophet(add_seasonalities=kwargs_all)
         model2 = Prophet()
         model2.add_seasonality(**kwargs_all)
-        self.assertEqual(model1._add_seasonalities, model2._add_seasonalities)
+        assert model1._add_seasonalities == model2._add_seasonalities
 
         # add multiple seasonalities
         model3 = Prophet(add_seasonalities=[kwargs_mandatory, kwargs_mandatory2])
-        self.assertEqual(len(model3._add_seasonalities), 2)
+        assert len(model3._add_seasonalities) == 2
 
         # seasonality already exists
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model1.add_seasonality(**kwargs_mandatory)
 
         # missing mandatory arguments
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             for kw, arg in kwargs_mandatory.items():
                 Prophet(add_seasonalities={kw: arg})
 
         # invalid keywords
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Prophet(
                 add_seasonalities=dict(
                     kwargs_mandatory, **{"some_random_keyword": "custom"}
@@ -63,10 +61,10 @@ class ProphetTestCase(DartsBaseTestClass):
             )
 
         # invalid value dtypes
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Prophet(add_seasonalities=dict({kw: None for kw in kwargs_mandatory}))
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Prophet(add_seasonalities=dict([]))
 
     def test_prophet_model(self):
@@ -162,7 +160,7 @@ class ProphetTestCase(DartsBaseTestClass):
         pred = model.predict(len(val))
 
         for val_i, pred_i in zip(val.univariate_values(), pred.univariate_values()):
-            self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+            assert abs(val_i - pred_i) < 0.1
 
     def helper_test_freq_coversion(self, test_cases):
         for freq, period in test_cases.items():
@@ -172,14 +170,15 @@ class ProphetTestCase(DartsBaseTestClass):
             # this should not raise an error if frequency is known
             _ = Prophet._freq_to_days(freq=ts_sine.freq_str)
 
-        self.assertAlmostEqual(
-            Prophet._freq_to_days(freq="30S"),
-            30 * Prophet._freq_to_days(freq="S"),
-            delta=10e-9,
+        assert (
+            abs(
+                Prophet._freq_to_days(freq="30S") - 30 * Prophet._freq_to_days(freq="S")
+            )
+            < 10e-9
         )
 
         # check bad frequency string
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = Prophet._freq_to_days(freq="30SS")
 
     def helper_test_prophet_model(self, period, freq, compare_all_models=False):
@@ -243,7 +242,7 @@ class ProphetTestCase(DartsBaseTestClass):
         # all predictions should fit the underlying curve very well
         for pred in compare_preds:
             for val_i, pred_i in zip(val.univariate_values(), pred.univariate_values()):
-                self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+                assert abs(val_i - pred_i) < 0.1
 
     def test_conditional_seasonality(self):
         """
@@ -281,7 +280,7 @@ class ProphetTestCase(DartsBaseTestClass):
         for val_i, pred_i in zip(
             expected_result.univariate_values(), forecast.univariate_values()
         ):
-            self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+            assert abs(val_i - pred_i) < 0.1
 
         invalid_future_covariates = future_covariates.with_values(
             np.reshape(np.random.randint(0, 3, duration), (-1, 1, 1)).astype("float")

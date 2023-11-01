@@ -1,7 +1,6 @@
 from itertools import combinations
 
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 
@@ -51,17 +50,17 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class LikelihoodModelTestCase(DartsBaseTestClass):
+    class TestLikelihoodModel:
         def test_intra_class_equality(self):
             for _, model_pair in likelihood_models.items():
-                self.assertEqual(model_pair[0], model_pair[0])
-                self.assertEqual(model_pair[1], model_pair[1])
-                self.assertNotEqual(model_pair[0], model_pair[1])
+                assert model_pair[0] == model_pair[0]
+                assert model_pair[1] == model_pair[1]
+                assert model_pair[0] != model_pair[1]
 
         def test_inter_class_equality(self):
             model_combinations = combinations(likelihood_models.keys(), 2)
             for (first_model_name, second_model_name) in model_combinations:
-                self.assertNotEqual(
-                    likelihood_models[first_model_name][0],
-                    likelihood_models[second_model_name][0],
+                assert (
+                    likelihood_models[first_model_name][0]
+                    != likelihood_models[second_model_name][0]
                 )

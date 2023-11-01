@@ -21,9 +21,9 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Have a monotonically increasing time index, without holes (without missing dates)
     - Contain numeric types only
     - Have distinct components/columns names
-    - Have a well defined frequency (
-    `date offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
-    for ``DateTimeIndex``, and step size for ``RangeIndex``)
+    - Have a well defined frequency (`date offset aliases
+      <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
+      for ``DateTimeIndex``, or step size for ``RangeIndex``)
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
@@ -216,7 +216,7 @@ class TimeSeries:
                     logger,
                 )
         else:
-            self._freq = self._time_index.step
+            self._freq: int = self._time_index.step
             self._freq_str = None
 
         # check static covariates
@@ -709,6 +709,9 @@ class TimeSeries:
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
+
+        if series_df.columns.name:
+            series_df.columns.name = None
 
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
@@ -2100,7 +2103,7 @@ class TimeSeries:
                 )
             raise_if_not(
                 0 <= point_index < len(self),
-                "point (int) should be a valid index in series",
+                f"The index corresponding to the provided point ({point}) should be a valid index in series",
                 logger,
             )
         elif isinstance(point, pd.Timestamp):
@@ -2139,8 +2142,8 @@ class TimeSeries:
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
             In case of a `float`, the parameter will be treated as the proportion of the time series
             that should lie before the point.
-            In the case of `int`, the parameter will be treated as an integer index to the time index of
-            `series`. Will raise a ValueError if not a valid index in `series`
+            In case of `int`, the parameter will be treated as an integer index to the time index of
+            `series`. Will raise a ValueError if not a valid index in `series`.
             In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
             is present in the series time index, otherwise will raise a ValueError.
         """
@@ -2582,7 +2585,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A TimeSeries constructed after differencing.
+            A new TimeSeries, with the differenced values.
         """
         if not isinstance(n, int) or n < 1:
             raise_log(ValueError("'n' must be a positive integer >= 1."), logger)
@@ -2608,6 +2611,17 @@ class TimeSeries:
         for _ in range(n - 1):
             new_xa = _compute_diff(new_xa)
         return self.__class__(new_xa)
+
+    def cumsum(self) -> Self:
+        """
+        Returns the cumulative sum of the time series along the time axis.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, with the cumulatively summed values.
+        """
+        return self.__class__(self._xa.copy().cumsum(axis=0))
 
     def has_same_time_as(self, other: "TimeSeries") -> bool:
         """
@@ -3079,7 +3093,7 @@ class TimeSeries:
 
             'backfill': use NEXT valid observation to fill.
         kwargs
-            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where
+            some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more informations, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
@@ -3101,7 +3115,7 @@ class TimeSeries:
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
-        >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
+        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30T"))
         >>> print(resampled_ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
                       dtype='datetime64[ns]', name='time', freq='H')
@@ -3749,6 +3763,9 @@ class TimeSeries:
         ax
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
+        alpha
+             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            probabilistic series.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3822,10 +3839,9 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            # temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
-            kwargs["alpha"] = 1
-
+            if not self.is_deterministic:
+                kwargs["alpha"] = 1
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -3857,7 +3873,6 @@ class TimeSeries:
                     **kwargs,
                 )
             color_used = p[0].get_color() if default_formatting else None
-            kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
             if (
@@ -3873,11 +3888,7 @@ class TimeSeries:
                         low_series,
                         high_series,
                         color=color_used,
-                        alpha=(
-                            alpha_confidence_intvls
-                            if "alpha" not in kwargs
-                            else kwargs["alpha"]
-                        ),
+                        alpha=(alpha if alpha is not None else alpha_confidence_intvls),
                     )
                 else:
                     ax.plot(
@@ -5178,7 +5189,7 @@ def concatenate(
         if not consecutive_time_axes:
             raise_if_not(
                 ignore_time_axis,
-                "When concatenating over time axis, all series need to be contiguous"
+                "When concatenating over time axis, all series need to be contiguous "
                 "in the time dimension. Use `ignore_time_axis=True` to override "
                 "this behavior and concatenate the series by extending the time axis "
                 "of the first series.",

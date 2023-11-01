@@ -9,7 +9,10 @@ import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
-from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLMixedCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 MixedCovariatesTrainTensorType = Tuple[
@@ -155,6 +158,7 @@ class _DLinearModule(PLMixedCovariatesModule):
                 layer_in_dim_static_cov, layer_out_dim
             )
 
+    @io_processor
     def forward(
         self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):
@@ -295,6 +299,9 @@ class DLinearModel(MixedCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -335,11 +342,14 @@ class DLinearModel(MixedCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'custom': {'past': [encode_year]},
                     'transformer': Scaler()
                 }
             ..
@@ -402,6 +412,41 @@ class DLinearModel(MixedCovariatesTorchModel):
         ----------
         .. [1] Zeng, A., Chen, M., Zhang, L., & Xu, Q. (2022).
                Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import DLinearModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> # values corresponding to the forecasted period
+        >>> model = DLinearModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[667.20957388],
+               [666.76986848],
+               [666.67733306],
+               [666.06625381],
+               [665.8529289 ],
+               [665.75320573]])
+
+        .. note::
+            This simple usage example produces poor forecasts. In order to obtain better performance, user should
+            transform the input data, increase the number of epochs, use a validation set, optimize the hyper-
+            parameters, ...
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
