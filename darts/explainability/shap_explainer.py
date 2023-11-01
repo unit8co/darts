@@ -599,6 +599,7 @@ class _RegressionShapExplainers:
         self.past_covariates_components = past_covariates_components
         self.future_covariates_components = future_covariates_components
 
+        # default forecast horizon, equals to output_chunk_length
         self.n = n
         self.shap_method = shap_method
         self.background_series = background_series
@@ -678,47 +679,30 @@ class _RegressionShapExplainers:
                     explainer.time_index = foreground_X.index
                     tmp_n[t] = explainer
                 shap_explanations[h] = tmp_n
-        # single explainer but one sub-model per horizon step
-        elif self.model.multi_models:
-            shap_explanation_tmp = self.explainers(foreground_X)
-            for h in horizons:
-                tmp_n = {}
-                for t_idx, t in enumerate(target_components):
-                    if t not in target_components:
-                        continue
-                    if not self.single_output:
-                        tmp_t = shap.Explanation(
-                            shap_explanation_tmp.values[
-                                :, :, self.target_dim * (h - 1) + t_idx
-                            ]
-                        )
-                        tmp_t.data = shap_explanation_tmp.data
-                        tmp_t.base_values = shap_explanation_tmp.base_values[
-                            :, self.target_dim * (h - 1) + t_idx
-                        ].ravel()
-                    else:
-                        tmp_t = shap_explanation_tmp
-
-                    tmp_t.feature_names = shap_explanation_tmp.feature_names
-                    tmp_t.time_index = foreground_X.index
-                    tmp_n[t] = tmp_t
-                shap_explanations[h] = tmp_n
-        # single explainer, all horizon steps are forecasted by the same model
         else:
             shap_explanation_tmp = self.explainers(foreground_X)
+            multi_dim_explanations = (
+                self.model.multi_models and not self.single_output
+            ) or (self.target_dim > 1 and not self.model.multi_models)
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(target_components):
                     if t not in target_components:
                         continue
-                    # extract shap values of the component
-                    if self.target_dim > 1:
+                    if multi_dim_explanations:
+                        # one sub-model per component per horizon step
+                        if self.model.multi_models:
+                            idx_explanations = self.target_dim * (h - 1) + t_idx
+                        # single model per component, for all horizon steps
+                        else:
+                            idx_explanations = t_idx
+
                         tmp_t = shap.Explanation(
-                            shap_explanation_tmp.values[:, :, t_idx]
+                            shap_explanation_tmp.values[:, :, idx_explanations]
                         )
                         tmp_t.data = shap_explanation_tmp.data
                         tmp_t.base_values = shap_explanation_tmp.base_values[
-                            :, t_idx
+                            :, idx_explanations
                         ].ravel()
                     else:
                         tmp_t = shap_explanation_tmp
