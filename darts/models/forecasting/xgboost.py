@@ -140,6 +140,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         Examples
         --------
         Deterministic forecasting, using past/future covariates (optional)
+
         >>> from darts.datasets import WeatherDataset
         >>> from darts.models import XGBModel
         >>> series = WeatherDataset().load()

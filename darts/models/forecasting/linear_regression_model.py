@@ -124,6 +124,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         Examples
         --------
         Deterministic forecasting, using past/future covariates (optional)
+
         >>> from darts.datasets import WeatherDataset
         >>> from darts.models import LinearRegressionModel
         >>> series = WeatherDataset().load()
