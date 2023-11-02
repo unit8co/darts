@@ -31,6 +31,7 @@ from darts.datasets import (
     UberTLCDataset,
     USGasolineDataset,
     WeatherDataset,
+    WeatherZurichDataset,
     WineDataset,
     WoolyDataset,
 )
@@ -41,64 +42,36 @@ from darts.datasets.dataset_loaders import (
     DatasetLoadingException,
 )
 
-datasets = [
-    AirPassengersDataset,
-    AusBeerDataset,
-    AustralianTourismDataset,
-    EnergyDataset,
-    HeartRateDataset,
-    IceCreamHeaterDataset,
-    MonthlyMilkDataset,
-    SunspotsDataset,
-    TaylorDataset,
-    TemperatureDataset,
-    USGasolineDataset,
-    WineDataset,
-    WoolyDataset,
-    GasRateCO2Dataset,
-    MonthlyMilkIncompleteDataset,
-    ETTh1Dataset,
-    ETTh2Dataset,
-    ETTm1Dataset,
-    ETTm2Dataset,
-    ElectricityDataset,
-    UberTLCDataset,
-    ILINetDataset,
-    ExchangeRateDataset,
-    TrafficDataset,
-    WeatherDataset,
-    EnergyConsumptionZurichDataset,
-]
-
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
 
-width_datasets = [
-    1,
-    1,
-    96,
-    28,
-    1,
-    2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    2,
-    1,
-    7,
-    7,
-    7,
-    7,
-    370,
-    262,
-    11,
-    8,
-    862,
-    21,
-    2,
+datasets_with_width = [
+    (AirPassengersDataset, 1),
+    (AusBeerDataset, 1),
+    (AustralianTourismDataset, 96),
+    (EnergyDataset, 28),
+    (HeartRateDataset, 1),
+    (IceCreamHeaterDataset, 2),
+    (MonthlyMilkDataset, 1),
+    (SunspotsDataset, 1),
+    (TaylorDataset, 1),
+    (TemperatureDataset, 1),
+    (USGasolineDataset, 1),
+    (WineDataset, 1),
+    (WoolyDataset, 1),
+    (GasRateCO2Dataset, 2),
+    (MonthlyMilkIncompleteDataset, 1),
+    (ETTh1Dataset, 7),
+    (ETTh2Dataset, 7),
+    (ETTm1Dataset, 7),
+    (ETTm2Dataset, 7),
+    (ElectricityDataset, 370),
+    (UberTLCDataset, 262),
+    (ILINetDataset, 11),
+    (ExchangeRateDataset, 8),
+    (TrafficDataset, 862),
+    (WeatherDataset, 21),
+    (EnergyConsumptionZurichDataset, 2),
+    (WeatherZurichDataset, 8),
 ]
 
 wrong_hash_dataset = DatasetLoaderCSV(
@@ -164,9 +137,9 @@ def tmp_dir_dataset():
 
 class TestDatasetLoader:
     @pytest.mark.slow
-    @pytest.mark.parametrize("dataset_config", zip(width_datasets, datasets))
+    @pytest.mark.parametrize("dataset_config", datasets_with_width)
     def test_ok_dataset(self, dataset_config, tmp_dir_dataset):
-        width, dataset_cls = dataset_config
+        dataset_cls, width = dataset_config
         dataset = dataset_cls()
         assert dataset._DEFAULT_DIRECTORY == tmp_dir_dataset
         ts: TimeSeries = dataset.load()
