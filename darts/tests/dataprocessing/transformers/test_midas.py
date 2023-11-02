@@ -202,7 +202,7 @@ class TestMIDAS:
         """
         Tests if the transformer raises an error when the user asks for a transform in the wrong direction.
         """
-        # wrong direction / low to high freq
+        # wrong direction : low to high freq
         midas_1 = MIDAS(low_freq="M")
         with pytest.raises(ValueError):
             midas_1.fit_transform(self.quarterly_ts)
@@ -414,11 +414,10 @@ class TestMIDAS:
             monthly_multivar_with_static_covs.static_covariates
         )
 
-    # @pytest.mark.parametrize()
-    def test_int_anchored_low_freq(self):
+    def test_aligned_low_freq_anchor(self):
         """
-        Check that values are properly extracted when the beginning of the series is not aligned with the low frequency
-        offset anchor value (day of the week, week of the month).
+        Check that values are properly extracted when the beginning of the series is aligned with the low frequency
+        anchor value (day of the week).
         """
         ts = linear_timeseries(
             start=pd.Timestamp("2000-01-01"),
@@ -427,9 +426,8 @@ class TestMIDAS:
             end_value=22,
             length=22,
         )
-
-        # resampling with anchor aligned with the first date
         assert ts.time_index[0].day_name() == "Saturday"
+
         midas_sat = MIDAS(low_freq="W-SAT")
         ts_saturday_anchor = midas_sat.fit_transform(ts)
         # the resampled series start at the same timestamp
@@ -439,15 +437,27 @@ class TestMIDAS:
             ts_saturday_anchor[0].values().flatten() == ts[:7].values().flatten()
         ).all()
 
-        # reverse transform with anchor aligned
+        # inverse transform
         ts_inv_saturday_anchor = midas_sat.inverse_transform(ts_saturday_anchor)
         np.testing.assert_array_almost_equal(
             ts.values(), ts_inv_saturday_anchor.values()
         )
-        assert (ts.time_index == ts_inv_saturday_anchor.time_index).all()
+        assert ts.time_index.equals(ts_inv_saturday_anchor.time_index)
 
-        # resampling with shifted anchor
+    def test_shifted_low_freq_anchor(self):
+        """
+        Check that values are properly extracted when the beginning of the series is not aligned with the low
+        frequency anchor value (day of the week).
+        """
+        ts = linear_timeseries(
+            start=pd.Timestamp("2000-01-01"),
+            freq="D",
+            start_value=1,
+            end_value=22,
+            length=22,
+        )
         assert ts.time_index[2].day_name() == "Monday"
+
         midas_mon = MIDAS(low_freq="W-MON")
         ts_monday_anchor = midas_mon.fit_transform(ts)
         # the resampled series start at the previous anchor point (incomplete)
@@ -455,16 +465,16 @@ class TestMIDAS:
             weeks=1
         )
         assert ts_monday_anchor.time_index[1] == ts.time_index[2]
-        # the incomplete low frequency period
+        # incomplete low frequency period
         assert (
             ts_monday_anchor[0].values().flatten()[-2:] == ts[:2].values().flatten()
         ).all()
-        # the complete low frequency period
+        # complete low frequency period
         assert (
             ts_monday_anchor[1].values().flatten() == ts[2:9].values().flatten()
         ).all()
 
-        # reverse transform with shifted anchor
+        # reverse transform
         ts_inv_monday_anchor = midas_mon.inverse_transform(ts_monday_anchor)
         np.testing.assert_array_almost_equal(ts.values(), ts_inv_monday_anchor.values())
-        assert (ts.time_index == ts_inv_monday_anchor.time_index).all()
+        assert ts.time_index.equals(ts_inv_monday_anchor.time_index)
