@@ -255,6 +255,7 @@ class FFT(LocalForecastingModel):
         >>> FFT(required_matches={'month'}, trend='exp')
 
         Simple usage example, using one of the dataset available in darts
+
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import FFT
         >>> series = AirPassengersDataset().load()

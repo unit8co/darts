@@ -150,13 +150,14 @@ def extract_trend_and_seasonality(
         Only compatible with ``ADDITIVE`` model type.
     kwargs
         Other keyword arguments are passed down to the decomposition method.
+
     Returns
     -------
     Tuple[TimeSeries, TimeSeries]
         A tuple of (trend, seasonal) time series.
 
     References
-    -------
+    ----------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     .. [3] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html
@@ -248,6 +249,7 @@ def remove_from_series(
         Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enums member.
         Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
         Defaults ``ModelMode.MULTIPLICATIVE``.
+
     Returns
     -------
     TimeSeries
@@ -304,10 +306,12 @@ def remove_seasonality(
         Defaults to "naive"
     kwargs
         Other keyword arguments are passed down to the decomposition method.
-     Returns
+
+    Returns
     -------
     TimeSeries
         A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
+
     References
     -------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
@@ -354,6 +358,7 @@ def remove_trend(
         Defaults to "naive"
     kwargs
         Other keyword arguments are passed down to the decomposition method.
+
     Returns
     -------
     TimeSeries
@@ -618,7 +623,7 @@ def plot_acf(
     axis
         Optionally, an axis object to plot the ACF on.
     default_formatting
-        Whether or not to use the darts default scheme.
+        Whether to use the darts default scheme.
 
     References
     ----------
@@ -722,7 +727,7 @@ def plot_pacf(
     axis
         Optionally, an axis object to plot the ACF on.
     default_formatting
-        Whether or not to use the darts default scheme.
+        Whether to use the darts default scheme.
 
     References
     ----------
@@ -889,7 +894,7 @@ def plot_residuals_analysis(
     fill_nan
         A boolean value indicating whether NaN values should be filled in the residuals.
     default_formatting
-        Whether or not to use the darts default scheme.
+        Whether to use the darts default scheme.
     acf_max_lag
         The maximum lag to be displayed in the ACF plot. Must be less than residuals length.
     """
