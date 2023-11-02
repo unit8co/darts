@@ -737,6 +737,7 @@ class RegressionModel(GlobalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
@@ -812,6 +813,7 @@ class RegressionModel(GlobalForecastingModel):
             num_samples,
             verbose,
             predict_likelihood_parameters,
+            show_warnings,
         )
 
         # check that the input sizes of the target series and covariates match

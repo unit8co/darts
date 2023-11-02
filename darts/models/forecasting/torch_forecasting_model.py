@@ -1225,6 +1225,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1344,6 +1345,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            show_warnings=show_warnings,
         )
 
         dataset = self._build_inference_dataset(

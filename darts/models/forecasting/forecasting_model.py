@@ -2131,6 +2131,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -2169,6 +2170,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        show_warnings
+            Whether to show warnings related auto-regression and past covariates usage.
 
         Returns
         -------
@@ -2210,6 +2213,19 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                     "must be embedded in the target `series` passed to `predict()`."
                 )
             )
+        if (
+            show_warnings
+            and self.uses_past_covariates
+            and self.output_chunk_length is not None
+            and n > self.output_chunk_length
+        ):
+            logger.warning(
+                "Since `predict` was called with `n > output_chunk_length`, auto-regression is be used to forecast "
+                "the values after `output_chunk_length`. As this model uses past covariates, it will access future "
+                "values (compared to the first predicted timestep) of this covariates to produce each subsequent "
+                "`output_chunk_length` forecasts."
+                "To hide this warning, set `show_warnings=False`."
+            )
 
     def _predict_wrapper(
         self,
@@ -2220,6 +2236,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
@@ -2231,6 +2248,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             future_covariates=future_covariates,
             num_samples=num_samples,
             verbose=verbose,
+            show_warnings=show_warnings,
             **kwargs,
         )
 
