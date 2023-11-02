@@ -130,6 +130,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         Transforms series from high to low frequency using a mixed-data sampling approach. Uses and relies on
         pandas.DataFrame.resample.
 
+        When converting to/from anchorable offset [1]_, the index is rolled backward if the series does not start on
+        the anchor date to preserve all the values.
+
         Steps:
             (1) Transform series to pd.DataFrame and get frequency string for PeriodIndex
             (2) Downsample series and then upsample it again
@@ -212,10 +215,34 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             inverse_transform=False,
         )
 
+        times = midas_df.index
+        values = midas_df.to_numpy()
+        # low frequency anchoring is not just Begin/End, requires additional adjustments
+        if "-" in low_freq:
+            # shift values so that the first values in the row correspond to the time index value
+            values = np.vstack([values, np.full((1, values.shape[1]), np.NaN)])
+            values = np.roll(values, shift=1)
+
+            # adjust the time index and values based on the series start and low frequency anchor
+            anchor_adjusted_time_index = pd.date_range(
+                series.start_time(), freq=low_freq, periods=1
+            )
+            # start was rolled forward
+            if series.time_index[0] < anchor_adjusted_time_index[0]:
+                # roll back the time axis to retrieve the incomplete low frequency
+                times = midas_df.index.shift(-1)
+                # discard the row of NaN
+                values = values[:-1]
+            else:
+                # discard the row of NaN
+                values = values[1:]
+
         # back to TimeSeries
-        midas_ts = TimeSeries.from_dataframe(
-            midas_df,
+        midas_ts = TimeSeries.from_times_and_values(
+            times=times,
+            values=values,
             static_covariates=new_static_covariates,
+            columns=midas_df.columns,
         )
 
         if strip:
@@ -231,7 +258,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
     ) -> TimeSeries:
         """
         Transforms series back to high frequency by retrieving the original high frequency and reshaping the values.
-        When converting to/from anchorable offset [1]_, the original time index is not garanteed to be restored.
+
+        When converting to/from anchorable offset [1]_, the index is rolled backward if the series does not start on
+        the anchor date to preserve all the values.
 
         Steps:
             (1) Reshape the values to flatten the components introduced by the transform
@@ -284,11 +313,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             start_to_end_shift = series.time_index[0] - orig_ts_end_time
             # shift is caused by the low frequency anchoring, fitted and inversed ts have the same start
             if np.abs(start_to_start_shift) <= low_freq_timedelta:
-                print("FIRST SCENARIO")
                 start_time = orig_ts_start_time
             # shift is caused by the low frequency anchoring, inversed ts starts after the end of the fitted ts
             elif pd.Timedelta(0) < start_to_end_shift <= low_freq_timedelta:
-                print("SECOND SCENARIO")
                 start_time = orig_ts_end_time
                 shift = 1
 
