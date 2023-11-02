@@ -31,6 +31,7 @@ def _optimized_historical_forecasts_last_points_only(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
+    num_loader_workers: int = 0,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:

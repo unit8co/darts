@@ -1103,6 +1103,7 @@ class RegressionModel(GlobalForecastingModel):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        num_loader_workers: int = 0,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:

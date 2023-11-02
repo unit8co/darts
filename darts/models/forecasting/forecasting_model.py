@@ -328,10 +328,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        num_loader_workers: int = 0,
     ) -> TimeSeries:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
             kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
+        if getattr(self, "trainer_params", False):
+            kwargs["num_loader_workers"] = num_loader_workers
         return self.predict(n, num_samples=num_samples, verbose=verbose, **kwargs)
 
     @property
@@ -586,6 +589,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        num_loader_workers: int = 0,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -692,6 +696,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``False``
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
 
         Returns
         -------
@@ -829,6 +836,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 verbose=verbose,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                num_loader_workers=num_loader_workers,
             )
 
         if len(series) == 1:
@@ -1019,6 +1027,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     num_samples=num_samples,
                     verbose=verbose,
                     predict_likelihood_parameters=predict_likelihood_parameters,
+                    num_loader_workers=num_loader_workers,
                 )
                 if forecast_components is None:
                     forecast_components = forecast.columns
@@ -1076,6 +1085,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
+        num_loader_workers: int = 0,
     ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
@@ -1185,6 +1195,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress.
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
 
         Returns
         -------
@@ -1208,6 +1221,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 last_points_only=last_points_only,
                 verbose=verbose,
                 show_warnings=show_warnings,
+                num_loader_workers=num_loader_workers,
             )
         else:
             forecasts = historical_forecasts
@@ -1261,6 +1275,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: Optional[Union[int, float]] = None,
+        num_loader_workers: int = 0,
     ) -> Tuple["ForecastingModel", Dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
@@ -1374,6 +1389,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             must be between `0` and the total number of parameter combinations.
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must
             be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
 
         Returns
         -------
@@ -1457,6 +1475,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     last_points_only=last_points_only,
                     verbose=verbose,
                     show_warnings=show_warnings,
+                    num_loader_workers=num_loader_workers,
                 )
             else:  # split mode
                 model._fit_wrapper(series, past_covariates, future_covariates)
@@ -1467,6 +1486,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates,
                     num_samples=1,
                     verbose=verbose,
+                    num_loader_workers=num_loader_workers,
                 )
                 error = metric(val_series, pred)
 
@@ -2131,6 +2151,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        num_loader_workers: int = 0,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -2169,6 +2190,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
 
         Returns
         -------
@@ -2220,10 +2244,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        num_loader_workers: int = 0,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
             kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
+        if getattr(self, "trainer_params", False):
+            kwargs["num_loader_workers"] = num_loader_workers
         return self.predict(
             n,
             series,
@@ -2465,10 +2492,13 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        num_loader_workers: int = 0,
     ) -> TimeSeries:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
             kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
+        if getattr(self, "trainer_params", False):
+            kwargs["num_loader_workers"] = num_loader_workers
         return self.predict(
             n,
             future_covariates=future_covariates,
@@ -2682,10 +2712,13 @@ class TransferableFutureCovariatesLocalForecastingModel(
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        num_loader_workers: int = 0,
     ) -> TimeSeries:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
             kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
+        if getattr(self, "trainer_params", False):
+            kwargs["num_loader_workers"] = num_loader_workers
         return self.predict(
             n=n,
             series=series,

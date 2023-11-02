@@ -34,6 +34,7 @@ def _optimized_historical_forecasts(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     verbose: bool = False,
+    num_loader_workers: int = 0,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -99,6 +100,7 @@ def _optimized_historical_forecasts(
         future_covariates,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
+        num_loader_workers=num_loader_workers,
     )
 
     dataset = model._build_inference_dataset(
