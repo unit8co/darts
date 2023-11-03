@@ -2277,9 +2277,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            for the inference/prediction dataset loaders (if any).
 
         Returns
         -------
