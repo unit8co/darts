@@ -25,7 +25,7 @@ each of the (lagged) series.
 """
 
 from enum import Enum
-from typing import Dict, List, NewType, Optional, Sequence, Union
+from typing import Dict, NewType, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -375,7 +375,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         num_samples: Optional[int] = None,
         plot_type: Optional[str] = "dot",
         **kwargs,
-    ) -> List[shap.Explanation]:
+    ) -> Dict[str, Dict[str, shap.Explanation]]:
         """
         Display a shap plot summary for each horizon and each component dimension of the target.
         This method reuses the initial background data as foreground (potentially sampled) to give a general importance
@@ -398,8 +398,9 @@ class ShapExplainer(_ForecastingModelExplainer):
 
         Returns
         -------
-        shap_explanations
-            A list containing the raw Explanations of the visualized the horizons and components
+        shaps_
+            A nested dictionary {horizon : {component : shap.Explaination}} containing the raw Explanations for all
+            the horizons and components.
         """
 
         horizons, target_components = self._process_horizons_and_targets(
@@ -417,10 +418,8 @@ class ShapExplainer(_ForecastingModelExplainer):
             foreground_X_sampled, horizons, target_components
         )
 
-        shap_explanations = []
         for t in target_components:
             for h in horizons:
-                shap_explanations.append(shaps_[h][t])
                 plt.title("Target: `{}` - Horizon: {}".format(t, "t+" + str(h)))
                 shap.summary_plot(
                     shaps_[h][t],
@@ -428,8 +427,7 @@ class ShapExplainer(_ForecastingModelExplainer):
                     plot_type=plot_type,
                     **kwargs,
                 )
-
-        return shap_explanations
+        return shaps_
 
     def force_plot_from_ts(
         self,
