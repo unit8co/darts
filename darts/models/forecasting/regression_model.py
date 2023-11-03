@@ -1101,7 +1101,7 @@ class RegressionModel(GlobalForecastingModel):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
-        predict_kwargs: Dict[str, Any] = {},
+        predict_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -1121,6 +1121,9 @@ class RegressionModel(GlobalForecastingModel):
             forecast_horizon=forecast_horizon,
             allow_autoregression=False,
         )
+
+        if predict_kwargs is None:
+            predict_kwargs = dict()
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:

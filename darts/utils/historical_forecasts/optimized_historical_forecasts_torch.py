@@ -32,7 +32,7 @@ def _optimized_historical_forecasts(
     last_points_only: bool = True,
     show_warnings: bool = True,
     verbose: bool = False,
-    predict_kwargs: Dict[str, Any] = {},
+    predict_kwargs: Optional[Dict[str, Any]] = None,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -41,6 +41,9 @@ def _optimized_historical_forecasts(
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
+    if predict_kwargs is None:
+        predict_kwargs = dict()
+
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
