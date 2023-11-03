@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
@@ -20,3 +22,15 @@ class NotImportedModule:
 
     def __call__(self, *args, **kwargs):
         raise_log(ImportError(self.error_message), logger=logger)
+
+
+def _check_kwargs_keys(
+    param_name: str, kwargs_dict: Dict[str, Any], invalid_keys: List[str]
+):
+    """Check if the dictionary contain any of the invalid key"""
+    invalid_args_passed = set(invalid_keys).intersection(set(kwargs_dict.keys()))
+    if len(invalid_args_passed) > 0:
+        raise_log(
+            f"`{param_name}` can't contain the following parameters : {list(invalid_args_passed)}.",
+            logger,
+        )
