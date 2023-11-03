@@ -94,12 +94,13 @@ def _optimized_historical_forecasts(
         for cls in model.__class__.__mro__
         if cls.__name__ == "TorchForecastingModel"
     ][0]
+    gfm_kwargs = {
+        k: v
+        for k, v in predict_kwargs.items()
+        if k in ["num_samples", "predict_likelihood_parameters"]
+    }
     super(tfm_cls, model).predict(
-        forecast_horizon,
-        series,
-        past_covariates,
-        future_covariates,
-        **predict_kwargs,
+        forecast_horizon, series, past_covariates, future_covariates, **gfm_kwargs
     )
 
     dataset = model._build_inference_dataset(
