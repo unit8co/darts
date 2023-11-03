@@ -328,6 +328,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> TimeSeries:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
@@ -838,6 +839,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             outer_iterator = _build_tqdm_iterator(series, verbose)
 
+        # deactivate the warning after displaying it once
+        show_predict_warnings = show_warnings
+
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
             past_covariates_ = past_covariates[idx] if past_covariates else None
@@ -1019,7 +1023,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     num_samples=num_samples,
                     verbose=verbose,
                     predict_likelihood_parameters=predict_likelihood_parameters,
+                    show_warnings=show_predict_warnings,
                 )
+                show_predict_warnings = False
+
                 if forecast_components is None:
                     forecast_components = forecast.columns
 
@@ -2483,6 +2490,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> TimeSeries:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
@@ -2700,6 +2708,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         num_samples: int,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> TimeSeries:
         kwargs = dict()
         if self.supports_likelihood_parameter_prediction:
