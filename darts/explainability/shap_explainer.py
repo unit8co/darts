@@ -375,7 +375,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         num_samples: Optional[int] = None,
         plot_type: Optional[str] = "dot",
         **kwargs,
-    ) -> Dict[str, Dict[str, shap.Explanation]]:
+    ) -> Dict[int, Dict[str, shap.Explanation]]:
         """
         Display a shap plot summary for each horizon and each component dimension of the target.
         This method reuses the initial background data as foreground (potentially sampled) to give a general importance
