@@ -77,7 +77,8 @@ class RandomForest(RegressionModel):
         output_chunk_length
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
+            be useful to prevent auto-regression if the covariates don't extend far enough into the future or the
+            future values of the past covariates should not be accessed.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
