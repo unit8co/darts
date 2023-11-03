@@ -1093,7 +1093,6 @@ class RegressionModel(GlobalForecastingModel):
         series: Optional[Sequence[TimeSeries]],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
         future_covariates: Optional[Sequence[TimeSeries]] = None,
-        num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
@@ -1102,8 +1101,7 @@ class RegressionModel(GlobalForecastingModel):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
-        predict_likelihood_parameters: bool = False,
-        num_loader_workers: int = 0,
+        predict_kwargs: Dict[str, Any] = {},
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -1131,14 +1129,13 @@ class RegressionModel(GlobalForecastingModel):
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=num_samples,
                 start=start,
                 start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
-                predict_likelihood_parameters=predict_likelihood_parameters,
+                **predict_kwargs,
             )
         else:
             return _optimized_historical_forecasts_all_points(
@@ -1146,14 +1143,13 @@ class RegressionModel(GlobalForecastingModel):
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=num_samples,
                 start=start,
                 start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
-                predict_likelihood_parameters=predict_likelihood_parameters,
+                **predict_kwargs,
             )
 
 

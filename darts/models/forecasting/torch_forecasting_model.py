@@ -2027,7 +2027,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         series: Optional[Sequence[TimeSeries]],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
         future_covariates: Optional[Sequence[TimeSeries]] = None,
-        num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
@@ -2036,8 +2035,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
-        predict_likelihood_parameters: bool = False,
-        num_loader_workers: int = 0,
+        predict_kwargs: Dict[str, Any] = {},
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -2058,7 +2056,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=num_samples,
             start=start,
             start_format=start_format,
             forecast_horizon=forecast_horizon,
@@ -2066,9 +2063,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
             verbose=verbose,
-            num_loader_workers=num_loader_workers,
+            predict_kwargs=predict_kwargs,
         )
         return forecasts_list
 

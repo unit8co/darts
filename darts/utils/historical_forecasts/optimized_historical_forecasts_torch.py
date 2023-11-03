@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -24,7 +24,6 @@ def _optimized_historical_forecasts(
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,
     future_covariates: Optional[Sequence[TimeSeries]] = None,
-    num_samples: int = 1,
     start: Optional[Union[pd.Timestamp, float, int]] = None,
     start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
@@ -32,9 +31,8 @@ def _optimized_historical_forecasts(
     overlap_end: bool = False,
     last_points_only: bool = True,
     show_warnings: bool = True,
-    predict_likelihood_parameters: bool = False,
     verbose: bool = False,
-    num_loader_workers: int = 0,
+    predict_kwargs: Dict[str, Any] = {},
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -98,9 +96,7 @@ def _optimized_historical_forecasts(
         series,
         past_covariates,
         future_covariates,
-        num_samples=num_samples,
-        predict_likelihood_parameters=predict_likelihood_parameters,
-        num_loader_workers=num_loader_workers,
+        **predict_kwargs,
     )
 
     dataset = model._build_inference_dataset(
@@ -117,7 +113,7 @@ def _optimized_historical_forecasts(
         dataset,
         trainer=None,
         verbose=verbose,
-        predict_likelihood_parameters=predict_likelihood_parameters,
+        **predict_kwargs,
     )
 
     # torch models return list of time series in order of historical forecasts: we reorder per time series
