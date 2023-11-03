@@ -1452,6 +1452,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             must be between `0` and the total number of parameter combinations.
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must
             be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.
+        fit_kwargs
+            Additional arguments passed to the model `fit()` method, for example `max_samples_per_ts`,
+            `n_jobs_multiouput_wrapper` or `num_loader_workers`.
         predict_kwargs
             Additional arguments passed to the model `predict()` method, for example `predict_likelihood_parameters` or
             `num_loader_workers`.
@@ -2365,7 +2368,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         epochs: int = 0,
         num_loader_workers: int = 0,
     ):
-        """Propagate the supported parameters to the underlying model fit() method"""
         kwargs = dict()
         if getattr(self, "trainer_params", False):
             kwargs["trainer"] = trainer
