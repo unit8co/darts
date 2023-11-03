@@ -266,9 +266,8 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 if xgb_200_or_above:
                     self.kwargs["quantile_alpha"] = quantile
                 else:
-                    self.kwargs["objective"] = partial(
-                        xgb_quantile_loss, quantile=quantile
-                    )
+                    objective = partial(xgb_quantile_loss, quantile=quantile)
+                    self.kwargs["objective"] = objective
                 self.model = xgb.XGBRegressor(**self.kwargs)
 
                 super().fit(
