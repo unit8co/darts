@@ -4,7 +4,7 @@ Utils for time series generation
 """
 
 import math
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import holidays
 import numpy as np
@@ -528,7 +528,7 @@ def _extend_time_index_until(
 
 
 def holidays_timeseries(
-    time_index: pd.DatetimeIndex,
+    time_index: Union[TimeSeries, pd.DatetimeIndex],
     country_code: str,
     prov: str = None,
     state: str = None,
@@ -536,6 +536,7 @@ def holidays_timeseries(
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype: np.dtype = np.float64,
+    tz: Optional[str] = None,
 ) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
@@ -546,13 +547,13 @@ def holidays_timeseries(
     Parameters
     ----------
     time_index
-        The time index over which to generate the holidays
+        Either a `pd.DatetimeIndex` or a `TimeSeries` for which to generate the holidays/
     country_code
-        The country ISO code
+        The country ISO code.
     prov
-        The province
+        The province.
     state
-        The state
+        The state.
     until
         Extend the time_index up until timestamp for datetime indexed series
         and int for range indexed series, should match or exceed forecasting window.
@@ -560,17 +561,24 @@ def holidays_timeseries(
         Extend the time_index by add_length, should match or exceed forecasting window.
         Set only one of until and add_length.
     column_name
-        Optionally, the name of the value column for the returned TimeSeries
+        Optionally, the name of the value column for the returned TimeSeries/
     dtype
-        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series.
+    tz
+        Optionally, a time zone to convert the time index to before generating the holidays.
 
     Returns
     -------
     TimeSeries
         A new binary holiday TimeSeries instance.
     """
+    time_index_ts, time_index = _process_time_index(
+        time_index=time_index,
+        tz=tz,
+        until=until,
+        add_length=add_length,
+    )
 
-    time_index = _extend_time_index_until(time_index, until, add_length)
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
     country_holidays = holidays.country_holidays(
         country_code, prov=prov, state=state, years=scope
@@ -578,7 +586,7 @@ def holidays_timeseries(
     index_series = pd.Series(time_index, index=time_index)
     values = index_series.apply(lambda x: x in country_holidays).astype(dtype)
     return TimeSeries.from_times_and_values(
-        time_index, values, columns=pd.Index([column_name])
+        time_index_ts, values, columns=pd.Index([column_name])
     )
 
 
@@ -591,6 +599,7 @@ def datetime_attribute_timeseries(
     add_length: int = 0,
     dtype=np.float64,
     with_columns: Optional[Union[List[str], str]] = None,
+    tz: Optional[str] = None,
 ) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
@@ -628,6 +637,8 @@ def datetime_attribute_timeseries(
             cosine component name.
         * If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
             features.
+    tz
+        Optionally, a time zone to convert the time index to before computing the attributes.
 
     Returns
     -------
@@ -635,10 +646,12 @@ def datetime_attribute_timeseries(
         New datetime attribute TimeSeries instance.
     """
 
-    if isinstance(time_index, TimeSeries):
-        time_index = time_index.time_index
-
-    time_index = _extend_time_index_until(time_index, until, add_length)
+    time_index_ts, time_index = _process_time_index(
+        time_index=time_index,
+        tz=tz,
+        until=until,
+        add_length=add_length,
+    )
 
     raise_if_not(
         hasattr(pd.DatetimeIndex, attribute)
@@ -743,7 +756,7 @@ def datetime_attribute_timeseries(
             )
             values_df = pd.DataFrame({with_columns: values})
 
-    values_df.index = time_index
+    values_df.index = time_index_ts
     return TimeSeries.from_dataframe(values_df).astype(dtype)
 
 
@@ -818,3 +831,42 @@ def _generate_new_dates(
     return generate_index(
         start=start, freq=input_series.freq, length=n, name=input_series.time_dim
     )
+
+
+def _process_time_index(
+    time_index: Union[TimeSeries, pd.DatetimeIndex],
+    tz: Optional[str] = None,
+    until: Optional[Union[int, str, pd.Timestamp]] = None,
+    add_length: int = 0,
+) -> Tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
+    """
+    Extracts the time index, and optionally adds some time steps after the end of the index, and/or converts the
+    index to another time zone.
+
+    Returns a tuple of pd.DatetimeIndex with the first being the naive time index for generating a new TimeSeries,
+    and the second being the one used for generating datetime attributes and holidays in a potentially different
+    time zone.
+    """
+    if isinstance(time_index, TimeSeries):
+        time_index = time_index.time_index
+
+    if not isinstance(time_index, pd.DatetimeIndex):
+        raise_log(
+            ValueError(
+                "`time_index` must be a pandas `DatetimeIndex` or a `TimeSeries` indexed with a `DatetimeIndex`."
+            ),
+            logger=logger,
+        )
+    if time_index.tz is not None:
+        raise_log(
+            ValueError("`time_index` must be time zone naive."),
+            logger=logger,
+        )
+    time_index = _extend_time_index_until(time_index, until, add_length)
+
+    # convert to another time zone
+    if tz is not None:
+        time_index_ = time_index.tz_localize("UTC").tz_convert(tz)
+    else:
+        time_index_ = time_index
+    return time_index, time_index_
