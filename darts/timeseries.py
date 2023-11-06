@@ -3006,7 +3006,11 @@ class TimeSeries:
         return self[index if isinstance(index, str) else self.components[index]]
 
     def add_datetime_attribute(
-        self, attribute, one_hot: bool = False, cyclic: bool = False
+        self,
+        attribute,
+        one_hot: bool = False,
+        cyclic: bool = False,
+        tz: Optional[str] = None,
     ) -> "TimeSeries":
         """
         Build a new series with one (or more) additional component(s) that contain an attribute
@@ -3027,6 +3031,8 @@ class TimeSeries:
             Boolean value indicating whether to add the specified attribute as a cyclic encoding.
             Alternative to one_hot encoding, enable only one of the two.
             (adds 2 columns, corresponding to sin and cos transformation).
+        tz
+            Optionally, a time zone to convert the time index to before computing the attributes.
 
         Returns
         -------
@@ -3038,12 +3044,20 @@ class TimeSeries:
 
         return self.stack(
             tg.datetime_attribute_timeseries(
-                self.time_index, attribute, one_hot, cyclic
+                self.time_index,
+                attribute=attribute,
+                one_hot=one_hot,
+                cyclic=cyclic,
+                tz=tz,
             )
         )
 
     def add_holidays(
-        self, country_code: str, prov: str = None, state: str = None
+        self,
+        country_code: str,
+        prov: str = None,
+        state: str = None,
+        tz: Optional[str] = None,
     ) -> "TimeSeries":
         """
         Adds a binary univariate component to the current series that equals 1 at every index that
@@ -3063,6 +3077,8 @@ class TimeSeries:
             The province
         state
             The state
+        tz
+            Optionally, a time zone to convert the time index to before computing the attributes.
 
         Returns
         -------
@@ -3073,7 +3089,13 @@ class TimeSeries:
         from .utils import timeseries_generation as tg
 
         return self.stack(
-            tg.holidays_timeseries(self.time_index, country_code, prov, state)
+            tg.holidays_timeseries(
+                self.time_index,
+                country_code=country_code,
+                prov=prov,
+                state=state,
+                tz=tz,
+            )
         )
 
     def resample(self, freq: str, method: str = "pad", **kwargs) -> Self:
