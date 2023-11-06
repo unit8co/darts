@@ -490,6 +490,7 @@ class TestEncoder:
                 "future": [extract_month, extract_year],
             },
             "transformer": Scaler(),
+            "tz": "CET",
         }
         # given `add_encoders` dict, we expect encoders to generate the following components
         comps_expected_past = pd.Index(
@@ -1339,3 +1340,41 @@ class TestEncoder:
         assert encoded == result
         for enc, enc_train_inf in zip(encoded, encoded_train_inf):
             assert enc == enc_train_inf[enc.time_index]
+
+    def test_tz_conversion(self):
+        add_encoders = {
+            "cyclic": {"past": "hour", "future": "hour"},
+            "datetime_attribute": {"past": "hour", "future": "hour"},
+        }
+        encs = SequentialEncoder(
+            add_encoders=add_encoders,
+            input_chunk_length=12,
+            output_chunk_length=6,
+            takes_past_covariates=True,
+            takes_future_covariates=True,
+        )
+        # convert to Central European Time (CET)
+        encs_tz = SequentialEncoder(
+            add_encoders=dict({"tz": "CET"}, **add_encoders),
+            input_chunk_length=12,
+            output_chunk_length=6,
+            takes_past_covariates=True,
+            takes_future_covariates=True,
+        )
+
+        ts = tg.linear_timeseries(
+            start=pd.Timestamp("2000-01-01 00:00:00"), length=48, freq="h"
+        )
+        pc1, fc1 = encs.encode_train(ts)
+        pc2, fc2 = encs.encode_inference(n=6, target=ts)
+
+        pc1_tz, fc1_tz = encs_tz.encode_train(ts)
+        pc2_tz, fc2_tz = encs_tz.encode_inference(n=6, target=ts)
+
+        for vals, vals_tz in zip(
+            [pc1, pc2, fc1, fc2], [pc1_tz, pc2_tz, fc1_tz, fc2_tz]
+        ):
+            # CET is +1 hour compared to UTC, so we shift by 1
+            np.testing.assert_array_almost_equal(
+                np.roll(vals.values(), -1, axis=0)[:-1], vals_tz.values()[:-1]
+            )
