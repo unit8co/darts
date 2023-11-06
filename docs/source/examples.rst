@@ -77,7 +77,7 @@ with Darts using the Optuna library for hyperparameter optimization.
    examples/17-hyperparameter-optimization.ipynb
 
 Regression Models
-=============================
+=================
 
 Regression models example notebook:
 

@@ -856,13 +856,13 @@ class WeatherZurichDataset(DatasetLoaderCSV):
     Components Descriptions:
 
     * Hr [%Hr] : Relative humidity
-    * RainDur [min] : Precipitation period
+    * RainDur [min] : Duration of precipitation
     * T [°C] : Temperature
     * WD [°] : Wind direction
-    * WVv [m/s] : Vectoriel wind speed
+    * WVv [m/s] : Wind vector speed
     * p [hPa] : Air pressure
-    * WVs [m/s] : Scalar wind speed
-    * StrGlo [W/m2] : Global radiation
+    * WVs [m/s] : Wind scalar speed
+    * StrGlo [W/m2] : Global solar irradiation
 
     Note: before 2018, the scalar speeds were calculated from the 30 minutes vector data.
 
