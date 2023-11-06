@@ -1,6 +1,5 @@
 """
 TorchForecastingModel
----------------------
 
 This file contains several abstract classes:
 
@@ -29,9 +28,15 @@ import shutil
 import sys
 from abc import ABC, abstractmethod
 from glob import glob
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
@@ -75,6 +80,13 @@ from darts.utils.data.training_dataset import (
     PastCovariatesTrainingDataset,
     SplitCovariatesTrainingDataset,
     TrainingDataset,
+)
+from darts.utils.historical_forecasts import (
+    _check_optimizable_historical_forecasts_global_models,
+    _process_historical_forecast_input,
+)
+from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
+    _optimized_historical_forecasts,
 )
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
@@ -211,7 +223,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         random_state
@@ -567,6 +580,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
     ) -> InferenceDataset:
         """
         Each model must specify the default training dataset to use.
@@ -1337,6 +1352,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n=n,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            stride=0,
+            bounds=None,
         )
 
         predictions = self.predict_from_dataset(
@@ -1511,7 +1528,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
             elif elem is None:
                 aggregated.append(None)
-            elif isinstance(elem, TimeSeries):
+            else:
                 aggregated.append([sample[i] for sample in batch])
         return tuple(aggregated)
 
@@ -1981,6 +1998,72 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else True  # all torch models can be probabilistic (via Dropout)
         )
 
+    def _check_optimizable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings: bool,
+    ) -> bool:
+        """
+        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
+        (no auto-regression required).
+        """
+        return _check_optimizable_historical_forecasts_global_models(
+            model=self,
+            forecast_horizon=forecast_horizon,
+            retrain=retrain,
+            show_warnings=show_warnings,
+            allow_autoregression=True,
+        )
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Optional[Sequence[TimeSeries]],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
+        """
+        For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
+        datasets for each forecastable index and series.
+        """
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            allow_autoregression=True,
+        )
+        forecasts_list = _optimized_historical_forecasts(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            overlap_end=overlap_end,
+            last_points_only=last_points_only,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            verbose=verbose,
+        )
+        return forecasts_list
+
     def _load_encoders(
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
     ) -> Tuple[SequentialEncoder, Dict]:
@@ -2169,9 +2252,13 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     """
     For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
     that training/inference datasets have target and covariates in first and second position to do the checks.
+
+    - `train_sample` comes with last dimension (static covs, target TimeSeries)
+    - `predict_sample` comes with last dimensions (..., static covs, target TimeSeries, first prediction time stamp)
+
     """
     tgt_train, cov_train, static_train = train_sample[:2] + (train_sample[-2],)
-    tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-2],)
+    tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-3],)
     raise_if_not(
         tgt_train.shape[-1] == tgt_pred.shape[-1],
         "The provided target has a dimension (width) that does not match the dimension "
@@ -2292,6 +2379,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
     ) -> PastCovariatesInferenceDataset:
         raise_if_not(
             future_covariates is None,
@@ -2302,6 +2391,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             target_series=target,
             covariates=past_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,
@@ -2391,6 +2482,8 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
     ) -> FutureCovariatesInferenceDataset:
         raise_if_not(
             past_covariates is None,
@@ -2401,6 +2494,8 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             target_series=target,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2484,11 +2579,15 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
     ) -> DualCovariatesInferenceDataset:
         return DualCovariatesInferenceDataset(
             target_series=target,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,
@@ -2572,12 +2671,16 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
     ) -> MixedCovariatesInferenceDataset:
         return MixedCovariatesInferenceDataset(
             target_series=target,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,
@@ -2658,12 +2761,16 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         n: int,
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
     ) -> SplitCovariatesInferenceDataset:
         return SplitCovariatesInferenceDataset(
             target_series=target,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             use_static_covariates=self.uses_static_covariates,

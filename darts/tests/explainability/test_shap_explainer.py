@@ -596,6 +596,14 @@ class TestShapExplainer:
                 "power",
             )
 
+        # Check the dimensions of returned values
+        dict_shap_values = shap_explain.summary_plot(show=False)
+        # One nested dict per horizon
+        assert len(dict_shap_values) == m_0.output_chunk_length
+        # Size of nested dict match number of component
+        for i in range(1, m_0.output_chunk_length + 1):
+            assert len(dict_shap_values[i]) == self.target_ts.width
+
         # Wrong component name
         with pytest.raises(ValueError):
             shap_explain.summary_plot(horizons=[1], target_components=["test"])

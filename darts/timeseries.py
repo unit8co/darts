@@ -2991,7 +2991,11 @@ class TimeSeries:
         return self[index if isinstance(index, str) else self.components[index]]
 
     def add_datetime_attribute(
-        self, attribute, one_hot: bool = False, cyclic: bool = False
+        self,
+        attribute,
+        one_hot: bool = False,
+        cyclic: bool = False,
+        tz: Optional[str] = None,
     ) -> "TimeSeries":
         """
         Build a new series with one (or more) additional component(s) that contain an attribute
@@ -3012,6 +3016,8 @@ class TimeSeries:
             Boolean value indicating whether to add the specified attribute as a cyclic encoding.
             Alternative to one_hot encoding, enable only one of the two.
             (adds 2 columns, corresponding to sin and cos transformation).
+        tz
+            Optionally, a time zone to convert the time index to before computing the attributes.
 
         Returns
         -------
@@ -3023,12 +3029,20 @@ class TimeSeries:
 
         return self.stack(
             tg.datetime_attribute_timeseries(
-                self.time_index, attribute, one_hot, cyclic
+                self.time_index,
+                attribute=attribute,
+                one_hot=one_hot,
+                cyclic=cyclic,
+                tz=tz,
             )
         )
 
     def add_holidays(
-        self, country_code: str, prov: str = None, state: str = None
+        self,
+        country_code: str,
+        prov: str = None,
+        state: str = None,
+        tz: Optional[str] = None,
     ) -> "TimeSeries":
         """
         Adds a binary univariate component to the current series that equals 1 at every index that
@@ -3048,6 +3062,8 @@ class TimeSeries:
             The province
         state
             The state
+        tz
+            Optionally, a time zone to convert the time index to before computing the attributes.
 
         Returns
         -------
@@ -3058,7 +3074,13 @@ class TimeSeries:
         from .utils import timeseries_generation as tg
 
         return self.stack(
-            tg.holidays_timeseries(self.time_index, country_code, prov, state)
+            tg.holidays_timeseries(
+                self.time_index,
+                country_code=country_code,
+                prov=prov,
+                state=state,
+                tz=tz,
+            )
         )
 
     def resample(self, freq: str, method: str = "pad", **kwargs) -> Self:
@@ -3748,6 +3770,9 @@ class TimeSeries:
         ax
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
+        alpha
+             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            probabilistic series.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3821,10 +3846,9 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            # temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
-            kwargs["alpha"] = 1
-
+            if not self.is_deterministic:
+                kwargs["alpha"] = 1
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -3856,7 +3880,6 @@ class TimeSeries:
                     **kwargs,
                 )
             color_used = p[0].get_color() if default_formatting else None
-            kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
             if (
@@ -3872,11 +3895,7 @@ class TimeSeries:
                         low_series,
                         high_series,
                         color=color_used,
-                        alpha=(
-                            alpha_confidence_intvls
-                            if "alpha" not in kwargs
-                            else kwargs["alpha"]
-                        ),
+                        alpha=(alpha if alpha is not None else alpha_confidence_intvls),
                     )
                 else:
                     ax.plot(
