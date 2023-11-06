@@ -497,6 +497,13 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
     @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        """
+        Whether the model supports optimized historical forecasts
+        """
+        return False
+
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         return self.is_global_ensemble
 

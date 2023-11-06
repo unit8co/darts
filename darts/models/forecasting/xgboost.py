@@ -25,6 +25,10 @@ from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
 
+# Check whether we are running xgboost >= 2.0.0 for quantile regression
+tokens = xgb.__version__.split(".")
+xgb_200_or_above = int(tokens[0]) >= 2
+
 
 def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
     """Custom loss function for XGBoost to compute quantile loss gradient.
@@ -140,6 +144,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         Examples
         --------
         Deterministic forecasting, using past/future covariates (optional)
+
         >>> from darts.datasets import WeatherDataset
         >>> from darts.models import XGBModel
         >>> series = WeatherDataset().load()
@@ -182,8 +187,12 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             if likelihood in {"poisson"}:
                 self.kwargs["objective"] = f"count:{likelihood}"
             elif likelihood == "quantile":
+                if xgb_200_or_above:
+                    # leverage built-in Quantile Regression
+                    self.kwargs["objective"] = "reg:quantileerror"
                 self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
                 self._model_container = self._get_model_container()
+
             self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
 
         super().__init__(
@@ -248,12 +257,17 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 )
             ]
 
+        # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
+        #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         if self.likelihood == "quantile":
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in self.quantiles:
-                obj_func = partial(xgb_quantile_loss, quantile=quantile)
-                self.kwargs["objective"] = obj_func
+                if xgb_200_or_above:
+                    self.kwargs["quantile_alpha"] = quantile
+                else:
+                    objective = partial(xgb_quantile_loss, quantile=quantile)
+                    self.kwargs["objective"] = objective
                 self.model = xgb.XGBRegressor(**self.kwargs)
 
                 super().fit(

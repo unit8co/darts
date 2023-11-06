@@ -3748,6 +3748,9 @@ class TimeSeries:
         ax
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
+        alpha
+             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            probabilistic series.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3821,10 +3824,9 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            # temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
-            kwargs["alpha"] = 1
-
+            if not self.is_deterministic:
+                kwargs["alpha"] = 1
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -3856,7 +3858,6 @@ class TimeSeries:
                     **kwargs,
                 )
             color_used = p[0].get_color() if default_formatting else None
-            kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
             if (
@@ -3872,11 +3873,7 @@ class TimeSeries:
                         low_series,
                         high_series,
                         color=color_used,
-                        alpha=(
-                            alpha_confidence_intvls
-                            if "alpha" not in kwargs
-                            else kwargs["alpha"]
-                        ),
+                        alpha=(alpha if alpha is not None else alpha_confidence_intvls),
                     )
                 else:
                     ax.plot(
