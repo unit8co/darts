@@ -4,9 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from darts import TimeSeries
 from darts.utils.timeseries_generation import (
     autoregressive_timeseries,
     constant_timeseries,
+    datetime_attribute_timeseries,
     gaussian_timeseries,
     generate_index,
     holidays_timeseries,
@@ -183,6 +185,27 @@ class TestTimeSeriesGeneration:
         with pytest.raises(ValueError):
             holidays_timeseries(time_index_3, "US", until=163)
 
+        # test non time zone-naive
+        with pytest.raises(ValueError):
+            holidays_timeseries(time_index_3.tz_localize("UTC"), "US", until=163)
+
+        # test holiday with and without time zone, 1st of August is national holiday in Switzerland
+        # time zone naive (e.g. in UTC)
+        idx = generate_index(
+            start=pd.Timestamp("2000-07-31 22:00:00"), length=3, freq="h"
+        )
+        ts = holidays_timeseries(idx, country_code="CH")
+        np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([0, 0, 1]))
+
+        # time zone CET (+2 hour compared to UTC)
+        ts = holidays_timeseries(idx, country_code="CH", tz="CET")
+        np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([1, 1, 1]))
+
+        # check same from TimeSeries
+        series = TimeSeries.from_times_and_values(times=idx, values=np.arange(len(idx)))
+        ts = holidays_timeseries(series, country_code="CH", tz="CET")
+        np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([1, 1, 1]))
+
     def test_generate_index(self):
         def test_routine(
             expected_length,
@@ -321,3 +344,93 @@ class TestTimeSeriesGeneration:
 
         for coef_assert in [[-1], [-1, 1.618], [1, 2, 3], list(range(10))]:
             test_calculation(coef=coef_assert)
+
+    def test_datetime_attribute_timeseries(self):
+        idx = generate_index(start=pd.Timestamp("2000-01-01"), length=48, freq="h")
+
+        def helper_routine(idx, attr, vals_exp, **kwargs):
+            ts = datetime_attribute_timeseries(idx, attribute=attr, **kwargs)
+            vals_exp = np.array(vals_exp, dtype=ts.dtype)
+            if len(vals_exp.shape) == 1:
+                vals_act = ts.values()[:, 0]
+            else:
+                vals_act = ts.values()
+            np.testing.assert_array_almost_equal(vals_act, vals_exp)
+
+        # no pd.DatetimeIndex
+        with pytest.raises(ValueError) as err:
+            helper_routine(
+                pd.RangeIndex(start=0, stop=len(idx)), "h", vals_exp=np.arange(len(idx))
+            )
+        assert str(err.value).startswith(
+            "`time_index` must be a pandas `DatetimeIndex`"
+        )
+
+        # invalid attribute
+        with pytest.raises(ValueError) as err:
+            helper_routine(idx, "h", vals_exp=np.arange(len(idx)))
+        assert str(err.value).startswith(
+            "attribute `h` needs to be an attribute of pd.DatetimeIndex."
+        )
+
+        # no time zone aware index
+        with pytest.raises(ValueError) as err:
+            helper_routine(idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx)))
+        assert "`time_index` must be time zone naive." == str(err.value)
+
+        # ===> datetime attribute
+        # hour
+        vals = [i for i in range(24)] * 2
+        helper_routine(idx, "hour", vals_exp=vals)
+
+        # hour from TimeSeries
+        helper_routine(
+            TimeSeries.from_times_and_values(times=idx, values=np.arange(len(idx))),
+            "hour",
+            vals_exp=vals,
+        )
+
+        # tz=CET is +1 hour to UTC
+        vals = vals[1:] + [0]
+        helper_routine(idx, "hour", vals_exp=vals, tz="CET")
+
+        # day
+        vals = [1] * 24 + [2] * 24
+        helper_routine(idx, "day", vals_exp=vals)
+
+        # dayofweek
+        vals = [5] * 24 + [6] * 24
+        helper_routine(idx, "dayofweek", vals_exp=vals)
+
+        # month
+        vals = [1] * 48
+        helper_routine(idx, "month", vals_exp=vals)
+
+        # ===> one hot encoded
+        # month
+        vals = [1] + [0] * 11
+        vals = [vals for _ in range(48)]
+        helper_routine(idx, "month", vals_exp=vals, one_hot=True)
+
+        # tz=CET, month
+        vals = [1] + [0] * 11
+        vals = [vals for _ in range(48)]
+        helper_routine(idx, "month", vals_exp=vals, tz="CET", one_hot=True)
+
+        # ===> sine/cosine cyclic encoding
+        # hour (period = 24 hours in one day)
+        period = 24
+        freq = 2 * np.pi / period
+        vals_dta = [i for i in range(24)] * 2
+        vals = np.array(vals_dta)
+        sin_vals = np.sin(freq * vals)[:, None]
+        cos_vals = np.cos(freq * vals)[:, None]
+        vals = np.concatenate([sin_vals, cos_vals], axis=1)
+        helper_routine(idx, "hour", vals_exp=vals, cyclic=True)
+
+        # tz=CET, hour
+        vals = np.array(vals_dta[1:] + [0])
+        sin_vals = np.sin(freq * vals)[:, None]
+        cos_vals = np.cos(freq * vals)[:, None]
+        vals = np.concatenate([sin_vals, cos_vals], axis=1)
+        helper_routine(idx, "hour", vals_exp=vals, tz="CET", cyclic=True)
