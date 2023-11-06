@@ -31,7 +31,6 @@ from darts.datasets import (
     UberTLCDataset,
     USGasolineDataset,
     WeatherDataset,
-    WeatherZurichDataset,
     WineDataset,
     WoolyDataset,
 )
@@ -70,8 +69,7 @@ datasets_with_width = [
     (ExchangeRateDataset, 8),
     (TrafficDataset, 862),
     (WeatherDataset, 21),
-    (EnergyConsumptionZurichDataset, 2),
-    (WeatherZurichDataset, 8),
+    (EnergyConsumptionZurichDataset, 10),
 ]
 
 wrong_hash_dataset = DatasetLoaderCSV(
