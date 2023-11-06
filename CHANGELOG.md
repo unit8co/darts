@@ -16,8 +16,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added callback `darts.utils.callbacks.TFMProgressBar` to customize at which model stages to display the progress bar. [#2020](https://github.com/unit8co/darts/pull/2020) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to documentation:
   - Adapted the example notebooks to properly apply data transformers and avoid look-ahead bias. [#2020](https://github.com/unit8co/darts/pull/2020) by [Samriddhi Singh](https://github.com/SimTheGreat). 
+- Improvements to Regression Models:
+  - `XGBModel` now leverages XGBoost's native Quantile Regression support that was released in version 2.0.0 for improved probabilistic forecasts. [#2051](https://github.com/unit8co/darts/pull/2051) by [Dennis Bader](https://github.com/dennisbader).
 - New `MIDAS` fittable-invertible data-transformer, which uses mixed-data sampling to convert `TimeSeries` from high frequency to low frequency. [#1820](https://github.com/unit8co/darts/pull/1820) by [Boyd Biersteker](https://github.com/Beerstabr) and [Antoine Madrona](https://github.com/madtoinou).
-
 
 **Fixed**
 - Fixed a bug when calling optimized `historical_forecasts()` for a `RegressionModel` trained with unequal component-specific lags. [#2040](https://github.com/unit8co/darts/pull/2040) by [Antoine Madrona](https://github.com/madtoinou).
