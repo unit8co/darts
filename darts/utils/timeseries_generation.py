@@ -547,7 +547,7 @@ def holidays_timeseries(
     Parameters
     ----------
     time_index
-        Either a `pd.DatetimeIndex` or a `TimeSeries` for which to generate the holidays/
+        Either a `pd.DatetimeIndex` or a `TimeSeries` for which to generate the holidays.
     country_code
         The country ISO code.
     prov
@@ -561,7 +561,7 @@ def holidays_timeseries(
         Extend the time_index by add_length, should match or exceed forecasting window.
         Set only one of until and add_length.
     column_name
-        Optionally, the name of the value column for the returned TimeSeries/
+        Optionally, the name of the value column for the returned TimeSeries.
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series.
     tz

@@ -358,18 +358,25 @@ class TestTimeSeriesGeneration:
             np.testing.assert_array_almost_equal(vals_act, vals_exp)
 
         # no pd.DatetimeIndex
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             helper_routine(
                 pd.RangeIndex(start=0, stop=len(idx)), "h", vals_exp=np.arange(len(idx))
             )
+        assert str(err.value).startswith(
+            "`time_index` must be a pandas `DatetimeIndex`"
+        )
 
         # invalid attribute
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             helper_routine(idx, "h", vals_exp=np.arange(len(idx)))
+        assert str(err.value).startswith(
+            "attribute `h` needs to be an attribute of pd.DatetimeIndex."
+        )
 
         # no time zone aware index
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             helper_routine(idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx)))
+        assert "`time_index` must be time zone naive." == str(err.value)
 
         # ===> datetime attribute
         # hour

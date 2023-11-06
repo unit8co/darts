@@ -884,7 +884,7 @@ class SequentialEncoder(Encoder):
             BoxCox(). The transformers will be fitted on the training dataset when calling calling `model.fit()`.
             The training, validation and inference datasets are then transformed equally.
         Supported time zone:
-            optionally, apply a time zone conversion with keyword 'tz'. This converts the time zone-naive index to a
+            Optionally, apply a time zone conversion with keyword 'tz'. This converts the time zone-naive index to a
             timezone `'tz'` before applying the `'cyclic'` or `'datetime_attribute'` temporal encoders.
 
         An example of a valid `add_encoders` dict for hourly data:
