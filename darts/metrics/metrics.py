@@ -107,6 +107,86 @@ def multi_ts_support(func):
     return wrapper_multi_ts_support
 
 
+def multi_ts_support_insample(func):
+    """
+    This decorator modifies a metric function to handle sequences of TimeSeries instances.
+    It computes the metric for each pair of corresponding TimeSeries in the actual and predicted sequences,
+    and then aggregates these metrics into a single value using a reduction function.
+
+    Parameters
+    ----------
+    func : Callable
+        The metric function to be modified. This function should take two TimeSeries instances and return a float.
+
+    Returns
+    -------
+    Callable
+        The modified metric function.
+    """
+
+    @wraps(func)
+    def wrapper_multi_ts_support_insample(*args, **kwargs):
+        actual_series = (
+            kwargs["actual_series"] if "actual_series" in kwargs else args[0]
+        )
+        pred_series = kwargs["pred_series"] if "pred_series" in kwargs else args[1]
+        insample = kwargs["insample"] if "insample" in kwargs else args[2]
+
+        n_jobs = kwargs.pop("n_jobs", signature(func).parameters["n_jobs"].default)
+        verbose = kwargs.pop("verbose", signature(func).parameters["verbose"].default)
+
+        raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
+        raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
+
+        actual_series = (
+            [actual_series]
+            if not isinstance(actual_series, Sequence)
+            else actual_series
+        )
+        pred_series = (
+            [pred_series] if not isinstance(pred_series, Sequence) else pred_series
+        )
+        insample = [insample] if not isinstance(insample, Sequence) else insample
+
+        raise_if_not(
+            len(actual_series) == len(pred_series) == len(insample),
+            "The TimeSeries sequences must have the same length.",
+        )
+
+        num_series_in_args = (
+            int("actual_series" not in kwargs)
+            + int("pred_series" not in kwargs)
+            + int("insample" not in kwargs)
+        )
+        kwargs.pop("actual_series", 0)
+        kwargs.pop("pred_series", 0)
+        kwargs.pop("insample", 0)
+
+        iterator = _build_tqdm_iterator(
+            iterable=zip(actual_series, pred_series, insample),
+            verbose=verbose,
+            total=len(actual_series),
+        )
+
+        value_list = _parallel_apply(
+            iterator=iterator,
+            fn=func,
+            n_jobs=n_jobs,
+            fn_args=args[num_series_in_args:],
+            fn_kwargs=kwargs,
+        )
+
+        if len(value_list) == 1:
+            value_list = value_list[0]
+
+        if "inter_reduction" in kwargs:
+            return kwargs["inter_reduction"](value_list)
+        else:
+            return signature(func).parameters["inter_reduction"].default(value_list)
+
+    return wrapper_multi_ts_support_insample
+
+
 def multivariate_support(func):
     """
     This decorator transforms a metric function that takes as input two univariate TimeSeries instances
@@ -143,6 +223,156 @@ def multivariate_support(func):
             return signature(func).parameters["reduction"].default(value_list)
 
     return wrapper_multivariate_support
+
+
+def multivariate_support_insample(func):
+    """
+    This decorator transforms a metric function that takes as input two univariate TimeSeries instances
+    and an insample TimeSeries instance into a function that takes two equally-sized multivariate TimeSeries instances,
+    computes the pairwise univariate metrics for components with the same indices, and returns a float value that is
+    computed as a function of all the univariate metrics using a `reduction` subroutine passed as argument to the metric function.
+    """
+
+    @wraps(func)
+    def wrapper_multivariate_support_insample(*args, **kwargs):
+        actual_series = args[0]
+        pred_series = args[1]
+        insample = args[2]
+        m = args[3]
+        intersect = args[4]
+
+        raise_if_not(
+            actual_series.width == pred_series.width,
+            "The two TimeSeries instances must have the same width.",
+        )
+        raise_if_not(
+            actual_series.width == insample.width,
+            "The insample TimeSeries must have the same width as the other series.",
+        )
+        raise_if_not(
+            insample.end_time() + insample.freq == pred_series.start_time(),
+            "The pred_series must be the forecast of the insample series",
+        )
+
+        insample_ = (
+            insample.quantile_timeseries(quantile=0.5)
+            if insample.is_stochastic
+            else insample
+        )
+
+        value_list = []
+        for i in range(actual_series.width):
+            y_true, y_hat = _get_values_or_raise(
+                actual_series.univariate_component(i),
+                pred_series.univariate_component(i),
+                intersect,
+                remove_nan_union=False,
+            )
+
+            x_t = insample_.univariate_component(i).values()
+
+            if m is None:
+                test_season, m = check_seasonality(insample)
+            if not test_season:
+                warn(
+                    "No seasonality found when computing RMSSE. Fixing the period to 1.",
+                    UserWarning,
+                )
+                m = 1
+
+            value_list.append(func(y_true, y_hat, x_t, m, *args[5:], **kwargs))
+
+        if "reduction" in kwargs:
+            return kwargs["reduction"](value_list)
+        else:
+            return signature(func).parameters["reduction"].default(value_list)
+
+    return wrapper_multivariate_support_insample
+
+
+def multivariate_insample_metric(
+    actual_series: TimeSeries,
+    pred_series: TimeSeries,
+    insample: TimeSeries,
+    m: int,
+    intersect: bool,
+    reduction: Callable[[np.ndarray], float],
+    metric_fn: Callable[[np.ndarray, np.ndarray, np.ndarray, int], np.ndarray],
+) -> float:
+    """
+    Compute a multivariate insample metric.
+
+    Parameters
+    ----------
+    actual_series : TimeSeries
+        The actual series.
+    pred_series : TimeSeries
+        The predicted series.
+    insample : TimeSeries
+        The insample series.
+    m : int
+        The period for seasonal differencing.
+    intersect : bool
+        Whether to only consider the time intersection between `actual_series` and `pred_series`.
+    reduction : Callable[[np.ndarray], float]
+        The reduction function to aggregate the metric results.
+    metric_fn : Callable[[np.ndarray, np.ndarray, np.ndarray, int], np.ndarray]
+        The metric function to compute the metric for a single component of the multivariate time series.
+
+    Returns
+    -------
+    float
+        The aggregated metric result.
+
+    Raises
+    ------
+    ValueError
+        If the two TimeSeries instances do not have the same width.
+        If the insample TimeSeries does not have the same width as the other series.
+        If the pred_series is not the forecast of the insample series.
+    """
+    raise_if_not(
+        actual_series.width == pred_series.width,
+        "The two TimeSeries instances must have the same width.",
+    )
+    raise_if_not(
+        actual_series.width == insample.width,
+        "The insample TimeSeries must have the same width as the other series.",
+    )
+    raise_if_not(
+        insample.end_time() + insample.freq == pred_series.start_time(),
+        "The pred_series must be the forecast of the insample series",
+    )
+
+    insample_ = (
+        insample.quantile_timeseries(quantile=0.5)
+        if insample.is_stochastic
+        else insample
+    )
+
+    value_list = []
+    for i in range(actual_series.width):
+        y_true, y_hat = _get_values_or_raise(
+            actual_series.univariate_component(i),
+            pred_series.univariate_component(i),
+            intersect,
+            remove_nan_union=False,
+        )
+
+        x_t = insample_.univariate_component(i).values()
+
+        if m is None:
+            test_season, m = check_seasonality(insample)
+        if not test_season:
+            warn(
+                "No seasonality found when computing RMSSE. Fixing the period to 1.",
+                UserWarning,
+            )
+            m = 1
+
+        value_list.append(metric_fn(y_true, y_hat, x_t, m))
+
+    return reduction(value_list)
 
 
 def _get_values(
@@ -665,7 +895,8 @@ def smape(
     return 200.0 * np.mean(np.abs(y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat)))
 
 
-# mase cannot leverage multivariate and multi_ts with the decorator since also the `insample` is a Sequence[TimeSeries]
+@multi_ts_support_insample
+@multivariate_support_insample
 def mase(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -729,126 +960,17 @@ def mase(
         The Mean Absolute Scaled Error (MASE)
     """
 
-    def _multivariate_mase(
-        actual_series: TimeSeries,
-        pred_series: TimeSeries,
-        insample: TimeSeries,
-        m: int,
-        intersect: bool,
-        reduction: Callable[[np.ndarray], float],
-    ):
-        raise_if_not(
-            actual_series.width == pred_series.width,
-            "The two TimeSeries instances must have the same width.",
-            logger,
-        )
-        raise_if_not(
-            actual_series.width == insample.width,
-            "The insample TimeSeries must have the same width as the other series.",
-            logger,
-        )
-        raise_if_not(
-            insample.end_time() + insample.freq == pred_series.start_time(),
-            "The pred_series must be the forecast of the insample series",
-            logger,
-        )
+    y_true = actual_series
+    y_hat = pred_series
+    x_t = insample
 
-        insample_ = (
-            insample.quantile_timeseries(quantile=0.5)
-            if insample.is_stochastic
-            else insample
-        )
-
-        value_list = []
-        for i in range(actual_series.width):
-            # old implementation of mase on univariate TimeSeries
-            if m is None:
-                test_season, m = check_seasonality(insample)
-                if not test_season:
-                    warn(
-                        "No seasonality found when computing MASE. Fixing the period to 1.",
-                        UserWarning,
-                    )
-                    m = 1
-
-            y_true, y_hat = _get_values_or_raise(
-                actual_series.univariate_component(i),
-                pred_series.univariate_component(i),
-                intersect,
-                remove_nan_union=False,
-            )
-
-            x_t = insample_.univariate_component(i).values()
-            errors = np.abs(y_true - y_hat)
-            scale = np.mean(np.abs(x_t[m:] - x_t[:-m]))
-            raise_if_not(
-                not np.isclose(scale, 0),
-                "cannot use MASE with periodical signals",
-                logger,
-            )
-            value_list.append(np.mean(errors / scale))
-
-        return reduction(value_list)
-
-    if isinstance(actual_series, TimeSeries):
-        raise_if_not(
-            isinstance(pred_series, TimeSeries),
-            "Expecting pred_series to be TimeSeries",
-        )
-        raise_if_not(
-            isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries"
-        )
-        return _multivariate_mase(
-            actual_series=actual_series,
-            pred_series=pred_series,
-            insample=insample,
-            m=m,
-            intersect=intersect,
-            reduction=reduction,
-        )
-
-    elif isinstance(actual_series, Sequence) and isinstance(
-        actual_series[0], TimeSeries
-    ):
-        raise_if_not(
-            isinstance(pred_series, Sequence)
-            and isinstance(pred_series[0], TimeSeries),
-            "Expecting pred_series to be a Sequence[TimeSeries]",
-        )
-        raise_if_not(
-            isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
-            "Expecting insample to be a Sequence[TimeSeries]",
-        )
-        raise_if_not(
-            len(pred_series) == len(actual_series)
-            and len(pred_series) == len(insample),
-            "The TimeSeries sequences must have the same length.",
-            logger,
-        )
-
-        raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
-        raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
-
-        iterator = _build_tqdm_iterator(
-            iterable=zip(actual_series, pred_series, insample),
-            verbose=verbose,
-            total=len(actual_series),
-        )
-
-        value_list = _parallel_apply(
-            iterator=iterator,
-            fn=_multivariate_mase,
-            n_jobs=n_jobs,
-            fn_args=dict(),
-            fn_kwargs={"m": m, "intersect": intersect, "reduction": reduction},
-        )
-        return inter_reduction(value_list)
-    else:
-        raise_log(
-            ValueError(
-                "Input type not supported, only TimeSeries and Sequence[TimeSeries] are accepted."
-            )
-        )
+    errors = y_true - y_hat
+    scale = np.mean(np.abs(x_t[m:] - x_t[:-m]))
+    raise_if_not(
+        not np.isclose(scale, 0),
+        "cannot use MASE with periodical signals",
+    )
+    return np.mean(np.abs(errors)) / scale
 
 
 @multi_ts_support
@@ -1288,6 +1410,8 @@ def quantile_loss(
     return losses.mean()
 
 
+@multi_ts_support_insample
+@multivariate_support_insample
 def rmsse(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -1352,130 +1476,14 @@ def rmsse(
         The Root Mean Squared Scaled Error (RMSSE)
     """
 
-    def _multivariate_rmsse(
-        actual_series: TimeSeries,
-        pred_series: TimeSeries,
-        insample: TimeSeries,
-        m: int,
-        intersect: bool,
-        reduction: Callable[[np.ndarray], float],
-    ):
-        raise_if_not(
-            actual_series.width == pred_series.width,
-            "The two TimeSeries instances must have the same width.",
-            logger,
-        )
-        raise_if_not(
-            actual_series.width == insample.width,
-            "The insample TimeSeries must have the same width as the other series.",
-            logger,
-        )
-        raise_if_not(
-            insample.end_time() + insample.freq == pred_series.start_time(),
-            "The pred_series must be the forecast of the insample series",
-            logger,
-        )
+    y_true = actual_series
+    y_hat = pred_series
+    x_t = insample
 
-        insample_ = (
-            insample.quantile_timeseries(quantile=0.5)
-            if insample.is_stochastic
-            else insample
-        )
-
-        value_list = []
-        for i in range(actual_series.width):
-            if m is None:
-                test_season, m = check_seasonality(insample)
-                if not test_season:
-                    warn(
-                        "No seasonality found when computing RMSSE. Fixing the period to 1.",
-                        UserWarning,
-                    )
-                    m = 1
-
-            # y_true, y_hat = _get_values_or_raise(
-            #    actual_series.univariate_component(i),
-            #    pred_series.univariate_component(i),
-            #    intersect,
-            #    remove_nan_union=False,
-            # )
-
-            x_t = insample_.univariate_component(i).values()
-            # errors = y_true - y_hat
-            scale = np.sqrt(np.mean(np.square(x_t[m:] - x_t[:-m])))
-            raise_if_not(
-                not np.isclose(scale, 0),
-                "cannot use RMSSE with periodical signals",
-                logger,
-            )
-            # value_list.append(np.sqrt(np.mean(np.square(errors))) / scale)
-            value_list.append(
-                rmse(
-                    actual_series.univariate_component(i),
-                    pred_series.univariate_component(i),
-                    intersect=intersect,
-                )
-                / scale
-            )
-
-        return reduction(value_list)
-
-    if isinstance(actual_series, TimeSeries):
-        raise_if_not(
-            isinstance(pred_series, TimeSeries),
-            "Expecting pred_series to be TimeSeries",
-        )
-        raise_if_not(
-            isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries"
-        )
-        return _multivariate_rmsse(
-            actual_series=actual_series,
-            pred_series=pred_series,
-            insample=insample,
-            m=m,
-            intersect=intersect,
-            reduction=reduction,
-        )
-
-    elif isinstance(actual_series, Sequence) and isinstance(
-        actual_series[0], TimeSeries
-    ):
-        raise_if_not(
-            isinstance(pred_series, Sequence)
-            and isinstance(pred_series[0], TimeSeries),
-            "Expecting pred_series to be a Sequence[TimeSeries]",
-        )
-        raise_if_not(
-            isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
-            "Expecting insample to be a Sequence[TimeSeries]",
-        )
-        raise_if_not(
-            len(pred_series) == len(actual_series)
-            and len(pred_series) == len(insample),
-            "The TimeSeries sequences must have the same length.",
-            logger,
-        )
-
-        raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
-        raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
-
-        iterator = _build_tqdm_iterator(
-            iterable=zip(actual_series, pred_series, insample),
-            verbose=verbose,
-            total=len(actual_series),
-        )
-
-        value_list = _parallel_apply(
-            iterator=iterator,
-            fn=_multivariate_rmsse,
-            n_jobs=n_jobs,
-            fn_args=dict(),
-            fn_kwargs={"m": m, "intersect": intersect, "reduction": reduction},
-        )
-        return inter_reduction(value_list)
-    else:
-        raise_log(
-            ValueError(
-                "Input type not supported, only TimeSeries and Sequence[TimeSeries] are accepted."
-            )
-        )
+    errors = y_true - y_hat
+    scale = np.sqrt(np.mean(np.square(x_t[m:] - x_t[:-m])))
+    raise_if_not(
+        not np.isclose(scale, 0),
+        "cannot use RMSSE with periodical signals",
+    )
+    return np.sqrt(np.mean(np.square(errors))) / scale
