@@ -819,42 +819,20 @@ class WeatherDataset(DatasetLoaderCSV):
 class EnergyConsumptionZurichDataset(DatasetLoaderCSV):
     """
     Energy Consumption of households & SMEs (low voltage) and businesses & services (medium voltage) in the
-    city of Zurich [1]_. The dataset frequency is 15 minutes and updated hourly, but only the values between
-    2015 and 2022 were retained.
+    city of Zurich [1]_, with values recorded every 15 minutes.
+
+    The energy consumption information is combined with the weather information recorded by three different
+    stations in the city of Zurich with a hourly frequency [2]_. The missing timestaps are filled with NaN.
+
+    To simplify the dataset, the values from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse
+    stations are discarded to keep only the data recorded in the Zch_Stampfenbachstrasse station.
+
+    Both datasets are updated in real-time (hourly), but only the values between 2015 and 2022 are retained (local time).
 
     Components Descriptions:
 
     * Value_NE5 : Households & SMEs consumption (low voltage, grid level 7) in kWh
     * Value_NE7 : Business and services consumption (medium voltage, grid level 5) in kWh
-
-    References
-    ----------
-    .. [1] https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich
-    """
-
-    def __init__(self):
-        super().__init__(
-            metadata=DatasetLoaderMetadata(
-                "zurich_energy_consumption.csv",
-                uri=_DEFAULT_PATH + "/zurich_energy_consumption.csv",
-                hash="917b1b776e7c755009761d03324d1493",
-                header_time="Timestamp",
-                freq="15min",
-                format_time="%Y-%m-%d %H:%M:%S",
-            )
-        )
-
-
-class WeatherZurichDataset(DatasetLoaderCSV):
-    """
-    Weather information recorded by three different weather stations in the city of Zurich with
-    a hourly frequency, from 2015 to 2022 [1]_.
-
-    To reduce the size of the dataset, the values from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse
-    stations is discarded to keep only the data recorded in Zch_Stampfenbachstrasse station.
-
-    Components Descriptions:
-
     * Hr [%Hr] : Relative humidity
     * RainDur [min] : Duration of precipitation
     * T [°C] : Temperature
@@ -868,35 +846,54 @@ class WeatherZurichDataset(DatasetLoaderCSV):
 
     References
     ----------
-    .. [1] https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte
+    .. [1] https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich
+    .. [2] https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte
     """
 
     def __init__(self):
-        # since the dataset is split across csv files, download is handled by another method
+        def pre_process_dataset(dataset_path):
+            """Restrict the time axis and add the weather data"""
+            df = pd.read_csv(dataset_path, index_col=0)
+            # convert time index
+            df.index = pd.to_datetime(df.index, utc=True, format="ISO8601")
+            # extract pre-determined period
+            df = df.loc[
+                (pd.Timestamp("2015-01-01", tz="UTC+01:00") <= df.index)
+                & (df.index <= pd.Timestamp("2022-12-31", tz="UTC+01:00"))
+            ]
+            # download and preprocess the weather information
+            df_weather = self.download_weather_data()
+            # add weather informations as additional features
+            df = pd.concat([df, df_weather], axis=1)
+            # convert time index
+            # TODO: TimeSeries.from_dataframe should support index of type datetime64[ns, UTC]
+            df.index = df.index.tz_localize(None)
+            df.index.name = "Timestamp"
+            df.reset_index(inplace=True)
+            # export without the numerical index
+            df.to_csv(self._get_path_dataset(), index=False)
+
+        # hash value for dataset with weather data
         super().__init__(
             metadata=DatasetLoaderMetadata(
-                "zurich_weather.csv",
-                uri="",
-                hash="6f39976134a144b88c4378495a7bcdc4",
-                header_time="Datum",
-                freq="H",
-                format_time="%Y-%m-%d %H:%M:%S",
+                "zurich_energy_consumption.csv",
+                uri="https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich/download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv",
+                hash="c1ae40ac91bbd4cd1c1552c8388f3eb0",
+                header_time="Timestamp",
+                freq="15min",
+                pre_process_csv_fn=pre_process_dataset,
             )
         )
 
-        if not self._is_already_downloaded():
-            self.pre_download_dataset()
-
-    def pre_download_dataset(self):
+    def download_weather_data(self):
         """Concatenate the yearly csv files into a single dataframe and reshape it"""
+        # download the csv from the url
         base_url = "https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte/download/"
         filenames = [f"ugz_ogd_meteo_h1_{year}.csv" for year in range(2015, 2022)]
         df_weather = pd.concat([pd.read_csv(base_url + fname) for fname in filenames])
-
         # retain only one weather station
         df_weather = df_weather.loc[df_weather["Standort"] == "Zch_Stampfenbachstrasse"]
         df_weather.drop(columns="Standort", inplace=True)
-
         # rename the components to include the units
         columns_names = [
             f"{param} [{unit}]"
@@ -907,15 +904,6 @@ class WeatherZurichDataset(DatasetLoaderCSV):
         )
         df_weather.columns = df_weather.columns.to_flat_index()
         df_weather.columns = columns_names
-
-        # move time index to the columns
-        df_weather.reset_index(inplace=True)
-
         # convert time index
-        df_weather["Datum"] = (
-            df_weather["Datum"]
-            .apply(pd.to_datetime)
-            .apply(lambda x: x.tz_convert(None))
-        )
-
-        df_weather.to_csv(self._get_path_dataset(), index=False)
+        df_weather.index = pd.to_datetime(df_weather.index, utc=True, format="ISO8601")
+        return df_weather
