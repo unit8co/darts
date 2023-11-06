@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to documentation:
   - Adapted the example notebooks to properly apply data transformers and avoid look-ahead bias. [#2020](https://github.com/unit8co/darts/pull/2020) by [Samriddhi Singh](https://github.com/SimTheGreat).
   - New example notebook for the `RegressionModels` with information about the advanced features such as component-specific lags, `multi_model` or the `MultiOutputRegressor` wrapper. [#2039](https://github.com/unit8co/darts/pull/2039) by [Antoine Madrona](https://github.com/madtoinou).
+- Improvements to Regression Models:
+  - `XGBModel` now leverages XGBoost's native Quantile Regression support that was released in version 2.0.0 for improved probabilistic forecasts. [#2051](https://github.com/unit8co/darts/pull/2051) by [Dennis Bader](https://github.com/dennisbader).
 - New dataset `EnergyConsumptionZurich` available in `darts.datasets`, can be loaded with weather information as covariates. [#2039](https://github.com/unit8co/darts/pull/2039) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Fixed**
