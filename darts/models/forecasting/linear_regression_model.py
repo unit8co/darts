@@ -95,7 +95,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         likelihood

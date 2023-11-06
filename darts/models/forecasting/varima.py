@@ -71,7 +71,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
                     'custom': {'future': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
 
