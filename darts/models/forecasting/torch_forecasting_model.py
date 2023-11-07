@@ -107,6 +107,12 @@ CHECKPOINTS_FOLDER = "checkpoints"
 RUNS_FOLDER = "runs"
 INIT_MODEL_NAME = "_model.pth.tar"
 
+TORCH_NP_DTYPES = {
+    torch.float16: np.float16,
+    torch.float32: np.float32,
+    torch.float64: np.float64,
+}
+
 # pickling a TorchForecastingModel will not save below attributes: the keys specify the
 # attributes to be ignored, and the values are the default values getting assigned upon loading
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
@@ -1874,8 +1880,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # pl_forecasting module saves the train_sample shape, must recreate one
+        np_dtype = TORCH_NP_DTYPES[ckpt["model_dtype"]]
         mock_train_sample = [
-            np.zeros(sample_shape) if sample_shape else None
+            np.zeros(sample_shape, dtype=np_dtype) if sample_shape else None
             for sample_shape in ckpt["train_sample_shape"]
         ]
         self.train_sample = tuple(mock_train_sample)
