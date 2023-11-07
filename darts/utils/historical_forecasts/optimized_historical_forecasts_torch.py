@@ -1,9 +1,11 @@
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+import inspect
 
 import numpy as np
 import pandas as pd
@@ -32,7 +34,7 @@ def _optimized_historical_forecasts(
     last_points_only: bool = True,
     show_warnings: bool = True,
     verbose: bool = False,
-    predict_kwargs: Optional[Dict[str, Any]] = None,
+    **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -41,9 +43,6 @@ def _optimized_historical_forecasts(
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
-    if predict_kwargs is None:
-        predict_kwargs = dict()
-
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
@@ -94,13 +93,13 @@ def _optimized_historical_forecasts(
         for cls in model.__class__.__mro__
         if cls.__name__ == "TorchForecastingModel"
     ][0]
-    gfm_kwargs = {
-        k: v
-        for k, v in predict_kwargs.items()
-        if k in ["num_samples", "predict_likelihood_parameters"]
-    }
+    super_predict_params = inspect.signature(super(tfm_cls, model).predict).parameters
     super(tfm_cls, model).predict(
-        forecast_horizon, series, past_covariates, future_covariates, **gfm_kwargs
+        forecast_horizon,
+        series,
+        past_covariates,
+        future_covariates,
+        **{k: v for k, v in kwargs.items() if k in super_predict_params},
     )
 
     dataset = model._build_inference_dataset(
@@ -117,7 +116,7 @@ def _optimized_historical_forecasts(
         dataset,
         trainer=None,
         verbose=verbose,
-        **predict_kwargs,
+        **kwargs,
     )
 
     # torch models return list of time series in order of historical forecasts: we reorder per time series

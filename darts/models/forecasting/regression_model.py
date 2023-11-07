@@ -1094,6 +1094,7 @@ class RegressionModel(GlobalForecastingModel):
         series: Optional[Sequence[TimeSeries]],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
         future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
@@ -1102,7 +1103,8 @@ class RegressionModel(GlobalForecastingModel):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        predict_likelihood_parameters: bool = False,
+        **kwargs,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -1123,9 +1125,6 @@ class RegressionModel(GlobalForecastingModel):
             allow_autoregression=False,
         )
 
-        if predict_kwargs is None:
-            predict_kwargs = dict()
-
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
             return _optimized_historical_forecasts_last_points_only(
@@ -1133,13 +1132,15 @@ class RegressionModel(GlobalForecastingModel):
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
+                num_samples=num_samples,
                 start=start,
                 start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
-                **predict_kwargs,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                **kwargs,
             )
         else:
             return _optimized_historical_forecasts_all_points(
@@ -1147,13 +1148,15 @@ class RegressionModel(GlobalForecastingModel):
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
+                num_samples=num_samples,
                 start=start,
                 start_format=start_format,
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
-                **predict_kwargs,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                **kwargs,
             )
 
 

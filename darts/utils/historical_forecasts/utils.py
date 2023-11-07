@@ -6,6 +6,8 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
+import inspect
+
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -204,6 +206,28 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ValueError(
                     "`predict_likelihood_parameters=True` is only supported for `forecast_horizon` smaller than or "
                     "equal to model's `output_chunk_length`."
+                ),
+                logger,
+            )
+
+    # check that fit/predict_kwargs contain only supported parameters
+    if n.fit_kwargs is not None:
+        fit_args = set(inspect.signature(model.fit).parameters)
+        wrong_args = set(n.fit_kwargs) - fit_args
+        if len(wrong_args) > 0:
+            raise_log(
+                ValueError(
+                    f"The following parameters in `fit_kwargs` are not supported by the model : {wrong_args}."
+                ),
+                logger,
+            )
+    if n.predict_kwargs is not None:
+        predict_args = set(inspect.signature(model.predict).parameters)
+        wrong_args = set(n.predict_kwargs) - predict_args
+        if len(wrong_args) > 0:
+            raise_log(
+                ValueError(
+                    f"The following parameters in `predict_kwargs` are not supported by the model : {wrong_args}."
                 ),
                 logger,
             )

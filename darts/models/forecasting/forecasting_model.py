@@ -31,12 +31,10 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
-from sklearn.multioutput import MultiOutputRegressor
 
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.models.utils import _check_kwargs_keys
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
@@ -320,33 +318,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[TimeSeries],
         **kwargs,
     ):
-        self.fit(series)
+        supported_params = inspect.signature(self.fit).parameters
+        kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
+        if self.supports_past_covariates:
+            kwargs_["past_covariates"] = past_covariates
+        if self.supports_future_covariates:
+            kwargs_["future_covariates"] = future_covariates
+        self.fit(series, **kwargs_)
 
     def _predict_wrapper(
         self,
         n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
         num_samples: int,
-        verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
-        num_loader_workers: int = 0,
-        batch_size: Optional[int] = None,
-        n_jobs: int = 1,
-        roll_size: Optional[int] = None,
-        mc_dropout: bool = False,
-    ) -> TimeSeries:
-        kwargs = dict()
-        if self.supports_likelihood_parameter_prediction:
-            kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
-        if getattr(self, "trainer_params", False):
-            kwargs["num_loader_workers"] = num_loader_workers
-            kwargs["batch_size"] = batch_size
-            kwargs["n_jobs"] = n_jobs
-            kwargs["roll_size"] = roll_size
-            kwargs["mc_dropout"] = mc_dropout
-        return self.predict(n, num_samples=num_samples, verbose=verbose, **kwargs)
+        **kwargs,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        supported_params = inspect.signature(self.predict).parameters
+        kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
+        return self.predict(n, num_samples=num_samples, **kwargs_)
 
     @property
     def min_train_series_length(self) -> int:
@@ -829,46 +817,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if predict_kwargs is None:
             predict_kwargs = dict()
 
-        # sanity checks of the arguments directly exposed by historical_forecasts
-        if "predict_likelihood_parameters" not in predict_kwargs:
-            predict_kwargs[
-                "predict_likelihood_parameters"
-            ] = predict_likelihood_parameters
-        elif (
-            predict_kwargs["predict_likelihood_parameters"]
-            != predict_likelihood_parameters
-        ):
-            logger.warning(
-                "`predict_likelihood_parameters` was provided with contradictory values, "
-                "retaining the value passed with `predict_kwargs`."
-            )
-        if "num_samples" not in predict_kwargs:
-            predict_kwargs["num_samples"] = num_samples
-        elif predict_kwargs["num_samples"] != num_samples:
-            logger.warning(
-                "`num_samples` was provided with contradictory values, "
-                "retaining the value passed with `predict_kwargs`."
-            )
-
-        # fit/predict_kwargs cannot be used to pass arguments used by historical_forecast logic
-        forbiden_args = ["series", "past_covariates", "future_covariates"]
-        fit_invalid_args = forbiden_args + [
-            "val_series",
-            "val_past_covariates",
-            "val_future_covariates",
-        ]
-        _check_kwargs_keys(
-            param_name="fit_kwargs",
-            kwargs_dict=fit_kwargs,
-            invalid_keys=fit_invalid_args,
-        )
-        predict_invalid_args = forbiden_args + ["n", "trainer"]
-        _check_kwargs_keys(
-            param_name="predict_kwargs",
-            kwargs_dict=predict_kwargs,
-            invalid_keys=predict_invalid_args,
-        )
-
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
@@ -886,6 +834,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
+                num_samples=num_samples,
                 start=start,
                 start_format=start_format,
                 forecast_horizon=forecast_horizon,
@@ -894,7 +843,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 last_points_only=last_points_only,
                 verbose=verbose,
                 show_warnings=show_warnings,
-                predict_kwargs=predict_kwargs,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                **predict_kwargs,
             )
 
         if len(series) == 1:
@@ -1083,7 +1033,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series=train_series,
                     past_covariates=past_covariates_,
                     future_covariates=future_covariates_,
+                    num_samples=num_samples,
                     verbose=verbose,
+                    predict_likelihood_parameters=predict_likelihood_parameters,
                     **predict_kwargs,
                 )
                 if forecast_components is None:
@@ -1495,24 +1447,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if predict_kwargs is None:
             predict_kwargs = dict()
 
-        forbiden_args = ["series", "past_covariates", "future_covariates"]
-        fit_invalid_args = forbiden_args + [
-            "val_series",
-            "val_past_covariates",
-            "val_future_covariates",
-        ]
-        _check_kwargs_keys(
-            param_name="fit_kwargs",
-            kwargs_dict=fit_kwargs,
-            invalid_keys=fit_invalid_args,
-        )
-        predict_invalid_args = forbiden_args + ["n", "trainer", "num_samples"]
-        _check_kwargs_keys(
-            param_name="predict_kwargs",
-            kwargs_dict=predict_kwargs,
-            invalid_keys=predict_invalid_args,
-        )
-
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
 
@@ -1540,9 +1474,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
                 model._fit_wrapper(
-                    series,
-                    past_covariates,
-                    future_covariates,
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
                     **fit_kwargs,
                 )
                 fitted_values = TimeSeries.from_times_and_values(
@@ -1568,14 +1502,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
             else:  # split mode
                 model._fit_wrapper(
-                    series, past_covariates, future_covariates, **fit_kwargs
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    **fit_kwargs,
                 )
                 pred = model._predict_wrapper(
-                    len(val_series),
-                    series,
-                    past_covariates,
-                    future_covariates,
+                    n=len(val_series),
                     num_samples=1,
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
                     verbose=verbose,
                     **predict_kwargs,
                 )
@@ -2322,71 +2259,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 )
             )
 
-    def _predict_wrapper(
-        self,
-        n: int,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        num_samples: int,
-        verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
-        num_loader_workers: int = 0,
-        batch_size: Optional[int] = None,
-        n_jobs: int = 1,
-        roll_size: Optional[int] = None,
-        mc_dropout: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        kwargs = dict()
-        if self.supports_likelihood_parameter_prediction:
-            kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
-        if getattr(self, "trainer_params", False):
-            kwargs["num_loader_workers"] = num_loader_workers
-            kwargs["batch_size"] = batch_size
-            kwargs["n_jobs"] = n_jobs
-            kwargs["roll_size"] = roll_size
-            kwargs["mc_dropout"] = mc_dropout
-        return self.predict(
-            n,
-            series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-            **kwargs,
-        )
-
-    def _fit_wrapper(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        trainer=None,
-        verbose: Optional[bool] = None,
-        epochs: int = 0,
-        num_loader_workers: int = 0,
-    ):
-        kwargs = dict()
-        if getattr(self, "trainer_params", False):
-            kwargs["trainer"] = trainer
-            kwargs["epochs"] = epochs
-            kwargs["verbose"] = verbose
-            kwargs["num_loader_workers"] = num_loader_workers
-            kwargs["max_samples_per_ts"] = max_samples_per_ts
-        elif isinstance(self, MultiOutputRegressor):
-            kwargs["n_jobs_multioutput_wrapper"] = n_jobs_multioutput_wrapper
-            kwargs["max_samples_per_ts"] = max_samples_per_ts
-        self.fit(
-            series=series,
-            past_covariates=past_covariates if self.supports_past_covariates else None,
-            future_covariates=future_covariates
-            if self.supports_future_covariates
-            else None,
-            **kwargs,
-        )
-
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
@@ -2587,36 +2459,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """
         pass
 
-    def _fit_wrapper(
-        self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        **kwargs,
-    ):
-        self.fit(series, future_covariates=future_covariates)
-
-    def _predict_wrapper(
-        self,
-        n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        num_samples: int,
-        verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
-    ) -> TimeSeries:
-        kwargs = dict()
-        if self.supports_likelihood_parameter_prediction:
-            kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
-        return self.predict(
-            n,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-            **kwargs,
-        )
-
     @property
     def _model_encoder_settings(
         self,
@@ -2812,28 +2654,6 @@ class TransferableFutureCovariatesLocalForecastingModel(
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
         """
         pass
-
-    def _predict_wrapper(
-        self,
-        n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        num_samples: int,
-        verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
-    ) -> TimeSeries:
-        kwargs = dict()
-        if self.supports_likelihood_parameter_prediction:
-            kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
-        return self.predict(
-            n=n,
-            series=series,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-            **kwargs,
-        )
 
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:

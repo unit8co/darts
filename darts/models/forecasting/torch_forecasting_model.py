@@ -2043,7 +2043,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -2072,7 +2072,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             last_points_only=last_points_only,
             show_warnings=show_warnings,
             verbose=verbose,
-            predict_kwargs=predict_kwargs,
+            **kwargs,
         )
         return forecasts_list
 
