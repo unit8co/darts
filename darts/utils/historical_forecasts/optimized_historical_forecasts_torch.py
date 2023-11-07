@@ -99,6 +99,7 @@ def _optimized_historical_forecasts(
         future_covariates,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
+        show_warnings=show_warnings,
     )
 
     dataset = model._build_inference_dataset(

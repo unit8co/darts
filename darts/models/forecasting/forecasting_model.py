@@ -839,7 +839,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             outer_iterator = _build_tqdm_iterator(series, verbose)
 
-        # deactivate the warning after displaying it once
+        # deactivate the warning after displaying it once if show_warnings is True
         show_predict_warnings = show_warnings
 
         forecasts_list = []
@@ -2230,8 +2230,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 "Since `predict` was called with `n > output_chunk_length`, auto-regression is be used to forecast "
                 "the values after `output_chunk_length`. As this model uses past covariates, it will access future "
                 "values (compared to the first predicted timestep) of this covariates to produce each subsequent "
-                "`output_chunk_length` forecasts."
-                "To hide this warning, set `show_warnings=False`."
+                "`output_chunk_length` forecasts. To hide this warning, set `show_warnings=False`."
             )
 
     def _predict_wrapper(
