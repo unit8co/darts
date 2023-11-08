@@ -10,8 +10,8 @@ from darts.datasets import (
     AirPassengersDataset,
     AusBeerDataset,
     AustralianTourismDataset,
+    ElectricityConsumptionZurichDataset,
     ElectricityDataset,
-    EnergyConsumptionZurichDataset,
     EnergyDataset,
     ETTh1Dataset,
     ETTh2Dataset,
@@ -69,7 +69,7 @@ datasets_with_width = [
     (ExchangeRateDataset, 8),
     (TrafficDataset, 862),
     (WeatherDataset, 21),
-    (EnergyConsumptionZurichDataset, 10),
+    (ElectricityConsumptionZurichDataset, 10),
 ]
 
 wrong_hash_dataset = DatasetLoaderCSV(

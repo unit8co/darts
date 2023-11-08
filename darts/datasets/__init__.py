@@ -816,26 +816,28 @@ class WeatherDataset(DatasetLoaderCSV):
         return [TimeSeries.from_series(series[label]) for label in series]
 
 
-class EnergyConsumptionZurichDataset(DatasetLoaderCSV):
+class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
     """
-    Energy Consumption of households & SMEs (low voltage) and businesses & services (medium voltage) in the
+    Electricity Consumption of households & SMEs (low voltage) and businesses & services (medium voltage) in the
     city of Zurich [1]_, with values recorded every 15 minutes.
 
-    The energy consumption information is combined with the weather information recorded by three different
-    stations in the city of Zurich with a hourly frequency [2]_. The missing timestaps are filled with NaN.
+    The electricity consumption is combined with weather measurements recorded by three different
+    stations in the city of Zurich with a hourly frequency [2]_. The missing time stamps are filled with NaN.
+    The original weather data is recorded every hour. Before adding the features to the electricity consumption,
+    the data is resampled to 15 minutes frequency, and missing values are interpolated.
 
-    To simplify the dataset, the values from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse
+    To simplify the dataset, the measurements from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse weather
     stations are discarded to keep only the data recorded in the Zch_Stampfenbachstrasse station.
 
-    Both datasets are updated in real-time (hourly), but only the values between 2015 and 2022 are retained
-    (local time).
+    Both dataset sources are updated continuously, but this dataset only retrains values between 2015 and 2022.
+    The time index was converted from CET time zone to UTC.
 
     Components Descriptions:
 
-    * Value_NE5 : Households & SMEs consumption (low voltage, grid level 7) in kWh
-    * Value_NE7 : Business and services consumption (medium voltage, grid level 5) in kWh
+    * Value_NE5 : Households & SMEs electricity consumption (low voltage, grid level 7) in kWh
+    * Value_NE7 : Business and services electricity consumption (medium voltage, grid level 5) in kWh
     * Hr [%Hr] : Relative humidity
-    * RainDur [min] : Duration of precipitation
+    * RainDur [min] : Duration of precipitation (divided by 4 for conversion from hourly to quarter-hourly records)
     * T [°C] : Temperature
     * WD [°] : Wind direction
     * WVv [m/s] : Wind vector speed
@@ -856,55 +858,67 @@ class EnergyConsumptionZurichDataset(DatasetLoaderCSV):
             """Restrict the time axis and add the weather data"""
             df = pd.read_csv(dataset_path, index_col=0)
             # convert time index
-            df.index = pd.to_datetime(df.index, utc=True, format="ISO8601")
+            df.index = (
+                pd.DatetimeIndex(df.index, tz="CET").tz_convert("UTC").tz_localize(None)
+            )
             # extract pre-determined period
             df = df.loc[
-                (pd.Timestamp("2015-01-01", tz="UTC+01:00") <= df.index)
-                & (df.index <= pd.Timestamp("2022-12-31", tz="UTC+01:00"))
+                (pd.Timestamp("2015-01-01") <= df.index)
+                & (df.index <= pd.Timestamp("2022-12-31"))
             ]
             # download and preprocess the weather information
-            df_weather = self.download_weather_data()
-            # add weather informations as additional features
+            df_weather = self._download_weather_data()
+            # add weather data as additional features
             df = pd.concat([df, df_weather], axis=1)
-            # convert time index
-            # TODO: TimeSeries.from_dataframe should support index of type datetime64[ns, UTC]
-            df.index = df.index.tz_localize(None)
+            # interpolate weather data
+            df = df.interpolate()
+            # raining duration is given in minutes -> we divide by 4 from hourly to quarter-hourly records
+            df["RainDur [min]"] = df["RainDur [min]"] / 4
+
+            # round Electricity cols to 4 decimals, other columns to 2 decimals
+            cols_precise = ["Value_NE5", "Value_NE7"]
+            df = df.round(
+                decimals={col: (4 if col in cols_precise else 2) for col in df.columns}
+            )
+
+            # export the dataset
             df.index.name = "Timestamp"
-            df.reset_index(inplace=True)
-            # export without the numerical index
-            df.to_csv(self._get_path_dataset(), index=False)
+            df.to_csv(self._get_path_dataset())
 
         # hash value for dataset with weather data
         super().__init__(
             metadata=DatasetLoaderMetadata(
-                "zurich_energy_consumption.csv",
-                uri="https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich/download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv",
-                hash="c1ae40ac91bbd4cd1c1552c8388f3eb0",
+                "zurich_electricity_consumption.csv",
+                uri=(
+                    "https://data.stadt-zuerich.ch/dataset/"
+                    "ewz_stromabgabe_netzebenen_stadt_zuerich/"
+                    "download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv"
+                ),
+                hash="c2fea1a0974611ff1c276abcc1d34619",
                 header_time="Timestamp",
                 freq="15min",
                 pre_process_csv_fn=pre_process_dataset,
             )
         )
 
-    def download_weather_data(self):
+    @staticmethod
+    def _download_weather_data():
         """Concatenate the yearly csv files into a single dataframe and reshape it"""
         # download the csv from the url
         base_url = "https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte/download/"
-        filenames = [f"ugz_ogd_meteo_h1_{year}.csv" for year in range(2015, 2022)]
-        df_weather = pd.concat([pd.read_csv(base_url + fname) for fname in filenames])
+        filenames = [f"ugz_ogd_meteo_h1_{year}.csv" for year in range(2015, 2023)]
+        df = pd.concat([pd.read_csv(base_url + fname) for fname in filenames])
         # retain only one weather station
-        df_weather = df_weather.loc[df_weather["Standort"] == "Zch_Stampfenbachstrasse"]
-        df_weather.drop(columns="Standort", inplace=True)
-        # rename the components to include the units
-        columns_names = [
-            f"{param} [{unit}]"
-            for param, unit in zip(df_weather.Parameter[:8], df_weather.Einheit[:8])
-        ]
-        df_weather = df_weather.pivot(
-            index=["Datum"], columns=["Parameter"], values=["Wert"]
+        df = df.loc[df["Standort"] == "Zch_Stampfenbachstrasse"]
+        # pivot the df to get all measurements as columns
+        df["param_name"] = df["Parameter"] + " [" + df["Einheit"] + "]"
+        df = df.pivot(index="Datum", columns="param_name", values="Wert")
+        # convert time index to from CET to UTC and extract the required time range
+        df.index = (
+            pd.DatetimeIndex(df.index, tz="CET").tz_convert("UTC").tz_localize(None)
         )
-        df_weather.columns = df_weather.columns.to_flat_index()
-        df_weather.columns = columns_names
-        # convert time index
-        df_weather.index = pd.to_datetime(df_weather.index, utc=True, format="ISO8601")
-        return df_weather
+        df = df.loc[
+            (pd.Timestamp("2015-01-01") <= df.index)
+            & (df.index <= pd.Timestamp("2022-12-31"))
+        ]
+        return df
