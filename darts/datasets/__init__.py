@@ -827,7 +827,8 @@ class EnergyConsumptionZurichDataset(DatasetLoaderCSV):
     To simplify the dataset, the values from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse
     stations are discarded to keep only the data recorded in the Zch_Stampfenbachstrasse station.
 
-    Both datasets are updated in real-time (hourly), but only the values between 2015 and 2022 are retained (local time).
+    Both datasets are updated in real-time (hourly), but only the values between 2015 and 2022 are retained
+    (local time).
 
     Components Descriptions:
 
