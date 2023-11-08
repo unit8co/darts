@@ -651,7 +651,7 @@ class TestLocalForecastingModels:
             (
                 ExponentialSmoothing(),
                 "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
-                + "seasonal_periods=None, random_state=0)",
+                + "seasonal_periods=None, random_state=0, kwargs=None)",
             ),  # no params changed
             (
                 ARIMA(1, 1, 1),
