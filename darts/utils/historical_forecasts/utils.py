@@ -215,21 +215,17 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         fit_args = set(inspect.signature(model.fit).parameters)
         wrong_args = set(n.fit_kwargs) - fit_args
         if len(wrong_args) > 0:
-            raise_log(
-                ValueError(
-                    f"The following parameters in `fit_kwargs` are not supported by the model : {wrong_args}."
-                ),
-                logger,
+            logger.warning(
+                f"The following parameters in `fit_kwargs` will be ignored was they are not supported by "
+                f"`model.fit()` : {wrong_args}."
             )
     if n.predict_kwargs is not None:
         predict_args = set(inspect.signature(model.predict).parameters)
         wrong_args = set(n.predict_kwargs) - predict_args
         if len(wrong_args) > 0:
-            raise_log(
-                ValueError(
-                    f"The following parameters in `predict_kwargs` are not supported by the model : {wrong_args}."
-                ),
-                logger,
+            logger.warning(
+                f"The following parameters in `predict_kwargs` will be ignored was they are not supported by "
+                f"`model.predict()` : {wrong_args}."
             )
 
 
