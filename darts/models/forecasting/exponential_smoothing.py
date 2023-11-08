@@ -3,7 +3,7 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -24,7 +24,8 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
-        **fit_kwargs,
+        kwargs: Optional[Dict[str, Any]] = None,
+        **fit_kwargs
     ):
 
         """Exponential Smoothing
@@ -61,6 +62,11 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
+        kwargs
+            Some optional keyword arguments that will be used to call
+            :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
+            See `the documentation
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_.
         fit_kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
@@ -91,6 +97,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.seasonal = seasonal
         self.infer_seasonal_periods = seasonal_periods is None
         self.seasonal_periods = seasonal_periods
+        self.constructor_kwargs = dict() if kwargs is None else kwargs
         self.fit_kwargs = fit_kwargs
         self.model = None
         np.random.seed(random_state)
@@ -120,6 +127,7 @@ class ExponentialSmoothing(LocalForecastingModel):
             seasonal_periods=seasonal_periods_param,
             freq=series.freq if series.has_datetime_index else None,
             dates=series.time_index if series.has_datetime_index else None,
+            **self.constructor_kwargs
         )
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
