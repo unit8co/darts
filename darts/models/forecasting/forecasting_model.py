@@ -1502,6 +1502,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     last_points_only=last_points_only,
                     verbose=verbose,
                     show_warnings=show_warnings,
+                    fit_kwargs=fit_kwargs,
                     predict_kwargs=predict_kwargs,
                 )
             else:  # split mode
