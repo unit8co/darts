@@ -116,6 +116,7 @@ def _optimized_historical_forecasts(
         dataset,
         trainer=None,
         verbose=verbose,
+        num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
     )
 
