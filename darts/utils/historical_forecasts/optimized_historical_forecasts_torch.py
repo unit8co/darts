@@ -26,6 +26,7 @@ def _optimized_historical_forecasts(
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,
     future_covariates: Optional[Sequence[TimeSeries]] = None,
+    num_samples: int = 1,
     start: Optional[Union[pd.Timestamp, float, int]] = None,
     start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
@@ -34,6 +35,7 @@ def _optimized_historical_forecasts(
     last_points_only: bool = True,
     show_warnings: bool = True,
     verbose: bool = False,
+    predict_likelihood_parameters: bool = False,
     **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]

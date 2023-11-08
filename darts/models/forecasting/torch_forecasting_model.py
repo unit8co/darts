@@ -2035,6 +2035,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         series: Optional[Sequence[TimeSeries]],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
         future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
@@ -2043,6 +2044,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
         **kwargs,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]

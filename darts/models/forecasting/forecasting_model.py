@@ -329,12 +329,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _predict_wrapper(
         self,
         n: int,
-        num_samples: int,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         supported_params = inspect.signature(self.predict).parameters
         kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
-        return self.predict(n, num_samples=num_samples, **kwargs_)
+        # even if the predict accept the covariate, the model itself might not
+        if not self.supports_past_covariates:
+            kwargs_.pop("past_covariates")
+        if self.supports_future_covariates:
+            kwargs_.pop("future_covariates")
+        return self.predict(n, **kwargs_)
 
     @property
     def min_train_series_length(self) -> int:
