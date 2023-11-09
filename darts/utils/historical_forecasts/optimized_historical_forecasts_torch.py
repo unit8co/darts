@@ -101,6 +101,8 @@ def _optimized_historical_forecasts(
         series,
         past_covariates,
         future_covariates,
+        num_samples=num_samples,
+        predict_likelihood_parameters=predict_likelihood_parameters,
         **{k: v for k, v in kwargs.items() if k in super_predict_params},
     )
 
@@ -118,6 +120,8 @@ def _optimized_historical_forecasts(
         dataset,
         trainer=None,
         verbose=verbose,
+        num_samples=num_samples,
+        predict_likelihood_parameters=predict_likelihood_parameters,
         **kwargs,
     )
 

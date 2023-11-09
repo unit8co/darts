@@ -2066,6 +2066,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            num_samples=num_samples,
             start=start,
             start_format=start_format,
             forecast_horizon=forecast_horizon,
@@ -2074,6 +2075,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             last_points_only=last_points_only,
             show_warnings=show_warnings,
             verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
             **kwargs,
         )
         return forecasts_list

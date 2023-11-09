@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, Union
 
 try:
     from typing import Literal
@@ -210,23 +210,60 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-    # check that fit/predict_kwargs contain only supported parameters
+    if n.fit_kwargs is not None or n.predict_kwargs is not None:
+        hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
+        # replace `forecast_horizon` with `n`
+        hfc_args = hfc_args - {"forecast_horizon"}
+        hfc_args = hfc_args.union({"n"})
+        # allow user to provide validation series at their own responsability
+        hfc_args = hfc_args - {
+            "val_series",
+            "val_past_covariates",
+            "val_future_covariates",
+        }
+
     if n.fit_kwargs is not None:
         fit_args = set(inspect.signature(model.fit).parameters)
-        wrong_args = set(n.fit_kwargs) - fit_args
-        if len(wrong_args) > 0:
-            logger.warning(
-                f"The following parameters in `fit_kwargs` will be ignored was they are not supported by "
-                f"`model.fit()` : {wrong_args}."
-            )
+        _historical_forecasts_kwargs_checks(
+            hfc_args=hfc_args,
+            name_kwargs="fit_kwargs",
+            dict_kwargs=n.fit_kwargs,
+            method_args=fit_args,
+        )
+
     if n.predict_kwargs is not None:
         predict_args = set(inspect.signature(model.predict).parameters)
-        wrong_args = set(n.predict_kwargs) - predict_args
-        if len(wrong_args) > 0:
-            logger.warning(
-                f"The following parameters in `predict_kwargs` will be ignored was they are not supported by "
-                f"`model.predict()` : {wrong_args}."
-            )
+        _historical_forecasts_kwargs_checks(
+            hfc_args=hfc_args,
+            name_kwargs="predict_kwargs",
+            dict_kwargs=n.predict_kwargs,
+            method_args=predict_args,
+        )
+
+
+def _historical_forecasts_kwargs_checks(
+    hfc_args: Set[str],
+    name_kwargs: str,
+    dict_kwargs: Dict[str, Any],
+    method_args: Set[str],
+):
+    """
+    Return a warning if some argument are not supported and an exception if some arguments interfere with
+    historical_forecasts logic
+    """
+    ignored_args = set(dict_kwargs) - method_args
+    if len(ignored_args) > 0:
+        logger.warning(
+            f"The following parameters in `{name_kwargs}` will be ignored was they are not supported by "
+            f"the model method : {ignored_args}."
+        )
+    invalid_args = set(dict_kwargs).intersection(hfc_args)
+    if len(invalid_args) > 0:
+        raise_log(
+            f"The following parameters cannot be passed using `{name_kwargs}` as they would interfere with "
+            f"historical forecasts logic : {invalid_args}.",
+            logger,
+        )
 
 
 def _historical_forecasts_start_warnings(
