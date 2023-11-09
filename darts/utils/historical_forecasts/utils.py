@@ -223,13 +223,19 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         }
 
     if n.fit_kwargs is not None:
-        fit_args = set(inspect.signature(model.fit).parameters)
-        _historical_forecasts_kwargs_checks(
-            hfc_args=hfc_args,
-            name_kwargs="fit_kwargs",
-            dict_kwargs=n.fit_kwargs,
-            method_args=fit_args,
-        )
+        if n.retrain:
+            fit_args = set(inspect.signature(model.fit).parameters)
+            _historical_forecasts_kwargs_checks(
+                hfc_args=hfc_args,
+                name_kwargs="fit_kwargs",
+                dict_kwargs=n.fit_kwargs,
+                method_args=fit_args,
+                show_warnings=n.show_warnings,
+            )
+        elif n.show_warnings:
+            logger.warning(
+                "`fit_kwargs` was provided with `retrain=False`, the argument will be ignored."
+            )
 
     if n.predict_kwargs is not None:
         predict_args = set(inspect.signature(model.predict).parameters)
@@ -238,6 +244,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
             name_kwargs="predict_kwargs",
             dict_kwargs=n.predict_kwargs,
             method_args=predict_args,
+            show_warnings=n.show_warnings,
         )
 
 
@@ -246,13 +253,14 @@ def _historical_forecasts_kwargs_checks(
     name_kwargs: str,
     dict_kwargs: Dict[str, Any],
     method_args: Set[str],
+    show_warnings: bool,
 ):
     """
     Return a warning if some argument are not supported and an exception if some arguments interfere with
     historical_forecasts logic
     """
     ignored_args = set(dict_kwargs) - method_args
-    if len(ignored_args) > 0:
+    if show_warnings and len(ignored_args) > 0:
         logger.warning(
             f"The following parameters in `{name_kwargs}` will be ignored was they are not supported by "
             f"the model method : {ignored_args}."
