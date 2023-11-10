@@ -98,7 +98,8 @@ class RandomForest(RegressionModel):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         n_estimators : int
