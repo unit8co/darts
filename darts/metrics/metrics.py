@@ -1432,24 +1432,3 @@ def rmsse(
         "cannot use RMSSE with periodical signals",
     )
     return np.sqrt(np.mean(np.square(errors))) / scale
-
-
-if __name__ == "__main__":
-    import pandas as pd
-    from darts import TimeSeries
-
-    series = TimeSeries.from_dataframe(
-        pd.DataFrame(
-            {
-                "time": pd.date_range("2018-01-01", "2018-01-10"),
-                "value": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            }
-        ),
-        "time",
-        "value",
-    )
-
-    preds = series + 1
-
-    test_mase = mase(series, preds[6:], series[:6], m=1, intersect=True)
-    print(f"mase: {test_mase}")

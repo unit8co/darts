@@ -381,7 +381,7 @@ class TestMetrics:
         # not supported input
         with pytest.raises(ValueError):
             metrics.mase(1, 2, 3)
-    
+
     def test_rmsse(self):
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
@@ -481,7 +481,7 @@ class TestMetrics:
             metrics.rmsse([self.series1] * 2, [self.series2] * 2, [insample] * 3)
         # not supported input
         with pytest.raises(ValueError):
-            metrics.rmsse(1, 2, 3)    
+            metrics.rmsse(1, 2, 3)
 
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
