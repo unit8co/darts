@@ -1,4 +1,5 @@
 import itertools
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -1961,8 +1962,11 @@ class TestHistoricalforecast:
             )
             assert len(hist_fc) == n + 1
 
-    @pytest.mark.parametrize("model_type", ["regression", "torch"])
-    def test_fit_kwargs(self, monkeypatch, model_type):
+    @pytest.mark.parametrize(
+        "model_type,enable_optimization",
+        product(["regression", "torch"], [True, False]),
+    )
+    def test_fit_kwargs(self, monkeypatch, model_type, enable_optimization):
         """check that the parameters provided in fit_kwargs are correctly processed"""
         valid_fit_kwargs = {"max_samples_per_ts": 3}
         invalid_fit_kwargs = {"series": self.ts_pass_train}
@@ -1982,6 +1986,7 @@ class TestHistoricalforecast:
             num_samples=1,
             start=len(self.ts_pass_train) - n,
             retrain=True,
+            enable_optimization=enable_optimization,
             fit_kwargs=valid_fit_kwargs,
         )
 
@@ -1994,6 +1999,7 @@ class TestHistoricalforecast:
             forecast_horizon=1,
             start=len(self.ts_pass_train) - n,
             retrain=True,
+            enable_optimization=enable_optimization,
             fit_kwargs=unsupported_fit_kwargs,
         )
 
@@ -2007,11 +2013,15 @@ class TestHistoricalforecast:
                 forecast_horizon=1,
                 start=len(self.ts_pass_train) - n,
                 retrain=True,
+                enable_optimization=enable_optimization,
                 fit_kwargs=invalid_fit_kwargs,
             )
 
-    @pytest.mark.parametrize("model_type", ["regression", "torch"])
-    def test_predict_kwargs(self, monkeypatch, model_type):
+    @pytest.mark.parametrize(
+        "model_type,enable_optimization",
+        product(["regression", "torch"], [True, False]),
+    )
+    def test_predict_kwargs(self, monkeypatch, model_type, enable_optimization):
         """check that the parameters provided in predict_kwargs are correctly processed"""
         invalid_predict_kwargs = {"predict_likelihood_parameters": False}
         if model_type == "regression":
@@ -2031,6 +2041,7 @@ class TestHistoricalforecast:
             forecast_horizon=1,
             start=len(self.ts_pass_train) - n,
             retrain=False,
+            enable_optimization=enable_optimization,
             predict_kwargs=valid_predict_kwargs,
         )
 
@@ -2043,6 +2054,7 @@ class TestHistoricalforecast:
             forecast_horizon=1,
             start=len(self.ts_pass_train) - n,
             retrain=False,
+            enable_optimization=enable_optimization,
             predict_kwargs=unsupported_predict_kwargs,
         )
 
@@ -2056,5 +2068,6 @@ class TestHistoricalforecast:
                 forecast_horizon=1,
                 start=len(self.ts_pass_train) - n,
                 retrain=False,
+                enable_optimization=enable_optimization,
                 predict_kwargs=invalid_predict_kwargs,
             )
