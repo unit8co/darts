@@ -2227,10 +2227,10 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             and n > self.output_chunk_length
         ):
             logger.warning(
-                "Since `predict` was called with `n > output_chunk_length`, auto-regression is be used to forecast "
-                "the values after `output_chunk_length`. As this model uses past covariates, it will access future "
-                "values (compared to the first predicted timestep) of this covariates to produce each subsequent "
-                "`output_chunk_length` forecasts. To hide this warning, set `show_warnings=False`."
+                "`predict()` was called with `n > output_chunk_length`: using auto-regression to forecast "
+                "the values after `output_chunk_length` points. The model will access `(n - output_chunk_length)` "
+                "future values of your `past_covariates` (relative to the first predicted time step). "
+                "To hide this warning, set `show_warnings=False`."
             )
 
     def _predict_wrapper(
