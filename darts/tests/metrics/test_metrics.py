@@ -277,11 +277,9 @@ class TestMetrics:
         self.helper_test_nan(metrics.smape)
 
     def test_mase(self):
-
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
         for s1, s2 in test_cases:
-
             # multivariate, series as args
             assert (
                 round(
@@ -501,7 +499,6 @@ class TestMetrics:
             metrics.r2_score(series00, series11, False, np.mean)
 
     def test_multiple_ts(self):
-
         dim = 2
 
         # simple test
