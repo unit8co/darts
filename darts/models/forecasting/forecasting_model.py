@@ -42,6 +42,7 @@ from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_predict_index,
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
+    _historical_forecasts_sanitize_kwargs,
     _reconciliate_historical_time_indices,
 )
 from darts.utils.timeseries_generation import (
@@ -816,10 +817,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
-        if fit_kwargs is None:
-            fit_kwargs = dict()
-        if predict_kwargs is None:
-            predict_kwargs = dict()
+        # remove unsupported arguments, raise exception if interference with historical forecasts logic
+        fit_kwargs, predict_kwargs = _historical_forecasts_sanitize_kwargs(
+            model=model,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            retrain=retrain,
+            show_warnings=show_warnings,
+        )
 
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)

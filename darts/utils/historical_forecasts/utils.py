@@ -210,7 +210,16 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-    if n.fit_kwargs is not None or n.predict_kwargs is not None:
+
+def _historical_forecasts_sanitize_kwargs(
+    model,
+    fit_kwargs: Optional[Dict[str, Any]],
+    predict_kwargs: Optional[Dict[str, Any]],
+    retrain: bool,
+    show_warnings: bool,
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """Convert kwargs to dictionary, check that their content is compatible with called methods."""
+    if fit_kwargs is not None or predict_kwargs is not None:
         hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
         # replace `forecast_horizon` with `n`
         hfc_args = hfc_args - {"forecast_horizon"}
@@ -222,56 +231,72 @@ def _historical_forecasts_general_checks(model, series, kwargs):
             "val_future_covariates",
         }
 
-    if n.fit_kwargs is not None:
-        if n.retrain:
+    if fit_kwargs is None:
+        fit_kwargs = dict()
+    else:
+        if retrain:
             fit_args = set(inspect.signature(model.fit).parameters)
-            _historical_forecasts_kwargs_checks(
+            fit_kwargs = _historical_forecasts_check_kwargs(
                 hfc_args=hfc_args,
                 name_kwargs="fit_kwargs",
-                dict_kwargs=n.fit_kwargs,
+                dict_kwargs=fit_kwargs,
                 method_args=fit_args,
-                show_warnings=n.show_warnings,
+                show_warnings=show_warnings,
             )
-        elif n.show_warnings:
+        elif show_warnings:
             logger.warning(
                 "`fit_kwargs` was provided with `retrain=False`, the argument will be ignored."
             )
 
-    if n.predict_kwargs is not None:
+    if predict_kwargs is None:
+        predict_kwargs = dict()
+    else:
         predict_args = set(inspect.signature(model.predict).parameters)
-        _historical_forecasts_kwargs_checks(
+        predict_kwargs = _historical_forecasts_check_kwargs(
             hfc_args=hfc_args,
             name_kwargs="predict_kwargs",
-            dict_kwargs=n.predict_kwargs,
+            dict_kwargs=predict_kwargs,
             method_args=predict_args,
-            show_warnings=n.show_warnings,
+            show_warnings=show_warnings,
         )
 
+    return fit_kwargs, predict_kwargs
 
-def _historical_forecasts_kwargs_checks(
+
+def _historical_forecasts_check_kwargs(
     hfc_args: Set[str],
     name_kwargs: str,
     dict_kwargs: Dict[str, Any],
     method_args: Set[str],
     show_warnings: bool,
-):
+) -> Dict[str, Any]:
     """
-    Return a warning if some argument are not supported and an exception if some arguments interfere with
-    historical_forecasts logic
+    Return the kwargs dict without the arguments unsupported by the model method.
+
+    Raise a warning if some argument are not supported and an exception if some arguments interfere with
+    historical_forecasts logic.
     """
-    ignored_args = set(dict_kwargs) - method_args
-    if show_warnings and len(ignored_args) > 0:
-        logger.warning(
-            f"The following parameters in `{name_kwargs}` will be ignored was they are not supported by "
-            f"the model method : {ignored_args}."
-        )
     invalid_args = set(dict_kwargs).intersection(hfc_args)
     if len(invalid_args) > 0:
         raise_log(
-            f"The following parameters cannot be passed using `{name_kwargs}` as they would interfere with "
-            f"historical forecasts logic : {invalid_args}.",
+            ValueError(
+                f"The following parameters cannot be passed using `{name_kwargs}` as they would interfere with "
+                f"historical forecasts logic : {invalid_args}."
+            ),
             logger,
         )
+
+    ignored_args = set(dict_kwargs) - method_args
+    if len(ignored_args) > 0:
+        # remove unsupported argument to avoid exception thrown by python
+        dict_kwargs = {k: v for k, v in dict_kwargs.items() if k not in ignored_args}
+        if show_warnings:
+            logger.warning(
+                f"The following parameters in `{name_kwargs}` will be ignored was they are not supported by "
+                f"the model method : {ignored_args}."
+            )
+
+    return dict_kwargs
 
 
 def _historical_forecasts_start_warnings(
