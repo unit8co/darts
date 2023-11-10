@@ -138,15 +138,33 @@ def multi_ts_support_insample(func):
         raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
         raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
 
-        actual_series = (
-            [actual_series]
-            if not isinstance(actual_series, Sequence)
-            else actual_series
-        )
-        pred_series = (
-            [pred_series] if not isinstance(pred_series, Sequence) else pred_series
-        )
-        insample = [insample] if not isinstance(insample, Sequence) else insample
+        if isinstance(actual_series, Sequence) and isinstance(
+            actual_series[0], TimeSeries
+        ):
+            raise_if_not(
+                isinstance(pred_series, Sequence)
+                and isinstance(pred_series[0], TimeSeries),
+                "Expecting pred_series to be a Sequence[TimeSeries]",
+            )
+            raise_if_not(
+                isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
+                "Expecting insample to be a Sequence[TimeSeries]",
+            )
+        else:
+            raise_if_not(
+                isinstance(actual_series, TimeSeries), "Expecting a TimeSeries"
+            )
+            raise_if_not(
+                isinstance(pred_series, TimeSeries),
+                "Expecting pred_series to be a TimeSeries",
+            )
+            raise_if_not(
+                isinstance(insample, TimeSeries),
+                "Expecting insample to be a TimeSeries",
+            )
+            actual_series = [actual_series]
+            pred_series = [pred_series]
+            insample = [insample]
 
         raise_if_not(
             len(actual_series) == len(pred_series) == len(insample),
@@ -214,7 +232,7 @@ def multivariate_support(func):
                     actual_series.univariate_component(i),
                     pred_series.univariate_component(i),
                     *args[2:],
-                    **kwargs
+                    **kwargs,
                 )
             )  # [2:] since we already know the first two arguments are the series
         if "reduction" in kwargs:
@@ -238,8 +256,16 @@ def multivariate_support_insample(func):
         actual_series = args[0]
         pred_series = args[1]
         insample = args[2]
-        m = args[3]
-        intersect = args[4]
+        if "m" in kwargs:
+            m = kwargs["m"]
+            kwargs.pop("m")
+        else:
+            m = 1
+        if "intersect" in kwargs:
+            intersect = kwargs["intersect"]
+            kwargs.pop("intersect")
+        else:
+            intersect = True
 
         raise_if_not(
             actual_series.width == pred_series.width,
@@ -272,15 +298,15 @@ def multivariate_support_insample(func):
             x_t = insample_.univariate_component(i).values()
 
             if m is None:
-                test_season, m = check_seasonality(insample)
-            if not test_season:
-                warn(
-                    "No seasonality found when computing RMSSE. Fixing the period to 1.",
-                    UserWarning,
-                )
-                m = 1
+                test_season, m = check_seasonality(insample.univariate_component(i))
+                if not test_season:
+                    warn(
+                        "No seasonality found when computing metric. Fixing the period to 1.",
+                        UserWarning,
+                    )
+                    m = 1
 
-            value_list.append(func(y_true, y_hat, x_t, m, *args[5:], **kwargs))
+            value_list.append(func(y_true, y_hat, x_t, m, *args[3:], **kwargs))
 
         if "reduction" in kwargs:
             return kwargs["reduction"](value_list)
@@ -288,91 +314,6 @@ def multivariate_support_insample(func):
             return signature(func).parameters["reduction"].default(value_list)
 
     return wrapper_multivariate_support_insample
-
-
-def multivariate_insample_metric(
-    actual_series: TimeSeries,
-    pred_series: TimeSeries,
-    insample: TimeSeries,
-    m: int,
-    intersect: bool,
-    reduction: Callable[[np.ndarray], float],
-    metric_fn: Callable[[np.ndarray, np.ndarray, np.ndarray, int], np.ndarray],
-) -> float:
-    """
-    Compute a multivariate insample metric.
-
-    Parameters
-    ----------
-    actual_series : TimeSeries
-        The actual series.
-    pred_series : TimeSeries
-        The predicted series.
-    insample : TimeSeries
-        The insample series.
-    m : int
-        The period for seasonal differencing.
-    intersect : bool
-        Whether to only consider the time intersection between `actual_series` and `pred_series`.
-    reduction : Callable[[np.ndarray], float]
-        The reduction function to aggregate the metric results.
-    metric_fn : Callable[[np.ndarray, np.ndarray, np.ndarray, int], np.ndarray]
-        The metric function to compute the metric for a single component of the multivariate time series.
-
-    Returns
-    -------
-    float
-        The aggregated metric result.
-
-    Raises
-    ------
-    ValueError
-        If the two TimeSeries instances do not have the same width.
-        If the insample TimeSeries does not have the same width as the other series.
-        If the pred_series is not the forecast of the insample series.
-    """
-    raise_if_not(
-        actual_series.width == pred_series.width,
-        "The two TimeSeries instances must have the same width.",
-    )
-    raise_if_not(
-        actual_series.width == insample.width,
-        "The insample TimeSeries must have the same width as the other series.",
-    )
-    raise_if_not(
-        insample.end_time() + insample.freq == pred_series.start_time(),
-        "The pred_series must be the forecast of the insample series",
-    )
-
-    insample_ = (
-        insample.quantile_timeseries(quantile=0.5)
-        if insample.is_stochastic
-        else insample
-    )
-
-    value_list = []
-    for i in range(actual_series.width):
-        y_true, y_hat = _get_values_or_raise(
-            actual_series.univariate_component(i),
-            pred_series.univariate_component(i),
-            intersect,
-            remove_nan_union=False,
-        )
-
-        x_t = insample_.univariate_component(i).values()
-
-        if m is None:
-            test_season, m = check_seasonality(insample)
-        if not test_season:
-            warn(
-                "No seasonality found when computing RMSSE. Fixing the period to 1.",
-                UserWarning,
-            )
-            m = 1
-
-        value_list.append(metric_fn(y_true, y_hat, x_t, m))
-
-    return reduction(value_list)
 
 
 def _get_values(
@@ -472,7 +413,7 @@ def mae(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Mean Absolute Error (MAE).
 
@@ -529,7 +470,7 @@ def mse(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Mean Squared Error (MSE).
 
@@ -586,7 +527,7 @@ def rmse(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Root Mean Squared Error (RMSE).
 
@@ -639,7 +580,7 @@ def rmsle(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Root Mean Squared Log Error (RMSLE).
 
@@ -699,7 +640,7 @@ def coefficient_of_variation(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Coefficient of Variation (percentage).
 
@@ -761,7 +702,7 @@ def mape(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Mean Absolute Percentage Error (MAPE).
 
@@ -832,7 +773,7 @@ def smape(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """symmetric Mean Absolute Percentage Error (sMAPE).
 
@@ -907,7 +848,7 @@ def mase(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Mean Absolute Scaled Error (MASE).
 
@@ -983,7 +924,7 @@ def ope(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Overall Percentage Error (OPE).
 
@@ -1053,7 +994,7 @@ def marre(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Mean Absolute Ranged Relative Error (MARRE).
 
@@ -1124,7 +1065,7 @@ def r2_score(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Coefficient of Determination :math:`R^2`.
 
@@ -1191,7 +1132,7 @@ def dtw_metric(
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
     verbose: bool = False,
-    **kwargs
+    **kwargs,
 ) -> float:
     """
     Applies Dynamic Time Warping to actual_series and pred_series before passing it into the metric.
@@ -1252,7 +1193,7 @@ def rho_risk(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> float:
     """:math:`\\rho`-risk (rho-risk or quantile risk).
 
@@ -1345,7 +1286,7 @@ def quantile_loss(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> float:
     """
     Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T`
@@ -1422,7 +1363,7 @@ def rmsse(
     reduction: Callable[[np.ndarray], float] = np.mean,
     inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
     n_jobs: int = 1,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> Union[float, np.ndarray]:
     """Root Mean Squared Scaled Error (RMSSE).
 
@@ -1487,3 +1428,24 @@ def rmsse(
         "cannot use RMSSE with periodical signals",
     )
     return np.sqrt(np.mean(np.square(errors))) / scale
+
+
+if __name__ == "__main__":
+    import pandas as pd
+    from darts import TimeSeries
+
+    series = TimeSeries.from_dataframe(
+        pd.DataFrame(
+            {
+                "time": pd.date_range("2018-01-01", "2018-01-10"),
+                "value": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            }
+        ),
+        "time",
+        "value",
+    )
+
+    preds = series + 1
+
+    test_mase = mase(series, preds[6:], series[:6], m=1, intersect=True)
+    print(f"mase: {test_mase}")
