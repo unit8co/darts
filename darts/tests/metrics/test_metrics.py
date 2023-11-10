@@ -77,6 +77,9 @@ class TestMetrics:
         assert (
             metrics.mase(self.series1 + 1, self.series1 + 1, self.series_train, 1) == 0
         )
+        assert (
+            metrics.rmsse(self.series1 + 1, self.series1 + 1, self.series_train, 1) == 0
+        )
         assert metrics.marre(self.series1 + 1, self.series1 + 1) == 0
         assert metrics.r2_score(self.series1 + 1, self.series1 + 1) == 1
         assert metrics.ope(self.series1 + 1, self.series1 + 1) == 0
@@ -220,6 +223,8 @@ class TestMetrics:
     def test_season(self):
         with pytest.raises(ValueError):
             metrics.mase(self.series3, self.series3 * 1.3, self.series_train, 8)
+        with pytest.raises(ValueError):
+            metrics.rmsse(self.series3, self.series3 * 1.3, self.series_train, 8)
 
     def test_mse(self):
         self.helper_test_shape_equality(metrics.mse)
@@ -376,6 +381,107 @@ class TestMetrics:
         # not supported input
         with pytest.raises(ValueError):
             metrics.mase(1, 2, 3)
+    
+    def test_rmsse(self):
+        insample = self.series_train
+        test_cases, _ = self.get_test_cases()
+        for s1, s2 in test_cases:
+            # multivariate, series as args
+            assert (
+                round(
+                    abs(
+                        metrics.rmsse(
+                            s1.stack(s1),
+                            s2.stack(s2),
+                            insample.stack(insample),
+                            reduction=(lambda x: x[0]),
+                        )
+                        - metrics.rmsse(s1, s2, insample)
+                    ),
+                    7,
+                )
+                == 0
+            )
+            # multi-ts, series as kwargs
+            assert (
+                round(
+                    abs(
+                        metrics.rmsse(
+                            actual_series=[s1] * 2,
+                            pred_series=[s2] * 2,
+                            insample=[insample] * 2,
+                            reduction=(lambda x: x[0]),
+                            inter_reduction=(lambda x: x[0]),
+                        )
+                        - metrics.rmsse(s1, s2, insample)
+                    ),
+                    7,
+                )
+                == 0
+            )
+            # checking with n_jobs and verbose
+            assert (
+                round(
+                    abs(
+                        metrics.rmsse(
+                            [s1] * 5,
+                            pred_series=[s2] * 5,
+                            insample=[insample] * 5,
+                            reduction=(lambda x: x[0]),
+                            inter_reduction=(lambda x: x[0]),
+                        )
+                        - metrics.rmsse(
+                            [s1] * 5,
+                            [s2] * 5,
+                            insample=[insample] * 5,
+                            reduction=(lambda x: x[0]),
+                            inter_reduction=(lambda x: x[0]),
+                            n_jobs=-1,
+                            verbose=True,
+                        )
+                    ),
+                    7,
+                )
+                == 0
+            )
+        # checking with m=None
+        assert (
+            round(
+                abs(
+                    metrics.rmsse(
+                        self.series2,
+                        self.series2,
+                        self.series_train_not_periodic,
+                        m=None,
+                    )
+                    - metrics.rmsse(
+                        [self.series2] * 2,
+                        [self.series2] * 2,
+                        [self.series_train_not_periodic] * 2,
+                        m=None,
+                        inter_reduction=np.mean,
+                    )
+                ),
+                7,
+            )
+            == 0
+        )
+
+        # fails because of wrong indexes (series1/2 indexes should be the continuation of series3)
+        with pytest.raises(ValueError):
+            metrics.rmsse(self.series1, self.series2, self.series3, 1)
+        # multi-ts, second series is not a TimeSeries
+        with pytest.raises(ValueError):
+            metrics.rmsse([self.series1] * 2, self.series2, [insample] * 2)
+        # multi-ts, insample series is not a TimeSeries
+        with pytest.raises(ValueError):
+            metrics.rmsse([self.series1] * 2, [self.series2] * 2, insample)
+        # multi-ts one array has different length
+        with pytest.raises(ValueError):
+            metrics.rmsse([self.series1] * 2, [self.series2] * 2, [insample] * 3)
+        # not supported input
+        with pytest.raises(ValueError):
+            metrics.rmsse(1, 2, 3)    
 
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)

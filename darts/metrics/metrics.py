@@ -259,11 +259,15 @@ def multivariate_support_insample(func):
         if "m" in kwargs:
             m = kwargs["m"]
             kwargs.pop("m")
+        elif len(args) > 3:
+            m = args[3]
         else:
             m = 1
         if "intersect" in kwargs:
             intersect = kwargs["intersect"]
             kwargs.pop("intersect")
+        elif len(args) > 4:
+            intersect = args[4]
         else:
             intersect = True
 
