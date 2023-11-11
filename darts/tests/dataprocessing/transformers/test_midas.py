@@ -428,20 +428,28 @@ class TestMIDAS:
         )
         assert ts.time_index[0].day_name() == "Saturday"
 
-        midas_sat = MIDAS(low_freq="W-SAT")
+        midas_sat = MIDAS(low_freq="W-SAT", strip=False)
         ts_saturday_anchor = midas_sat.fit_transform(ts)
-        # the resampled series start at the same timestamp
-        assert ts_saturday_anchor.time_index[0] == ts.time_index[0]
-        # no padding, the values are identical across the series
-        assert (
-            ts_saturday_anchor[0].values().flatten() == ts[:7].values().flatten()
-        ).all()
+        # the resampled series start at the same timestamp because `strip=False`
+        assert ts_saturday_anchor.start_time() == ts.start_time()
+        assert ts_saturday_anchor.end_time() == ts.end_time()
+
+        # padding in the first row
+        first_row_exp = np.empty(6)
+        first_row_exp.fill(np.nan)
+        first_row_exp = np.concatenate([first_row_exp, ts[0].values().flatten()])
+        np.testing.assert_array_equal(
+            ts_saturday_anchor[0].values().flatten(), first_row_exp
+        )
+
+        # last row should be completely filled
+        np.testing.assert_array_equal(
+            ts_saturday_anchor[-1].values().flatten(), ts[-7:].values().flatten()
+        )
 
         # inverse transform
         ts_inv_saturday_anchor = midas_sat.inverse_transform(ts_saturday_anchor)
-        np.testing.assert_array_almost_equal(
-            ts.values(), ts_inv_saturday_anchor.values()
-        )
+        np.testing.assert_array_equal(ts.values(), ts_inv_saturday_anchor.values())
         assert ts.time_index.equals(ts_inv_saturday_anchor.time_index)
 
     def test_shifted_low_freq_anchor(self):

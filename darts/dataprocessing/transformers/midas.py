@@ -13,7 +13,7 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import _finite_rows_boundaries
 from darts.utils.timeseries_generation import generate_index
 
@@ -249,7 +249,127 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             midas_ts = midas_ts.strip(how=how)
 
         # components: comp0_0, comp1_0, comp0_1, comp1_1, ...
-        return midas_ts
+        def hello():
+            # TimeSeries to pd.DataFrame
+            df = pd.DataFrame(index=series.time_index)
+
+            # get high frequency string that's suitable for PeriodIndex
+            high_freq_datetime = series.freq_str
+            high_freq_period = df.index.to_period().freqstr
+
+            # downsample
+            resampled = df.resample(low_freq)
+            low_freq_df = resampled.last()
+
+            # extract one low freq period; upsample again to get number of high freq time steps per low freq period
+            low_freq_period_df = low_freq_df.iloc[0:1]
+            low_freq_period_df.index = low_freq_period_df.index.to_period()
+            high_freq_period_df = low_freq_period_df.resample(
+                rule=high_freq_period
+            ).last()
+
+            if not len(low_freq_period_df) < len(high_freq_period_df):
+                raise_log(
+                    ValueError(
+                        f"The target conversion should go from a high to a "
+                        f"low frequency, instead the targeted frequency is "
+                        f"{low_freq}, while the original frequency is {high_freq_datetime}."
+                    ),
+                    logger=logger,
+                )
+
+            # max size is the number of higher frequency time steps in one lower frequency period
+            max_size = len(high_freq_period_df)
+
+            n_samples = series.n_samples
+            n_cols = series.n_components
+            n_times = len(series)
+
+            sizes = resampled.size()
+            n_midas_cols = max_size * n_cols
+
+            arr = series.all_values(copy=False)
+
+            if n_times < max_size:
+                first_idx = high_freq_period_df.index.get_loc(df.index[0])
+                last_idx = first_idx + n_times - 1
+
+                start_chunk = np.empty((first_idx, 1, 1))
+                start_chunk.fill(np.nan)
+                end_chunk = np.empty((max_size - 1 - last_idx, 1, 1))
+                end_chunk.fill(np.nan)
+                arr = np.concatenate([start_chunk, arr, end_chunk])
+
+                time_index = low_freq_df.index
+
+            # extract rows from higher frequency and add convert them to columns in the lower frequency
+            # we can achieve this by extracting all windows with a size of `max_size`;
+            # later on we stride to get only the relevant windows each `max_size` steps
+            arr = np.lib.stride_tricks.sliding_window_view(
+                arr, window_shape=max_size, axis=0
+            )
+            arr = arr.reshape(len(arr), n_midas_cols, n_samples)
+
+            # the first resampled index might not have all dates from higher freq
+            size_group_first = sizes.iloc[0]
+            size_group_first = 0 if size_group_first == max_size else size_group_first
+            components_group_first = size_group_first * n_cols
+            first_group_arr = None
+            if components_group_first and not strip:
+                first_group_arr = np.empty(
+                    (n_midas_cols - components_group_first, n_samples)
+                )
+                first_group_arr.fill(np.nan)
+                first_group_arr = np.concatenate(
+                    [first_group_arr, arr[0, :components_group_first]]
+                )
+                first_group_arr = np.expand_dims(first_group_arr, axis=0)
+
+            # the last resampled index might not have all dates from higher freq
+            size_group_last = sizes.iloc[-1]
+            size_group_last = 0 if size_group_last == max_size else size_group_last
+            components_group_last = size_group_last * n_cols
+            last_group_arr = None
+            if components_group_last and not strip:
+                last_group_arr = np.empty(
+                    (n_midas_cols - components_group_last, n_samples)
+                )
+                last_group_arr.fill(np.nan)
+                last_group_arr = np.concatenate(
+                    [arr[-1, -components_group_last:], last_group_arr]
+                )
+                last_group_arr = np.expand_dims(last_group_arr, axis=0)
+
+            arr = arr[size_group_first::max_size]
+            arr = np.concatenate(
+                [
+                    group_arr
+                    for group_arr in [first_group_arr, arr, last_group_arr]
+                    if group_arr is not None
+                ]
+            )
+
+            time_index = low_freq_df.index
+            if strip:
+                first_idx = None if not components_group_first else 1
+                last_idx = None if not components_group_last else -1
+                time_index = time_index[first_idx:last_idx]
+
+            # TODO: remove this
+            arr = np.concatenate([arr[:, i::max_size] for i in range(max_size)], axis=1)
+
+            ts = MIDAS._create_midas_df2(
+                series=series,
+                arr=arr,
+                time_index=time_index,
+                multiple=max_size,
+                drop_static_covariates=drop_static_covariates,
+                inverse_transform=False,
+            )
+            return ts
+
+        return hello()
+        # return midas_ts
 
     @staticmethod
     def ts_inverse_transform(
@@ -424,3 +544,54 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         transformed.index = low_index_datetime
         transformed.columns = cols_out
         return transformed
+
+    @staticmethod
+    def _process_static_covariates2(
+        static_covariates: Union[None, pd.Series, pd.DataFrame],
+        index_or_multiple: int,
+        drop_static_covariates: bool,
+        inverse_transform: bool,
+    ) -> Optional[Union[pd.Series, pd.DataFrame]]:
+        """If static covariates are component-specific, they must be reshaped appropriately.
+        `index_or_multiple` has a different meaning depending on the transformation:
+        - transform : multiple, to repeat the static covariates for the new components
+        - inverse_transform : index, to remove the duplciated static covariates
+        """
+        if drop_static_covariates:
+            return None
+        elif (
+            static_covariates is not None
+            and static_covariates.index.name == "component"
+        ):
+            if inverse_transform:
+                return static_covariates[:index_or_multiple]
+            else:
+                return pd.concat([static_covariates] * index_or_multiple)
+        else:
+            return static_covariates
+
+    @staticmethod
+    def _create_midas_df2(
+        series: TimeSeries,
+        arr: np.ndarray,
+        time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
+        multiple: int,
+        drop_static_covariates: bool,
+        inverse_transform: bool,
+    ) -> TimeSeries:
+        """
+        Function creating the lower frequency dataframe out of a higher frequency dataframe.
+        """
+        static_covariates = MIDAS._process_static_covariates2(
+            static_covariates=series.static_covariates,
+            index_or_multiple=multiple,
+            drop_static_covariates=drop_static_covariates,
+            inverse_transform=inverse_transform,
+        )
+        return TimeSeries.from_times_and_values(
+            times=time_index,
+            values=arr,
+            # TODO: revert this to [f"{col}_{i}" for col in series.columns for i in range(multiple)]
+            columns=[f"{col}_{i}" for i in range(multiple) for col in series.columns],
+            static_covariates=static_covariates,
+        )
