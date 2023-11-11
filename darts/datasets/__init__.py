@@ -858,8 +858,8 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
             """Restrict the time axis and add the weather data"""
             df = pd.read_csv(dataset_path, index_col=0)
             # convert time index
-            df.index = (
-                pd.DatetimeIndex(df.index, tz="CET").tz_convert("UTC").tz_localize(None)
+            df.index = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True)).tz_localize(
+                None
             )
             # extract pre-determined period
             df = df.loc[
@@ -914,8 +914,8 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
         df["param_name"] = df["Parameter"] + " [" + df["Einheit"] + "]"
         df = df.pivot(index="Datum", columns="param_name", values="Wert")
         # convert time index to from CET to UTC and extract the required time range
-        df.index = (
-            pd.DatetimeIndex(df.index, tz="CET").tz_convert("UTC").tz_localize(None)
+        df.index = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True)).tz_localize(
+            None
         )
         df = df.loc[
             (pd.Timestamp("2015-01-01") <= df.index)
