@@ -81,17 +81,20 @@ class TestMIDAS:
         )
         assert self.monthly_not_complete_ts == inversed_quarterly_not_complete_ts_midas
 
-        # verify that the result is identical when strip=True
+        # when strip=True we only get 1 one quarter with all 3 months
         midas = MIDAS(low_freq="QS", strip=True)
         quarterly_not_complete_ts_midas = midas.fit_transform(
             self.monthly_not_complete_ts
         )
-        assert quarterly_not_complete_ts_midas == self.quarterly_not_complete_ts
+        assert quarterly_not_complete_ts_midas == self.quarterly_not_complete_ts[1:2]
 
         inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
             quarterly_not_complete_ts_midas
         )
-        assert self.monthly_not_complete_ts == inversed_quarterly_not_complete_ts_midas
+        assert (
+            self.monthly_not_complete_ts[1:4]
+            == inversed_quarterly_not_complete_ts_midas
+        )
 
     def test_multivariate_monthly_to_quarterly(self):
         """
@@ -295,9 +298,32 @@ class TestMIDAS:
         )
 
         ts_to_transform = [self.monthly_ts, quarterly_univariate_ts]
-        midas_yearly = MIDAS(low_freq="AS")
+        # ==> with stripping: not enough months, first series will be empty
+        midas_yearly = MIDAS(low_freq="AS", strip=True)
+
         list_yearly_ts = midas_yearly.fit_transform(ts_to_transform)
         assert len(list_yearly_ts) == 2
+        assert len(list_yearly_ts[0]) == 0
+        assert list_yearly_ts[0].freq == "AS"
+        assert list_yearly_ts[0].n_components == 12
+
+        # 4 quarters in a year
+        np.testing.assert_array_almost_equal(
+            list_yearly_ts[1].values(),
+            quarterly_univariate_ts.values().reshape(3, 4),
+        )
+        # verify inverse-transform: first series will be empty, second should be identical to original
+        inverse_transformed = midas_yearly.inverse_transform(list_yearly_ts)
+        assert len(inverse_transformed) == 2
+        assert len(inverse_transformed[0]) == 0
+        assert inverse_transformed[0].freq == "M"
+        assert inverse_transformed[0].n_components == 1
+
+        assert ts_to_transform[1:] == inverse_transformed[1:]
+
+        # ==> without stripping: first series will be partially empty
+        midas_yearly = MIDAS(low_freq="AS", strip=False)
+        list_yearly_ts = midas_yearly.fit_transform(ts_to_transform)
         # 12 months in a year, original ts contains only 9 values, the missing data are nan
         np.testing.assert_array_almost_equal(
             list_yearly_ts[0].values()[:, :9], self.monthly_ts.values().T
@@ -466,23 +492,33 @@ class TestMIDAS:
         )
         assert ts.time_index[2].day_name() == "Monday"
 
-        midas_mon = MIDAS(low_freq="W-MON")
+        midas_mon = MIDAS(low_freq="W-MON", strip=False)
         ts_monday_anchor = midas_mon.fit_transform(ts)
         # the resampled series start at the previous anchor point (incomplete)
-        assert ts_monday_anchor.time_index[0] == ts.time_index[2] - pd.Timedelta(
-            weeks=1
-        )
-        assert ts_monday_anchor.time_index[1] == ts.time_index[2]
+        assert ts_monday_anchor.time_index[0] == pd.Timestamp("2000-01-03")
+        assert ts_monday_anchor.freq == "W-MON"
+        assert len(ts_monday_anchor) == 4
         # incomplete low frequency period
         assert (
-            ts_monday_anchor[0].values().flatten()[-2:] == ts[:2].values().flatten()
+            ts_monday_anchor[0].values().flatten()[-3:] == ts[:3].values().flatten()
         ).all()
         # complete low frequency period
         assert (
-            ts_monday_anchor[1].values().flatten() == ts[2:9].values().flatten()
+            ts_monday_anchor[1].values().flatten() == ts[3:10].values().flatten()
         ).all()
 
         # reverse transform
         ts_inv_monday_anchor = midas_mon.inverse_transform(ts_monday_anchor)
         np.testing.assert_array_almost_equal(ts.values(), ts_inv_monday_anchor.values())
         assert ts.time_index.equals(ts_inv_monday_anchor.time_index)
+
+        # with strip, it skips first and last week
+        midas_mon = MIDAS(low_freq="W-MON", strip=True)
+        ts_monday_anchor = midas_mon.fit_transform(ts)
+        assert ts_monday_anchor.time_index[0] == pd.Timestamp("2000-01-10")
+        assert ts_monday_anchor.freq == "W-MON"
+        assert len(ts_monday_anchor) == 2
+        # first complete low frequency period
+        assert (
+            ts_monday_anchor[0].values().flatten() == ts[3:10].values().flatten()
+        ).all()
