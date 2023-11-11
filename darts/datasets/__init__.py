@@ -5,8 +5,9 @@ Datasets
 A few popular time series datasets
 """
 
+import os
 from pathlib import Path
-from typing import List
+from typing import List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -813,3 +814,111 @@ class WeatherDataset(DatasetLoaderCSV):
         Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
         """
         return [TimeSeries.from_series(series[label]) for label in series]
+
+
+class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
+    """
+    Electricity Consumption of households & SMEs (low voltage) and businesses & services (medium voltage) in the
+    city of Zurich [1]_, with values recorded every 15 minutes.
+
+    The electricity consumption is combined with weather measurements recorded by three different
+    stations in the city of Zurich with a hourly frequency [2]_. The missing time stamps are filled with NaN.
+    The original weather data is recorded every hour. Before adding the features to the electricity consumption,
+    the data is resampled to 15 minutes frequency, and missing values are interpolated.
+
+    To simplify the dataset, the measurements from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse weather
+    stations are discarded to keep only the data recorded in the Zch_Stampfenbachstrasse station.
+
+    Both dataset sources are updated continuously, but this dataset only retrains values between 2015 and 2022.
+    The time index was converted from CET time zone to UTC.
+
+    Components Descriptions:
+
+    * Value_NE5 : Households & SMEs electricity consumption (low voltage, grid level 7) in kWh
+    * Value_NE7 : Business and services electricity consumption (medium voltage, grid level 5) in kWh
+    * Hr [%Hr] : Relative humidity
+    * RainDur [min] : Duration of precipitation (divided by 4 for conversion from hourly to quarter-hourly records)
+    * T [°C] : Temperature
+    * WD [°] : Wind direction
+    * WVv [m/s] : Wind vector speed
+    * p [hPa] : Air pressure
+    * WVs [m/s] : Wind scalar speed
+    * StrGlo [W/m2] : Global solar irradiation
+
+    Note: before 2018, the scalar speeds were calculated from the 30 minutes vector data.
+
+    References
+    ----------
+    .. [1] https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich
+    .. [2] https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte
+    """
+
+    def __init__(self):
+        def pre_process_dataset(dataset_path):
+            """Restrict the time axis and add the weather data"""
+            df = pd.read_csv(dataset_path, index_col=0)
+            # convert time index
+            df.index = (
+                pd.DatetimeIndex(df.index, tz="CET").tz_convert("UTC").tz_localize(None)
+            )
+            # extract pre-determined period
+            df = df.loc[
+                (pd.Timestamp("2015-01-01") <= df.index)
+                & (df.index <= pd.Timestamp("2022-12-31"))
+            ]
+            # download and preprocess the weather information
+            df_weather = self._download_weather_data()
+            # add weather data as additional features
+            df = pd.concat([df, df_weather], axis=1)
+            # interpolate weather data
+            df = df.interpolate()
+            # raining duration is given in minutes -> we divide by 4 from hourly to quarter-hourly records
+            df["RainDur [min]"] = df["RainDur [min]"] / 4
+
+            # round Electricity cols to 4 decimals, other columns to 2 decimals
+            cols_precise = ["Value_NE5", "Value_NE7"]
+            df = df.round(
+                decimals={col: (4 if col in cols_precise else 2) for col in df.columns}
+            )
+
+            # export the dataset
+            df.index.name = "Timestamp"
+            df.to_csv(self._get_path_dataset())
+
+        # hash value for dataset with weather data
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "zurich_electricity_consumption.csv",
+                uri=(
+                    "https://data.stadt-zuerich.ch/dataset/"
+                    "ewz_stromabgabe_netzebenen_stadt_zuerich/"
+                    "download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv"
+                ),
+                hash="c2fea1a0974611ff1c276abcc1d34619",
+                header_time="Timestamp",
+                freq="15min",
+                pre_process_csv_fn=pre_process_dataset,
+            )
+        )
+
+    @staticmethod
+    def _download_weather_data():
+        """Concatenate the yearly csv files into a single dataframe and reshape it"""
+        # download the csv from the url
+        base_url = "https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte/download/"
+        filenames = [f"ugz_ogd_meteo_h1_{year}.csv" for year in range(2015, 2023)]
+        df = pd.concat([pd.read_csv(base_url + fname) for fname in filenames])
+        # retain only one weather station
+        df = df.loc[df["Standort"] == "Zch_Stampfenbachstrasse"]
+        # pivot the df to get all measurements as columns
+        df["param_name"] = df["Parameter"] + " [" + df["Einheit"] + "]"
+        df = df.pivot(index="Datum", columns="param_name", values="Wert")
+        # convert time index to from CET to UTC and extract the required time range
+        df.index = (
+            pd.DatetimeIndex(df.index, tz="CET").tz_convert("UTC").tz_localize(None)
+        )
+        df = df.loc[
+            (pd.Timestamp("2015-01-01") <= df.index)
+            & (df.index <= pd.Timestamp("2022-12-31"))
+        ]
+        return df
