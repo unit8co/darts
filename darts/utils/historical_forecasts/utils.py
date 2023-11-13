@@ -219,34 +219,26 @@ def _historical_forecasts_sanitize_kwargs(
     show_warnings: bool,
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """Convert kwargs to dictionary, check that their content is compatible with called methods."""
-    if fit_kwargs is not None or predict_kwargs is not None:
-        hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
-        # replace `forecast_horizon` with `n`
-        hfc_args = hfc_args - {"forecast_horizon"}
-        hfc_args = hfc_args.union({"n"})
-        # allow user to provide validation series at their own responsability
-        hfc_args = hfc_args - {
-            "val_series",
-            "val_past_covariates",
-            "val_future_covariates",
-        }
+    hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
+    # replace `forecast_horizon` with `n`
+    hfc_args = hfc_args - {"forecast_horizon"}
+    hfc_args = hfc_args.union({"n"})
 
     if fit_kwargs is None:
         fit_kwargs = dict()
-    else:
-        if retrain:
-            fit_args = set(inspect.signature(model.fit).parameters)
-            fit_kwargs = _historical_forecasts_check_kwargs(
-                hfc_args=hfc_args,
-                name_kwargs="fit_kwargs",
-                dict_kwargs=fit_kwargs,
-                method_args=fit_args,
-                show_warnings=show_warnings,
-            )
-        elif show_warnings:
-            logger.warning(
-                "`fit_kwargs` was provided with `retrain=False`, the argument will be ignored."
-            )
+    elif retrain:
+        fit_args = set(inspect.signature(model.fit).parameters)
+        fit_kwargs = _historical_forecasts_check_kwargs(
+            hfc_args=hfc_args,
+            name_kwargs="fit_kwargs",
+            dict_kwargs=fit_kwargs,
+            method_args=fit_args,
+            show_warnings=show_warnings,
+        )
+    elif show_warnings:
+        logger.warning(
+            "`fit_kwargs` was provided with `retrain=False`, the argument will be ignored."
+        )
 
     if predict_kwargs is None:
         predict_kwargs = dict()
@@ -280,8 +272,8 @@ def _historical_forecasts_check_kwargs(
     if len(invalid_args) > 0:
         raise_log(
             ValueError(
-                f"The following parameters cannot be passed using `{name_kwargs}` as they would interfere with "
-                f"historical forecasts logic : {invalid_args}."
+                f"The following parameters cannot be passed in `{name_kwargs}`: {invalid_args}. "
+                f"Make sure to pass them explicitly to the function/method."
             ),
             logger,
         )
@@ -292,8 +284,8 @@ def _historical_forecasts_check_kwargs(
         dict_kwargs = {k: v for k, v in dict_kwargs.items() if k not in ignored_args}
         if show_warnings:
             logger.warning(
-                f"The following parameters in `{name_kwargs}` will be ignored was they are not supported by "
-                f"the model method : {ignored_args}."
+                f"The following parameters in `{name_kwargs}` will be ignored as they are not supported by "
+                f"model method: {ignored_args}."
             )
 
     return dict_kwargs

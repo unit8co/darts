@@ -335,9 +335,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         supported_params = inspect.signature(self.predict).parameters
         kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
         # even if the predict accept the covariate, the model itself might not
-        if "past_covariates" in kwargs_ and not self.supports_past_covariates:
+        if "past_covariates" in kwargs_ and not self.uses_past_covariates:
             kwargs_.pop("past_covariates")
-        if "future_covariates" in kwargs_ and not self.supports_future_covariates:
+        if "future_covariates" in kwargs_ and not self.uses_future_covariates:
             kwargs_.pop("future_covariates")
         return self.predict(n, **kwargs_)
 
@@ -822,7 +822,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             model=model,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
-            retrain=retrain,
+            retrain=retrain is not False and retrain != 0,
             show_warnings=show_warnings,
         )
 

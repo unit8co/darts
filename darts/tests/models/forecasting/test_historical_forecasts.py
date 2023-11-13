@@ -1972,7 +1972,7 @@ class TestHistoricalforecast:
         invalid_fit_kwargs = {"series": self.ts_pass_train}
         if model_type == "regression":
             unsupported_fit_kwargs = {"trainer": None}
-        elif model_type == "torch":
+        else:
             unsupported_fit_kwargs = {"n_jobs_multioutput_wrapper": False}
 
         n = 2
@@ -2027,7 +2027,7 @@ class TestHistoricalforecast:
         if model_type == "regression":
             valid_predict_kwargs = {}
             unsupported_predict_kwargs = {"batch_size": 10}
-        elif model_type == "torch":
+        else:
             valid_predict_kwargs = {"batch_size": 10}
             unsupported_predict_kwargs = {}
 
@@ -2061,7 +2061,7 @@ class TestHistoricalforecast:
         assert hist_fc.components.equals(self.ts_pass_train.components)
         assert len(hist_fc) == n
 
-        # passing hist_fc parameters in predict_kwargs, interferring with the logic
+        # passing hist_fc parameters in predict_kwargs, interfering with the logic
         with pytest.raises(ValueError):
             hist_fc = model.historical_forecasts(
                 self.ts_pass_train,
