@@ -2006,9 +2006,22 @@ class TestHistoricalforecast:
         assert hist_fc.components.equals(self.ts_pass_train.components)
         assert len(hist_fc) == n
 
+        # passing hist_fc parameters in fit_kwargs, with retrain=False
+        hist_fc = model.historical_forecasts(
+            self.ts_pass_train,
+            forecast_horizon=1,
+            start=len(self.ts_pass_train) - n,
+            retrain=False,
+            enable_optimization=enable_optimization,
+            fit_kwargs=invalid_fit_kwargs,
+        )
+
+        assert hist_fc.components.equals(self.ts_pass_train.components)
+        assert len(hist_fc) == n
+
         # passing hist_fc parameters in fit_kwargs, interferring with the logic
         with pytest.raises(ValueError):
-            hist_fc = model.historical_forecasts(
+            model.historical_forecasts(
                 self.ts_pass_train,
                 forecast_horizon=1,
                 start=len(self.ts_pass_train) - n,
