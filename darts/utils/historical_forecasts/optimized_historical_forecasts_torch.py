@@ -118,7 +118,6 @@ def _optimized_historical_forecasts(
     predictions = model.predict_from_dataset(
         forecast_horizon,
         dataset,
-        trainer=None,
         verbose=verbose,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
