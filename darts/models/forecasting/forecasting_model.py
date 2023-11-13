@@ -2361,6 +2361,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 logger=logger,
             )
             self._expect_future_covariates = True
+            self._uses_future_covariates = True
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
