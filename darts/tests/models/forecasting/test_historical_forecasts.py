@@ -380,6 +380,19 @@ class TestHistoricalforecast:
         assert len(res) == 1
         assert series.end_time() == res.time_index[0]
 
+        # passing non-supported covariates
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series,
+                past_covariates=series,
+                future_covariates=series,
+                retrain=False,
+                forecast_horizon=1,
+            )
+        assert str(msg.value).startswith(
+            "Model does not support `past_covariates` at inference"
+        )
+
     def test_historical_forecasts_future_cov_local_models(self):
         model = AutoARIMA()
         assert model.min_train_series_length == 10
@@ -400,6 +413,19 @@ class TestHistoricalforecast:
         assert str(msg.value).startswith(
             "FutureCovariatesLocalForecastingModel does not support historical forecasting "
             "with `retrain` set to `False`"
+        )
+
+        # passing non-supported covariates
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series,
+                past_covariates=series,
+                future_covariates=series,
+                retrain=True,
+                forecast_horizon=1,
+            )
+        assert str(msg.value).startswith(
+            "Model cannot be fitted with `past_covariates`."
         )
 
     def test_historical_forecasts_local_models(self):
@@ -624,6 +650,38 @@ class TestHistoricalforecast:
             f"Model {model_cls} does not return forecast_horizon points per historical forecast in the case of "
             f"retrain=True and overlap_end=False, and last_points_only=False"
         )
+
+        if not model.supports_past_covariates:
+            with pytest.raises(ValueError) as msg:
+                model.historical_forecasts(
+                    series=self.ts_pass_val_range,
+                    past_covariates=self.ts_passengers,
+                    forecast_horizon=forecast_horizon,
+                    train_length=train_length,
+                    stride=1,
+                    retrain=True,
+                    overlap_end=False,
+                    last_points_only=False,
+                )
+            assert str(msg.value).startswith(
+                "Model cannot be fitted with `past_covariates`."
+            )
+
+        if not model.supports_future_covariates:
+            with pytest.raises(ValueError) as msg:
+                model.historical_forecasts(
+                    series=self.ts_pass_val_range,
+                    future_covariates=self.ts_passengers,
+                    forecast_horizon=forecast_horizon,
+                    train_length=train_length,
+                    stride=1,
+                    retrain=True,
+                    overlap_end=False,
+                    last_points_only=False,
+                )
+            assert str(msg.value).startswith(
+                "Model cannot be fitted with `future_covariates`."
+            )
 
     def test_sanity_check_invalid_start(self):
         timeidx_ = tg.linear_timeseries(length=10)
