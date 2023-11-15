@@ -98,7 +98,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length
             Number of input past time steps per chunk.
         output_chunk_length
-            Number of output time steps per chunk.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         train_sample_shape
             Shape of the model's input, used to instantiate model without calling ``fit_from_dataset`` and
             perform sanity check on new training/inference datasets used for re-training or prediction.

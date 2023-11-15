@@ -385,9 +385,12 @@ class TiDEModel(MixedCovariatesTorchModel):
 
         The model is implemented as a :class:`MixedCovariatesTorchModel`, which means that it supports
         both past and future covariates, as well as static covariates. Probabilistic forecasting is supported through
-        the use of a `likelihood` instead of a `loss_fn`.
+        the use of a ``likelihood`` instead of a ``loss_fn``.
         The original paper does not describe how past covariates are treated in detail, so we assume that they are
         passed to the encoder as-is.
+
+        The past covariates must be known for ``input_chunk_length`` points before prediction time whereas the future
+        covariates must be known for ``output_chunk_length`` points after prediction time.
 
         The encoder and decoder are implemented as a series of residual blocks. The number of residual blocks in
         the encoder and decoder can be controlled via ``num_encoder_layers`` and ``num_decoder_layers`` respectively.
@@ -399,7 +402,10 @@ class TiDEModel(MixedCovariatesTorchModel):
         input_chunk_length
             The length of the input sequence fed to the model.
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         num_encoder_layers
             The number of residual blocks in the encoder.
         num_decoder_layers

@@ -281,7 +281,10 @@ class TCNModel(PastCovariatesTorchModel):
         input_chunk_length
             Number of past time steps that are fed to the forecasting module.
         output_chunk_length
-            Number of time steps the torch module will predict into the future at once.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters

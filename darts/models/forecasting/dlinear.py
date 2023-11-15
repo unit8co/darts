@@ -245,15 +245,19 @@ class DLinearModel(MixedCovariatesTorchModel):
     ):
         """An implementation of the DLinear model, as presented in [1]_.
 
-        This implementation is improved by allowing the optional use of past covariates,
-        future covariates and static covariates, and by making the model optionally probabilistic.
+        This implementation is improved by allowing the optional use of past covariates (known for
+        `output_chunk_length` points before prediction time), future covariates (known for ``output_chunk_length``
+        points after prediction time) and static covariates, as well as supporting probabilistic forecasting.
 
         Parameters
         ----------
         input_chunk_length
             The length of the input sequence fed to the model.
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         shared_weights
             Whether to use shared weights for all components of multivariate series.
 

@@ -502,7 +502,10 @@ class NHiTSModel(PastCovariatesTorchModel):
         input_chunk_length
             The length of the input sequence fed to the model.
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         num_stacks
             The number of stacks that make up the whole model.
         num_blocks

@@ -159,7 +159,10 @@ class BlockRNNModel(PastCovariatesTorchModel):
         input_chunk_length
             The number of time steps that will be fed to the internal forecasting module
         output_chunk_length
-            Number of time steps to be output by the internal forecasting module.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as

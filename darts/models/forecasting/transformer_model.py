@@ -351,14 +351,17 @@ class TransformerModel(PastCovariatesTorchModel):
 
         The transformer architecture implemented here is based on [1]_.
 
-        This model supports past covariates (known for `input_chunk_length` points before prediction time).
+        This model supports past covariates (known for ``input_chunk_length`` points before prediction time).
 
         Parameters
         ----------
         input_chunk_length
             Number of time steps to be input to the forecasting module.
         output_chunk_length
-            Number of time steps to be output by the forecasting module.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         d_model
             The number of expected features in the transformer encoder/decoder inputs (default=64).
         nhead

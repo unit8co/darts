@@ -684,7 +684,8 @@ class TFTModel(MixedCovariatesTorchModel):
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
 
         This model supports mixed covariates (includes past covariates known for ``input_chunk_length``
-        points before prediction time and future covariates known for ``output_chunk_length`` after prediction time).
+        points before prediction time and future covariates known for ``output_chunk_length`` points
+        after prediction time).
 
         The TFT applies multi-head attention queries on future inputs from mandatory ``future_covariates``.
         Specifying future encoders with ``add_encoders`` (read below) can automatically generate future covariates

@@ -565,7 +565,10 @@ class NBEATSModel(PastCovariatesTorchModel):
         input_chunk_length
             The length of the input sequence fed to the model.
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
+            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past covariates for prediction (depending on the model's covariate support).
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
