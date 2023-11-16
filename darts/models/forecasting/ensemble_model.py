@@ -288,6 +288,7 @@ class EnsembleModel(GlobalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         # ensure forecasting models all rely on the same series during inference
         if series is None:
@@ -305,6 +306,7 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=num_samples,
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            show_warnings=show_warnings,
         )
 
         # for single-level ensemble, probabilistic forecast is obtained directly from forecasting models
