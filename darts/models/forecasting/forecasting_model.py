@@ -321,18 +321,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ):
         supported_params = inspect.signature(self.fit).parameters
         kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
-        if self.supports_past_covariates:
-            kwargs_["past_covariates"] = past_covariates
-        elif past_covariates is not None:
-            raise_log(
-                ValueError("Model cannot be fitted with `past_covariates`."), logger
-            )
-        if self.supports_future_covariates:
-            kwargs_["future_covariates"] = future_covariates
-        elif future_covariates is not None:
-            raise_log(
-                ValueError("Model cannot be fitted with `future_covariates`."), logger
-            )
+
+        # handle past and future covariates based on model support
+        for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
+            covs_name = f"{name}_covariates"
+            if getattr(self, f"supports_{covs_name}"):
+                kwargs_[covs_name] = covs
+            elif covs is not None:
+                raise_log(
+                    ValueError(f"Model cannot be fit/trained with `{covs_name}`."),
+                    logger,
+                )
         self.fit(series, **kwargs_)
 
     def _predict_wrapper(
@@ -341,29 +340,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         supported_params = set(inspect.signature(self.predict).parameters)
+
         # if predict() accepts covariates, the model might not support them at inference
-        if "past_covariates" in kwargs and not self.supports_past_covariates:
-            if kwargs["past_covariates"] is None:
-                supported_params = supported_params - {"past_covariates"}
-            else:
-                raise_log(
-                    ValueError(
-                        "Model does not support `past_covariates` at inference, either remove this covariate or "
-                        "fit the model with this covariate."
-                    ),
-                    logger,
-                )
-        if "future_covariates" in kwargs and not self.supports_future_covariates:
-            if kwargs["future_covariates"] is None:
-                supported_params = supported_params - {"future_covariates"}
-            else:
-                raise_log(
-                    ValueError(
-                        "Model does not support `future_covariates` at inference, either remove this covariate or "
-                        "fit the model with this covariate."
-                    ),
-                    logger,
-                )
+        for covs_name in ["past_covariates", "future_covariates"]:
+            if covs_name in kwargs and not getattr(self, f"supports_{covs_name}"):
+                if kwargs[covs_name] is None:
+                    supported_params = supported_params - {covs_name}
+                else:
+                    raise_log(
+                        ValueError(
+                            f"Model prediction does not support `{covs_name}`, either because it "
+                            f"does not support `{covs_name}` in general, or because it was fit/trained "
+                            f"without using `{covs_name}`."
+                        ),
+                        logger,
+                    )
 
         kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
         return self.predict(n, **kwargs_)

@@ -476,13 +476,13 @@ class TestBacktesting:
         with pytest.raises(ValueError) as msg:
             model.backtest(series=series, past_covariates=series, **bt_kwargs)
         assert str(msg.value).startswith(
-            "Model cannot be fitted with `past_covariates`."
+            "Model cannot be fit/trained with `past_covariates`."
         )
         if not model.supports_future_covariates:
             with pytest.raises(ValueError) as msg:
                 model.backtest(series=series, future_covariates=series, **bt_kwargs)
             assert str(msg.value).startswith(
-                "Model cannot be fitted with `future_covariates`."
+                "Model cannot be fit/trained with `future_covariates`."
             )
 
     def test_gridsearch(self):
@@ -679,7 +679,7 @@ class TestBacktesting:
                 **bt_kwargs
             )
         assert str(msg.value).startswith(
-            "Model cannot be fitted with `past_covariates`."
+            "Model cannot be fit/trained with `past_covariates`."
         )
         if not model.supports_future_covariates:
             with pytest.raises(ValueError) as msg:
@@ -691,5 +691,5 @@ class TestBacktesting:
                     **bt_kwargs
                 )
             assert str(msg.value).startswith(
-                "Model cannot be fitted with `future_covariates`."
+                "Model cannot be fit/trained with `future_covariates`."
             )

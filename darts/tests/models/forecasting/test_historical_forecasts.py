@@ -388,7 +388,7 @@ class TestHistoricalforecast:
                 retrain=False,
             )
         assert str(msg.value).startswith(
-            "Model does not support `past_covariates` at inference"
+            "Model prediction does not support `past_covariates`"
         )
 
     def test_historical_forecasts_future_cov_local_models(self):
@@ -421,7 +421,7 @@ class TestHistoricalforecast:
                 retrain=True,
             )
         assert str(msg.value).startswith(
-            "Model cannot be fitted with `past_covariates`."
+            "Model cannot be fit/trained with `past_covariates`."
         )
 
     def test_historical_forecasts_local_models(self):
@@ -655,7 +655,7 @@ class TestHistoricalforecast:
                     retrain=True,
                 )
             assert str(msg.value).startswith(
-                "Model cannot be fitted with `past_covariates`."
+                "Model cannot be fit/trained with `past_covariates`."
             )
 
         if not model.supports_future_covariates:
@@ -666,7 +666,7 @@ class TestHistoricalforecast:
                     last_points_only=False,
                 )
             assert str(msg.value).startswith(
-                "Model cannot be fitted with `future_covariates`."
+                "Model cannot be fit/trained with `future_covariates`."
             )
 
     def test_sanity_check_invalid_start(self):
