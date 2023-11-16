@@ -385,9 +385,7 @@ class TestHistoricalforecast:
             model.historical_forecasts(
                 series,
                 past_covariates=series,
-                future_covariates=series,
                 retrain=False,
-                forecast_horizon=1,
             )
         assert str(msg.value).startswith(
             "Model does not support `past_covariates` at inference"
@@ -420,9 +418,7 @@ class TestHistoricalforecast:
             model.historical_forecasts(
                 series,
                 past_covariates=series,
-                future_covariates=series,
                 retrain=True,
-                forecast_horizon=1,
             )
         assert str(msg.value).startswith(
             "Model cannot be fitted with `past_covariates`."
@@ -656,12 +652,7 @@ class TestHistoricalforecast:
                 model.historical_forecasts(
                     series=self.ts_pass_val_range,
                     past_covariates=self.ts_passengers,
-                    forecast_horizon=forecast_horizon,
-                    train_length=train_length,
-                    stride=1,
                     retrain=True,
-                    overlap_end=False,
-                    last_points_only=False,
                 )
             assert str(msg.value).startswith(
                 "Model cannot be fitted with `past_covariates`."
@@ -672,11 +663,6 @@ class TestHistoricalforecast:
                 model.historical_forecasts(
                     series=self.ts_pass_val_range,
                     future_covariates=self.ts_passengers,
-                    forecast_horizon=forecast_horizon,
-                    train_length=train_length,
-                    stride=1,
-                    retrain=True,
-                    overlap_end=False,
                     last_points_only=False,
                 )
             assert str(msg.value).startswith(
@@ -2024,7 +2010,7 @@ class TestHistoricalforecast:
         "model_type,enable_optimization",
         product(["regression", "torch"], [True, False]),
     )
-    def test_fit_kwargs(self, monkeypatch, model_type, enable_optimization):
+    def test_fit_kwargs(self, model_type, enable_optimization):
         """check that the parameters provided in fit_kwargs are correctly processed"""
         valid_fit_kwargs = {"max_samples_per_ts": 3}
         invalid_fit_kwargs = {"series": self.ts_pass_train}
@@ -2035,6 +2021,11 @@ class TestHistoricalforecast:
 
         n = 2
         model = self.create_model(1, use_ll=False, model_type=model_type)
+
+        # torch not available
+        if model is None:
+            return
+
         model.fit(series=self.ts_pass_train[:-n])
 
         # supported argument
@@ -2077,8 +2068,8 @@ class TestHistoricalforecast:
         assert hist_fc.components.equals(self.ts_pass_train.components)
         assert len(hist_fc) == n
 
-        # passing hist_fc parameters in fit_kwargs, interferring with the logic
-        with pytest.raises(ValueError):
+        # passing hist_fc parameters in fit_kwargs, interfering with the logic
+        with pytest.raises(ValueError) as msg:
             model.historical_forecasts(
                 self.ts_pass_train,
                 forecast_horizon=1,
@@ -2087,12 +2078,15 @@ class TestHistoricalforecast:
                 enable_optimization=enable_optimization,
                 fit_kwargs=invalid_fit_kwargs,
             )
+        assert str(msg.value).startswith(
+            "The following parameters cannot be passed in `fit_kwargs`"
+        )
 
     @pytest.mark.parametrize(
         "model_type,enable_optimization",
         product(["regression", "torch"], [True, False]),
     )
-    def test_predict_kwargs(self, monkeypatch, model_type, enable_optimization):
+    def test_predict_kwargs(self, model_type, enable_optimization):
         """check that the parameters provided in predict_kwargs are correctly processed"""
         invalid_predict_kwargs = {"predict_likelihood_parameters": False}
         if model_type == "regression":
@@ -2100,10 +2094,15 @@ class TestHistoricalforecast:
             unsupported_predict_kwargs = {"batch_size": 10}
         else:
             valid_predict_kwargs = {"batch_size": 10}
-            unsupported_predict_kwargs = {}
+            unsupported_predict_kwargs = {"unsupported": "unsupported"}
 
         n = 2
         model = self.create_model(1, use_ll=False, model_type=model_type)
+
+        # torch not available
+        if model is None:
+            return
+
         model.fit(series=self.ts_pass_train[:-n])
 
         # supported argument
@@ -2133,7 +2132,7 @@ class TestHistoricalforecast:
         assert len(hist_fc) == n
 
         # passing hist_fc parameters in predict_kwargs, interfering with the logic
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as msg:
             hist_fc = model.historical_forecasts(
                 self.ts_pass_train,
                 forecast_horizon=1,
@@ -2142,3 +2141,6 @@ class TestHistoricalforecast:
                 enable_optimization=enable_optimization,
                 predict_kwargs=invalid_predict_kwargs,
             )
+        assert str(msg.value).startswith(
+            "The following parameters cannot be passed in `predict_kwargs`"
+        )
