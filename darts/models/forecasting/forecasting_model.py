@@ -720,11 +720,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
         fit_kwargs
-            Additional arguments passed to the model `fit()` method, for example `max_samples_per_ts`,
-            `n_jobs_multiouput_wrapper` or `num_loader_workers`.
+            Additional arguments passed to the model `fit()` method.
         predict_kwargs
-            Additional arguments passed to the model `predict()` method, for example `num_samples`,
-            `predict_likelihood_parameters` or `num_loader_workers`.
+            Additional arguments passed to the model `predict()` method.
 
         Returns
         -------
@@ -1233,11 +1231,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
         fit_kwargs
-            Additional arguments passed to the model `fit()` method, for example `max_samples_per_ts`,
-            `n_jobs_multiouput_wrapper` or `num_loader_workers`.
+            Additional arguments passed to the model `fit()` method.
         predict_kwargs
-            Additional arguments passed to the model `predict()` method, for example `num_samples`,
-            `predict_likelihood_parameters` or `num_loader_workers`.
+            Additional arguments passed to the model `predict()` method.
 
         Returns
         -------
@@ -1432,11 +1428,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must
             be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.
         fit_kwargs
-            Additional arguments passed to the model `fit()` method, for example `max_samples_per_ts`,
-            `n_jobs_multiouput_wrapper` or `num_loader_workers`.
+            Additional arguments passed to the model `fit()` method.
         predict_kwargs
-            Additional arguments passed to the model `predict()` method, for example `predict_likelihood_parameters` or
-            `num_loader_workers`.
+            Additional arguments passed to the model `predict()` method.
 
         Returns
         -------
@@ -1537,10 +1531,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
                 pred = model._predict_wrapper(
                     n=len(val_series),
-                    num_samples=1,
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    num_samples=1,
                     verbose=verbose,
                     **predict_kwargs,
                 )
