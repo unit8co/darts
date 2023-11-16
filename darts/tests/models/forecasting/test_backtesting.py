@@ -654,12 +654,14 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "model_cls,parameters",
-        zip([Theta, ARIMA], [{"theta": [1, 2]}, {"p": [18, 4]}]),
+        zip([Theta, ARIMA], [{"theta": [3, 4]}, {"p": [18, 4]}]),
     )
     def test_gridsearch_bad_covariates(self, model_cls, parameters):
         """Passing unsupported covariate should raise an exception"""
-        dummy_series = lt(start_value=1, end_value=10, length=40, dtype="float32")
-        ts_train, ts_val = dummy_series.split_after(0.8)
+        dummy_series = get_dummy_series(
+            ts_length=100, lt_end_value=1, st_value_offset=0
+        ).astype(np.float32)
+        ts_train, ts_val = dummy_series.split_before(split_point=0.8)
 
         bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
 
