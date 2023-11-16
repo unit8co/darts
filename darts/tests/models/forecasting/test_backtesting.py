@@ -468,25 +468,19 @@ class TestBacktesting:
     @pytest.mark.parametrize("model_cls", [Theta, ARIMA])
     def test_backtest_bad_covariates(self, model_cls):
         """Passing unsupported covariate should raise an exception"""
-        dummy_series = lt(start_value=1, end_value=10, length=40, dtype="float32")
-        ts_train, ts_val = dummy_series.split_after(0.8)
-
+        series = lt(start_value=1, end_value=10, length=31, dtype="float32")
         model = model_cls()
-        model.backtest(series=ts_train, show_warnings=False)
+        bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
+        model.backtest(series=series, **bt_kwargs)
 
-        if not model.supports_past_covariates:
-            with pytest.raises(ValueError) as msg:
-                model.backtest(
-                    series=ts_train, past_covariates=dummy_series, show_warnings=False
-                )
-            assert str(msg.value).startswith(
-                "Model cannot be fitted with `past_covariates`."
-            )
+        with pytest.raises(ValueError) as msg:
+            model.backtest(series=series, past_covariates=series, **bt_kwargs)
+        assert str(msg.value).startswith(
+            "Model cannot be fitted with `past_covariates`."
+        )
         if not model.supports_future_covariates:
             with pytest.raises(ValueError) as msg:
-                model.backtest(
-                    series=ts_train, future_covariates=dummy_series, show_warnings=False
-                )
+                model.backtest(series=series, future_covariates=series, **bt_kwargs)
             assert str(msg.value).startswith(
                 "Model cannot be fitted with `future_covariates`."
             )
@@ -660,31 +654,31 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "model_cls,parameters",
-        zip([Theta, ARIMA], [{"theta": [1, 2]}, {"p": [11, 12]}]),
+        zip([Theta, ARIMA], [{"theta": [1, 2]}, {"p": [18, 4]}]),
     )
     def test_gridsearch_bad_covariates(self, model_cls, parameters):
         """Passing unsupported covariate should raise an exception"""
         dummy_series = lt(start_value=1, end_value=10, length=40, dtype="float32")
         ts_train, ts_val = dummy_series.split_after(0.8)
 
+        bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
+
         model = model_cls()
         model_cls.gridsearch(
-            parameters=parameters,
-            series=ts_train,
-            val_series=ts_val,
+            parameters=parameters, series=ts_train, val_series=ts_val, **bt_kwargs
         )
 
-        if not model.supports_past_covariates:
-            with pytest.raises(ValueError) as msg:
-                model_cls.gridsearch(
-                    parameters=parameters,
-                    series=ts_train,
-                    past_covariates=dummy_series,
-                    val_series=ts_val,
-                )
-            assert str(msg.value).startswith(
-                "Model cannot be fitted with `past_covariates`."
+        with pytest.raises(ValueError) as msg:
+            model_cls.gridsearch(
+                parameters=parameters,
+                series=ts_train,
+                past_covariates=dummy_series,
+                val_series=ts_val,
+                **bt_kwargs
             )
+        assert str(msg.value).startswith(
+            "Model cannot be fitted with `past_covariates`."
+        )
         if not model.supports_future_covariates:
             with pytest.raises(ValueError) as msg:
                 model_cls.gridsearch(
@@ -692,6 +686,7 @@ class TestBacktesting:
                     series=ts_train,
                     future_covariates=dummy_series,
                     val_series=ts_val,
+                    **bt_kwargs
                 )
             assert str(msg.value).startswith(
                 "Model cannot be fitted with `future_covariates`."
