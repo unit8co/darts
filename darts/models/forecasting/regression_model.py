@@ -114,9 +114,12 @@ class RegressionModel(GlobalForecastingModel):
             'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
         output_chunk_length
-            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -738,6 +741,7 @@ class RegressionModel(GlobalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
@@ -813,6 +817,7 @@ class RegressionModel(GlobalForecastingModel):
             num_samples,
             verbose,
             predict_likelihood_parameters,
+            show_warnings,
         )
 
         # check that the input sizes of the target series and covariates match
@@ -1500,9 +1505,12 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
         output_chunk_length
-            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that

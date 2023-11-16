@@ -103,6 +103,7 @@ def _optimized_historical_forecasts(
         future_covariates,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
+        show_warnings=show_warnings,
         **{k: v for k, v in kwargs.items() if k in super_predict_params},
     )
 
