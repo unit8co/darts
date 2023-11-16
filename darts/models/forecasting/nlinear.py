@@ -23,14 +23,14 @@ class _NLinearModule(PLMixedCovariatesModule):
 
     def __init__(
         self,
-        input_dim,
-        output_dim,
-        future_cov_dim,
-        static_cov_dim,
-        nr_params,
-        shared_weights,
-        const_init,
-        normalize,
+        input_dim: int,
+        output_dim: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
+        nr_params: int,
+        shared_weights: bool,
+        const_init: bool,
+        normalize: bool,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -50,10 +50,10 @@ class _NLinearModule(PLMixedCovariatesModule):
         shared_weights
             Whether to use shared weights for the components of the series.
             ** Ignores covariates when True. **
-        normalize
-            Whether to apply the "normalization" described in the paper.
         const_init
             Whether to initialize the weights to 1/in_len
+        normalize
+            Whether to apply the "normalization" described in the paper.
 
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
