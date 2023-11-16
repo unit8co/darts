@@ -113,15 +113,29 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         if is_single_series:
             series = [series]
 
-        fitted_params = [
-            {
-                "high_freq": ts.freq_str,
-                "start": ts.start_time(),
-                "end": ts.end_time(),
-            }
-            for ts in series
-        ]
-
+        fitted_params = []
+        low_freq = params["fixed"]["_low_freq"]
+        for idx, ts in enumerate(series):
+            high_freq = ts.freq_str
+            if not pd.tseries.frequencies.is_subperiod(
+                pd.tseries.frequencies.get_period_alias(high_freq),
+                pd.tseries.frequencies.get_period_alias(low_freq),
+            ):
+                raise_log(
+                    ValueError(
+                        f"The frequency string of the series at index={idx} must be higher than the "
+                        f"`low_freq` set at MIDAS creation. "
+                        f"Received series frequency {high_freq} against `low_freq={low_freq}`"
+                    ),
+                    logger=logger,
+                )
+            fitted_params.append(
+                {
+                    "high_freq": high_freq,
+                    "start": ts.start_time(),
+                    "end": ts.end_time(),
+                }
+            )
         return fitted_params[0] if is_single_series else fitted_params
 
     @staticmethod
@@ -150,30 +164,45 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         df = pd.DataFrame(index=series.time_index)
 
         # get high frequency string that's suitable for PeriodIndex
-        high_freq_datetime = series.freq_str
         high_freq_period = df.index.to_period().freqstr
 
         # downsample
         resampled = df.resample(low_freq)
         low_freq_df = resampled.last()
 
-        # extract one low freq period; upsample again to get number of high freq time steps per low freq period
-        low_freq_period_df = low_freq_df.iloc[0:1]
-        low_freq_period_df.index = low_freq_period_df.index.to_period()
-        high_freq_period_df = low_freq_period_df.resample(rule=high_freq_period).last()
+        def get_upsampled(low_df: pd.DataFrame, high_period):
+            """Upsample a single index DataFrame to a higher frequency"""
+            low_df = low_df.copy(deep=True)
+            low_df.index = low_df.index.to_period()
+            return low_df.resample(rule=high_period).last()
 
-        if not len(low_freq_period_df) < len(high_freq_period_df):
+        # first and last groups can be shorter than an entire lower freq period
+        # we upsample them from the low to high frequency to get the expected number
+        # higher freq time steps in one lower freq
+        first_upsampled = get_upsampled(low_freq_df.iloc[:1], high_freq_period)
+        last_upsampled = get_upsampled(low_freq_df.iloc[-1:], high_freq_period)
+
+        # find unique sizes from: first group size + unique sizes of center groups + last group size
+        sizes = np.unique(
+            [len(first_upsampled)]
+            + resampled.size()[1:-1].unique().tolist()
+            + [len(last_upsampled)]
+        )
+
+        # MIDAS requires the high freq to be a round multiple of the low freq -> sizes must be identical
+        if not len(sizes) == 1:
             raise_log(
                 ValueError(
-                    f"The target conversion should go from a high to a "
-                    f"low frequency, instead the targeted frequency is "
-                    f"{low_freq}, while the original frequency is {high_freq_datetime}."
+                    "The frequency of the input series should be an exact multiple of the targeted "
+                    f"lower frequency output. Received series frequency `{high_freq}`, and lower frequency "
+                    f"{low_freq}. E.g., a valid conversion would be from a monthly (high) to a quarterly "
+                    f"(low) frequency."
                 ),
                 logger=logger,
             )
 
         # max size is the number of higher frequency time steps in one lower frequency period
-        max_size = len(high_freq_period_df)
+        max_size = sizes[0]
 
         n_samples = series.n_samples
         n_cols = series.n_components
@@ -185,7 +214,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         arr = series.all_values(copy=False)
         time_index = low_freq_df.index
         if n_times < max_size:
-            first_idx = high_freq_period_df.index.get_loc(df.index[0])
+            first_idx = first_upsampled.index.get_loc(df.index[0])
             last_idx = first_idx + n_times - 1
 
             start_chunk = np.empty((first_idx, 1, 1))
@@ -265,9 +294,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             drop_static_covariates=drop_static_covariates,
             inverse_transform=False,
         )
-
         return ts
-        # return midas_ts
 
     @staticmethod
     def ts_inverse_transform(
@@ -403,20 +430,25 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         series_freq_str = series.freq_str
         input_freq = [series_freq_str]
         # flexibility on anchoring
-        if isinstance(series_freq_str, str) and "-" in series_freq_str:
+        if "-" in series_freq_str:
             input_freq.append(series_freq_str.split("-")[0])
 
-        raise_if(
-            high_freq is not None and high_freq not in input_freq,
-            f"The frequency string of the series to transform must be identical to the fitted one, expected "
-            f"{high_freq} but received {series.freq_str}.",
-        )
-
-        raise_if(
-            low_freq is not None and low_freq not in input_freq,
-            f"The frequency string of the series to inverse-transform must be identical to the fitted one, "
-            f"expected {low_freq} but received {series.freq_str}.",
-        )
+        if high_freq is not None and high_freq not in input_freq:
+            raise_log(
+                ValueError(
+                    f"The frequency string of the series to transform must be identical to the fitted one, expected "
+                    f"{high_freq} but received {series_freq_str}."
+                ),
+                logger=logger,
+            )
+        if low_freq is not None and low_freq not in input_freq:
+            raise_log(
+                ValueError(
+                    f"The frequency string of the series to inverse-transform must be identical to the fitted one, "
+                    f"expected {low_freq} but received {series_freq_str}."
+                ),
+                logger=logger,
+            )
 
     @staticmethod
     def _process_static_covariates(

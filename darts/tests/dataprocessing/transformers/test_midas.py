@@ -229,8 +229,11 @@ class TestMIDAS:
         )
 
         midas = MIDAS(low_freq="M")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as msg:
             midas.fit_transform(daily_ts)
+        assert str(msg.value).startswith(
+            "The frequency of the input series should be an exact multiple"
+        )
 
     def test_inverse_transform_prediction(self):
         """
