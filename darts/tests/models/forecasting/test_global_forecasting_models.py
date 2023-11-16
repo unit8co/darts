@@ -1,5 +1,6 @@
 import os
 from copy import deepcopy
+from itertools import product
 from unittest.mock import ANY, patch
 
 import numpy as np
@@ -205,6 +206,15 @@ if TORCH_AVAILABLE:
 
         target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
         target_past, target_future = target.split_after(split_ratio)
+
+        # various ts with different static covariates representations
+        ts_w_static_cov = tg.linear_timeseries(length=80).with_static_covariates(
+            pd.Series([1, 2])
+        )
+        ts_shared_static_cov = ts_w_static_cov.stack(tg.sine_timeseries(length=80))
+        ts_comps_static_cov = ts_shared_static_cov.with_static_covariates(
+            pd.DataFrame([[0, 1], [2, 3]], columns=["st1", "st2"])
+        )
 
         @pytest.mark.parametrize("config", models_cls_kwargs_errs)
         def test_save_model_parameters(self, config):
@@ -449,6 +459,37 @@ if TORCH_AVAILABLE:
             model.predict(n=160, future_covariates=self.covariates)
             with pytest.raises(ValueError):
                 model.predict(n=161, future_covariates=self.covariates)
+
+        @pytest.mark.parametrize(
+            "model_cls,ts",
+            product(
+                [TFTModel, DLinearModel, NLinearModel, TiDEModel],
+                [ts_w_static_cov, ts_shared_static_cov, ts_comps_static_cov],
+            ),
+        )
+        def test_use_static_covariates(self, model_cls, ts):
+            """
+            Check that both static covariates representations are supported (component-specific and shared)
+            for both uni- and multivariate series when fitting the model.
+            Also check that the static covariates are present in the forecasted series
+            """
+            model = model_cls(
+                input_chunk_length=IN_LEN,
+                output_chunk_length=OUT_LEN,
+                random_state=0,
+                use_static_covariates=True,
+                n_epochs=1,
+                **tfm_kwargs,
+            )
+            # must provide mandatory future_covariates to TFTModel
+            model.fit(
+                series=ts,
+                future_covariates=self.sine_1_ts
+                if model.supports_future_covariates
+                else None,
+            )
+            pred = model.predict(OUT_LEN)
+            assert pred.static_covariates.equals(ts.static_covariates)
 
         def test_batch_predictions(self):
             # predicting multiple time series at once needs to work for arbitrary batch sizes
