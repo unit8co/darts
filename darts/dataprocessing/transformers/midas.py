@@ -142,242 +142,131 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         """
         low_freq = params["fixed"]["_low_freq"]
         strip = params["fixed"]["_strip"]
-        how = params["fixed"]["_how"]
         drop_static_covariates = params["fixed"]["_drop_static_covariates"]
         high_freq = params["fitted"]["high_freq"]
         MIDAS._verify_series(series, high_freq=high_freq)
 
         # TimeSeries to pd.DataFrame
-        series_df = series.pd_dataframe(copy=True)
-        # TODO: get ride of the double copy?
-        series_copy_df = series_df.copy()
+        df = pd.DataFrame(index=series.time_index)
 
         # get high frequency string that's suitable for PeriodIndex
         high_freq_datetime = series.freq_str
-        high_freq_period = series_df.index.to_period().freqstr
+        high_freq_period = df.index.to_period().freqstr
 
         # downsample
-        low_freq_series_df = series_df.resample(rule=low_freq).last()
-        # save the downsampled index
-        low_index_datetime = low_freq_series_df.index
+        resampled = df.resample(low_freq)
+        low_freq_df = resampled.last()
 
-        # upsample again to get full range of high freq periods for every low freq period
-        low_freq_series_df.index = low_index_datetime.to_period()
-        high_freq_series_df = low_freq_series_df.resample(rule=high_freq_period).last()
+        # extract one low freq period; upsample again to get number of high freq time steps per low freq period
+        low_freq_period_df = low_freq_df.iloc[0:1]
+        low_freq_period_df.index = low_freq_period_df.index.to_period()
+        high_freq_period_df = low_freq_period_df.resample(rule=high_freq_period).last()
 
-        # make sure the extension of the index matches the original index
-        if "End" in str(series.freq):
-            args_to_timestamp = {"freq": high_freq_period}
-        else:
-            args_to_timestamp = {"how": "start"}
-        high_index_datetime = high_freq_series_df.index.to_timestamp(
-            **args_to_timestamp
-        )
-
-        raise_if_not(
-            low_freq_series_df.shape[0] < high_freq_series_df.shape[0],
-            f"The target conversion should go from a high to a "
-            f"low frequency, instead the targeted frequency is "
-            f"{low_freq}, while the original frequency is {high_freq_datetime}.",
-            logger,
-        )
-
-        # if necessary, expand the original series
-        if len(high_index_datetime) > series_df.shape[0]:
-            series_df = pd.DataFrame(
-                np.nan, index=high_index_datetime, columns=series_copy_df.columns
+        if not len(low_freq_period_df) < len(high_freq_period_df):
+            raise_log(
+                ValueError(
+                    f"The target conversion should go from a high to a "
+                    f"low frequency, instead the targeted frequency is "
+                    f"{low_freq}, while the original frequency is {high_freq_datetime}."
+                ),
+                logger=logger,
             )
-            series_df.loc[series_copy_df.index, :] = series_copy_df.values
 
-        n_high = series_df.shape[0]
-        n_low = len(low_index_datetime)
+        # max size is the number of higher frequency time steps in one lower frequency period
+        max_size = len(high_freq_period_df)
 
-        raise_if_not(
-            n_high % n_low == 0,
-            "The frequency of the high frequency input series should be an exact multiple of the targeted"
-            "low frequency output. For example, you could go from a monthly series to a quarterly series.",
-            logger,
-        )
+        n_samples = series.n_samples
+        n_cols = series.n_components
+        n_times = len(series)
 
-        multiple = n_high // n_low
+        sizes = resampled.size()
+        n_midas_cols = max_size * n_cols
 
-        # make multiple low frequency columns out of the high frequency column(s)
-        midas_df = MIDAS._create_midas_df(
-            series_df=series_df,
-            low_index_datetime=low_index_datetime,
-            multiple=multiple,
-        )
+        arr = series.all_values(copy=False)
+        time_index = low_freq_df.index
+        if n_times < max_size:
+            first_idx = high_freq_period_df.index.get_loc(df.index[0])
+            last_idx = first_idx + n_times - 1
 
-        new_static_covariates = MIDAS._process_static_covariates(
-            static_covariates=series.static_covariates,
-            index_or_multiple=multiple,
+            start_chunk = np.empty((first_idx, 1, 1))
+            start_chunk.fill(np.nan)
+            end_chunk = np.empty((max_size - 1 - last_idx, 1, 1))
+            end_chunk.fill(np.nan)
+            arr = np.concatenate([start_chunk, arr, end_chunk])
+            # arr has shape (n time steps, n components, n samples)
+            # reshape to (1 time step, n midas components, n samples)
+            arr = arr.reshape(1, n_midas_cols, n_samples)
+
+            if strip:
+                # results in an empty series
+                arr = arr[0:0]
+                time_index = time_index[0:0]
+        else:
+            # extract rows from higher frequency and add convert them to columns in the lower frequency
+            # we can achieve this by extracting all windows with a size of `max_size`;
+            # later on we stride to get only the relevant windows each `max_size` steps
+            arr = np.lib.stride_tricks.sliding_window_view(
+                arr, window_shape=max_size, axis=0
+            )
+            arr = arr.reshape(len(arr), n_midas_cols, n_samples)
+
+            # the first resampled index might not have all dates from higher freq
+            size_group_first = sizes.iloc[0]
+            size_group_first = 0 if size_group_first == max_size else size_group_first
+            components_group_first = size_group_first * n_cols
+            first_group_arr = None
+            if components_group_first and not strip:
+                first_group_arr = np.empty(
+                    (n_midas_cols - components_group_first, n_samples)
+                )
+                first_group_arr.fill(np.nan)
+                first_group_arr = np.concatenate(
+                    [first_group_arr, arr[0, :components_group_first]]
+                )
+                first_group_arr = np.expand_dims(first_group_arr, axis=0)
+
+            # the last resampled index might not have all dates from higher freq
+            size_group_last = sizes.iloc[-1]
+            size_group_last = 0 if size_group_last == max_size else size_group_last
+            components_group_last = size_group_last * n_cols
+            last_group_arr = None
+            if components_group_last and not strip:
+                last_group_arr = np.empty(
+                    (n_midas_cols - components_group_last, n_samples)
+                )
+                last_group_arr.fill(np.nan)
+                last_group_arr = np.concatenate(
+                    [arr[-1, -components_group_last:], last_group_arr]
+                )
+                last_group_arr = np.expand_dims(last_group_arr, axis=0)
+
+            arr = arr[size_group_first::max_size]
+            arr = np.concatenate(
+                [
+                    group_arr
+                    for group_arr in [first_group_arr, arr, last_group_arr]
+                    if group_arr is not None
+                ]
+            )
+
+            if strip:
+                first_idx = None if not components_group_first else 1
+                last_idx = None if not components_group_last else -1
+                time_index = time_index[first_idx:last_idx]
+
+            # TODO: remove this
+            arr = np.concatenate([arr[:, i::max_size] for i in range(max_size)], axis=1)
+
+        ts = MIDAS._create_midas_df2(
+            series=series,
+            arr=arr,
+            time_index=time_index,
+            multiple=max_size,
             drop_static_covariates=drop_static_covariates,
             inverse_transform=False,
         )
 
-        times = midas_df.index
-        values = midas_df.to_numpy()
-        # low frequency anchoring is not just Begin/End, requires additional adjustments
-        if "-" in low_freq:
-            # shift values so that the first values in the row correspond to the time index value
-            values = np.vstack([values, np.full((1, values.shape[1]), np.NaN)])
-            values = np.roll(values, shift=1)
-
-            # adjust the time index and values based on the series start and low frequency anchor
-            anchor_adjusted_time_index = pd.date_range(
-                series.start_time(), freq=low_freq, periods=1
-            )
-            # start was rolled forward
-            if series.time_index[0] < anchor_adjusted_time_index[0]:
-                # roll back the time axis to retrieve the incomplete low frequency
-                times = midas_df.index.shift(-1)
-                # discard the row of NaN
-                values = values[:-1]
-            else:
-                # discard the row of NaN
-                values = values[1:]
-
-        # back to TimeSeries
-        midas_ts = TimeSeries.from_times_and_values(
-            times=times,
-            values=values,
-            static_covariates=new_static_covariates,
-            columns=midas_df.columns,
-        )
-
-        if strip:
-            midas_ts = midas_ts.strip(how=how)
-
-        # components: comp0_0, comp1_0, comp0_1, comp1_1, ...
-        def hello():
-            # TimeSeries to pd.DataFrame
-            df = pd.DataFrame(index=series.time_index)
-
-            # get high frequency string that's suitable for PeriodIndex
-            high_freq_datetime = series.freq_str
-            high_freq_period = df.index.to_period().freqstr
-
-            # downsample
-            resampled = df.resample(low_freq)
-            low_freq_df = resampled.last()
-
-            # extract one low freq period; upsample again to get number of high freq time steps per low freq period
-            low_freq_period_df = low_freq_df.iloc[0:1]
-            low_freq_period_df.index = low_freq_period_df.index.to_period()
-            high_freq_period_df = low_freq_period_df.resample(
-                rule=high_freq_period
-            ).last()
-
-            if not len(low_freq_period_df) < len(high_freq_period_df):
-                raise_log(
-                    ValueError(
-                        f"The target conversion should go from a high to a "
-                        f"low frequency, instead the targeted frequency is "
-                        f"{low_freq}, while the original frequency is {high_freq_datetime}."
-                    ),
-                    logger=logger,
-                )
-
-            # max size is the number of higher frequency time steps in one lower frequency period
-            max_size = len(high_freq_period_df)
-
-            n_samples = series.n_samples
-            n_cols = series.n_components
-            n_times = len(series)
-
-            sizes = resampled.size()
-            n_midas_cols = max_size * n_cols
-
-            arr = series.all_values(copy=False)
-            time_index = low_freq_df.index
-            if n_times < max_size:
-                first_idx = high_freq_period_df.index.get_loc(df.index[0])
-                last_idx = first_idx + n_times - 1
-
-                start_chunk = np.empty((first_idx, 1, 1))
-                start_chunk.fill(np.nan)
-                end_chunk = np.empty((max_size - 1 - last_idx, 1, 1))
-                end_chunk.fill(np.nan)
-                arr = np.concatenate([start_chunk, arr, end_chunk])
-                # arr has shape (n time steps, n components, n samples)
-                # reshape to (1 time step, n midas components, n samples)
-                arr = arr.reshape(1, n_midas_cols, n_samples)
-
-                if strip:
-                    # results in an empty series
-                    arr = arr[0:0]
-                    time_index = time_index[0:0]
-            else:
-                # extract rows from higher frequency and add convert them to columns in the lower frequency
-                # we can achieve this by extracting all windows with a size of `max_size`;
-                # later on we stride to get only the relevant windows each `max_size` steps
-                arr = np.lib.stride_tricks.sliding_window_view(
-                    arr, window_shape=max_size, axis=0
-                )
-                arr = arr.reshape(len(arr), n_midas_cols, n_samples)
-
-                # the first resampled index might not have all dates from higher freq
-                size_group_first = sizes.iloc[0]
-                size_group_first = (
-                    0 if size_group_first == max_size else size_group_first
-                )
-                components_group_first = size_group_first * n_cols
-                first_group_arr = None
-                if components_group_first and not strip:
-                    first_group_arr = np.empty(
-                        (n_midas_cols - components_group_first, n_samples)
-                    )
-                    first_group_arr.fill(np.nan)
-                    first_group_arr = np.concatenate(
-                        [first_group_arr, arr[0, :components_group_first]]
-                    )
-                    first_group_arr = np.expand_dims(first_group_arr, axis=0)
-
-                # the last resampled index might not have all dates from higher freq
-                size_group_last = sizes.iloc[-1]
-                size_group_last = 0 if size_group_last == max_size else size_group_last
-                components_group_last = size_group_last * n_cols
-                last_group_arr = None
-                if components_group_last and not strip:
-                    last_group_arr = np.empty(
-                        (n_midas_cols - components_group_last, n_samples)
-                    )
-                    last_group_arr.fill(np.nan)
-                    last_group_arr = np.concatenate(
-                        [arr[-1, -components_group_last:], last_group_arr]
-                    )
-                    last_group_arr = np.expand_dims(last_group_arr, axis=0)
-
-                arr = arr[size_group_first::max_size]
-                arr = np.concatenate(
-                    [
-                        group_arr
-                        for group_arr in [first_group_arr, arr, last_group_arr]
-                        if group_arr is not None
-                    ]
-                )
-
-                if strip:
-                    first_idx = None if not components_group_first else 1
-                    last_idx = None if not components_group_last else -1
-                    time_index = time_index[first_idx:last_idx]
-
-                # TODO: remove this
-                arr = np.concatenate(
-                    [arr[:, i::max_size] for i in range(max_size)], axis=1
-                )
-
-            ts = MIDAS._create_midas_df2(
-                series=series,
-                arr=arr,
-                time_index=time_index,
-                multiple=max_size,
-                drop_static_covariates=drop_static_covariates,
-                inverse_transform=False,
-            )
-            return ts
-
-        return hello()
+        return ts
         # return midas_ts
 
     @staticmethod
@@ -453,6 +342,22 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                 elif pd.Timedelta(0) < start_to_end_shift <= low_freq_timedelta:
                     start_time = orig_ts_end_time
                     shift = 1
+
+        # time_index = generate_index(
+        #     start=start_time,
+        #     length=len(series_values) + shift,
+        #     freq=high_freq,
+        #     name=series.time_index.name,
+        # )[shift:]
+        #
+        # inversed_midas_ts = MIDAS._create_midas_df2(
+        #     series=series,
+        #     arr=series_values,
+        #     time_index=time_index,
+        #     multiple=0,
+        #     drop_static_covariates=drop_static_covariates,
+        #     inverse_transform=True,
+        # )
 
         new_static_covariates = MIDAS._process_static_covariates(
             static_covariates=series.static_covariates,
