@@ -31,6 +31,7 @@ def _optimized_historical_forecasts_last_points_only(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
+    **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -128,6 +129,7 @@ def _optimized_historical_forecasts_last_points_only(
             x=np.repeat(X, num_samples, axis=0),
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
         # where k = output_chunk length if multi_models, 1 otherwise
@@ -177,6 +179,7 @@ def _optimized_historical_forecasts_all_points(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
+    **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -273,6 +276,7 @@ def _optimized_historical_forecasts_all_points(
             x=np.repeat(X, num_samples, axis=0),
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
         )
 
         # reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)

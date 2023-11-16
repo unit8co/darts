@@ -1,10 +1,12 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, Union
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+import inspect
 
 import numpy as np
 import pandas as pd
@@ -207,6 +209,86 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
+
+
+def _historical_forecasts_sanitize_kwargs(
+    model,
+    fit_kwargs: Optional[Dict[str, Any]],
+    predict_kwargs: Optional[Dict[str, Any]],
+    retrain: bool,
+    show_warnings: bool,
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """Convert kwargs to dictionary, check that their content is compatible with called methods."""
+    hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
+    # replace `forecast_horizon` with `n`
+    hfc_args = hfc_args - {"forecast_horizon"}
+    hfc_args = hfc_args.union({"n"})
+
+    if fit_kwargs is None:
+        fit_kwargs = dict()
+    elif retrain:
+        fit_args = set(inspect.signature(model.fit).parameters)
+        fit_kwargs = _historical_forecasts_check_kwargs(
+            hfc_args=hfc_args,
+            name_kwargs="fit_kwargs",
+            dict_kwargs=fit_kwargs,
+            method_args=fit_args,
+            show_warnings=show_warnings,
+        )
+    elif show_warnings:
+        logger.warning(
+            "`fit_kwargs` was provided with `retrain=False`, the argument will be ignored."
+        )
+
+    if predict_kwargs is None:
+        predict_kwargs = dict()
+    else:
+        predict_args = set(inspect.signature(model.predict).parameters)
+        predict_kwargs = _historical_forecasts_check_kwargs(
+            hfc_args=hfc_args,
+            name_kwargs="predict_kwargs",
+            dict_kwargs=predict_kwargs,
+            method_args=predict_args,
+            show_warnings=show_warnings,
+        )
+
+    return fit_kwargs, predict_kwargs
+
+
+def _historical_forecasts_check_kwargs(
+    hfc_args: Set[str],
+    name_kwargs: str,
+    dict_kwargs: Dict[str, Any],
+    method_args: Set[str],
+    show_warnings: bool,
+) -> Dict[str, Any]:
+    """
+    Return the kwargs dict without the arguments unsupported by the model method.
+
+    Raise a warning if some argument are not supported and an exception if some arguments interfere with
+    historical_forecasts logic.
+    """
+    invalid_args = set(dict_kwargs).intersection(hfc_args)
+    if len(invalid_args) > 0:
+        raise_log(
+            ValueError(
+                f"The following parameters cannot be passed in `{name_kwargs}`: {invalid_args}. "
+                f"Make sure to pass them explicitly to the function/method."
+            ),
+            logger,
+        )
+
+    ignored_args = set(dict_kwargs) - method_args
+    if len(ignored_args) > 0:
+        # remove unsupported argument to avoid exception thrown by python
+        dict_kwargs = {k: v for k, v in dict_kwargs.items() if k not in ignored_args}
+        if show_warnings:
+            logger.warning(
+                f"The following parameters in `{name_kwargs}` will be ignored as they are not supported by "
+                f"model method: {ignored_args}."
+            )
+
+    return dict_kwargs
 
 
 def _historical_forecasts_start_warnings(

@@ -1,4 +1,5 @@
 import itertools
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -333,6 +334,29 @@ class TestHistoricalforecast:
     # slightly longer to not affect the last predictable timestamp
     ts_covs = tg.gaussian_timeseries(length=30, start=start_ts)
 
+    @staticmethod
+    def create_model(ocl, use_ll=True, model_type="regression"):
+        if model_type == "regression":
+            return LinearRegressionModel(
+                lags=3,
+                likelihood="quantile" if use_ll else None,
+                quantiles=[0.05, 0.4, 0.5, 0.6, 0.95] if use_ll else None,
+                output_chunk_length=ocl,
+            )
+        else:  # model_type == "torch"
+            if not TORCH_AVAILABLE:
+                return None
+            return NLinearModel(
+                input_chunk_length=3,
+                likelihood=QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95])
+                if use_ll
+                else None,
+                output_chunk_length=ocl,
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs,
+            )
+
     def test_historical_forecasts_transferrable_future_cov_local_models(self):
         model = ARIMA()
         assert model.min_train_series_length == 30
@@ -356,6 +380,17 @@ class TestHistoricalforecast:
         assert len(res) == 1
         assert series.end_time() == res.time_index[0]
 
+        # passing non-supported covariates
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series,
+                past_covariates=series,
+                retrain=False,
+            )
+        assert str(msg.value).startswith(
+            "Model prediction does not support `past_covariates`"
+        )
+
     def test_historical_forecasts_future_cov_local_models(self):
         model = AutoARIMA()
         assert model.min_train_series_length == 10
@@ -376,6 +411,17 @@ class TestHistoricalforecast:
         assert str(msg.value).startswith(
             "FutureCovariatesLocalForecastingModel does not support historical forecasting "
             "with `retrain` set to `False`"
+        )
+
+        # passing non-supported covariates
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series,
+                past_covariates=series,
+                retrain=True,
+            )
+        assert str(msg.value).startswith(
+            "Model cannot be fit/trained with `past_covariates`."
         )
 
     def test_historical_forecasts_local_models(self):
@@ -600,6 +646,28 @@ class TestHistoricalforecast:
             f"Model {model_cls} does not return forecast_horizon points per historical forecast in the case of "
             f"retrain=True and overlap_end=False, and last_points_only=False"
         )
+
+        if not model.supports_past_covariates:
+            with pytest.raises(ValueError) as msg:
+                model.historical_forecasts(
+                    series=self.ts_pass_val_range,
+                    past_covariates=self.ts_passengers,
+                    retrain=True,
+                )
+            assert str(msg.value).startswith(
+                "Model cannot be fit/trained with `past_covariates`."
+            )
+
+        if not model.supports_future_covariates:
+            with pytest.raises(ValueError) as msg:
+                model.historical_forecasts(
+                    series=self.ts_pass_val_range,
+                    future_covariates=self.ts_passengers,
+                    last_points_only=False,
+                )
+            assert str(msg.value).startswith(
+                "Model cannot be fit/trained with `future_covariates`."
+            )
 
     def test_sanity_check_invalid_start(self):
         timeidx_ = tg.linear_timeseries(length=10)
@@ -1827,29 +1895,7 @@ class TestHistoricalforecast:
         """standard checks that historical forecasts work with direct likelihood parameter predictions
         with regression and torch models."""
 
-        def create_model(ocl, use_ll=True, model_type="regression"):
-            if model_type == "regression":
-                return LinearRegressionModel(
-                    lags=3,
-                    likelihood="quantile" if use_ll else None,
-                    quantiles=[0.05, 0.4, 0.5, 0.6, 0.95] if use_ll else None,
-                    output_chunk_length=ocl,
-                )
-            else:  # model_type == "torch"
-                if not TORCH_AVAILABLE:
-                    return None
-                return NLinearModel(
-                    input_chunk_length=3,
-                    likelihood=QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95])
-                    if use_ll
-                    else None,
-                    output_chunk_length=ocl,
-                    n_epochs=1,
-                    random_state=42,
-                    **tfm_kwargs,
-                )
-
-        model = create_model(1, False, model_type=model_type)
+        model = self.create_model(1, False, model_type=model_type)
         # skip torch models if not installed
         if model is None:
             return
@@ -1860,7 +1906,7 @@ class TestHistoricalforecast:
                 predict_likelihood_parameters=True,
             )
 
-        model = create_model(1, model_type=model_type)
+        model = self.create_model(1, model_type=model_type)
         # forecast_horizon > output_chunk_length doesn't work
         with pytest.raises(ValueError):
             model.historical_forecasts(
@@ -1869,7 +1915,7 @@ class TestHistoricalforecast:
                 forecast_horizon=2,
             )
 
-        model = create_model(1, model_type=model_type)
+        model = self.create_model(1, model_type=model_type)
         # num_samples != 1 doesn't work
         with pytest.raises(ValueError):
             model.historical_forecasts(
@@ -1884,7 +1930,7 @@ class TestHistoricalforecast:
         qs_expected = ["q0.05", "q0.40", "q0.50", "q0.60", "q0.95"]
         qs_expected = pd.Index([target_name + "_" + q for q in qs_expected])
         # check that it works with retrain
-        model = create_model(1, model_type=model_type)
+        model = self.create_model(1, model_type=model_type)
         hist_fc = model.historical_forecasts(
             self.ts_pass_train,
             predict_likelihood_parameters=True,
@@ -1897,7 +1943,7 @@ class TestHistoricalforecast:
         assert len(hist_fc) == n
 
         # check for equal results between predict and hist fc without retraining
-        model = create_model(1, model_type=model_type)
+        model = self.create_model(1, model_type=model_type)
         model.fit(series=self.ts_pass_train[:-n])
         hist_fc = model.historical_forecasts(
             self.ts_pass_train,
@@ -1926,7 +1972,7 @@ class TestHistoricalforecast:
 
         # check equal results between predict and hist fc with higher output_chunk_length and horizon,
         # and last_points_only=False
-        model = create_model(2, model_type=model_type)
+        model = self.create_model(2, model_type=model_type)
         # we take one more training step so that model trained on ocl=1 has the same training samples
         # as model above
         model.fit(series=self.ts_pass_train[: -(n - 1)])
@@ -1959,3 +2005,142 @@ class TestHistoricalforecast:
                 p.all_values(copy=False), hfc.all_values(copy=False)
             )
             assert len(hist_fc) == n + 1
+
+    @pytest.mark.parametrize(
+        "model_type,enable_optimization",
+        product(["regression", "torch"], [True, False]),
+    )
+    def test_fit_kwargs(self, model_type, enable_optimization):
+        """check that the parameters provided in fit_kwargs are correctly processed"""
+        valid_fit_kwargs = {"max_samples_per_ts": 3}
+        invalid_fit_kwargs = {"series": self.ts_pass_train}
+        if model_type == "regression":
+            unsupported_fit_kwargs = {"trainer": None}
+        else:
+            unsupported_fit_kwargs = {"n_jobs_multioutput_wrapper": False}
+
+        n = 2
+        model = self.create_model(1, use_ll=False, model_type=model_type)
+
+        # torch not available
+        if model is None:
+            return
+
+        model.fit(series=self.ts_pass_train[:-n])
+
+        # supported argument
+        hist_fc = model.historical_forecasts(
+            self.ts_pass_train,
+            forecast_horizon=1,
+            num_samples=1,
+            start=len(self.ts_pass_train) - n,
+            retrain=True,
+            enable_optimization=enable_optimization,
+            fit_kwargs=valid_fit_kwargs,
+        )
+
+        assert hist_fc.components.equals(self.ts_pass_train.components)
+        assert len(hist_fc) == n
+
+        # passing unsupported argument
+        hist_fc = model.historical_forecasts(
+            self.ts_pass_train,
+            forecast_horizon=1,
+            start=len(self.ts_pass_train) - n,
+            retrain=True,
+            enable_optimization=enable_optimization,
+            fit_kwargs=unsupported_fit_kwargs,
+        )
+
+        assert hist_fc.components.equals(self.ts_pass_train.components)
+        assert len(hist_fc) == n
+
+        # passing hist_fc parameters in fit_kwargs, with retrain=False
+        hist_fc = model.historical_forecasts(
+            self.ts_pass_train,
+            forecast_horizon=1,
+            start=len(self.ts_pass_train) - n,
+            retrain=False,
+            enable_optimization=enable_optimization,
+            fit_kwargs=invalid_fit_kwargs,
+        )
+
+        assert hist_fc.components.equals(self.ts_pass_train.components)
+        assert len(hist_fc) == n
+
+        # passing hist_fc parameters in fit_kwargs, interfering with the logic
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                self.ts_pass_train,
+                forecast_horizon=1,
+                start=len(self.ts_pass_train) - n,
+                retrain=True,
+                enable_optimization=enable_optimization,
+                fit_kwargs=invalid_fit_kwargs,
+            )
+        assert str(msg.value).startswith(
+            "The following parameters cannot be passed in `fit_kwargs`"
+        )
+
+    @pytest.mark.parametrize(
+        "model_type,enable_optimization",
+        product(["regression", "torch"], [True, False]),
+    )
+    def test_predict_kwargs(self, model_type, enable_optimization):
+        """check that the parameters provided in predict_kwargs are correctly processed"""
+        invalid_predict_kwargs = {"predict_likelihood_parameters": False}
+        if model_type == "regression":
+            valid_predict_kwargs = {}
+            unsupported_predict_kwargs = {"batch_size": 10}
+        else:
+            valid_predict_kwargs = {"batch_size": 10}
+            unsupported_predict_kwargs = {"unsupported": "unsupported"}
+
+        n = 2
+        model = self.create_model(1, use_ll=False, model_type=model_type)
+
+        # torch not available
+        if model is None:
+            return
+
+        model.fit(series=self.ts_pass_train[:-n])
+
+        # supported argument
+        hist_fc = model.historical_forecasts(
+            self.ts_pass_train,
+            forecast_horizon=1,
+            start=len(self.ts_pass_train) - n,
+            retrain=False,
+            enable_optimization=enable_optimization,
+            predict_kwargs=valid_predict_kwargs,
+        )
+
+        assert hist_fc.components.equals(self.ts_pass_train.components)
+        assert len(hist_fc) == n
+
+        # passing unsupported argument
+        hist_fc = model.historical_forecasts(
+            self.ts_pass_train,
+            forecast_horizon=1,
+            start=len(self.ts_pass_train) - n,
+            retrain=False,
+            enable_optimization=enable_optimization,
+            predict_kwargs=unsupported_predict_kwargs,
+        )
+
+        assert hist_fc.components.equals(self.ts_pass_train.components)
+        assert len(hist_fc) == n
+
+        # passing hist_fc parameters in predict_kwargs, interfering with the logic
+        with pytest.raises(ValueError) as msg:
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                forecast_horizon=1,
+                start=len(self.ts_pass_train) - n,
+                retrain=False,
+                enable_optimization=enable_optimization,
+                predict_kwargs=invalid_predict_kwargs,
+            )
+        assert str(msg.value).startswith(
+            "The following parameters cannot be passed in `predict_kwargs`"
+        )

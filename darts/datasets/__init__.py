@@ -829,7 +829,8 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
     To simplify the dataset, the measurements from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse weather
     stations are discarded to keep only the data recorded in the Zch_Stampfenbachstrasse station.
 
-    Both dataset sources are updated continuously, but this dataset only retrains values between 2015 and 2022.
+    Both dataset sources are updated continuously, but this dataset only retrains values between 2015-01-01 and
+    2022-08-31.
     The time index was converted from CET time zone to UTC.
 
     Components Descriptions:
@@ -864,7 +865,7 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
             # extract pre-determined period
             df = df.loc[
                 (pd.Timestamp("2015-01-01") <= df.index)
-                & (df.index <= pd.Timestamp("2022-12-31"))
+                & (df.index <= pd.Timestamp("2022-08-31"))
             ]
             # download and preprocess the weather information
             df_weather = self._download_weather_data()
@@ -894,7 +895,7 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
                     "ewz_stromabgabe_netzebenen_stadt_zuerich/"
                     "download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv"
                 ),
-                hash="c2fea1a0974611ff1c276abcc1d34619",
+                hash="a019125b7f9c1afeacb0ae60ce7455ef",
                 header_time="Timestamp",
                 freq="15min",
                 pre_process_csv_fn=pre_process_dataset,
@@ -919,6 +920,6 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
         )
         df = df.loc[
             (pd.Timestamp("2015-01-01") <= df.index)
-            & (df.index <= pd.Timestamp("2022-12-31"))
+            & (df.index <= pd.Timestamp("2022-08-31"))
         ]
         return df

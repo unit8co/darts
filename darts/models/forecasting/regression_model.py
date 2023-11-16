@@ -1104,6 +1104,7 @@ class RegressionModel(GlobalForecastingModel):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        **kwargs,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -1139,6 +1140,7 @@ class RegressionModel(GlobalForecastingModel):
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                **kwargs,
             )
         else:
             return _optimized_historical_forecasts_all_points(
@@ -1154,6 +1156,7 @@ class RegressionModel(GlobalForecastingModel):
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                **kwargs,
             )
 
 
