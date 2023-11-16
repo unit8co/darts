@@ -383,14 +383,9 @@ class TiDEModel(MixedCovariatesTorchModel):
         but attempts to provide better performance at lower computational cost by introducing
         multilayer perceptron (MLP)-based encoder-decoders without attention.
 
-        The model is implemented as a :class:`MixedCovariatesTorchModel`, which means that it supports
-        both past and future covariates, as well as static covariates. Probabilistic forecasting is supported through
-        the use of a ``likelihood`` instead of a ``loss_fn``.
-        The original paper does not describe how past covariates are treated in detail, so we assume that they are
-        passed to the encoder as-is.
-
-        The past covariates must be known for ``input_chunk_length`` points before prediction time whereas the future
-        covariates must be known for ``output_chunk_length`` points after prediction time.
+        This model supports past covariates (known for `input_chunk_length` points before prediction time),
+        future covariates (known for `output_chunk_length` points after prediction time), static covariates,
+        as well as probabilistic forecasting.
 
         The encoder and decoder are implemented as a series of residual blocks. The number of residual blocks in
         the encoder and decoder can be controlled via ``num_encoder_layers`` and ``num_decoder_layers`` respectively.
@@ -400,12 +395,16 @@ class TiDEModel(MixedCovariatesTorchModel):
         Parameters
         ----------
         input_chunk_length
-            The length of the input sequence fed to the model.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            Number of time steps to be output by the internal forecasting module. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `n <= output_chunk_length` prevents auto-regression. This
-            is useful when the covariates don't extend far enough into the future, or to prohibit the model from using
-            future values of past covariates for prediction (depending on the model's covariate support).
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         num_encoder_layers
             The number of residual blocks in the encoder.
         num_decoder_layers
