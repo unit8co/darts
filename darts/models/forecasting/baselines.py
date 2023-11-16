@@ -332,8 +332,12 @@ class NaiveEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    past_covariates=past_covariates
+                    if model.supports_past_covariates
+                    else None,
+                    future_covariates=future_covariates
+                    if model.supports_future_covariates
+                    else None,
                 )
 
         return self

@@ -2047,6 +2047,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        **kwargs,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -2075,8 +2076,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
             verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
         )
         return forecasts_list
 

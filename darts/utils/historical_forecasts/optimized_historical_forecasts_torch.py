@@ -5,6 +5,8 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
+import inspect
+
 import numpy as np
 import pandas as pd
 
@@ -32,8 +34,9 @@ def _optimized_historical_forecasts(
     overlap_end: bool = False,
     last_points_only: bool = True,
     show_warnings: bool = True,
-    predict_likelihood_parameters: bool = False,
     verbose: bool = False,
+    predict_likelihood_parameters: bool = False,
+    **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -92,6 +95,7 @@ def _optimized_historical_forecasts(
         for cls in model.__class__.__mro__
         if cls.__name__ == "TorchForecastingModel"
     ][0]
+    super_predict_params = inspect.signature(super(tfm_cls, model).predict).parameters
     super(tfm_cls, model).predict(
         forecast_horizon,
         series,
@@ -100,6 +104,7 @@ def _optimized_historical_forecasts(
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
         show_warnings=show_warnings,
+        **{k: v for k, v in kwargs.items() if k in super_predict_params},
     )
 
     dataset = model._build_inference_dataset(
@@ -114,10 +119,10 @@ def _optimized_historical_forecasts(
     predictions = model.predict_from_dataset(
         forecast_horizon,
         dataset,
-        trainer=None,
         verbose=verbose,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
+        **kwargs,
     )
 
     # torch models return list of time series in order of historical forecasts: we reorder per time series
