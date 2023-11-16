@@ -68,14 +68,14 @@ class _DLinearModule(PLMixedCovariatesModule):
 
     def __init__(
         self,
-        input_dim,
-        output_dim,
-        future_cov_dim,
-        static_cov_dim,
-        nr_params,
-        shared_weights,
-        kernel_size,
-        const_init,
+        input_dim: int,
+        output_dim: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
+        nr_params: int,
+        shared_weights: bool,
+        kernel_size: int,
+        const_init: bool,
         **kwargs,
     ):
         """PyTorch module implementing the DLinear architecture.
