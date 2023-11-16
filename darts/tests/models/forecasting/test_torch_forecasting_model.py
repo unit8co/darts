@@ -66,7 +66,7 @@ try:
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning("Torch not available. RNN tests will be skipped.")
+    logger.warning("Torch not available. Tests will be skipped.")
     TORCH_AVAILABLE = False
 
 if TORCH_AVAILABLE:
