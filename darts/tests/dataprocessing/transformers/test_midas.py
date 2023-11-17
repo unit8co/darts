@@ -25,14 +25,14 @@ class TestMIDAS:
     quarterly_ts = TimeSeries.from_times_and_values(
         times=quarterly_times,
         values=quarterly_values,
-        columns=["values_0", "values_1", "values_2"],
+        columns=["values_midas_0", "values_midas_1", "values_midas_2"],
     )
 
     quarterly_end_times = pd.date_range(start="01-2020", periods=3, freq="Q")
     quarterly_with_quarter_end_index_ts = TimeSeries.from_times_and_values(
         times=quarterly_end_times,
         values=quarterly_values,
-        columns=["values_0", "values_1", "values_2"],
+        columns=["values_midas_0", "values_midas_1", "values_midas_2"],
     )
 
     quarterly_not_complete_values = np.array(
@@ -41,7 +41,7 @@ class TestMIDAS:
     quarterly_not_complete_ts = TimeSeries.from_times_and_values(
         times=quarterly_times,
         values=quarterly_not_complete_values,
-        columns=["values_0", "values_1", "values_2"],
+        columns=["values_midas_0", "values_midas_1", "values_midas_2"],
     )
 
     def test_complete_monthly_to_quarterly(self):
@@ -115,12 +115,12 @@ class TestMIDAS:
                 [[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]
             ),
             columns=[
-                "values_0",
-                "other_0",
-                "values_1",
-                "other_1",
-                "values_2",
-                "other_2",
+                "values_midas_0",
+                "other_midas_0",
+                "values_midas_1",
+                "other_midas_1",
+                "values_midas_2",
+                "other_midas_2",
             ],
         )
 
@@ -156,12 +156,12 @@ class TestMIDAS:
                 ]
             ),
             columns=[
-                "values_0",
-                "other_0",
-                "values_1",
-                "other_1",
-                "values_2",
-                "other_2",
+                "values_midas_0",
+                "other_midas_0",
+                "values_midas_1",
+                "other_midas_1",
+                "values_midas_2",
+                "other_midas_2",
             ],
         )
 
@@ -192,7 +192,7 @@ class TestMIDAS:
         minute_ts = TimeSeries.from_times_and_values(
             times=minute_times,
             values=minute_values,
-            columns=[f"values_{i}" for i in range(60)],
+            columns=[f"values_midas_{i}" for i in range(60)],
         )
 
         midas = MIDAS(low_freq="T")
@@ -399,9 +399,9 @@ class TestMIDAS:
             [monthly_with_static_covs.static_covariates] * 3
         )
         expected_static_covs.index = [
-            "values_0",
-            "values_1",
-            "values_2",
+            "values_midas_0",
+            "values_midas_1",
+            "values_midas_2",
         ]
         quartely_univ_dropped_static = midas_with_static_covs.fit_transform(
             monthly_with_static_covs
@@ -422,12 +422,12 @@ class TestMIDAS:
             [monthly_multivar_with_static_covs.static_covariates] * 3
         )
         expected_static_covs.index = [
-            "0_0",
-            "1_0",
-            "0_1",
-            "1_1",
-            "0_2",
-            "1_2",
+            "0_midas_0",
+            "1_midas_0",
+            "0_midas_1",
+            "1_midas_1",
+            "0_midas_2",
+            "1_midas_2",
         ]
         quartely_multiv_dropped_static = midas_with_static_covs.fit_transform(
             monthly_multivar_with_static_covs

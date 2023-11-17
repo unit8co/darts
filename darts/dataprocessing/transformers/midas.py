@@ -99,6 +99,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         self._low_freq = low_freq
         self._strip = strip
         self._drop_static_covariates = drop_static_covariates
+        self._sep = "_midas_"
         # Original high frequency should be fitted on TimeSeries independently
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False)
 
@@ -162,6 +163,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         low_freq = params["fixed"]["_low_freq"]
         strip = params["fixed"]["_strip"]
         drop_static_covariates = params["fixed"]["_drop_static_covariates"]
+        feature_sep = params["fixed"]["_sep"]
         high_freq = params["fitted"]["high_freq"]
         MIDAS._verify_series(series, high_freq=high_freq)
 
@@ -299,6 +301,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             multiple=max_size,
             drop_static_covariates=drop_static_covariates,
             inverse_transform=False,
+            feature_sep=feature_sep,
         )
         return ts
 
@@ -326,13 +329,14 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         """
         low_freq = params["fixed"]["_low_freq"]
         drop_static_covariates = params["fixed"]["_drop_static_covariates"]
+        feature_sep = params["fixed"]["_sep"]
         high_freq = params["fitted"]["high_freq"]
         orig_ts_start_time = params["fitted"]["start"]
         orig_ts_end_time = params["fitted"]["end"]
         MIDAS._verify_series(series, low_freq=low_freq)
 
         # retrieve the number of component introduced by midas
-        n_midas_components = int(series.components[-1].split("_")[-1]) + 1
+        n_midas_components = int(series.components[-1].split(feature_sep)[-1]) + 1
         series_n_components = series.n_components
 
         n_orig_components = series_n_components // n_midas_components
@@ -344,7 +348,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
         # retrieve original components name by removing the "_0" suffix
         component_names = [
-            "_".join(series.components[i].split("_")[:-1])
+            feature_sep.join(series.components[i].split(feature_sep)[:-1])
             for i in range(0, n_orig_components)
         ]
 
@@ -536,6 +540,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         multiple: int,
         drop_static_covariates: bool,
         inverse_transform: bool,
+        feature_sep: str,
     ) -> TimeSeries:
         """
         Function creating the lower frequency dataframe out of a higher frequency dataframe.
@@ -550,6 +555,10 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             times=time_index,
             values=arr,
             # TODO: revert this to [f"{col}_{i}" for col in series.columns for i in range(multiple)]
-            columns=[f"{col}_{i}" for i in range(multiple) for col in series.columns],
+            columns=[
+                f"{col}{feature_sep}{i}"
+                for i in range(multiple)
+                for col in series.columns
+            ],
             static_covariates=static_covariates,
         )
