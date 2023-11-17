@@ -25,7 +25,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         self,
         low_freq: str,
         strip: bool = True,
-        how: str = "all",
         drop_static_covariates: bool = False,
         name: str = "MIDAS",
         n_jobs: int = 1,
@@ -53,12 +52,19 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             frequency [2]_. Passed on to the `rule` parameter of pandas.DataFrame.resample().
         strip
             Whether to remove the NaNs from the start and the end of the transformed series.
-        how
-            Define if the entries containing `NaN` in all the components ('all') or in any of the components ('any')
-            should be stripped. Default: 'all'
         drop_static_covariates
             If set to `True`, the statics covariates of the input series won't be transferred to the output.
             Recommended for multivariate series with component-specific static covariates.
+        name
+            A specific name for the scaler
+        n_jobs
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+            (sequential). Setting the parameter to `-1` means using all the available processors.
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+            required amount of time.
+        verbose
+            Optionally, whether to print operations progress
 
         Examples
         --------
@@ -92,7 +98,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         """
         self._low_freq = low_freq
         self._strip = strip
-        self._how = how
         self._drop_static_covariates = drop_static_covariates
         # Original high frequency should be fitted on TimeSeries independently
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False)
@@ -164,29 +169,29 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         df = pd.DataFrame(index=series.time_index)
 
         # get high frequency string that's suitable for PeriodIndex
-        high_freq_period = df.index.to_period().freqstr
+        high_freq_period = pd.tseries.frequencies.get_period_alias(series.freq_str)
 
         # downsample
         resampled = df.resample(low_freq)
         low_freq_df = resampled.last()
 
-        def get_upsampled(low_df: pd.DataFrame, high_period):
-            """Upsample a single index DataFrame to a higher frequency"""
+        def up_sample(low_df: pd.DataFrame, high_period):
+            """up sample a single index DataFrame to a higher frequency"""
             low_df = low_df.copy(deep=True)
             low_df.index = low_df.index.to_period()
             return low_df.resample(rule=high_period).last()
 
         # first and last groups can be shorter than an entire lower freq period
-        # we upsample them from the low to high frequency to get the expected number
+        # we up_sample them from the low to high frequency to get the expected number
         # higher freq time steps in one lower freq
-        first_upsampled = get_upsampled(low_freq_df.iloc[:1], high_freq_period)
-        last_upsampled = get_upsampled(low_freq_df.iloc[-1:], high_freq_period)
+        first_up_sampled = up_sample(low_freq_df.iloc[:1], high_freq_period)
+        last_up_sampled = up_sample(low_freq_df.iloc[-1:], high_freq_period)
 
         # find unique sizes from: first group size + unique sizes of center groups + last group size
         sizes = np.unique(
-            [len(first_upsampled)]
+            [len(first_up_sampled)]
             + resampled.size()[1:-1].unique().tolist()
-            + [len(last_upsampled)]
+            + [len(last_up_sampled)]
         )
 
         # MIDAS requires the high freq to be a round multiple of the low freq -> sizes must be identical
@@ -201,21 +206,26 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                 logger=logger,
             )
 
-        # max size is the number of higher frequency time steps in one lower frequency period
+        # max size is the number of higher frequency time steps per lower frequency period
         max_size = sizes[0]
 
         n_samples = series.n_samples
-        n_cols = series.n_components
-        n_times = len(series)
+        n_cols_in = series.n_components
+        n_cols_out = max_size * n_cols_in
+        series_size = len(series)
 
-        sizes = resampled.size()
-        n_midas_cols = max_size * n_cols
+        # how many input time steps are in each down-sampled lower frequency period
+        group_sizes = resampled.size()
+        n_groups = len(group_sizes)
 
         arr = series.all_values(copy=False)
         time_index = low_freq_df.index
-        if n_times < max_size:
-            first_idx = first_upsampled.index.get_loc(df.index[0])
-            last_idx = first_idx + n_times - 1
+
+        if series_size <= max_size:
+            # we can't apply windowing when series is shorter than `max_size`
+            # we have at least one group, maximum two
+            first_idx = first_up_sampled.index.get_loc(df.index[0])
+            last_idx = first_idx + series_size - 1
 
             start_chunk = np.empty((first_idx, 1, 1))
             start_chunk.fill(np.nan)
@@ -224,64 +234,60 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             arr = np.concatenate([start_chunk, arr, end_chunk])
             # arr has shape (n time steps, n components, n samples)
             # reshape to (1 time step, n midas components, n samples)
-            arr = arr.reshape(1, n_midas_cols, n_samples)
+            arr = arr.reshape(1, n_cols_out, n_samples)
 
             if strip:
                 # results in an empty series
                 arr = arr[0:0]
                 time_index = time_index[0:0]
         else:
-            # extract rows from higher frequency and add convert them to columns in the lower frequency
+            # guarantee that we have at least two groups since series is longer than `max_size`
+            # extract rows from higher frequency and convert them to columns in the lower frequency
             # we can achieve this by extracting all windows with a size of `max_size`;
             # later on we stride to get only the relevant windows each `max_size` steps
+
+            # create maximum possible output array
+            arr_out = np.empty((n_groups, n_cols_out, n_samples))
+            arr_out.fill(np.nan)
+
             arr = np.lib.stride_tricks.sliding_window_view(
                 arr, window_shape=max_size, axis=0
             )
-            arr = arr.reshape(len(arr), n_midas_cols, n_samples)
+            arr = arr.reshape((len(arr), n_cols_out, n_samples))
 
             # the first resampled index might not have all dates from higher freq
-            size_group_first = sizes.iloc[0]
+            size_group_first = group_sizes.iloc[0]
             size_group_first = 0 if size_group_first == max_size else size_group_first
-            components_group_first = size_group_first * n_cols
-            first_group_arr = None
+            components_group_first = size_group_first * n_cols_in
             if components_group_first and not strip:
-                first_group_arr = np.empty(
-                    (n_midas_cols - components_group_first, n_samples)
-                )
-                first_group_arr.fill(np.nan)
-                first_group_arr = np.concatenate(
-                    [first_group_arr, arr[0, :components_group_first]]
-                )
-                first_group_arr = np.expand_dims(first_group_arr, axis=0)
+                arr_out[0, n_cols_out - components_group_first :, :] = arr[
+                    0, :components_group_first
+                ]
+            center_start_idx = 0 if not size_group_first else 1
 
             # the last resampled index might not have all dates from higher freq
-            size_group_last = sizes.iloc[-1]
+            size_group_last = group_sizes.iloc[-1]
             size_group_last = 0 if size_group_last == max_size else size_group_last
-            components_group_last = size_group_last * n_cols
-            last_group_arr = None
+            components_group_last = size_group_last * n_cols_in
             if components_group_last and not strip:
-                last_group_arr = np.empty(
-                    (n_midas_cols - components_group_last, n_samples)
-                )
-                last_group_arr.fill(np.nan)
-                last_group_arr = np.concatenate(
-                    [arr[-1, -components_group_last:], last_group_arr]
-                )
-                last_group_arr = np.expand_dims(last_group_arr, axis=0)
-
-            arr = arr[size_group_first::max_size]
-            arr = np.concatenate(
-                [
-                    group_arr
-                    for group_arr in [first_group_arr, arr, last_group_arr]
-                    if group_arr is not None
+                arr_out[-1, :components_group_last, :] = arr[
+                    -1, -components_group_last:
                 ]
-            )
 
+            # get the center resampled indices
+            center_end_idx = None if not size_group_last else -1
+            arr_out[center_start_idx:center_end_idx, :, :] = arr[
+                size_group_first::max_size
+            ]
+
+            # potentially strip first and last groups
             if strip:
-                first_idx = None if not components_group_first else 1
-                last_idx = None if not components_group_last else -1
+                first_idx = None if not size_group_first else 1
+                last_idx = None if not size_group_last else -1
+                arr_out = arr_out[first_idx:last_idx]
                 time_index = time_index[first_idx:last_idx]
+
+            arr = arr_out
 
             # TODO: remove this
             arr = np.concatenate([arr[:, i::max_size] for i in range(max_size)], axis=1)
