@@ -141,7 +141,8 @@ class _NLinearModule(PLMixedCovariatesModule):
             if self.normalize:
                 # get last values only for target features
                 seq_last = x[:, -1:, : self.output_dim].detach()
-                x = x - seq_last
+                # normalize the target features only (ignore the covariates)
+                x[:, :, : self.output_dim] = x[:, :, : self.output_dim] - seq_last
 
             x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
             x = x.view(
@@ -171,6 +172,7 @@ class _NLinearModule(PLMixedCovariatesModule):
 
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
             if self.normalize:
+                # model only forecasts target components, no need to slice
                 x = x + seq_last.view(seq_last.shape + (1,))
         return x
 
