@@ -64,10 +64,10 @@ class FittableDataTransformer(BaseDataTransformer):
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` method of `BaseDataTransformer` for further details.
         global_fit
-            Optionally, whether all of the `TimeSeries` passed to the `fit()` method should be used to fit
+            Optionally, whether all `TimeSeries` passed to the `fit()` method should be used to fit
             a *single* set of parameters, or if a different set of parameters should be independently fitted
             to each provided `TimeSeries`. If `True`, then a `Sequence[TimeSeries]` is passed to `ts_fit`
-            and a single set of parameters is fitted using all of the provided `TimeSeries`. If `False`, then
+            and a single set of parameters is fitted using all provided `TimeSeries`. If `False`, then
             each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters
             if yielded for each of these fitting operations. See `ts_fit` for further details.
 
@@ -83,9 +83,9 @@ class FittableDataTransformer(BaseDataTransformer):
         of fitted parameters.
 
         Note that if an invertible *and* fittable data transformer is to be globally fitted, the data transformer
-        class should first inherit from `FittableDataTransformer` and then from `InveritibleDataTransformer`. In
-        other words, `MyTransformer(FittableDataTransformer, InveritibleDataTransformer)` is correct, but
-        `MyTransformer(InveritibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented
+        class should first inherit from `FittableDataTransformer` and then from `InvertibleDataTransformer`. In
+        other words, `MyTransformer(FittableDataTransformer, InvertibleDataTransformer)` is correct, but
+        `MyTransformer(InvertibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented
         correctly, then the `global_fit` parameter will not be correctly passed to `FittableDataTransformer`'s
         constructor.
 
