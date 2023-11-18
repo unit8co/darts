@@ -68,14 +68,14 @@ class _DLinearModule(PLMixedCovariatesModule):
 
     def __init__(
         self,
-        input_dim,
-        output_dim,
-        future_cov_dim,
-        static_cov_dim,
-        nr_params,
-        shared_weights,
-        kernel_size,
-        const_init,
+        input_dim: int,
+        output_dim: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
+        nr_params: int,
+        shared_weights: bool,
+        kernel_size: int,
+        const_init: bool,
         **kwargs,
     ):
         """PyTorch module implementing the DLinear architecture.
@@ -89,7 +89,7 @@ class _DLinearModule(PLMixedCovariatesModule):
         future_cov_dim
             Number of components in the future covariates
         static_cov_dim
-            Dimensionality of the static covariates
+            Dimensionality of the static covariates (either component-specific or shared)
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         shared_weights
@@ -112,8 +112,6 @@ class _DLinearModule(PLMixedCovariatesModule):
         y of shape `(batch_size, output_chunk_length, target_size/output_dim, nr_params)`
             Tensor containing the output of the NBEATS module.
         """
-
-        # TODO: could we support future covariates with a simple extension?
 
         super().__init__(**kwargs)
         self.input_dim = input_dim
@@ -142,9 +140,6 @@ class _DLinearModule(PLMixedCovariatesModule):
             layer_in_dim = self.input_chunk_length * self.input_dim
             layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
 
-            # for static cov, we take the number of components of the target, times static cov dim
-            layer_in_dim_static_cov = self.output_dim * self.static_cov_dim
-
         self.linear_seasonal = _create_linear_layer(layer_in_dim, layer_out_dim)
         self.linear_trend = _create_linear_layer(layer_in_dim, layer_out_dim)
 
@@ -155,7 +150,7 @@ class _DLinearModule(PLMixedCovariatesModule):
             )
         if self.static_cov_dim != 0:
             self.linear_static_cov = _create_linear_layer(
-                layer_in_dim_static_cov, layer_out_dim
+                self.static_cov_dim, layer_out_dim
             )
 
     @io_processor
@@ -477,8 +472,8 @@ class DLinearModel(MixedCovariatesTorchModel):
         raise_if(
             self.shared_weights
             and (train_sample[1] is not None or train_sample[2] is not None),
-            "Covariates have been provided, but the model has been built with shared_weights=True."
-            + "Please set shared_weights=False to use covariates.",
+            "Covariates have been provided, but the model has been built with shared_weights=True. "
+            "Please set shared_weights=False to use covariates.",
         )
 
         input_dim = train_sample[0].shape[1] + sum(
@@ -488,8 +483,11 @@ class DLinearModel(MixedCovariatesTorchModel):
         )
         future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
 
-        # dimension is (component, static_dim), we extract static_dim
-        static_cov_dim = train_sample[4].shape[1] if train_sample[4] is not None else 0
+        if train_sample[4] is None:
+            static_cov_dim = 0
+        else:
+            # account for component-specific or shared static covariates representation
+            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
 
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters

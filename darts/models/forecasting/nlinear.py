@@ -23,14 +23,14 @@ class _NLinearModule(PLMixedCovariatesModule):
 
     def __init__(
         self,
-        input_dim,
-        output_dim,
-        future_cov_dim,
-        static_cov_dim,
-        nr_params,
-        shared_weights,
-        const_init,
-        normalize,
+        input_dim: int,
+        output_dim: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
+        nr_params: int,
+        shared_weights: bool,
+        const_init: bool,
+        normalize: bool,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -44,16 +44,16 @@ class _NLinearModule(PLMixedCovariatesModule):
         future_cov_dim
             Number of components in the future covariates
         static_cov_dim
-            Dimensionality of the static covariates
+            Dimensionality of the static covariates (either component-specific or shared)
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         shared_weights
             Whether to use shared weights for the components of the series.
             ** Ignores covariates when True. **
-        normalize
-            Whether to apply the "normalization" described in the paper.
         const_init
             Whether to initialize the weights to 1/in_len
+        normalize
+            Whether to apply the "normalization" described in the paper.
 
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
@@ -94,9 +94,6 @@ class _NLinearModule(PLMixedCovariatesModule):
             layer_in_dim = self.input_chunk_length * self.input_dim
             layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
 
-            # for static cov, we take the number of components of the target, times static cov dim
-            layer_in_dim_static_cov = self.output_dim * self.static_cov_dim
-
         self.layer = _create_linear_layer(layer_in_dim, layer_out_dim)
 
         if self.future_cov_dim != 0:
@@ -106,7 +103,7 @@ class _NLinearModule(PLMixedCovariatesModule):
             )
         if self.static_cov_dim != 0:
             self.linear_static_cov = _create_linear_layer(
-                layer_in_dim_static_cov, layer_out_dim
+                self.static_cov_dim, layer_out_dim
             )
 
     @io_processor
@@ -438,8 +435,11 @@ class NLinearModel(MixedCovariatesTorchModel):
         )
         future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
 
-        # dimension is (component, static_dim), we extract static_dim
-        static_cov_dim = train_sample[4].shape[1] if train_sample[4] is not None else 0
+        if train_sample[4] is None:
+            static_cov_dim = 0
+        else:
+            # account for component-specific or shared static covariates representation
+            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
 
         output_dim = train_sample[-1].shape[1]
 
