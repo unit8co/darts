@@ -6,36 +6,48 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.26.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.27.0...master)
 
 ### For users of the library:
+**Improved**
 
+**Fixed**
+
+### For developers of the library:
+
+
+## [0.27.0](https://github.com/unit8co/darts/tree/0.27.0) (2023-11-18)
+### For users of the library:
 **Improved**
 - Improvements to `TorchForecastingModel`:
-  - 🚀🚀 Optimized `historical_forecasts()` for pre-trained `TorchForecastingModel` running up to 20 times faster than before!. [#2013](https://github.com/unit8co/darts/pull/2013) by [Dennis Bader](https://github.com/dennisbader).
+  - 🚀🚀 We optimized `historical_forecasts()` for pre-trained `TorchForecastingModel` running up to 20 times faster than before (and even more when tuning the batch size)!. [#2013](https://github.com/unit8co/darts/pull/2013) by [Dennis Bader](https://github.com/dennisbader).
   - Added callback `darts.utils.callbacks.TFMProgressBar` to customize at which model stages to display the progress bar. [#2020](https://github.com/unit8co/darts/pull/2020) by [Dennis Bader](https://github.com/dennisbader).
-- Improvements to documentation:
-  - Adapted the example notebooks to properly apply data transformers and avoid look-ahead bias. [#2020](https://github.com/unit8co/darts/pull/2020) by [Samriddhi Singh](https://github.com/SimTheGreat).
+  - All `InferenceDataset`s now support strided forecasts with parameters `stride`, `bounds`. These datasets can be used with `TorchForecastingModel.predict_from_dataset()`. [#2013](https://github.com/unit8co/darts/pull/2013) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `RegressionModel`:
   - New example notebook for the `RegressionModels` explaining features such as (component-specific) lags, `output_chunk_length` in relation with `multi_models`, multivariate support, and more. [#2039](https://github.com/unit8co/darts/pull/2039) by [Antoine Madrona](https://github.com/madtoinou).
-- Improvements to Regression Models:
   - `XGBModel` now leverages XGBoost's native Quantile Regression support that was released in version 2.0.0 for improved probabilistic forecasts. [#2051](https://github.com/unit8co/darts/pull/2051) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `LocalForecastingModel`
+  - Added optional keyword arguments dict `kwargs` to `ExponentialSmoothing` that will be passed to the constructor of the underlying `statsmodels.tsa.holtwinters.ExponentialSmoothing` model. [#2059](https://github.com/unit8co/darts/pull/2059) by [Antoine Madrona](https://github.com/madtoinou).
+- General model improvements:
+  - Added new arguments `fit_kwargs` and `predict_kwargs` to `historical_forecasts()`, `backtest()` and `gridsearch()` that will be passed to the model's `fit()` and / or `predict` methods. E.g., you can now set a batch size, static validation series, ... depending on the model support. [#2050](https://github.com/unit8co/darts/pull/2050) by [Antoine Madrona](https://github.com/madtoinou)
+  - For transparency, we issue a (removable) warning when performing auto-regressive forecasts with past covariates (with `n >= output_chunk_length`) to inform users that future values of past covariates will be accessed. [#2049](https://github.com/unit8co/darts/pull/2049) by [Antoine Madrona](https://github.com/madtoinou)
 - Other improvements:
   - Added support for time index time zone conversion with parameter `tz` before generating/computing holidays and datetime attributes. Support was added to all Time Axis Encoders, standalone encoders and forecasting models' `add_encoders`, time series generation utils functions `holidays_timeseries()` and `datetime_attribute_timeseries()`, and `TimeSeries` methods `add_datetime_attribute()` and `add_holidays()`. [#2054](https://github.com/unit8co/darts/pull/2054) by [Dennis Bader](https://github.com/dennisbader).
   - Added new data transformer: `MIDAS`, which uses mixed-data sampling to convert `TimeSeries` from high frequency to low frequency (and back). [#1820](https://github.com/unit8co/darts/pull/1820) by [Boyd Biersteker](https://github.com/Beerstabr), [Antoine Madrona](https://github.com/madtoinou) and [Dennis Bader](https://github.com/dennisbader).
-  - Added optional keyword arguments dict `kwargs` to `ExponentialSmoothing` that will be passed to the constructor of the underlying `statsmodels.tsa.holtwinters.ExponentialSmoothing` model. [#2059](https://github.com/unit8co/darts/pull/2059) by [Antoine Madrona](https://github.com/madtoinou).
   - Added new dataset `ElectricityConsumptionZurichDataset`: The dataset contains the electricity consumption of households in Zurich, Switzerland from 2015-2022 on different grid levels. We also added weather measurements for Zurich which can be used as covariates for modelling. [#2039](https://github.com/unit8co/darts/pull/2039) by [Antoine Madrona](https://github.com/madtoinou) and [Dennis Bader](https://github.com/dennisbader).
-  - Added new arguments `fit_kwargs` and `predict_kwargs` to `historical_forecasts()`, `backtest()` and `gridsearch()` that will be passed to the model's `fit()` and / or `predict` methods. E.g., you can now set a batch size, static validation series, ... depending on the model support. [#2050](https://github.com/unit8co/darts/pull/2050) by [Antoine Madrona](https://github.com/madtoinou)
-  - For transparency, we issue a (removable) warning when performing auto-regressive forecasts with past covariates (with `n >= output_chunk_length`) to inform users that future values of past covariates will be accessed. [#2049](https://github.com/unit8co/darts/pull/2049) by [Antoine Madrona](https://github.com/madtoinou)
+  - Adapted the example notebooks to properly apply data transformers and avoid look-ahead bias. [#2020](https://github.com/unit8co/darts/pull/2020) by [Samriddhi Singh](https://github.com/SimTheGreat).
 
 **Fixed**
-- Fixed a bug when calling optimized `historical_forecasts()` for a `RegressionModel` trained with unequal component-specific lags. [#2040](https://github.com/unit8co/darts/pull/2040) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug when calling `historical_forecasts()` and `overlap_end=False` that did not generate the last possible forecast. [#2013](https://github.com/unit8co/darts/pull/2013) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug when calling optimized `historical_forecasts()` for a `RegressionModel` trained with varying component-specific lags. [#2040](https://github.com/unit8co/darts/pull/2040) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug when using encoders with `RegressionModel` and series with a non-evenly spaced frequency (e.g. Month Begin). This raised an error during lagged data creation when trying to divide a pd.Timedelta by the ambiguous frequency. [#2034](https://github.com/unit8co/darts/pull/2034) by [Antoine Madrona](https://github.com/madtoinou).
-- Fixed a bug when loading a `TorchForecastingModel` that was trained with a precision other than `float64`. [#2046](https://github.com/unit8co/darts/pull/2046) by [Freddie Hsin-Fu Huang](https://github.com/Hsinfu).
+- Fixed a bug when loading the weights of a `TorchForecastingModel` that was trained with a precision other than `float64`. [#2046](https://github.com/unit8co/darts/pull/2046) by [Freddie Hsin-Fu Huang](https://github.com/Hsinfu).
 - Fixed broken links in the `Transfer learning` example notebook with publicly hosted version of the three datasets. [#2067](https://github.com/unit8co/darts/pull/2067) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug when using `NLinearModel` on multivariate series with covariates and `normalize=True`. [#2072](https://github.com/unit8co/darts/pull/2072) by [Antoine Madrona](https://github.com/madtoinou).
-- Fixed a bug when using `DLinearModel` and `NLinearModel` on multivariate series with "components-shared" static covariates and `use_static_covariates=True`. [#2070](https://github.com/unit8co/darts/pull/2070) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug when using `DLinearModel` and `NLinearModel` on multivariate series with static covariates shared across components and `use_static_covariates=True`. [#2070](https://github.com/unit8co/darts/pull/2070) by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:
+No changes.
 
 ## [0.26.0](https://github.com/unit8co/darts/tree/0.26.0) (2023-09-16)
 ### For users of the library:
