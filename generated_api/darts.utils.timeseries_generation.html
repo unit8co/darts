@@ -397,6 +397,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
        Missing Values Filler
       </a>
@@ -679,11 +684,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
-       TorchForecastingModel
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
        Transformer Model
       </a>
@@ -906,7 +906,7 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.datetime_attribute_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">datetime_attribute_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_columns=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#datetime_attribute_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">datetime_attribute_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_columns=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#datetime_attribute_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a new TimeSeries with index <cite>time_index</cite> and one or more dimensions containing
 (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.</p>
 <dl class="field-list simple">
@@ -941,6 +941,7 @@ Set only one of until and add_length.</p></li>
 </li>
 </ul>
 </p></li>
+<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1026,23 +1027,24 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.holidays_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">holidays_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prov=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='holidays'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#holidays_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.holidays_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">holidays_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prov=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='holidays'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#holidays_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.holidays_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a binary univariate TimeSeries with index <cite>time_index</cite> that equals 1 at every index that lies within
 (or equals) a selected country’s holiday, and 0 otherwise.</p>
 <p>Available countries can be found <a class="reference external" href="https://github.com/dr-prodigy/python-holidays#available-countries">here</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>time_index</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>) – The time index over which to generate the holidays</p></li>
-<li><p><strong>country_code</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The country ISO code</p></li>
-<li><p><strong>prov</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The province</p></li>
-<li><p><strong>state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The state</p></li>
+<li><p><strong>time_index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>]) – Either a <cite>pd.DatetimeIndex</cite> or a <cite>TimeSeries</cite> for which to generate the holidays.</p></li>
+<li><p><strong>country_code</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The country ISO code.</p></li>
+<li><p><strong>prov</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The province.</p></li>
+<li><p><strong>state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The state.</p></li>
 <li><p><strong>until</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Extend the time_index up until timestamp for datetime indexed series
 and int for range indexed series, should match or exceed forecasting window.</p></li>
 <li><p><strong>add_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries.</p></li>
+<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series.</p></li>
+<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a time zone to convert the time index to before generating the holidays.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

@@ -2567,26 +2567,41 @@
         <span class="n">time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">time_index</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="TimeSeries.strip"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.strip">[docs]</a>    <span class="k">def</span> <span class="nf">strip</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.strip"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.strip">[docs]</a>    <span class="k">def</span> <span class="nf">strip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">how</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return a ``TimeSeries`` slice of this deterministic time series, where NaN-only entries at the beginning</span>
+<span class="sd">        Return a ``TimeSeries`` slice of this deterministic time series, where NaN-containing entries at the beginning</span>
 <span class="sd">        and the end of the series are removed. No entries after (and including) the first non-NaN entry and</span>
 <span class="sd">        before (and including) the last non-NaN entry are removed.</span>
 
 <span class="sd">        This method is only applicable to deterministic series (i.e., having 1 sample).</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        how</span>
+<span class="sd">            Define if the entries containing `NaN` in all the components (&#39;all&#39;) or in any of the components (&#39;any&#39;)</span>
+<span class="sd">            should be stripped. Default: &#39;all&#39;</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
-<span class="sd">            a new series based on the original where NaN-only entries at start and end have been removed</span>
+<span class="sd">            a new series based on the original where NaN-containing entries at start and end have been removed</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_probabilistic</span><span class="p">,</span>
+            <span class="s2">&quot;`strip` cannot be applied to stochastic TimeSeries&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">new_start_idx</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">first_valid_index</span><span class="p">()</span>
-        <span class="n">new_end_idx</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">last_valid_index</span><span class="p">()</span>
-        <span class="n">new_series</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">new_start_idx</span><span class="p">:</span><span class="n">new_end_idx</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
-            <span class="n">new_series</span><span class="p">,</span> <span class="n">static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span>
+        <span class="n">first_finite_row</span><span class="p">,</span> <span class="n">last_finite_row</span> <span class="o">=</span> <span class="n">_finite_rows_boundaries</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">how</span><span class="o">=</span><span class="n">how</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="n">first_finite_row</span> <span class="p">:</span> <span class="n">last_finite_row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="n">first_finite_row</span> <span class="p">:</span> <span class="n">last_finite_row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+            <span class="n">hierarchy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.longest_contiguous_slice"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.longest_contiguous_slice">[docs]</a>    <span class="k">def</span> <span class="nf">longest_contiguous_slice</span><span class="p">(</span>
@@ -3158,7 +3173,11 @@
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">index</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">[</span><span class="n">index</span><span class="p">]]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.add_datetime_attribute"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_datetime_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">add_datetime_attribute</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cyclic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">attribute</span><span class="p">,</span>
+        <span class="n">one_hot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">cyclic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a new series with one (or more) additional component(s) that contain an attribute</span>
@@ -3179,6 +3198,8 @@
 <span class="sd">            Boolean value indicating whether to add the specified attribute as a cyclic encoding.</span>
 <span class="sd">            Alternative to one_hot encoding, enable only one of the two.</span>
 <span class="sd">            (adds 2 columns, corresponding to sin and cos transformation).</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -3190,12 +3211,20 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
             <span class="n">tg</span><span class="o">.</span><span class="n">datetime_attribute_timeseries</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">,</span> <span class="n">cyclic</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span>
+                <span class="n">one_hot</span><span class="o">=</span><span class="n">one_hot</span><span class="p">,</span>
+                <span class="n">cyclic</span><span class="o">=</span><span class="n">cyclic</span><span class="p">,</span>
+                <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.add_holidays"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_holidays">[docs]</a>    <span class="k">def</span> <span class="nf">add_holidays</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">country_code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prov</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">country_code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">prov</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Adds a binary univariate component to the current series that equals 1 at every index that</span>
@@ -3215,6 +3244,8 @@
 <span class="sd">            The province</span>
 <span class="sd">        state</span>
 <span class="sd">            The state</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -3225,7 +3256,13 @@
         <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
-            <span class="n">tg</span><span class="o">.</span><span class="n">holidays_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">country_code</span><span class="p">,</span> <span class="n">prov</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+            <span class="n">tg</span><span class="o">.</span><span class="n">holidays_timeseries</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                <span class="n">country_code</span><span class="o">=</span><span class="n">country_code</span><span class="p">,</span>
+                <span class="n">prov</span><span class="o">=</span><span class="n">prov</span><span class="p">,</span>
+                <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
+                <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.resample"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
@@ -3915,6 +3952,9 @@
 <span class="sd">        ax</span>
 <span class="sd">            Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If</span>
 <span class="sd">            `new_plot=True`, will create a new axis.</span>
+<span class="sd">        alpha</span>
+<span class="sd">             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for</span>
+<span class="sd">            probabilistic series.</span>
 <span class="sd">        args</span>
 <span class="sd">            some positional arguments for the `plot()` method</span>
 <span class="sd">        kwargs</span>
@@ -3988,10 +4028,9 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">central_series</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
 
-            <span class="c1"># temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)</span>
             <span class="n">alpha</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;alpha&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="kc">None</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">custom_labels</span><span class="p">:</span>
                 <span class="n">label_to_use</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
@@ -4023,7 +4062,6 @@
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="n">color_used</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span> <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">alpha_confidence_intvls</span>
 
             <span class="c1"># Optionally show confidence intervals</span>
             <span class="k">if</span> <span class="p">(</span>
@@ -4039,11 +4077,7 @@
                         <span class="n">low_series</span><span class="p">,</span>
                         <span class="n">high_series</span><span class="p">,</span>
                         <span class="n">color</span><span class="o">=</span><span class="n">color_used</span><span class="p">,</span>
-                        <span class="n">alpha</span><span class="o">=</span><span class="p">(</span>
-                            <span class="n">alpha_confidence_intvls</span>
-                            <span class="k">if</span> <span class="s2">&quot;alpha&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span>
-                            <span class="k">else</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span>
-                        <span class="p">),</span>
+                        <span class="n">alpha</span><span class="o">=</span><span class="p">(</span><span class="n">alpha</span> <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">alpha_confidence_intvls</span><span class="p">),</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
@@ -5420,6 +5454,52 @@
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">da_concat</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_finite_rows_boundaries</span><span class="p">(</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">how</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the indices of the first rows containing finite values starting from the start and the end of the first</span>
+<span class="sd">    dimension of the ndarray.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    values</span>
+<span class="sd">        1D, 2D or 3D numpy array where the first dimension correspond to entries/rows, and the second to components/</span>
+<span class="sd">        columns</span>
+<span class="sd">    how</span>
+<span class="sd">        Define if the entries containing `NaN` in all the components (&#39;all&#39;) or in any of the components (&#39;any&#39;)</span>
+<span class="sd">        should be stripped. Default: &#39;all&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dims</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">raise_if</span><span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected 1D to 3D array, received </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span><span class="si">}</span><span class="s2">D array&quot;</span><span class="p">,</span> <span class="n">logger</span>
+    <span class="p">)</span>
+
+    <span class="n">finite_rows</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">finite_rows</span> <span class="o">=</span> <span class="n">finite_rows</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">how</span> <span class="o">==</span> <span class="s2">&quot;any&quot;</span><span class="p">:</span>
+            <span class="n">finite_rows</span> <span class="o">=</span> <span class="n">finite_rows</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">how</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+            <span class="n">finite_rows</span> <span class="o">=</span> <span class="n">finite_rows</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`how` parameter value not recognized, should be either &#39;all&#39; or &#39;any&#39;, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;received </span><span class="si">{</span><span class="n">how</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="n">first_finite_row</span> <span class="o">=</span> <span class="n">finite_rows</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span>
+    <span class="n">last_finite_row</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">finite_rows</span><span class="p">)</span> <span class="o">-</span> <span class="n">finite_rows</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">first_finite_row</span><span class="p">,</span> <span class="n">last_finite_row</span>
 </pre></div>
 
               </div>

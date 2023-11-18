@@ -397,6 +397,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
        Missing Values Filler
       </a>
@@ -679,11 +684,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
-       TorchForecastingModel
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
        Transformer Model
       </a>
@@ -858,10 +858,10 @@ series. For this, see TimeSeries properties <cite>TimeSeries.static_covariates</
 Default: <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler(feature_range=(0,</span> <span class="pre">1))</span></code>; this will scale all
 the values of a time series between 0 and 1.</p></li>
 <li><p><strong>name</strong> – A specific name for the scaler</p></li>
-<li><p><strong>global_fit</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether all of the <cite>TimeSeries</cite> passed to the <cite>fit()</cite> method should be used to fit
+<li><p><strong>global_fit</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether all <cite>TimeSeries</cite> passed to the <cite>fit()</cite> method should be used to fit
 a <em>single</em> set of parameters, or if a different set of parameters should be independently fitted
 to each provided <cite>TimeSeries</cite>. If <cite>True</cite>, then a <cite>Sequence[TimeSeries]</cite> is passed to <cite>ts_fit</cite>
-and a single set of parameters is fitted using all of the provided <cite>TimeSeries</cite>. If <cite>False</cite>, then
+and a single set of parameters is fitted using all provided <cite>TimeSeries</cite>. If <cite>False</cite>, then
 each <cite>TimeSeries</cite> is individually passed to <cite>ts_fit</cite>, and a different set of fitted parameters
 if yielded for each of these fitting operations. See <cite>FittableDataTransformer</cite> documentation for
 further details.</p></li>

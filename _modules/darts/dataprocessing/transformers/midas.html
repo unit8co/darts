@@ -1,0 +1,685 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.dataprocessing.transformers.midas &#8212; darts  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.dataprocessing.transformers.midas</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Mixed-data sampling (MIDAS) Transformer</span>
+<span class="sd">---------------------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FittableDataTransformer</span><span class="p">,</span>
+    <span class="n">InvertibleDataTransformer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">_finite_rows_boundaries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">generate_index</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MIDAS"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.midas.html#darts.dataprocessing.transformers.midas.MIDAS">[docs]</a><span class="k">class</span> <span class="nc">MIDAS</span><span class="p">(</span><span class="n">FittableDataTransformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">low_freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">strip</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">drop_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MIDAS&quot;</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mixed-data sampling transformer.</span>
+
+<span class="sd">        A transformer that converts higher frequency time series to lower frequency using mixed-data sampling; see</span>
+<span class="sd">        [1]_ for further details. This allows higher frequency covariates to be used whilst forecasting a lower</span>
+<span class="sd">        frequency target series. For example, using monthly inputs to forecast a quarterly target.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The high input frequency should always relate in the same rate to the low target frequency. For</span>
+<span class="sd">        example, there&#39;s always three months in quarter. However, the number of days in a month varies per month.</span>
+<span class="sd">        In the latter case a MIDAS transformation does not work and the transformer will raise an error.</span>
+
+<span class="sd">        For anchored low frequency, the transformed series must contain at least 2 samples in order to be</span>
+<span class="sd">        able to retrieve the original time index.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        low_freq</span>
+<span class="sd">            The pd.DateOffset string alias corresponding to the target low</span>
+<span class="sd">            frequency [2]_. Passed on to the `rule` parameter of pandas.DataFrame.resample().</span>
+<span class="sd">        strip</span>
+<span class="sd">            Whether to remove the NaNs from the start and the end of the transformed series.</span>
+<span class="sd">        drop_static_covariates</span>
+<span class="sd">            If set to `True`, the statics covariates of the input series won&#39;t be transferred to the output.</span>
+<span class="sd">            This migth be useful for multivariate series with component-specific static covariates.</span>
+<span class="sd">        name</span>
+<span class="sd">            A specific name for the scaler</span>
+<span class="sd">        n_jobs</span>
+<span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">            (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">            Note: for a small amount of data, the parallelisation overhead could end up increasing the total</span>
+<span class="sd">            required amount of time.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Optionally, whether to print operations progress</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import MIDAS</span>
+<span class="sd">        &gt;&gt;&gt; monthly_series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; print(monthly_series.time_index[:4])</span>
+<span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;,</span>
+<span class="sd">        name=&#39;Month&#39;, freq=&#39;MS&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; print(monthly_series.values()[:4])</span>
+<span class="sd">        [[112.], [118.], [132.], [129.]]</span>
+<span class="sd">        &gt;&gt;&gt; midas = MIDAS(low_freq=&quot;QS&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; quarterly_series = midas.fit_transform(monthly_series)</span>
+<span class="sd">        &gt;&gt;&gt; print(quarterly_series.time_index[:3])</span>
+<span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-04-01&#39;, &#39;1949-07-01&#39;], dtype=&#39;datetime64[ns]&#39;, name=&#39;Month&#39;, freq=&#39;QS-JAN&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; print(quarterly_series.values()[:3])</span>
+<span class="sd">        [[112. 118. 132.], [129. 121. 135.], [148. 148. 136.]]</span>
+<span class="sd">        &gt;&gt;&gt; inversed_quaterly = midas.inverse_transform(quarterly_series)</span>
+<span class="sd">        &gt;&gt;&gt; print(inversed_quaterly.time_index[:4])</span>
+<span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;,</span>
+<span class="sd">        name=&#39;time&#39;, freq=&#39;MS&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; print(inversed_quaterly.values()[:4])</span>
+<span class="sd">        [[112.], [118.], [132.], [129.]]</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] https://en.wikipedia.org/wiki/Mixed-data_sampling</span>
+<span class="sd">        .. [2] https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_low_freq</span> <span class="o">=</span> <span class="n">low_freq</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip</span> <span class="o">=</span> <span class="n">strip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_drop_static_covariates</span> <span class="o">=</span> <span class="n">drop_static_covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sep</span> <span class="o">=</span> <span class="s2">&quot;_midas_&quot;</span>
+        <span class="c1"># Original high frequency should be fitted on TimeSeries independently</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">global_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MIDAS.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.midas.html#darts.dataprocessing.transformers.midas.MIDAS.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;MIDAS needs the high frequency period name in order to easily reverse_transform</span>
+<span class="sd">        TimeSeries, the parallelization is handled by `transform` and/or `inverse_transform`</span>
+<span class="sd">        (see InvertibleDataTransformer.__init__() docstring).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_single_series</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
+
+        <span class="n">fitted_params</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">low_freq</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_low_freq&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="n">high_freq</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">freq_str</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">is_subperiod</span><span class="p">(</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">get_period_alias</span><span class="p">(</span><span class="n">high_freq</span><span class="p">),</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">get_period_alias</span><span class="p">(</span><span class="n">low_freq</span><span class="p">),</span>
+            <span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The frequency string of the series at index=</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2"> must be higher than the &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`low_freq` set at MIDAS creation. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Received series frequency </span><span class="si">{</span><span class="n">high_freq</span><span class="si">}</span><span class="s2"> against `low_freq=</span><span class="si">{</span><span class="n">low_freq</span><span class="si">}</span><span class="s2">`&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">fitted_params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;high_freq&quot;</span><span class="p">:</span> <span class="n">high_freq</span><span class="p">,</span>
+                    <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
+                    <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fitted_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">is_single_series</span> <span class="k">else</span> <span class="n">fitted_params</span></div>
+
+<div class="viewcode-block" id="MIDAS.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.midas.html#darts.dataprocessing.transformers.midas.MIDAS.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Transforms series from high to low frequency using a mixed-data sampling approach. Uses and relies on</span>
+<span class="sd">        pandas.DataFrame.resample.</span>
+
+<span class="sd">        When converting to/from anchorable offset [1]_, the index is rolled backward if the series does not start on</span>
+<span class="sd">        the anchor date to preserve all the values.</span>
+
+<span class="sd">        Steps:</span>
+<span class="sd">            (1) Transform series to pd.DataFrame and get frequency string for PeriodIndex</span>
+<span class="sd">            (2) Downsample series and then upsample it again</span>
+<span class="sd">            (3) Replace input series by unsampled series if it&#39;s not &#39;full&#39;</span>
+<span class="sd">            (4) Transform every column of the high frequency series into multiple columns for the low frequency series</span>
+<span class="sd">            (5) Transform the low frequency series back into a TimeSeries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">low_freq</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_low_freq&quot;</span><span class="p">]</span>
+        <span class="n">strip</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_strip&quot;</span><span class="p">]</span>
+        <span class="n">drop_static_covariates</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_drop_static_covariates&quot;</span><span class="p">]</span>
+        <span class="n">feature_sep</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_sep&quot;</span><span class="p">]</span>
+        <span class="n">high_freq</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">][</span><span class="s2">&quot;high_freq&quot;</span><span class="p">]</span>
+        <span class="n">MIDAS</span><span class="o">.</span><span class="n">_verify_series</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">high_freq</span><span class="o">=</span><span class="n">high_freq</span><span class="p">)</span>
+
+        <span class="c1"># TimeSeries to pd.DataFrame</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">)</span>
+
+        <span class="c1"># get high frequency string that&#39;s suitable for PeriodIndex</span>
+        <span class="n">high_freq_period</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">get_period_alias</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">)</span>
+
+        <span class="c1"># downsample</span>
+        <span class="n">resampled</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">low_freq</span><span class="p">)</span>
+        <span class="n">low_freq_df</span> <span class="o">=</span> <span class="n">resampled</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">up_sample</span><span class="p">(</span><span class="n">low_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">high_period</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;up sample a single index DataFrame to a higher frequency&quot;&quot;&quot;</span>
+            <span class="n">low_df</span> <span class="o">=</span> <span class="n">low_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">low_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">low_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_period</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">low_df</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">high_period</span><span class="p">)</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
+
+        <span class="c1"># first and last groups can be shorter than an entire lower freq period</span>
+        <span class="c1"># we up_sample them from the low to high frequency to get the expected number</span>
+        <span class="c1"># higher freq time steps in one lower freq</span>
+        <span class="n">first_up_sampled</span> <span class="o">=</span> <span class="n">up_sample</span><span class="p">(</span><span class="n">low_freq_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">1</span><span class="p">],</span> <span class="n">high_freq_period</span><span class="p">)</span>
+        <span class="n">last_up_sampled</span> <span class="o">=</span> <span class="n">up_sample</span><span class="p">(</span><span class="n">low_freq_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="n">high_freq_period</span><span class="p">)</span>
+
+        <span class="c1"># find unique sizes from: first group size + unique sizes of center groups + last group size</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
+            <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">first_up_sampled</span><span class="p">)]</span>
+            <span class="o">+</span> <span class="n">resampled</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="o">+</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">last_up_sampled</span><span class="p">)]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># MIDAS requires the high freq to be a round multiple of the low freq -&gt; sizes must be identical</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The frequency of the input series should be an exact multiple of the targeted &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;lower frequency output. Received series frequency `</span><span class="si">{</span><span class="n">high_freq</span><span class="si">}</span><span class="s2">`, and lower frequency &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">low_freq</span><span class="si">}</span><span class="s2">. E.g., a valid conversion would be from a monthly (high) to a quarterly &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(low) frequency.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># max size is the number of higher frequency time steps per lower frequency period</span>
+        <span class="n">max_size</span> <span class="o">=</span> <span class="n">sizes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span>
+        <span class="n">n_cols_in</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span>
+        <span class="n">n_cols_out</span> <span class="o">=</span> <span class="n">max_size</span> <span class="o">*</span> <span class="n">n_cols_in</span>
+        <span class="n">series_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+        <span class="c1"># how many input time steps are in each down-sampled lower frequency period</span>
+        <span class="n">group_sizes</span> <span class="o">=</span> <span class="n">resampled</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+        <span class="n">n_groups</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">group_sizes</span><span class="p">)</span>
+
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">low_freq_df</span><span class="o">.</span><span class="n">index</span>
+
+        <span class="k">if</span> <span class="n">series_size</span> <span class="o">&lt;=</span> <span class="n">max_size</span><span class="p">:</span>
+            <span class="c1"># we can&#39;t apply windowing when series is shorter than `max_size`</span>
+            <span class="c1"># we have at least one group, maximum two</span>
+            <span class="n">first_idx</span> <span class="o">=</span> <span class="n">first_up_sampled</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">last_idx</span> <span class="o">=</span> <span class="n">first_idx</span> <span class="o">+</span> <span class="n">series_size</span> <span class="o">-</span> <span class="mi">1</span>
+
+            <span class="n">start_chunk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">first_idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">start_chunk</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">end_chunk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">max_size</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">last_idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">end_chunk</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">start_chunk</span><span class="p">,</span> <span class="n">arr</span><span class="p">,</span> <span class="n">end_chunk</span><span class="p">])</span>
+            <span class="c1"># arr has shape (n time steps, n components, n samples)</span>
+            <span class="c1"># reshape to (1 time step, n midas components, n samples)</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_cols_out</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">strip</span><span class="p">:</span>
+                <span class="c1"># results in an empty series</span>
+                <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">time_index</span> <span class="o">=</span> <span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># guarantee that we have at least two groups since series is longer than `max_size`</span>
+            <span class="c1"># extract rows from higher frequency and convert them to columns in the lower frequency</span>
+            <span class="c1"># we can achieve this by extracting all windows with a size of `max_size`;</span>
+            <span class="c1"># later on we stride to get only the relevant windows each `max_size` steps</span>
+
+            <span class="c1"># create maximum possible output array</span>
+            <span class="n">arr_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_groups</span><span class="p">,</span> <span class="n">n_cols_out</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">))</span>
+            <span class="n">arr_out</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">stride_tricks</span><span class="o">.</span><span class="n">sliding_window_view</span><span class="p">(</span>
+                <span class="n">arr</span><span class="p">,</span> <span class="n">window_shape</span><span class="o">=</span><span class="p">(</span><span class="n">max_size</span><span class="p">,</span> <span class="n">n_cols_in</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_cols_out</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">))</span>
+
+            <span class="c1"># the first resampled index might not have all dates from higher freq</span>
+            <span class="n">size_group_first</span> <span class="o">=</span> <span class="n">group_sizes</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">size_group_first</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">size_group_first</span> <span class="o">==</span> <span class="n">max_size</span> <span class="k">else</span> <span class="n">size_group_first</span>
+            <span class="n">components_group_first</span> <span class="o">=</span> <span class="n">size_group_first</span> <span class="o">*</span> <span class="n">n_cols_in</span>
+            <span class="k">if</span> <span class="n">components_group_first</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">strip</span><span class="p">:</span>
+                <span class="n">arr_out</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_cols_out</span> <span class="o">-</span> <span class="n">components_group_first</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span>
+                    <span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="n">components_group_first</span>
+                <span class="p">]</span>
+            <span class="n">center_start_idx</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">size_group_first</span> <span class="k">else</span> <span class="mi">1</span>
+
+            <span class="c1"># the last resampled index might not have all dates from higher freq</span>
+            <span class="n">size_group_last</span> <span class="o">=</span> <span class="n">group_sizes</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">size_group_last</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">size_group_last</span> <span class="o">==</span> <span class="n">max_size</span> <span class="k">else</span> <span class="n">size_group_last</span>
+            <span class="n">components_group_last</span> <span class="o">=</span> <span class="n">size_group_last</span> <span class="o">*</span> <span class="n">n_cols_in</span>
+            <span class="k">if</span> <span class="n">components_group_last</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">strip</span><span class="p">:</span>
+                <span class="n">arr_out</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="n">components_group_last</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span>
+                    <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">components_group_last</span><span class="p">:</span>
+                <span class="p">]</span>
+
+            <span class="c1"># get the center resampled indices</span>
+            <span class="n">center_end_idx</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">size_group_last</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">arr_out</span><span class="p">[</span><span class="n">center_start_idx</span><span class="p">:</span><span class="n">center_end_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span>
+                <span class="n">size_group_first</span><span class="p">::</span><span class="n">max_size</span>
+            <span class="p">]</span>
+
+            <span class="c1"># potentially strip first and last groups</span>
+            <span class="k">if</span> <span class="n">strip</span><span class="p">:</span>
+                <span class="n">first_idx</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">size_group_first</span> <span class="k">else</span> <span class="mi">1</span>
+                <span class="n">last_idx</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">size_group_last</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">arr_out</span> <span class="o">=</span> <span class="n">arr_out</span><span class="p">[</span><span class="n">first_idx</span><span class="p">:</span><span class="n">last_idx</span><span class="p">]</span>
+                <span class="n">time_index</span> <span class="o">=</span> <span class="n">time_index</span><span class="p">[</span><span class="n">first_idx</span><span class="p">:</span><span class="n">last_idx</span><span class="p">]</span>
+
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">arr_out</span>
+
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">MIDAS</span><span class="o">.</span><span class="n">_create_midas_df</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">arr</span><span class="o">=</span><span class="n">arr</span><span class="p">,</span>
+            <span class="n">time_index</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">n_midas</span><span class="o">=</span><span class="n">max_size</span><span class="p">,</span>
+            <span class="n">drop_static_covariates</span><span class="o">=</span><span class="n">drop_static_covariates</span><span class="p">,</span>
+            <span class="n">inverse_transform</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">feature_sep</span><span class="o">=</span><span class="n">feature_sep</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ts</span></div>
+
+<div class="viewcode-block" id="MIDAS.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.midas.html#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Transforms series back to high frequency by retrieving the original high frequency and reshaping the values.</span>
+
+<span class="sd">        When converting to/from anchorable offset [1]_, the index is rolled backward if the series does not start on</span>
+<span class="sd">        the anchor date to preserve all the values.</span>
+
+<span class="sd">        Steps:</span>
+<span class="sd">            (1) Reshape the values to flatten the components introduced by the transform</span>
+<span class="sd">            (2) Eliminate the rows filled with NaNs, to facilitate time index adjustment</span>
+<span class="sd">            (3) Retrieve the original components name</span>
+<span class="sd">            (4) When applicable, shift the time index start back in time</span>
+<span class="sd">            (5) Generate a new time index with the high frequency</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">low_freq</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_low_freq&quot;</span><span class="p">]</span>
+        <span class="n">drop_static_covariates</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_drop_static_covariates&quot;</span><span class="p">]</span>
+        <span class="n">feature_sep</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_sep&quot;</span><span class="p">]</span>
+        <span class="n">high_freq</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">][</span><span class="s2">&quot;high_freq&quot;</span><span class="p">]</span>
+        <span class="n">orig_ts_start_time</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">][</span><span class="s2">&quot;start&quot;</span><span class="p">]</span>
+        <span class="n">orig_ts_end_time</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">][</span><span class="s2">&quot;end&quot;</span><span class="p">]</span>
+        <span class="n">MIDAS</span><span class="o">.</span><span class="n">_verify_series</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">low_freq</span><span class="o">=</span><span class="n">low_freq</span><span class="p">)</span>
+
+        <span class="c1"># retrieve the number of component introduced by midas</span>
+        <span class="n">n_midas_components</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">feature_sep</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">series_n_components</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span>
+
+        <span class="n">n_orig_components</span> <span class="o">=</span> <span class="n">series_n_components</span> <span class="o">//</span> <span class="n">n_midas_components</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># placeholders for empty series</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">)</span>
+            <span class="n">shift</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">series_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_orig_components</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">series_values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_orig_components</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span>
+            <span class="p">)</span>
+
+            <span class="c1"># remove the rows containing only NaNs at the extremities of the array, necessary to adjust the time index</span>
+            <span class="n">first_finite_row</span><span class="p">,</span> <span class="n">last_finite_row</span> <span class="o">=</span> <span class="n">_finite_rows_boundaries</span><span class="p">(</span>
+                <span class="n">series_values</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;all&quot;</span>
+            <span class="p">)</span>
+            <span class="c1"># adding one to make the end bound inclusive</span>
+            <span class="n">series_values</span> <span class="o">=</span> <span class="n">series_values</span><span class="p">[</span><span class="n">first_finite_row</span> <span class="p">:</span> <span class="n">last_finite_row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span>
+            <span class="n">shift</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># adjust the start if was shifted due to the frequency change</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">low_freq_timedelta</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">start_to_start_shift</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">orig_ts_start_time</span>
+                <span class="n">start_to_end_shift</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">orig_ts_end_time</span>
+                <span class="c1"># shift is caused by the low frequency anchoring, fitted and inversed ts have the same start</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">start_to_start_shift</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">low_freq_timedelta</span><span class="p">:</span>
+                    <span class="n">start_time</span> <span class="o">=</span> <span class="n">orig_ts_start_time</span>
+                <span class="c1"># shift is caused by the low frequency anchoring, inversed ts starts after the end of the fitted ts</span>
+                <span class="k">elif</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">start_to_end_shift</span> <span class="o">&lt;=</span> <span class="n">low_freq_timedelta</span><span class="p">:</span>
+                    <span class="n">start_time</span> <span class="o">=</span> <span class="n">orig_ts_end_time</span>
+                    <span class="n">shift</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+            <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">series_values</span><span class="p">)</span> <span class="o">+</span> <span class="n">shift</span><span class="p">,</span>
+            <span class="n">freq</span><span class="o">=</span><span class="n">high_freq</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)[</span><span class="n">shift</span><span class="p">:]</span>
+
+        <span class="n">inversed_midas_ts</span> <span class="o">=</span> <span class="n">MIDAS</span><span class="o">.</span><span class="n">_create_midas_df</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">arr</span><span class="o">=</span><span class="n">series_values</span><span class="p">,</span>
+            <span class="n">time_index</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">n_midas</span><span class="o">=</span><span class="n">n_midas_components</span><span class="p">,</span>
+            <span class="n">drop_static_covariates</span><span class="o">=</span><span class="n">drop_static_covariates</span><span class="p">,</span>
+            <span class="n">inverse_transform</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">feature_sep</span><span class="o">=</span><span class="n">feature_sep</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">inversed_midas_ts</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_verify_series</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">high_freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">low_freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Some sanity checks on the input, the high_freq and low_freq arguments are mutually exclusive&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;MIDAS input series must have a pd.Datetime index&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">series_freq_str</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">freq_str</span>
+        <span class="n">input_freq</span> <span class="o">=</span> <span class="p">[</span><span class="n">series_freq_str</span><span class="p">]</span>
+        <span class="c1"># flexibility on anchoring</span>
+        <span class="k">if</span> <span class="s2">&quot;-&quot;</span> <span class="ow">in</span> <span class="n">series_freq_str</span><span class="p">:</span>
+            <span class="n">input_freq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series_freq_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">high_freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">high_freq</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">input_freq</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The frequency string of the series to transform must be identical to the fitted one, expected &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">high_freq</span><span class="si">}</span><span class="s2"> but received </span><span class="si">{</span><span class="n">series_freq_str</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">low_freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">low_freq</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">input_freq</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The frequency string of the series to inverse-transform must be identical to the fitted one, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;expected </span><span class="si">{</span><span class="n">low_freq</span><span class="si">}</span><span class="s2"> but received </span><span class="si">{</span><span class="n">series_freq_str</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_process_static_covariates</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">n_midas</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">drop_static_covariates</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">inverse_transform</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If static covariates are component-specific, they must be reshaped appropriately.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span>
+        <span class="k">if</span> <span class="n">drop_static_covariates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;component&quot;</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">inverse_transform</span><span class="p">:</span>
+                <span class="n">cols_orig</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span> <span class="o">//</span> <span class="n">n_midas</span>
+                <span class="k">return</span> <span class="n">static_covariates</span><span class="p">[:</span><span class="n">cols_orig</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">static_covariates</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_midas</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">static_covariates</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_create_midas_df</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">time_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">],</span>
+        <span class="n">n_midas</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">drop_static_covariates</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">inverse_transform</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">feature_sep</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function creating the lower frequency dataframe out of a higher frequency dataframe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inverse_transform</span><span class="p">:</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}{</span><span class="n">feature_sep</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_midas</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">series</span><span class="o">.</span><span class="n">columns</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cols_orig</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span> <span class="o">//</span> <span class="n">n_midas</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">[:</span><span class="n">cols_orig</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">feature_sep</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">MIDAS</span><span class="o">.</span><span class="n">_process_static_covariates</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">n_midas</span><span class="o">=</span><span class="n">n_midas</span><span class="p">,</span>
+            <span class="n">drop_static_covariates</span><span class="o">=</span><span class="n">drop_static_covariates</span><span class="p">,</span>
+            <span class="n">inverse_transform</span><span class="o">=</span><span class="n">inverse_transform</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">arr</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covariates</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

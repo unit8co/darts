@@ -214,8 +214,10 @@
     <span class="n">create_lagged_training_data</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.utils.historical_forecasts</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">_optimized_historical_forecasts_regression_all_points</span><span class="p">,</span>
-    <span class="n">_optimized_historical_forecasts_regression_last_points_only</span><span class="p">,</span>
+    <span class="n">_check_optimizable_historical_forecasts_global_models</span><span class="p">,</span>
+    <span class="n">_optimized_historical_forecasts_all_points</span><span class="p">,</span>
+    <span class="n">_optimized_historical_forecasts_last_points_only</span><span class="p">,</span>
+    <span class="n">_process_historical_forecast_input</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.utils.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 <span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="p">(</span>
@@ -279,9 +281,12 @@
 <span class="sd">            &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
 <span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast</span>
-<span class="sd">            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may</span>
-<span class="sd">            be useful if the covariates don&#39;t extend far enough into the future.</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
+<span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
+<span class="sd">            one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
+<span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
+<span class="sd">            support).</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -302,7 +307,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        model</span>
@@ -390,6 +396,7 @@
         <span class="p">)</span>
 
         <span class="c1"># convert lags arguments to list of int</span>
+        <span class="c1"># lags attribute should always be accessed with self._get_lags(), not self.lags.get()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_lags</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
             <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
@@ -540,7 +547,7 @@
         <span class="k">if</span> <span class="n">lags_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span><span class="p">[</span><span class="n">lags_type</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lags_type</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lags_type</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_model_encoder_settings</span><span class="p">(</span>
@@ -901,6 +908,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Forecasts values for `n` time steps after the end of the series.</span>
@@ -976,6 +984,7 @@
             <span class="n">num_samples</span><span class="p">,</span>
             <span class="n">verbose</span><span class="p">,</span>
             <span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">show_warnings</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># check that the input sizes of the target series and covariates match</span>
@@ -1234,40 +1243,23 @@
     <span class="k">def</span> <span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_optimized_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span>
-
     <span class="k">def</span> <span class="nf">_check_optimizable_historical_forecasts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]],</span>
-        <span class="n">show_warnings</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon &lt;= self.output_chunk_length`</span>
+<span class="sd">        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon &lt;= model.output_chunk_length`</span>
 <span class="sd">        (no auto-regression required).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">supported_retrain</span> <span class="o">=</span> <span class="p">(</span><span class="n">retrain</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">retrain</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">supported_forecast_horizon</span> <span class="o">=</span> <span class="n">forecast_horizon</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
-        <span class="k">if</span> <span class="n">supported_retrain</span> <span class="ow">and</span> <span class="n">supported_forecast_horizon</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="k">if</span> <span class="n">show_warnings</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">supported_retrain</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;`enable_optimization=True` is ignored because `retrain` is not `False`&quot;</span>
-                    <span class="s2">&quot;To hide this warning, set `show_warnings=False` or `enable_optimization=False`.&quot;</span>
-                <span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">supported_forecast_horizon</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;`enable_optimization=True` is ignored because &quot;</span>
-                    <span class="s2">&quot;`forecast_horizon &gt; self.output_chunk_length`.&quot;</span>
-                    <span class="s2">&quot;To hide this warning, set `show_warnings=False` or `enable_optimization=False`.&quot;</span>
-                <span class="p">)</span>
-
-        <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">_check_optimizable_historical_forecasts_global_models</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+            <span class="n">retrain</span><span class="o">=</span><span class="n">retrain</span><span class="p">,</span>
+            <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+            <span class="n">allow_autoregression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_optimized_historical_forecasts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1284,45 +1276,30 @@
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
         <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
     <span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For RegressionModels we create the lagged prediction data once per series using a moving window.</span>
+<span class="sd">        With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each</span>
+<span class="sd">        forecastable index and series.</span>
+<span class="sd">        Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.</span>
+
 <span class="sd">        TODO: support forecast_horizon &gt; output_chunk_length (auto-regression)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Model has not been fit yet.&quot;</span><span class="p">),</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">forecast_horizon</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;`forecast_horizon &gt; model.output_chunk_length` requires auto-regression which is not &quot;</span>
-                    <span class="s2">&quot;supported in this optimized routine.&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="c1"># manage covariates, usually handled by RegressionModel.predict()</span>
-        <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_covariate_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">past_covariates</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">past_covariate_series</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_covariate_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">future_covariates</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">future_covariate_series</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_verify_static_covariates</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
-            <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_fit_predict_encodings</span><span class="p">(</span>
-                <span class="n">n</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
-                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">_process_historical_forecast_input</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+            <span class="n">allow_autoregression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="c1"># TODO: move the loop here instead of duplicated code in each sub-routine?</span>
         <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">_optimized_historical_forecasts_regression_last_points_only</span><span class="p">(</span>
+            <span class="k">return</span> <span class="n">_optimized_historical_forecasts_last_points_only</span><span class="p">(</span>
                 <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
                 <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -1335,9 +1312,10 @@
                 <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">_optimized_historical_forecasts_regression_all_points</span><span class="p">(</span>
+            <span class="k">return</span> <span class="n">_optimized_historical_forecasts_all_points</span><span class="p">(</span>
                 <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
                 <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -1350,6 +1328,7 @@
                 <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span></div>
 
 
@@ -1693,9 +1672,12 @@
 <span class="sd">            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list</span>
 <span class="sd">            of integers with lags is required.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast</span>
-<span class="sd">            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may</span>
-<span class="sd">            be useful if the covariates don&#39;t extend far enough into the future.</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
+<span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
+<span class="sd">            one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
+<span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
+<span class="sd">            support).</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -1716,7 +1698,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        model</span>

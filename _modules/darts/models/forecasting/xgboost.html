@@ -192,6 +192,10 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<span class="c1"># Check whether we are running xgboost &gt;= 2.0.0 for quantile regression</span>
+<span class="n">tokens</span> <span class="o">=</span> <span class="n">xgb</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="n">xgb_200_or_above</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">2</span>
+
 
 <div class="viewcode-block" id="xgb_quantile_loss"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.xgb_quantile_loss">[docs]</a><span class="k">def</span> <span class="nf">xgb_quantile_loss</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom loss function for XGBoost to compute quantile loss gradient.</span>
@@ -260,9 +264,12 @@
 <span class="sd">            &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
 <span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast</span>
-<span class="sd">            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may</span>
-<span class="sd">            be useful if the covariates don&#39;t extend far enough into the future.</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
+<span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
+<span class="sd">            one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
+<span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
+<span class="sd">            support).</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -283,7 +290,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        likelihood</span>
@@ -307,6 +315,7 @@
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        Deterministic forecasting, using past/future covariates (optional)</span>
+
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
 <span class="sd">        &gt;&gt;&gt; from darts.models import XGBModel</span>
 <span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
@@ -349,8 +358,12 @@
             <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;poisson&quot;</span><span class="p">}:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;count:</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">xgb_200_or_above</span><span class="p">:</span>
+                    <span class="c1"># leverage built-in Quantile Regression</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;reg:quantileerror&quot;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_container</span><span class="p">()</span>
+
             <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>  <span class="c1"># seed for sampling</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -415,12 +428,17 @@
                 <span class="p">)</span>
             <span class="p">]</span>
 
+        <span class="c1"># TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future</span>
+        <span class="c1">#  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
             <span class="c1"># empty model container in case of multiple calls to fit, e.g. when backtesting</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
-                <span class="n">obj_func</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">xgb_quantile_loss</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="n">quantile</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj_func</span>
+                <span class="k">if</span> <span class="n">xgb_200_or_above</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;quantile_alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantile</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">objective</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">xgb_quantile_loss</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="n">quantile</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">objective</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">xgb</span><span class="o">.</span><span class="n">XGBRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
 
                 <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>

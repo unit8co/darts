@@ -850,8 +850,9 @@
 <span class="sd">        The internal sub models are adopted from `pytorch-forecasting&#39;s TemporalFusionTransformer</span>
 <span class="sd">        &lt;https://pytorch-forecasting.readthedocs.io/en/latest/models.html&gt;`_ implementation.</span>
 
-<span class="sd">        This model supports mixed covariates (includes past covariates known for ``input_chunk_length``</span>
-<span class="sd">        points before prediction time and future covariates known for ``output_chunk_length`` after prediction time).</span>
+<span class="sd">        This model supports past covariates (known for `input_chunk_length` points before prediction time),</span>
+<span class="sd">        future covariates (known for `output_chunk_length` points after prediction time), static covariates,</span>
+<span class="sd">        as well as probabilistic forecasting.</span>
 
 <span class="sd">        The TFT applies multi-head attention queries on future inputs from mandatory ``future_covariates``.</span>
 <span class="sd">        Specifying future encoders with ``add_encoders`` (read below) can automatically generate future covariates</span>
@@ -864,9 +865,18 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        input_chunk_length</span>
-<span class="sd">            Encoder length; number of past time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">            Number of time steps in the past to take as a model input (per chunk). Applies to the target</span>
+<span class="sd">            series, and past and/or future covariates (if the model supports it).</span>
+<span class="sd">            Also called: Encoder length</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            Decoder length; number of future time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
+<span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
+<span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
+<span class="sd">            using either a one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
+<span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
+<span class="sd">            model&#39;s covariate support).</span>
+<span class="sd">            Also called: Decoder length</span>
 <span class="sd">        hidden_size</span>
 <span class="sd">            Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT</span>
 <span class="sd">            architecture.</span>
@@ -986,7 +996,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        random_state</span>

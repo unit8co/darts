@@ -7,5 +7,6 @@
         :maxdepth: 1
         
         
-        darts.utils.historical_forecasts.optimized_historical_forecasts
+        darts.utils.historical_forecasts.optimized_historical_forecasts_regression
+        darts.utils.historical_forecasts.optimized_historical_forecasts_torch
         darts.utils.historical_forecasts.utils

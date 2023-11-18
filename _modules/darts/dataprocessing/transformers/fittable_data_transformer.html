@@ -231,10 +231,10 @@
 <span class="sd">            be passed as a keyword argument, but won&#39;t automatically be applied to the input timeseries.</span>
 <span class="sd">            See `apply_component_mask` method of `BaseDataTransformer` for further details.</span>
 <span class="sd">        global_fit</span>
-<span class="sd">            Optionally, whether all of the `TimeSeries` passed to the `fit()` method should be used to fit</span>
+<span class="sd">            Optionally, whether all `TimeSeries` passed to the `fit()` method should be used to fit</span>
 <span class="sd">            a *single* set of parameters, or if a different set of parameters should be independently fitted</span>
 <span class="sd">            to each provided `TimeSeries`. If `True`, then a `Sequence[TimeSeries]` is passed to `ts_fit`</span>
-<span class="sd">            and a single set of parameters is fitted using all of the provided `TimeSeries`. If `False`, then</span>
+<span class="sd">            and a single set of parameters is fitted using all provided `TimeSeries`. If `False`, then</span>
 <span class="sd">            each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters</span>
 <span class="sd">            if yielded for each of these fitting operations. See `ts_fit` for further details.</span>
 
@@ -250,9 +250,9 @@
 <span class="sd">        of fitted parameters.</span>
 
 <span class="sd">        Note that if an invertible *and* fittable data transformer is to be globally fitted, the data transformer</span>
-<span class="sd">        class should first inherit from `FittableDataTransformer` and then from `InveritibleDataTransformer`. In</span>
-<span class="sd">        other words, `MyTransformer(FittableDataTransformer, InveritibleDataTransformer)` is correct, but</span>
-<span class="sd">        `MyTransformer(InveritibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented</span>
+<span class="sd">        class should first inherit from `FittableDataTransformer` and then from `InvertibleDataTransformer`. In</span>
+<span class="sd">        other words, `MyTransformer(FittableDataTransformer, InvertibleDataTransformer)` is correct, but</span>
+<span class="sd">        `MyTransformer(InvertibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented</span>
 <span class="sd">        correctly, then the `global_fit` parameter will not be correctly passed to `FittableDataTransformer`&#39;s</span>
 <span class="sd">        constructor.</span>
 

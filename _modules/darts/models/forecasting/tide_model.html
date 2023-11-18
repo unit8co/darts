@@ -550,11 +550,9 @@
 <span class="sd">        but attempts to provide better performance at lower computational cost by introducing</span>
 <span class="sd">        multilayer perceptron (MLP)-based encoder-decoders without attention.</span>
 
-<span class="sd">        The model is implemented as a :class:`MixedCovariatesTorchModel`, which means that it supports</span>
-<span class="sd">        both past and future covariates, as well as static covariates. Probabilistic forecasting is supported through</span>
-<span class="sd">        the use of a `likelihood` instead of a `loss_fn`.</span>
-<span class="sd">        The original paper does not describe how past covariates are treated in detail, so we assume that they are</span>
-<span class="sd">        passed to the encoder as-is.</span>
+<span class="sd">        This model supports past covariates (known for `input_chunk_length` points before prediction time),</span>
+<span class="sd">        future covariates (known for `output_chunk_length` points after prediction time), static covariates,</span>
+<span class="sd">        as well as probabilistic forecasting.</span>
 
 <span class="sd">        The encoder and decoder are implemented as a series of residual blocks. The number of residual blocks in</span>
 <span class="sd">        the encoder and decoder can be controlled via ``num_encoder_layers`` and ``num_decoder_layers`` respectively.</span>
@@ -564,9 +562,16 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        input_chunk_length</span>
-<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">            Number of time steps in the past to take as a model input (per chunk). Applies to the target</span>
+<span class="sd">            series, and past and/or future covariates (if the model supports it).</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
+<span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
+<span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
+<span class="sd">            using either a one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
+<span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
+<span class="sd">            model&#39;s covariate support).</span>
 <span class="sd">        num_encoder_layers</span>
 <span class="sd">            The number of residual blocks in the encoder.</span>
 <span class="sd">        num_decoder_layers</span>
@@ -665,7 +670,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        random_state</span>

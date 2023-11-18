@@ -1,0 +1,1996 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Likelihood Models" href="darts.utils.likelihood_models.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="darts.utils.historical_forecasts.utils.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.ad.html">
+   Anomaly Detection
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.aggregators.html">
+     Anomaly Aggregators
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
+       AND Aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
+       Ensemble scikit-learn aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
+       OR Aggregator
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.anomaly_model.html">
+     Anomaly Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <label for="toctree-checkbox-3">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
+       Filtering Anomaly Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
+       Forecasting Anomaly Model
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.detectors.html">
+     Anomaly Detectors
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+    <label for="toctree-checkbox-4">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
+       Quantile Detector
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
+       Threshold Detector
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.scorers.html">
+     Anomaly Scorers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+    <label for="toctree-checkbox-5">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
+       Difference Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
+       k-means Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
+       NLL Cauchy Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
+       NLL Exponential Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
+       NLL Gamma Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
+       NLL Gaussian Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
+       NLL Laplace Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
+       NLL Poisson Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
+       Norm Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
+       PyODScorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
+       WassersteinScorer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.ad.utils.html">
+     Utils for Anomaly Detection
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.dtw.html">
+     Dynamic Time Warping (DTW)
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
+       Dynamic Time Warping (DTW)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
+       DTW Windows
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.encoders.html">
+     Time Axis Encoders
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
+       Window Transformer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     Explainability Result
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.tft_explainer.html">
+     TFT Explainer for Temporal Fusion Transformer (TFTModel)
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+  <label for="toctree-checkbox-13">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+    <label for="toctree-checkbox-15">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
+       D-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
+       N-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
+       Time-series Dense Encoder (TiDE)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
+       XGBoost Model
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <label for="toctree-checkbox-16">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <label for="toctree-checkbox-17">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="simple visible nav section-nav flex-column">
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.utils.callbacks"></span><dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.callbacks.</span></span><span class="sig-name descname"><span class="pre">TFMProgressBar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable_sanity_check_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_train_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_validation_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_prediction_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_train_bar_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/callbacks.html#TFMProgressBar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytorch_lightning.callbacks.progress.tqdm_progress.TQDMProgressBar</span></code></p>
+<p>Darts’ Progress Bar for <cite>TorchForecastingModels</cite>.</p>
+<p>Allows to customize for which model stages (sanity checks, training, validation, prediction) to display a
+progress bar.</p>
+<p>This class is a PyTorch Lightning <cite>Callback</cite> and can be passed to the <cite>TorchForecastingModel</cite> constructor
+through the <cite>pl_trainer_kwargs</cite> parameter.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.utils.callbacks</span> <span class="kn">import</span> <span class="n">TFMProgressBar</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># only display the training bar and not the validation, prediction, and sanity check bars</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prog_bar</span> <span class="o">=</span> <span class="n">TFMProgressBar</span><span class="p">(</span><span class="n">enable_train_bar_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">prog_bar</span><span class="p">]})</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enable_sanity_check_bar</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to enable to progress bar for sanity checks.</p></li>
+<li><p><strong>enable_train_bar</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to enable to progress bar for training.</p></li>
+<li><p><strong>enable_validation_bar</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to enable to progress bar for validation.</p></li>
+<li><p><strong>enable_prediction_bar</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to enable to progress bar for prediction.</p></li>
+<li><p><strong>enable_train_bar_only</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to disable all progress bars except the bar for training.</p></li>
+<li><p><strong>**kwargs</strong> – Arguments passed to the PyTorch Lightning’s <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random_state">TQDMProgressBar</a>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.state_key" title="darts.utils.callbacks.TFMProgressBar.state_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_key</span></code></a></p></td>
+<td><p>Identifier for the state of the callback.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.total_predict_batches_current_dataloader" title="darts.utils.callbacks.TFMProgressBar.total_predict_batches_current_dataloader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_predict_batches_current_dataloader</span></code></a></p></td>
+<td><p>The total number of prediction batches, which may change from epoch to epoch for current dataloader.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.total_test_batches_current_dataloader" title="darts.utils.callbacks.TFMProgressBar.total_test_batches_current_dataloader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_test_batches_current_dataloader</span></code></a></p></td>
+<td><p>The total number of testing batches, which may change from epoch to epoch for current dataloader.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.total_train_batches" title="darts.utils.callbacks.TFMProgressBar.total_train_batches"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_train_batches</span></code></a></p></td>
+<td><p>The total number of training batches, which may change from epoch to epoch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.total_val_batches" title="darts.utils.callbacks.TFMProgressBar.total_val_batches"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_val_batches</span></code></a></p></td>
+<td><p>The total number of validation batches, which may change from epoch to epoch for all val dataloaders.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.total_val_batches_current_dataloader" title="darts.utils.callbacks.TFMProgressBar.total_val_batches_current_dataloader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_val_batches_current_dataloader</span></code></a></p></td>
+<td><p>The total number of validation batches, which may change from epoch to epoch for current dataloader.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 74%" />
+<col style="width: 26%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>is_disabled</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>is_enabled</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>predict_description</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>predict_progress_bar</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>process_position</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>refresh_rate</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>sanity_check_description</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>test_description</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>test_progress_bar</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>train_description</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>train_progress_bar</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>trainer</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>val_progress_bar</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>validation_description</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.disable" title="darts.utils.callbacks.TFMProgressBar.disable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">disable</span></code></a>()</p></td>
+<td><p>You should provide a way to disable the progress bar.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.enable" title="darts.utils.callbacks.TFMProgressBar.enable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enable</span></code></a>()</p></td>
+<td><p>You should provide a way to enable the progress bar.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.get_metrics" title="darts.utils.callbacks.TFMProgressBar.get_metrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_metrics</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Combines progress bar metrics collected from the trainer with standard metrics from get_standard_metrics.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.init_predict_tqdm" title="darts.utils.callbacks.TFMProgressBar.init_predict_tqdm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_predict_tqdm</span></code></a>()</p></td>
+<td><p>Override this to customize the tqdm bar for predicting.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.init_sanity_tqdm" title="darts.utils.callbacks.TFMProgressBar.init_sanity_tqdm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_sanity_tqdm</span></code></a>()</p></td>
+<td><p>Override this to customize the tqdm bar for the validation sanity run.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.init_test_tqdm" title="darts.utils.callbacks.TFMProgressBar.init_test_tqdm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_test_tqdm</span></code></a>()</p></td>
+<td><p>Override this to customize the tqdm bar for testing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.init_train_tqdm" title="darts.utils.callbacks.TFMProgressBar.init_train_tqdm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_train_tqdm</span></code></a>()</p></td>
+<td><p>Override this to customize the tqdm bar for training.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.init_validation_tqdm" title="darts.utils.callbacks.TFMProgressBar.init_validation_tqdm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_validation_tqdm</span></code></a>()</p></td>
+<td><p>Override this to customize the tqdm bar for validation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.load_state_dict" title="darts.utils.callbacks.TFMProgressBar.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict)</p></td>
+<td><p>Called when loading a checkpoint, implement to reload callback state given callback's <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_after_backward" title="darts.utils.callbacks.TFMProgressBar.on_after_backward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_after_backward</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called after <code class="docutils literal notranslate"><span class="pre">loss.backward()</span></code> and before optimizers are stepped.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_before_backward" title="darts.utils.callbacks.TFMProgressBar.on_before_backward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_before_backward</span></code></a>(trainer, pl_module, loss)</p></td>
+<td><p>Called before <code class="docutils literal notranslate"><span class="pre">loss.backward()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_before_optimizer_step" title="darts.utils.callbacks.TFMProgressBar.on_before_optimizer_step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_before_optimizer_step</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_before_zero_grad" title="darts.utils.callbacks.TFMProgressBar.on_before_zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_before_zero_grad</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.zero_grad()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_exception" title="darts.utils.callbacks.TFMProgressBar.on_exception"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_exception</span></code></a>(trainer, pl_module, exception)</p></td>
+<td><p>Called when any trainer execution is interrupted by an exception.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_fit_end" title="darts.utils.callbacks.TFMProgressBar.on_fit_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_fit_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when fit ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_fit_start" title="darts.utils.callbacks.TFMProgressBar.on_fit_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_fit_start</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when fit begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_load_checkpoint" title="darts.utils.callbacks.TFMProgressBar.on_load_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_load_checkpoint</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when loading a model checkpoint, use to reload state.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_predict_batch_end" title="darts.utils.callbacks.TFMProgressBar.on_predict_batch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_batch_end</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when the predict batch ends.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_predict_batch_start" title="darts.utils.callbacks.TFMProgressBar.on_predict_batch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_batch_start</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when the predict batch begins.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_predict_end" title="darts.utils.callbacks.TFMProgressBar.on_predict_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when predict ends.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_predict_epoch_end" title="darts.utils.callbacks.TFMProgressBar.on_predict_epoch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_epoch_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the predict epoch ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_predict_epoch_start" title="darts.utils.callbacks.TFMProgressBar.on_predict_epoch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_epoch_start</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the predict epoch begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_predict_start" title="darts.utils.callbacks.TFMProgressBar.on_predict_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_start</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the predict begins.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_sanity_check_end" title="darts.utils.callbacks.TFMProgressBar.on_sanity_check_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_sanity_check_end</span></code></a>(*_)</p></td>
+<td><p>Called when the validation sanity check ends.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_sanity_check_start" title="darts.utils.callbacks.TFMProgressBar.on_sanity_check_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_sanity_check_start</span></code></a>(*_)</p></td>
+<td><p>Called when the validation sanity check starts.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_save_checkpoint" title="darts.utils.callbacks.TFMProgressBar.on_save_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_save_checkpoint</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when saving a checkpoint to give you a chance to store anything else you might want to save.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_test_batch_end" title="darts.utils.callbacks.TFMProgressBar.on_test_batch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_batch_end</span></code></a>(trainer, pl_module, ...[, ...])</p></td>
+<td><p>Called when the test batch ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_test_batch_start" title="darts.utils.callbacks.TFMProgressBar.on_test_batch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_batch_start</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when the test batch begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_test_end" title="darts.utils.callbacks.TFMProgressBar.on_test_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the test ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_test_epoch_end" title="darts.utils.callbacks.TFMProgressBar.on_test_epoch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_epoch_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the test epoch ends.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_test_epoch_start" title="darts.utils.callbacks.TFMProgressBar.on_test_epoch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_epoch_start</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the test epoch begins.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_test_start" title="darts.utils.callbacks.TFMProgressBar.on_test_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_start</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the test begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_train_batch_end" title="darts.utils.callbacks.TFMProgressBar.on_train_batch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_batch_end</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when the train batch ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_train_batch_start" title="darts.utils.callbacks.TFMProgressBar.on_train_batch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_batch_start</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when the train batch begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_train_end" title="darts.utils.callbacks.TFMProgressBar.on_train_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_end</span></code></a>(*_)</p></td>
+<td><p>Called when the train ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_train_epoch_end" title="darts.utils.callbacks.TFMProgressBar.on_train_epoch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_epoch_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the train epoch ends.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_train_epoch_start" title="darts.utils.callbacks.TFMProgressBar.on_train_epoch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_epoch_start</span></code></a>(trainer, *_)</p></td>
+<td><p>Called when the train epoch begins.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_train_start" title="darts.utils.callbacks.TFMProgressBar.on_train_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_start</span></code></a>(*_)</p></td>
+<td><p>Called when the train begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_validation_batch_end" title="darts.utils.callbacks.TFMProgressBar.on_validation_batch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_batch_end</span></code></a>(trainer, pl_module, ...)</p></td>
+<td><p>Called when the validation batch ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_validation_batch_start" title="darts.utils.callbacks.TFMProgressBar.on_validation_batch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_batch_start</span></code></a>(trainer, ...[, ...])</p></td>
+<td><p>Called when the validation batch begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_validation_end" title="darts.utils.callbacks.TFMProgressBar.on_validation_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the validation loop ends.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_validation_epoch_end" title="darts.utils.callbacks.TFMProgressBar.on_validation_epoch_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_epoch_end</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the val epoch ends.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_validation_epoch_start" title="darts.utils.callbacks.TFMProgressBar.on_validation_epoch_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_epoch_start</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the val epoch begins.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.on_validation_start" title="darts.utils.callbacks.TFMProgressBar.on_validation_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_start</span></code></a>(trainer, pl_module)</p></td>
+<td><p>Called when the validation loop begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.print" title="darts.utils.callbacks.TFMProgressBar.print"><code class="xref py py-obj docutils literal notranslate"><span class="pre">print</span></code></a>(*args[, sep])</p></td>
+<td><p>You should provide a way to print without breaking the progress bar.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.setup" title="darts.utils.callbacks.TFMProgressBar.setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup</span></code></a>(trainer, pl_module, stage)</p></td>
+<td><p>Called when fit, validate, test, predict, or tune begins.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.state_dict" title="darts.utils.callbacks.TFMProgressBar.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>()</p></td>
+<td><p>Called when saving a checkpoint, implement to generate callback's <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.callbacks.TFMProgressBar.teardown" title="darts.utils.callbacks.TFMProgressBar.teardown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">teardown</span></code></a>(trainer, pl_module, stage)</p></td>
+<td><p>Called when fit, validate, test, predict, or tune ends.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 76%" />
+<col style="width: 24%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>has_dataloader_changed</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>reset_dataloader_idx_tracker</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.BAR_FORMAT">
+<span class="sig-name descname"><span class="pre">BAR_FORMAT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'{l_bar}{bar}|</span> <span class="pre">{n_fmt}/{total_fmt}</span> <span class="pre">[{elapsed}&lt;{remaining},</span> <span class="pre">{rate_noinv_fmt}{postfix}]'</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.BAR_FORMAT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.disable">
+<span class="sig-name descname"><span class="pre">disable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.disable" title="Permalink to this definition">¶</a></dt>
+<dd><p>You should provide a way to disable the progress bar.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.enable">
+<span class="sig-name descname"><span class="pre">enable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.enable" title="Permalink to this definition">¶</a></dt>
+<dd><p>You should provide a way to enable the progress bar.</p>
+<p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> will call this in e.g. pre-training
+routines like the <span class="xref std std-ref">learning rate finder</span>.
+to temporarily enable and disable the training progress bar.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.get_metrics">
+<span class="sig-name descname"><span class="pre">get_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.get_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines progress bar metrics collected from the trainer with standard metrics from get_standard_metrics.
+Implement this to override the items displayed in the progress bar.</p>
+<p>Here is an example of how to override the defaults:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="c1"># don&#39;t show the version number</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_metrics</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">items</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;v_num&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">items</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary with the items to be displayed in the progress bar.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.has_dataloader_changed">
+<span class="sig-name descname"><span class="pre">has_dataloader_changed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.has_dataloader_changed" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.init_predict_tqdm">
+<span class="sig-name descname"><span class="pre">init_predict_tqdm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/callbacks.html#TFMProgressBar.init_predict_tqdm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.init_predict_tqdm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this to customize the tqdm bar for predicting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tqdm</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.init_sanity_tqdm">
+<span class="sig-name descname"><span class="pre">init_sanity_tqdm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/callbacks.html#TFMProgressBar.init_sanity_tqdm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.init_sanity_tqdm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this to customize the tqdm bar for the validation sanity run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tqdm</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.init_test_tqdm">
+<span class="sig-name descname"><span class="pre">init_test_tqdm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.init_test_tqdm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this to customize the tqdm bar for testing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tqdm</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.init_train_tqdm">
+<span class="sig-name descname"><span class="pre">init_train_tqdm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/callbacks.html#TFMProgressBar.init_train_tqdm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.init_train_tqdm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this to customize the tqdm bar for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tqdm</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.init_validation_tqdm">
+<span class="sig-name descname"><span class="pre">init_validation_tqdm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/callbacks.html#TFMProgressBar.init_validation_tqdm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.init_validation_tqdm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override this to customize the tqdm bar for validation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tqdm</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.is_disabled">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.is_disabled" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.is_enabled">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_enabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.is_enabled" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when loading a checkpoint, implement to reload callback state given callback’s <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>state_dict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the callback state returned by <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_after_backward">
+<span class="sig-name descname"><span class="pre">on_after_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_after_backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called after <code class="docutils literal notranslate"><span class="pre">loss.backward()</span></code> and before optimizers are stepped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_before_backward">
+<span class="sig-name descname"><span class="pre">on_before_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_before_backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before <code class="docutils literal notranslate"><span class="pre">loss.backward()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_before_optimizer_step">
+<span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_before_optimizer_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_before_zero_grad">
+<span class="sig-name descname"><span class="pre">on_before_zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_before_zero_grad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.zero_grad()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_exception">
+<span class="sig-name descname"><span class="pre">on_exception</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exception</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_exception" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when any trainer execution is interrupted by an exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_fit_end">
+<span class="sig-name descname"><span class="pre">on_fit_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_fit_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when fit ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_fit_start">
+<span class="sig-name descname"><span class="pre">on_fit_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_fit_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when fit begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_load_checkpoint">
+<span class="sig-name descname"><span class="pre">on_load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_load_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when loading a model checkpoint, use to reload state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trainer</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> instance.</p></li>
+<li><p><strong>pl_module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code> instance.</p></li>
+<li><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the full checkpoint dictionary that got loaded by the Trainer.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_predict_batch_end">
+<span class="sig-name descname"><span class="pre">on_predict_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_predict_batch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the predict batch ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_predict_batch_start">
+<span class="sig-name descname"><span class="pre">on_predict_batch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_predict_batch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the predict batch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_predict_end">
+<span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_predict_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when predict ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_predict_epoch_end">
+<span class="sig-name descname"><span class="pre">on_predict_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_predict_epoch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the predict epoch ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_predict_epoch_start">
+<span class="sig-name descname"><span class="pre">on_predict_epoch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_predict_epoch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the predict epoch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_predict_start">
+<span class="sig-name descname"><span class="pre">on_predict_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_predict_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the predict begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_sanity_check_end">
+<span class="sig-name descname"><span class="pre">on_sanity_check_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_sanity_check_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the validation sanity check ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_sanity_check_start">
+<span class="sig-name descname"><span class="pre">on_sanity_check_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_sanity_check_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the validation sanity check starts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_save_checkpoint">
+<span class="sig-name descname"><span class="pre">on_save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_save_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when saving a checkpoint to give you a chance to store anything else you might want to save.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trainer</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> instance.</p></li>
+<li><p><strong>pl_module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code> instance.</p></li>
+<li><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the checkpoint dictionary that will be saved.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_test_batch_end">
+<span class="sig-name descname"><span class="pre">on_test_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_test_batch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the test batch ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_test_batch_start">
+<span class="sig-name descname"><span class="pre">on_test_batch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_test_batch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the test batch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_test_end">
+<span class="sig-name descname"><span class="pre">on_test_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_test_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the test ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_test_epoch_end">
+<span class="sig-name descname"><span class="pre">on_test_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_test_epoch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the test epoch ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_test_epoch_start">
+<span class="sig-name descname"><span class="pre">on_test_epoch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_test_epoch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the test epoch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_test_start">
+<span class="sig-name descname"><span class="pre">on_test_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_test_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the test begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_train_batch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the train batch ends.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The value <code class="docutils literal notranslate"><span class="pre">outputs[&quot;loss&quot;]</span></code> here will be the normalized value w.r.t <code class="docutils literal notranslate"><span class="pre">accumulate_grad_batches</span></code> of the
+loss returned from <code class="docutils literal notranslate"><span class="pre">training_step</span></code>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_train_batch_start">
+<span class="sig-name descname"><span class="pre">on_train_batch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_train_batch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the train batch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_train_end">
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_train_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the train ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_train_epoch_end">
+<span class="sig-name descname"><span class="pre">on_train_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_train_epoch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the train epoch ends.</p>
+<p>To access all batch outputs at the end of the epoch, you can cache step outputs as an attribute of the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">pytorch_lightning.core.LightningModule</span></code> and access them in this hook:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyLightningModule</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_step_outputs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">training_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="o">...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_step_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span>
+
+<span class="k">class</span> <span class="nc">MyCallback</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">Callback</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">on_train_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">):</span>
+        <span class="c1"># do something with all training_step outputs, for example:</span>
+        <span class="n">epoch_mean</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">pl_module</span><span class="o">.</span><span class="n">training_step_outputs</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">pl_module</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;training_epoch_mean&quot;</span><span class="p">,</span> <span class="n">epoch_mean</span><span class="p">)</span>
+        <span class="c1"># free up the memory</span>
+        <span class="n">pl_module</span><span class="o">.</span><span class="n">training_step_outputs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_train_epoch_start">
+<span class="sig-name descname"><span class="pre">on_train_epoch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_train_epoch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the train epoch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_train_start">
+<span class="sig-name descname"><span class="pre">on_train_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_train_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the train begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_validation_batch_end">
+<span class="sig-name descname"><span class="pre">on_validation_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_validation_batch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the validation batch ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_validation_batch_start">
+<span class="sig-name descname"><span class="pre">on_validation_batch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_validation_batch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the validation batch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_validation_end">
+<span class="sig-name descname"><span class="pre">on_validation_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_validation_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the validation loop ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_validation_epoch_end">
+<span class="sig-name descname"><span class="pre">on_validation_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_validation_epoch_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the val epoch ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_validation_epoch_start">
+<span class="sig-name descname"><span class="pre">on_validation_epoch_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_validation_epoch_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the val epoch begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.on_validation_start">
+<span class="sig-name descname"><span class="pre">on_validation_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.on_validation_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the validation loop begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.predict_description">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict_description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.predict_description" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.predict_progress_bar">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict_progress_bar</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tqdm.asyncio.tqdm_asyncio</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.predict_progress_bar" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tqdm_asyncio</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.print">
+<span class="sig-name descname"><span class="pre">print</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'</span> <span class="pre">'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.print" title="Permalink to this definition">¶</a></dt>
+<dd><p>You should provide a way to print without breaking the progress bar.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.process_position">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process_position</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.process_position" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.refresh_rate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">refresh_rate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.refresh_rate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.reset_dataloader_idx_tracker">
+<span class="sig-name descname"><span class="pre">reset_dataloader_idx_tracker</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.reset_dataloader_idx_tracker" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.sanity_check_description">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sanity_check_description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.sanity_check_description" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.setup">
+<span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when fit, validate, test, predict, or tune begins.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.state_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when saving a checkpoint, implement to generate callback’s <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dictionary containing callback state.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.state_key">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.state_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifier for the state of the callback.</p>
+<p>Used to store and retrieve a callback’s state from the checkpoint dictionary by
+<code class="docutils literal notranslate"><span class="pre">checkpoint[&quot;callbacks&quot;][state_key]</span></code>. Implementations of a callback need to provide a unique state key if 1)
+the callback has state and 2) it is desired to maintain the state of multiple instances of that callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.teardown">
+<span class="sig-name descname"><span class="pre">teardown</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.teardown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when fit, validate, test, predict, or tune ends.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.test_description">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.test_description" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.test_progress_bar">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_progress_bar</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tqdm.asyncio.tqdm_asyncio</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.test_progress_bar" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tqdm_asyncio</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.total_predict_batches_current_dataloader">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_predict_batches_current_dataloader</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.total_predict_batches_current_dataloader" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total number of prediction batches, which may change from epoch to epoch for current dataloader.</p>
+<p>Use this to set the total number of iterations in the progress bar. Can return <code class="docutils literal notranslate"><span class="pre">inf</span></code> if the predict dataloader
+is of infinite size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.total_test_batches_current_dataloader">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_test_batches_current_dataloader</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.total_test_batches_current_dataloader" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total number of testing batches, which may change from epoch to epoch for current dataloader.</p>
+<p>Use this to set the total number of iterations in the progress bar. Can return <code class="docutils literal notranslate"><span class="pre">inf</span></code> if the test dataloader is
+of infinite size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.total_train_batches">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_train_batches</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.total_train_batches" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total number of training batches, which may change from epoch to epoch.</p>
+<p>Use this to set the total number of iterations in the progress bar. Can return <code class="docutils literal notranslate"><span class="pre">inf</span></code> if the training
+dataloader is of infinite size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.total_val_batches">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_val_batches</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.total_val_batches" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total number of validation batches, which may change from epoch to epoch for all val dataloaders.</p>
+<p>Use this to set the total number of iterations in the progress bar. Can return <code class="docutils literal notranslate"><span class="pre">inf</span></code> if the predict dataloader
+is of infinite size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.total_val_batches_current_dataloader">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_val_batches_current_dataloader</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.total_val_batches_current_dataloader" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total number of validation batches, which may change from epoch to epoch for current dataloader.</p>
+<p>Use this to set the total number of iterations in the progress bar. Can return <code class="docutils literal notranslate"><span class="pre">inf</span></code> if the validation
+dataloader is of infinite size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.train_description">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.train_description" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.train_progress_bar">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_progress_bar</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tqdm.asyncio.tqdm_asyncio</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.train_progress_bar" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tqdm_asyncio</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.trainer">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">trainer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pytorch_lightning.trainer.trainer.Trainer</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.trainer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.val_progress_bar">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">val_progress_bar</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tqdm.asyncio.tqdm_asyncio</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.val_progress_bar" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tqdm_asyncio</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.callbacks.TFMProgressBar.validation_description">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validation_description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.callbacks.TFMProgressBar.validation_description" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.utils.historical_forecasts.utils.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">&lt;no title&gt;</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.utils.likelihood_models.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Likelihood Models</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

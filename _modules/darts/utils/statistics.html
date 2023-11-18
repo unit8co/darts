@@ -317,13 +317,14 @@
 <span class="sd">        Only compatible with ``ADDITIVE`` model type.</span>
 <span class="sd">    kwargs</span>
 <span class="sd">        Other keyword arguments are passed down to the decomposition method.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    Tuple[TimeSeries, TimeSeries]</span>
 <span class="sd">        A tuple of (trend, seasonal) time series.</span>
 
 <span class="sd">    References</span>
-<span class="sd">    -------</span>
+<span class="sd">    ----------</span>
 <span class="sd">    .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</span>
 <span class="sd">    .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</span>
 <span class="sd">    .. [3] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html</span>
@@ -415,6 +416,7 @@
 <span class="sd">        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enums member.</span>
 <span class="sd">        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.</span>
 <span class="sd">        Defaults ``ModelMode.MULTIPLICATIVE``.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
@@ -471,10 +473,12 @@
 <span class="sd">        Defaults to &quot;naive&quot;</span>
 <span class="sd">    kwargs</span>
 <span class="sd">        Other keyword arguments are passed down to the decomposition method.</span>
-<span class="sd">     Returns</span>
+
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
 <span class="sd">        A new TimeSeries instance that corresponds to the seasonality-adjusted &#39;ts&#39;.</span>
+
 <span class="sd">    References</span>
 <span class="sd">    -------</span>
 <span class="sd">    .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</span>
@@ -521,6 +525,7 @@
 <span class="sd">        Defaults to &quot;naive&quot;</span>
 <span class="sd">    kwargs</span>
 <span class="sd">        Other keyword arguments are passed down to the decomposition method.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
@@ -785,7 +790,7 @@
 <span class="sd">    axis</span>
 <span class="sd">        Optionally, an axis object to plot the ACF on.</span>
 <span class="sd">    default_formatting</span>
-<span class="sd">        Whether or not to use the darts default scheme.</span>
+<span class="sd">        Whether to use the darts default scheme.</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -889,7 +894,7 @@
 <span class="sd">    axis</span>
 <span class="sd">        Optionally, an axis object to plot the ACF on.</span>
 <span class="sd">    default_formatting</span>
-<span class="sd">        Whether or not to use the darts default scheme.</span>
+<span class="sd">        Whether to use the darts default scheme.</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -1056,7 +1061,7 @@
 <span class="sd">    fill_nan</span>
 <span class="sd">        A boolean value indicating whether NaN values should be filled in the residuals.</span>
 <span class="sd">    default_formatting</span>
-<span class="sd">        Whether or not to use the darts default scheme.</span>
+<span class="sd">        Whether to use the darts default scheme.</span>
 <span class="sd">    acf_max_lag</span>
 <span class="sd">        The maximum lag to be displayed in the ACF plot. Must be less than residuals length.</span>
 <span class="sd">    &quot;&quot;&quot;</span>

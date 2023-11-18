@@ -397,6 +397,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
        Missing Values Filler
       </a>
@@ -679,11 +684,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
-       TorchForecastingModel
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
        Transformer Model
       </a>
@@ -956,7 +956,7 @@ If set to False, the confidence interval can be used to test for randomness
 (i.e. there is no time dependence in the data) of the data.</p></li>
 <li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
 <li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
-<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to use the darts default scheme.</p></li>
+<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1033,7 +1033,7 @@ correction.</p></li>
 <li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
 <li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
 <li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
-<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to use the darts default scheme.</p></li>
+<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1065,7 +1065,7 @@ be interpolated.</p>
 <li><p><strong>residuals</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Univariate TimeSeries instance representing residuals.</p></li>
 <li><p><strong>num_bins</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer value determining the number of bins in the histogram.</p></li>
 <li><p><strong>fill_nan</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – A boolean value indicating whether NaN values should be filled in the residuals.</p></li>
-<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to use the darts default scheme.</p></li>
+<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
 <li><p><strong>acf_max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum lag to be displayed in the ACF plot. Must be less than residuals length.</p></li>
 </ul>
 </dd>
@@ -1117,11 +1117,14 @@ Defaults SeasonalityMode.MULTIPLICATIVE.</p></li>
 - “naive” : Seasonal decomposition using moving averages <a class="reference internal" href="#rf4f084a62862-1" id="id7">[1]</a>.
 - “STL” : Season-Trend decomposition using LOESS <a class="reference internal" href="#rf4f084a62862-2" id="id8">[2]</a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.
 Defaults to “naive”</p></li>
-<li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.
-Returns</p></li>
-<li><p><strong>-------</strong> – </p></li>
-<li><p><strong>TimeSeries</strong> – A new TimeSeries instance that corresponds to the seasonality-adjusted ‘ts’.</p></li>
+<li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new TimeSeries instance that corresponds to the seasonality-adjusted ‘ts’.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
 <p class="rubric">References</p>
@@ -1131,11 +1134,6 @@ Returns</p></li>
 </dd>
 <dt class="label" id="rf4f084a62862-2"><span class="brackets"><a class="fn-backref" href="#id8">2</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>

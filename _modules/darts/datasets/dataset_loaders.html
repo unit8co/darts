@@ -198,8 +198,10 @@
     <span class="n">format_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="c1"># used to indicate the freq when we already know it</span>
     <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="c1"># a custom function to handling non-csv based datasets</span>
+    <span class="c1"># a custom function handling non-csv based datasets</span>
     <span class="n">pre_process_zipped_csv_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># a custom function handling csv based datasets</span>
+    <span class="n">pre_process_csv_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="c1"># multivariate</span>
     <span class="n">multivariate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
@@ -216,7 +218,9 @@
 
     <span class="n">_DEFAULT_DIRECTORY</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.darts/datasets/&quot;</span><span class="p">)))</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span> <span class="o">=</span> <span class="n">metadata</span>
         <span class="k">if</span> <span class="n">root_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_root_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">DatasetLoader</span><span class="o">.</span><span class="n">_DEFAULT_DIRECTORY</span>
@@ -298,7 +302,13 @@
                 <span class="s2">&quot;Could not download the dataset. Reason:&quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
             <span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">pre_process_csv_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">pre_process_csv_fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">())</span>
+
     <span class="k">def</span> <span class="nf">_download_zip_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">pre_process_csv_fn</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Loading a ZIP file does not use the pre_process_csv_fn&quot;</span><span class="p">)</span>
+
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span>
@@ -353,7 +363,9 @@
 
 
 <div class="viewcode-block" id="DatasetLoaderCSV"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV">[docs]</a><span class="k">class</span> <span class="nc">DatasetLoaderCSV</span><span class="p">(</span><span class="n">DatasetLoader</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_load_from_disk</span><span class="p">(</span>

@@ -195,6 +195,7 @@
 <span class="sd">                input_chunk_length=24,</span>
 <span class="sd">                output_chunk_length=12,</span>
 <span class="sd">                attribute=&#39;month&#39;</span>
+<span class="sd">                tz=&#39;CET&#39;</span>
 <span class="sd">            )</span>
 
 <span class="sd">            past_covariates_train = encoder.encode_train(</span>
@@ -242,6 +243,8 @@
 <span class="sd">        attribute</span>
 <span class="sd">            An attribute of `pd.DatetimeIndex`: see all available attributes in</span>
 <span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, convert the time zone naive index to a time zone `tz` before applying the encoder.</span>
 <span class="sd">*   `CyclicTemporalEncoder`</span>
 <span class="sd">        Adds cyclic pd.DatetimeIndex attribute information deriveed from `series.time_index`.</span>
 <span class="sd">        Adds 2 columns, corresponding to sin and cos encodings, to uniquely describe the underlying attribute.</span>
@@ -251,6 +254,8 @@
 <span class="sd">            An attribute of `pd.DatetimeIndex` that follows a cyclic pattern. One of (&#39;month&#39;, &#39;day&#39;, &#39;weekday&#39;,</span>
 <span class="sd">            &#39;dayofweek&#39;, &#39;day_of_week&#39;, &#39;hour&#39;, &#39;minute&#39;, &#39;second&#39;, &#39;microsecond&#39;, &#39;nanosecond&#39;, &#39;quarter&#39;,</span>
 <span class="sd">            &#39;dayofyear&#39;, &#39;day_of_year&#39;, &#39;week&#39;, &#39;weekofyear&#39;, &#39;week_of_year&#39;).</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, convert the time zone naive index to a time zone `tz` before applying the encoder.</span>
 <span class="sd">*   `IntegerIndexEncoder`</span>
 <span class="sd">        Adds the relative index positions as integer values (positions) derived from `series` time index.</span>
 <span class="sd">        `series` can either have a pd.DatetimeIndex or an integer index.</span>
@@ -288,6 +293,7 @@
 <span class="sd">    *   &#39;position&#39; for `IntegerIndexEncoder`</span>
 <span class="sd">    *   &#39;custom&#39; for `CallableIndexEncoder`</span>
 <span class="sd">    *   &#39;transformer&#39; for a transformer</span>
+<span class="sd">    *   &#39;tz&#39; for applying a time zone conversion</span>
 <span class="sd">*   inner keys: covariates type</span>
 
 <span class="sd">    *   &#39;past&#39; for past covariates</span>
@@ -309,7 +315,8 @@
 <span class="sd">        &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">        &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">        &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
-<span class="sd">        &#39;transformer&#39;: Scaler()</span>
+<span class="sd">        &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">        &#39;tz&#39;: &#39;CET&#39;,</span>
 <span class="sd">    }</span>
 
 <span class="sd">    model = SomeTorchForecastingModel(..., add_encoders=add_encoders)</span>
@@ -351,6 +358,7 @@
 <span class="n">VALID_TIME_PARAMS</span> <span class="o">=</span> <span class="p">[</span><span class="n">FUTURE</span><span class="p">,</span> <span class="n">PAST</span><span class="p">]</span>
 <span class="n">VALID_ENCODER_DTYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span>
 
+<span class="n">TZ_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tz&quot;</span><span class="p">]</span>
 <span class="n">TRANSFORMER_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;transformer&quot;</span><span class="p">]</span>
 <span class="n">VALID_TRANSFORMER_DTYPES</span> <span class="o">=</span> <span class="n">FittableDataTransformer</span>
 <span class="n">INTEGER_INDEX_ATTRIBUTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;relative&quot;</span><span class="p">]</span>
@@ -359,7 +367,12 @@
 <div class="viewcode-block" id="CyclicTemporalEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder">[docs]</a><span class="k">class</span> <span class="nc">CyclicTemporalEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`CyclicTemporalEncoder`: Cyclic encoding of time series datetime attributes.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span>
+        <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.</span>
 
@@ -375,9 +388,12 @@
 <span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
 <span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
 <span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">index_generator</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tz</span> <span class="o">=</span> <span class="n">tz</span>
 
     <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">target_end</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span>
@@ -393,6 +409,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">+</span> <span class="s2">&quot;_sin&quot;</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">+</span> <span class="s2">&quot;_cos&quot;</span><span class="p">,</span>
             <span class="p">],</span>
+            <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tz</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -422,6 +439,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -447,6 +465,8 @@
 <span class="sd">            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.</span>
 <span class="sd">            Only required for :class:`RegressionModel`.</span>
 <span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariatesIndexGenerator</span><span class="p">(</span>
@@ -455,6 +475,7 @@
                 <span class="n">lags_covariates</span><span class="o">=</span><span class="n">lags_covariates</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span>
+            <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -467,6 +488,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -492,6 +514,8 @@
 <span class="sd">            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.</span>
 <span class="sd">            Only required for :class:`RegressionModel`.</span>
 <span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariatesIndexGenerator</span><span class="p">(</span>
@@ -500,6 +524,7 @@
                 <span class="n">lags_covariates</span><span class="o">=</span><span class="n">lags_covariates</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span>
+            <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -508,7 +533,12 @@
 <span class="sd">    Requires the underlying TimeSeries to have a pd.DatetimeIndex</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span>
+        <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -522,9 +552,12 @@
 <span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
 <span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
 <span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">index_generator</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tz</span> <span class="o">=</span> <span class="n">tz</span>
 
     <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">target_end</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span>
@@ -536,6 +569,7 @@
             <span class="n">attribute</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">with_columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">,</span>
+            <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tz</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -565,6 +599,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -590,6 +625,8 @@
 <span class="sd">            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.</span>
 <span class="sd">            Only required for :class:`RegressionModel`.</span>
 <span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariatesIndexGenerator</span><span class="p">(</span>
@@ -598,6 +635,7 @@
                 <span class="n">lags_covariates</span><span class="o">=</span><span class="n">lags_covariates</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span>
+            <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -610,6 +648,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tz</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -635,6 +674,8 @@
 <span class="sd">            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.</span>
 <span class="sd">            Only required for :class:`RegressionModel`.</span>
 <span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.</span>
+<span class="sd">        tz</span>
+<span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariatesIndexGenerator</span><span class="p">(</span>
@@ -643,6 +684,7 @@
                 <span class="n">lags_covariates</span><span class="o">=</span><span class="n">lags_covariates</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span>
+            <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -734,6 +776,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -777,6 +820,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -880,6 +924,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -926,6 +971,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -1004,6 +1050,9 @@
 <span class="sd">            &lt;darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer&gt;` such as Scaler() or</span>
 <span class="sd">            BoxCox(). The transformers will be fitted on the training dataset when calling calling `model.fit()`.</span>
 <span class="sd">            The training, validation and inference datasets are then transformed equally.</span>
+<span class="sd">        Supported time zone:</span>
+<span class="sd">            Optionally, apply a time zone conversion with keyword &#39;tz&#39;. This converts the time zone-naive index to a</span>
+<span class="sd">            timezone `&#39;tz&#39;` before applying the `&#39;cyclic&#39;` or `&#39;datetime_attribute&#39;` temporal encoders.</span>
 
 <span class="sd">        An example of a valid `add_encoders` dict for hourly data:</span>
 
@@ -1016,7 +1065,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;past&#39;: [&#39;hour&#39;], &#39;future&#39;: [&#39;year&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;,</span>
 <span class="sd">                }</span>
 
 <span class="sd">        Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`</span>
@@ -1456,6 +1506,7 @@
 <span class="sd">            * params={&#39;cyclic&#39;: {&#39;past&#39;: [&#39;month&#39;, &#39;dayofweek&#39;, ...], &#39;future&#39;: [same as for &#39;past&#39;]}}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">past_encoders</span><span class="p">,</span> <span class="n">future_encoders</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_input_encoders</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">tz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_timezone</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">past_encoders</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">future_encoders</span><span class="p">:</span>
             <span class="k">return</span>
@@ -1466,6 +1517,7 @@
                 <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
                 <span class="n">lags_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+                <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">enc_id</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">past_encoders</span>
         <span class="p">]</span>
@@ -1475,6 +1527,7 @@
                 <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
                 <span class="n">lags_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+                <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">enc_id</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">future_encoders</span>
         <span class="p">]</span>
@@ -1536,7 +1589,9 @@
 
         <span class="c1"># check input for invalid encoder types</span>
         <span class="n">invalid_encoders</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">enc</span> <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="n">enc</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ENCODER_KEYS</span> <span class="o">+</span> <span class="n">TRANSFORMER_KEYS</span>
+            <span class="n">enc</span>
+            <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="n">params</span>
+            <span class="k">if</span> <span class="n">enc</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ENCODER_KEYS</span> <span class="o">+</span> <span class="n">TZ_KEYS</span> <span class="o">+</span> <span class="n">TRANSFORMER_KEYS</span>
         <span class="p">]</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">invalid_encoders</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
@@ -1646,6 +1701,21 @@
             <span class="k">for</span> <span class="n">transform</span> <span class="ow">in</span> <span class="n">enc</span><span class="o">.</span><span class="n">accept_transformer</span>
         <span class="p">]</span>
         <span class="k">return</span> <span class="n">transformer</span><span class="p">,</span> <span class="n">transform_past_mask</span><span class="p">,</span> <span class="n">transform_future_mask</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_process_timezone</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Processes input params used at model creation for time zone specification, and returns the time zone.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        params</span>
+<span class="sd">            Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:</span>
+<span class="sd">            * params={&#39;tz&#39;: &#39;CET&#39;}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">params</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">TZ_KEYS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

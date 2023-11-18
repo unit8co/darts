@@ -397,6 +397,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
        Missing Values Filler
       </a>
@@ -676,11 +681,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tide_model.html">
        Time-series Dense Encoder (TiDE)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
-       TorchForecastingModel
       </a>
      </li>
      <li class="toctree-l3">
@@ -1886,10 +1886,10 @@ before passing them to the called method; the masked components will also be aut
 ‘unmasked’ in the returned <cite>TimeSeries</cite>. If <cite>False</cite>, then <cite>component_mask</cite> (if provided) will
 be passed as a keyword argument, but won’t automatically be applied to the input timeseries.
 See <cite>apply_component_mask</cite> method of <cite>BaseDataTransformer</cite> for further details.</p></li>
-<li><p><strong>global_fit</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether all of the <cite>TimeSeries</cite> passed to the <cite>fit()</cite> method should be used to fit
+<li><p><strong>global_fit</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether all <cite>TimeSeries</cite> passed to the <cite>fit()</cite> method should be used to fit
 a <em>single</em> set of parameters, or if a different set of parameters should be independently fitted
 to each provided <cite>TimeSeries</cite>. If <cite>True</cite>, then a <cite>Sequence[TimeSeries]</cite> is passed to <cite>ts_fit</cite>
-and a single set of parameters is fitted using all of the provided <cite>TimeSeries</cite>. If <cite>False</cite>, then
+and a single set of parameters is fitted using all provided <cite>TimeSeries</cite>. If <cite>False</cite>, then
 each <cite>TimeSeries</cite> is individually passed to <cite>ts_fit</cite>, and a different set of fitted parameters
 if yielded for each of these fitting operations. See <cite>ts_fit</cite> for further details.</p></li>
 </ul>
@@ -1905,9 +1905,9 @@ provided with a <cite>Sequence[TimeSeries]</cite>. Consequently, if a <cite>Sequ
 <cite>transform</cite>/<cite>inverse_transform</cite>, each of these <cite>TimeSeries</cite> will be transformed using the exact same set
 of fitted parameters.</p>
 <p>Note that if an invertible <em>and</em> fittable data transformer is to be globally fitted, the data transformer
-class should first inherit from <cite>FittableDataTransformer</cite> and then from <cite>InveritibleDataTransformer</cite>. In
-other words, <cite>MyTransformer(FittableDataTransformer, InveritibleDataTransformer)</cite> is correct, but
-<cite>MyTransformer(InveritibleDataTransformer, FittableDataTransformer)</cite> is <strong>not</strong>. If this is not implemented
+class should first inherit from <cite>FittableDataTransformer</cite> and then from <cite>InvertibleDataTransformer</cite>. In
+other words, <cite>MyTransformer(FittableDataTransformer, InvertibleDataTransformer)</cite> is correct, but
+<cite>MyTransformer(InvertibleDataTransformer, FittableDataTransformer)</cite> is <strong>not</strong>. If this is not implemented
 correctly, then the <cite>global_fit</cite> parameter will not be correctly passed to <cite>FittableDataTransformer</cite>’s
 constructor.</p>
 <p>The <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> and <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> methods are designed to be static methods instead of instance

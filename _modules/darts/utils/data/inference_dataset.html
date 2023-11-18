@@ -170,16 +170,21 @@
 <span class="sd">-----------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">bisect</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.utils.historical_forecasts.utils</span> <span class="kn">import</span> <span class="n">_process_predict_start_points_bounds</span>
 
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">CovariateType</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="InferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.InferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">InferenceDataset</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
@@ -206,7 +211,8 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_covariate_indexer</span><span class="p">(</span>
         <span class="n">target_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">past_start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+        <span class="n">past_end</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
         <span class="n">covariate_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -221,21 +227,24 @@
             <span class="k">else</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span>
         <span class="p">)</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">main_covariate_type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">],</span>
-            <span class="s2">&quot;`main_covariate_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">main_covariate_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">]:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`main_covariate_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># we need to use the time index (datetime or integer) here to match the index with the covariate series</span>
-        <span class="n">past_start</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="n">input_chunk_length</span><span class="p">]</span>
-        <span class="n">past_end</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">main_covariate_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">:</span>
-            <span class="n">future_end</span> <span class="o">=</span> <span class="n">past_end</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="n">output_chunk_length</span><span class="p">)</span> <span class="o">*</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span>
+            <span class="n">future_end</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">past_end</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="n">output_chunk_length</span><span class="p">)</span> <span class="o">*</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">freq</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># CovariateType.FUTURE</span>
-            <span class="n">future_end</span> <span class="o">=</span> <span class="n">past_end</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">)</span> <span class="o">*</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span>
+            <span class="n">future_end</span> <span class="o">=</span> <span class="n">past_end</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">)</span> <span class="o">*</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">freq</span>
 
         <span class="n">future_start</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">past_end</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">future_end</span> <span class="o">!=</span> <span class="n">past_end</span> <span class="k">else</span> <span class="n">future_end</span>
+            <span class="n">past_end</span> <span class="o">+</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">future_end</span> <span class="o">!=</span> <span class="n">past_end</span> <span class="k">else</span> <span class="n">future_end</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">input_chunk_length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># for regression ensemble models</span>
@@ -245,21 +254,27 @@
         <span class="n">case_start</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">future_start</span> <span class="k">if</span> <span class="n">covariate_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span> <span class="k">else</span> <span class="n">past_start</span>
         <span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">covariate_series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">case_start</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;For the given forecasting case, the provided </span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates at dataset index &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">target_idx</span><span class="si">}</span><span class="s2">` do not extend far enough into the past. The </span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;must start at time step `</span><span class="si">{</span><span class="n">case_start</span><span class="si">}</span><span class="s2">`, whereas now they start at time step &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">future_end</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;For the given forecasting horizon `n=</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">`, the provided </span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;at dataset index `</span><span class="si">{</span><span class="n">target_idx</span><span class="si">}</span><span class="s2">` do not extend far enough into the future. As `&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;n &gt; output_chunk_length&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">output_chunk_length</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;n &lt;= output_chunk_length&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;` the </span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates must end at time step `</span><span class="si">{</span><span class="n">future_end</span><span class="si">}</span><span class="s2">`, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;whereas now they end at time step `</span><span class="si">{</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">case_start</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;For the given forecasting case, the provided </span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates at &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;dataset index `</span><span class="si">{</span><span class="n">target_idx</span><span class="si">}</span><span class="s2">` do not extend far enough into the past. The &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates must start at time step `</span><span class="si">{</span><span class="n">case_start</span><span class="si">}</span><span class="s2">`, whereas now &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;they start at time step `</span><span class="si">{</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">future_end</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;For the given forecasting horizon `n=</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">`, the provided </span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;at dataset index `</span><span class="si">{</span><span class="n">target_idx</span><span class="si">}</span><span class="s2">` do not extend far enough into the future. As `&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;n &gt; output_chunk_length&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">output_chunk_length</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;n &lt;= output_chunk_length&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;` the </span><span class="si">{</span><span class="n">main_covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates must end at time step `</span><span class="si">{</span><span class="n">future_end</span><span class="si">}</span><span class="s2">`, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;whereas now they end at time step `</span><span class="si">{</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># extract the index position (index) from time_index value</span>
         <span class="n">covariate_start</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">past_start</span><span class="p">)</span>
@@ -273,6 +288,8 @@
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
@@ -297,6 +314,13 @@
 <span class="sd">            were used during training, the same type of cavariates must be supplied at prediction.</span>
 <span class="sd">        n</span>
 <span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
+<span class="sd">        stride</span>
+<span class="sd">            Optionally, the number of time steps between two consecutive predictions. Can only be used together</span>
+<span class="sd">            with `bounds`.</span>
+<span class="sd">        bounds</span>
+<span class="sd">            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries</span>
+<span class="sd">            per series. The boundaries must represent the positional index of the series (0, len(series)).</span>
+<span class="sd">            If provided, `stride` must be `&gt;=1`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
@@ -320,13 +344,47 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">)),</span>
-            <span class="s2">&quot;The number of target series must be equal to the number of covariates.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">)):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The number of target series must be equal to the number of covariates.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">bounds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">stride</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">bounds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">stride</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Must supply either both `stride` and `bounds`, or none of them.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">=</span> <span class="n">stride</span>
+        <span class="k">if</span> <span class="n">bounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cum_lengths</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">len_preds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cum_lengths</span> <span class="o">=</span> <span class="n">_process_predict_start_points_bounds</span><span class="p">(</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
+                <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">len_preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cum_lengths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">len_preds</span>
+
+<div class="viewcode-block" id="GenericInferenceDataset.find_list_index"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.GenericInferenceDataset.find_list_index">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">find_list_index</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">cumulative_lengths</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">stride</span><span class="p">):</span>
+        <span class="n">list_index</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect_right</span><span class="p">(</span><span class="n">cumulative_lengths</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+        <span class="n">bound_left</span> <span class="o">=</span> <span class="n">bounds</span><span class="p">[</span><span class="n">list_index</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">list_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">stride_idx</span> <span class="o">=</span> <span class="n">index</span> <span class="o">*</span> <span class="n">stride</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stride_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span> <span class="o">-</span> <span class="n">cumulative_lengths</span><span class="p">[</span><span class="n">list_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">stride</span>
+        <span class="k">return</span> <span class="n">list_index</span><span class="p">,</span> <span class="n">bound_left</span> <span class="o">+</span> <span class="n">stride_idx</span></div>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
@@ -336,26 +394,51 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
-        <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;All input series must have length &gt;= `input_chunk_length` (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">series_idx</span><span class="p">,</span> <span class="n">target_start_idx</span><span class="p">,</span> <span class="n">target_end_idx</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">idx</span><span class="p">,</span>
+                <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">series_idx</span><span class="p">,</span> <span class="n">target_end_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_list_index</span><span class="p">(</span>
+                <span class="n">idx</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cum_lengths</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stride</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">target_start_idx</span> <span class="o">=</span> <span class="n">target_end_idx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
+
+        <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">series_idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;All input series must have length &gt;= `input_chunk_length` (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="si">}</span><span class="s2">).&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># extract past target values</span>
+        <span class="n">past_end</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span>
+            <span class="n">target_end_idx</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">target_end_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="p">]</span>
         <span class="n">past_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span>
-            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="p">:</span>
+            <span class="n">target_start_idx</span><span class="p">:</span><span class="n">target_end_idx</span>
         <span class="p">]</span>
 
         <span class="c1"># optionally, extract covariates</span>
         <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_covariate</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
-        <span class="n">covariate_series</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">covariate_series</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">series_idx</span><span class="p">]</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">covariate_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># get start and end indices (integer) of the covariates including historic and future parts</span>
             <span class="n">covariate_start</span><span class="p">,</span> <span class="n">covariate_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_covariate_indexer</span><span class="p">(</span>
-                <span class="n">target_idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
-                <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                <span class="n">target_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">,</span>
+                <span class="n">past_start</span><span class="o">=</span><span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="n">target_start_idx</span><span class="p">],</span>
+                <span class="n">past_end</span><span class="o">=</span><span class="n">past_end</span><span class="p">,</span>
                 <span class="n">covariate_series</span><span class="o">=</span><span class="n">covariate_series</span><span class="p">,</span>
                 <span class="n">covariate_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">covariate_type</span><span class="p">,</span>
                 <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
@@ -398,6 +481,7 @@
             <span class="n">future_covariate</span><span class="p">,</span>
             <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">target_series</span><span class="p">,</span>
+            <span class="n">past_end</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -407,6 +491,8 @@
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
@@ -429,6 +515,13 @@
 <span class="sd">            if the model was trained with past-observed covariates.</span>
 <span class="sd">        n</span>
 <span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
+<span class="sd">        stride</span>
+<span class="sd">            Optionally, the number of time steps between two consecutive predictions. Can only be used together</span>
+<span class="sd">            with `bounds`.</span>
+<span class="sd">        bounds</span>
+<span class="sd">            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries</span>
+<span class="sd">            per series. The boundaries must represent the positional index of the series (0, len(series)).</span>
+<span class="sd">            If provided, `stride` must be `&gt;=1`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
@@ -443,6 +536,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">covariate_type</span><span class="p">,</span>
@@ -460,6 +555,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
 
@@ -470,6 +566,8 @@
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -486,6 +584,13 @@
 <span class="sd">            if the model was trained with future-known covariates.</span>
 <span class="sd">        n</span>
 <span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
+<span class="sd">        stride</span>
+<span class="sd">            Optionally, the number of time steps between two consecutive predictions. Can only be used together</span>
+<span class="sd">            with `bounds`.</span>
+<span class="sd">        bounds</span>
+<span class="sd">            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries</span>
+<span class="sd">            per series. The boundaries must represent the positional index of the series (0, len(series)).</span>
+<span class="sd">            If provided, `stride` must be `&gt;=1`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        use_static_covariates</span>
@@ -497,6 +602,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">covariate_type</span><span class="p">,</span>
@@ -508,9 +615,28 @@
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">]:</span>
-        <span class="n">past_target</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">target_series</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+    <span class="p">]:</span>
+        <span class="p">(</span>
+            <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
+            <span class="n">future_covariate</span><span class="p">,</span>
+            <span class="n">static_covariate</span><span class="p">,</span>
+            <span class="n">target_series</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">future_covariate</span><span class="p">,</span>
+            <span class="n">static_covariate</span><span class="p">,</span>
+            <span class="n">target_series</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="DualCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.DualCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">DualCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
@@ -519,6 +645,8 @@
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -535,6 +663,13 @@
 <span class="sd">            if the model was trained with future-known covariates.</span>
 <span class="sd">        n</span>
 <span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
+<span class="sd">        stride</span>
+<span class="sd">            Optionally, the number of time steps between two consecutive predictions. Can only be used together</span>
+<span class="sd">            with `bounds`.</span>
+<span class="sd">        bounds</span>
+<span class="sd">            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries</span>
+<span class="sd">            per series. The boundaries must represent the positional index of the series (0, len(series)).</span>
+<span class="sd">            If provided, `stride` must be `&gt;=1`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
@@ -549,6 +684,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">HISTORIC_FUTURE</span><span class="p">,</span>
@@ -560,6 +697,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
@@ -576,6 +715,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
         <span class="p">(</span>
             <span class="n">past_target</span><span class="p">,</span>
@@ -583,14 +723,16 @@
             <span class="n">_</span><span class="p">,</span>
             <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">ts_target</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">past_target</span><span class="p">,</span>
             <span class="n">historic_future_covariate</span><span class="p">,</span>
             <span class="n">future_covariate</span><span class="p">,</span>
             <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">ts_target</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -601,6 +743,8 @@
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -623,6 +767,13 @@
 <span class="sd">            if the model was trained with future-known covariates.</span>
 <span class="sd">        n</span>
 <span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
+<span class="sd">        stride</span>
+<span class="sd">            Optionally, the number of time steps between two consecutive predictions. Can only be used together</span>
+<span class="sd">            with `bounds`.</span>
+<span class="sd">        bounds</span>
+<span class="sd">            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries</span>
+<span class="sd">            per series. The boundaries must represent the positional index of the series (0, len(series)).</span>
+<span class="sd">            If provided, `stride` must be `&gt;=1`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
@@ -637,6 +788,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
@@ -648,6 +801,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
@@ -666,6 +821,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
 
         <span class="p">(</span>
@@ -674,8 +830,9 @@
             <span class="n">future_past_covariate</span><span class="p">,</span>
             <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">ts_target</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">past_target</span><span class="p">,</span>
             <span class="n">past_covariate</span><span class="p">,</span>
@@ -684,6 +841,7 @@
             <span class="n">future_past_covariate</span><span class="p">,</span>
             <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">ts_target</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -694,6 +852,8 @@
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -715,6 +875,13 @@
 <span class="sd">            if the model was trained with future-known covariates.</span>
 <span class="sd">        n</span>
 <span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
+<span class="sd">        stride</span>
+<span class="sd">            Optionally, the number of time steps between two consecutive predictions. Can only be used together</span>
+<span class="sd">            with `bounds`.</span>
+<span class="sd">        bounds</span>
+<span class="sd">            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries</span>
+<span class="sd">            per series. The boundaries must represent the positional index of the series (0, len(series)).</span>
+<span class="sd">            If provided, `stride` must be `&gt;=1`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
@@ -729,6 +896,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
@@ -740,6 +909,8 @@
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
@@ -757,6 +928,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
 
         <span class="p">(</span>
@@ -765,8 +937,9 @@
             <span class="n">future_past_covariate</span><span class="p">,</span>
             <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">ts_target</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">past_target</span><span class="p">,</span>
             <span class="n">past_covariate</span><span class="p">,</span>
@@ -774,6 +947,7 @@
             <span class="n">future_past_covariate</span><span class="p">,</span>
             <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">ts_target</span><span class="p">,</span>
+            <span class="n">pred_point</span><span class="p">,</span>
         <span class="p">)</span></div>
 </pre></div>
 

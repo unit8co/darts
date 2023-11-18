@@ -1,0 +1,1359 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Mixed-data sampling (MIDAS) Transformer &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Missing Values Filler" href="darts.dataprocessing.transformers.missing_values_filler.html" />
+    <link rel="prev" title="Mapper and InvertibleMapper" href="darts.dataprocessing.transformers.mappers.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.ad.html">
+   Anomaly Detection
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.aggregators.html">
+     Anomaly Aggregators
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
+       AND Aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
+       Ensemble scikit-learn aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
+       OR Aggregator
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.anomaly_model.html">
+     Anomaly Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <label for="toctree-checkbox-3">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
+       Filtering Anomaly Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
+       Forecasting Anomaly Model
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.detectors.html">
+     Anomaly Detectors
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+    <label for="toctree-checkbox-4">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
+       Quantile Detector
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
+       Threshold Detector
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.scorers.html">
+     Anomaly Scorers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+    <label for="toctree-checkbox-5">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
+       Difference Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
+       k-means Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
+       NLL Cauchy Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
+       NLL Exponential Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
+       NLL Gamma Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
+       NLL Gaussian Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
+       NLL Laplace Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
+       NLL Poisson Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
+       Norm Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
+       PyODScorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
+       WassersteinScorer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.ad.utils.html">
+     Utils for Anomaly Detection
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.dtw.html">
+     Dynamic Time Warping (DTW)
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
+       Dynamic Time Warping (DTW)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
+       DTW Windows
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.encoders.html">
+     Time Axis Encoders
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
+       Window Transformer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     Explainability Result
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.tft_explainer.html">
+     TFT Explainer for Temporal Fusion Transformer (TFTModel)
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+  <label for="toctree-checkbox-13">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+    <label for="toctree-checkbox-15">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
+       D-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
+       N-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
+       Time-series Dense Encoder (TiDE)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
+       XGBoost Model
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <label for="toctree-checkbox-16">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <label for="toctree-checkbox-17">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+
+<nav id="bd-toc-nav">
+    
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.dataprocessing.transformers.midas"></span><section id="mixed-data-sampling-midas-transformer">
+<h1>Mixed-data sampling (MIDAS) Transformer<a class="headerlink" href="#mixed-data-sampling-midas-transformer" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.midas.</span></span><span class="sig-name descname"><span class="pre">MIDAS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">low_freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'MIDAS'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/midas.html#MIDAS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a></p>
+<p>Mixed-data sampling transformer.</p>
+<p>A transformer that converts higher frequency time series to lower frequency using mixed-data sampling; see
+<a class="reference internal" href="#r4834e81d1aa9-1" id="id1">[1]</a> for further details. This allows higher frequency covariates to be used whilst forecasting a lower
+frequency target series. For example, using monthly inputs to forecast a quarterly target.</p>
+<p class="rubric">Notes</p>
+<p>The high input frequency should always relate in the same rate to the low target frequency. For
+example, there’s always three months in quarter. However, the number of days in a month varies per month.
+In the latter case a MIDAS transformation does not work and the transformer will raise an error.</p>
+<p>For anchored low frequency, the transformed series must contain at least 2 samples in order to be
+able to retrieve the original time index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>low_freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The pd.DateOffset string alias corresponding to the target low
+frequency <a class="reference internal" href="#r4834e81d1aa9-2" id="id2">[2]</a>. Passed on to the <cite>rule</cite> parameter of pandas.DataFrame.resample().</p></li>
+<li><p><strong>strip</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to remove the NaNs from the start and the end of the transformed series.</p></li>
+<li><p><strong>drop_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the statics covariates of the input series won’t be transferred to the output.
+This migth be useful for multivariate series with component-specific static covariates.</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – A specific name for the scaler</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input to a method, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
+Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+required amount of time.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">MIDAS</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">monthly_series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">monthly_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
+<span class="go">DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;,</span>
+<span class="go">name=&#39;Month&#39;, freq=&#39;MS&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">monthly_series</span><span class="o">.</span><span class="n">values</span><span class="p">()[:</span><span class="mi">4</span><span class="p">])</span>
+<span class="go">[[112.], [118.], [132.], [129.]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">midas</span> <span class="o">=</span> <span class="n">MIDAS</span><span class="p">(</span><span class="n">low_freq</span><span class="o">=</span><span class="s2">&quot;QS&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">quarterly_series</span> <span class="o">=</span> <span class="n">midas</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">monthly_series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">quarterly_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+<span class="go">DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-04-01&#39;, &#39;1949-07-01&#39;], dtype=&#39;datetime64[ns]&#39;, name=&#39;Month&#39;, freq=&#39;QS-JAN&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">quarterly_series</span><span class="o">.</span><span class="n">values</span><span class="p">()[:</span><span class="mi">3</span><span class="p">])</span>
+<span class="go">[[112. 118. 132.], [129. 121. 135.], [148. 148. 136.]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inversed_quaterly</span> <span class="o">=</span> <span class="n">midas</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">quarterly_series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">inversed_quaterly</span><span class="o">.</span><span class="n">time_index</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
+<span class="go">DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;,</span>
+<span class="go">name=&#39;time&#39;, freq=&#39;MS&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">inversed_quaterly</span><span class="o">.</span><span class="n">values</span><span class="p">()[:</span><span class="mi">4</span><span class="p">])</span>
+<span class="go">[[112.], [118.], [132.], [129.]]</span>
+</pre></div>
+</div>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r4834e81d1aa9-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Mixed-data_sampling">https://en.wikipedia.org/wiki/Mixed-data_sampling</a></p>
+</dd>
+<dt class="label" id="r4834e81d1aa9-2"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p><a class="reference external" href="https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects">https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects</a></p>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.name" title="darts.dataprocessing.transformers.midas.MIDAS.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.apply_component_mask" title="darts.dataprocessing.transformers.midas.MIDAS.apply_component_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_component_mask</span></code></a>(series[, ...])</p></td>
+<td><p>Extracts components specified by <cite>component_mask</cite> from <cite>series</cite></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.fit" title="darts.dataprocessing.transformers.midas.MIDAS.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series, *args[, component_mask])</p></td>
+<td><p>Fits transformer to a (sequence of) <cite>TimeSeries</cite> by calling the user-implemented <cite>ts_fit</cite> method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.fit_transform" title="darts.dataprocessing.transformers.midas.MIDAS.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(series, *args[, component_mask])</p></td>
+<td><p>Fit the transformer to the (sequence of) series and return the transformed input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.inverse_transform" title="darts.dataprocessing.transformers.midas.MIDAS.inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_transform</span></code></a>(series, *args[, ...])</p></td>
+<td><p>Inverse transforms a (sequence of) series by calling the user-implemented <cite>ts_inverse_transform</cite> method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.set_n_jobs" title="darts.dataprocessing.transformers.midas.MIDAS.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.set_verbose" title="darts.dataprocessing.transformers.midas.MIDAS.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.stack_samples" title="darts.dataprocessing.transformers.midas.MIDAS.stack_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stack_samples</span></code></a>(vals)</p></td>
+<td><p>Creates an array of shape <cite>(n_timesteps * n_samples, n_components)</cite> from either a <cite>TimeSeries</cite> or the <cite>array_values</cite> of a <cite>TimeSeries</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.transform" title="darts.dataprocessing.transformers.midas.MIDAS.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args[, component_mask])</p></td>
+<td><p>Transforms a (sequence of) of series by calling the user-implemeneted <cite>ts_transform</cite> method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_fit" title="darts.dataprocessing.transformers.midas.MIDAS.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series, params, *args, **kwargs)</p></td>
+<td><p>MIDAS needs the high frequency period name in order to easily reverse_transform TimeSeries, the parallelization is handled by <cite>transform</cite> and/or <cite>inverse_transform</cite> (see InvertibleDataTransformer.__init__() docstring).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_inverse_transform</span></code></a>(series, params)</p></td>
+<td><p>Transforms series back to high frequency by retrieving the original high frequency and reshaping the values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, params)</p></td>
+<td><p>Transforms series from high to low frequency using a mixed-data sampling approach.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.unapply_component_mask" title="darts.dataprocessing.transformers.midas.MIDAS.unapply_component_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unapply_component_mask</span></code></a>(series, vals[, ...])</p></td>
+<td><p>Adds back components previously removed by <cite>component_mask</cite> in <cite>apply_component_mask</cite> method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.unstack_samples" title="darts.dataprocessing.transformers.midas.MIDAS.unstack_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unstack_samples</span></code></a>(vals[, n_timesteps, ...])</p></td>
+<td><p>Reshapes the 2D array returned by <cite>stack_samples</cite> back into an array of shape <cite>(n_timesteps, n_components, n_samples)</cite>; this 'undoes' the reshaping of <cite>stack_samples</cite>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.apply_component_mask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">apply_component_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.apply_component_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts components specified by <cite>component_mask</cite> from <cite>series</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – input TimeSeries to be fed into transformer.</p></li>
+<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
+extract from <cite>series</cite>. The <cite>i`th component of `series</cite> is kept only if <cite>component_mask[i] = True</cite>.
+If not specified, no masking is performed.</p></li>
+<li><p><strong>return_ts</strong> – Optionally, specifies that a <cite>TimeSeries</cite> should be returned, rather than an <cite>np.ndarray</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>TimeSeries</cite> (if <cite>return_ts = True</cite>) or <cite>np.ndarray</cite> (if <cite>return_ts = False</cite>) with only those components
+specified by <cite>component_mask</cite> remaining.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>masked</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits transformer to a (sequence of) <cite>TimeSeries</cite> by calling the user-implemented <cite>ts_fit</cite> method.</p>
+<p>The fitted parameters returned by <cite>ts_fit</cite> are stored in the <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code> attribute.
+If a <cite>Sequence[TimeSeries]</cite> is passed as the <cite>series</cite> data, then one of two outcomes will occur:</p>
+<blockquote>
+<div><p>1. If the <cite>global_fit</cite> attribute was set to <cite>False</cite>, then a different set of parameters will be
+individually fitted to each <cite>TimeSeries</cite> in the <cite>Sequence</cite>. In this case, this function automatically
+parallelises this fitting process over all of the multiple <cite>TimeSeries</cite> that have been passed.
+2. If the <cite>global_fit</cite> attribute was set to <cite>True</cite>, then all of the <cite>TimeSeries</cite> objects will be used
+fit a single set of parameters.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to fit the transformer on.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_fit" title="darts.dataprocessing.transformers.midas.MIDAS.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p></li>
+<li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the transform should be fitted to.</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_fit" title="darts.dataprocessing.transformers.midas.MIDAS.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted transformer.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer">FittableDataTransformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the (sequence of) series and return the transformed input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series to transform.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments passed to the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> and <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_fit" title="darts.dataprocessing.transformers.midas.MIDAS.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> methods.</p></li>
+<li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the transform should be fitted and applied to.</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments passed to the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> and <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_fit" title="darts.dataprocessing.transformers.midas.MIDAS.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> methods.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inverse transforms a (sequence of) series by calling the user-implemented <cite>ts_inverse_transform</cite> method.</p>
+<p>In case a sequence is passed as input data, this function takes care of parallelising the
+transformation of multiple series in the sequence at the same time. Additionally,
+if the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>InvertibleDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each input `TimeSeries</cite>;
+please refer to ‘Notes’ for further details on component masking.</p>
+<p>Any additionally specified <cite>*args</cite> and <cite>**kwargs</cite> are automatically passed to <cite>ts_inverse_transform</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series be inverse-transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
+<li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies
+which components of the underlying <cite>series</cite> the inverse transform should consider.</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Inverse transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>InvertibleDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each `TimeSeries</cite> input to
+transform; <cite>component_mask`s are simply boolean arrays of shape `(series.n_components,)</cite> that
+specify which components of each <cite>series</cite> should be transformed using <cite>ts_inverse_transform</cite> and which
+components should not. If <cite>component_mask[i]</cite> is <cite>True</cite>, then the <cite>i`th component of each
+`series</cite> will be transformed by <cite>ts_inverse_transform</cite>. Conversely, if <cite>component_mask[i]</cite> is <cite>False</cite>,
+the <cite>i`th component will be removed from each `series</cite> before being passed to <cite>ts_inverse_transform</cite>;
+after transforming this masked series, the untransformed <cite>i`th component will be ‘added back’
+to the output. Note that automatic `component_mask`ing can only be performed if the `ts_inverse_transform</cite>
+does <em>not</em> change the number of timesteps in each series; if this were to happen, then the transformed
+and untransformed components are unable to be concatenated back together along the component axis.</p>
+<p>If <cite>mask_components</cite> was set to <cite>False</cite> when instantiating <cite>InvertibleDataTransformer</cite>, then any provided
+<cite>component_masks</cite> will be passed as a keyword argument <cite>ts_inverse_transform</cite>; the user can then manually
+specify how the <cite>component_mask</cite> should be applied to each series.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the data transformer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.set_n_jobs">
+<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – New n_jobs value.  Set to <cite>-1</cite> for using all the available cores.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.set_verbose">
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity status.</p>
+<p><cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – New verbosity status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.stack_samples">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stack_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.stack_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an array of shape <cite>(n_timesteps * n_samples, n_components)</cite> from
+either a <cite>TimeSeries</cite> or the <cite>array_values</cite> of a <cite>TimeSeries</cite>.</p>
+<p>Each column of the returned array corresponds to a component (dimension)
+of the series and is formed by concatenating all of the samples associated
+with that component together. More specifically, the <cite>i`th column is formed
+by concatenating
+`[component_i_sample_1, component_i_sample_2, …, component_i_sample_n]</cite>.</p>
+<p>Stacking is useful when implementing a transformation that applies the exact same
+change to every timestep in the timeseries. In such cases, the samples of each
+component can be stacked together into a single column, and the transformation can then be
+applied to each column, thereby ‘vectorising’ the transformation over all samples of that component;
+the <cite>unstack_samples</cite> method can then be used to reshape the output. For transformations that depend
+on the <cite>time_index</cite> or the temporal ordering of the observations, stacking should <em>not</em> be employed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>vals</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – <cite>Timeseries</cite> or <cite>np.ndarray</cite> of shape <cite>(n_timesteps, n_components, n_samples)</cite> to be ‘stacked’.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>np.ndarray</cite> of shape <cite>(n_timesteps * n_samples, n_components)</cite>, where the <cite>i`th column is formed
+by concatenating all of the samples of the `i`th component in `vals</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>stacked</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a (sequence of) of series by calling the user-implemeneted <cite>ts_transform</cite> method.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time. Additionally,
+if the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each input `TimeSeries</cite>;
+please refer to ‘Notes’ for further details on component masking.</p>
+<p>Any additionally specified <cite>*args</cite> and <cite>**kwargs</cite> are automatically passed to <cite>ts_transform</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the transform should consider. If the <cite>mask_components</cite>
+attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>, then the component mask
+will be automatically applied to each <cite>TimeSeries</cite> input. Otherwise, <cite>component_mask</cite> will be
+provided as an addition keyword argument to <cite>ts_transform</cite>. See ‘Notes’ for further details.</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each `TimeSeries</cite> input to
+transform; <cite>component_mask`s are simply boolean arrays of shape `(series.n_components,)</cite> that
+specify which components of each <cite>series</cite> should be transformed using <cite>ts_transform</cite> and which
+components should not. If <cite>component_mask[i]</cite> is <cite>True</cite>, then the <cite>i`th component of each
+`series</cite> will be transformed by <cite>ts_transform</cite>. Conversely, if <cite>component_mask[i]</cite> is <cite>False</cite>,
+the <cite>i`th component will be removed from each `series</cite> before being passed to <cite>ts_transform</cite>;
+after transforming this masked series, the untransformed <cite>i`th component will be ‘added back’
+to the output. Note that automatic `component_mask`ing can only be performed if the `ts_transform</cite>
+does <em>not</em> change the number of timesteps in each series; if this were to happen, then the transformed
+and untransformed components are unable to be concatenated back together along the component axis.</p>
+<p>If <cite>mask_components</cite> was set to <cite>False</cite> when instantiating <cite>BaseDataTransformer</cite>, then any provided
+<cite>component_masks</cite> will be passed as a keyword argument <cite>ts_transform</cite>; the user can then manually specify
+how the <cite>component_mask</cite> should be applied to each series.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.ts_fit">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/midas.html#MIDAS.ts_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>MIDAS needs the high frequency period name in order to easily reverse_transform
+TimeSeries, the parallelization is handled by <cite>transform</cite> and/or <cite>inverse_transform</cite>
+(see InvertibleDataTransformer.__init__() docstring).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/midas.html#MIDAS.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms series back to high frequency by retrieving the original high frequency and reshaping the values.</p>
+<p>When converting to/from anchorable offset <a class="reference internal" href="#r11edb9e61e9f-1" id="id3">[1]</a>, the index is rolled backward if the series does not start on
+the anchor date to preserve all the values.</p>
+<dl class="simple">
+<dt>Steps:</dt><dd><ol class="arabic simple">
+<li><p>Reshape the values to flatten the components introduced by the transform</p></li>
+<li><p>Eliminate the rows filled with NaNs, to facilitate time index adjustment</p></li>
+<li><p>Retrieve the original components name</p></li>
+<li><p>When applicable, shift the time index start back in time</p></li>
+<li><p>Generate a new time index with the high frequency</p></li>
+</ol>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r11edb9e61e9f-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets">https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets</a></p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.ts_transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/midas.html#MIDAS.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms series from high to low frequency using a mixed-data sampling approach. Uses and relies on
+pandas.DataFrame.resample.</p>
+<p>When converting to/from anchorable offset <a href="#id5"><span class="problematic" id="id4">[1]_</span></a>, the index is rolled backward if the series does not start on
+the anchor date to preserve all the values.</p>
+<dl class="simple">
+<dt>Steps:</dt><dd><ol class="arabic simple">
+<li><p>Transform series to pd.DataFrame and get frequency string for PeriodIndex</p></li>
+<li><p>Downsample series and then upsample it again</p></li>
+<li><p>Replace input series by unsampled series if it’s not ‘full’</p></li>
+<li><p>Transform every column of the high frequency series into multiple columns for the low frequency series</p></li>
+<li><p>Transform the low frequency series back into a TimeSeries</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.unapply_component_mask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unapply_component_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.unapply_component_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds back components previously removed by <cite>component_mask</cite> in <cite>apply_component_mask</cite> method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – input TimeSeries that was fed into transformer.</p></li>
+<li><p><strong>vals</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – <cite>np.ndarray</cite> or <cite>TimeSeries</cite> to ‘unmask’</p></li>
+<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
+from <cite>series</cite>. If given, insert <cite>vals</cite> back into the columns of the original array. If not specified,
+nothing is ‘unmasked’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>TimeSeries</cite> (if <cite>vals</cite> is a <cite>TimeSeries</cite>) or <cite>np.ndarray</cite> (if <cite>vals</cite> is an <cite>np.ndarray</cite>) with those
+components previously removed by <cite>component_mask</cite> now ‘added back’.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>unmasked</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.unstack_samples">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unstack_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_timesteps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.unstack_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reshapes the 2D array returned by <cite>stack_samples</cite> back into an array of shape
+<cite>(n_timesteps, n_components, n_samples)</cite>; this ‘undoes’ the reshaping of
+<cite>stack_samples</cite>. Either <cite>n_components</cite>, <cite>n_samples</cite>, or <cite>series</cite> must be specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – <cite>np.ndarray</cite> of shape <cite>(n_timesteps * n_samples, n_components)</cite> to be ‘unstacked’.</p></li>
+<li><p><strong>n_timesteps</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the number of timesteps in the array originally passed to <cite>stack_samples</cite>.
+Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
+<li><p><strong>n_samples</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the number of samples in the array originally passed to <cite>stack_samples</cite>.
+Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – Optionally, the <cite>TimeSeries</cite> object used to create <cite>vals</cite>; <cite>n_samples</cite> is inferred
+from this.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>np.ndarray</cite> of shape <cite>(n_timesteps, n_components, n_samples)</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>unstacked</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.dataprocessing.transformers.mappers.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Mapper and InvertibleMapper</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.dataprocessing.transformers.missing_values_filler.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Missing Values Filler</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

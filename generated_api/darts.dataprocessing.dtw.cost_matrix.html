@@ -397,6 +397,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
        Missing Values Filler
       </a>
@@ -676,11 +681,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tide_model.html">
        Time-series Dense Encoder (TiDE)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
-       TorchForecastingModel
       </a>
      </li>
      <li class="toctree-l3">
@@ -2240,6 +2240,13 @@ look-up at each loop iteration.</p>
 <p class="rubric">Notes</p>
 <p>Does not include memory consumed by non-element attributes of the
 array object.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">sys.getsizeof</span></code></dt><dd><p>Memory consumed by the object itself without parents in case view. This does include memory consumed by non-element attributes.</p>
+</dd>
+</dl>
+</div>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">nbytes</span>

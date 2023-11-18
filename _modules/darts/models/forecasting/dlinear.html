@@ -235,14 +235,14 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">input_dim</span><span class="p">,</span>
-        <span class="n">output_dim</span><span class="p">,</span>
-        <span class="n">future_cov_dim</span><span class="p">,</span>
-        <span class="n">static_cov_dim</span><span class="p">,</span>
-        <span class="n">nr_params</span><span class="p">,</span>
-        <span class="n">shared_weights</span><span class="p">,</span>
-        <span class="n">kernel_size</span><span class="p">,</span>
-        <span class="n">const_init</span><span class="p">,</span>
+        <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">future_cov_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">static_cov_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">shared_weights</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">const_init</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;PyTorch module implementing the DLinear architecture.</span>
@@ -256,7 +256,7 @@
 <span class="sd">        future_cov_dim</span>
 <span class="sd">            Number of components in the future covariates</span>
 <span class="sd">        static_cov_dim</span>
-<span class="sd">            Dimensionality of the static covariates</span>
+<span class="sd">            Dimensionality of the static covariates (either component-specific or shared)</span>
 <span class="sd">        nr_params</span>
 <span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used).</span>
 <span class="sd">        shared_weights</span>
@@ -279,8 +279,6 @@
 <span class="sd">        y of shape `(batch_size, output_chunk_length, target_size/output_dim, nr_params)`</span>
 <span class="sd">            Tensor containing the output of the NBEATS module.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="c1"># TODO: could we support future covariates with a simple extension?</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
@@ -309,9 +307,6 @@
             <span class="n">layer_in_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span>
             <span class="n">layer_out_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
 
-            <span class="c1"># for static cov, we take the number of components of the target, times static cov dim</span>
-            <span class="n">layer_in_dim_static_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_cov_dim</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">linear_seasonal</span> <span class="o">=</span> <span class="n">_create_linear_layer</span><span class="p">(</span><span class="n">layer_in_dim</span><span class="p">,</span> <span class="n">layer_out_dim</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">linear_trend</span> <span class="o">=</span> <span class="n">_create_linear_layer</span><span class="p">(</span><span class="n">layer_in_dim</span><span class="p">,</span> <span class="n">layer_out_dim</span><span class="p">)</span>
 
@@ -322,7 +317,7 @@
             <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_cov_dim</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">linear_static_cov</span> <span class="o">=</span> <span class="n">_create_linear_layer</span><span class="p">(</span>
-                <span class="n">layer_in_dim_static_cov</span><span class="p">,</span> <span class="n">layer_out_dim</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">static_cov_dim</span><span class="p">,</span> <span class="n">layer_out_dim</span>
             <span class="p">)</span>
 
     <span class="nd">@io_processor</span>
@@ -412,15 +407,23 @@
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;An implementation of the DLinear model, as presented in [1]_.</span>
 
-<span class="sd">        This implementation is improved by allowing the optional use of past covariates,</span>
-<span class="sd">        future covariates and static covariates, and by making the model optionally probabilistic.</span>
+<span class="sd">        This implementation is improved by allowing the optional use of past covariates (known for</span>
+<span class="sd">        `input_chunk_length` points before prediction time), future covariates (known for `output_chunk_length`</span>
+<span class="sd">        points after prediction time) and static covariates, as well as supporting probabilistic forecasting.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        input_chunk_length</span>
-<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">            Number of time steps in the past to take as a model input (per chunk). Applies to the target</span>
+<span class="sd">            series, and past and/or future covariates (if the model supports it).</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
+<span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
+<span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
+<span class="sd">            using either a one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
+<span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
+<span class="sd">            model&#39;s covariate support).</span>
 <span class="sd">        shared_weights</span>
 <span class="sd">            Whether to use shared weights for all components of multivariate series.</span>
 
@@ -517,7 +520,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        random_state</span>
@@ -635,8 +639,8 @@
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">shared_weights</span>
             <span class="ow">and</span> <span class="p">(</span><span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="s2">&quot;Covariates have been provided, but the model has been built with shared_weights=True.&quot;</span>
-            <span class="o">+</span> <span class="s2">&quot;Please set shared_weights=False to use covariates.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Covariates have been provided, but the model has been built with shared_weights=True. &quot;</span>
+            <span class="s2">&quot;Please set shared_weights=False to use covariates.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
@@ -646,8 +650,11 @@
         <span class="p">)</span>
         <span class="n">future_cov_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
 
-        <span class="c1"># dimension is (component, static_dim), we extract static_dim</span>
-        <span class="n">static_cov_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">static_cov_dim</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># account for component-specific or shared static covariates representation</span>
+            <span class="n">static_cov_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>

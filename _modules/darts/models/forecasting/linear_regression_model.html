@@ -238,9 +238,12 @@
 <span class="sd">            &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
 <span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast</span>
-<span class="sd">            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may</span>
-<span class="sd">            be useful if the covariates don&#39;t extend far enough into the future.</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
+<span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
+<span class="sd">            one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
+<span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
+<span class="sd">            support).</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -261,7 +264,8 @@
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
 <span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
-<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        likelihood</span>
@@ -291,6 +295,7 @@
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        Deterministic forecasting, using past/future covariates (optional)</span>
+
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
 <span class="sd">        &gt;&gt;&gt; from darts.models import LinearRegressionModel</span>
 <span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>

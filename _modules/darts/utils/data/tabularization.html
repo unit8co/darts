@@ -1050,12 +1050,27 @@
             <span class="c1"># for all feature times - these values will become labels.</span>
             <span class="c1"># If `start_time` not included in `time_index_i`, can &#39;manually&#39; calculate</span>
             <span class="c1"># what its index *would* be if `time_index_i` were extended to include that time:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_target_series</span> <span class="ow">and</span> <span class="p">(</span><span class="n">time_index_i</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">start_time</span><span class="p">):</span>
-                <span class="n">start_time_idx</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="nb">len</span><span class="p">(</span><span class="n">time_index_i</span><span class="p">)</span>
-                    <span class="o">-</span> <span class="mi">1</span>
-                    <span class="o">+</span> <span class="p">(</span><span class="n">start_time</span> <span class="o">-</span> <span class="n">time_index_i</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">//</span> <span class="n">series_i</span><span class="o">.</span><span class="n">freq</span>
-                <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_target_series</span> <span class="ow">and</span> <span class="p">(</span><span class="n">time_index_i</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">start_time</span><span class="p">):</span>
+                <span class="c1"># Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’)</span>
+                <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">series_i</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">NaT</span><span class="p">:</span>
+                    <span class="n">start_time_idx</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">time_index_i</span><span class="p">)</span>
+                        <span class="o">-</span> <span class="mi">1</span>
+                        <span class="o">+</span> <span class="p">(</span><span class="n">start_time</span> <span class="o">-</span> <span class="n">time_index_i</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">//</span> <span class="n">series_i</span><span class="o">.</span><span class="n">freq</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Create a temporary DatetimeIndex to extract the actual start index.</span>
+                    <span class="n">start_time_idx</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">time_index_i</span><span class="p">)</span>
+                        <span class="o">-</span> <span class="mi">1</span>
+                        <span class="o">+</span> <span class="nb">len</span><span class="p">(</span>
+                            <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span>
+                                <span class="n">start</span><span class="o">=</span><span class="n">time_index_i</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">series_i</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+                                <span class="n">end</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+                                <span class="n">freq</span><span class="o">=</span><span class="n">series_i</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
             <span class="k">elif</span> <span class="ow">not</span> <span class="n">is_target_series</span> <span class="ow">and</span> <span class="p">(</span><span class="n">time_index_i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">start_time</span><span class="p">):</span>
                 <span class="n">start_time_idx</span> <span class="o">=</span> <span class="n">max_lag_i</span>
             <span class="c1"># If `start_time` *is* included in `time_index_i`, need to binary search `time_index_i`</span>

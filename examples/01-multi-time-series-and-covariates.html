@@ -203,6 +203,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="20-RegressionModel-examples.html">
+   Regression Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
@@ -710,7 +717,8 @@ div.rendered_html tbody tr:hover {
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span> <span class="nn">darts.utils.callbacks</span> <span class="kn">import</span> <span class="n">TFMProgressBar</span>
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">gaussian_timeseries</span><span class="p">,</span>
     <span class="n">linear_timeseries</span><span class="p">,</span>
@@ -742,6 +750,16 @@ div.rendered_html tbody tr:hover {
 <span class="c1"># for reproducibility</span>
 <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">generate_torch_kwargs</span><span class="p">():</span>
+    <span class="c1"># run torch models on CPU, and disable progress bars for all model stages except training.</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;pl_trainer_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">TFMProgressBar</span><span class="p">(</span><span class="n">enable_train_bar_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)],</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -854,7 +872,11 @@ are used it requires these covariates to be known for long enough in advance.</p
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">model_air</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
-    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -865,15 +887,24 @@ are used it requires these covariates to be known for long enough in advance.</p
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+<span></span><span class="n">model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a4e3eea31b2244d4a0b5720a85d8a8b9", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f13ab7bf59874aaba64679b11697e3a8", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+NBEATSModel(generic_architecture=True, num_stacks=30, num_blocks=1, num_layers=4, layer_widths=256, expansion_coefficient_dim=5, trend_polynomial_degree=2, dropout=0.0, activation=ReLU, input_chunk_length=24, output_chunk_length=12, n_epochs=200, random_state=0, pl_trainer_kwargs={&#39;accelerator&#39;: &#39;cpu&#39;, &#39;callbacks&#39;: [&lt;darts.utils.callbacks.TFMProgressBar object at 0x103d1a710&gt;]})
+</pre></div></div>
 </div>
 <p>And like any other Darts forecasting models, we can then get a forecast by calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. Note that below, we are calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a horizon of 36, which is longer than the model internal <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> of 12. That’s not a problem here - as explained above, in such a case the internal model will simply be called auto-regressively on its own outputs. In this case, it will be called three times so that the three 12-points outputs make up the final 36-points forecast -
 but all of this is done transparently behind the scenes.</p>
@@ -895,12 +926,6 @@ but all of this is done transparently behind the scenes.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9bd036f9ee1a4bb8aa1189902a1fa519", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
 <div class="highlight"><pre>
 MAPE = 8.02%
 </pre></div></div>
@@ -909,7 +934,7 @@ MAPE = 8.02%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_13_2.png" src="../_images/examples_01-multi-time-series-and-covariates_13_2.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_13_1.png" src="../_images/examples_01-multi-time-series-and-covariates_13_1.png" />
 </div>
 </div>
 </section>
@@ -944,7 +969,11 @@ forecasting models.</p>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">model_air_milk</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
-    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -955,15 +984,24 @@ forecasting models.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_air_milk</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+<span></span><span class="n">model_air_milk</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "dfa3b9016acc45f1b9402baa605da2a2", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4d958219d6ba4fec91343c20b80482a5", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+NBEATSModel(generic_architecture=True, num_stacks=30, num_blocks=1, num_layers=4, layer_widths=256, expansion_coefficient_dim=5, trend_polynomial_degree=2, dropout=0.0, activation=ReLU, input_chunk_length=24, output_chunk_length=12, n_epochs=100, random_state=0, pl_trainer_kwargs={&#39;accelerator&#39;: &#39;cpu&#39;, &#39;callbacks&#39;: [&lt;darts.utils.callbacks.TFMProgressBar object at 0x2af748f10&gt;]})
+</pre></div></div>
 </div>
 </section>
 <section id="Producing-Forecasts-After-the-End-of-a-Series">
@@ -989,12 +1027,6 @@ forecasting models.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "790ca8d2550e4d3590473ae4965f56ac", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
 <div class="highlight"><pre>
 MAPE = 7.58%
 </pre></div></div>
@@ -1003,7 +1035,7 @@ MAPE = 7.58%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_20_2.png" src="../_images/examples_01-multi-time-series-and-covariates_20_2.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_20_1.png" src="../_images/examples_01-multi-time-series-and-covariates_20_1.png" />
 </div>
 </div>
 <section id="Wait…-does-this-mean-that-milk-production-helps-to-predict-air-traffic??">
@@ -1020,15 +1052,18 @@ MAPE = 7.58%
 
 <span class="n">any_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;&quot;any series, really&quot;&#39;</span><span class="p">)</span>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7b2b34bb24c640bf89edb604b75de9fc", "version_major": 2, "version_minor": 0}</script></div>
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x2af20d5d0&gt;
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1047,15 +1082,18 @@ MAPE = 7.58%
 <span></span><span class="n">pred_list</span> <span class="o">=</span> <span class="n">model_air_milk</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">])</span>
 <span class="k">for</span> <span class="n">series</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pred_list</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;air passengers&quot;</span><span class="p">,</span> <span class="s2">&quot;milk production&quot;</span><span class="p">]):</span>
     <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;forecast </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0cbde1e25960435ab7b191ba3d2b5281", "version_major": 2, "version_minor": 0}</script></div>
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x2b56bb9d0&gt;
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1088,19 +1126,25 @@ MAPE = 7.58%
 <span class="n">air_covariates</span> <span class="o">=</span> <span class="n">air_year</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">air_month</span><span class="p">)</span>
 <span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">milk_year</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">milk_month</span><span class="p">)</span>
 
-<span class="c1"># scale them between 0 and 1:</span>
-<span class="n">scaler_dt_air</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
-<span class="n">air_covariates</span> <span class="o">=</span> <span class="n">scaler_dt_air</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">air_covariates</span><span class="p">)</span>
-
-<span class="n">scaler_dt_milk</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
-<span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">scaler_dt_milk</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">milk_covariates</span><span class="p">)</span>
-
 <span class="c1"># split in train/validation sets:</span>
 <span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">air_val_covariates</span> <span class="o">=</span> <span class="n">air_covariates</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">air_covariates</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
 <span class="n">milk_train_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">milk_covariates</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span>
     <span class="n">milk_covariates</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:],</span>
 <span class="p">)</span>
+
+<span class="c1"># scale them between 0 and 1:</span>
+<span class="n">scaler_covariates</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span> <span class="o">=</span> <span class="n">scaler_covariates</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">air_val_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span> <span class="o">=</span> <span class="n">scaler_covariates</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">air_val_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># concatenate for the full scaled series; we can feed this to model.fit()/predict() as Darts will extract the required covariates for you</span>
+<span class="n">air_covariates</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">air_val_covariates</span><span class="p">])</span>
+<span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="n">milk_train_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span><span class="p">])</span>
 
 <span class="c1"># plot the covariates:</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -1109,22 +1153,31 @@ MAPE = 7.58%
 
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
 <span class="n">milk_covariates</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Milk production covariates (year and month)&quot;</span><span class="p">);</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Milk production covariates (year and month)&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Milk production covariates (year and month)&#39;)
+</pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_27_0.png" src="../_images/examples_01-multi-time-series-and-covariates_27_0.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_27_1.png" src="../_images/examples_01-multi-time-series-and-covariates_27_1.png" />
 </div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_27_1.png" src="../_images/examples_01-multi-time-series-and-covariates_27_1.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_27_2.png" src="../_images/examples_01-multi-time-series-and-covariates_27_2.png" />
 </div>
 </div>
 <p>Good, so for each target series (air and milk), we have built a covariates series having the same time axis and containing the year and the month.</p>
@@ -1134,58 +1187,121 @@ MAPE = 7.58%
 </section>
 <section id="Training-with-Covariates">
 <h2>Training with Covariates<a class="headerlink" href="#Training-with-Covariates" title="Permalink to this headline">¶</a></h2>
-<p>Let’s revisit our example again, this time with covariates. We will build a <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> here:</p>
+<p>Let’s revisit our example again, this time with covariates. We will build a <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> here. We activate checkpointing to keep track of the model performance on a validation set over time.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_pastcov</span> <span class="o">=</span> <span class="n">BlockRNNModel</span><span class="p">(</span>
+<span></span><span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;BlockRNN_test&quot;</span>
+<span class="n">model_pastcov</span> <span class="o">=</span> <span class="n">BlockRNNModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># store model states: latest and best performing of validation set</span>
+    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>Now, to train the model with covariates, it is as simple as providing the covariates (in form of a list matching the target series) as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> argument to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function. The argument is named <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> to remind us that the model can use past values of these covariates in order to make a prediction.</p>
-<div class="nbinput nblast docutils container">
+<p>Now, to train the model with covariates, it is as simple as providing the covariates (in form of a list matching the target series) as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> argument to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function. The argument is named <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> to remind us that the model can use past values of these covariates in order to make a prediction. We can feed the entire air and milk covariates including the train and test sets to model.fit()/predict() as Darts will automatically extract the required covariates
+for you.</p>
+<p>Aditionally, we pass a validation series to avoid model overfitting.</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">model_pastcov</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span>
-    <span class="n">past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span><span class="p">],</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">);</span>
+    <span class="n">past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covariates</span><span class="p">,</span> <span class="n">milk_covariates</span><span class="p">],</span>
+    <span class="n">val_series</span><span class="o">=</span><span class="p">[</span><span class="n">val_air</span><span class="p">,</span> <span class="n">val_milk</span><span class="p">],</span>
+    <span class="n">val_past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covariates</span><span class="p">,</span> <span class="n">milk_covariates</span><span class="p">],</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>Since the covariates can easily be known in the future in this example, we can also define a <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and train it using them as <code class="docutils literal notranslate"><span class="pre">future_covariate</span></code>:</p>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d505fa9d752547b9b04d40c27dd7971a", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+BlockRNNModel(model=LSTM, hidden_dim=25, n_rnn_layers=1, hidden_fc_sizes=None, dropout=0.0, input_chunk_length=24, output_chunk_length=12, n_epochs=100, random_state=0, model_name=BlockRNN_test, save_checkpoints=True, force_reset=True, pl_trainer_kwargs={&#39;accelerator&#39;: &#39;cpu&#39;, &#39;callbacks&#39;: [&lt;darts.utils.callbacks.TFMProgressBar object at 0x2b56bb640&gt;]})
+</pre></div></div>
+</div>
+<p>Now we load the model state with the best performance on the validation set to avoid overfitting.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_futcov</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
+<span></span><span class="n">model_pastcov</span> <span class="o">=</span> <span class="n">BlockRNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Since the covariates can easily be known in the future in this example, we can also define a <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and train it using them as <code class="docutils literal notranslate"><span class="pre">future_covariate</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;RNN_test&quot;</span>
+<span class="n">model_futcov</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
     <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">training_length</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
+    <span class="n">training_length</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># store model states: latest and best performing of validation set</span>
     <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
 <span class="p">)</span>
 
 <span class="n">model_futcov</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span>
-    <span class="n">future_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span><span class="p">],</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">);</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covariates</span><span class="p">,</span> <span class="n">milk_covariates</span><span class="p">],</span>
+    <span class="n">val_series</span><span class="o">=</span><span class="p">[</span><span class="n">val_air</span><span class="p">,</span> <span class="n">val_milk</span><span class="p">],</span>
+    <span class="n">val_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covariates</span><span class="p">,</span> <span class="n">milk_covariates</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "54c586fd5c64491a8a66110cf0131e91", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0.0, training_length=35, batch_size=8, n_epochs=100, random_state=0, input_chunk_length=24, model_name=RNN_test, save_checkpoints=True, force_reset=True, pl_trainer_kwargs={&#39;accelerator&#39;: &#39;cpu&#39;, &#39;callbacks&#39;: [&lt;darts.utils.callbacks.TFMProgressBar object at 0x2b69cb9d0&gt;]})
+</pre></div></div>
+</div>
+<p>Now we load the model state with the best performance on the validation set to avoid overfitting.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_futurecov</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1194,7 +1310,7 @@ MAPE = 7.58%
 <h2>Forecasting with Covariates<a class="headerlink" href="#Forecasting-with-Covariates" title="Permalink to this headline">¶</a></h2>
 <p>similarly, getting a forecast is now only a matter of specifying the <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> argument to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function for the <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1202,21 +1318,30 @@ MAPE = 7.58%
 
 <span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
 <span class="n">pred_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x2b6abd4b0&gt;
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_35_0.png" src="../_images/examples_01-multi-time-series-and-covariates_35_0.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_39_1.png" src="../_images/examples_01-multi-time-series-and-covariates_39_1.png" />
 </div>
 </div>
 <p>Note that here we called <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> that is larger than the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> we trained our model with. We were able to do this because even though <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> uses past covariates, in this case these covariates are also known into the future, so Darts is able to compute the forecasts auto-regressively for <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps in the future.</p>
 <p>For the <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>, we can use a similar approach by just providing <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1226,35 +1351,54 @@ MAPE = 7.58%
 
 <span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
 <span class="n">pred_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x2b6ba5540&gt;
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_37_0.png" src="../_images/examples_01-multi-time-series-and-covariates_37_0.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_41_1.png" src="../_images/examples_01-multi-time-series-and-covariates_41_1.png" />
 </div>
 </div>
 </section>
 <section id="Backtesting-with-Covariates">
 <h2>Backtesting with Covariates<a class="headerlink" href="#Backtesting-with-Covariates" title="Permalink to this headline">¶</a></h2>
-<p>We can also backtest the models using covariates. Say for instance we are interested in evaluating the running accuracy with a horizon of 12 months, starting at 60% of the air series:</p>
+<p>We can also backtest the models using covariates. Say for instance we are interested in evaluating the running accuracy with a horizon of 12 months start at the beginning of the validation series.</p>
+<ul class="simple">
+<li><p>we start at the beginning of the validation series (<code class="docutils literal notranslate"><span class="pre">start=val_air.start_time()</span></code>).</p></li>
+<li><p>each prediction will have length <code class="docutils literal notranslate"><span class="pre">forecast_horizon=12</span></code>.</p></li>
+<li><p>the next prediction will start <code class="docutils literal notranslate"><span class="pre">stride=12</span></code> points after the previous one</p></li>
+<li><p>we keep all predicted values from each forecast (<code class="docutils literal notranslate"><span class="pre">last_points_only=False</span></code>)</p></li>
+<li><p>the we continue until we run out of input data</p></li>
+</ul>
+<p>In the end we concatenate the historical forecasts to get a single continuous (on time axis) time series</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">backtest_pastcov</span> <span class="o">=</span> <span class="n">model_pastcov</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">series_air_scaled</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">,</span>
-    <span class="n">start</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">val_air</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
     <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
-    <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
-
+<span class="n">backtest_pastcov</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">backtest_pastcov</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
     <span class="s2">&quot;MAPE (BlockRNNModel with past covariates) = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
         <span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">backtest_pastcov</span><span class="p">)</span>
@@ -1264,12 +1408,14 @@ MAPE = 7.58%
 <span class="n">backtest_futcov</span> <span class="o">=</span> <span class="n">model_futcov</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">series_air_scaled</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">,</span>
-    <span class="n">start</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">val_air</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
     <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
-    <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
-
+<span class="n">backtest_futcov</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">backtest_futcov</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
     <span class="s2">&quot;MAPE (RNNModel with future covariates) = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
         <span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">backtest_futcov</span><span class="p">)</span>
@@ -1278,18 +1424,37 @@ MAPE = 7.58%
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "21c81307a941415f9081ea7ae8eebecc", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MAPE (BlockRNNModel with past covariates) = 12.09%
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "032d55df0e1746dbb520389d9eeec001", "version_major": 2, "version_minor": 0}</script></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE (BlockRNNModel with past covariates) = 10.48%
-MAPE (RNNModel with future covariates) = 15.21%
+MAPE (RNNModel with future covariates) = 10.26%
 </pre></div></div>
 </div>
 <p>With the selected hyperparameters (and random seed), the <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> using the <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> (MAPE=10.48%) seems to outperform the <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> with <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> (MAPE=15.21%). In order to have a better idea of the forecast obtained with these two models, it’s possible to plot them next to each other:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1308,7 +1473,7 @@ MAPE (RNNModel with future covariates) = 15.21%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_41_0.png" src="../_images/examples_01-multi-time-series-and-covariates_41_0.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_45_0.png" src="../_images/examples_01-multi-time-series-and-covariates_45_0.png" />
 </div>
 </div>
 </section>
@@ -1325,7 +1490,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 <p>Even if not be covered in this example, models can also be trained using several multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> by providing a sequence of such series to the <code class="docutils literal notranslate"><span class="pre">fit</span></code> method (on the condition that the model supports multivatiate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> of course).</p>
 <p>In order to illustrate this example, the <code class="docutils literal notranslate"><span class="pre">ElectricityDataset</span></code> (also available in Darts) will be used. This dataset contains measurements of electric power comsumption (in kW) for 370 clients with a sampling rate of 15 minutes.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1335,7 +1500,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 </div>
 <p>Since this multivariate serie is particularly large (370 components, 140’256 values), we keep only 3 components before resampling the serie with a frequency of 1 hour. Finally, the last 168 values (one week) are retained to shorten the training duration.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1350,7 +1515,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1363,7 +1528,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_46_0.png" src="../_images/examples_01-multi-time-series-and-covariates_46_0.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_50_0.png" src="../_images/examples_01-multi-time-series-and-covariates_50_0.png" />
 </div>
 </div>
 </section>
@@ -1372,7 +1537,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 <h2>Data preparation and inference routine<a class="headerlink" href="#Data-preparation-and-inference-routine" title="Permalink to this headline">¶</a></h2>
 <p>We split the dataset in training (6 days) and validation set (1 day) and normalize the values. In Darts, all the models are trained by calling <code class="docutils literal notranslate"><span class="pre">fit</span></code> and infer using <code class="docutils literal notranslate"><span class="pre">predict</span></code>, it is thus possible to define short function <code class="docutils literal notranslate"><span class="pre">fit_and_pred</span></code> to wrap these two steps.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1395,7 +1560,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 </div>
 <p>Now, we will define and train one <code class="docutils literal notranslate"><span class="pre">VARIMA</span></code> model and one <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> using the function defined above. Since the dataset is Integer-indexed, the <code class="docutils literal notranslate"><span class="pre">trend</span></code> argument for the <code class="docutils literal notranslate"><span class="pre">VARIMA</span></code> model must be set to <code class="docutils literal notranslate"><span class="pre">None</span></code> which is not really problematic since no trend is noticeable in the plot above.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1408,6 +1573,7 @@ have a sufficient span, otherwise Darts will complain.</p>
     <span class="n">n_rnn_layers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
     <span class="n">training_length</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
 <span class="p">)</span>
 
 <span class="c1"># training and prediction with the VARIMA model</span>
@@ -1432,13 +1598,7 @@ MAE (VARIMA) = 0.11
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d55f755857a34d16b945d0bb5d46e878", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bcedba062fab4bf283c799b6499fa0b3", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9b0358f15cc1439f8d84f43b42729a48", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1450,7 +1610,7 @@ MAE (RNN) = 0.10
 </div>
 <p>Since we used a <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> to normalize each component of the multivariate serie, we must not forget to scale them back in order to be able to properly visualise the forecasted values.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1477,7 +1637,7 @@ MAE (RNN) = 0.10
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-multi-time-series-and-covariates_52_0.png" src="../_images/examples_01-multi-time-series-and-covariates_52_0.png" />
+<img alt="../_images/examples_01-multi-time-series-and-covariates_56_0.png" src="../_images/examples_01-multi-time-series-and-covariates_56_0.png" />
 </div>
 </div>
 <p>Due to the parameters selection, favoring speed over accuracy, the quality of the forecast is not great. Using more components from the original dataset or increasing the size of the training set should improve the accuracy of both models. Another possible improvement would be to account for the daily seasonality of the dataset by setting <code class="docutils literal notranslate"><span class="pre">p</span></code> (time lag) to 24 instead of 12 in the <code class="docutils literal notranslate"><span class="pre">VARIMA</span></code> model, and to retrain it.</p>

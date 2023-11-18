@@ -9,6 +9,7 @@
         darts.utils.data
         darts.utils.historical_forecasts
         
+        darts.utils.callbacks
         darts.utils.likelihood_models
         darts.utils.losses
         darts.utils.missing_values

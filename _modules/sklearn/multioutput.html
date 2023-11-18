@@ -489,7 +489,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        routing : MetadataRouter</span>
-<span class="sd">            A :class:`~utils.metadata_routing.MetadataRouter` encapsulating</span>
+<span class="sd">            A :class:`~sklearn.utils.metadata_routing.MetadataRouter` encapsulating</span>
 <span class="sd">            routing information.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
@@ -949,6 +949,11 @@
 <span class="sd">    all of the available features provided to the model plus the predictions</span>
 <span class="sd">    of models that are earlier in the chain.</span>
 
+<span class="sd">    For an example of how to use ``ClassifierChain`` and benefit from its</span>
+<span class="sd">    ensemble, see</span>
+<span class="sd">    :ref:`ClassifierChain on a yeast dataset</span>
+<span class="sd">    &lt;sphx_glr_auto_examples_multioutput_plot_classifier_chain_yeast.py&gt;` example.</span>
+
 <span class="sd">    Read more in the :ref:`User Guide &lt;classifierchain&gt;`.</span>
 
 <span class="sd">    .. versionadded:: 0.19</span>
@@ -1026,7 +1031,7 @@
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    RegressorChain : Equivalent for regression.</span>
-<span class="sd">    MultioutputClassifier : Classifies each output independently rather than</span>
+<span class="sd">    MultiOutputClassifier : Classifies each output independently rather than</span>
 <span class="sd">        chaining.</span>
 
 <span class="sd">    References</span>
@@ -1173,7 +1178,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        routing : MetadataRouter</span>
-<span class="sd">            A :class:`~utils.metadata_routing.MetadataRouter` encapsulating</span>
+<span class="sd">            A :class:`~sklearn.utils.metadata_routing.MetadataRouter` encapsulating</span>
 <span class="sd">            routing information.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
@@ -1322,7 +1327,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        routing : MetadataRouter</span>
-<span class="sd">            A :class:`~utils.metadata_routing.MetadataRouter` encapsulating</span>
+<span class="sd">            A :class:`~sklearn.utils.metadata_routing.MetadataRouter` encapsulating</span>
 <span class="sd">            routing information.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>

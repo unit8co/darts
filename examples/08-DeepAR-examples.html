@@ -203,6 +203,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="20-RegressionModel-examples.html">
+   Regression Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
@@ -634,6 +641,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.callbacks</span> <span class="kn">import</span> <span class="n">TFMProgressBar</span>
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">BlockRNNModel</span>
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
@@ -643,13 +651,23 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
 <span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
 <span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">GaussianLikelihood</span>
-
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">concatenate</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">generate_torch_kwargs</span><span class="p">():</span>
+    <span class="c1"># run torch models on CPU, and disable progress bars for all model stages except training.</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;pl_trainer_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">TFMProgressBar</span><span class="p">(</span><span class="n">enable_train_bar_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)],</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -687,11 +705,20 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: xlabel=&#39;time&#39;&gt;
+</pre></div></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-DeepAR-examples_6_0.png" src="../_images/examples_08-DeepAR-examples_6_0.png" />
+<img alt="../_images/examples_08-DeepAR-examples_6_1.png" src="../_images/examples_08-DeepAR-examples_6_1.png" />
 </div>
 </div>
 <p>In the following we train a probabilistic RNN to predict the targets series in an autoregressive fashion, but also by taking into consideration the modulation of the noise component as a covariate which is known in the future. So the RNN has information on when the noise component of the target is severe, but it doesn’t know the noise component itself. Let’s see if the RNN can make use of this information.</p>
@@ -711,9 +738,10 @@ div.rendered_html tbody tr:hover {
     <span class="n">training_length</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihood</span><span class="p">(),</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">(),</span>
 <span class="p">)</span>
 
-<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target_train</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target_train</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -721,14 +749,15 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2cbc81b7423d49b4a0deebd494ac2034", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8d4415eb84b9406d94ef3aaadbea05eb", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0447
+RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0, training_length=50, batch_size=16, n_epochs=50, optimizer_kwargs={&#39;lr&#39;: 0.001}, random_state=0, input_chunk_length=20, likelihood=GaussianLikelihood(prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0), pl_trainer_kwargs={&#39;accelerator&#39;: &#39;cpu&#39;, &#39;callbacks&#39;: [&lt;darts.utils.callbacks.TFMProgressBar object at 0x2b3386350&gt;]})
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -742,11 +771,20 @@ Training loss: 0.0447
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: xlabel=&#39;time&#39;&gt;
+</pre></div></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-DeepAR-examples_9_0.png" src="../_images/examples_08-DeepAR-examples_9_0.png" />
+<img alt="../_images/examples_08-DeepAR-examples_9_1.png" src="../_images/examples_08-DeepAR-examples_9_1.png" />
 </div>
 </div>
 <p>We can see that, on top of correctly predicting the, granted, simple oscillatory behavior of the target, the RNN correctly expresses more uncertainty in its predictions when the noise component is higher.</p>
@@ -754,7 +792,7 @@ Training loss: 0.0447
 <section id="Daily-energy-production">
 <h2>Daily energy production<a class="headerlink" href="#Daily-energy-production" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -772,38 +810,49 @@ Training loss: 0.0447
 <span class="c1"># convert to float32</span>
 <span class="n">series_en</span> <span class="o">=</span> <span class="n">series_en</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
+<span class="c1"># create train and test splits</span>
+<span class="n">train_en</span><span class="p">,</span> <span class="n">val_en</span> <span class="o">=</span> <span class="n">series_en</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;20170901&quot;</span><span class="p">))</span>
+
 <span class="c1"># scale</span>
 <span class="n">scaler_en</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
-<span class="n">series_en_transformed</span> <span class="o">=</span> <span class="n">scaler_en</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_en</span><span class="p">)</span>
-<span class="n">train_en_transformed</span><span class="p">,</span> <span class="n">val_en_transformed</span> <span class="o">=</span> <span class="n">series_en_transformed</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span>
-    <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;20170901&quot;</span><span class="p">)</span>
-<span class="p">)</span>
+<span class="n">train_en_transformed</span> <span class="o">=</span> <span class="n">scaler_en</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train_en</span><span class="p">)</span>
+<span class="n">val_en_transformed</span> <span class="o">=</span> <span class="n">scaler_en</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val_en</span><span class="p">)</span>
+<span class="n">series_en_transformed</span> <span class="o">=</span> <span class="n">scaler_en</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series_en</span><span class="p">)</span>
 
-<span class="c1"># add the day as a covariate</span>
+<span class="c1"># add the day as a covariate (no scaling required as the day is one-hot-encoded)</span>
 <span class="n">day_series</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span>
-    <span class="n">series_en_transformed</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">series_en</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span>
 <span class="p">)</span>
-<span class="n">scaler_day</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
-<span class="n">day_series</span> <span class="o">=</span> <span class="n">scaler_day</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">day_series</span><span class="p">)</span>
-<span class="n">train_day</span><span class="p">,</span> <span class="n">val_day</span> <span class="o">=</span> <span class="n">day_series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;20170901&quot;</span><span class="p">))</span>
 
-<span class="n">series_en_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">train_en_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="n">val_en_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;validation&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: xlabel=&#39;time&#39;&gt;
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-DeepAR-examples_12_0.png" src="../_images/examples_08-DeepAR-examples_12_0.png" />
+<img alt="../_images/examples_08-DeepAR-examples_12_1.png" src="../_images/examples_08-DeepAR-examples_12_1.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_en</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
+<span></span><span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;LSTM_test&quot;</span>
+<span class="n">model_en</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
     <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">n_rnn_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
@@ -815,16 +864,25 @@ Training loss: 0.0447
     <span class="n">training_length</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
     <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihood</span><span class="p">(),</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># store the latest and best performing epochs</span>
+    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">(),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_en</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train_en_transformed</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">train_day</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span></span><span class="n">model_en</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">train_en_transformed</span><span class="p">,</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
+    <span class="n">val_series</span><span class="o">=</span><span class="n">val_en_transformed</span><span class="p">,</span>
+    <span class="n">val_future_covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -832,31 +890,46 @@ Training loss: 0.0447
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "240675b7978840d0b5136bc7e1743e57", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "19355b24d5154cc0a62362346dcb6c40", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.7328
+RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=2, dropout=0.2, training_length=300, batch_size=16, n_epochs=10, optimizer_kwargs={&#39;lr&#39;: 0.001}, random_state=0, input_chunk_length=300, likelihood=GaussianLikelihood(prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0), model_name=LSTM_test, save_checkpoints=True, force_reset=True, pl_trainer_kwargs={&#39;accelerator&#39;: &#39;cpu&#39;, &#39;callbacks&#39;: [&lt;darts.utils.callbacks.TFMProgressBar object at 0x2c1c97a00&gt;]})
 </pre></div></div>
 </div>
+<p>Let’s load the model at the best performing state</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_en</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Now we perform historical forecasts: - we start predictions at the beginning of the validation series (<code class="docutils literal notranslate"><span class="pre">start=val_en_transformed.start_time()</span></code>) - each prediction will have length <code class="docutils literal notranslate"><span class="pre">forecast_horizon=30</span></code>. - the next prediction will start <code class="docutils literal notranslate"><span class="pre">stride=30</span></code> points ahead - we keep all predicted values from each forecast (<code class="docutils literal notranslate"><span class="pre">last_points_only=False</span></code>) - continue until we run out of input data</p>
+<p>In the end we concatenate the historical forecasts to get a single continuous (on time axis) time series</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">backtest_en</span> <span class="o">=</span> <span class="n">model_en</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">series_en_transformed</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
-    <span class="n">num_samples</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
-    <span class="n">start</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">val_en_transformed</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
+    <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
     <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-    <span class="n">stride</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
     <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="n">backtest_en</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">backtest_en</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -864,18 +937,35 @@ Training loss: 0.7328
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "70e9a2b724ba4db88d1bc05b70788a56", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4dad0c392b7d4c7c93ba7ebb06c266e7", "version_major": 2, "version_minor": 0}</script></div>
 </div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-<span class="n">series_en_transformed</span><span class="p">[</span><span class="mi">1000</span><span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
-<span class="n">backtest_en</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;backtest (H=30)&quot;</span><span class="p">,</span> <span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.99</span><span class="p">)</span>
+<span class="n">val_en_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">backtest_en</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;backtest q0.01 - q0.99&quot;</span><span class="p">,</span> <span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.99</span><span class="p">)</span>
+<span class="n">backtest_en</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;backtest q0.05 - q0.95&quot;</span><span class="p">,</span> <span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x2c0581de0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_08-DeepAR-examples_19_1.png" src="../_images/examples_08-DeepAR-examples_19_1.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">

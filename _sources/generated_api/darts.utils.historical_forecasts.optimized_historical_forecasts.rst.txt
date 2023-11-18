@@ -1,4 +1,0 @@
-
-.. automodule:: darts.utils.historical_forecasts.optimized_historical_forecasts
-   :members:
-   :undoc-members:

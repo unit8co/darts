@@ -399,6 +399,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
        Missing Values Filler
       </a>
@@ -678,11 +683,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tide_model.html">
        Time-series Dense Encoder (TiDE)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
-       TorchForecastingModel
       </a>
      </li>
      <li class="toctree-l3">
@@ -994,7 +994,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.add_datetime_attribute" title="darts.timeseries.TimeSeries.add_datetime_attribute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_datetime_attribute</span></code></a>(attribute[, one_hot, ...])</p></td>
 <td><p>Build a new series with one (or more) additional component(s) that contain an attribute of the time index of the series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.add_holidays" title="darts.timeseries.TimeSeries.add_holidays"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_holidays</span></code></a>(country_code[, prov, state])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.add_holidays" title="darts.timeseries.TimeSeries.add_holidays"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_holidays</span></code></a>(country_code[, prov, state, tz])</p></td>
 <td><p>Adds a binary univariate component to the current series that equals 1 at every index that corresponds to selected country's holiday, and 0 otherwise.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.all_values" title="darts.timeseries.TimeSeries.all_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">all_values</span></code></a>([copy])</p></td>
@@ -1186,8 +1186,8 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.std" title="darts.timeseries.TimeSeries.std"><code class="xref py py-obj docutils literal notranslate"><span class="pre">std</span></code></a>([ddof])</p></td>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the standard deviation of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.strip" title="darts.timeseries.TimeSeries.strip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strip</span></code></a>()</p></td>
-<td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> slice of this deterministic time series, where NaN-only entries at the beginning and the end of the series are removed.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.strip" title="darts.timeseries.TimeSeries.strip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strip</span></code></a>([how])</p></td>
+<td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> slice of this deterministic time series, where NaN-containing entries at the beginning and the end of the series are removed.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.sum" title="darts.timeseries.TimeSeries.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>([axis])</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the sum calculated over the specified axis.</p></td>
@@ -1235,7 +1235,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.add_datetime_attribute">
-<span class="sig-name descname"><span class="pre">add_datetime_attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.add_datetime_attribute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.add_datetime_attribute" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">add_datetime_attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.add_datetime_attribute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.add_datetime_attribute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a new series with one (or more) additional component(s) that contain an attribute
 of the time index of the series.</p>
 <p>The additional components are specified with <cite>attribute</cite>, such as ‘weekday’, ‘day’ or ‘month’.</p>
@@ -1249,6 +1249,7 @@ of the time index of the series.</p>
 <li><p><strong>cyclic</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating whether to add the specified attribute as a cyclic encoding.
 Alternative to one_hot encoding, enable only one of the two.
 (adds 2 columns, corresponding to sin and cos transformation).</p></li>
+<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1262,7 +1263,7 @@ Alternative to one_hot encoding, enable only one of the two.
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.add_holidays">
-<span class="sig-name descname"><span class="pre">add_holidays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">country_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.add_holidays"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.add_holidays" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">add_holidays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">country_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.add_holidays"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.add_holidays" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a binary univariate component to the current series that equals 1 at every index that
 corresponds to selected country’s holiday, and 0 otherwise.</p>
 <p>The frequency of the TimeSeries is daily.</p>
@@ -1274,6 +1275,7 @@ corresponds to selected country’s holiday, and 0 otherwise.</p>
 <li><p><strong>country_code</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The country ISO code</p></li>
 <li><p><strong>prov</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The province</p></li>
 <li><p><strong>state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The state</p></li>
+<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -2618,6 +2620,8 @@ the series, the labels will be mapped to the components in order.</p></li>
 <li><p><strong>max_nr_components</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum number of components of a series to plot. -1 means all components will be plotted.</p></li>
 <li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]) – Optionally, an axis to plot on. If <cite>None</cite>, and <cite>new_plot=False</cite>, will use the current axis. If
 <cite>new_plot=True</cite>, will create a new axis.</p></li>
+<li><p><strong>alpha</strong> – Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+probabilistic series.</p></li>
 <li><p><strong>args</strong> – some positional arguments for the <cite>plot()</cite> method</p></li>
 <li><p><strong>kwargs</strong> – some keyword arguments for the <cite>plot()</cite> method</p></li>
 </ul>
@@ -3128,17 +3132,21 @@ number of elements. By default, ddof is 1.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.strip">
-<span class="sig-name descname"><span class="pre">strip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.strip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.strip" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> slice of this deterministic time series, where NaN-only entries at the beginning
+<span class="sig-name descname"><span class="pre">strip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">how</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.strip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.strip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> slice of this deterministic time series, where NaN-containing entries at the beginning
 and the end of the series are removed. No entries after (and including) the first non-NaN entry and
 before (and including) the last non-NaN entry are removed.</p>
 <p>This method is only applicable to deterministic series (i.e., having 1 sample).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a new series based on the original where NaN-only entries at start and end have been removed</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>how</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Define if the entries containing <cite>NaN</cite> in all the components (‘all’) or in any of the components (‘any’)
+should be stripped. Default: ‘all’</p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a new series based on the original where NaN-containing entries at start and end have been removed</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
 </dd></dl>

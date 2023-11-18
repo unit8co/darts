@@ -399,6 +399,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
        Missing Values Filler
       </a>
@@ -681,11 +686,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.torch_forecasting_model.html">
-       TorchForecastingModel
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
        Transformer Model
       </a>
@@ -869,125 +869,128 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is co
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.children" title="darts.utils.losses.MAELoss.children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code></a>()</p></td>
 <td><p>Returns an iterator over immediate children modules.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.cpu" title="darts.utils.losses.MAELoss.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.compile" title="darts.utils.losses.MAELoss.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Compile this Module's forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.cpu" title="darts.utils.losses.MAELoss.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
 <td><p>Moves all model parameters and buffers to the CPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.cuda" title="darts.utils.losses.MAELoss.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.cuda" title="darts.utils.losses.MAELoss.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the GPU.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.double" title="darts.utils.losses.MAELoss.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.double" title="darts.utils.losses.MAELoss.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">double</span></code> datatype.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.eval" title="darts.utils.losses.MAELoss.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.eval" title="darts.utils.losses.MAELoss.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
 <td><p>Sets the module in evaluation mode.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.extra_repr" title="darts.utils.losses.MAELoss.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.extra_repr" title="darts.utils.losses.MAELoss.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
 <td><p>Set the extra representation of the module</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.float" title="darts.utils.losses.MAELoss.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.float" title="darts.utils.losses.MAELoss.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">float</span></code> datatype.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(inpt, tgt)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(inpt, tgt)</p></td>
 <td><p>Defines the computation performed at every call.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_buffer" title="darts.utils.losses.MAELoss.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_buffer" title="darts.utils.losses.MAELoss.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
 <td><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_extra_state" title="darts.utils.losses.MAELoss.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_extra_state" title="darts.utils.losses.MAELoss.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
 <td><p>Returns any extra state to include in the module's state_dict.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_parameter" title="darts.utils.losses.MAELoss.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_parameter" title="darts.utils.losses.MAELoss.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
 <td><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_submodule" title="darts.utils.losses.MAELoss.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.get_submodule" title="darts.utils.losses.MAELoss.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
 <td><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.half" title="darts.utils.losses.MAELoss.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.half" title="darts.utils.losses.MAELoss.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">half</span></code> datatype.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.ipu" title="darts.utils.losses.MAELoss.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.ipu" title="darts.utils.losses.MAELoss.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the IPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.load_state_dict" title="darts.utils.losses.MAELoss.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.load_state_dict" title="darts.utils.losses.MAELoss.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict, assign])</p></td>
 <td><p>Copies parameters and buffers from <a class="reference internal" href="#darts.utils.losses.MAELoss.state_dict" title="darts.utils.losses.MAELoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.modules" title="darts.utils.losses.MAELoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.modules" title="darts.utils.losses.MAELoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
 <td><p>Returns an iterator over all modules in the network.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_buffers" title="darts.utils.losses.MAELoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_buffers" title="darts.utils.losses.MAELoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_children" title="darts.utils.losses.MAELoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_children" title="darts.utils.losses.MAELoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
 <td><p>Returns an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_modules" title="darts.utils.losses.MAELoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_modules" title="darts.utils.losses.MAELoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
 <td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_parameters" title="darts.utils.losses.MAELoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_parameters" title="darts.utils.losses.MAELoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.parameters" title="darts.utils.losses.MAELoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.parameters" title="darts.utils.losses.MAELoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
 <td><p>Returns an iterator over module parameters.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_backward_hook" title="darts.utils.losses.MAELoss.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_backward_hook" title="darts.utils.losses.MAELoss.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_buffer" title="darts.utils.losses.MAELoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_buffer" title="darts.utils.losses.MAELoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
 <td><p>Adds a buffer to the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_hook" title="darts.utils.losses.MAELoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_hook" title="darts.utils.losses.MAELoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
 <td><p>Registers a forward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_pre_hook" title="darts.utils.losses.MAELoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_pre_hook" title="darts.utils.losses.MAELoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
 <td><p>Registers a forward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_full_backward_hook" title="darts.utils.losses.MAELoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_full_backward_hook" title="darts.utils.losses.MAELoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_full_backward_pre_hook" title="darts.utils.losses.MAELoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_full_backward_pre_hook" title="darts.utils.losses.MAELoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_load_state_dict_post_hook" title="darts.utils.losses.MAELoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_load_state_dict_post_hook" title="darts.utils.losses.MAELoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_module" title="darts.utils.losses.MAELoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_module" title="darts.utils.losses.MAELoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.utils.losses.MAELoss.add_module" title="darts.utils.losses.MAELoss.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_parameter" title="darts.utils.losses.MAELoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_parameter" title="darts.utils.losses.MAELoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
 <td><p>Adds a parameter to the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_state_dict_pre_hook" title="darts.utils.losses.MAELoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_state_dict_pre_hook" title="darts.utils.losses.MAELoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
 <td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.requires_grad_" title="darts.utils.losses.MAELoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.requires_grad_" title="darts.utils.losses.MAELoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.set_extra_state" title="darts.utils.losses.MAELoss.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.set_extra_state" title="darts.utils.losses.MAELoss.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>This function is called from <a class="reference internal" href="#darts.utils.losses.MAELoss.load_state_dict" title="darts.utils.losses.MAELoss.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> to handle any extra state found within the <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.share_memory" title="darts.utils.losses.MAELoss.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.share_memory" title="darts.utils.losses.MAELoss.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
 <td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.state_dict" title="darts.utils.losses.MAELoss.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.state_dict" title="darts.utils.losses.MAELoss.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
 <td><p>Returns a dictionary containing references to the whole state of the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.to" title="darts.utils.losses.MAELoss.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.to" title="darts.utils.losses.MAELoss.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Moves and/or casts the parameters and buffers.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.to_empty" title="darts.utils.losses.MAELoss.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.to_empty" title="darts.utils.losses.MAELoss.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device[, recurse])</p></td>
 <td><p>Moves the parameters and buffers to the specified device without copying storage.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.train" title="darts.utils.losses.MAELoss.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.train" title="darts.utils.losses.MAELoss.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
 <td><p>Sets the module in training mode.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.type" title="darts.utils.losses.MAELoss.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.type" title="darts.utils.losses.MAELoss.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
 <td><p>Casts all parameters and buffers to <code class="xref py py-attr docutils literal notranslate"><span class="pre">dst_type</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.xpu" title="darts.utils.losses.MAELoss.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.xpu" title="darts.utils.losses.MAELoss.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the XPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.zero_grad" title="darts.utils.losses.MAELoss.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
-<td><p>Sets gradients of all model parameters to zero.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.zero_grad" title="darts.utils.losses.MAELoss.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
+<td><p>Resets gradients of all model parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1133,6 +1136,15 @@ are direct members of this module.</p>
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.MAELoss.compile">
+<span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile this Module’s forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>This Module’s <cite>__call__</cite> method is compiled and all arguments are passed as-is
+to <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code> for details on the arguments for this function.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1440,11 +1452,16 @@ copied to that device</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.load_state_dict">
-<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.load_state_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copies parameters and buffers from <a class="reference internal" href="#darts.utils.losses.MAELoss.state_dict" title="darts.utils.losses.MAELoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into
 this module and its descendants. If <code class="xref py py-attr docutils literal notranslate"><span class="pre">strict</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then
 the keys of <a class="reference internal" href="#darts.utils.losses.MAELoss.state_dict" title="darts.utils.losses.MAELoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> must exactly match the keys returned
 by this module’s <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
+the call to <a class="reference internal" href="#darts.utils.losses.MAELoss.load_state_dict" title="darts.utils.losses.MAELoss.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1453,6 +1470,13 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.utils.losses.MAELoss.state_dict" title="darts.utils.losses.MAELoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
+dictionary to their corresponding keys in the module instead
+of copying them inplace into the module’s current parameters and buffers.
+When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
+module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
+Tensors in the state dict are preserved.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1724,7 +1748,7 @@ the buffer is <strong>not</strong> included in the module’s <a class="referenc
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.register_forward_hook">
-<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward hook on the module.</p>
 <p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> or not specified, the input contains only
@@ -1757,6 +1781,9 @@ registered by this method.
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 <li><p><strong>with_kwargs</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the
 kwargs given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>always_call</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be run regardless of
+whether an exception is raised while calling the Module.
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
@@ -1877,7 +1904,7 @@ all hooks registered by this method.</p></li>
 <dd><p>Registers a backward pre-hook on the module.</p>
 <p>The hook will be called every time the gradients for the module are computed.
 The hook should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span> <span class="ow">or</span> <span class="kc">None</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
 <p>The <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> is a tuple. The hook should
@@ -2197,12 +2224,16 @@ only argument)</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.to_empty">
-<span class="sig-name descname"><span class="pre">to_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.to_empty" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">to_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.to_empty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves the parameters and buffers to the specified device without copying storage.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code>) – The desired device of the parameters
-and buffers in this module.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code>) – The desired device of the parameters
+and buffers in this module.</p></li>
+<li><p><strong>recurse</strong> (<em>bool</em>) – Whether parameters and buffers of submodules should
+be recursively moved to the specified device.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>self</p>
@@ -2289,7 +2320,7 @@ copied to that device</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.zero_grad">
 <span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.zero_grad" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets gradients of all model parameters to zero. See similar function
+<dd><p>Resets gradients of all model parameters. See similar function
 under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2339,125 +2370,128 @@ and not their direction.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.children" title="darts.utils.losses.MapeLoss.children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code></a>()</p></td>
 <td><p>Returns an iterator over immediate children modules.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.cpu" title="darts.utils.losses.MapeLoss.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.compile" title="darts.utils.losses.MapeLoss.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Compile this Module's forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.cpu" title="darts.utils.losses.MapeLoss.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
 <td><p>Moves all model parameters and buffers to the CPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.cuda" title="darts.utils.losses.MapeLoss.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.cuda" title="darts.utils.losses.MapeLoss.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the GPU.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.double" title="darts.utils.losses.MapeLoss.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.double" title="darts.utils.losses.MapeLoss.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">double</span></code> datatype.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.eval" title="darts.utils.losses.MapeLoss.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.eval" title="darts.utils.losses.MapeLoss.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
 <td><p>Sets the module in evaluation mode.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.extra_repr" title="darts.utils.losses.MapeLoss.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.extra_repr" title="darts.utils.losses.MapeLoss.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
 <td><p>Set the extra representation of the module</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.float" title="darts.utils.losses.MapeLoss.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.float" title="darts.utils.losses.MapeLoss.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">float</span></code> datatype.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(inpt, tgt)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(inpt, tgt)</p></td>
 <td><p>Defines the computation performed at every call.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_buffer" title="darts.utils.losses.MapeLoss.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_buffer" title="darts.utils.losses.MapeLoss.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
 <td><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_extra_state" title="darts.utils.losses.MapeLoss.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_extra_state" title="darts.utils.losses.MapeLoss.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
 <td><p>Returns any extra state to include in the module's state_dict.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_parameter" title="darts.utils.losses.MapeLoss.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_parameter" title="darts.utils.losses.MapeLoss.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
 <td><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_submodule" title="darts.utils.losses.MapeLoss.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.get_submodule" title="darts.utils.losses.MapeLoss.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
 <td><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.half" title="darts.utils.losses.MapeLoss.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.half" title="darts.utils.losses.MapeLoss.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">half</span></code> datatype.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.ipu" title="darts.utils.losses.MapeLoss.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.ipu" title="darts.utils.losses.MapeLoss.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the IPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.load_state_dict" title="darts.utils.losses.MapeLoss.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.load_state_dict" title="darts.utils.losses.MapeLoss.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict, assign])</p></td>
 <td><p>Copies parameters and buffers from <a class="reference internal" href="#darts.utils.losses.MapeLoss.state_dict" title="darts.utils.losses.MapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.modules" title="darts.utils.losses.MapeLoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.modules" title="darts.utils.losses.MapeLoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
 <td><p>Returns an iterator over all modules in the network.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_buffers" title="darts.utils.losses.MapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_buffers" title="darts.utils.losses.MapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_children" title="darts.utils.losses.MapeLoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_children" title="darts.utils.losses.MapeLoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
 <td><p>Returns an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_modules" title="darts.utils.losses.MapeLoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_modules" title="darts.utils.losses.MapeLoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
 <td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_parameters" title="darts.utils.losses.MapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_parameters" title="darts.utils.losses.MapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.parameters" title="darts.utils.losses.MapeLoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.parameters" title="darts.utils.losses.MapeLoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
 <td><p>Returns an iterator over module parameters.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_backward_hook" title="darts.utils.losses.MapeLoss.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_backward_hook" title="darts.utils.losses.MapeLoss.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_buffer" title="darts.utils.losses.MapeLoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_buffer" title="darts.utils.losses.MapeLoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
 <td><p>Adds a buffer to the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="darts.utils.losses.MapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="darts.utils.losses.MapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
 <td><p>Registers a forward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_pre_hook" title="darts.utils.losses.MapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_pre_hook" title="darts.utils.losses.MapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
 <td><p>Registers a forward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_full_backward_hook" title="darts.utils.losses.MapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_full_backward_hook" title="darts.utils.losses.MapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_full_backward_pre_hook" title="darts.utils.losses.MapeLoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_full_backward_pre_hook" title="darts.utils.losses.MapeLoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.MapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.MapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_module" title="darts.utils.losses.MapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_module" title="darts.utils.losses.MapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.utils.losses.MapeLoss.add_module" title="darts.utils.losses.MapeLoss.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_parameter" title="darts.utils.losses.MapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_parameter" title="darts.utils.losses.MapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
 <td><p>Adds a parameter to the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_state_dict_pre_hook" title="darts.utils.losses.MapeLoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_state_dict_pre_hook" title="darts.utils.losses.MapeLoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
 <td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.requires_grad_" title="darts.utils.losses.MapeLoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.requires_grad_" title="darts.utils.losses.MapeLoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.set_extra_state" title="darts.utils.losses.MapeLoss.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.set_extra_state" title="darts.utils.losses.MapeLoss.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>This function is called from <a class="reference internal" href="#darts.utils.losses.MapeLoss.load_state_dict" title="darts.utils.losses.MapeLoss.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> to handle any extra state found within the <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.share_memory" title="darts.utils.losses.MapeLoss.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.share_memory" title="darts.utils.losses.MapeLoss.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
 <td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.state_dict" title="darts.utils.losses.MapeLoss.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.state_dict" title="darts.utils.losses.MapeLoss.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
 <td><p>Returns a dictionary containing references to the whole state of the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.to" title="darts.utils.losses.MapeLoss.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.to" title="darts.utils.losses.MapeLoss.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Moves and/or casts the parameters and buffers.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.to_empty" title="darts.utils.losses.MapeLoss.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.to_empty" title="darts.utils.losses.MapeLoss.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device[, recurse])</p></td>
 <td><p>Moves the parameters and buffers to the specified device without copying storage.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.train" title="darts.utils.losses.MapeLoss.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.train" title="darts.utils.losses.MapeLoss.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
 <td><p>Sets the module in training mode.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.type" title="darts.utils.losses.MapeLoss.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.type" title="darts.utils.losses.MapeLoss.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
 <td><p>Casts all parameters and buffers to <code class="xref py py-attr docutils literal notranslate"><span class="pre">dst_type</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.xpu" title="darts.utils.losses.MapeLoss.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.xpu" title="darts.utils.losses.MapeLoss.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the XPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.zero_grad" title="darts.utils.losses.MapeLoss.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
-<td><p>Sets gradients of all model parameters to zero.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.zero_grad" title="darts.utils.losses.MapeLoss.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
+<td><p>Resets gradients of all model parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2603,6 +2637,15 @@ are direct members of this module.</p>
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.compile">
+<span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile this Module’s forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>This Module’s <cite>__call__</cite> method is compiled and all arguments are passed as-is
+to <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code> for details on the arguments for this function.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2910,11 +2953,16 @@ copied to that device</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.load_state_dict">
-<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.load_state_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copies parameters and buffers from <a class="reference internal" href="#darts.utils.losses.MapeLoss.state_dict" title="darts.utils.losses.MapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into
 this module and its descendants. If <code class="xref py py-attr docutils literal notranslate"><span class="pre">strict</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then
 the keys of <a class="reference internal" href="#darts.utils.losses.MapeLoss.state_dict" title="darts.utils.losses.MapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> must exactly match the keys returned
 by this module’s <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
+the call to <a class="reference internal" href="#darts.utils.losses.MapeLoss.load_state_dict" title="darts.utils.losses.MapeLoss.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -2923,6 +2971,13 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.utils.losses.MapeLoss.state_dict" title="darts.utils.losses.MapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
+dictionary to their corresponding keys in the module instead
+of copying them inplace into the module’s current parameters and buffers.
+When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
+module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
+Tensors in the state dict are preserved.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -3194,7 +3249,7 @@ the buffer is <strong>not</strong> included in the module’s <a class="referenc
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.register_forward_hook">
-<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward hook on the module.</p>
 <p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> or not specified, the input contains only
@@ -3227,6 +3282,9 @@ registered by this method.
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 <li><p><strong>with_kwargs</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the
 kwargs given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>always_call</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be run regardless of
+whether an exception is raised while calling the Module.
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
@@ -3347,7 +3405,7 @@ all hooks registered by this method.</p></li>
 <dd><p>Registers a backward pre-hook on the module.</p>
 <p>The hook will be called every time the gradients for the module are computed.
 The hook should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span> <span class="ow">or</span> <span class="kc">None</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
 <p>The <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> is a tuple. The hook should
@@ -3667,12 +3725,16 @@ only argument)</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.to_empty">
-<span class="sig-name descname"><span class="pre">to_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.to_empty" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">to_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.to_empty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves the parameters and buffers to the specified device without copying storage.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code>) – The desired device of the parameters
-and buffers in this module.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code>) – The desired device of the parameters
+and buffers in this module.</p></li>
+<li><p><strong>recurse</strong> (<em>bool</em>) – Whether parameters and buffers of submodules should
+be recursively moved to the specified device.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>self</p>
@@ -3759,7 +3821,7 @@ copied to that device</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.zero_grad">
 <span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.zero_grad" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets gradients of all model parameters to zero. See similar function
+<dd><p>Resets gradients of all model parameters. See similar function
 under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -3815,125 +3877,128 @@ and not their direction.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.children" title="darts.utils.losses.SmapeLoss.children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code></a>()</p></td>
 <td><p>Returns an iterator over immediate children modules.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.cpu" title="darts.utils.losses.SmapeLoss.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.compile" title="darts.utils.losses.SmapeLoss.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Compile this Module's forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.cpu" title="darts.utils.losses.SmapeLoss.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
 <td><p>Moves all model parameters and buffers to the CPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.cuda" title="darts.utils.losses.SmapeLoss.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.cuda" title="darts.utils.losses.SmapeLoss.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the GPU.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.double" title="darts.utils.losses.SmapeLoss.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.double" title="darts.utils.losses.SmapeLoss.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">double</span></code> datatype.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.eval" title="darts.utils.losses.SmapeLoss.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.eval" title="darts.utils.losses.SmapeLoss.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
 <td><p>Sets the module in evaluation mode.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.extra_repr" title="darts.utils.losses.SmapeLoss.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.extra_repr" title="darts.utils.losses.SmapeLoss.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
 <td><p>Set the extra representation of the module</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.float" title="darts.utils.losses.SmapeLoss.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.float" title="darts.utils.losses.SmapeLoss.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">float</span></code> datatype.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(inpt, tgt)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(inpt, tgt)</p></td>
 <td><p>Defines the computation performed at every call.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_buffer" title="darts.utils.losses.SmapeLoss.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_buffer" title="darts.utils.losses.SmapeLoss.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
 <td><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_extra_state" title="darts.utils.losses.SmapeLoss.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_extra_state" title="darts.utils.losses.SmapeLoss.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
 <td><p>Returns any extra state to include in the module's state_dict.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_parameter" title="darts.utils.losses.SmapeLoss.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_parameter" title="darts.utils.losses.SmapeLoss.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
 <td><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_submodule" title="darts.utils.losses.SmapeLoss.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.get_submodule" title="darts.utils.losses.SmapeLoss.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
 <td><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.half" title="darts.utils.losses.SmapeLoss.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.half" title="darts.utils.losses.SmapeLoss.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">half</span></code> datatype.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.ipu" title="darts.utils.losses.SmapeLoss.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.ipu" title="darts.utils.losses.SmapeLoss.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the IPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.load_state_dict" title="darts.utils.losses.SmapeLoss.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.load_state_dict" title="darts.utils.losses.SmapeLoss.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict, assign])</p></td>
 <td><p>Copies parameters and buffers from <a class="reference internal" href="#darts.utils.losses.SmapeLoss.state_dict" title="darts.utils.losses.SmapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.modules" title="darts.utils.losses.SmapeLoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.modules" title="darts.utils.losses.SmapeLoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
 <td><p>Returns an iterator over all modules in the network.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_buffers" title="darts.utils.losses.SmapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_buffers" title="darts.utils.losses.SmapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_children" title="darts.utils.losses.SmapeLoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_children" title="darts.utils.losses.SmapeLoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
 <td><p>Returns an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_modules" title="darts.utils.losses.SmapeLoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_modules" title="darts.utils.losses.SmapeLoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
 <td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_parameters" title="darts.utils.losses.SmapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_parameters" title="darts.utils.losses.SmapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.parameters" title="darts.utils.losses.SmapeLoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.parameters" title="darts.utils.losses.SmapeLoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
 <td><p>Returns an iterator over module parameters.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_backward_hook" title="darts.utils.losses.SmapeLoss.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_backward_hook" title="darts.utils.losses.SmapeLoss.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_buffer" title="darts.utils.losses.SmapeLoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_buffer" title="darts.utils.losses.SmapeLoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
 <td><p>Adds a buffer to the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="darts.utils.losses.SmapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="darts.utils.losses.SmapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
 <td><p>Registers a forward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_pre_hook" title="darts.utils.losses.SmapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_pre_hook" title="darts.utils.losses.SmapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
 <td><p>Registers a forward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_full_backward_hook" title="darts.utils.losses.SmapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_full_backward_hook" title="darts.utils.losses.SmapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_full_backward_pre_hook" title="darts.utils.losses.SmapeLoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_full_backward_pre_hook" title="darts.utils.losses.SmapeLoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_module" title="darts.utils.losses.SmapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_module" title="darts.utils.losses.SmapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.utils.losses.SmapeLoss.add_module" title="darts.utils.losses.SmapeLoss.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_parameter" title="darts.utils.losses.SmapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_parameter" title="darts.utils.losses.SmapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
 <td><p>Adds a parameter to the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_state_dict_pre_hook" title="darts.utils.losses.SmapeLoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_state_dict_pre_hook" title="darts.utils.losses.SmapeLoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
 <td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.requires_grad_" title="darts.utils.losses.SmapeLoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.requires_grad_" title="darts.utils.losses.SmapeLoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.set_extra_state" title="darts.utils.losses.SmapeLoss.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.set_extra_state" title="darts.utils.losses.SmapeLoss.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>This function is called from <a class="reference internal" href="#darts.utils.losses.SmapeLoss.load_state_dict" title="darts.utils.losses.SmapeLoss.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> to handle any extra state found within the <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.share_memory" title="darts.utils.losses.SmapeLoss.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.share_memory" title="darts.utils.losses.SmapeLoss.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
 <td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.state_dict" title="darts.utils.losses.SmapeLoss.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.state_dict" title="darts.utils.losses.SmapeLoss.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
 <td><p>Returns a dictionary containing references to the whole state of the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.to" title="darts.utils.losses.SmapeLoss.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.to" title="darts.utils.losses.SmapeLoss.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Moves and/or casts the parameters and buffers.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.to_empty" title="darts.utils.losses.SmapeLoss.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.to_empty" title="darts.utils.losses.SmapeLoss.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device[, recurse])</p></td>
 <td><p>Moves the parameters and buffers to the specified device without copying storage.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.train" title="darts.utils.losses.SmapeLoss.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.train" title="darts.utils.losses.SmapeLoss.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
 <td><p>Sets the module in training mode.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.type" title="darts.utils.losses.SmapeLoss.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.type" title="darts.utils.losses.SmapeLoss.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
 <td><p>Casts all parameters and buffers to <code class="xref py py-attr docutils literal notranslate"><span class="pre">dst_type</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.xpu" title="darts.utils.losses.SmapeLoss.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.xpu" title="darts.utils.losses.SmapeLoss.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
 <td><p>Moves all model parameters and buffers to the XPU.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.zero_grad" title="darts.utils.losses.SmapeLoss.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
-<td><p>Sets gradients of all model parameters to zero.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.zero_grad" title="darts.utils.losses.SmapeLoss.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
+<td><p>Resets gradients of all model parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -4079,6 +4144,15 @@ are direct members of this module.</p>
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.compile">
+<span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile this Module’s forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>This Module’s <cite>__call__</cite> method is compiled and all arguments are passed as-is
+to <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code> for details on the arguments for this function.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -4386,11 +4460,16 @@ copied to that device</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.load_state_dict">
-<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.load_state_dict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.load_state_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copies parameters and buffers from <a class="reference internal" href="#darts.utils.losses.SmapeLoss.state_dict" title="darts.utils.losses.SmapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into
 this module and its descendants. If <code class="xref py py-attr docutils literal notranslate"><span class="pre">strict</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then
 the keys of <a class="reference internal" href="#darts.utils.losses.SmapeLoss.state_dict" title="darts.utils.losses.SmapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> must exactly match the keys returned
 by this module’s <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
+the call to <a class="reference internal" href="#darts.utils.losses.SmapeLoss.load_state_dict" title="darts.utils.losses.SmapeLoss.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -4399,6 +4478,13 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.utils.losses.SmapeLoss.state_dict" title="darts.utils.losses.SmapeLoss.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
+dictionary to their corresponding keys in the module instead
+of copying them inplace into the module’s current parameters and buffers.
+When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
+module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
+Tensors in the state dict are preserved.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -4670,7 +4756,7 @@ the buffer is <strong>not</strong> included in the module’s <a class="referenc
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.register_forward_hook">
-<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward hook on the module.</p>
 <p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> or not specified, the input contains only
@@ -4703,6 +4789,9 @@ registered by this method.
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 <li><p><strong>with_kwargs</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the
 kwargs given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>always_call</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be run regardless of
+whether an exception is raised while calling the Module.
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
@@ -4823,7 +4912,7 @@ all hooks registered by this method.</p></li>
 <dd><p>Registers a backward pre-hook on the module.</p>
 <p>The hook will be called every time the gradients for the module are computed.
 The hook should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span> <span class="ow">or</span> <span class="kc">None</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
 <p>The <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> is a tuple. The hook should
@@ -5143,12 +5232,16 @@ only argument)</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.to_empty">
-<span class="sig-name descname"><span class="pre">to_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.to_empty" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">to_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.to_empty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves the parameters and buffers to the specified device without copying storage.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code>) – The desired device of the parameters
-and buffers in this module.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code>) – The desired device of the parameters
+and buffers in this module.</p></li>
+<li><p><strong>recurse</strong> (<em>bool</em>) – Whether parameters and buffers of submodules should
+be recursively moved to the specified device.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>self</p>
@@ -5235,7 +5328,7 @@ copied to that device</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.zero_grad">
 <span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.zero_grad" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets gradients of all model parameters to zero. See similar function
+<dd><p>Resets gradients of all model parameters. See similar function
 under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

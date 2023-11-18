@@ -172,8 +172,9 @@
 <span class="sd">A few popular time series datasets</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -980,6 +981,115 @@
 <span class="sd">        Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">label</span><span class="p">])</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ElectricityConsumptionZurichDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ElectricityConsumptionZurichDataset">[docs]</a><span class="k">class</span> <span class="nc">ElectricityConsumptionZurichDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Electricity Consumption of households &amp; SMEs (low voltage) and businesses &amp; services (medium voltage) in the</span>
+<span class="sd">    city of Zurich [1]_, with values recorded every 15 minutes.</span>
+
+<span class="sd">    The electricity consumption is combined with weather measurements recorded by three different</span>
+<span class="sd">    stations in the city of Zurich with a hourly frequency [2]_. The missing time stamps are filled with NaN.</span>
+<span class="sd">    The original weather data is recorded every hour. Before adding the features to the electricity consumption,</span>
+<span class="sd">    the data is resampled to 15 minutes frequency, and missing values are interpolated.</span>
+
+<span class="sd">    To simplify the dataset, the measurements from the Zch_Schimmelstrasse and Zch_Rosengartenstrasse weather</span>
+<span class="sd">    stations are discarded to keep only the data recorded in the Zch_Stampfenbachstrasse station.</span>
+
+<span class="sd">    Both dataset sources are updated continuously, but this dataset only retrains values between 2015-01-01 and</span>
+<span class="sd">    2022-08-31.</span>
+<span class="sd">    The time index was converted from CET time zone to UTC.</span>
+
+<span class="sd">    Components Descriptions:</span>
+
+<span class="sd">    * Value_NE5 : Households &amp; SMEs electricity consumption (low voltage, grid level 7) in kWh</span>
+<span class="sd">    * Value_NE7 : Business and services electricity consumption (medium voltage, grid level 5) in kWh</span>
+<span class="sd">    * Hr [%Hr] : Relative humidity</span>
+<span class="sd">    * RainDur [min] : Duration of precipitation (divided by 4 for conversion from hourly to quarter-hourly records)</span>
+<span class="sd">    * T [°C] : Temperature</span>
+<span class="sd">    * WD [°] : Wind direction</span>
+<span class="sd">    * WVv [m/s] : Wind vector speed</span>
+<span class="sd">    * p [hPa] : Air pressure</span>
+<span class="sd">    * WVs [m/s] : Wind scalar speed</span>
+<span class="sd">    * StrGlo [W/m2] : Global solar irradiation</span>
+
+<span class="sd">    Note: before 2018, the scalar speeds were calculated from the 30 minutes vector data.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://data.stadt-zuerich.ch/dataset/ewz_stromabgabe_netzebenen_stadt_zuerich</span>
+<span class="sd">    .. [2] https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">pre_process_dataset</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Restrict the time axis and add the weather data&quot;&quot;&quot;</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="c1"># convert time index</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span>
+                <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="c1"># extract pre-determined period</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2015-01-01&quot;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2022-08-31&quot;</span><span class="p">))</span>
+            <span class="p">]</span>
+            <span class="c1"># download and preprocess the weather information</span>
+            <span class="n">df_weather</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_weather_data</span><span class="p">()</span>
+            <span class="c1"># add weather data as additional features</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">df_weather</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># interpolate weather data</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">interpolate</span><span class="p">()</span>
+            <span class="c1"># raining duration is given in minutes -&gt; we divide by 4 from hourly to quarter-hourly records</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;RainDur [min]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;RainDur [min]&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">4</span>
+
+            <span class="c1"># round Electricity cols to 4 decimals, other columns to 2 decimals</span>
+            <span class="n">cols_precise</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Value_NE5&quot;</span><span class="p">,</span> <span class="s2">&quot;Value_NE7&quot;</span><span class="p">]</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">round</span><span class="p">(</span>
+                <span class="n">decimals</span><span class="o">=</span><span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="p">(</span><span class="mi">4</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols_precise</span> <span class="k">else</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="c1"># export the dataset</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Timestamp&quot;</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">())</span>
+
+        <span class="c1"># hash value for dataset with weather data</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;zurich_electricity_consumption.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">&quot;https://data.stadt-zuerich.ch/dataset/&quot;</span>
+                    <span class="s2">&quot;ewz_stromabgabe_netzebenen_stadt_zuerich/&quot;</span>
+                    <span class="s2">&quot;download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv&quot;</span>
+                <span class="p">),</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;a019125b7f9c1afeacb0ae60ce7455ef&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Timestamp&quot;</span><span class="p">,</span>
+                <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;15min&quot;</span><span class="p">,</span>
+                <span class="n">pre_process_csv_fn</span><span class="o">=</span><span class="n">pre_process_dataset</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_download_weather_data</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Concatenate the yearly csv files into a single dataframe and reshape it&quot;&quot;&quot;</span>
+        <span class="c1"># download the csv from the url</span>
+        <span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://data.stadt-zuerich.ch/dataset/ugz_meteodaten_stundenmittelwerte/download/&quot;</span>
+        <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;ugz_ogd_meteo_h1_</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">.csv&quot;</span> <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">2023</span><span class="p">)]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="n">fname</span><span class="p">)</span> <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">])</span>
+        <span class="c1"># retain only one weather station</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;Standort&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Zch_Stampfenbachstrasse&quot;</span><span class="p">]</span>
+        <span class="c1"># pivot the df to get all measurements as columns</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;param_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Parameter&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot; [&quot;</span> <span class="o">+</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Einheit&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;Datum&quot;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s2">&quot;param_name&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s2">&quot;Wert&quot;</span><span class="p">)</span>
+        <span class="c1"># convert time index to from CET to UTC and extract the required time range</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span>
+            <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2015-01-01&quot;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2022-08-31&quot;</span><span class="p">))</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">df</span></div>
 </pre></div>
 
               </div>

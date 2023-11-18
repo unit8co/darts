@@ -209,6 +209,7 @@
     <span class="n">_get_historical_forecast_predict_index</span><span class="p">,</span>
     <span class="n">_get_historical_forecast_train_index</span><span class="p">,</span>
     <span class="n">_historical_forecasts_general_checks</span><span class="p">,</span>
+    <span class="n">_historical_forecasts_sanitize_kwargs</span><span class="p">,</span>
     <span class="n">_reconciliate_historical_time_indices</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="p">(</span>
@@ -483,23 +484,47 @@
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">supported_params</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">kwargs_</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">supported_params</span><span class="p">}</span>
+
+        <span class="c1"># handle past and future covariates based on model support</span>
+        <span class="k">for</span> <span class="n">covs</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;past&quot;</span><span class="p">,</span> <span class="s2">&quot;future&quot;</span><span class="p">]):</span>
+            <span class="n">covs_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_covariates&quot;</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;supports_</span><span class="si">{</span><span class="n">covs_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
+                <span class="n">kwargs_</span><span class="p">[</span><span class="n">covs_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">covs</span>
+            <span class="k">elif</span> <span class="n">covs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model cannot be fit/trained with `</span><span class="si">{</span><span class="n">covs_name</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs_</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;predict_likelihood_parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="n">supported_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+
+        <span class="c1"># if predict() accepts covariates, the model might not support them at inference</span>
+        <span class="k">for</span> <span class="n">covs_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;past_covariates&quot;</span><span class="p">,</span> <span class="s2">&quot;future_covariates&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">covs_name</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;supports_</span><span class="si">{</span><span class="n">covs_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">covs_name</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">supported_params</span> <span class="o">=</span> <span class="n">supported_params</span> <span class="o">-</span> <span class="p">{</span><span class="n">covs_name</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Model prediction does not support `</span><span class="si">{</span><span class="n">covs_name</span><span class="si">}</span><span class="s2">`, either because it &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;does not support `</span><span class="si">{</span><span class="n">covs_name</span><span class="si">}</span><span class="s2">` in general, or because it was fit/trained &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;without using `</span><span class="si">{</span><span class="n">covs_name</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+        <span class="n">kwargs_</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">supported_params</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs_</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -654,6 +679,7 @@
         <span class="n">custom_components</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">with_static_covs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">with_hierarchy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">pred_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Builds a forecast time series starting after the end of the training time series, with the</span>
@@ -671,6 +697,9 @@
 <span class="sd">            If set to False, do not copy the input_series `static_covariates` attribute</span>
 <span class="sd">        with_hierarchy</span>
 <span class="sd">            If set to False, do not copy the input_series `hierarchy` attribute</span>
+<span class="sd">        pred_start</span>
+<span class="sd">            Optionally, give a custom prediction start point.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
@@ -685,6 +714,7 @@
             <span class="n">custom_components</span><span class="p">,</span>
             <span class="n">with_static_covs</span><span class="p">,</span>
             <span class="n">with_hierarchy</span><span class="p">,</span>
+            <span class="n">pred_start</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_historical_forecasts_sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -713,40 +743,18 @@
         <span class="n">overlap_end</span><span class="p">,</span>
         <span class="n">latest_possible_prediction_start</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="c1"># when overlap_end=True, we can simply use the precomputed last possible prediction start point</span>
+        <span class="c1"># if `overlap_end` is True, we can use the pre-computed latest possible first prediction point</span>
         <span class="k">if</span> <span class="n">overlap_end</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">latest_possible_prediction_start</span>
 
-        <span class="c1"># (1) otherwise, we have to step `forecast_horizon` steps back.</span>
-        <span class="c1"># (2) additionally, we check whether the `latest_possible_prediction_start` was shifted back</span>
-        <span class="c1"># from the overall theoretical latest possible prediction start point (which is by definition</span>
-        <span class="c1"># the first time step after the end of the target series) due to too short covariates.</span>
-        <span class="n">theoretical_latest_prediction_start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span>
-        <span class="k">if</span> <span class="n">latest_possible_prediction_start</span> <span class="o">==</span> <span class="n">theoretical_latest_prediction_start</span><span class="p">:</span>
-            <span class="c1"># (1)</span>
-            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_horizon</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># (2)</span>
-            <span class="n">covariates_shift</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="nb">len</span><span class="p">(</span>
-                    <span class="n">generate_index</span><span class="p">(</span>
-                        <span class="n">start</span><span class="o">=</span><span class="n">latest_possible_prediction_start</span><span class="p">,</span>
-                        <span class="n">end</span><span class="o">=</span><span class="n">theoretical_latest_prediction_start</span><span class="p">,</span>
-                        <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
-                <span class="o">-</span> <span class="mi">2</span>
-            <span class="p">)</span>
-            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span>
-                <span class="o">-</span><span class="p">(</span><span class="n">forecast_horizon</span> <span class="o">+</span> <span class="n">covariates_shift</span><span class="p">)</span>
-            <span class="p">]</span>
-        <span class="k">return</span> <span class="n">last_valid_pred_time</span>
+        <span class="c1"># otherwise, the upper bound for the last time step of the last prediction is the end of the target series</span>
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_horizon</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_check_optimizable_historical_forecasts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]],</span>
-        <span class="n">show_warnings</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;By default, historical forecasts cannot be optimized&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">False</span>
@@ -770,6 +778,8 @@
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">enable_optimization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fit_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
         <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
     <span class="p">]:</span>
@@ -876,6 +886,10 @@
 <span class="sd">            Default: ``False``</span>
 <span class="sd">        enable_optimization</span>
 <span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">        fit_kwargs</span>
+<span class="sd">            Additional arguments passed to the model `fit()` method.</span>
+<span class="sd">        predict_kwargs</span>
+<span class="sd">            Additional arguments passed to the model `predict()` method.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -986,6 +1000,15 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
+        <span class="c1"># remove unsupported arguments, raise exception if interference with historical forecasts logic</span>
+        <span class="n">fit_kwargs</span><span class="p">,</span> <span class="n">predict_kwargs</span> <span class="o">=</span> <span class="n">_historical_forecasts_sanitize_kwargs</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">fit_kwargs</span><span class="o">=</span><span class="n">fit_kwargs</span><span class="p">,</span>
+            <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
+            <span class="n">retrain</span><span class="o">=</span><span class="n">retrain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">retrain</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+        <span class="p">)</span>
+
         <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">past_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">)</span>
         <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
@@ -1013,6 +1036,7 @@
                 <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">predict_kwargs</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -1022,6 +1046,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">outer_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
+        <span class="c1"># deactivate the warning after displaying it once if show_warnings is True</span>
+        <span class="n">show_predict_warnings</span> <span class="o">=</span> <span class="n">show_warnings</span>
+
         <span class="n">forecasts_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">outer_iterator</span><span class="p">):</span>
             <span class="n">past_covariates_</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
@@ -1030,7 +1057,13 @@
             <span class="c1"># predictable time indexes (assuming model is already trained)</span>
             <span class="n">historical_forecasts_time_index_predict</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">_get_historical_forecast_predict_index</span><span class="p">(</span>
-                    <span class="n">model</span><span class="p">,</span> <span class="n">series_</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">past_covariates_</span><span class="p">,</span> <span class="n">future_covariates_</span>
+                    <span class="n">model</span><span class="p">,</span>
+                    <span class="n">series_</span><span class="p">,</span>
+                    <span class="n">idx</span><span class="p">,</span>
+                    <span class="n">past_covariates_</span><span class="p">,</span>
+                    <span class="n">future_covariates_</span><span class="p">,</span>
+                    <span class="n">forecast_horizon</span><span class="p">,</span>
+                    <span class="n">overlap_end</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
 
@@ -1043,6 +1076,8 @@
                         <span class="n">idx</span><span class="p">,</span>
                         <span class="n">past_covariates_</span><span class="p">,</span>
                         <span class="n">future_covariates_</span><span class="p">,</span>
+                        <span class="n">forecast_horizon</span><span class="p">,</span>
+                        <span class="n">overlap_end</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
 
@@ -1077,12 +1112,9 @@
 
             <span class="c1"># based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened</span>
             <span class="n">historical_forecasts_time_index</span> <span class="o">=</span> <span class="n">_adjust_historical_forecasts_time_index</span><span class="p">(</span>
-                <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">series_</span><span class="p">,</span>
                 <span class="n">series_idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
                 <span class="n">historical_forecasts_time_index</span><span class="o">=</span><span class="n">historical_forecasts_time_index</span><span class="p">,</span>
-                <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
-                <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
                 <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
                 <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
@@ -1148,6 +1180,7 @@
                             <span class="n">series</span><span class="o">=</span><span class="n">train_series</span><span class="p">,</span>
                             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates_</span><span class="p">,</span>
                             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates_</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="c1"># untrained model was not trained on the first trainable timestamp</span>
@@ -1198,7 +1231,11 @@
                     <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
                     <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                     <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                    <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_predict_warnings</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">predict_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="n">show_predict_warnings</span> <span class="o">=</span> <span class="kc">False</span>
+
                 <span class="k">if</span> <span class="n">forecast_components</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">forecast_components</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">.</span><span class="n">columns</span>
 
@@ -1208,7 +1245,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">forecasts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last_points_only</span> <span class="ow">and</span> <span class="n">last_points_values</span><span class="p">:</span>
                 <span class="n">forecasts_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                         <span class="n">generate_index</span><span class="p">(</span>
@@ -1255,6 +1292,8 @@
         <span class="n">reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fit_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute error values that the model would have produced when</span>
 <span class="sd">        used on (potentially multiple) `series`.</span>
@@ -1364,6 +1403,10 @@
 <span class="sd">            Whether to print progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to parameters `start`, and `train_length`.</span>
+<span class="sd">        fit_kwargs</span>
+<span class="sd">            Additional arguments passed to the model `fit()` method.</span>
+<span class="sd">        predict_kwargs</span>
+<span class="sd">            Additional arguments passed to the model `predict()` method.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1387,6 +1430,8 @@
                 <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
                 <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+                <span class="n">fit_kwargs</span><span class="o">=</span><span class="n">fit_kwargs</span><span class="p">,</span>
+                <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">forecasts</span> <span class="o">=</span> <span class="n">historical_forecasts</span>
@@ -1440,6 +1485,8 @@
         <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">n_random_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">fit_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;ForecastingModel&quot;</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find the best hyper-parameters among a given set using a grid search.</span>
@@ -1553,6 +1600,10 @@
 <span class="sd">            must be between `0` and the total number of parameter combinations.</span>
 <span class="sd">            If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must</span>
 <span class="sd">            be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.</span>
+<span class="sd">        fit_kwargs</span>
+<span class="sd">            Additional arguments passed to the model `fit()` method.</span>
+<span class="sd">        predict_kwargs</span>
+<span class="sd">            Additional arguments passed to the model `predict()` method.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1585,10 +1636,10 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="c1"># TODO: here too I&#39;d say we can leave these checks to the models</span>
-        <span class="c1"># if covariates is not None:</span>
-        <span class="c1">#     raise_if_not(series.has_same_time_as(covariates), &#39;The provided series and covariates must have the &#39;</span>
-        <span class="c1">#                                                       &#39;same time axes.&#39;)</span>
+        <span class="k">if</span> <span class="n">fit_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fit_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">predict_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">predict_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
         <span class="c1"># compute all hyperparameter combinations from selection</span>
         <span class="n">params_cross_product</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
@@ -1616,7 +1667,12 @@
 
             <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">param_combination_dict</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">use_fitted_values</span><span class="p">:</span>  <span class="c1"># fitted value mode</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
+                    <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="n">fitted_values</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">fitted_values</span>
                 <span class="p">)</span>
@@ -1636,16 +1692,24 @@
                     <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
                     <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                     <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+                    <span class="n">fit_kwargs</span><span class="o">=</span><span class="n">fit_kwargs</span><span class="p">,</span>
+                    <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>  <span class="c1"># split mode</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
+                    <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_predict_wrapper</span><span class="p">(</span>
-                    <span class="nb">len</span><span class="p">(</span><span class="n">val_series</span><span class="p">),</span>
-                    <span class="n">series</span><span class="p">,</span>
-                    <span class="n">past_covariates</span><span class="p">,</span>
-                    <span class="n">future_covariates</span><span class="p">,</span>
+                    <span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">val_series</span><span class="p">),</span>
+                    <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
                     <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                     <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">predict_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">val_series</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
 
@@ -2310,6 +2374,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Forecasts values for `n` time steps after the end of the series.</span>
 
@@ -2348,6 +2413,8 @@
 <span class="sd">            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only</span>
 <span class="sd">            supported for probabilistic models with a likelihood, `num_samples = 1` and `n&lt;=output_chunk_length`.</span>
 <span class="sd">            Default: ``False``</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            Whether to show warnings related auto-regression and past covariates usage.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -2389,47 +2456,29 @@
                     <span class="s2">&quot;must be embedded in the target `series` passed to `predict()`.&quot;</span>
                 <span class="p">)</span>
             <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;predict_likelihood_parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-            <span class="n">n</span><span class="p">,</span>
-            <span class="n">series</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
-            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_fit_wrapper</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
-    <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_future_covariates</span>
-            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">show_warnings</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_past_covariates</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+        <span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;`predict()` was called with `n &gt; output_chunk_length`: using auto-regression to forecast &quot;</span>
+                <span class="s2">&quot;the values after `output_chunk_length` points. The model will access `(n - output_chunk_length)` &quot;</span>
+                <span class="s2">&quot;future values of your `past_covariates` (relative to the first predicted time step). &quot;</span>
+                <span class="s2">&quot;To hide this warning, set `show_warnings=False`.&quot;</span>
+            <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_supports_non_retrainable_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;GlobalForecastingModel supports historical forecasts without retraining the model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_optimized_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Whether the model supports optimized historical forecasts</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_sanity_check_predict_likelihood_parameters</span><span class="p">(</span>
@@ -2512,6 +2561,7 @@
                 <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_expect_future_covariates</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_uses_future_covariates</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize_encoders</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
@@ -2619,35 +2669,6 @@
 <span class="sd">        DualCovariatesModels must implement the predict logic in this method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
-
-    <span class="k">def</span> <span class="nf">_fit_wrapper</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-    <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;predict_likelihood_parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-            <span class="n">n</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
-            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_model_encoder_settings</span><span class="p">(</span>
@@ -2844,28 +2865,6 @@
 <span class="sd">        TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
-
-    <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;predict_likelihood_parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
-            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_supports_non_retrainable_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

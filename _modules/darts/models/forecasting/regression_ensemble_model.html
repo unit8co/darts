@@ -536,8 +536,12 @@
                 <span class="c1"># maximize covariate usage</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">forecast_training</span><span class="p">,</span>
-                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
+                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
+                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="c1"># we can call direct prediction in any case. Even if we overwrite with historical</span>
@@ -574,8 +578,12 @@
             <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
+                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
+                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
