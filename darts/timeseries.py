@@ -5299,7 +5299,8 @@ def _finite_rows_boundaries(
     Parameters
     ----------
     values
-        1D or 2D numpy array where the first dimension correspond to entries/rows, and the second to components/columns
+        1D, 2D or 3D numpy array where the first dimension correspond to entries/rows, and the second to components/
+        columns
     how
         Define if the entries containing `NaN` in all the components ('all') or in any of the components ('any')
         should be stripped. Default: 'all'
@@ -5307,10 +5308,14 @@ def _finite_rows_boundaries(
     dims = values.shape
 
     raise_if(
-        len(dims) > 2, f"Expected 1D or 2D array, received {len(dims)}D array", logger
+        len(dims) > 3, f"Expected 1D to 3D array, received {len(dims)}D array", logger
     )
 
     finite_rows = ~np.isnan(values)
+
+    if len(dims) == 3:
+        finite_rows = finite_rows.all(axis=2)
+
     if len(dims) > 1 and dims[1] > 1:
         if how == "any":
             finite_rows = finite_rows.all(axis=1)

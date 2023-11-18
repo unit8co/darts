@@ -1,6 +1,6 @@
 """
 Mixed-data sampling (MIDAS) Transformer
-------------------
+---------------------------------------
 """
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
@@ -12,7 +12,7 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.timeseries import _finite_rows_boundaries
 from darts.utils.timeseries_generation import generate_index
 
@@ -75,14 +75,12 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         name='Month', freq='MS')
         >>> print(monthly_series.values()[:4])
         [[112.], [118.], [132.], [129.]]
-
         >>> midas = MIDAS(low_freq="QS")
         >>> quarterly_series = midas.fit_transform(monthly_series)
         >>> print(quarterly_series.time_index[:3])
         DatetimeIndex(['1949-01-01', '1949-04-01', '1949-07-01'], dtype='datetime64[ns]', name='Month', freq='QS-JAN')
         >>> print(quarterly_series.values()[:3])
         [[112. 118. 132.], [129. 121. 135.], [148. 148. 136.]]
-
         >>> inversed_quaterly = midas.inverse_transform(quarterly_series)
         >>> print(inversed_quaterly.time_index[:4])
         DatetimeIndex(['1949-01-01', '1949-02-01', '1949-03-01', '1949-04-01'], dtype='datetime64[ns]',
@@ -252,9 +250,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             arr_out.fill(np.nan)
 
             arr = np.lib.stride_tricks.sliding_window_view(
-                arr, window_shape=max_size, axis=0
+                arr, window_shape=(max_size, n_cols_in, n_samples)
             )
-            arr = arr.reshape((len(arr), n_cols_out, n_samples))
+            arr = arr.reshape((-1, n_cols_out, n_samples))
 
             # the first resampled index might not have all dates from higher freq
             size_group_first = group_sizes.iloc[0]
@@ -290,14 +288,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
             arr = arr_out
 
-            # TODO: remove this
-            arr = np.concatenate([arr[:, i::max_size] for i in range(max_size)], axis=1)
-
         ts = MIDAS._create_midas_df(
             series=series,
             arr=arr,
             time_index=time_index,
-            n_midas_cols=max_size,
+            n_midas=max_size,
             drop_static_covariates=drop_static_covariates,
             inverse_transform=False,
             feature_sep=feature_sep,
@@ -339,18 +334,17 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         series_n_components = series.n_components
 
         n_orig_components = series_n_components // n_midas_components
-        # original ts was univariate
-        if n_orig_components == 1:
-            series_values = series.values(copy=False).flatten()
-        else:
-            series_values = series.values(copy=False).reshape((-1, n_orig_components))
 
         if len(series) == 0:
             # placeholders for empty series
             start_time = pd.Timestamp("2020-01-01")
             shift = 0
-            series_values = np.empty((0, n_orig_components))
+            series_values = np.empty((0, n_orig_components, series.n_samples))
         else:
+            series_values = series.all_values(copy=False).reshape(
+                -1, n_orig_components, series.n_samples
+            )
+
             # remove the rows containing only NaNs at the extremities of the array, necessary to adjust the time index
             first_finite_row, last_finite_row = _finite_rows_boundaries(
                 series_values, how="all"
@@ -384,7 +378,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             series=series,
             arr=series_values,
             time_index=time_index,
-            n_midas_cols=n_midas_components,
+            n_midas=n_midas_components,
             drop_static_covariates=drop_static_covariates,
             inverse_transform=True,
             feature_sep=feature_sep,
@@ -398,17 +392,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         low_freq: Optional[str] = None,
     ):
         """Some sanity checks on the input, the high_freq and low_freq arguments are mutually exclusive"""
-        raise_if(
-            series.is_probabilistic,
-            "MIDAS Transformer cannot be applied to probabilistic/stochastic TimeSeries",
-            logger,
-        )
-
-        raise_if_not(
-            isinstance(series.time_index, pd.DatetimeIndex),
-            "MIDAS input series must have a pd.Datetime index",
-            logger,
-        )
+        if not isinstance(series.time_index, pd.DatetimeIndex):
+            raise_log(
+                ValueError("MIDAS input series must have a pd.Datetime index"),
+                logger,
+            )
 
         series_freq_str = series.freq_str
         input_freq = [series_freq_str]
@@ -435,16 +423,15 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def _process_static_covariates(
-        static_covariates: Union[None, pd.Series, pd.DataFrame],
-        index_or_multiple: int,
+        series: TimeSeries,
+        n_midas: int,
         drop_static_covariates: bool,
         inverse_transform: bool,
     ) -> Optional[Union[pd.Series, pd.DataFrame]]:
-        """If static covariates are component-specific, they must be reshaped appropriately.
-        `index_or_multiple` has a different meaning depending on the transformation:
-        - transform : multiple, to repeat the static covariates for the new components
-        - inverse_transform : index, to remove the duplciated static covariates
         """
+        If static covariates are component-specific, they must be reshaped appropriately.
+        """
+        static_covariates = series.static_covariates
         if drop_static_covariates:
             return None
         elif (
@@ -452,9 +439,10 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             and static_covariates.index.name == "component"
         ):
             if inverse_transform:
-                return static_covariates[:index_or_multiple]
+                cols_orig = series.n_components // n_midas
+                return static_covariates[:cols_orig]
             else:
-                return pd.concat([static_covariates] * index_or_multiple)
+                return pd.concat([static_covariates] * n_midas)
         else:
             return static_covariates
 
@@ -463,7 +451,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         series: TimeSeries,
         arr: np.ndarray,
         time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
-        n_midas_cols: int,
+        n_midas: int,
         drop_static_covariates: bool,
         inverse_transform: bool,
         feature_sep: str,
@@ -472,23 +460,18 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         Function creating the lower frequency dataframe out of a higher frequency dataframe.
         """
         if not inverse_transform:
-            # TODO: revert this to [f"{col}_{i}" for col in series.columns for i in range(n_midas_cols)]
-            index_or_multiple = n_midas_cols
             cols = [
                 f"{col}{feature_sep}{i}"
-                for i in range(n_midas_cols)
+                for i in range(n_midas)
                 for col in series.columns
             ]
         else:
-            index_or_multiple = series.n_components // n_midas_cols
-            cols = [
-                feature_sep.join(series.components[i].split(feature_sep)[:-1])
-                for i in range(index_or_multiple)
-            ]
+            cols_orig = series.n_components // n_midas
+            cols = series.components[:cols_orig].str.split(feature_sep).str[0].tolist()
 
         static_covariates = MIDAS._process_static_covariates(
-            static_covariates=series.static_covariates,
-            index_or_multiple=index_or_multiple,
+            series=series,
+            n_midas=n_midas,
             drop_static_covariates=drop_static_covariates,
             inverse_transform=inverse_transform,
         )

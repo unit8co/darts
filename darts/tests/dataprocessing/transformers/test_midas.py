@@ -96,6 +96,86 @@ class TestMIDAS:
             == inversed_quarterly_not_complete_ts_midas
         )
 
+    def test_probabilistic_complete_monthly_to_quarterly(self):
+        """
+        Tests MIDAS on probabilistic series on example of monthly series aligned with quarters.
+        """
+
+        # generate probabilistic monthly series
+        all_vals_monthly = self.monthly_ts.all_values(copy=False)
+        prob_values_monthly = np.concatenate(
+            [all_vals_monthly + i * 0.01 for i in range(3)], axis=2
+        )
+        ts_prob_monthly = TimeSeries.from_times_and_values(
+            times=self.monthly_ts.time_index,
+            values=prob_values_monthly,
+            columns=self.monthly_ts.columns.tolist(),
+        )
+        # generate probabilistic quarterly series
+        all_vals_quarterly = self.quarterly_ts.all_values(copy=False)
+        prob_values_quarterly = np.concatenate(
+            [all_vals_quarterly + i * 0.01 for i in range(3)], axis=2
+        )
+        ts_prob_quarterly = TimeSeries.from_times_and_values(
+            times=self.quarterly_ts.time_index,
+            values=prob_values_quarterly,
+            columns=self.quarterly_ts.columns.tolist(),
+        )
+
+        # to quarter start
+        midas_1 = MIDAS(low_freq="QS")
+
+        quarterly_ts_midas = midas_1.fit_transform(ts_prob_monthly)
+        assert quarterly_ts_midas == ts_prob_quarterly
+
+        inversed_quarterly_ts_midas = midas_1.inverse_transform(quarterly_ts_midas)
+        assert inversed_quarterly_ts_midas == ts_prob_monthly
+
+    def test_probabilistic_not_complete_monthly_to_quarterly(self):
+        """
+        Tests MIDAS on probabilistic series on example of monthly series not aligned with quarters.
+        """
+        # generate probabilistic monthly series
+        all_vals_monthly = self.monthly_not_complete_ts.all_values(copy=False)
+        prob_values_monthly = np.concatenate(
+            [all_vals_monthly + i * 0.01 for i in range(3)], axis=2
+        )
+        ts_prob_monthly = TimeSeries.from_times_and_values(
+            times=self.monthly_not_complete_ts.time_index,
+            values=prob_values_monthly,
+            columns=self.monthly_not_complete_ts.columns.tolist(),
+        )
+        # generate probabilistic quarterly series
+        all_vals_quarterly = self.quarterly_not_complete_ts.all_values(copy=False)
+        prob_values_quarterly = np.concatenate(
+            [all_vals_quarterly + i * 0.01 for i in range(3)], axis=2
+        )
+        ts_prob_quarterly = TimeSeries.from_times_and_values(
+            times=self.quarterly_not_complete_ts.time_index,
+            values=prob_values_quarterly,
+            columns=self.quarterly_not_complete_ts.columns.tolist(),
+        )
+
+        # monthly series with missing values
+        midas = MIDAS(low_freq="QS", strip=False)
+        quarterly_not_complete_ts_midas = midas.fit_transform(ts_prob_monthly)
+        assert quarterly_not_complete_ts_midas == ts_prob_quarterly
+
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
+            quarterly_not_complete_ts_midas
+        )
+        assert inversed_quarterly_not_complete_ts_midas == ts_prob_monthly
+
+        # when strip=True we only get 1 one quarter with all 3 months
+        midas = MIDAS(low_freq="QS", strip=True)
+        quarterly_not_complete_ts_midas = midas.fit_transform(ts_prob_monthly)
+        assert quarterly_not_complete_ts_midas == ts_prob_quarterly[1:2]
+
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
+            quarterly_not_complete_ts_midas
+        )
+        assert ts_prob_monthly[1:4] == inversed_quarterly_not_complete_ts_midas
+
     def test_multivariate_monthly_to_quarterly(self):
         """
         Check that multivariate monthly to quarterly is properly transformed
@@ -132,6 +212,63 @@ class TestMIDAS:
             multivar_quarterly_ts_midas
         )
         assert stacked_monthly_ts == multivar_inversed_quarterly_ts_midas
+
+    def test_probabilistic_multivariate_monthly_to_quarterly(self):
+        """
+        Check that probabilistic multivariate monthly to quarterly is properly transformed
+        """
+        monthly_ts = self.monthly_ts.stack(
+            TimeSeries.from_times_and_values(
+                times=self.monthly_ts.time_index,
+                values=np.arange(10, 19),
+                columns=["other"],
+            )
+        )
+        # generate probabilistic monthly series
+        all_vals_monthly = monthly_ts.all_values(copy=False)
+        prob_values_monthly = np.concatenate(
+            [all_vals_monthly + i * 0.01 for i in range(3)], axis=2
+        )
+        ts_prob_monthly = TimeSeries.from_times_and_values(
+            times=monthly_ts.time_index,
+            values=prob_values_monthly,
+            columns=monthly_ts.columns.tolist(),
+        )
+
+        # component components are alternating
+        quarterly_ts = TimeSeries.from_times_and_values(
+            times=self.quarterly_ts.time_index,
+            values=np.array(
+                [[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]
+            ),
+            columns=[
+                "values_midas_0",
+                "other_midas_0",
+                "values_midas_1",
+                "other_midas_1",
+                "values_midas_2",
+                "other_midas_2",
+            ],
+        )
+        # generate probabilistic quarterly series
+        all_vals_quarterly = quarterly_ts.all_values(copy=False)
+        prob_values_quarterly = np.concatenate(
+            [all_vals_quarterly + i * 0.01 for i in range(3)], axis=2
+        )
+        ts_prob_quarterly = TimeSeries.from_times_and_values(
+            times=quarterly_ts.time_index,
+            values=prob_values_quarterly,
+            columns=quarterly_ts.columns.tolist(),
+        )
+
+        midas_1 = MIDAS(low_freq="QS")
+        multivar_quarterly_ts_midas = midas_1.fit_transform(ts_prob_monthly)
+        assert multivar_quarterly_ts_midas == ts_prob_quarterly
+
+        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(
+            multivar_quarterly_ts_midas
+        )
+        assert ts_prob_monthly == multivar_inversed_quarterly_ts_midas
 
     def test_ts_with_missing_data(self):
         """
