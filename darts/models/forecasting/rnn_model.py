@@ -4,7 +4,8 @@ Recurrent Neural Networks
 """
 
 from typing import Optional, Sequence, Tuple, Union
-
+from darts.dataprocessing.transformers.revwinnorm import RevWinNorm
+from tot.data_processing.scaler import Scaler
 import torch
 import torch.nn as nn
 
@@ -31,6 +32,10 @@ class _RNNModule(PLDualCovariatesModule):
         target_size: int,
         nr_params: int,
         dropout: float = 0.0,
+        scaler: Scaler = None,
+        norm_mode: Optional[str] = None, #revin or pytorch (not applicable)
+        norm_types: Optional[str] = None, #instance or batch 
+        norm_affines: Optional[bool] = False, #learnable or nonlearnable
         **kwargs,
     ):
 
@@ -93,15 +98,31 @@ class _RNNModule(PLDualCovariatesModule):
     def forward(
         self, x_in: Tuple, h: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        
         x, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
+        
+        # apply window-based normalization if applicable
+        if self.norm_mode is not None:
+            if self.scaler = StandardScaler():
+                scaler = "standard"
+            elif self.scaler = MeanScaler():
+                scaler = "mean"
+            else:
+                scaler = None
+            window_norm_layer = RevWinNorm(x.shape[2])
+            x = window_norm_layer(x, "norm", norm_type=self.norm_type, scaler=scaler, norm_affine=self.norm_affine)
 
         # out is of size (batch_size, input_length, hidden_dim)
         out, last_hidden_state = self.rnn(x) if h is None else self.rnn(x, h)
 
         # Here, we apply the V matrix to every hidden state to produce the outputs
         predictions = self.V(out)
+        
+        #revert window-based normalization if applicable:
+        if self.norm_mode is not None:
+            predictions = window_norm_layer(predictions, "denorm", norm_type=self.norm_type, scaler=scaler, norm_affine=self.norm_affine)
 
         # predictions is of size (batch_size, input_length, target_size)
         predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
