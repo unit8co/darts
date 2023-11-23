@@ -478,16 +478,7 @@ class RNNModel(DualCovariatesTorchModel):
                 **self.pl_module_params,
             )
         else:
-            model = self.rnn_type_or_module(
-                name="custom_module",
-                input_size=input_dim,
-                target_size=output_dim,
-                nr_params=nr_params,
-                hidden_dim=self.hidden_dim,
-                dropout=self.dropout,
-                num_layers=self.n_rnn_layers,
-                **self.pl_module_params,
-            )
+            model = self.rnn_type_or_module
         return model
 
     def _build_train_dataset(
