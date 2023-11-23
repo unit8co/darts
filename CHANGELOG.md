@@ -12,9 +12,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 **Fixed**
+- Fixed a bug when creating a `RNNModel` with a custom `model`. [#2088](https://github.com/unit8co/darts/pull/2088) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
-
 
 ## [0.27.0](https://github.com/unit8co/darts/tree/0.27.0) (2023-11-18)
 ### For users of the library:
