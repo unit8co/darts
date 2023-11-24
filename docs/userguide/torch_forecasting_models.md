@@ -461,6 +461,109 @@ model.fit(...)
 
 *Note* : The callback will give one more element in the `loss_logger.val_loss` as the model trainer performs a validation sanity check before the training begins.
 
+#### Example with MLflow Autologging
+
+MLflow using interface (UI) and autologging to track Dart's pytorch models. 
+```python
+import pandas as pd
+from torchmetrics import MeanAbsolutePercentageError
+from darts.dataprocessing.transformers import Scaler
+from darts.datasets import AirPassengersDataset
+from darts.models import NBEATSModel
+
+# read data
+series = AirPassengersDataset().load()
+
+# create training and validation sets:
+train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
+
+# normalize the time series
+transformer = Scaler()
+train = transformer.fit_transform(train)
+val = transformer.transform(val)
+
+# any TorchMetric or val_loss can be used as the monitor
+torch_metrics = torchmetrics.regression.MeanAbsolutePercentageError()
+
+# MLflow setup
+## Run this command with environment activated: mlflow ui --port xxxx  (e.g. 5000, 5001, 5002)
+# Copy and paste url from command line to web browser
+import mlflow
+import torchmetrics
+from mlflow.data.pandas_dataset import PandasDataset
+
+mlflow.pytorch.autolog(log_every_n_epoch=1, log_every_n_step=None, 
+                        log_models=True, log_datasets=True, disable=False, 
+                        exclusive=False, disable_for_unsupported_versions=False, 
+                        silent=False, registered_model_name=None, extra_tags=None
+                        )
+
+import mlflow.pytorch
+from mlflow.client import MlflowClient
+
+model_name = "Darts"
+
+with mlflow.start_run(nested=True) as run:
+
+    dataset: PandasDataset = mlflow.data.from_pandas(series, source="AirPassengersDataset")
+
+    # Log the dataset to the MLflow Run. Specify the "training" context to indicate that the
+    # dataset is used for model training
+    mlflow.log_input(dataset, context="training")
+   
+    mlflow.log_param("model_type", "Darts_Pytorch_model")
+    mlflow.log_param("input_chunk_length", 24)
+    mlflow.log_param("output_chunk_length", 12)                   
+    mlflow.log_param("n_epochs", 500)
+    mlflow.log_param("model_name", 'NBEATS_MLflow')
+    mlflow.log_param("log_tensorboard", True)
+    mlflow.log_param("torch_metrics", "torchmetrics.regression.MeanAbsolutePercentageError()")
+    mlflow.log_param("nr_epochs_val_period", 1)
+    mlflow.log_param("pl_trainer_kwargs", "{callbacks: [loss_logger]}")    
+   
+   
+    from pytorch_lightning.callbacks import Callback
+
+    class LossLogger(Callback):
+        def __init__(self):
+            self.train_loss = []
+            self.val_loss = []
+
+        # will automatically be called at the end of each epoch
+        def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+            self.train_loss.append(float(trainer.callback_metrics["train_loss"]))
+
+        def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+            self.val_loss.append(float(trainer.callback_metrics["val_loss"]))
+
+
+    loss_logger = LossLogger()    
+
+    # create the model
+    model = NBEATSModel(
+        input_chunk_length=24,
+        output_chunk_length=12,
+        n_epochs=500,
+        model_name='NBEATS_MLflow',
+        log_tensorboard=True,
+        torch_metrics=torch_metrics,
+        nr_epochs_val_period=1,
+        pl_trainer_kwargs={"callbacks": [loss_logger]})
+
+    # use validation dataset
+    model.fit(
+        series=train,
+        val_series=val,
+        )
+
+    # predit
+    forecast = model.predict(len(val))
+
+# Registering model
+model_uri = f"runs:/{run.info.run_id}/darts-NBEATS"
+mlflow.register_model(model_uri=model_uri, name=model_name)
+```
+
 ## Performance Recommendations
 This section recaps the main factors impacting the performance when
 training and using torch-based models.
