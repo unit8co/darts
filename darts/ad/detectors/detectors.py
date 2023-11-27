@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
 from darts import TimeSeries
-from darts.ad.utils import eval_accuracy_from_binary_prediction
+from darts.ad.utils import eval_metric_from_binary_prediction
 from darts.logging import raise_if_not
 
 
@@ -115,7 +115,7 @@ class Detector(ABC):
                 "Input `anomaly_score` must be deterministic (number of samples equal to 1).",
             )
 
-        return eval_accuracy_from_binary_prediction(
+        return eval_metric_from_binary_prediction(
             actual_anomalies, self.detect(anomaly_score), window, metric
         )
 

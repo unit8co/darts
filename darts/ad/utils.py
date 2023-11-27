@@ -146,9 +146,9 @@ def eval_accuracy_from_scores(
         return sol
 
 
-def eval_accuracy_from_binary_prediction(
-    actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-    binary_pred_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+def eval_metric_from_binary_prediction(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]] = 1,
     metric: str = "recall",
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
@@ -160,40 +160,39 @@ def eval_accuracy_from_binary_prediction(
         - number of components
         - binary and has values belonging to the two classes (1 and 0)
 
-    If one series is given for `actual_anomalies` and `pred_anomalies` contains more than
-    one series, the function will consider `actual_anomalies` as the true anomalies for
+    If one series is given for `actual_series` and `pred_series` contains more than
+    one series, the function will consider `actual_series` as the true anomalies for
     all scores in `anomaly_score`.
 
     Parameters
     ----------
-    actual_anomalies
+    actual_series
         The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-    binary_pred_anomalies
+    pred_series
         Anomaly predictions.
     window
         Integer value indicating the number of past samples each point represents
-        in the pred_anomalies. The parameter will be used to transform actual_anomalies.
-        If a list is given. the length must match the number of series in pred_anomalies
-        and actual_anomalies. If only one window is given, the value will be used for every
-        series in pred_anomalies and actual_anomalies.
+        in the pred_series. The parameter will be used to transform actual_series.
+        If a list is given. the length must match the number of series in pred_series
+        and actual_series. If only one window is given, the value will be used for every
+        series in pred_series and actual_series.
     metric
         Optionally, Scoring function to use. Must be one of "recall", "precision",
-        "f1", and "accuracy".
-        Default: "recall"
+        "f1", and "accuracy". Default: "recall"
 
     Returns
     -------
     Union[float, Sequence[float], Sequence[Sequence[float]]]
         Score of the anomalies prediction
 
-            * ``float`` if `binary_pred_anomalies` is a univariate series (dimension=1).
+            * ``float`` if `pred_series` is a univariate series (dimension=1).
             * ``Sequence[float]``
 
-                * if `binary_pred_anomalies` is a multivariate series (dimension>1),
+                * if `pred_series` is a multivariate series (dimension>1),
                   returns one value per dimension.
-                * if `binary_pred_anomalies` is a sequence of univariate series, returns one
+                * if `pred_series` is a sequence of univariate series, returns one
                   value per series
-            * ``Sequence[Sequence[float]]`` if `binary_pred_anomalies` is a sequence of
+            * ``Sequence[Sequence[float]]`` if `pred_series` is a sequence of
               multivariate series. Outer Sequence is over the sequence input, and the inner
               Sequence is over the dimensions of each element in the sequence input.
     """
@@ -214,8 +213,8 @@ def eval_accuracy_from_binary_prediction(
         metric_fn = accuracy_score
 
     list_actual_anomalies, list_binary_pred_anomalies, list_window = (
-        _to_list(actual_anomalies),
-        _to_list(binary_pred_anomalies),
+        _to_list(actual_series),
+        _to_list(pred_series),
         _to_list(window),
     )
 
@@ -229,8 +228,8 @@ def eval_accuracy_from_binary_prediction(
     else:
         raise_if_not(
             len(list_window) == len(list_actual_anomalies),
-            "The list of windows must be the same length as the list of `pred_anomalies` and"
-            + " `actual_anomalies`. There must be one window value for each series."
+            "The list of windows must be the same length as the list of `pred_series` and"
+            + " `actual_series`. There must be one window value for each series."
             + f" Found length {len(list_window)}, expected {len(list_actual_anomalies)}.",
         )
 
@@ -239,8 +238,8 @@ def eval_accuracy_from_binary_prediction(
         zip(list_actual_anomalies, list_binary_pred_anomalies)
     ):
 
-        _assert_binary(s_pred, "pred_anomalies")
-        _assert_binary(s_anomalies, "actual_anomalies")
+        _assert_binary(s_pred, "pred_series")
+        _assert_binary(s_anomalies, "actual_series")
 
         sol.append(
             _eval_accuracy_from_data(
@@ -248,7 +247,7 @@ def eval_accuracy_from_binary_prediction(
             )
         )
 
-    if len(sol) == 1 and not isinstance(binary_pred_anomalies, Sequence):
+    if len(sol) == 1 and not isinstance(pred_series, Sequence):
         return sol[0]
     else:
         return sol

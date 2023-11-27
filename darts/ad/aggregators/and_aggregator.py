@@ -9,10 +9,10 @@ are flagged as anomalous (logical AND).
 from typing import Sequence
 
 from darts import TimeSeries
-from darts.ad.aggregators.aggregators import NonFittableAggregator
+from darts.ad.aggregators.aggregators import Aggregator
 
 
-class AndAggregator(NonFittableAggregator):
+class AndAggregator(Aggregator):
     def __init__(self) -> None:
         super().__init__()
 
