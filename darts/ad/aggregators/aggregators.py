@@ -292,4 +292,4 @@ class FittableAggregator(Aggregator):
             + f" {self.width_trained_on}.",
         )
 
-        super().predict(series=list_series)
+        super().predict(series=series)
