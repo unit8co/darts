@@ -251,7 +251,6 @@ def _historical_forecasts_sanitize_kwargs(
             method_args=predict_args,
             show_warnings=show_warnings,
         )
-
     return fit_kwargs, predict_kwargs
 
 
@@ -277,6 +276,11 @@ def _historical_forecasts_check_kwargs(
             ),
             logger,
         )
+
+    # no chance for ignoring parameters which are part of the base model;
+    # let model handle the exception
+    if "args" in method_args or "kwargs" in method_args:
+        return dict_kwargs
 
     ignored_args = set(dict_kwargs) - method_args
     if len(ignored_args) > 0:
