@@ -697,13 +697,3 @@ class TiDEModel(MixedCovariatesTorchModel):
     @property
     def supports_multivariate(self) -> bool:
         return True
-
-    def predict(self, n, *args, **kwargs):
-        # since we have future covariates, the inference dataset for future input must be at least of length
-        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
-        # `input_chunk_length`.
-
-        if n >= self.output_chunk_length:
-            return super().predict(n, *args, **kwargs)
-        else:
-            return super().predict(self.output_chunk_length, *args, **kwargs)[:n]

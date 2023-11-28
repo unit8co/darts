@@ -2754,6 +2754,62 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_length - 1 if self.uses_future_covariates else None,
         )
 
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        trainer: Optional[pl.Trainer] = None,
+        batch_size: Optional[int] = None,
+        verbose: Optional[bool] = None,
+        n_jobs: int = 1,
+        roll_size: Optional[int] = None,
+        num_samples: int = 1,
+        num_loader_workers: int = 0,
+        mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        # since we have future covariates, the inference dataset for future input must be at least of length
+        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
+        # `input_chunk_length`.
+
+        if n >= self.output_chunk_length:
+            return super().predict(
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                trainer=trainer,
+                batch_size=batch_size,
+                verbose=verbose,
+                n_jobs=n_jobs,
+                roll_size=roll_size,
+                num_samples=num_samples,
+                num_loader_workers=num_loader_workers,
+                mc_dropout=mc_dropout,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                show_warnings=show_warnings,
+            )
+        else:
+            return super().predict(
+                n=self.output_chunk_length,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                trainer=trainer,
+                batch_size=batch_size,
+                verbose=verbose,
+                n_jobs=n_jobs,
+                roll_size=roll_size,
+                num_samples=num_samples,
+                num_loader_workers=num_loader_workers,
+                mc_dropout=mc_dropout,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                show_warnings=show_warnings,
+            )[:n]
+
 
 class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(
