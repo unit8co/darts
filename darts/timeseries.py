@@ -1472,10 +1472,10 @@ class TimeSeries:
         self._assert_deterministic()
         if copy:
             return pd.Series(
-                self._xa[:, 0, 0].values.copy(), index=self._time_index.copy(), name=list(self.components)[0]
+                self._xa[:, 0, 0].values.copy(), index=self._time_index.copy(), name=self.components.array[0]
             )
         else:
-            return pd.Series(self._xa[:, 0, 0].values, index=self._time_index, name=list(self.components)[0])
+            return pd.Series(self._xa[:, 0, 0].values, index=self._time_index, name=self.components.array[0])
 
     def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
