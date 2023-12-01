@@ -12,6 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 **Fixed**
+- Fixed an import error when trying to create a `TorchForecastingModel` with PyTorch Lightning v<2.0.0. [#2087](https://github.com/unit8co/darts/pull/2087) by [Eschibli](https://github.com/eschibli).
 - Fixed a bug when creating a `RNNModel` with a custom `model`. [#2088](https://github.com/unit8co/darts/pull/2088) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
