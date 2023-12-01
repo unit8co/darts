@@ -33,12 +33,16 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         dropout: float = 0.0,
         **kwargs,
     ):
-        """PyTorch module implementing an RNN to be used in `RNNModel`.
+        """This class allows to create custom RNN modules that can later be used with Darts' `RNNModel`.
+        It adds the backbone that is required to be used with Darts' `TorchForecastingModel` and `RNNModel`.
 
-        PyTorch module implementing a simple RNN with the specified `name` type.
-        This module combines a PyTorch RNN module, together with one fully connected layer which
-        maps the hidden state of the RNN at each step to the output value of the model at that
-        time step.
+        To create a new module, create a subclass and:
+
+        * Define the architecture in the module constructor (`__init__()`)
+
+        * Add the `forward()` method and define the logic of your module's forward pass
+
+        You can use `darts.models.forecasting.rnn_model._RNNModule` as an example.
 
         Parameters
         ----------
@@ -295,9 +299,8 @@ class RNNModel(DualCovariatesTorchModel):
         input_chunk_length
             Number of past time steps that are fed to the forecasting module at prediction time.
         model
-            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
-            or a PyTorch module with the same specifications as
-            `darts.models.rnn_model._RNNModule`.
+            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"), or a subclass of
+            :class:`CustomRNNModule` (the class itself, not an object of the class) with a custom logic.
         hidden_dim
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
@@ -401,7 +404,6 @@ class RNNModel(DualCovariatesTorchModel):
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:
-
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),

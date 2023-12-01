@@ -487,7 +487,6 @@ class TransformerModel(PastCovariatesTorchModel):
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:
 
-
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
             - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
