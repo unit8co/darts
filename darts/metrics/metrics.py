@@ -184,7 +184,7 @@ def _get_values_or_raise(
     series_b
         A univariate (deterministic or stochastic) ``TimeSeries`` instance (the predicted series).
     intersect
-        A boolean for whether or not to only consider the time intersection between `series_a` and `series_b`
+        A boolean for whether to only consider the time intersection between `series_a` and `series_b`
     stochastic_quantile
         Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)
         or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
