@@ -40,7 +40,6 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.callbacks import ProgressBar
 from torch import Tensor
 from torch.utils.data import DataLoader
 
@@ -97,8 +96,10 @@ tokens = pl.__version__.split(".")
 pl_200_or_above = int(tokens[0]) >= 2
 
 if pl_200_or_above:
+    from pytorch_lightning.callbacks import ProgressBar
     from pytorch_lightning.tuner import Tuner
 else:
+    from pytorch_lightning.callbacks import ProgressBarBase as ProgressBar
     from pytorch_lightning.tuner.tuning import Tuner
 
 
