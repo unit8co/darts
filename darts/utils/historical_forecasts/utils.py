@@ -227,13 +227,10 @@ def _historical_forecasts_sanitize_kwargs(
     if fit_kwargs is None:
         fit_kwargs = dict()
     elif retrain:
-        fit_args = set(inspect.signature(model.fit).parameters)
         fit_kwargs = _historical_forecasts_check_kwargs(
             hfc_args=hfc_args,
             name_kwargs="fit_kwargs",
             dict_kwargs=fit_kwargs,
-            method_args=fit_args,
-            show_warnings=show_warnings,
         )
     elif show_warnings:
         logger.warning(
@@ -243,13 +240,10 @@ def _historical_forecasts_sanitize_kwargs(
     if predict_kwargs is None:
         predict_kwargs = dict()
     else:
-        predict_args = set(inspect.signature(model.predict).parameters)
         predict_kwargs = _historical_forecasts_check_kwargs(
             hfc_args=hfc_args,
             name_kwargs="predict_kwargs",
             dict_kwargs=predict_kwargs,
-            method_args=predict_args,
-            show_warnings=show_warnings,
         )
     return fit_kwargs, predict_kwargs
 
@@ -258,8 +252,6 @@ def _historical_forecasts_check_kwargs(
     hfc_args: Set[str],
     name_kwargs: str,
     dict_kwargs: Dict[str, Any],
-    method_args: Set[str],
-    show_warnings: bool,
 ) -> Dict[str, Any]:
     """
     Return the kwargs dict without the arguments unsupported by the model method.
@@ -276,22 +268,6 @@ def _historical_forecasts_check_kwargs(
             ),
             logger,
         )
-
-    # no chance for ignoring parameters which are part of the base model;
-    # let model handle the exception
-    if "args" in method_args or "kwargs" in method_args:
-        return dict_kwargs
-
-    ignored_args = set(dict_kwargs) - method_args
-    if len(ignored_args) > 0:
-        # remove unsupported argument to avoid exception thrown by python
-        dict_kwargs = {k: v for k, v in dict_kwargs.items() if k not in ignored_args}
-        if show_warnings:
-            logger.warning(
-                f"The following parameters in `{name_kwargs}` will be ignored as they are not supported by "
-                f"model method: {ignored_args}."
-            )
-
     return dict_kwargs
 
 

@@ -204,7 +204,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -1302,7 +1302,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
-            Default: ``False``
+            Default: ``False``.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
