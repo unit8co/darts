@@ -33,14 +33,17 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         dropout: float = 0.0,
         **kwargs,
     ):
-        """This class allows to create custom RNN modules that can later be used with Darts' `RNNModel`.
-        It adds the backbone that is required to be used with Darts' `TorchForecastingModel` and `RNNModel`.
+        """This class allows to create custom RNN modules that can later be used with Darts' :class:`RNNModel`.
+        It adds the backbone that is required to be used with Darts' :class:`TorchForecastingModel` and
+        :class:`RNNModel`.
 
-        To create a new module, create a subclass and:
+        To create a new module, subclass from :class:`CustomRNNModule` and:
 
         * Define the architecture in the module constructor (`__init__()`)
 
         * Add the `forward()` method and define the logic of your module's forward pass
+
+        * Use the custom module class when creating a new :class:`RNNModel` with parameter `model`.
 
         You can use `darts.models.forecasting.rnn_model._RNNModule` as an example.
 
@@ -205,7 +208,7 @@ class _RNNModule(CustomRNNModule):
         name
             The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for the :class:`darts.model.forecasting_models.CustomRNNModule` base class.
 
         Inputs
         ------
@@ -496,7 +499,7 @@ class RNNModel(DualCovariatesTorchModel):
             if not inspect.isclass(model) or not issubclass(model, CustomRNNModule):
                 raise_log(
                     ValueError(
-                        "`model` is not a valid RNN model. Please specify RNN', 'LSTM', 'GRU', or give a subclass "
+                        "`model` is not a valid RNN model. Please specify 'RNN', 'LSTM', 'GRU', or give a subclass "
                         "(not an instance) of darts.models.forecasting.rnn_model.CustomRNNModule."
                     ),
                     logger=logger,
