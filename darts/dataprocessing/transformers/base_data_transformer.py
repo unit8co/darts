@@ -77,7 +77,7 @@ class BaseDataTransformer(ABC):
             each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those
             attribute names specified will take on different values between different parallel jobs.
         mask_components
-            Optionally, whether or not to automatically apply any provided `component_mask`s to the
+            Optionally, whether to automatically apply any provided `component_mask`s to the
             `TimeSeries` inputs passed to `transform`, `fit`, `inverse_transform`, or `fit_transform`.
             If `True`, any specified `component_mask` will be applied to each input timeseries
             before passing them to the called method; the masked components will also be automatically

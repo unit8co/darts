@@ -772,6 +772,8 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
         """
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
