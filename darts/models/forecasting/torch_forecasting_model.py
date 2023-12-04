@@ -205,7 +205,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -1302,7 +1302,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
-            Default: ``False``
+            Default: ``False``.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
@@ -2753,6 +2755,62 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length if self.uses_future_covariates else None,
             self.output_chunk_length - 1 if self.uses_future_covariates else None,
         )
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        trainer: Optional[pl.Trainer] = None,
+        batch_size: Optional[int] = None,
+        verbose: Optional[bool] = None,
+        n_jobs: int = 1,
+        roll_size: Optional[int] = None,
+        num_samples: int = 1,
+        num_loader_workers: int = 0,
+        mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        # since we have future covariates, the inference dataset for future input must be at least of length
+        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
+        # `input_chunk_length`.
+
+        if n >= self.output_chunk_length:
+            return super().predict(
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                trainer=trainer,
+                batch_size=batch_size,
+                verbose=verbose,
+                n_jobs=n_jobs,
+                roll_size=roll_size,
+                num_samples=num_samples,
+                num_loader_workers=num_loader_workers,
+                mc_dropout=mc_dropout,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                show_warnings=show_warnings,
+            )
+        else:
+            return super().predict(
+                n=self.output_chunk_length,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                trainer=trainer,
+                batch_size=batch_size,
+                verbose=verbose,
+                n_jobs=n_jobs,
+                roll_size=roll_size,
+                num_samples=num_samples,
+                num_loader_workers=num_loader_workers,
+                mc_dropout=mc_dropout,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                show_warnings=show_warnings,
+            )[:n]
 
 
 class SplitCovariatesTorchModel(TorchForecastingModel, ABC):

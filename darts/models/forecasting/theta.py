@@ -153,7 +153,11 @@ class Theta(LocalForecastingModel):
         return self
 
     def predict(
-        self, n: int, num_samples: int = 1, verbose: bool = False
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
     ) -> "TimeSeries":
         super().predict(n, num_samples)
 
@@ -400,7 +404,11 @@ class FourTheta(LocalForecastingModel):
         return self
 
     def predict(
-        self, n: int, num_samples: int = 1, verbose: bool = False
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
     ) -> "TimeSeries":
         super().predict(n, num_samples)
 
