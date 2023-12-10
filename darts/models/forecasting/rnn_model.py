@@ -3,12 +3,14 @@ Recurrent Neural Networks
 -------------------------
 """
 
-from typing import Optional, Sequence, Tuple, Union
+import inspect
+from abc import ABC, abstractmethod
+from typing import Optional, Sequence, Tuple, Type, Union
 
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLDualCovariatesModule,
     io_processor,
@@ -20,11 +22,9 @@ from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
 logger = get_logger(__name__)
 
 
-# TODO add batch norm
-class _RNNModule(PLDualCovariatesModule):
+class CustomRNNModule(PLDualCovariatesModule, ABC):
     def __init__(
         self,
-        name: str,
         input_size: int,
         hidden_dim: int,
         num_layers: int,
@@ -33,18 +33,22 @@ class _RNNModule(PLDualCovariatesModule):
         dropout: float = 0.0,
         **kwargs,
     ):
+        """This class allows to create custom RNN modules that can later be used with Darts' :class:`RNNModel`.
+        It adds the backbone that is required to be used with Darts' :class:`TorchForecastingModel` and
+        :class:`RNNModel`.
 
-        """PyTorch module implementing an RNN to be used in `RNNModel`.
+        To create a new module, subclass from :class:`CustomRNNModule` and:
 
-        PyTorch module implementing a simple RNN with the specified `name` type.
-        This module combines a PyTorch RNN module, together with one fully connected layer which
-        maps the hidden state of the RNN at each step to the output value of the model at that
-        time step.
+        * Define the architecture in the module constructor (`__init__()`)
+
+        * Add the `forward()` method and define the logic of your module's forward pass
+
+        * Use the custom module class when creating a new :class:`RNNModel` with parameter `model`.
+
+        You can use `darts.models.forecasting.rnn_model._RNNModule` as an example.
 
         Parameters
         ----------
-        name
-            The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
         input_size
             The dimensionality of the input time series.
         hidden_dim
@@ -59,55 +63,43 @@ class _RNNModule(PLDualCovariatesModule):
             The fraction of neurons that are dropped in all-but-last RNN layers.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
-
-        Inputs
-        ------
-        x of shape `(batch_size, input_length, input_size)`
-            Tensor containing the features of the input sequence. The `input_length` is not fixed.
-
-        Outputs
-        -------
-        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
-            Tensor containing the outputs of the RNN at every time step of the input sequence.
-            During training the whole tensor is used as output, whereas during prediction we only use y[:, -1, :].
-            However, this module always returns the whole Tensor.
         """
-
         # RNNModule doesn't really need input and output_chunk_length for PLModule
         super().__init__(**kwargs)
 
         # Defining parameters
+        self.input_size = input_size
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
         self.target_size = target_size
         self.nr_params = nr_params
-        self.name = name
-
-        # Defining the RNN module
-        self.rnn = getattr(nn, name)(
-            input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout
-        )
-
-        # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
-        self.V = nn.Linear(hidden_dim, target_size * nr_params)
+        self.dropout = dropout
 
     @io_processor
+    @abstractmethod
     def forward(
         self, x_in: Tuple, h: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        x, _ = x_in
-        # data is of size (batch_size, input_length, input_size)
-        batch_size = x.shape[0]
+        """RNN Module forward.
 
-        # out is of size (batch_size, input_length, hidden_dim)
-        out, last_hidden_state = self.rnn(x) if h is None else self.rnn(x, h)
+        Parameters
+        ----------
+        x_in
+            Tuple of Tensors containing the features of the input sequence. The tuple has elements (past target,
+            historic future covariates, future covariates, static covariates). The shape of the past target is
+            `(batch_size, input_length, input_size)`.
+        h
+            Optionally, the hidden state.
 
-        # Here, we apply the V matrix to every hidden state to produce the outputs
-        predictions = self.V(out)
-
-        # predictions is of size (batch_size, input_length, target_size)
-        predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
-
-        # returns outputs for all inputs, only the last one is needed for prediction time
-        return predictions, last_hidden_state
+        Returns
+        -------
+        Tuple[torch.Tensor, torch.Tensor]
+            Tuple of Tensors with elements (RNN output, hidden state). The RNN output Tensor has shape
+            `(batch_size, output_chunk_length, target_size, nr_params)`. It contains the outputs at every
+            time step of the input sequence. During training the whole tensor is used as output, whereas during
+            prediction we only use y[:, -1, :]. However, this module always returns the whole Tensor.
+        """
+        pass
 
     def _produce_train_output(self, input_batch: Tuple) -> torch.Tensor:
         (
@@ -204,11 +196,82 @@ class _RNNModule(PLDualCovariatesModule):
         return batch_prediction
 
 
+# TODO add batch norm
+class _RNNModule(CustomRNNModule):
+    def __init__(
+        self,
+        name: str,
+        **kwargs,
+    ):
+        """PyTorch module implementing an RNN to be used in `RNNModel`.
+
+        PyTorch module implementing a simple RNN with the specified `name` type.
+        This module combines a PyTorch RNN module, together with one fully connected layer which
+        maps the hidden state of the RNN at each step to the output value of the model at that
+        time step.
+
+        Parameters
+        ----------
+        name
+            The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
+        **kwargs
+            all parameters required for the :class:`darts.model.forecasting_models.CustomRNNModule` base class.
+
+        Inputs
+        ------
+        x of shape `(batch_size, input_length, input_size)`
+            Tensor containing the features of the input sequence. The `input_length` is not fixed.
+
+        Outputs
+        -------
+        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
+            Tensor containing the outputs of the RNN at every time step of the input sequence.
+            During training the whole tensor is used as output, whereas during prediction we only use y[:, -1, :].
+            However, this module always returns the whole Tensor.
+        """
+
+        # RNNModule doesn't really need input and output_chunk_length for PLModule
+        super().__init__(**kwargs)
+        self.name = name
+
+        # Defining the RNN module
+        self.rnn = getattr(nn, name)(
+            self.input_size,
+            self.hidden_dim,
+            self.num_layers,
+            batch_first=True,
+            dropout=self.dropout,
+        )
+
+        # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
+        self.V = nn.Linear(self.hidden_dim, self.target_size * self.nr_params)
+
+    @io_processor
+    def forward(
+        self, x_in: Tuple, h: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        x, _ = x_in
+        # data is of size (batch_size, input_length, input_size)
+        batch_size = x.shape[0]
+
+        # out is of size (batch_size, input_length, hidden_dim)
+        out, last_hidden_state = self.rnn(x) if h is None else self.rnn(x, h)
+
+        # Here, we apply the V matrix to every hidden state to produce the outputs
+        predictions = self.V(out)
+
+        # predictions is of size (batch_size, input_length, target_size)
+        predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
+
+        # returns outputs for all inputs, only the last one is needed for prediction time
+        return predictions, last_hidden_state
+
+
 class RNNModel(DualCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
-        model: Union[str, nn.Module] = "RNN",
+        model: Union[str, Type[CustomRNNModule]] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
@@ -246,9 +309,8 @@ class RNNModel(DualCovariatesTorchModel):
         input_chunk_length
             Number of past time steps that are fed to the forecasting module at prediction time.
         model
-            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
-            or a PyTorch module with the same specifications as
-            `darts.models.rnn_model._RNNModule`.
+            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"), or a subclass of
+            :class:`CustomRNNModule` (the class itself, not an object of the class) with a custom logic.
         hidden_dim
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
@@ -353,7 +415,6 @@ class RNNModel(DualCovariatesTorchModel):
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:
 
-
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
             - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
@@ -442,14 +503,14 @@ class RNNModel(DualCovariatesTorchModel):
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:
-            raise_if_not(
-                isinstance(model, nn.Module),
-                '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
-                '"GRU", or give your own PyTorch nn.Module'.format(
-                    model.__class__.__name__
-                ),
-                logger,
-            )
+            if not inspect.isclass(model) or not issubclass(model, CustomRNNModule):
+                raise_log(
+                    ValueError(
+                        "`model` is not a valid RNN model. Please specify 'RNN', 'LSTM', 'GRU', or give a subclass "
+                        "(not an instance) of darts.models.forecasting.rnn_model.CustomRNNModule."
+                    ),
+                    logger=logger,
+                )
 
         self.rnn_type_or_module = model
         self.dropout = dropout
@@ -466,29 +527,22 @@ class RNNModel(DualCovariatesTorchModel):
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        if self.rnn_type_or_module in ["RNN", "LSTM", "GRU"]:
-            model = _RNNModule(
-                name=self.rnn_type_or_module,
-                input_size=input_dim,
-                target_size=output_dim,
-                nr_params=nr_params,
-                hidden_dim=self.hidden_dim,
-                dropout=self.dropout,
-                num_layers=self.n_rnn_layers,
-                **self.pl_module_params,
-            )
+        kwargs = {}
+        if isinstance(self.rnn_type_or_module, str):
+            model_cls = _RNNModule
+            kwargs["name"] = self.rnn_type_or_module
         else:
-            model = self.rnn_type_or_module(
-                name="custom_module",
-                input_size=input_dim,
-                target_size=output_dim,
-                nr_params=nr_params,
-                hidden_dim=self.hidden_dim,
-                dropout=self.dropout,
-                num_layers=self.n_rnn_layers,
-                **self.pl_module_params,
-            )
-        return model
+            model_cls = self.rnn_type_or_module
+        return model_cls(
+            input_size=input_dim,
+            target_size=output_dim,
+            nr_params=nr_params,
+            hidden_dim=self.hidden_dim,
+            dropout=self.dropout,
+            num_layers=self.n_rnn_layers,
+            **self.pl_module_params,
+            **kwargs,
+        )
 
     def _build_train_dataset(
         self,
