@@ -44,7 +44,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
 
         * Use the custom module class when creating a new :class:`BlockRNNModel` with parameter `model`.
 
-        You can use `darts.models.forecasting.rnn_model._RNNModule` as an example.
+        You can use `darts.models.forecasting.block_rnn_model._BlockRNNModule` as an example.
 
         Parameters
         ----------
