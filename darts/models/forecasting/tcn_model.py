@@ -400,7 +400,6 @@ class TCNModel(PastCovariatesTorchModel):
             dict:rgs``
             dict:
 
-
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
             - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
