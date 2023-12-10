@@ -61,8 +61,7 @@ class TestTimeSeriesStaticCovariate:
                 ts.pd_dataframe(), static_covariates=ts.static_covariates
             ),
         )
-        # ts.pd_series() loses component names -> static covariates have different components names
-        self.helper_test_cov_transfer_values(
+        self.helper_test_cov_transfer(
             ts,
             TimeSeries.from_series(
                 ts.pd_series(), static_covariates=ts.static_covariates
