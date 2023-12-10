@@ -78,6 +78,18 @@ class TestTimeSeries:
         )
         _ = TimeSeries.from_xarray(ar)
 
+    def test_pandas_creation(self):
+        pd_series = pd.Series(range(10), name="test_name", dtype="float32")
+        ts = TimeSeries.from_series(pd_series)
+        ts_pd_series = ts.pd_series()
+        assert ts_pd_series.equals(pd_series)
+        assert ts_pd_series.name == pd_series.name
+
+        pd_df = pd_series.to_frame()
+        ts = TimeSeries.from_dataframe(pd_df)
+        ts_pd_df = ts.pd_dataframe()
+        assert ts_pd_df.equals(pd_df)
+
     def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
         range_indexed_data = np.random.randn(
