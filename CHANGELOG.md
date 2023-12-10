@@ -6,8 +6,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.27.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.27.1...master)
 
+### For users of the library:
+**Improved**
+
+**Fixed**
+
+### For developers of the library:
+
+## [0.27.1](https://github.com/unit8co/darts/tree/0.27.1) (2023-12-10)
 ### For users of the library:
 **Improved**
 - 🔴 Added `CustomRNNModule` and `CustomBlockRNNModule` for defining custom RNN modules that can be used with `RNNModel` and `BlockRNNModel`. The custom `model` must now be a subclass of the custom modules. [#2088](https://github.com/unit8co/darts/pull/2088) by [Dennis Bader](https://github.com/dennisbader).
@@ -18,7 +26,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug when creating a `RNNModel` with a custom `model`. [#2088](https://github.com/unit8co/darts/pull/2088) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
-
+- Added a folder `docs/generated_api` to define custom .rst files for generating the documentation. [#2115](https://github.com/unit8co/darts/pull/2115) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.27.0](https://github.com/unit8co/darts/tree/0.27.0) (2023-11-18)
 ### For users of the library:
