@@ -939,6 +939,8 @@
 <span class="sd">        **kwargs : dict, optional</span>
 <span class="sd">            Additional keyword arguments passed to the `predict` method of the model. Only works with</span>
 <span class="sd">            univariate target series.</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            Optionally, control whether warnings are shown. Not effective for all models.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># then there must be a single TS, and that was saved in super().fit as self.training_series</span>

@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.catboost_model
    :members:
    :undoc-members:

@@ -1,4 +1,3 @@
-
 .. automodule:: darts.dataprocessing.encoders.encoder_base
    :members:
    :undoc-members:

@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.tft_model
    :members:
    :undoc-members:

@@ -30,7 +30,7 @@ Time Series Made Easy in Python
 
 
 .. image:: https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date
-   :target: https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date
+   :target: https://hub.docker.com/r/unit8/darts
    :alt: Docker Image Version (latest by date)
 
 
@@ -326,25 +326,25 @@ on bringing more models and features.
      - 
    * - `NaiveMean <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean>`_
      - 
-     - 🟩 🟥
+     - 🟩 🟩
      - 🟥 🟥 🟥
      - 🟥 🟥
      - 🟥
    * - `NaiveSeasonal <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal>`_
      - 
-     - 🟩 🟥
+     - 🟩 🟩
      - 🟥 🟥 🟥
      - 🟥 🟥
      - 🟥
    * - `NaiveDrift <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift>`_
      - 
-     - 🟩 🟥
+     - 🟩 🟩
      - 🟥 🟥 🟥
      - 🟥 🟥
      - 🟥
    * - `NaiveMovingAverage <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage>`_
      - 
-     - 🟩 🟥
+     - 🟩 🟩
      - 🟥 🟥 🟥
      - 🟥 🟥
      - 🟥
@@ -364,7 +364,7 @@ on bringing more models and features.
      - 
      - 🟥 🟩
      - 🟥 🟩 🟥
-     - 🟥 🟥
+     - 🟩 🟥
      - 🟥
    * - `AutoARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA>`_
      - 
@@ -414,7 +414,7 @@ on bringing more models and features.
      - 🟥 🟥 🟥
      - 🟩 🟥
      - 🟥
-   * - `Prophet <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet>`_ (see `install notes <https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet>`_\ )
+   * - `Prophet <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet>`_
      - `Prophet repo <https://github.com/facebook/prophet>`_
      - 🟩 🟥
      - 🟥 🟩 🟥
@@ -462,7 +462,7 @@ on bringing more models and features.
      - 🟩 🟩 🟩
      - 🟥 🟥
      - 🟩
-   * - `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel>`_\ ,
+   * - `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel>`_
      - 
      - 🟩 🟩
      - 🟩 🟩 🟩

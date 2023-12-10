@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.xgboost
    :members:
    :undoc-members:

@@ -1,4 +1,10 @@
+Recurrent Neural Networks
+-------------------------
 
-.. automodule:: darts.models.forecasting.rnn_model
+.. autoclass:: darts.models.forecasting.rnn_model.RNNModel
    :members:
-   :undoc-members:
+   :exclude-members:
+
+.. autoclass:: darts.models.forecasting.rnn_model.CustomRNNModule
+   :members:
+   :no-inherited-members:

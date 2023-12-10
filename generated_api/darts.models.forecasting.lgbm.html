@@ -995,13 +995,16 @@ treated as categorical are integer-encoded.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.supports_static_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.uses_future_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.supports_transferrable_series_prediction" title="darts.models.forecasting.lgbm.LightGBMModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.uses_future_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.uses_past_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.uses_past_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.uses_static_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.uses_static_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -1678,6 +1681,7 @@ supported for probabilistic models with a likelihood, <cite>num_samples = 1</cit
 Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 <li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional keyword arguments passed to the <cite>predict</cite> method of the model. Only works with
 univariate target series.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, control whether warnings are shown. Not effective for all models.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1810,6 +1814,17 @@ wrapping the univariate model in a <cite>sklearn.multioutput.MultiOutputRegresso
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.supports_static_covariates">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports static covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.supports_transferrable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>

@@ -1,4 +1,10 @@
+Block Recurrent Neural Networks
+-------------------------------
 
-.. automodule:: darts.models.forecasting.block_rnn_model
+.. autoclass:: darts.models.forecasting.block_rnn_model.BlockRNNModel
    :members:
-   :undoc-members:
+   :exclude-members:
+
+.. autoclass:: darts.models.forecasting.block_rnn_model.CustomBlockRNNModule
+   :members:
+   :no-inherited-members:

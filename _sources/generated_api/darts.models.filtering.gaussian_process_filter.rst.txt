@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.filtering.gaussian_process_filter
    :members:
    :undoc-members:

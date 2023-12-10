@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.tcn_model
    :members:
    :undoc-members:

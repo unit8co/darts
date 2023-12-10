@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.nlinear
    :members:
    :undoc-members:

@@ -1,4 +1,3 @@
-
 .. automodule:: darts.utils.data.horizon_based_dataset
    :members:
    :undoc-members:

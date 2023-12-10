@@ -1,4 +1,3 @@
-
 .. automodule:: darts.dataprocessing.transformers.window_transformer
    :members:
    :undoc-members:

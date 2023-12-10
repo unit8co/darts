@@ -1,4 +1,3 @@
-
 .. automodule:: darts.ad.anomaly_model.filtering_am
    :members:
    :undoc-members:

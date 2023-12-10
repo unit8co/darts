@@ -1,4 +1,3 @@
-
 .. automodule:: darts.dataprocessing.transformers.diff
    :members:
    :undoc-members:

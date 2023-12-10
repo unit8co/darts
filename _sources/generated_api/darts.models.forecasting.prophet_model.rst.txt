@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.prophet_model
    :members:
    :undoc-members:

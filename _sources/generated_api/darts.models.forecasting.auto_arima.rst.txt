@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.auto_arima
    :members:
    :undoc-members:

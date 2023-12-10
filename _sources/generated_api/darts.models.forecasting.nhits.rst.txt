@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.nhits
    :members:
    :undoc-members:

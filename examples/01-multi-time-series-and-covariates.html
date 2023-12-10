@@ -829,31 +829,28 @@ div.rendered_html tbody tr:hover {
 </div>
 <section id="Global-Forecasting-Models">
 <h3>Global Forecasting Models<a class="headerlink" href="#Global-Forecasting-Models" title="Permalink to this headline">¶</a></h3>
-<p>Darts contains many forecasting models, but not all of them can be trained on several time series. The models that support training on multiple series are called <em>global</em> models. At the time of writing, there are 5 global models:</p>
+<p>Darts contains many forecasting models, but not all of them can be trained on several time series. The models that support training on multiple series are called <em>global</em> models. An exhaustive list of the global models can be found <a class="reference external" href="https://unit8co.github.io/darts/README.html#forecasting-models">here</a> (bottom of the table) with for example:</p>
 <ul class="simple">
+<li><p>LinearRegressionModel</p></li>
 <li><p>BlockRNNModel</p></li>
-<li><p>RNNModel</p></li>
-<li><p>Temporal Convolutional Networks (TCNs)</p></li>
-<li><p>N-Beats</p></li>
-<li><p>Transformer model</p></li>
+<li><p>Temporal Convolutional Networks (TCNModel)</p></li>
+<li><p>N-Beats (NBEATSModel)</p></li>
+<li><p>TiDEModel</p></li>
 </ul>
 <p>In the following, we will distinguish two sorts of time series:</p>
 <ul class="simple">
 <li><p>The <strong>target time series</strong> is the time series we are interested to forecast (given its history)</p></li>
 <li><p>A <strong>covariate time series</strong> is a time series which may help in the forecasting of the target series, but that we are not interested in forecasting. It’s sometimes also called <em>external data</em>.</p></li>
 </ul>
+<p><strong>Note</strong>: Static covariates are invariant in time and correspond to additional information associated with the components of the <strong>target time series</strong>. Detailed information about this kind of covariate can be found in the <a class="reference external" href="https://unit8co.github.io/darts/examples/15-static-covariates.html">static covariates notebook</a>.</p>
 <p>We further differentiate covariates series, depending on whether they can be known in advance or not:</p>
 <ul class="simple">
 <li><p><strong>Past Covariates</strong> denote time series whose past values are known at prediction time. These are usually things that have to be measured or observed.</p></li>
 <li><p><strong>Future Covariates</strong> denote time series whose future values are already known at prediction time for the span of the forecast horizon. These can for instance represent known future holidays, or weather forecasts.</p></li>
 </ul>
-<p>Some models use only past covariates, others use only future covariates, and some models might use both. We will dive deeper in this topic in some other notebook, but for now it is enough to know this:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> and <code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code> all use <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> uses <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>.</p></li>
-</ul>
+<p>Some models use only past covariates, others use only future covariates, and some models might use both. We will dive deeper in this topic in some other notebook, but this <a class="reference external" href="https://unit8co.github.io/darts/README.html#forecasting-models">table</a> details the covariates supported by each model.</p>
 <p>All of the global models listed above support training on multiple series. In addition, they also all support <em>multivariate series</em>. This means that they can seamlessly be used with time series of more than one dimension; the target series can contain one (as is often the case) or several dimensions. A time series with several dimensions is really just a regular time series where the values at each time stamps are vectors instead of scalars.</p>
-<p>As an example, the 4 models supporting <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> follow a “block” architecture. They contain a neural network that takes chunks of time series in input, and outputs chunks of (predicted) future time series values. The input dimensionality is the number of dimensions (components) of the target series, plus the number of components of all the covariates - stacked together. The output dimensionality is simply the number of dimensions of the target series: <img alt="image0" src="../_images/seq_dataset_one_ts.png" /></p>
+<p>As an example, the BlockRNNModel, N-Beats, TCN and Transformer models follow a “block” architecture. They contain a neural network that takes chunks of time series in input, and outputs chunks of (predicted) future time series values. The input dimensionality is the number of dimensions (components) of the target series, plus the number of components of all the covariates - stacked together. The output dimensionality is simply the number of dimensions of the target series: <img alt="image0" src="../_images/seq_dataset_one_ts.png" /></p>
 <p>The <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> works differently, in a recurrent fashion (which is also why they support future covariates). The good news is that as a user, we don’t have to worry too much about the different model types and input/output dimensionalities. The dimensionalities are automatically inferred for us by the model based on the training data, and the support for past or future covariates is simply handled by the <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> arguments.</p>
 <p>We’ll still have to specify two important parameters when building our models:</p>
 <ul class="simple">

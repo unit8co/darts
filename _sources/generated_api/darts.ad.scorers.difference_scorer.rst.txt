@@ -1,4 +1,3 @@
-
 .. automodule:: darts.ad.scorers.difference_scorer
    :members:
    :undoc-members:

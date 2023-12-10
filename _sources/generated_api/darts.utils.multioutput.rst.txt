@@ -1,4 +1,3 @@
-
 .. automodule:: darts.utils.multioutput
    :members:
    :undoc-members:

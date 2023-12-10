@@ -1,4 +1,3 @@
-
 .. automodule:: darts.dataprocessing.transformers.mappers
    :members:
    :undoc-members:

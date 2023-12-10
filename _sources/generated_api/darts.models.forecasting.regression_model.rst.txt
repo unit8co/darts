@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.regression_model
    :members:
    :undoc-members:

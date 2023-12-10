@@ -834,7 +834,7 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.rnn_model"></span><section id="recurrent-neural-networks">
+  <section id="recurrent-neural-networks">
 <h1>Recurrent Neural Networks<a class="headerlink" href="#recurrent-neural-networks" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel">
@@ -864,9 +864,8 @@ covariates, checkout <cite>BlockRNNModel</cite>.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of past time steps that are fed to the forecasting module at prediction time.</p></li>
-<li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]) – Either a string specifying the RNN module type (“RNN”, “LSTM” or “GRU”),
-or a PyTorch module with the same specifications as
-<cite>darts.models.rnn_model._RNNModule</cite>.</p></li>
+<li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Type</span></code>[<a class="reference internal" href="#darts.models.forecasting.rnn_model.CustomRNNModule" title="darts.models.forecasting.rnn_model.CustomRNNModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">CustomRNNModule</span></code></a>]]) – Either a string specifying the RNN module type (“RNN”, “LSTM” or “GRU”), or a subclass of
+<a class="reference internal" href="#darts.models.forecasting.rnn_model.CustomRNNModule" title="darts.models.forecasting.rnn_model.CustomRNNModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">CustomRNNModule</span></code></a> (the class itself, not an object of the class) with a custom logic.</p></li>
 <li><p><strong>hidden_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size for feature maps for each hidden RNN layer (<span class="math notranslate nohighlight">\(h_n\)</span>).</p></li>
 <li><p><strong>n_rnn_layers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of recurrent layers.</p></li>
 <li><p><strong>dropout</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Fraction of neurons afected by Dropout.</p></li>
@@ -905,7 +904,7 @@ Default: current working directory.</p></li>
 <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is passed to the <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="darts.models.forecasting.rnn_model.RNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> method). Default: <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
 <li><p><strong>force_reset</strong> – If set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, any previously-existing model with the same name will be reset (all checkpoints will
 be discarded). Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-<li><p><strong>save_checkpoints</strong> – Whether or not to automatically save the untrained model and checkpoints from training.
+<li><p><strong>save_checkpoints</strong> – Whether to automatically save the untrained model and checkpoints from training.
 To load the model from checkpoint, call <code class="xref py py-func docutils literal notranslate"><span class="pre">MyModelClass.load_from_checkpoint()</span></code>, where
 <code class="xref py py-class docutils literal notranslate"><span class="pre">MyModelClass</span></code> is the <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> class that was used (such as <code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code>,
 <code class="xref py py-class docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, etc.). If set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the model can still be manually saved using
@@ -934,8 +933,8 @@ Read <code class="xref py py-meth docutils literal notranslate"><span class="pre
 <li><p><strong>random_state</strong> – Control the randomness of the weights initialization. Check this
 <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random_state">link</a> for more details.
 Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>pl_trainer_kwargs</strong> – <dl class="simple">
-<dt>By default <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> creates a PyTorch Lightning Trainer with several useful presets</dt><dd><p>that performs the training, validation and prediction processes. These presets include automatic
+<li><p><strong>pl_trainer_kwargs</strong> – <p>By default <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> creates a PyTorch Lightning Trainer with several useful presets
+that performs the training, validation and prediction processes. These presets include automatic
 checkpointing, tensorboard logging, setting the torch device and more.
 With <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> you can add additional kwargs to instantiate the PyTorch Lightning trainer
 object. Check the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">PL Trainer documentation</a> for more information about the
@@ -943,8 +942,6 @@ supported kwargs. Default: <code class="docutils literal notranslate"><span clas
 Running on GPU(s) is also possible using <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> by specifying keys <code class="docutils literal notranslate"><span class="pre">&quot;accelerator&quot;,</span>
 <span class="pre">&quot;devices&quot;,</span> <span class="pre">and</span> <span class="pre">&quot;auto_select_gpus&quot;</span></code>. Some examples for setting the devices inside the <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code>
 dict:</p>
-</dd>
-</dl>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">{&quot;accelerator&quot;:</span> <span class="pre">&quot;cpu&quot;}</span></code> for CPU,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">{&quot;accelerator&quot;:</span> <span class="pre">&quot;gpu&quot;,</span> <span class="pre">&quot;devices&quot;:</span> <span class="pre">[i]}</span></code> to use only GPU <code class="docutils literal notranslate"><span class="pre">i</span></code> (<code class="docutils literal notranslate"><span class="pre">i</span></code> must be an integer),</p></li>
@@ -975,12 +972,9 @@ specifications. For more information on callbacks, visit:
 <p>Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
 parameter <code class="docutils literal notranslate"><span class="pre">trainer</span></code> in <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="darts.models.forecasting.rnn_model.RNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> and <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a>.</p>
 </p></li>
+<li><p><strong>show_warnings</strong> – whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+your forecasting use case. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
-</dd>
-</dl>
-<dl class="simple">
-<dt>show_warnings</dt><dd><p>whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
-your forecasting use case. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
@@ -1027,8 +1021,14 @@ that can be used to improve the forecasts quality compared to this simple usage 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.extreme_lags" title="darts.models.forecasting.rnn_model.RNNModel.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 6-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.min_train_samples" title="darts.models.forecasting.rnn_model.RNNModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.first_prediction_index" title="darts.models.forecasting.rnn_model.RNNModel.first_prediction_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_prediction_index</span></code></a></p></td>
+<td><p>Returns the index of the first predicted within the output of self.model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.min_train_samples" title="darts.models.forecasting.rnn_model.RNNModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.min_train_series_length" title="darts.models.forecasting.rnn_model.RNNModel.min_train_series_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_series_length</span></code></a></p></td>
+<td><p>Class property defining the minimum required length for the training series; overriding the default value of 3 of ForecastingModel</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.output_chunk_length" title="darts.models.forecasting.rnn_model.RNNModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
@@ -1048,13 +1048,16 @@ that can be used to improve the forecasts quality compared to this simple usage 
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.supports_static_covariates" title="darts.models.forecasting.rnn_model.RNNModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.uses_future_covariates" title="darts.models.forecasting.rnn_model.RNNModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.supports_transferrable_series_prediction" title="darts.models.forecasting.rnn_model.RNNModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.uses_future_covariates" title="darts.models.forecasting.rnn_model.RNNModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.uses_past_covariates" title="darts.models.forecasting.rnn_model.RNNModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.uses_past_covariates" title="darts.models.forecasting.rnn_model.RNNModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.uses_static_covariates" title="darts.models.forecasting.rnn_model.RNNModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.uses_static_covariates" title="darts.models.forecasting.rnn_model.RNNModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -1113,38 +1116,44 @@ that can be used to improve the forecasts quality compared to this simple usage 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.historical_forecasts" title="darts.models.forecasting.rnn_model.RNNModel.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load" title="darts.models.forecasting.rnn_model.RNNModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.initialize_encoders" title="darts.models.forecasting.rnn_model.RNNModel.initialize_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_encoders</span></code></a>()</p></td>
+<td><p>instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> used at model creation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load" title="darts.models.forecasting.rnn_model.RNNModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path, **kwargs)</p></td>
 <td><p>Loads a model from a given file path.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint" title="darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint" title="darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
 <td><p>Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_weights" title="darts.models.forecasting.rnn_model.RNNModel.load_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_weights</span></code></a>(path[, load_encoders, skip_checks])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_weights" title="darts.models.forecasting.rnn_model.RNNModel.load_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_weights</span></code></a>(path[, load_encoders, skip_checks])</p></td>
 <td><p>Loads the weights from a manually saved model (saved with <code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_weights_from_checkpoint" title="darts.models.forecasting.rnn_model.RNNModel.load_weights_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_weights_from_checkpoint</span></code></a>([model_name, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_weights_from_checkpoint" title="darts.models.forecasting.rnn_model.RNNModel.load_weights_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_weights_from_checkpoint</span></code></a>([model_name, ...])</p></td>
 <td><p>Load only the weights from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/ checkpoints/'.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.lr_find" title="darts.models.forecasting.rnn_model.RNNModel.lr_find"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lr_find</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.lr_find" title="darts.models.forecasting.rnn_model.RNNModel.lr_find"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lr_find</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>A wrapper around PyTorch Lightning's <cite>Tuner.lr_find()</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Predict the <code class="docutils literal notranslate"><span class="pre">n</span></code> time step following the end of the training series, or of the specified <code class="docutils literal notranslate"><span class="pre">series</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_from_dataset</span></code></a>(n, input_series_dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_from_dataset</span></code></a>(n, input_series_dataset)</p></td>
 <td><p>This method allows for predicting with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.InferenceDataset</span></code> instance.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.reset_model" title="darts.models.forecasting.rnn_model.RNNModel.reset_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_model</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.reset_model" title="darts.models.forecasting.rnn_model.RNNModel.reset_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_model</span></code></a>()</p></td>
 <td><p>Resets the model object and removes all stored data - model, checkpoints, loggers and training history.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.residuals" title="darts.models.forecasting.rnn_model.RNNModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.residuals" title="darts.models.forecasting.rnn_model.RNNModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals produced by this model on a (or sequence of) univariate  time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.save" title="darts.models.forecasting.rnn_model.RNNModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.save" title="darts.models.forecasting.rnn_model.RNNModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
 <td><p>Saves the model under a given path.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.to_cpu" title="darts.models.forecasting.rnn_model.RNNModel.to_cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_cpu</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.to_cpu" title="darts.models.forecasting.rnn_model.RNNModel.to_cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_cpu</span></code></a>()</p></td>
 <td><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id1"><span class="problematic" id="id2">:fun:`fit()`</span></a> or <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.untrained_model" title="darts.models.forecasting.rnn_model.RNNModel.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
+<td><p>Returns a new (untrained) model instance create with the same parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1269,16 +1278,6 @@ provided series and each sample.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.epochs_trained">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">epochs_trained</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.epochs_trained" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.extreme_lags">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.extreme_lags" title="Permalink to this definition">¶</a></dt>
 <dd><p>A 6-tuple containing in order:
@@ -1324,6 +1323,17 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.first_prediction_index">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">first_prediction_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.first_prediction_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index of the first predicted within the output of self.model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1716,22 +1726,14 @@ and the inner lists contain the different historical forecasts.</p>
 </dl>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.input_chunk_length">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.input_chunk_length" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.initialize_encoders">
+<span class="sig-name descname"><span class="pre">initialize_encoders</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.initialize_encoders" title="Permalink to this definition">¶</a></dt>
+<dd><p>instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
+<code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> used at model creation</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.likelihood">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><span class="pre">darts.utils.likelihood_models.Likelihood</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.likelihood" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]</p>
+<dd class="field-odd"><p><a class="reference internal" href="darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder" title="darts.dataprocessing.encoders.encoders.SequentialEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialEncoder</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1977,21 +1979,13 @@ To disable, set to <cite>None</cite></p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.model_created">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_created</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.model_created" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.min_train_series_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_train_series_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.min_train_series_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class property defining the minimum required length for the training series;
+overriding the default value of 3 of ForecastingModel</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.model_params">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.model_params" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2067,7 +2061,8 @@ and increase memory usage, as more batches are loaded in parallel.</p></li>
 This allows bayesian approximation by specifying an implicit prior over learned models.</p></li>
 <li><p><strong>predict_likelihood_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the model predict the parameters of its Likelihood parameters instead of the target. Only
 supported for probabilistic models with a likelihood, <cite>num_samples = 1</cite> and <cite>n&lt;=output_chunk_length</cite>.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, control whether warnings are shown. Not effective for all models.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -2242,15 +2237,21 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 </dl>
 </dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.supports_past_covariates">
-<span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.supports_static_covariates">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports static covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.supports_transferrable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
@@ -2263,6 +2264,12 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 <span class="sig-name descname"><span class="pre">to_cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.to_cpu" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id13"><span class="problematic" id="id14">:fun:`fit()`</span></a> or
 <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.untrained_model">
+<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.untrained_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new (untrained) model instance create with the same parameters.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2294,6 +2301,529 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.CustomRNNModule">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.rnn_model.</span></span><span class="sig-name descname"><span class="pre">CustomRNNModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nr_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/rnn_model.html#CustomRNNModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.rnn_model.CustomRNNModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>This class allows to create custom RNN modules that can later be used with Darts’ <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel" title="darts.models.forecasting.rnn_model.RNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code></a>.
+It adds the backbone that is required to be used with Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> and
+<a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel" title="darts.models.forecasting.rnn_model.RNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code></a>.</p>
+<p>To create a new module, subclass from <a class="reference internal" href="#darts.models.forecasting.rnn_model.CustomRNNModule" title="darts.models.forecasting.rnn_model.CustomRNNModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">CustomRNNModule</span></code></a> and:</p>
+<ul class="simple">
+<li><p>Define the architecture in the module constructor (<cite>__init__()</cite>)</p></li>
+<li><p>Add the <cite>forward()</cite> method and define the logic of your module’s forward pass</p></li>
+<li><p>Use the custom module class when creating a new <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel" title="darts.models.forecasting.rnn_model.RNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code></a> with parameter <cite>model</cite>.</p></li>
+</ul>
+<p>You can use <cite>darts.models.forecasting.rnn_model._RNNModule</cite> as an example.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The dimensionality of the input time series.</p></li>
+<li><p><strong>hidden_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of features in the hidden state <cite>h</cite> of the RNN module.</p></li>
+<li><p><strong>num_layers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of recurrent layers.</p></li>
+<li><p><strong>target_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The dimensionality of the output time series.</p></li>
+<li><p><strong>nr_params</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of parameters of the likelihood (or 1 if no likelihood is used).</p></li>
+<li><p><strong>dropout</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The fraction of neurons that are dropped in all-but-last RNN layers.</p></li>
+<li><p><strong>**kwargs</strong> – all parameters required for <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.model.forecasting_models.PLForecastingModule</span></code> base class.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">automatic_optimization</span></code></p></td>
+<td><p>If set to <code class="docutils literal notranslate"><span class="pre">False</span></code> you are responsible for calling <code class="docutils literal notranslate"><span class="pre">.backward()</span></code>, <code class="docutils literal notranslate"><span class="pre">.step()</span></code>, <code class="docutils literal notranslate"><span class="pre">.zero_grad()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_epoch</span></code></p></td>
+<td><p>The current epoch in the <code class="docutils literal notranslate"><span class="pre">Trainer</span></code>, or 0 if not attached.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">example_input_array</span></code></p></td>
+<td><p>The example input array is a specification of what the module can consume in the <a class="reference internal" href="#darts.models.forecasting.rnn_model.CustomRNNModule.forward" title="darts.models.forecasting.rnn_model.CustomRNNModule.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a> method.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_rank</span></code></p></td>
+<td><p>The index of the current process across all nodes and devices.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_step</span></code></p></td>
+<td><p>Total training batches seen across all epochs.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">hparams</span></code></p></td>
+<td><p>The collection of hyperparameters saved with <code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">hparams_initial</span></code></p></td>
+<td><p>The collection of hyperparameters saved with <code class="xref py py-meth docutils literal notranslate"><span class="pre">save_hyperparameters()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">local_rank</span></code></p></td>
+<td><p>The index of the current process within a single node.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">logger</span></code></p></td>
+<td><p>Reference to the logger object in the Trainer.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">loggers</span></code></p></td>
+<td><p>Reference to the list of loggers in the Trainer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_gpu</span></code></p></td>
+<td><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this model is currently located on a GPU.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></p></td>
+<td><p>Number of time steps predicted at once by the model.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 64%" />
+<col style="width: 36%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>device</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>dtype</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>epochs_trained</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>fabric</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>trainer</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_module</span></code>(name, module)</p></td>
+<td><p>Adds a child module to the current module.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">all_gather</span></code>(data[, group, sync_grads])</p></td>
+<td><p>Gather tensors or collections of tensors from multiple processes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply</span></code>(fn)</p></td>
+<td><p>Applies <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">backward</span></code>(loss, *args, **kwargs)</p></td>
+<td><p>Called to perform backward on the loss returned in <code class="xref py py-meth docutils literal notranslate"><span class="pre">training_step()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">bfloat16</span></code>()</p></td>
+<td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">bfloat16</span></code> datatype.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">buffers</span></code>([recurse])</p></td>
+<td><p>Returns an iterator over module buffers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code>()</p></td>
+<td><p>Returns an iterator over immediate children modules.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip_gradients</span></code>(optimizer[, ...])</p></td>
+<td><p>Handles gradient clipping internally.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code>(*args, **kwargs)</p></td>
+<td><p>Compile this Module's forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_callbacks</span></code>()</p></td>
+<td><p>Configure model-specific callbacks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_gradient_clipping</span></code>(optimizer[, ...])</p></td>
+<td><p>Perform gradient clipping for the optimizer parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_model</span></code>()</p></td>
+<td><p>Hook to create modules in a strategy and precision aware context.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_optimizers</span></code>()</p></td>
+<td><p>configures optimizers and learning rate schedulers for model optimization.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_sharded_model</span></code>()</p></td>
+<td><p>Deprecated.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_torch_metrics</span></code>(torch_metrics)</p></td>
+<td><p>process the torch_metrics parameter.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code>()</p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.cpu()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code>([device])</p></td>
+<td><p>Moves all model parameters and buffers to the GPU.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code>()</p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.double()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code>()</p></td>
+<td><p>Sets the module in evaluation mode.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code>()</p></td>
+<td><p>Set the extra representation of the module</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>()</p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.float()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.CustomRNNModule.forward" title="darts.models.forecasting.rnn_model.CustomRNNModule.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x_in[, h])</p></td>
+<td><p>RNN Module forward.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">freeze</span></code>()</p></td>
+<td><p>Freeze all params for inference.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code>(target)</p></td>
+<td><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code>()</p></td>
+<td><p>Returns any extra state to include in the module's state_dict.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code>(target)</p></td>
+<td><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code>(target)</p></td>
+<td><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code>()</p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.half()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code>([device])</p></td>
+<td><p>Moves all model parameters and buffers to the IPU.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code>([map_location, ...])</p></td>
+<td><p>Primary way of loading a model from a checkpoint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code>(state_dict[, strict, assign])</p></td>
+<td><p>Copies parameters and buffers from <code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code> into this module and its descendants.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log</span></code>(name, value[, prog_bar, logger, ...])</p></td>
+<td><p>Log a key, value pair.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_dict</span></code>(dictionary[, prog_bar, logger, ...])</p></td>
+<td><p>Log a dictionary of values at once.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">lr_scheduler_step</span></code>(scheduler, metric)</p></td>
+<td><p>Override this method to adjust the default way the <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> calls each scheduler.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">lr_schedulers</span></code>()</p></td>
+<td><p>Returns the learning rate scheduler(s) that are being used during training.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">manual_backward</span></code>(loss, *args, **kwargs)</p></td>
+<td><p>Call this directly from your <code class="xref py py-meth docutils literal notranslate"><span class="pre">training_step()</span></code> when doing optimizations manually.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code>()</p></td>
+<td><p>Returns an iterator over all modules in the network.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code>([prefix, recurse, ...])</p></td>
+<td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code>()</p></td>
+<td><p>Returns an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code>([memo, prefix, remove_duplicate])</p></td>
+<td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code>([prefix, recurse, ...])</p></td>
+<td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_after_backward</span></code>()</p></td>
+<td><p>Called after <code class="docutils literal notranslate"><span class="pre">loss.backward()</span></code> and before optimizers are stepped.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_after_batch_transfer</span></code>(batch, dataloader_idx)</p></td>
+<td><p>Override to alter or apply batch augmentations to your batch after it is transferred to the device.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_before_backward</span></code>(loss)</p></td>
+<td><p>Called before <code class="docutils literal notranslate"><span class="pre">loss.backward()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_before_batch_transfer</span></code>(batch, dataloader_idx)</p></td>
+<td><p>Override to alter or apply batch augmentations to your batch before it is transferred to the device.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_before_optimizer_step</span></code>(optimizer)</p></td>
+<td><p>Called before <code class="docutils literal notranslate"><span class="pre">optimizer.step()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_before_zero_grad</span></code>(optimizer)</p></td>
+<td><p>Called after <code class="docutils literal notranslate"><span class="pre">training_step()</span></code> and before <code class="docutils literal notranslate"><span class="pre">optimizer.zero_grad()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_fit_end</span></code>()</p></td>
+<td><p>Called at the very end of fit.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_fit_start</span></code>()</p></td>
+<td><p>Called at the very beginning of fit.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_load_checkpoint</span></code>(checkpoint)</p></td>
+<td><p>Called by Lightning to restore your model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_batch_end</span></code>(outputs, batch, batch_idx)</p></td>
+<td><p>Called in the predict loop after the batch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_batch_start</span></code>(batch, batch_idx[, ...])</p></td>
+<td><p>Called in the predict loop before anything happens for that batch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_end</span></code>()</p></td>
+<td><p>Called at the end of predicting.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_epoch_end</span></code>()</p></td>
+<td><p>Called at the end of predicting.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_epoch_start</span></code>()</p></td>
+<td><p>Called at the beginning of predicting.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_model_eval</span></code>()</p></td>
+<td><p>Sets the model to eval during the predict loop.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_start</span></code>()</p></td>
+<td><p>Called at the beginning of predicting.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_save_checkpoint</span></code>(checkpoint)</p></td>
+<td><p>Called by Lightning when saving a checkpoint to give you a chance to store anything else you might want to save.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_batch_end</span></code>(outputs, batch, batch_idx)</p></td>
+<td><p>Called in the test loop after the batch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_batch_start</span></code>(batch, batch_idx[, ...])</p></td>
+<td><p>Called in the test loop before anything happens for that batch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_end</span></code>()</p></td>
+<td><p>Called at the end of testing.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_epoch_end</span></code>()</p></td>
+<td><p>Called in the test loop at the very end of the epoch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_epoch_start</span></code>()</p></td>
+<td><p>Called in the test loop at the very beginning of the epoch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_model_eval</span></code>()</p></td>
+<td><p>Sets the model to eval during the test loop.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_model_train</span></code>()</p></td>
+<td><p>Sets the model to train during the test loop.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_start</span></code>()</p></td>
+<td><p>Called at the beginning of testing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_batch_end</span></code>(outputs, batch, batch_idx)</p></td>
+<td><p>Called in the training loop after the batch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_batch_start</span></code>(batch, batch_idx)</p></td>
+<td><p>Called in the training loop before anything happens for that batch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_end</span></code>()</p></td>
+<td><p>Called at the end of training before logger experiment is closed.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_epoch_end</span></code>()</p></td>
+<td><p>Called in the training loop at the very end of the epoch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_epoch_start</span></code>()</p></td>
+<td><p>Called in the training loop at the very beginning of the epoch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_train_start</span></code>()</p></td>
+<td><p>Called at the beginning of training after sanity check.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_batch_end</span></code>(outputs, batch, ...)</p></td>
+<td><p>Called in the validation loop after the batch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_batch_start</span></code>(batch, batch_idx)</p></td>
+<td><p>Called in the validation loop before anything happens for that batch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_end</span></code>()</p></td>
+<td><p>Called at the end of validation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_epoch_end</span></code>()</p></td>
+<td><p>Called in the validation loop at the very end of the epoch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_epoch_start</span></code>()</p></td>
+<td><p>Called in the validation loop at the very beginning of the epoch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_model_eval</span></code>()</p></td>
+<td><p>Sets the model to eval during the val loop.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_model_train</span></code>()</p></td>
+<td><p>Sets the model to train during the val loop.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_model_zero_grad</span></code>()</p></td>
+<td><p>Called by the training loop to release gradients before entering the validation loop.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_start</span></code>()</p></td>
+<td><p>Called at the beginning of validation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimizer_step</span></code>(epoch, batch_idx, optimizer)</p></td>
+<td><p>Override this method to adjust the default way the <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> calls the optimizer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimizer_zero_grad</span></code>(epoch, batch_idx, optimizer)</p></td>
+<td><p>Override this method to change the default behaviour of <code class="docutils literal notranslate"><span class="pre">optimizer.zero_grad()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimizers</span></code>([use_pl_optimizer])</p></td>
+<td><p>Returns the optimizer(s) that are being used during training.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code>([recurse])</p></td>
+<td><p>Returns an iterator over module parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_dataloader</span></code>()</p></td>
+<td><p>An iterable or collection of iterables specifying prediction samples.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_step</span></code>(batch, batch_idx[, dataloader_idx])</p></td>
+<td><p>performs the prediction step</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">prepare_data</span></code>()</p></td>
+<td><p>Use this to download and prepare data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">print</span></code>(*args, **kwargs)</p></td>
+<td><p>Prints only from process 0.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code>(hook)</p></td>
+<td><p>Registers a backward hook on the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code>(name, tensor[, persistent])</p></td>
+<td><p>Adds a buffer to the module.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code>(hook, *[, prepend, ...])</p></td>
+<td><p>Registers a forward hook on the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code>(hook, *[, ...])</p></td>
+<td><p>Registers a forward pre-hook on the module.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code>(hook[, prepend])</p></td>
+<td><p>Registers a backward hook on the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code>(hook[, prepend])</p></td>
+<td><p>Registers a backward pre-hook on the module.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code>(hook)</p></td>
+<td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code>(name, module)</p></td>
+<td><p>Alias for <code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code>(name, param)</p></td>
+<td><p>Adds a parameter to the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code>(hook)</p></td>
+<td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code>([requires_grad])</p></td>
+<td><p>Change if autograd should record operations on parameters in this module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_hyperparameters</span></code>(*args[, ignore, frame, ...])</p></td>
+<td><p>Save arguments to <code class="docutils literal notranslate"><span class="pre">hparams</span></code> attribute.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code>(state)</p></td>
+<td><p>This function is called from <code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code> to handle any extra state found within the <cite>state_dict</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_predict_parameters</span></code>(n, num_samples, ...)</p></td>
+<td><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup</span></code>(stage)</p></td>
+<td><p>Called at the beginning of fit (train + validate), validate, test, or predict.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code>()</p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code>(*args[, destination, prefix, ...])</p></td>
+<td><p>Returns a dictionary containing references to the whole state of the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">teardown</span></code>(stage)</p></td>
+<td><p>Called at the end of fit (train + validate), validate, test, or predict.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_dataloader</span></code>()</p></td>
+<td><p>An iterable or collection of iterables specifying test samples.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_step</span></code>(*args, **kwargs)</p></td>
+<td><p>Operates on a single batch of data from the test set.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code>(*args, **kwargs)</p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.to()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dtype</span></code>(dtype)</p></td>
+<td><p>Cast module precision (float32 by default) to another precision.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code>(*, device[, recurse])</p></td>
+<td><p>Moves the parameters and buffers to the specified device without copying storage.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_onnx</span></code>(file_path[, input_sample])</p></td>
+<td><p>Saves the model in ONNX format.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_torchscript</span></code>([file_path, method, ...])</p></td>
+<td><p>By default compiles the whole model to a <code class="xref py py-class docutils literal notranslate"><span class="pre">ScriptModule</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">toggle_optimizer</span></code>(optimizer)</p></td>
+<td><p>Makes sure only the gradients of the current optimizer's parameters are calculated in the training step to prevent dangling gradients in multiple-optimizer setup.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code>([mode])</p></td>
+<td><p>Sets the module in training mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_dataloader</span></code>()</p></td>
+<td><p>An iterable or collection of iterables specifying training samples.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">training_step</span></code>(train_batch, batch_idx)</p></td>
+<td><p>performs the training step</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">transfer_batch_to_device</span></code>(batch, device, ...)</p></td>
+<td><p>Override this hook if your <code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code> returns tensors wrapped in a custom data structure.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code>(dst_type)</p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.type()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">unfreeze</span></code>()</p></td>
+<td><p>Unfreeze all parameters for training.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">untoggle_optimizer</span></code>(optimizer)</p></td>
+<td><p>Resets the state of required gradients that were toggled with <code class="xref py py-meth docutils literal notranslate"><span class="pre">toggle_optimizer()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">val_dataloader</span></code>()</p></td>
+<td><p>An iterable or collection of iterables specifying validation samples.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">validation_step</span></code>(val_batch, batch_idx)</p></td>
+<td><p>performs the validation step</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code>([device])</p></td>
+<td><p>Moves all model parameters and buffers to the XPU.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code>([set_to_none])</p></td>
+<td><p>Resets gradients of all model parameters.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 64%" />
+<col style="width: 36%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>__call__</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>set_mc_dropout</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.CustomRNNModule.forward">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/rnn_model.html#CustomRNNModule.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.rnn_model.CustomRNNModule.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>RNN Module forward.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_in</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>) – Tuple of Tensors containing the features of the input sequence. The tuple has elements (past target,
+historic future covariates, future covariates, static covariates). The shape of the past target is
+<cite>(batch_size, input_length, input_size)</cite>.</p></li>
+<li><p><strong>h</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]) – Optionally, the hidden state.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple of Tensors with elements (RNN output, hidden state). The RNN output Tensor has shape
+<cite>(batch_size, output_chunk_length, target_size, nr_params)</cite>. It contains the outputs at every
+time step of the input sequence. During training the whole tensor is used as output, whereas during
+prediction we only use y[:, -1, :]. However, this module always returns the whole Tensor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[torch.Tensor, torch.Tensor]</p>
 </dd>
 </dl>
 </dd></dl>

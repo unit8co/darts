@@ -1,4 +1,3 @@
-
 .. automodule:: darts.utils.historical_forecasts.optimized_historical_forecasts_torch
    :members:
    :undoc-members:

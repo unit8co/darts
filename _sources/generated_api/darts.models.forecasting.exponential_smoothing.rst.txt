@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.exponential_smoothing
    :members:
    :undoc-members:

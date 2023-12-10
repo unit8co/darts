@@ -930,13 +930,16 @@ See <a class="reference external" href="https://www.statsmodels.org/stable/gener
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_static_covariates" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_future_covariates" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_transferrable_series_prediction" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_future_covariates" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_past_covariates" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_past_covariates" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_static_covariates" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_static_covariates" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -983,7 +986,7 @@ See <a class="reference external" href="https://www.statsmodels.org/stable/gener
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.load" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
 <td><p>Loads the model from a given path or file handle.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose, show_warnings])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.residuals" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
@@ -1523,14 +1526,16 @@ and the inner lists contain the different historical forecasts.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
-<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
+<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, set the prediction verbosity. Not effective for all models.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, control whether warnings are shown. Not effective for all models.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1665,6 +1670,17 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_static_covariates">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports static covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_transferrable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>

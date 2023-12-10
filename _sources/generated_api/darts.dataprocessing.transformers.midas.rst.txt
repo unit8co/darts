@@ -1,4 +1,3 @@
-
 .. automodule:: darts.dataprocessing.transformers.midas
    :members:
    :undoc-members:

@@ -1,4 +1,3 @@
-
 .. automodule:: darts.utils.callbacks
    :members:
    :undoc-members:

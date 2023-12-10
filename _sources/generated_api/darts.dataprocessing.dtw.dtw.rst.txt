@@ -1,4 +1,3 @@
-
 .. automodule:: darts.dataprocessing.dtw.dtw
    :members:
    :undoc-members:

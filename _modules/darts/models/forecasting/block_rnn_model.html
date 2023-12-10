@@ -170,12 +170,14 @@
 <span class="sd">-------------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">PLPastCovariatesModule</span><span class="p">,</span>
     <span class="n">io_processor</span><span class="p">,</span>
@@ -185,11 +187,9 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="c1"># TODO add batch norm</span>
-<span class="k">class</span> <span class="nc">_BlockRNNModule</span><span class="p">(</span><span class="n">PLPastCovariatesModule</span><span class="p">):</span>
+<div class="viewcode-block" id="CustomBlockRNNModule"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.CustomBlockRNNModule">[docs]</a><span class="k">class</span> <span class="nc">CustomBlockRNNModule</span><span class="p">(</span><span class="n">PLPastCovariatesModule</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">input_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -197,6 +197,80 @@
         <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">num_layers_out_fc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This class allows to create custom block RNN modules that can later be used with Darts&#39;</span>
+<span class="sd">        :class:`BlockRNNModel`. It adds the backbone that is required to be used with Darts&#39;</span>
+<span class="sd">        :class:`TorchForecastingModel` and :class:`BlockRNNModel`.</span>
+
+<span class="sd">        To create a new module, subclass from :class:`CustomBlockRNNModule` and:</span>
+
+<span class="sd">        * Define the architecture in the module constructor (`__init__()`)</span>
+
+<span class="sd">        * Add the `forward()` method and define the logic of your module&#39;s forward pass</span>
+
+<span class="sd">        * Use the custom module class when creating a new :class:`BlockRNNModel` with parameter `model`.</span>
+
+<span class="sd">        You can use `darts.models.forecasting.block_rnn_model._BlockRNNModule` as an example.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_size</span>
+<span class="sd">            The dimensionality of the input time series.</span>
+<span class="sd">        hidden_dim</span>
+<span class="sd">            The number of features in the hidden state `h` of the RNN module.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of recurrent layers.</span>
+<span class="sd">        target_size</span>
+<span class="sd">            The dimensionality of the output time series.</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used).</span>
+<span class="sd">        num_layers_out_fc</span>
+<span class="sd">            A list containing the dimensions of the hidden layers of the fully connected NN.</span>
+<span class="sd">            This network connects the last hidden layer of the PyTorch RNN module to the output.</span>
+<span class="sd">        dropout</span>
+<span class="sd">            The fraction of neurons that are dropped in all-but-last RNN layers.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Defining parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span> <span class="o">=</span> <span class="n">input_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">=</span> <span class="n">target_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers_out_fc</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">num_layers_out_fc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">num_layers_out_fc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+
+<div class="viewcode-block" id="CustomBlockRNNModule.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.CustomBlockRNNModule.forward">[docs]</a>    <span class="nd">@io_processor</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;BlockRNN Module forward.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x_in</span>
+<span class="sd">            Tuple of Tensors containing the features of the input sequence. The tuple has elements</span>
+<span class="sd">            (past target, historic future covariates, future covariates, static covariates).</span>
+<span class="sd">            The shape of the past target is `(batch_size, input_length, input_size)`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        torch.Tensor</span>
+<span class="sd">            The BlockRNN output Tensor with shape `(batch_size, output_chunk_length, target_size, nr_params)`.</span>
+<span class="sd">            It contains the prediction at the last time step of the sequence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+
+
+<span class="c1"># TODO add batch norm</span>
+<span class="k">class</span> <span class="nc">_BlockRNNModule</span><span class="p">(</span><span class="n">CustomBlockRNNModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 
@@ -217,23 +291,8 @@
 <span class="sd">        ----------</span>
 <span class="sd">        name</span>
 <span class="sd">            The name of the specific PyTorch RNN module (&quot;RNN&quot;, &quot;GRU&quot; or &quot;LSTM&quot;).</span>
-<span class="sd">        input_size</span>
-<span class="sd">            The dimensionality of the input time series.</span>
-<span class="sd">        hidden_dim</span>
-<span class="sd">            The number of features in the hidden state `h` of the RNN module.</span>
-<span class="sd">        num_layers</span>
-<span class="sd">            The number of recurrent layers.</span>
-<span class="sd">        target_size</span>
-<span class="sd">            The dimensionality of the output time series.</span>
-<span class="sd">        nr_params</span>
-<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used).</span>
-<span class="sd">        num_layers_out_fc</span>
-<span class="sd">            A list containing the dimensions of the hidden layers of the fully connected NN.</span>
-<span class="sd">            This network connects the last hidden layer of the PyTorch RNN module to the output.</span>
-<span class="sd">        dropout</span>
-<span class="sd">            The fraction of neurons that are dropped in all-but-last RNN layers.</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
+<span class="sd">            all parameters required for the :class:`darts.model.forecasting_models.CustomBlockRNNModule` base class.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -248,25 +307,24 @@
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="c1"># Defining parameters</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">=</span> <span class="n">target_size</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
-        <span class="n">num_layers_out_fc</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">num_layers_out_fc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">num_layers_out_fc</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
 
         <span class="c1"># Defining the RNN module</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">name</span><span class="p">)(</span>
-            <span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+            <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># The RNN module is followed by a fully connected layer, which maps the last hidden layer</span>
         <span class="c1"># to the output of desired length</span>
-        <span class="n">last</span> <span class="o">=</span> <span class="n">hidden_dim</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
         <span class="n">feats</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">*</span> <span class="n">target_size</span> <span class="o">*</span> <span class="n">nr_params</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
+        <span class="p">]:</span>
             <span class="n">feats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">feature</span><span class="p">))</span>
             <span class="n">last</span> <span class="o">=</span> <span class="n">feature</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">feats</span><span class="p">)</span>
@@ -298,7 +356,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">CustomBlockRNNModule</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
         <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
         <span class="n">n_rnn_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">hidden_fc_sizes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -335,9 +393,8 @@
 <span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
 <span class="sd">            model&#39;s covariate support).</span>
 <span class="sd">        model</span>
-<span class="sd">            Either a string specifying the RNN module type (&quot;RNN&quot;, &quot;LSTM&quot; or &quot;GRU&quot;),</span>
-<span class="sd">            or a PyTorch module with the same specifications as</span>
-<span class="sd">            :class:`darts.models.block_rnn_model._BlockRNNModule`.</span>
+<span class="sd">            Either a string specifying the RNN module type (&quot;RNN&quot;, &quot;LSTM&quot; or &quot;GRU&quot;), or a subclass of</span>
+<span class="sd">            :class:`CustomBlockRNNModule` (the class itself, not an object of the class) with a custom logic.</span>
 <span class="sd">        hidden_dim</span>
 <span class="sd">            Size for feature maps for each hidden RNN layer (:math:`h_n`).</span>
 <span class="sd">            In Darts version &lt;= 0.21, hidden_dim was referred as hidden_size.</span>
@@ -398,7 +455,7 @@
 <span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
 <span class="sd">            be discarded). Default: ``False``.</span>
 <span class="sd">        save_checkpoints</span>
-<span class="sd">            Whether or not to automatically save the untrained model and checkpoints from training.</span>
+<span class="sd">            Whether to automatically save the untrained model and checkpoints from training.</span>
 <span class="sd">            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where</span>
 <span class="sd">            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,</span>
 <span class="sd">            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using</span>
@@ -442,7 +499,6 @@
 <span class="sd">            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``&quot;accelerator&quot;,</span>
 <span class="sd">            &quot;devices&quot;, and &quot;auto_select_gpus&quot;``. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
 <span class="sd">            dict:</span>
-
 
 <span class="sd">            - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
 <span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
@@ -524,14 +580,16 @@
 
         <span class="c1"># check we got right model type specified:</span>
         <span class="k">if</span> <span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;RNN&quot;</span><span class="p">,</span> <span class="s2">&quot;LSTM&quot;</span><span class="p">,</span> <span class="s2">&quot;GRU&quot;</span><span class="p">]:</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">),</span>
-                <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> is not a valid RNN model.</span><span class="se">\n</span><span class="s1"> Please specify &quot;RNN&quot;, &quot;LSTM&quot;, &#39;</span>
-                <span class="s1">&#39;&quot;GRU&quot;, or give your own PyTorch nn.Module&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span>
+                <span class="n">model</span><span class="p">,</span> <span class="n">CustomBlockRNNModule</span>
+            <span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;`model` is not a valid RNN model. Please specify &#39;RNN&#39;, &#39;LSTM&#39;, &#39;GRU&#39;, or give a subclass &quot;</span>
+                        <span class="s2">&quot;(not an instance) of darts.models.forecasting.rnn_model.CustomBlockRNNModule.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span> <span class="o">=</span> <span class="n">hidden_fc_sizes</span>
@@ -551,24 +609,25 @@
         <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;RNN&quot;</span><span class="p">,</span> <span class="s2">&quot;LSTM&quot;</span><span class="p">,</span> <span class="s2">&quot;GRU&quot;</span><span class="p">]:</span>
-            <span class="n">hidden_fc_sizes</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="p">[]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span>
-            <span class="p">)</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">_BlockRNNModule</span><span class="p">(</span>
-                <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span><span class="p">,</span>
-                <span class="n">input_size</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
-                <span class="n">target_size</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
-                <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
-                <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span>
-                <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span><span class="p">,</span>
-                <span class="n">num_layers_out_fc</span><span class="o">=</span><span class="n">hidden_fc_sizes</span><span class="p">,</span>
-                <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
-                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">hidden_fc_sizes</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span>
+
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">model_cls</span> <span class="o">=</span> <span class="n">_BlockRNNModule</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span>
-        <span class="k">return</span> <span class="n">model</span></div>
+            <span class="n">model_cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span>
+        <span class="k">return</span> <span class="n">model_cls</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
+            <span class="n">target_size</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+            <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
+            <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span><span class="p">,</span>
+            <span class="n">num_layers_out_fc</span><span class="o">=</span><span class="n">hidden_fc_sizes</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

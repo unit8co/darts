@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.fft
    :members:
    :undoc-members:

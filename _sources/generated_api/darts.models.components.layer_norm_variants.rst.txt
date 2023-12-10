@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.components.layer_norm_variants
    :members:
    :undoc-members:

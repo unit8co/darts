@@ -1,4 +1,3 @@
-
 .. automodule:: darts.timeseries
    :members:
    :undoc-members:

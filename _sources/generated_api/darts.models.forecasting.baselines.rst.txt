@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.forecasting.baselines
    :members:
    :undoc-members:

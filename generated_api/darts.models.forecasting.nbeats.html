@@ -910,7 +910,7 @@ Default: current working directory.</p></li>
 <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is passed to the <a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.fit" title="darts.models.forecasting.nbeats.NBEATSModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> method). Default: <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
 <li><p><strong>force_reset</strong> – If set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, any previously-existing model with the same name will be reset (all checkpoints will
 be discarded). Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-<li><p><strong>save_checkpoints</strong> – Whether or not to automatically save the untrained model and checkpoints from training.
+<li><p><strong>save_checkpoints</strong> – Whether to automatically save the untrained model and checkpoints from training.
 To load the model from checkpoint, call <code class="xref py py-func docutils literal notranslate"><span class="pre">MyModelClass.load_from_checkpoint()</span></code>, where
 <code class="xref py py-class docutils literal notranslate"><span class="pre">MyModelClass</span></code> is the <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> class that was used (such as <code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code>,
 <a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel" title="darts.models.forecasting.nbeats.NBEATSModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NBEATSModel</span></code></a>, etc.). If set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the model can still be manually saved using
@@ -939,8 +939,8 @@ Read <code class="xref py py-meth docutils literal notranslate"><span class="pre
 <li><p><strong>random_state</strong> – Control the randomness of the weights initialization. Check this
 <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random_state">link</a> for more details.
 Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>pl_trainer_kwargs</strong> – <dl class="simple">
-<dt>By default <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> creates a PyTorch Lightning Trainer with several useful presets</dt><dd><p>that performs the training, validation and prediction processes. These presets include automatic
+<li><p><strong>pl_trainer_kwargs</strong> – <p>By default <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> creates a PyTorch Lightning Trainer with several useful presets
+that performs the training, validation and prediction processes. These presets include automatic
 checkpointing, tensorboard logging, setting the torch device and more.
 With <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> you can add additional kwargs to instantiate the PyTorch Lightning trainer
 object. Check the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">PL Trainer documentation</a> for more information about the
@@ -948,8 +948,6 @@ supported kwargs. Default: <code class="docutils literal notranslate"><span clas
 Running on GPU(s) is also possible using <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> by specifying keys <code class="docutils literal notranslate"><span class="pre">&quot;accelerator&quot;,</span>
 <span class="pre">&quot;devices&quot;,</span> <span class="pre">and</span> <span class="pre">&quot;auto_select_gpus&quot;</span></code>. Some examples for setting the devices inside the <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code>
 dict:</p>
-</dd>
-</dl>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">{&quot;accelerator&quot;:</span> <span class="pre">&quot;cpu&quot;}</span></code> for CPU,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">{&quot;accelerator&quot;:</span> <span class="pre">&quot;gpu&quot;,</span> <span class="pre">&quot;devices&quot;:</span> <span class="pre">[i]}</span></code> to use only GPU <code class="docutils literal notranslate"><span class="pre">i</span></code> (<code class="docutils literal notranslate"><span class="pre">i</span></code> must be an integer),</p></li>
@@ -980,12 +978,9 @@ specifications. For more information on callbacks, visit:
 <p>Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
 parameter <code class="docutils literal notranslate"><span class="pre">trainer</span></code> in <a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.fit" title="darts.models.forecasting.nbeats.NBEATSModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> and <a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.predict" title="darts.models.forecasting.nbeats.NBEATSModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a>.</p>
 </p></li>
+<li><p><strong>show_warnings</strong> – whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+your forecasting use case. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
-</dd>
-</dl>
-<dl class="simple">
-<dt>show_warnings</dt><dd><p>whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
-your forecasting use case. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
 </dd>
 </dl>
 <p class="rubric">References</p>
@@ -1064,13 +1059,16 @@ example.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.supports_static_covariates" title="darts.models.forecasting.nbeats.NBEATSModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.uses_future_covariates" title="darts.models.forecasting.nbeats.NBEATSModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.supports_transferrable_series_prediction" title="darts.models.forecasting.nbeats.NBEATSModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.uses_future_covariates" title="darts.models.forecasting.nbeats.NBEATSModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.uses_past_covariates" title="darts.models.forecasting.nbeats.NBEATSModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.uses_past_covariates" title="darts.models.forecasting.nbeats.NBEATSModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.uses_static_covariates" title="darts.models.forecasting.nbeats.NBEATSModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nbeats.NBEATSModel.uses_static_covariates" title="darts.models.forecasting.nbeats.NBEATSModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -2083,7 +2081,8 @@ and increase memory usage, as more batches are loaded in parallel.</p></li>
 This allows bayesian approximation by specifying an implicit prior over learned models.</p></li>
 <li><p><strong>predict_likelihood_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the model predict the parameters of its Likelihood parameters instead of the target. Only
 supported for probabilistic models with a likelihood, <cite>num_samples = 1</cite> and <cite>n&lt;=output_chunk_length</cite>.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, control whether warnings are shown. Not effective for all models.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -2267,6 +2266,17 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 <dt class="sig sig-object py" id="darts.models.forecasting.nbeats.NBEATSModel.supports_static_covariates">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.nbeats.NBEATSModel.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports static covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.nbeats.NBEATSModel.supports_transferrable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.nbeats.NBEATSModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>

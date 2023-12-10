@@ -1,4 +1,3 @@
-
 .. automodule:: darts.ad.scorers.nll_gamma_scorer
    :members:
    :undoc-members:

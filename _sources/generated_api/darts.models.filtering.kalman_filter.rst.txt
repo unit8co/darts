@@ -1,4 +1,3 @@
-
 .. automodule:: darts.models.filtering.kalman_filter
    :members:
    :undoc-members:

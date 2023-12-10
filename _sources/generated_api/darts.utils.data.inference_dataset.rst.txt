@@ -1,4 +1,3 @@
-
 .. automodule:: darts.utils.data.inference_dataset
    :members:
    :undoc-members:
