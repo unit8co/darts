@@ -3,6 +3,7 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import pytorch_lightning as pl
@@ -42,6 +43,7 @@ def io_processor(forward):
         normalizes batch input target features, and inverse transform the forward output back to the original scale
     """
 
+    @wraps(forward)
     def forward_wrapper(self, *args, **kwargs):
         if not self.use_reversible_instance_norm:
             return forward(self, *args, **kwargs)

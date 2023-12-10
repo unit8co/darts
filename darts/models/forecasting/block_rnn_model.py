@@ -65,16 +65,6 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
             The fraction of neurons that are dropped in all-but-last RNN layers.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
-
-        Inputs
-        ------
-        x of shape `(batch_size, input_chunk_length, input_size, nr_params)`
-            Tensor containing the features of the input sequence.
-
-        Outputs
-        -------
-        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
-            Tensor containing the prediction at the last time step of the sequence.
         """
         super().__init__(**kwargs)
 
@@ -91,6 +81,21 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
     @io_processor
     @abstractmethod
     def forward(self, x_in: Tuple) -> torch.Tensor:
+        """BlockRNN Module forward.
+
+        Parameters
+        ----------
+        x_in
+            Tuple of Tensors containing the features of the input sequence. The tuple has elements
+            (past target, historic future covariates, future covariates, static covariates).
+            The shape of the past target is `(batch_size, input_length, input_size)`.
+
+        Returns
+        -------
+        torch.Tensor
+            The BlockRNN output Tensor with shape `(batch_size, output_chunk_length, target_size, nr_params)`.
+            It contains the prediction at the last time step of the sequence.
+        """
         pass
 
 

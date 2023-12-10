@@ -63,18 +63,6 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
             The fraction of neurons that are dropped in all-but-last RNN layers.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
-
-        Inputs
-        ------
-        x of shape `(batch_size, input_length, input_size)`
-            Tensor containing the features of the input sequence. The `input_length` is not fixed.
-
-        Outputs
-        -------
-        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
-            Tensor containing the outputs of the RNN at every time step of the input sequence.
-            During training the whole tensor is used as output, whereas during prediction we only use y[:, -1, :].
-            However, this module always returns the whole Tensor.
         """
         # RNNModule doesn't really need input and output_chunk_length for PLModule
         super().__init__(**kwargs)
@@ -92,6 +80,25 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
     def forward(
         self, x_in: Tuple, h: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """RNN Module forward.
+
+        Parameters
+        ----------
+        x_in
+            Tuple of Tensors containing the features of the input sequence. The tuple has elements (past target,
+            historic future covariates, future covariates, static covariates). The shape of the past target is
+            `(batch_size, input_length, input_size)`.
+        h
+            Optionally, the hidden state.
+
+        Returns
+        -------
+        Tuple[torch.Tensor, torch.Tensor]
+            Tuple of Tensors with elements (RNN output, hidden state). The RNN output Tensor has shape
+            `(batch_size, output_chunk_length, target_size, nr_params)`. It contains the outputs at every
+            time step of the input sequence. During training the whole tensor is used as output, whereas during
+            prediction we only use y[:, -1, :]. However, this module always returns the whole Tensor.
+        """
         pass
 
     def _produce_train_output(self, input_batch: Tuple) -> torch.Tensor:
