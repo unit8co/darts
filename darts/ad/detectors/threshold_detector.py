@@ -11,12 +11,14 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from darts.ad.detectors.detectors import Detector
-from darts.logging import raise_if, raise_if_not
+from darts.ad.detectors.detectors import Detector, _BoundedDetectorMixin
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
 
+logger = get_logger(__name__)
 
-class ThresholdDetector(Detector):
+
+class ThresholdDetector(Detector, _BoundedDetectorMixin):
     def __init__(
         self,
         low_threshold: Union[int, float, Sequence[float], None] = None,
@@ -48,57 +50,16 @@ class ThresholdDetector(Detector):
             If a sequence, must match the dimensionality of the series
             this detector is applied to.
         """
-
-        # TODO: could we refactor some code common between ThresholdDetector and QuantileDetector?
-
         super().__init__()
 
-        raise_if(
-            low_threshold is None and high_threshold is None,
-            "At least one parameter must be not None (`low` and `high` are both None).",
+        low_threshold, high_threshold = self._prepare_boundaries(
+            lower_bound=low_threshold,
+            upper_bound=high_threshold,
+            lower_bound_name="low_threshold",
+            upper_bound_name="high_threshold",
         )
-
-        def _prep_thresholds(q):
-            return (
-                q.tolist()
-                if isinstance(q, np.ndarray)
-                else [q]
-                if not isinstance(q, Sequence)
-                else q
-            )
-
-        low = _prep_thresholds(low_threshold)
-        high = _prep_thresholds(high_threshold)
-
-        self.low_threshold = low * len(high) if len(low) == 1 else low
-        self.high_threshold = high * len(low) if len(high) == 1 else high
-
-        # the threshold parameters are now sequences of the same length,
-        # possibly containing some None values, but at least one non-None value
-
-        raise_if_not(
-            len(self.low_threshold) == len(self.high_threshold),
-            "Parameters `low_threshold` and `high_threshold` must be of the same length,"
-            + f" found `low`: {len(self.low_threshold)} and `high`: {len(self.high_threshold)}.",
-        )
-
-        raise_if(
-            all([lo is None for lo in self.low_threshold])
-            and all([hi is None for hi in self.high_threshold]),
-            "All provided threshold values are None.",
-        )
-
-        raise_if_not(
-            all(
-                [
-                    l <= h
-                    for (l, h) in zip(self.low_threshold, self.high_threshold)
-                    if ((l is not None) and (h is not None))
-                ]
-            ),
-            "all values in `low_threshold` must be lower than or equal"
-            + "to their corresponding value in `high_threshold`.",
-        )
+        self.low_threshold = low_threshold
+        self.high_threshold = high_threshold
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
         raise_if_not(

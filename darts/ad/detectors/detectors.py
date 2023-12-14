@@ -10,11 +10,15 @@ Detector Base Classes
 #         - create an ensemble fittable detector
 
 from abc import ABC, abstractmethod
-from typing import Any, Sequence, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
 
 from darts import TimeSeries
 from darts.ad.utils import eval_metric_from_binary_prediction
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not
+
+logger = get_logger(__name__)
 
 
 class Detector(ABC):
@@ -45,11 +49,13 @@ class Detector(ABC):
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
             "all series in `series` must be of type TimeSeries.",
+            logger,
         )
 
         raise_if_not(
             all([s.is_deterministic for s in list_series]),
             "all series in `series` must be deterministic (number of samples equal to 1).",
+            logger,
         )
 
         detected_series = []
@@ -65,7 +71,7 @@ class Detector(ABC):
     def _detect_core(self, input: Any) -> Any:
         pass
 
-    def eval_accuracy(
+    def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
@@ -98,21 +104,25 @@ class Detector(ABC):
             raise_if_not(
                 all([isinstance(s, TimeSeries) for s in anomaly_score]),
                 "all series in `anomaly_score` must be of type TimeSeries.",
+                logger,
             )
 
             raise_if_not(
                 all([s.is_deterministic for s in anomaly_score]),
                 "all series in `anomaly_score` must be deterministic (number of samples equal to 1).",
+                logger,
             )
         else:
             raise_if_not(
                 isinstance(anomaly_score, TimeSeries),
                 f"Input `anomaly_score` must be of type TimeSeries, found {type(anomaly_score)}.",
+                logger,
             )
 
             raise_if_not(
                 anomaly_score.is_deterministic,
                 "Input `anomaly_score` must be deterministic (number of samples equal to 1).",
+                logger,
             )
 
         return eval_metric_from_binary_prediction(
@@ -149,6 +159,7 @@ class FittableDetector(Detector):
         raise_if_not(
             self._fit_called,
             "The Detector has not been fitted yet. Call `fit()` first.",
+            logger,
         )
 
         raise_if_not(
@@ -156,6 +167,7 @@ class FittableDetector(Detector):
             "all series in `series` must have the same number of components as the data "
             + "used for training the detector model, number of components in training: "
             + f" {self.width_trained_on}.",
+            logger,
         )
 
         return super().detect(series)
@@ -183,11 +195,13 @@ class FittableDetector(Detector):
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
             "all series in `series` must be of type TimeSeries.",
+            logger,
         )
 
         raise_if_not(
             all([s.is_deterministic for s in list_series]),
             "all series in `series` must be deterministic (number of samples equal to 1).",
+            logger,
         )
 
         self.width_trained_on = list_series[0].width
@@ -195,6 +209,7 @@ class FittableDetector(Detector):
         raise_if_not(
             all([s.width == self.width_trained_on for s in list_series]),
             "all series in `series` must have the same number of components.",
+            logger,
         )
 
         self._fit_called = True
@@ -217,3 +232,99 @@ class FittableDetector(Detector):
         """
         self.fit(series)
         return self.detect(series)
+
+
+class _BoundedDetectorMixin:
+    """
+    A class containing functions supporting bounds-based detection, to be used as a mixin for some
+    `Detector` subclasses.
+    """
+
+    @staticmethod
+    def _prepare_boundaries(
+        lower_bound_name: str,
+        upper_bound_name: str,
+        lower_bound: Optional[Union[Sequence[float], float]] = None,
+        upper_bound: Optional[Union[Sequence[float], float]] = None,
+    ) -> Tuple[List[Optional[float]], List[Optional[float]]]:
+        """
+        Process the boundaries argument and perform some sanity checks
+
+        Parameters
+        ----------
+        lower_bound_name
+            Name of the lower bound
+        upper_bound_name
+            Name of the upper bound
+        lower_bound
+            (Sequence of) numerical bound below which a value is regarded as anomaly.
+            Must be between 0 and 1. If a sequence, must match the dimensionality of the series
+            this detector is applied to.
+        upper_bound
+            (Sequence of) numerical bound above which a value is regarded as anomaly.
+            Must be between 0 and 1. If a sequence, must match the dimensionality of the series
+            this detector is applied to.
+
+        Returns
+        -------
+        lower_bound
+            Lower bounds, as a list of values (at least one not None value)
+        upper_bound
+            Upper bounds, as a list of values (at least one not None value)
+        """
+
+        raise_if(
+            lower_bound is None and upper_bound is None,
+            f"`{lower_bound_name} and `{upper_bound_name}` cannot be both `None`.",
+            logger,
+        )
+
+        def _prep_boundaries(boundaries) -> List[Optional[float]]:
+            """Convert boundaries to List"""
+            return (
+                boundaries.tolist()
+                if isinstance(boundaries, np.ndarray)
+                else [boundaries]
+                if not isinstance(boundaries, Sequence)
+                else boundaries
+            )
+
+        # convert to list
+        lower_bound = _prep_boundaries(lower_bound)
+        upper_bound = _prep_boundaries(upper_bound)
+
+        raise_if(
+            all([lo is None for lo in lower_bound])
+            and all([hi is None for hi in upper_bound]),
+            "All provided quantile values are None.",
+            logger,
+        )
+
+        # match the lengths of the boundaries
+        lower_bound = (
+            lower_bound * len(upper_bound) if len(lower_bound) == 1 else lower_bound
+        )
+        upper_bound = (
+            upper_bound * len(lower_bound) if len(upper_bound) == 1 else upper_bound
+        )
+
+        raise_if_not(
+            len(lower_bound) == len(upper_bound),
+            f"Parameters `{lower_bound_name}` and `{upper_bound_name}` must be of the same length,"
+            f" found `{lower_bound_name}`: {len(lower_bound)} and `{upper_bound_name}`: {len(upper_bound)}.",
+            logger,
+        )
+
+        raise_if_not(
+            all(
+                [
+                    l is None or h is None or l <= h
+                    for (l, h) in zip(lower_bound, upper_bound)
+                ]
+            ),
+            f"All values in `{lower_bound_name}` must be lower or equal"
+            f"to their corresponding value in `{upper_bound_name}`.",
+            logger,
+        )
+
+        return lower_bound, upper_bound

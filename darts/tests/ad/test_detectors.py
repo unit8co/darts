@@ -7,11 +7,11 @@ from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.tests.base_test_class import DartsBaseTestClass
 
-list_NonFittableDetector = [ThresholdDetector(low_threshold=0.2)]
+list_Detector = [ThresholdDetector(low_threshold=0.2)]
 
 list_FittableDetector = [QuantileDetector(low_quantile=0.2)]
 
-list_detector = list_NonFittableDetector + list_FittableDetector
+list_detector = list_Detector + list_FittableDetector
 
 
 class ADDetectorsTestCase(DartsBaseTestClass):
@@ -87,38 +87,38 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             # Input cannot be probabilistic
             detector.detect(self.probabilistic)
 
-    def test_eval_accuracy(self):
+    def test_eval_metric(self):
 
         detector = ThresholdDetector(low_threshold=0.2)
 
         # Check return types
         # Check if return type is float when input is a series
         self.assertTrue(
-            isinstance(detector.eval_accuracy(self.anomalies, self.test), float)
+            isinstance(detector.eval_metric(self.anomalies, self.test), float)
         )
 
         # Check if return type is Sequence when input is a Sequence of series
         self.assertTrue(
-            isinstance(detector.eval_accuracy(self.anomalies, [self.test]), Sequence)
+            isinstance(detector.eval_metric(self.anomalies, [self.test]), Sequence)
         )
 
         # Check if return type is Sequence when input is a multivariate series
         self.assertTrue(
             isinstance(
-                detector.eval_accuracy(self.mts_anomalies, self.mts_test), Sequence
+                detector.eval_metric(self.mts_anomalies, self.mts_test), Sequence
             )
         )
 
         # Check if return type is Sequence when input is a multivariate series
         self.assertTrue(
             isinstance(
-                detector.eval_accuracy(self.mts_anomalies, [self.mts_test]), Sequence
+                detector.eval_metric(self.mts_anomalies, [self.mts_test]), Sequence
             )
         )
 
         with self.assertRaises(ValueError):
             # Input cannot be probabilistic
-            detector.eval_accuracy(self.anomalies, self.probabilistic)
+            detector.eval_metric(self.anomalies, self.probabilistic)
 
     def test_FittableDetector(self):
 
@@ -328,25 +328,25 @@ class ADDetectorsTestCase(DartsBaseTestClass):
 
         # detector must have an accuracy of 0.57 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="accuracy"),
+            detector.eval_metric(self.anomalies, self.test, metric="accuracy"),
             0.57,
             delta=1e-05,
         )
         # detector must have an recall of 0.4 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="recall"),
+            detector.eval_metric(self.anomalies, self.test, metric="recall"),
             0.4,
             delta=1e-05,
         )
         # detector must have an f1 of 0.08510 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="f1"),
+            detector.eval_metric(self.anomalies, self.test, metric="f1"),
             0.08510,
             delta=1e-05,
         )
         # detector must have an precision of 0.04761 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="precision"),
+            detector.eval_metric(self.anomalies, self.test, metric="precision"),
             0.04761,
             delta=1e-05,
         )
@@ -370,7 +370,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertEqual(binary_detection.width, 2)
         self.assertEqual(
             len(
-                detector_1param.eval_accuracy(
+                detector_1param.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="accuracy"
                 )
             ),
@@ -378,7 +378,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(
             len(
-                detector_1param.eval_accuracy(
+                detector_1param.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="recall"
                 )
             ),
@@ -386,7 +386,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(
             len(
-                detector_1param.eval_accuracy(
+                detector_1param.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="f1"
                 )
             ),
@@ -394,7 +394,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(
             len(
-                detector_1param.eval_accuracy(
+                detector_1param.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="precision"
                 )
             ),
@@ -427,7 +427,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             binary_detection["1"].sum(axis=0).all_values().flatten()[0], 38
         )
 
-        acc = detector_1param.eval_accuracy(
+        acc = detector_1param.eval_metric(
             self.mts_anomalies, self.mts_test, metric="accuracy"
         )
         # detector_1param must have an accuracy of 0.58 on the first component of the series 'mts_test'
@@ -435,7 +435,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # detector_1param must have an accuracy of 0.58 on the second component of the series 'mts_test'
         self.assertAlmostEqual(acc[1], 0.58, delta=1e-05)
 
-        precision = detector_1param.eval_accuracy(
+        precision = detector_1param.eval_metric(
             self.mts_anomalies, self.mts_test, metric="precision"
         )
         # detector_1param must have an precision of 0.08108 on the first component of the series 'mts_test'
@@ -443,7 +443,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # detector_1param must have an precision of 0.07894 on the second component of the series 'mts_test'
         self.assertAlmostEqual(precision[1], 0.07894, delta=1e-05)
 
-        recall = detector_1param.eval_accuracy(
+        recall = detector_1param.eval_metric(
             self.mts_anomalies, self.mts_test, metric="recall"
         )
         # detector_1param must have an recall of 0.2727 on the first component of the series 'mts_test'
@@ -451,9 +451,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # detector_1param must have an recall of 0.3 on the second component of the series 'mts_test'
         self.assertAlmostEqual(recall[1], 0.3, delta=1e-05)
 
-        f1 = detector_1param.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="f1"
-        )
+        f1 = detector_1param.eval_metric(self.mts_anomalies, self.mts_test, metric="f1")
         # detector_1param must have an f1 of 0.125 on the first component of the series 'mts_test'
         self.assertAlmostEqual(f1[0], 0.125, delta=1e-05)
         # detector_1param must have an f1 of 0.125 on the second component of the series 'mts_test'
@@ -470,7 +468,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertEqual(binary_detection.width, 2)
         self.assertEqual(
             len(
-                detector.eval_accuracy(
+                detector.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="accuracy"
                 )
             ),
@@ -478,19 +476,17 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(
             len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="recall"
-                )
+                detector.eval_metric(self.mts_anomalies, self.mts_test, metric="recall")
             ),
             2,
         )
         self.assertEqual(
-            len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")),
+            len(detector.eval_metric(self.mts_anomalies, self.mts_test, metric="f1")),
             2,
         )
         self.assertEqual(
             len(
-                detector.eval_accuracy(
+                detector.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="precision"
                 )
             ),
@@ -511,25 +507,23 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             binary_detection["1"].sum(axis=0).all_values().flatten()[0], 19
         )
 
-        acc = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="accuracy"
-        )
+        acc = detector.eval_metric(self.mts_anomalies, self.mts_test, metric="accuracy")
         self.assertAlmostEqual(acc[0], 0.69, delta=1e-05)
         self.assertAlmostEqual(acc[1], 0.75, delta=1e-05)
 
-        precision = detector.eval_accuracy(
+        precision = detector.eval_metric(
             self.mts_anomalies, self.mts_test, metric="precision"
         )
         self.assertAlmostEqual(precision[0], 0.0, delta=1e-05)
         self.assertAlmostEqual(precision[1], 0.10526, delta=1e-05)
 
-        recall = detector.eval_accuracy(
+        recall = detector.eval_metric(
             self.mts_anomalies, self.mts_test, metric="recall"
         )
         self.assertAlmostEqual(recall[0], 0.0, delta=1e-05)
         self.assertAlmostEqual(recall[1], 0.2, delta=1e-05)
 
-        f1 = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")
+        f1 = detector.eval_metric(self.mts_anomalies, self.mts_test, metric="f1")
         self.assertAlmostEqual(f1[0], 0.0, delta=1e-05)
         self.assertAlmostEqual(f1[1], 0.13793, delta=1e-05)
 
@@ -622,25 +616,25 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertEqual(binary_detection.sum(axis=0).all_values().flatten()[0], 58)
         # detector must have an accuracy of 0.41 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="accuracy"),
+            detector.eval_metric(self.anomalies, self.test, metric="accuracy"),
             0.41,
             delta=1e-05,
         )
         # detector must have an recall of 0.4 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="recall"),
+            detector.eval_metric(self.anomalies, self.test, metric="recall"),
             0.4,
             delta=1e-05,
         )
         # detector must have an f1 of 0.06349 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="f1"),
+            detector.eval_metric(self.anomalies, self.test, metric="f1"),
             0.06349,
             delta=1e-05,
         )
         # detector must have an precision of 0.03448 for the series 'test'
         self.assertAlmostEqual(
-            detector.eval_accuracy(self.anomalies, self.test, metric="precision"),
+            detector.eval_metric(self.anomalies, self.test, metric="precision"),
             0.03448,
             delta=1e-05,
         )
@@ -662,7 +656,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertEqual(binary_detection.width, 2)
         self.assertEqual(
             len(
-                detector.eval_accuracy(
+                detector.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="accuracy"
                 )
             ),
@@ -670,19 +664,17 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(
             len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="recall"
-                )
+                detector.eval_metric(self.mts_anomalies, self.mts_test, metric="recall")
             ),
             2,
         )
         self.assertEqual(
-            len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")),
+            len(detector.eval_metric(self.mts_anomalies, self.mts_test, metric="f1")),
             2,
         )
         self.assertEqual(
             len(
-                detector.eval_accuracy(
+                detector.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="precision"
                 )
             ),
@@ -698,15 +690,13 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             binary_detection["1"].sum(axis=0).all_values().flatten()[0], 52
         )
 
-        acc = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="accuracy"
-        )
+        acc = detector.eval_metric(self.mts_anomalies, self.mts_test, metric="accuracy")
         # detector must have an accuracy of 0.71 on the first width of the series 'mts_test'
         self.assertAlmostEqual(acc[0], 0.71, delta=1e-05)
         # detector must have an accuracy of 0.48 on the second width of the series 'mts_test'
         self.assertAlmostEqual(acc[1], 0.48, delta=1e-05)
 
-        precision = detector.eval_accuracy(
+        precision = detector.eval_metric(
             self.mts_anomalies, self.mts_test, metric="precision"
         )
         # detector must have an precision of 0.17857 on the first width of the series 'mts_test'
@@ -714,7 +704,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # detector must have an precision of 0.09615 on the second width of the series 'mts_test'
         self.assertAlmostEqual(precision[1], 0.09615, delta=1e-05)
 
-        recall = detector.eval_accuracy(
+        recall = detector.eval_metric(
             self.mts_anomalies, self.mts_test, metric="recall"
         )
         # detector must have an recall of 0.45454 on the first width of the series 'mts_test'
@@ -722,7 +712,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # detector must have an recall of 0.5 on the second width of the series 'mts_test'
         self.assertAlmostEqual(recall[1], 0.5, delta=1e-05)
 
-        f1 = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")
+        f1 = detector.eval_metric(self.mts_anomalies, self.mts_test, metric="f1")
         # detector must have an f1 of 0.25641 on the first width of the series 'mts_test'
         self.assertAlmostEqual(f1[0], 0.25641, delta=1e-05)
         # detector must have an f1 of 0.16129 on the second width of the series 'mts_test'
@@ -736,7 +726,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertEqual(binary_detection.width, 2)
         self.assertEqual(
             len(
-                detector.eval_accuracy(
+                detector.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="accuracy"
                 )
             ),
@@ -744,19 +734,17 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(
             len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="recall"
-                )
+                detector.eval_metric(self.mts_anomalies, self.mts_test, metric="recall")
             ),
             2,
         )
         self.assertEqual(
-            len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")),
+            len(detector.eval_metric(self.mts_anomalies, self.mts_test, metric="f1")),
             2,
         )
         self.assertEqual(
             len(
-                detector.eval_accuracy(
+                detector.eval_metric(
                     self.mts_anomalies, self.mts_test, metric="precision"
                 )
             ),
@@ -772,15 +760,13 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             binary_detection["1"].sum(axis=0).all_values().flatten()[0], 43
         )
 
-        acc = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="accuracy"
-        )
+        acc = detector.eval_metric(self.mts_anomalies, self.mts_test, metric="accuracy")
         # detector must have an accuracy of 0.51 on the first width of the series 'mts_test'
         self.assertAlmostEqual(acc[0], 0.51, delta=1e-05)
         # detector must have an accuracy of 0.57 on the second width of the series 'mts_test'
         self.assertAlmostEqual(acc[1], 0.57, delta=1e-05)
 
-        precision = detector.eval_accuracy(
+        precision = detector.eval_metric(
             self.mts_anomalies, self.mts_test, metric="precision"
         )
         # detector must have an precision of 0.10416 and  on the first width of the series 'mts_test'
@@ -788,7 +774,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # detector must have an precision of 0.11627 on the second width of the series 'mts_test'
         self.assertAlmostEqual(precision[1], 0.11627, delta=1e-05)
 
-        recall = detector.eval_accuracy(
+        recall = detector.eval_metric(
             self.mts_anomalies, self.mts_test, metric="recall"
         )
         # detector must have an recall of 0.45454 on the first width of the series 'mts_test'
@@ -796,7 +782,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # detector must have an recall of 0.5 on the second width of the series 'mts_test'
         self.assertAlmostEqual(recall[1], 0.5, delta=1e-05)
 
-        f1 = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")
+        f1 = detector.eval_metric(self.mts_anomalies, self.mts_test, metric="f1")
         # detector must have an f1 of 0.16949 on the first width of the series 'mts_test'
         self.assertAlmostEqual(f1[0], 0.16949, delta=1e-05)
         # detector must have an f1 of 0.18867 on the second width of the series 'mts_test'

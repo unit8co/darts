@@ -11,13 +11,15 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from darts.ad.detectors.detectors import FittableDetector
+from darts.ad.detectors.detectors import FittableDetector, _BoundedDetectorMixin
 from darts.ad.detectors.threshold_detector import ThresholdDetector
-from darts.logging import raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
 
+logger = get_logger(__name__)
 
-class QuantileDetector(FittableDetector):
+
+class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
     def __init__(
         self,
         low_quantile: Union[Sequence[float], float, None] = None,
@@ -60,62 +62,25 @@ class QuantileDetector(FittableDetector):
 
         super().__init__()
 
-        raise_if(
-            low_quantile is None and high_quantile is None,
-            "At least one parameter must be not None (`low` and `high` are both None).",
+        low_quantile, high_quantile = self._prepare_boundaries(
+            lower_bound=low_quantile,
+            upper_bound=high_quantile,
+            lower_bound_name="low_quantile",
+            upper_bound_name="high_quantile",
         )
 
-        def _prep_quantile(q):
-            return (
-                q.tolist()
-                if isinstance(q, np.ndarray)
-                else [q]
-                if not isinstance(q, Sequence)
-                else q
-            )
-
-        low = _prep_quantile(low_quantile)
-        high = _prep_quantile(high_quantile)
-
-        for q in (low, high):
+        for q in (low_quantile, high_quantile):
             raise_if_not(
                 all([x is None or 0 <= x <= 1 for x in q]),
                 "Quantiles must be between 0 and 1, or None.",
+                logger,
             )
 
-        self.low_quantile = low * len(high) if len(low) == 1 else low
-        self.high_quantile = high * len(low) if len(high) == 1 else high
-
-        # the quantiles parameters are now sequences of the same length,
-        # possibly containing some None values, but at least one non-None value
+        self.low_quantile = low_quantile
+        self.high_quantile = high_quantile
 
         # We'll use an inner Threshold detector once the quantiles are fitted
         self.detector = None
-
-        # A few more checks:
-        raise_if_not(
-            len(self.low_quantile) == len(self.high_quantile),
-            "Parameters `low_quantile` and `high_quantile` must be of the same length,"
-            + f" found `low`: {len(self.low_quantile)} and `high`: {len(self.high_quantile)}.",
-        )
-
-        raise_if(
-            all([lo is None for lo in self.low_quantile])
-            and all([hi is None for hi in self.high_quantile]),
-            "All provided quantile values are None.",
-        )
-
-        raise_if_not(
-            all(
-                [
-                    l <= h
-                    for (l, h) in zip(self.low_quantile, self.high_quantile)
-                    if ((l is not None) and (h is not None))
-                ]
-            ),
-            "all values in `low_quantile` must be lower than or equal"
-            + "to their corresponding value in `high_quantile`.",
-        )
 
     def _fit_core(self, list_series: Sequence[TimeSeries]) -> None:
 
@@ -124,8 +89,9 @@ class QuantileDetector(FittableDetector):
             len(self.low_quantile) > 1
             and len(self.low_quantile) != list_series[0].width,
             "The number of components of input must be equal to the number"
-            + " of values given for `high_quantile` or/and `low_quantile`. Found number of "
-            + f"components equal to {list_series[0].width} and expected {len(self.low_quantile)}.",
+            " of values given for `high_quantile` or/and `low_quantile`. Found number of "
+            f"components equal to {list_series[0].width} and expected {len(self.low_quantile)}.",
+            logger,
         )
 
         # otherwise, make them the right length
