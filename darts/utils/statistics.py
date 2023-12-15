@@ -806,7 +806,7 @@ def plot_ccf(
 ) -> None:
     """
     Plots the Cross Correlation Function (CCF) between `ts` and `ts_other`, highlighting it at lag `m`, with
-    corresponding significance interval. Uses :func:`statsmodels.tsa.stattools.ccf` [1]_
+    corresponding significance interval.
 
     This can be used to find the cross correlation between the target and different covariates lags.
     If `ts_other` is identical `ts`, it corresponds to `plot_acf()`.
@@ -833,10 +833,6 @@ def plot_ccf(
         Optionally, an axis object to plot the CCF on.
     default_formatting
         Whether to use the darts default scheme.
-
-    References
-    ----------
-    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.ccf.html
     """
 
     ts._assert_univariate()
