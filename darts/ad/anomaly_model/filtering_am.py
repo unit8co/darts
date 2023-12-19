@@ -277,7 +277,7 @@ class FilteringAnomalyModel(AnomalyModel):
         else:
             return scores
 
-    def eval_accuracy(
+    def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -336,7 +336,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         list_anomaly_scores = self.score(series=list_series, **filter_kwargs)
 
-        acc_anomaly_scores = self._eval_accuracy_from_scores(
+        acc_anomaly_scores = self._eval_metric_from_scores(
             list_actual_anomalies=list_actual_anomalies,
             list_anomaly_scores=list_anomaly_scores,
             metric=metric,

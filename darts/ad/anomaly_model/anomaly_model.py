@@ -58,7 +58,7 @@ class AnomalyModel(ABC):
         pass
 
     @abstractmethod
-    def eval_accuracy(
+    def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -102,14 +102,14 @@ class AnomalyModel(ABC):
             metric=metric,
         )
 
-    def _eval_accuracy_from_scores(
+    def _eval_metric_from_scores(
         self,
         list_actual_anomalies: Sequence[TimeSeries],
         list_anomaly_scores: Sequence[TimeSeries],
         metric: str,
     ) -> Union[Sequence[Dict[str, float]], Sequence[Dict[str, Sequence[float]]]]:
-        """Internal function that computes the accuracy of the anomaly scores
-        computed by the model. Called by the function eval_accuracy().
+        """Internal function that computes the metric over the anomaly scores
+        computed by the model. Called by the function eval_metric().
         """
         windows = [s.window for s in self.scorers]
 

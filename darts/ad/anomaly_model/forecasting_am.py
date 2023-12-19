@@ -574,7 +574,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         return self.model.historical_forecasts(series, **historical_forecasts_param)
 
-    def eval_accuracy(
+    def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -662,7 +662,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             num_samples=num_samples,
         )
 
-        acc_anomaly_scores = self._eval_accuracy_from_scores(
+        acc_anomaly_scores = self._eval_metric_from_scores(
             list_actual_anomalies=list_actual_anomalies,
             list_anomaly_scores=list_anomaly_scores,
             metric=metric,
