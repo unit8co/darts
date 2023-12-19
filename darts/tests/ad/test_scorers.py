@@ -188,14 +188,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             )
         )
 
-    def test_eval_accuracy_from_prediction(self):
+    def test_eval_metric_from_prediction(self):
 
         scorer = Norm(component_wise=False)
         # Check return types
         # Check if return type is float when input is a series
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.anomalies, self.test, self.modified_test
                 ),
                 float,
@@ -205,7 +205,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a Sequence of series
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.anomalies, [self.test], self.modified_test
                 ),
                 Sequence,
@@ -215,7 +215,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is a float when input is a multivariate series and component_wise is set to False
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.anomalies, self.mts_test, self.modified_mts_test
                 ),
                 float,
@@ -225,7 +225,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a multivariate series and component_wise is set to False
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.anomalies, [self.mts_test], self.modified_mts_test
                 ),
                 Sequence,
@@ -237,7 +237,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is float when input is a series
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.anomalies, self.test, self.modified_test
                 ),
                 float,
@@ -247,7 +247,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a Sequence of series
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.anomalies, [self.test], self.modified_test
                 ),
                 Sequence,
@@ -257,7 +257,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is a float when input is a multivariate series and component_wise is set to True
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.mts_anomalies, self.mts_test, self.modified_mts_test
                 ),
                 Sequence,
@@ -267,7 +267,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a multivariate series and component_wise is set to True
         self.assertTrue(
             isinstance(
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     self.mts_anomalies, [self.mts_test], self.modified_mts_test
                 ),
                 Sequence,
@@ -280,63 +280,63 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # if component_wise set to False, 'actual_anomalies' must have widths of 1
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=self.mts_anomalies, series=self.test
             )
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=[self.anomalies, self.mts_anomalies],
                 series=[self.test, self.test],
             )
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=self.anomalies, series=self.test, metric=1
             )
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
             )
         with self.assertRaises(TypeError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
             )
 
         # 'actual_anomalies' must be binary
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.test, series=self.test)
+            fittable_scorer.eval_metric(actual_anomalies=self.test, series=self.test)
 
         # 'actual_anomalies' must contain anomalies (at least one)
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=self.only_0_anomalies, series=self.test
             )
 
         # 'actual_anomalies' cannot contain only anomalies
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=self.only_1_anomalies, series=self.test
             )
 
         # 'actual_anomalies' must match the number of series if length higher than 1
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=[self.anomalies, self.anomalies], series=self.test
             )
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=[self.anomalies, self.anomalies],
                 series=[self.test, self.test, self.test],
             )
 
         # 'actual_anomalies' must have non empty intersection with 'series'
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=self.anomalies[:20], series=self.test[30:]
             )
         with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_metric(
                 actual_anomalies=[self.anomalies, self.anomalies[:20]],
                 series=[self.test, self.test[40:]],
             )
@@ -351,21 +351,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
             with self.assertRaises(ValueError):
-                fittable_scorer.eval_accuracy_from_prediction(
+                fittable_scorer.eval_metric_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
                     metric=1,
                 )
             with self.assertRaises(ValueError):
-                fittable_scorer.eval_accuracy_from_prediction(
+                fittable_scorer.eval_metric_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
                     metric="auc_roc",
                 )
             with self.assertRaises(TypeError):
-                fittable_scorer.eval_accuracy_from_prediction(
+                fittable_scorer.eval_metric_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
@@ -374,7 +374,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # 'actual_anomalies' must be binary
             with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     actual_anomalies=self.test,
                     actual_series=self.test,
                     pred_series=self.modified_test,
@@ -382,7 +382,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # 'actual_anomalies' must contain anomalies (at least one)
             with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     actual_anomalies=self.only_0_anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
@@ -390,7 +390,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # 'actual_anomalies' cannot contain only anomalies
             with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     actual_anomalies=self.only_1_anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
@@ -398,7 +398,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # 'actual_anomalies' must match the number of series if length higher than 1
             with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     actual_anomalies=[self.anomalies, self.anomalies],
                     actual_series=[self.test, self.test, self.test],
                     pred_series=[
@@ -408,7 +408,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                     ],
                 )
             with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     actual_anomalies=[self.anomalies, self.anomalies],
                     actual_series=self.test,
                     pred_series=self.modified_test,
@@ -416,13 +416,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # 'actual_anomalies' must have non empty intersection with 'actual_series' and 'pred_series'
             with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     actual_anomalies=self.anomalies[:20],
                     actual_series=self.test[30:],
                     pred_series=self.modified_test[30:],
                 )
             with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
+                scorer.eval_metric_from_prediction(
                     actual_anomalies=[self.anomalies, self.anomalies[:20]],
                     actual_series=[self.test, self.test[40:]],
                     pred_series=[self.modified_test, self.modified_test[40:]],
@@ -913,20 +913,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # test model with window of 10
         scorer_10 = WassersteinScorer(window=10, window_agg=False)
         scorer_10.fit(train_wasserstein)
-        auc_roc_w10 = scorer_10.eval_accuracy(
+        auc_roc_w10 = scorer_10.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
         )
-        auc_pr_w10 = scorer_10.eval_accuracy(
+        auc_pr_w10 = scorer_10.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
         # test model with window of 20
         scorer_20 = WassersteinScorer(window=20, window_agg=False)
         scorer_20.fit(train_wasserstein)
-        auc_roc_w20 = scorer_20.eval_accuracy(
+        auc_roc_w20 = scorer_20.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
         )
-        auc_pr_w20 = scorer_20.eval_accuracy(
+        auc_pr_w20 = scorer_20.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
@@ -993,7 +993,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             window=10, component_wise=False, window_agg=False
         )
         scorer_w10_cwfalse.fit(mts_train_wasserstein)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_metric(
             anomalies_common_wasserstein, mts_test_wasserstein, metric="AUC_ROC"
         )
 
@@ -1002,7 +1002,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             window=10, component_wise=True, window_agg=False
         )
         scorer_w10_cwtrue.fit(mts_train_wasserstein)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_metric(
             anomalies_wasserstein_per_width, mts_test_wasserstein, metric="AUC_ROC"
         )
 
@@ -1091,10 +1091,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         kmeans_scorer = KMeansScorer(k=2, window=1, component_wise=False)
         kmeans_scorer.fit(KMeans_mts_train)
 
-        metric_AUC_ROC = kmeans_scorer.eval_accuracy(
+        metric_AUC_ROC = kmeans_scorer.eval_metric(
             KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_ROC"
         )
-        metric_AUC_PR = kmeans_scorer.eval_accuracy(
+        metric_AUC_PR = kmeans_scorer.eval_metric(
             KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_PR"
         )
 
@@ -1158,19 +1158,15 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         kmeans_scorer_w2 = KMeansScorer(k=8, window=2, window_agg=False)
         kmeans_scorer_w2.fit(ts_train)
 
-        auc_roc_w1 = kmeans_scorer_w1.eval_accuracy(
+        auc_roc_w1 = kmeans_scorer_w1.eval_metric(
             ts_anomalies, ts_test, metric="AUC_ROC"
         )
-        auc_pr_w1 = kmeans_scorer_w1.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_PR"
-        )
+        auc_pr_w1 = kmeans_scorer_w1.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
-        auc_roc_w2 = kmeans_scorer_w2.eval_accuracy(
+        auc_roc_w2 = kmeans_scorer_w2.eval_metric(
             ts_anomalies, ts_test, metric="AUC_ROC"
         )
-        auc_pr_w2 = kmeans_scorer_w2.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_PR"
-        )
+        auc_pr_w2 = kmeans_scorer_w2.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
         self.assertAlmostEqual(auc_roc_w1, 0.41551, delta=1e-05)
         self.assertAlmostEqual(auc_pr_w1, 0.064761, delta=1e-05)
@@ -1236,7 +1232,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             window=10, component_wise=False, n_init=10, window_agg=False
         )
         scorer_w10_cwfalse.fit(mts_train_kmeans)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_metric(
             anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC"
         )
 
@@ -1245,7 +1241,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             window=10, component_wise=True, n_init=10, window_agg=False
         )
         scorer_w10_cwtrue.fit(mts_train_kmeans)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_metric(
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
@@ -1389,10 +1385,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
         pyod_scorer.fit(pyod_mts_train)
 
-        metric_AUC_ROC = pyod_scorer.eval_accuracy(
+        metric_AUC_ROC = pyod_scorer.eval_metric(
             pyod_mts_anomalies, pyod_mts_test, metric="AUC_ROC"
         )
-        metric_AUC_PR = pyod_scorer.eval_accuracy(
+        metric_AUC_PR = pyod_scorer.eval_metric(
             pyod_mts_anomalies, pyod_mts_test, metric="AUC_PR"
         )
 
@@ -1463,15 +1459,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
         pyod_scorer_w2.fit(ts_train)
 
-        auc_roc_w1 = pyod_scorer_w1.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_ROC"
-        )
-        auc_pr_w1 = pyod_scorer_w1.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
+        auc_roc_w1 = pyod_scorer_w1.eval_metric(ts_anomalies, ts_test, metric="AUC_ROC")
+        auc_pr_w1 = pyod_scorer_w1.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
-        auc_roc_w2 = pyod_scorer_w2.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_ROC"
-        )
-        auc_pr_w2 = pyod_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
+        auc_roc_w2 = pyod_scorer_w2.eval_metric(ts_anomalies, ts_test, metric="AUC_ROC")
+        auc_pr_w2 = pyod_scorer_w2.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
         self.assertAlmostEqual(auc_roc_w1, 0.5, delta=1e-05)
         self.assertAlmostEqual(auc_pr_w1, 0.07, delta=1e-05)
@@ -1541,7 +1533,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             window_agg=False,
         )
         scorer_w10_cwfalse.fit(mts_train_PyOD)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_metric(
             anomalies_common_PyOD, mts_test_PyOD, metric="AUC_ROC"
         )
 
@@ -1553,7 +1545,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             window_agg=False,
         )
         scorer_w10_cwtrue.fit(mts_train_PyOD)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_metric(
             anomalies_pyod_per_width, mts_test_PyOD, metric="AUC_ROC"
         )
 
@@ -1768,10 +1760,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 scorer_T.fit(train)
                 scorer_F.fit(train)
 
-                auc_roc_T = scorer_T.eval_accuracy(
+                auc_roc_T = scorer_T.eval_metric(
                     actual_anomalies=self.anomalies, series=test
                 )
-                auc_roc_F = scorer_F.eval_accuracy(
+                auc_roc_F = scorer_F.eval_metric(
                     actual_anomalies=self.anomalies, series=test
                 )
 
