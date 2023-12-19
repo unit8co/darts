@@ -6,11 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Sequence, Union
 
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import (
-    _to_list,
-    eval_accuracy_from_scores,
-    show_anomalies_from_scores,
-)
+from darts.ad.utils import _to_list, eval_metric_from_scores, show_anomalies_from_scores
 from darts.logging import raise_if_not
 from darts.timeseries import TimeSeries
 
@@ -137,7 +133,7 @@ class AnomalyModel(ABC):
         acc = []
         for anomalies, scores in zip(list_actual_anomalies, list_anomaly_scores):
             acc.append(
-                eval_accuracy_from_scores(
+                eval_metric_from_scores(
                     actual_anomalies=anomalies,
                     anomaly_score=scores,
                     window=windows,

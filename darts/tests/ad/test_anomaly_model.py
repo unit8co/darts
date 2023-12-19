@@ -28,7 +28,7 @@ from darts.ad import (
     PyODScorer,
     WassersteinScorer,
 )
-from darts.ad.utils import eval_accuracy_from_scores, show_anomalies_from_scores
+from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverageFilter, NaiveSeasonal, RegressionModel
 from darts.tests.base_test_class import DartsBaseTestClass
 
@@ -634,14 +634,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             ts_anomalies, test_series_slope, metric="AUC_PR", start=0.1
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
@@ -757,14 +757,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             ts_anomalies, test_series_noise, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
@@ -892,14 +892,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             ts_anomalies, series_test, metric="AUC_PR", start=0.2
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
@@ -1025,14 +1025,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             mts_anomalies, mts_series_test, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 12, 1, 5, 1, 5],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 12, 1, 5, 1, 5],
@@ -1112,14 +1112,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             ts_anomalies, mts_series_test, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 12, 1, 5, 1, 5],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 12, 1, 5, 1, 5],
@@ -1255,14 +1255,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             mts_anomalies, mts_series_test, start=0.1, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 20, 1, 20, 1, 10],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 20, 1, 20, 1, 10],
@@ -1342,14 +1342,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             ts_anomalies, mts_series_test, start=0.1, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 20, 1, 20, 1, 10],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 20, 1, 20, 1, 10],

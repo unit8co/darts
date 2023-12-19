@@ -52,7 +52,7 @@ def _assert_binary(series: TimeSeries, name_series: str):
     )
 
 
-def eval_accuracy_from_scores(
+def eval_metric_from_scores(
     actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
     anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]] = 1,
@@ -709,7 +709,7 @@ def show_anomalies_from_scores(
 
             if metric is not None:
                 value = round(
-                    eval_accuracy_from_scores(
+                    eval_metric_from_scores(
                         anomaly_score=anomaly_scores[idx],
                         actual_anomalies=actual_anomalies,
                         window=w,
