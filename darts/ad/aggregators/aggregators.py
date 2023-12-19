@@ -286,7 +286,13 @@ class FittableAggregator(Aggregator):
         list_series = _to_list(series)
 
         raise_if_not(
-            all([s.width == self.width_trained_on for s in list_series]),
+            all(
+                [
+                    s.width == self.width_trained_on
+                    for s in list_series
+                    if isinstance(s, TimeSeries)
+                ]
+            ),
             "all series in `series` must have the same number of components as the data"
             + " used for training the detector model, number of components in training:"
             + f" {self.width_trained_on}.",
