@@ -81,5 +81,5 @@ from .nll_laplace_scorer import LaplaceNLLScorer
 from .nll_poisson_scorer import PoissonNLLScorer
 from .norm_scorer import NormScorer
 from .pyod_scorer import PyODScorer
-from .scorers import FittableAnomalyScorer, NonFittableAnomalyScorer
+from .scorers import AnomalyScorer, FittableAnomalyScorer
 from .wasserstein_scorer import WassersteinScorer

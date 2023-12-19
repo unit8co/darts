@@ -11,12 +11,12 @@ References
 
 import numpy as np
 
-from darts.ad.scorers.scorers import NonFittableAnomalyScorer
+from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import raise_if_not
 from darts.timeseries import TimeSeries
 
 
-class NormScorer(NonFittableAnomalyScorer):
+class NormScorer(AnomalyScorer):
     def __init__(self, ord=None, component_wise: bool = False) -> None:
         """
         Returns the elementwise norm of a given order between two series' values.

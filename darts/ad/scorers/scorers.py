@@ -20,7 +20,7 @@ from darts.ad.utils import (
     _intersect,
     _sanity_check_two_series,
     _to_list,
-    eval_accuracy_from_scores,
+    eval_metric_from_scores,
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_if_not
@@ -31,7 +31,9 @@ logger = get_logger(__name__)
 class AnomalyScorer(ABC):
     """Base class for all anomaly scorers"""
 
-    def __init__(self, univariate_scorer: bool, window: int) -> None:
+    def __init__(
+        self, univariate_scorer: bool, window: int, trainable: bool = False
+    ) -> None:
 
         raise_if_not(
             type(window) is int,
@@ -46,6 +48,8 @@ class AnomalyScorer(ABC):
         self.window = window
 
         self.univariate_scorer = univariate_scorer
+
+        self.trainable = trainable
 
     def _tabularize_series(
         self, list_series: Sequence[TimeSeries], concatenate: bool, component_wise: bool
@@ -188,7 +192,7 @@ class AnomalyScorer(ABC):
         """returns the name of the scorer"""
         pass
 
-    def eval_accuracy_from_prediction(
+    def eval_metric_from_prediction(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         actual_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -230,13 +234,9 @@ class AnomalyScorer(ABC):
 
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
 
-        return eval_accuracy_from_scores(
+        return eval_metric_from_scores(
             actual_anomalies, anomaly_score, self.window, metric
         )
-
-    @abstractmethod
-    def score_from_prediction(self, actual_series: Any, pred_series: Any) -> Any:
-        pass
 
     def show_anomalies_from_prediction(
         self,
@@ -327,16 +327,6 @@ class AnomalyScorer(ABC):
             metric=metric,
         )
 
-
-class NonFittableAnomalyScorer(AnomalyScorer):
-    """Base class of anomaly scorers that do not need training."""
-
-    def __init__(self, univariate_scorer, window) -> None:
-        super().__init__(univariate_scorer=univariate_scorer, window=window)
-
-        # indicates if the scorer is trainable or not
-        self.trainable = False
-
     @abstractmethod
     def _score_core_from_prediction(self, series: Any) -> Any:
         pass
@@ -394,10 +384,9 @@ class FittableAnomalyScorer(AnomalyScorer):
     def __init__(
         self, univariate_scorer, window, window_agg, diff_fn="abs_diff"
     ) -> None:
-        super().__init__(univariate_scorer=univariate_scorer, window=window)
-
-        # indicates if the scorer is trainable or not
-        self.trainable = True
+        super().__init__(
+            univariate_scorer=univariate_scorer, window=window, trainable=True
+        )
 
         # indicates if the scorer has been trained yet
         self._fit_called = False
@@ -457,7 +446,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             f"The Scorer {self.__str__()} has not been fitted yet. Call ``fit()`` first.",
         )
 
-    def eval_accuracy(
+    def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -500,9 +489,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         else:
             window = self.window
 
-        return eval_accuracy_from_scores(
-            actual_anomalies, anomaly_score, window, metric
-        )
+        return eval_metric_from_scores(actual_anomalies, anomaly_score, window, metric)
 
     def score(
         self,
@@ -616,6 +603,13 @@ class FittableAnomalyScorer(AnomalyScorer):
             title=title,
             metric=metric,
         )
+
+    def _score_core_from_prediction(
+        self,
+        actual_series: TimeSeries,
+        pred_series: TimeSeries,
+    ) -> TimeSeries:
+        return
 
     def score_from_prediction(
         self,
@@ -796,7 +790,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             )
 
 
-class NLLScorer(NonFittableAnomalyScorer):
+class NLLScorer(AnomalyScorer):
     """Parent class for all LikelihoodScorer"""
 
     def __init__(self, window) -> None:
