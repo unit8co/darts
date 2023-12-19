@@ -13,6 +13,7 @@ from darts.ad.aggregators import (
 )
 from darts.models import MovingAverageFilter
 
+# element shape : (model_cls, model_kwargs, expected metrics)
 list_NonFittableAggregator = [
     (
         OrAggregator,
@@ -60,11 +61,12 @@ list_NonFittableAggregator = [
     ),
 ]
 
+# expected metrics values are declared in the test
 list_FittableAggregator = [
     (EnsembleSklearnAggregator, {"model": GradientBoostingClassifier()}, {})
 ]
 
-# element shape : (model_cls, model_kwargs, metrics)
+
 list_Aggregator = list_NonFittableAggregator + list_FittableAggregator
 
 delta = 1e-05
@@ -133,6 +135,7 @@ class TestAnomalyDetectionAggregators:
         pred_series: TimeSeries,
         expected_vals: Dict[str, float],
     ):
+        """Evaluate model on given series, for all 4 supported metric functions"""
         for m_func in ["accuracy", "recall", "f1", "precision"]:
             assert (
                 np.abs(
@@ -153,19 +156,8 @@ class TestAnomalyDetectionAggregators:
         pred_series: Sequence[TimeSeries],
         expected_vals: Dict[str, List[float]],
     ):
+        """Evaluate model on multiple series, for all 4 supported metric functions"""
         for m_func in ["accuracy", "recall", "f1", "precision"]:
-            print(m_func)
-            print("exp", np.array(expected_vals[m_func]))
-            print(
-                "found",
-                np.array(
-                    aggregator.eval_metric(
-                        actual_series,
-                        pred_series,
-                        metric=m_func,
-                    )
-                ),
-            )
             np.testing.assert_array_almost_equal(
                 np.array(
                     aggregator.eval_metric(
@@ -235,6 +227,17 @@ class TestAnomalyDetectionAggregators:
             Sequence,
         )
 
+        # Check if return type is the same number of series in input
+        assert (
+            len(
+                aggregator.eval_metric(
+                    [self.real_anomalies, self.real_anomalies],
+                    [self.mts_anomalies1, self.mts_anomalies2],
+                )
+            )
+            == 2
+        )
+
         # intersection between 'actual_anomalies' and the series in the sequence 'list_series'
         # must be non empty
         with pytest.raises(ValueError):
@@ -249,15 +252,15 @@ class TestAnomalyDetectionAggregators:
         with pytest.raises(ValueError):
             aggregator.eval_metric(self.real_anomalies, self.mts_anomalies1, window=101)
 
-    @pytest.mark.parametrize("config", list_NonFittableAggregator)
-    def test_NonFittableAggregator(self, config):
+    @pytest.mark.parametrize("config", list_Aggregator)
+    def test_aggregator_predict_wrong_inputs(self, config):
+        """Check that exception is raised when predict() arguments are incorrects."""
         aggregator_cls, cls_kwargs, _ = config
         aggregator = aggregator_cls(**cls_kwargs)
 
-        # name must be of type str
-        assert isinstance(aggregator.__str__(), str)
-
-        assert not isinstance(aggregator, FittableAggregator)
+        # fit aggregator on series with 2 components
+        if isinstance(aggregator, FittableAggregator):
+            aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
         # predict on (sequence of) univariate series
         with pytest.raises(ValueError):
@@ -268,55 +271,48 @@ class TestAnomalyDetectionAggregators:
             aggregator.predict([self.mts_anomalies1, self.real_anomalies])
 
         # input a (sequence of) non binary series
-        with pytest.raises(ValueError):
+        expected_msg = "all series in `series` must be binary (only 0 and 1 values)."
+        with pytest.raises(ValueError) as err:
             aggregator.predict(self.mts_train)
-        with pytest.raises(ValueError):
+        assert str(err.value) == expected_msg
+        with pytest.raises(ValueError) as err:
             aggregator.predict([self.mts_anomalies1, self.mts_train])
+        assert str(err.value) == expected_msg
 
         # input a (sequence of) probabilistic series
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             aggregator.predict(self.mts_probabilistic)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             aggregator.predict([self.mts_anomalies1, self.mts_probabilistic])
 
         # input an element that is not a series
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             aggregator.predict([self.mts_anomalies1, "random"])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             aggregator.predict([self.mts_anomalies1, 1])
 
-        # Check if return type is the same number of series in input
-        assert (
-            len(
-                aggregator.eval_metric(
-                    [self.real_anomalies, self.real_anomalies],
-                    [self.mts_anomalies1, self.mts_anomalies2],
-                )
-            )
-            == 2
-        )
-
-    @pytest.mark.parametrize("config", list_FittableAggregator)
-    def test_FittableAggregator(self, config):
+    @pytest.mark.parametrize("config", list_NonFittableAggregator)
+    def test_NonFittableAggregator_predict(self, config):
+        """Check that predict() works as intented"""
         aggregator_cls, cls_kwargs, _ = config
         aggregator = aggregator_cls(**cls_kwargs)
 
         # name must be of type str
-        assert isinstance(
-            aggregator.__str__(),
-            str,
-        )
+        assert isinstance(aggregator.__str__(), str)
 
-        # Need to call fit() before calling predict()
-        with pytest.raises(ValueError) as err:
-            aggregator.predict([self.mts_anomalies1, self.mts_anomalies1])
-        assert (
-            str(err.value)
-            == f"The Aggregator {aggregator.__str__()} has not been fitted yet. Call `fit()` first."
-        )
+        assert not isinstance(aggregator, FittableAggregator)
 
-        # Check if _fit_called is False before calling fit()
-        assert not aggregator._fit_called
+        # Check that predict can be called when series is appropriate
+        pred = aggregator.predict(self.mts_anomalies1)
+
+        # Check that the aggregated result has only one component
+        assert pred.width == 1
+
+    @pytest.mark.parametrize("config", list_FittableAggregator)
+    def test_FittableAggregator_fit_wrong_inputs(self, config):
+        """Check that exception is raised when fit() arguments are incorrects"""
+        aggregator_cls, cls_kwargs, _ = config
+        aggregator = aggregator_cls(**cls_kwargs)
 
         # fit on sequence with series that have different width
         with pytest.raises(ValueError):
@@ -426,11 +422,13 @@ class TestAnomalyDetectionAggregators:
                 [self.real_anomalies], [self.mts_anomalies1, self.mts_anomalies1]
             )
 
-        # case1: fit
-        aggregator.fit(self.real_anomalies, self.mts_anomalies1)
+    @pytest.mark.parametrize("config", list_FittableAggregator)
+    def test_FittableAggregator_predict_wrong_inputs(self, config):
+        """Check that exception specific to FittableAggregator are properly raised"""
+        aggregator_cls, cls_kwargs, _ = config
+        aggregator = aggregator_cls(**cls_kwargs)
 
-        # Check if _fit_called is True after being fitted
-        assert aggregator._fit_called
+        aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
         # series must be same width as series used for training
         with pytest.raises(ValueError):
@@ -440,36 +438,39 @@ class TestAnomalyDetectionAggregators:
         with pytest.raises(ValueError):
             aggregator.predict([self.mts_anomalies1, self.mts_anomalies3])
 
-        # predict on (sequence of) univariate series
-        with pytest.raises(ValueError):
-            aggregator.predict([self.real_anomalies])
-        with pytest.raises(ValueError):
-            aggregator.predict(self.real_anomalies)
-        with pytest.raises(ValueError):
-            aggregator.predict([self.mts_anomalies1, self.real_anomalies])
+    @pytest.mark.parametrize("config", list_FittableAggregator)
+    def test_FittableAggregator_fit_predict(self, config):
+        """Check that consecutive calls to fit() and predict() work as intented"""
+        aggregator_cls, cls_kwargs, _ = config
+        aggregator = aggregator_cls(**cls_kwargs)
 
-        # input a (sequence of) non binary series
-        with pytest.raises(ValueError):
-            aggregator.predict(self.mts_train)
-        with pytest.raises(ValueError):
-            aggregator.predict([self.mts_anomalies1, self.mts_train])
-
-        # input a (sequence of) probabilistic series
-        with pytest.raises(ValueError):
-            aggregator.predict(self.mts_probabilistic)
-        with pytest.raises(ValueError):
-            aggregator.predict([self.mts_anomalies1, self.mts_probabilistic])
-
-        # Check if return type is the same number of series in input
-        assert (
-            len(
-                aggregator.eval_metric(
-                    [self.real_anomalies, self.real_anomalies],
-                    [self.mts_anomalies1, self.mts_anomalies2],
-                )
-            )
-            == 2
+        # name must be of type str
+        assert isinstance(
+            aggregator.__str__(),
+            str,
         )
+
+        # Need to call fit() before calling predict()
+        with pytest.raises(ValueError) as err:
+            aggregator.predict([self.mts_anomalies1, self.mts_anomalies1])
+        assert (
+            str(err.value)
+            == f"The Aggregator {aggregator.__str__()} has not been fitted yet. Call `fit()` first."
+        )
+
+        # Check if _fit_called is False before calling fit
+        assert not aggregator._fit_called
+
+        aggregator.fit(self.real_anomalies, self.mts_anomalies1)
+
+        # Check if _fit_called is True after calling fit
+        assert aggregator._fit_called
+
+        # Check that predict can be called when series is appropriate
+        pred = aggregator.predict(self.mts_anomalies1)
+
+        # Check that the aggregated result has only one component
+        assert pred.width == 1
 
     @pytest.mark.parametrize("config", list_NonFittableAggregator)
     def test_aggregator_performance_single_series(self, config):
