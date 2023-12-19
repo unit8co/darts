@@ -475,12 +475,14 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates: Sequence[TimeSeries],
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
+        sample_weight: Optional[Union[TimeSeries, str]] = None,
     ):
         (
             features,
             labels,
             _,
             self._static_covariates_shape,
+            sample_weights
         ) = create_lagged_training_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
@@ -495,6 +497,7 @@ class RegressionModel(GlobalForecastingModel):
             multi_models=self.multi_models,
             check_inputs=False,
             concatenate=False,
+            sample_weight=sample_weight,
         )
 
         expected_nb_feat = (
@@ -520,10 +523,17 @@ class RegressionModel(GlobalForecastingModel):
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
 
+        if sample_weights is not None:
+            for i, w_i in enumerate(sample_weights):
+                sample_weights[i] = w_i[:, 0]
+            sample_weights_values = np.concatenate(sample_weights, axis=0)
+        else:
+            sample_weights_values = None
+
         training_samples = np.concatenate(features, axis=0)
         training_labels = np.concatenate(labels, axis=0)
 
-        return training_samples, training_labels
+        return training_samples, training_labels, sample_weights_values
 
     def _fit_model(
         self,
@@ -531,6 +541,7 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates: Sequence[TimeSeries],
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
+        sample_weight: Optional[Union[TimeSeries, str]] = None,
         **kwargs,
     ):
         """
@@ -538,17 +549,19 @@ class RegressionModel(GlobalForecastingModel):
         adding validation data), keeping the sanity checks on series performed by fit().
         """
 
-        training_samples, training_labels = self._create_lagged_data(
+        training_samples, training_labels, sample_weights = self._create_lagged_data(
             target_series,
             past_covariates,
             future_covariates,
             max_samples_per_ts,
+            sample_weight
         )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
             training_labels = training_labels.ravel()
-        self.model.fit(training_samples, training_labels, **kwargs)
+
+        self.model.fit(training_samples, training_labels, sample_weights, **kwargs)
 
         # generate and store the lagged components names (for feature importance analysis)
         self._lagged_feature_names, _ = create_lagged_component_names(
@@ -570,6 +583,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, str]] = None,
         **kwargs,
     ):
         """
@@ -593,6 +607,10 @@ class RegressionModel(GlobalForecastingModel):
         n_jobs_multioutput_wrapper
             Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
             support multi-output regression natively.
+        sample_weight
+            Optionally, sample weights. 
+            If a TimeSeries is passed, then those weights are used.
+            If a string, then pre-defined weights are used. Can be one of: "linear", "linear_decay", "exponential_decay".
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -674,6 +692,13 @@ class RegressionModel(GlobalForecastingModel):
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
 
+        # Checking for correct values the provided sample weights
+        if isinstance(sample_weight, str):
+            raise_if(
+                sample_weight not in ["equal", "linear_decay", "exponential_decay"],
+                f"Invalid value for `sample_weight`: {sample_weight}. Possible values are: equal, linear_decay, exponential_decay.",
+            )
+            
         super().fit(
             series=seq2series(series),
             past_covariates=seq2series(past_covariates),
@@ -727,7 +752,7 @@ class RegressionModel(GlobalForecastingModel):
             raise_log(ValueError("\n".join(component_lags_error_msg)), logger)
 
         self._fit_model(
-            series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
+            series, past_covariates, future_covariates, max_samples_per_ts, sample_weight, **kwargs
         )
 
         return self

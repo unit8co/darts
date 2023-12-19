@@ -17,6 +17,7 @@ from numpy.lib.stride_tricks import as_strided
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.utils import get_single_series, series2seq
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -39,11 +40,13 @@ def create_lagged_data(
     use_moving_windows: bool = True,
     is_training: bool = True,
     concatenate: bool = True,
+    sample_weight: Optional[str] = None
 ) -> Tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
     Sequence[pd.Index],
     Optional[Tuple[int, int]],
+    Optional[ArrayOrArraySequence],
 ]:
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
@@ -228,6 +231,8 @@ def create_lagged_data(
     last_static_covariates_shape
         The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`
         is ``False``.
+    sample_weights
+        The sample weights for each observation in `X`, returned as a `Sequence` of `np.ndarray`s.
 
 
     Raises
@@ -277,7 +282,7 @@ def create_lagged_data(
     )
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
-    X, y, times = [], [], []
+    X, y, times, sample_weights = [], [], [], [] 
     for i in range(max(seq_ts_lens)):
         target_i = target_series[i] if target_series else None
         past_i = past_covariates[i] if past_covariates else None
@@ -319,6 +324,14 @@ def create_lagged_data(
         X.append(X_i)
         y.append(y_i)
         times.append(times_i)
+        
+        if sample_weight:
+            if sample_weight == 'equal':
+                weights = constant_timeseries(1, start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
+                sample_weights.append(weights)
+            elif sample_weight == 'linear_decay':
+                weights = linear_timeseries(start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
+                sample_weights.append(weights)
 
     if concatenate:
         X = np.concatenate(X, axis=0)
@@ -326,7 +339,13 @@ def create_lagged_data(
         y = None
     elif concatenate:
         y = np.concatenate(y, axis=0)
-    return X, y, times, last_static_covariates_shape
+
+    if sample_weight is None:
+        sample_weights = None
+    elif concatenate:
+        sample_weights = np.concatenate(sample_weights, axis=0)
+
+    return X, y, times, last_static_covariates_shape, sample_weights
 
 
 def create_lagged_training_data(
@@ -344,11 +363,13 @@ def create_lagged_training_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     concatenate: bool = True,
+    sample_weight: Optional[Union[TimeSeries, str]] = None,
 ) -> Tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
     Sequence[pd.Index],
     Optional[Tuple[int, int]],
+    Optional[ArrayOrArraySequence],
 ]:
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
@@ -468,6 +489,7 @@ def create_lagged_training_data(
         use_moving_windows=use_moving_windows,
         is_training=True,
         concatenate=concatenate,
+        sample_weight=sample_weight
     )
 
 
