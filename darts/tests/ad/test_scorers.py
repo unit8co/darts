@@ -24,8 +24,8 @@ from darts.models import MovingAverageFilter
 
 list_NonFittableAnomalyScorer = [
     Norm(component_wise=False),
-    # Norm(component_wise=True),
-    # Difference(),
+    Norm(component_wise=True),
+    Difference(),
     GaussianNLLScorer(),
     ExponentialNLLScorer(),
     PoissonNLLScorer(),
