@@ -16,7 +16,7 @@ class AndAggregator(Aggregator):
     def __init__(self) -> None:
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "AndAggregator"
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:

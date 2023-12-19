@@ -10,14 +10,14 @@ is flagged as anomalous (logical OR).
 from typing import Sequence
 
 from darts import TimeSeries
-from darts.ad.aggregators.aggregators import NonFittableAggregator
+from darts.ad.aggregators.aggregators import Aggregator
 
 
-class OrAggregator(NonFittableAggregator):
+class OrAggregator(Aggregator):
     def __init__(self) -> None:
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "OrAggregator"
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:

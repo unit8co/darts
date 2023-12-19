@@ -28,7 +28,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         self.model = model
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "EnsembleSklearnAggregator: {}".format(
             self.model.__str__().split("(")[0]
         )
