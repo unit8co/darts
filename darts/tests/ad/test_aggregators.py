@@ -72,7 +72,7 @@ list_Aggregator = list_NonFittableAggregator + list_FittableAggregator
 delta = 1e-05
 
 
-class TestAnomalyDetectionAggregators:
+class TestAnomalyDetectionAggregator:
 
     np.random.seed(42)
 
