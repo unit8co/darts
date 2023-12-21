@@ -4,7 +4,7 @@ Theta Method
 """
 
 import math
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -58,6 +58,23 @@ class Theta(LocalForecastingModel):
         References
         ----------
         .. [1] `Unmasking the Theta method <https://robjhyndman.com/papers/Theta.pdf`
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import Theta
+        >>> series = AirPassengersDataset().load()
+        >>> # using the canonical Theta method
+        >>> model = Theta(theta=2)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[442.7256909 ],
+               [433.74381763],
+               [494.54534585],
+               [480.36937856],
+               [481.06675142],
+               [545.80068173]])
         """
 
         super().__init__()
@@ -136,7 +153,11 @@ class Theta(LocalForecastingModel):
         return self
 
     def predict(
-        self, n: int, num_samples: int = 1, verbose: bool = False
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
     ) -> "TimeSeries":
         super().predict(n, num_samples)
 
@@ -182,19 +203,6 @@ class Theta(LocalForecastingModel):
             return 2 * self.seasonality_period
         else:
             return 3
-
-    @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-    ]:
-        return -self.min_train_series_length, 0, None, None, None, None
 
 
 class FourTheta(LocalForecastingModel):
@@ -250,6 +258,22 @@ class FourTheta(LocalForecastingModel):
         -----
         Even though this model is an improvement of :class:`Theta`, it is a naive
         implementation of the algorithm, which can potentially be slower.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import FourTheta
+        >>> series = AirPassengersDataset().load()
+        >>> model = FourTheta(theta=2)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[443.3949283 ],
+               [434.39769555],
+               [495.28886231],
+               [481.08962991],
+               [481.78610361],
+               [546.61463773]])
         """
 
         super().__init__()
@@ -380,7 +404,11 @@ class FourTheta(LocalForecastingModel):
         return self
 
     def predict(
-        self, n: int, num_samples: int = 1, verbose: bool = False
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
     ) -> "TimeSeries":
         super().predict(n, num_samples)
 

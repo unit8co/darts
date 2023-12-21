@@ -1,5 +1,4 @@
 import random
-import unittest
 from itertools import product
 
 import numpy as np
@@ -18,7 +17,7 @@ from darts.models import (
     NaiveSeasonal,
     Theta,
 )
-from darts.tests.base_test_class import DartsBaseTestClass, tfm_kwargs
+from darts.tests.conftest import tfm_kwargs
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
@@ -101,7 +100,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
     return expanding_window_ok and split_ok
 
 
-class BacktestingTestCase(DartsBaseTestClass):
+class TestBacktesting:
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
         linear_series_int = TimeSeries.from_values(linear_series.values())
@@ -114,7 +113,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        self.assertEqual(score, 1.0)
+        assert score == 1.0
 
         # univariate model + univariate series + historical_forecasts precalculated
         forecasts = NaiveDrift().historical_forecasts(
@@ -130,7 +129,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        self.assertEqual(score, precalculated_forecasts_score)
+        assert score == precalculated_forecasts_score
 
         # very large train length should not affect the backtest
         score = NaiveDrift().backtest(
@@ -140,7 +139,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        self.assertEqual(score, 1.0)
+        assert score == 1.0
 
         # using several metric function should not affect the backtest
         score = NaiveDrift().backtest(
@@ -153,7 +152,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         np.testing.assert_almost_equal(score, np.array([1.0, 0.0]))
 
         # window of size 2 is too small for naive drift
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(
                 linear_series,
                 train_length=2,
@@ -166,9 +165,9 @@ class BacktestingTestCase(DartsBaseTestClass):
         score = NaiveDrift().backtest(
             linear_series_int, start=0.7, forecast_horizon=3, metric=r2_score
         )
-        self.assertEqual(score, 1.0)
+        assert score == 1.0
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(
                 linear_series,
                 start=pd.Timestamp("20000218"),
@@ -199,31 +198,31 @@ class BacktestingTestCase(DartsBaseTestClass):
         NaiveDrift().backtest(linear_series, train_length=10, start=30)
 
         # Using invalid start and/or forecast_horizon values
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=0.7, forecast_horizon=-1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=-0.7, forecast_horizon=1)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=100)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, start=1.2)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, start="wrong type")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, train_length=0, start=0.5)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, train_length=1.2, start=0.5)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, train_length="wrong type", start=0.5)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             NaiveDrift().backtest(
                 linear_series, start=49, forecast_horizon=2, overlap_end=False
             )
 
         # univariate model + multivariate series
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             FFT().backtest(
                 linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3
             )
@@ -255,8 +254,8 @@ class BacktestingTestCase(DartsBaseTestClass):
                 verbose=False,
                 last_points_only=True,
             )
-            self.assertEqual(pred.width, 1)
-            self.assertEqual(pred.end_time(), linear_series.end_time())
+            assert pred.width == 1
+            assert pred.end_time() == linear_series.end_time()
 
             # multivariate model + multivariate series
             # historical forecasts doesn't overwrite model object -> we can use different input dimensions
@@ -300,8 +299,8 @@ class BacktestingTestCase(DartsBaseTestClass):
                 verbose=False,
                 last_points_only=True,
             )
-            self.assertEqual(pred.width, 2)
-            self.assertEqual(pred.end_time(), linear_series.end_time())
+            assert pred.width == 2
+            assert pred.end_time() == linear_series.end_time()
 
     def test_backtest_multiple_series(self):
         series = [AirPassengersDataset().load(), MonthlyMilkDataset().load()]
@@ -318,11 +317,11 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
 
         expected = [11.63104, 6.09458]
-        self.assertEqual(len(error), 2)
-        self.assertAlmostEqual(error[0], expected[0], places=4)
-        self.assertAlmostEqual(error[1], expected[1], places=4)
+        assert len(error) == 2
+        assert round(abs(error[0] - expected[0]), 4) == 0
+        assert round(abs(error[1] - expected[1]), 4) == 0
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_backtest_regression(self):
         np.random.seed(4)
 
@@ -353,7 +352,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             metric=r2_score,
             last_points_only=True,
         )
-        self.assertGreater(score, 0.9)
+        assert score > 0.9
 
         # univariate feature test + train length
         score = LinearRegressionModel(
@@ -367,7 +366,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             metric=r2_score,
             last_points_only=True,
         )
-        self.assertGreater(score, 0.9)
+        assert score > 0.9
 
         # Using an int or float value for start
         score = RandomForest(
@@ -379,7 +378,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        self.assertGreater(score, 0.9)
+        assert score > 0.9
 
         score = RandomForest(
             lags=12, lags_future_covariates=[0], random_state=0
@@ -390,13 +389,13 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        self.assertGreater(score, 0.9)
+        assert score > 0.9
 
         # Using a too small start value
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest(lags=12).backtest(series=target, start=0, forecast_horizon=3)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest(lags=12).backtest(
                 series=target, start=0.01, forecast_horizon=3
             )
@@ -405,7 +404,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         score = RandomForest(lags=12, random_state=0).backtest(
             series=target, forecast_horizon=3, start=0.5, metric=r2_score
         )
-        self.assertGreater(score, 0.95)
+        assert score > 0.95
 
         # multivariate feature test
         score = RandomForest(
@@ -417,7 +416,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        self.assertGreater(score, 0.94)
+        assert score > 0.94
 
         # multivariate feature test with train window 35
         score_35 = RandomForest(
@@ -433,7 +432,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         logger.info(
             "Score for multivariate feature test with train window 35 is: ", score_35
         )
-        self.assertGreater(score_35, 0.92)
+        assert score_35 > 0.92
 
         # multivariate feature test with train window 45
         score_45 = RandomForest(
@@ -449,8 +448,8 @@ class BacktestingTestCase(DartsBaseTestClass):
         logger.info(
             "Score for multivariate feature test with train window 45 is: ", score_45
         )
-        self.assertGreater(score_45, 0.94)
-        self.assertGreater(score_45, score_35)
+        assert score_45 > 0.94
+        assert score_45 > score_35
 
         # multivariate with stride
         score = RandomForest(
@@ -464,7 +463,27 @@ class BacktestingTestCase(DartsBaseTestClass):
             last_points_only=True,
             stride=3,
         )
-        self.assertGreater(score, 0.9)
+        assert score > 0.9
+
+    @pytest.mark.parametrize("model_cls", [Theta, ARIMA])
+    def test_backtest_bad_covariates(self, model_cls):
+        """Passing unsupported covariate should raise an exception"""
+        series = lt(start_value=1, end_value=10, length=31, dtype="float32")
+        model = model_cls()
+        bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
+        model.backtest(series=series, **bt_kwargs)
+
+        with pytest.raises(ValueError) as msg:
+            model.backtest(series=series, past_covariates=series, **bt_kwargs)
+        assert str(msg.value).startswith(
+            "Model cannot be fit/trained with `past_covariates`."
+        )
+        if not model.supports_future_covariates:
+            with pytest.raises(ValueError) as msg:
+                model.backtest(series=series, future_covariates=series, **bt_kwargs)
+            assert str(msg.value).startswith(
+                "Model cannot be fit/trained with `future_covariates`."
+            )
 
     def test_gridsearch(self):
         np.random.seed(1)
@@ -473,20 +492,16 @@ class BacktestingTestCase(DartsBaseTestClass):
         dummy_series_int_index = TimeSeries.from_values(dummy_series.values())
 
         theta_params = {"theta": list(range(3, 10))}
-        self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series))
-        self.assertTrue(
-            compare_best_against_random(Theta, theta_params, dummy_series_int_index)
-        )
-        self.assertTrue(
-            compare_best_against_random(Theta, theta_params, dummy_series, stride=2)
-        )
+        assert compare_best_against_random(Theta, theta_params, dummy_series)
+        assert compare_best_against_random(Theta, theta_params, dummy_series_int_index)
+        assert compare_best_against_random(Theta, theta_params, dummy_series, stride=2)
 
         fft_params = {"nr_freqs_to_keep": [10, 50, 100], "trend": [None, "poly", "exp"]}
-        self.assertTrue(compare_best_against_random(FFT, fft_params, dummy_series))
+        assert compare_best_against_random(FFT, fft_params, dummy_series)
 
         es_params = {"seasonal_periods": list(range(5, 10))}
-        self.assertTrue(
-            compare_best_against_random(ExponentialSmoothing, es_params, dummy_series)
+        assert compare_best_against_random(
+            ExponentialSmoothing, es_params, dummy_series
         )
 
     def test_gridsearch_metric_score(self):
@@ -510,9 +525,9 @@ class BacktestingTestCase(DartsBaseTestClass):
             stride=1,
         )
 
-        self.assertEqual(score, recalculated_score, "The metric scores should match")
+        assert score == recalculated_score, "The metric scores should match"
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_random_search(self):
         np.random.seed(1)
 
@@ -526,35 +541,35 @@ class BacktestingTestCase(DartsBaseTestClass):
             params, dummy_series, forecast_horizon=1, n_random_samples=5
         )
 
-        self.assertEqual(type(result[0]), RandomForest)
-        self.assertEqual(type(result[1]["lags"]), int)
-        self.assertEqual(type(result[2]), float)
-        self.assertTrue(min(param_range) <= result[1]["lags"] <= max(param_range))
+        assert isinstance(result[0], RandomForest)
+        assert isinstance(result[1]["lags"], int)
+        assert isinstance(result[2], float)
+        assert min(param_range) <= result[1]["lags"] <= max(param_range)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples_bad_arguments(self):
         dummy_series = get_dummy_series(ts_length=50)
 
         params = {"lags": list(range(1, 11)), "past_covariates": list(range(1, 11))}
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=-5
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=105
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=-24.56
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             RandomForest.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=1.5
             )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples(self):
         np.random.seed(1)
 
@@ -564,15 +579,15 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         # Test absolute sample
         absolute_sampled_result = RandomForest._sample_params(params_cross_product, 10)
-        self.assertEqual(len(absolute_sampled_result), 10)
+        assert len(absolute_sampled_result) == 10
 
         # Test percentage sample
         percentage_sampled_result = RandomForest._sample_params(
             params_cross_product, 0.37
         )
-        self.assertEqual(len(percentage_sampled_result), 37)
+        assert len(percentage_sampled_result) == 37
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_jobs(self):
         """
         Testing that running gridsearch with multiple workers returns the same
@@ -620,9 +635,9 @@ class BacktestingTestCase(DartsBaseTestClass):
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=2
             )
 
-            self.assertEqual(best_params1, best_params2)
+            assert best_params1 == best_params2
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_multi(self):
         dummy_series = st(length=40, value_y_offset=10).stack(
             lt(length=40, end_value=20)
@@ -636,3 +651,46 @@ class BacktestingTestCase(DartsBaseTestClass):
             "pl_trainer_kwargs": [tfm_kwargs["pl_trainer_kwargs"]],
         }
         TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape)
+
+    @pytest.mark.parametrize(
+        "model_cls,parameters",
+        zip([NaiveSeasonal, ARIMA], [{"K": [1, 2]}, {"p": [18, 4]}]),
+    )
+    def test_gridsearch_bad_covariates(self, model_cls, parameters):
+        """Passing unsupported covariate should raise an exception"""
+        dummy_series = get_dummy_series(
+            ts_length=100, lt_end_value=1, st_value_offset=0
+        ).astype(np.float32)
+
+        ts_train, ts_val = dummy_series.split_before(split_point=0.8)
+
+        bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
+
+        model = model_cls()
+        model_cls.gridsearch(
+            parameters=parameters, series=ts_train, val_series=ts_val, **bt_kwargs
+        )
+
+        with pytest.raises(ValueError) as msg:
+            model_cls.gridsearch(
+                parameters=parameters,
+                series=ts_train,
+                past_covariates=dummy_series,
+                val_series=ts_val,
+                **bt_kwargs
+            )
+        assert str(msg.value).startswith(
+            "Model cannot be fit/trained with `past_covariates`."
+        )
+        if not model.supports_future_covariates:
+            with pytest.raises(ValueError) as msg:
+                model_cls.gridsearch(
+                    parameters=parameters,
+                    series=ts_train,
+                    future_covariates=dummy_series,
+                    val_series=ts_val,
+                    **bt_kwargs
+                )
+            assert str(msg.value).startswith(
+                "Model cannot be fit/trained with `future_covariates`."
+            )

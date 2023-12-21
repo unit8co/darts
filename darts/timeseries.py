@@ -21,9 +21,9 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Have a monotonically increasing time index, without holes (without missing dates)
     - Contain numeric types only
     - Have distinct components/columns names
-    - Have a well defined frequency (
-    `date offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
-    for ``DateTimeIndex``, and step size for ``RangeIndex``)
+    - Have a well defined frequency (`date offset aliases
+      <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
+      for ``DateTimeIndex``, or step size for ``RangeIndex``)
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
@@ -216,7 +216,7 @@ class TimeSeries:
                     logger,
                 )
         else:
-            self._freq = self._time_index.step
+            self._freq: int = self._time_index.step
             self._freq_str = None
 
         # check static covariates
@@ -709,6 +709,9 @@ class TimeSeries:
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
+
+        if series_df.columns.name:
+            series_df.columns.name = None
 
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
@@ -1469,10 +1472,16 @@ class TimeSeries:
         self._assert_deterministic()
         if copy:
             return pd.Series(
-                self._xa[:, 0, 0].values.copy(), index=self._time_index.copy()
+                self._xa[:, 0, 0].values.copy(),
+                index=self._time_index.copy(),
+                name=self.components[0],
             )
         else:
-            return pd.Series(self._xa[:, 0, 0].values, index=self._time_index)
+            return pd.Series(
+                self._xa[:, 0, 0].values,
+                index=self._time_index,
+                name=self.components[0],
+            )
 
     def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
@@ -2100,7 +2109,7 @@ class TimeSeries:
                 )
             raise_if_not(
                 0 <= point_index < len(self),
-                "point (int) should be a valid index in series",
+                f"The index corresponding to the provided point ({point}) should be a valid index in series",
                 logger,
             )
         elif isinstance(point, pd.Timestamp):
@@ -2139,8 +2148,8 @@ class TimeSeries:
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
             In case of a `float`, the parameter will be treated as the proportion of the time series
             that should lie before the point.
-            In the case of `int`, the parameter will be treated as an integer index to the time index of
-            `series`. Will raise a ValueError if not a valid index in `series`
+            In case of `int`, the parameter will be treated as an integer index to the time index of
+            `series`. Will raise a ValueError if not a valid index in `series`.
             In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
             is present in the series time index, otherwise will raise a ValueError.
         """
@@ -2397,26 +2406,41 @@ class TimeSeries:
         time_index = self.time_index.intersection(other.time_index)
         return self[time_index]
 
-    def strip(self) -> Self:
+    def strip(self, how: str = "all") -> Self:
         """
-        Return a ``TimeSeries`` slice of this deterministic time series, where NaN-only entries at the beginning
+        Return a ``TimeSeries`` slice of this deterministic time series, where NaN-containing entries at the beginning
         and the end of the series are removed. No entries after (and including) the first non-NaN entry and
         before (and including) the last non-NaN entry are removed.
 
         This method is only applicable to deterministic series (i.e., having 1 sample).
 
+        Parameters
+        ----------
+        how
+            Define if the entries containing `NaN` in all the components ('all') or in any of the components ('any')
+            should be stripped. Default: 'all'
+
         Returns
         -------
         TimeSeries
-            a new series based on the original where NaN-only entries at start and end have been removed
+            a new series based on the original where NaN-containing entries at start and end have been removed
         """
+        raise_if(
+            self.is_probabilistic,
+            "`strip` cannot be applied to stochastic TimeSeries",
+            logger,
+        )
 
-        df = self.pd_dataframe(copy=False)
-        new_start_idx = df.first_valid_index()
-        new_end_idx = df.last_valid_index()
-        new_series = df.loc[new_start_idx:new_end_idx]
-        return self.__class__.from_dataframe(
-            new_series, static_covariates=self.static_covariates
+        first_finite_row, last_finite_row = _finite_rows_boundaries(
+            self.values(), how=how
+        )
+
+        return self.__class__.from_times_and_values(
+            times=self.time_index[first_finite_row : last_finite_row + 1],
+            values=self.values()[first_finite_row : last_finite_row + 1],
+            columns=self.components,
+            static_covariates=self.static_covariates,
+            hierarchy=self.hierarchy,
         )
 
     def longest_contiguous_slice(
@@ -2567,7 +2591,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A TimeSeries constructed after differencing.
+            A new TimeSeries, with the differenced values.
         """
         if not isinstance(n, int) or n < 1:
             raise_log(ValueError("'n' must be a positive integer >= 1."), logger)
@@ -2593,6 +2617,17 @@ class TimeSeries:
         for _ in range(n - 1):
             new_xa = _compute_diff(new_xa)
         return self.__class__(new_xa)
+
+    def cumsum(self) -> Self:
+        """
+        Returns the cumulative sum of the time series along the time axis.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, with the cumulatively summed values.
+        """
+        return self.__class__(self._xa.copy().cumsum(axis=0))
 
     def has_same_time_as(self, other: "TimeSeries") -> bool:
         """
@@ -2977,7 +3012,11 @@ class TimeSeries:
         return self[index if isinstance(index, str) else self.components[index]]
 
     def add_datetime_attribute(
-        self, attribute, one_hot: bool = False, cyclic: bool = False
+        self,
+        attribute,
+        one_hot: bool = False,
+        cyclic: bool = False,
+        tz: Optional[str] = None,
     ) -> "TimeSeries":
         """
         Build a new series with one (or more) additional component(s) that contain an attribute
@@ -2998,6 +3037,8 @@ class TimeSeries:
             Boolean value indicating whether to add the specified attribute as a cyclic encoding.
             Alternative to one_hot encoding, enable only one of the two.
             (adds 2 columns, corresponding to sin and cos transformation).
+        tz
+            Optionally, a time zone to convert the time index to before computing the attributes.
 
         Returns
         -------
@@ -3009,12 +3050,20 @@ class TimeSeries:
 
         return self.stack(
             tg.datetime_attribute_timeseries(
-                self.time_index, attribute, one_hot, cyclic
+                self.time_index,
+                attribute=attribute,
+                one_hot=one_hot,
+                cyclic=cyclic,
+                tz=tz,
             )
         )
 
     def add_holidays(
-        self, country_code: str, prov: str = None, state: str = None
+        self,
+        country_code: str,
+        prov: str = None,
+        state: str = None,
+        tz: Optional[str] = None,
     ) -> "TimeSeries":
         """
         Adds a binary univariate component to the current series that equals 1 at every index that
@@ -3034,6 +3083,8 @@ class TimeSeries:
             The province
         state
             The state
+        tz
+            Optionally, a time zone to convert the time index to before computing the attributes.
 
         Returns
         -------
@@ -3044,7 +3095,13 @@ class TimeSeries:
         from .utils import timeseries_generation as tg
 
         return self.stack(
-            tg.holidays_timeseries(self.time_index, country_code, prov, state)
+            tg.holidays_timeseries(
+                self.time_index,
+                country_code=country_code,
+                prov=prov,
+                state=state,
+                tz=tz,
+            )
         )
 
     def resample(self, freq: str, method: str = "pad", **kwargs) -> Self:
@@ -3734,6 +3791,9 @@ class TimeSeries:
         ax
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
+        alpha
+             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            probabilistic series.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3807,10 +3867,9 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            # temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
-            kwargs["alpha"] = 1
-
+            if not self.is_deterministic:
+                kwargs["alpha"] = 1
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -3842,7 +3901,6 @@ class TimeSeries:
                     **kwargs,
                 )
             color_used = p[0].get_color() if default_formatting else None
-            kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
             if (
@@ -3858,11 +3916,7 @@ class TimeSeries:
                         low_series,
                         high_series,
                         color=color_used,
-                        alpha=(
-                            alpha_confidence_intvls
-                            if "alpha" not in kwargs
-                            else kwargs["alpha"]
-                        ),
+                        alpha=(alpha if alpha is not None else alpha_confidence_intvls),
                     )
                 else:
                     ax.plot(
@@ -5163,7 +5217,7 @@ def concatenate(
         if not consecutive_time_axes:
             raise_if_not(
                 ignore_time_axis,
-                "When concatenating over time axis, all series need to be contiguous"
+                "When concatenating over time axis, all series need to be contiguous "
                 "in the time dimension. Use `ignore_time_axis=True` to override "
                 "this behavior and concatenate the series by extending the time axis "
                 "of the first series.",
@@ -5239,3 +5293,49 @@ def concatenate(
         )
 
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
+
+
+def _finite_rows_boundaries(
+    values: np.ndarray, how: str = "all"
+) -> Tuple[Optional[int], Optional[int]]:
+    """
+    Return the indices of the first rows containing finite values starting from the start and the end of the first
+    dimension of the ndarray.
+
+    Parameters
+    ----------
+    values
+        1D, 2D or 3D numpy array where the first dimension correspond to entries/rows, and the second to components/
+        columns
+    how
+        Define if the entries containing `NaN` in all the components ('all') or in any of the components ('any')
+        should be stripped. Default: 'all'
+    """
+    dims = values.shape
+
+    raise_if(
+        len(dims) > 3, f"Expected 1D to 3D array, received {len(dims)}D array", logger
+    )
+
+    finite_rows = ~np.isnan(values)
+
+    if len(dims) == 3:
+        finite_rows = finite_rows.all(axis=2)
+
+    if len(dims) > 1 and dims[1] > 1:
+        if how == "any":
+            finite_rows = finite_rows.all(axis=1)
+        elif how == "all":
+            finite_rows = finite_rows.any(axis=1)
+        else:
+            raise_log(
+                ValueError(
+                    f"`how` parameter value not recognized, should be either 'all' or 'any', "
+                    f"received {how}"
+                )
+            )
+
+    first_finite_row = finite_rows.argmax()
+    last_finite_row = len(finite_rows) - finite_rows[::-1].argmax() - 1
+
+    return first_finite_row, last_finite_row

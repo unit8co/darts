@@ -636,7 +636,6 @@ class TestAnomalyDetectionScorer:
         # if component_wise=True must always return the same width as the input
         scorer = Norm(component_wise=True)
         assert scorer.score_from_prediction(self.test, self.modified_test).width == 1
-
         assert (
             scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
             == self.mts_test.width
@@ -647,7 +646,6 @@ class TestAnomalyDetectionScorer:
         assert scorer.score_from_prediction(self.test, self.test + 1).sum(
             axis=0
         ).all_values().flatten()[0] == len(self.test)
-
         assert scorer.score_from_prediction(self.test + 1, self.test).sum(
             axis=0
         ).all_values().flatten()[0] == len(self.test)
@@ -658,7 +656,6 @@ class TestAnomalyDetectionScorer:
             scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"]
             == self.mts_test["0"]
         )
-
         assert (
             scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"]
             == self.mts_test["1"]
@@ -669,7 +666,6 @@ class TestAnomalyDetectionScorer:
             scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"]
             == self.mts_test["0"]
         )
-
         assert (
             scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"]
             == self.mts_test["1"]
@@ -681,7 +677,6 @@ class TestAnomalyDetectionScorer:
         assert scorer.score_from_prediction(self.test, self.test + 1).sum(
             axis=0
         ).all_values().flatten()[0] == len(self.test)
-
         assert scorer.score_from_prediction(self.test + 1, self.test).sum(
             axis=0
         ).all_values().flatten()[0] == len(self.test)

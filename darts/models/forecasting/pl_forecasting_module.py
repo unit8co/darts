@@ -3,6 +3,7 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import pytorch_lightning as pl
@@ -12,6 +13,7 @@ import torchmetrics
 from joblib import Parallel, delayed
 
 from darts.logging import get_logger, raise_if, raise_log
+from darts.models.components.layer_norm_variants import RINorm
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.timeseries_generation import _build_forecast_series
@@ -22,6 +24,44 @@ logger = get_logger(__name__)
 # Check whether we are running pytorch-lightning >= 1.6.0 or not:
 tokens = pl.__version__.split(".")
 pl_160_or_above = int(tokens[0]) > 1 or int(tokens[0]) == 1 and int(tokens[1]) >= 6
+
+
+def io_processor(forward):
+    """Applies some input / output processing to PLForecastingModule.forward.
+    Note that this wrapper must be added to each of PLForecastinModule's subclasses forward methods.
+    Here is an example how to add the decorator:
+
+    ```python
+        @io_processor
+        def forward(self, *args, **kwargs)
+            pass
+    ```
+
+    Applies
+    -------
+    Reversible Instance Normalization
+        normalizes batch input target features, and inverse transform the forward output back to the original scale
+    """
+
+    @wraps(forward)
+    def forward_wrapper(self, *args, **kwargs):
+        if not self.use_reversible_instance_norm:
+            return forward(self, *args, **kwargs)
+
+        # x is input batch tuple which by definition has the past features in the first element starting with the
+        # first n target features
+        x: Tuple = args[0][0]
+        # apply reversible instance normalization
+        x[:, :, : self.n_targets] = self.rin(x[:, :, : self.n_targets])
+        # run the forward pass
+        out = forward(self, *((x, *args[0][1:]), *args[1:]), **kwargs)
+        # inverse transform target output back to original scale; by definition the first output
+        if isinstance(out, tuple):
+            return self.rin.inverse(out[0]), *out[1:]
+        else:
+            return self.rin.inverse(out)
+
+    return forward_wrapper
 
 
 class PLForecastingModule(pl.LightningModule, ABC):
@@ -40,6 +80,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
+        use_reversible_instance_norm: bool = False,
     ) -> None:
         """
         PyTorch Lightning-based Forecasting Module.
@@ -57,9 +98,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         input_chunk_length
-            Number of input past time steps per chunk.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            Number of output time steps per chunk.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         train_sample_shape
             Shape of the model's input, used to instantiate model without calling ``fit_from_dataset`` and
             perform sanity check on new training/inference datasets used for re-training or prediction.
@@ -84,6 +132,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__()
 
@@ -107,6 +163,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
         self.train_sample_shape = train_sample_shape
+        self.n_targets = (
+            train_sample_shape[0][1] if train_sample_shape is not None else 1
+        )
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
@@ -121,12 +180,20 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.train_metrics = torch_metrics.clone(prefix="train_")
         self.val_metrics = torch_metrics.clone(prefix="val_")
 
+        # reversible instance norm
+        self.use_reversible_instance_norm = use_reversible_instance_norm
+        if use_reversible_instance_norm:
+            self.rin = RINorm(input_dim=self.n_targets)
+        else:
+            self.rin = None
+
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
         self.pred_num_samples: Optional[int] = None
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
         self.pred_n_jobs: Optional[int] = None
+        self.predict_likelihood_parameters: Optional[bool] = None
 
     @property
     def first_prediction_index(self) -> int:
@@ -184,7 +251,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         dataloader_idx
             the dataloader index
         """
-        input_data_tuple, batch_input_series = batch[:-1], batch[-1]
+        input_data_tuple, batch_input_series, batch_pred_starts = (
+            batch[:-2],
+            batch[-2],
+            batch[-1],
+        )
 
         # number of individual series to be predicted in current batch
         num_series = input_data_tuple[0].shape[0]
@@ -246,8 +317,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 else None,
                 with_static_covs=False if self.predict_likelihood_parameters else True,
                 with_hierarchy=False if self.predict_likelihood_parameters else True,
+                pred_start=pred_start,
             )
-            for batch_idx, input_series in enumerate(batch_input_series)
+            for batch_idx, (input_series, pred_start) in enumerate(
+                zip(batch_input_series, batch_pred_starts)
+            )
         )
         return ts_forecasts
 
