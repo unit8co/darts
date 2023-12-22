@@ -128,8 +128,8 @@ class FilteringAnomalyModel(AnomalyModel):
         if self.scorers_are_trainable:
             list_pred = [self.filter.filter(series) for series in list_series]
 
-        # fit the scorers
-        self._fit_scorers(list_series, list_pred)
+            # fit the scorers
+            self._fit_scorers(list_series, list_pred)
 
         return self
 

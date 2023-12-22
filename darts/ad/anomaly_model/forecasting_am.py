@@ -200,8 +200,8 @@ class ForecastingAnomalyModel(AnomalyModel):
                     )
                 )
 
-        # fit the scorers
-        self._fit_scorers(list_series, list_pred)
+            # fit the scorers
+            self._fit_scorers(list_series, list_pred)
 
         return self
 
