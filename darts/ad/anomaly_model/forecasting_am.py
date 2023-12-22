@@ -201,9 +201,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                 )
 
         # fit the scorers
-        for scorer in self.scorers:
-            if hasattr(scorer, "fit"):
-                scorer.fit_from_prediction(list_series, list_pred)
+        self._fit_scorers(list_series, list_pred)
 
         return self
 

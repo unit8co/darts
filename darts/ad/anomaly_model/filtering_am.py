@@ -12,7 +12,7 @@ from typing import Dict, Sequence, Union
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import _assert_same_length, series2seq
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
 
@@ -113,9 +113,12 @@ class FilteringAnomalyModel(AnomalyModel):
 
                 self.filter.fit(list_series[0], **filter_fit_kwargs)
             else:
-                raise ValueError(
-                    "`allow_filter_training` was set to True, but the filter"
-                    + f" {self.model.__class__.__name__} has no fit() method."
+                raise_log(
+                    ValueError(
+                        "`allow_filter_training` was set to True, but the filter"
+                        + f" {self.model.__class__.__name__} has no fit() method."
+                    ),
+                    logger,
                 )
         else:
             # TODO: check if Kalman is fitted or not
@@ -126,9 +129,7 @@ class FilteringAnomalyModel(AnomalyModel):
             list_pred = [self.filter.filter(series) for series in list_series]
 
         # fit the scorers
-        for scorer in self.scorers:
-            if hasattr(scorer, "fit"):
-                scorer.fit_from_prediction(list_series, list_pred)
+        self._fit_scorers(list_series, list_pred)
 
         return self
 

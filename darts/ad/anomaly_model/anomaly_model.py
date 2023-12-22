@@ -66,6 +66,14 @@ class AnomalyModel(ABC):
             "all input `series` must be of type Timeseries.",
         )
 
+    def _fit_scorers(
+        self, list_series: Sequence[TimeSeries], list_pred: Sequence[TimeSeries]
+    ):
+        """Train the fittable scorers using model forecasts"""
+        for scorer in self.scorers:
+            if hasattr(scorer, "fit"):
+                scorer.fit_from_prediction(list_series, list_pred)
+
     @abstractmethod
     def score(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
