@@ -14,7 +14,9 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
-from darts.logging import logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if_not
+
+logger = get_logger(__name__)
 
 
 class KMeansScorer(WindowedAnomalyScorer):
@@ -108,6 +110,7 @@ class KMeansScorer(WindowedAnomalyScorer):
         raise_if_not(
             type(component_wise) is bool,
             f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
+            logger,
         )
         self.component_wise = component_wise
 
@@ -131,7 +134,5 @@ class KMeansScorer(WindowedAnomalyScorer):
 
     def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:
         """Wrapper around model inference method"""
-        if not self._fit_called:
-            raise_log(ValueError("Scorer must be fitted."), logger)
         # only return the closest distance out of the k ones (k centroids)
         return model.transform(data).min(axis=1)
