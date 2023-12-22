@@ -16,7 +16,7 @@ from typing import Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.ad.utils import _to_list, eval_metric_from_binary_prediction
+from darts.ad.utils import eval_metric_from_binary_prediction, series2seq
 from darts.logging import raise_if_not
 
 
@@ -76,7 +76,7 @@ class Aggregator(ABC):
                 * binary (only values equal to 0 or 1)
         """
 
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
@@ -139,7 +139,7 @@ class Aggregator(ABC):
             (Sequence of) score for the (sequence of) series
         """
 
-        list_actual_series = _to_list(actual_series)
+        list_actual_series = series2seq(actual_series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_actual_series]),
@@ -157,7 +157,7 @@ class Aggregator(ABC):
         )
 
         raise_if_not(
-            len(list_actual_series) == len(_to_list(pred_series)),
+            len(list_actual_series) == len(series2seq(pred_series)),
             "`actual_series` and `pred_series` must contain the same number of series.",
         )
 
@@ -228,7 +228,7 @@ class FittableAggregator(Aggregator):
             "all series in `pred_series` must have the same number of components.",
         )
 
-        list_actual_series = _to_list(actual_series)
+        list_actual_series = series2seq(actual_series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_actual_series]),
@@ -283,7 +283,7 @@ class FittableAggregator(Aggregator):
         """
 
         self._assert_fit_called()
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         raise_if_not(
             all(

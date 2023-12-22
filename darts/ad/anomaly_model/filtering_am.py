@@ -11,7 +11,7 @@ from typing import Dict, Sequence, Union
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _assert_same_length, _to_list
+from darts.ad.utils import _assert_same_length, series2seq
 from darts.logging import get_logger, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
@@ -88,21 +88,9 @@ class FilteringAnomalyModel(AnomalyModel):
         """
         # TODO: add support for covariates (see eg. Kalman Filter)
 
-        raise_if_not(
-            type(allow_model_training) is bool,
-            f"`allow_filter_training` must be Boolean, found type: {type(allow_model_training)}.",
-        )
+        super().fit(series=series, allow_model_training=allow_model_training)
 
-        # checks if model does not need training and all scorer(s) are not fittable
-        if not allow_model_training and not self.scorers_are_trainable:
-            logger.warning(
-                f"The filtering model {self.model.__class__.__name__} is not required to be trained"
-                + " because the parameter `allow_filter_training` is set to False, and no scorer"
-                + " fittable. The ``.fit()`` function has no effect."
-            )
-            return
-
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
@@ -248,7 +236,7 @@ class FilteringAnomalyModel(AnomalyModel):
             f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
 
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         # TODO: vectorize this call later on if we have any filtering models allowing this
         list_pred = [self.filter.filter(s, **filter_kwargs) for s in list_series]
@@ -317,7 +305,7 @@ class FilteringAnomalyModel(AnomalyModel):
             (by nature of the scorer or if its component_wise is set to True), the values of the dictionary
             will be a Sequence containing the score for each dimension.
         """
-        list_series, list_actual_anomalies = _to_list(series), _to_list(
+        list_series, list_actual_anomalies = series2seq(series), series2seq(
             actual_anomalies
         )
 

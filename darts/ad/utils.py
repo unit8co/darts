@@ -28,6 +28,7 @@ from sklearn.metrics import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -107,9 +108,9 @@ def eval_metric_from_scores(
     metric_fn = roc_auc_score if metric == "AUC_ROC" else average_precision_score
 
     list_actual_anomalies, list_anomaly_scores, list_window = (
-        _to_list(actual_anomalies),
-        _to_list(anomaly_score),
-        _to_list(window),
+        series2seq(actual_anomalies),
+        series2seq(anomaly_score),
+        [window] if not isinstance(window, Sequence) else window,
     )
 
     if len(list_actual_anomalies) == 1 and len(list_anomaly_scores) > 1:
@@ -213,9 +214,9 @@ def eval_metric_from_binary_prediction(
         metric_fn = accuracy_score
 
     list_actual_anomalies, list_binary_pred_anomalies, list_window = (
-        _to_list(actual_series),
-        _to_list(pred_series),
-        _to_list(window),
+        series2seq(actual_series),
+        series2seq(pred_series),
+        [window] if not isinstance(window, Sequence) else window,
     )
 
     if len(list_actual_anomalies) == 1 and len(list_binary_pred_anomalies) > 1:
@@ -461,22 +462,6 @@ def _max_pooling(series: TimeSeries, window: int) -> TimeSeries:
             },
             treat_na="dropna",
         )
-
-
-def _to_list(series: Union[TimeSeries, Sequence[TimeSeries]]) -> Sequence[TimeSeries]:
-    """If not already, it converts the input into a sequence
-
-    Parameters
-    ----------
-    series
-        single TimeSeries, or a sequence of TimeSeries
-
-    Returns
-    -------
-    Sequence[TimeSeries]
-    """
-
-    return [series] if not isinstance(series, Sequence) else series
 
 
 def _assert_same_length(

@@ -16,7 +16,7 @@ import pandas as pd
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _assert_same_length, _assert_timeseries, _to_list
+from darts.ad.utils import _assert_same_length, _assert_timeseries, series2seq
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
@@ -135,7 +135,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
             return
 
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
@@ -239,7 +239,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         """
 
         if covariates is not None:
-            list_covariates = _to_list(covariates)
+            list_covariates = series2seq(covariates)
 
             for covariates in list_covariates:
                 _assert_timeseries(
@@ -422,7 +422,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             f"Model {self.model} has not been trained. Please call ``.fit()``.",
         )
 
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         list_past_covariates = self._prepare_covariates(
             past_covariates, list_series, "past"
@@ -637,8 +637,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             will be a Sequence containing the score for each dimension.
         """
 
-        list_actual_anomalies = _to_list(actual_anomalies)
-        list_series = _to_list(series)
+        list_actual_anomalies = series2seq(actual_anomalies)
+        list_series = series2seq(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),

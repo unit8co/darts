@@ -6,9 +6,11 @@ from abc import ABC, abstractmethod
 from typing import Dict, Sequence, Union
 
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _to_list, eval_metric_from_scores, show_anomalies_from_scores
-from darts.logging import raise_if_not
+from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
+from darts.logging import get_logger, raise_if_not
 from darts.timeseries import TimeSeries
+
+logger = get_logger(__name__)
 
 
 class AnomalyModel(ABC):
@@ -16,7 +18,7 @@ class AnomalyModel(ABC):
 
     def __init__(self, model, scorer):
 
-        self.scorers = _to_list(scorer)
+        self.scorers = [scorer] if not isinstance(scorer, Sequence) else scorer
 
         raise_if_not(
             all([isinstance(s, AnomalyScorer) for s in self.scorers]),
@@ -47,9 +49,22 @@ class AnomalyModel(ABC):
 
     @abstractmethod
     def fit(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        allow_model_training: bool,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        pass
+        raise_if_not(
+            type(allow_model_training) is bool,
+            f"`allow_filter_training` must be Boolean, found type: {type(allow_model_training)}.",
+        )
+
+        if not allow_model_training and not self.scorers_are_trainable:
+            logger.warning(
+                f"The model {self.model.__class__.__name__} won't be trained"
+                + " because the parameter `allow_filter_training` is set to False, and no scorer"
+                + " is fittable. The ``.fit()`` function has no effect."
+            )
+            return
 
     @abstractmethod
     def score(

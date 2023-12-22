@@ -20,11 +20,11 @@ from darts.ad.utils import (
     _assert_timeseries,
     _intersect,
     _sanity_check_two_series,
-    _to_list,
     eval_metric_from_scores,
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_if_not
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -230,7 +230,7 @@ class AnomalyScorer(ABC):
                 of multivariate series. Outer Sequence is over the sequence input and the inner
                 Sequence is over the dimensions of each element in the sequence input.
         """
-        actual_anomalies = _to_list(actual_anomalies)
+        actual_anomalies = series2seq(actual_anomalies)
         self._check_univariate_scorer(actual_anomalies)
 
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
@@ -355,7 +355,7 @@ class AnomalyScorer(ABC):
         Union[TimeSeries, Sequence[TimeSeries]]
             (Sequence of) anomaly score time series
         """
-        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
+        list_actual_series, list_pred_series = series2seq(actual_series), series2seq(
             pred_series
         )
         _assert_same_length(list_actual_series, list_pred_series)
@@ -485,7 +485,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                 series. Outer Sequence is over the sequence input and the inner Sequence
                 is over the dimensions of each element in the sequence input.
         """
-        actual_anomalies = _to_list(actual_anomalies)
+        actual_anomalies = series2seq(actual_anomalies)
         self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score(series)
 
@@ -518,7 +518,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         self.check_if_fit_called()
 
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         for s in list_series:
             _assert_timeseries(s)
@@ -647,7 +647,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         self.check_if_fit_called()
 
-        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
+        list_actual_series, list_pred_series = series2seq(actual_series), series2seq(
             pred_series
         )
         _assert_same_length(list_actual_series, list_pred_series)
@@ -690,7 +690,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self
             Fitted Scorer.
         """
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         for idx, s in enumerate(list_series):
             _assert_timeseries(s)
@@ -740,7 +740,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self
             Fitted Scorer.
         """
-        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
+        list_actual_series, list_pred_series = series2seq(actual_series), series2seq(
             pred_series
         )
         _assert_same_length(list_actual_series, list_pred_series)
@@ -833,6 +833,7 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         pass
 
     def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+        """Apply the scorer (sub) model scoring method on the series components"""
 
         raise_if_not(
             all([(self.width_trained_on == series.width) for series in list_series]),
@@ -841,6 +842,7 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         )
 
         if (not self.component_wise) | (list_series[0].width == 1):
+            # TODO: vectorize as a single model is used on all components
             list_np_anomaly_score = [
                 self._model_score_method(model=self.model, data=tabular_data)
                 for tabular_data in self._tabularize_series(
