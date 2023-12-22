@@ -16,14 +16,14 @@ from typing import Sequence
 import numpy as np
 from scipy.stats import wasserstein_distance
 
-from darts.ad.scorers.scorers import FittableAnomalyScorer
+from darts.ad.scorers.scorers import WindowedAnomalyScorer
 from darts.logging import get_logger, raise_if_not
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class WassersteinScorer(FittableAnomalyScorer):
+class WassersteinScorer(WindowedAnomalyScorer):
     def __init__(
         self,
         window: int = 10,
@@ -144,61 +144,14 @@ class WassersteinScorer(FittableAnomalyScorer):
         self,
         list_series: Sequence[TimeSeries],
     ):
-        self.training_data = np.concatenate(
+        """The training values are considered as the scorer model"""
+        self.model = np.concatenate(
             [s.all_values(copy=False) for s in list_series]
         ).squeeze(-1)
 
         if (not self.component_wise) | (list_series[0].width == 1):
-            self.training_data = self.training_data.flatten()
+            self.model = self.model.flatten()
 
-    def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
-
-        raise_if_not(
-            all([(self.width_trained_on == series.width) for series in list_series]),
-            "All series in 'series' must have the same number of components"
-            + " as the data used for training the Wasserstein model,"
-            + f" expected {self.width_trained_on} components.",
-        )
-
-        if (not self.component_wise) | (list_series[0].width == 1):
-
-            list_np_anomaly_score = [
-                [
-                    wasserstein_distance(self.training_data, window_samples)
-                    for window_samples in tabular_series
-                ]
-                for tabular_series in self._tabularize_series(
-                    list_series, concatenate=False, component_wise=False
-                )
-            ]
-
-            list_anomaly_score = [
-                TimeSeries.from_times_and_values(
-                    series.time_index[self.window - 1 :], np_anomaly_score
-                )
-                for series, np_anomaly_score in zip(list_series, list_np_anomaly_score)
-            ]
-
-        else:
-            list_np_anomaly_score = np.array(
-                [
-                    [
-                        wasserstein_distance(self.training_data[idx], window_samples)
-                        for window_samples in tabular_series
-                    ]
-                    for idx, tabular_series in enumerate(
-                        self._tabularize_series(
-                            list_series, concatenate=True, component_wise=True
-                        )
-                    )
-                ]
-            )
-
-            list_anomaly_score = self._convert_tabular_to_series(
-                list_series, list_np_anomaly_score
-            )
-
-        if self.window > 1 and self.window_agg:
-            return self._fun_window_agg(list_anomaly_score, self.window)
-        else:
-            return list_anomaly_score
+    def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:
+        """Wrapper around model inference method"""
+        return [wasserstein_distance(model, window_samples) for window_samples in data]

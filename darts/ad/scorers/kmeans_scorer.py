@@ -9,17 +9,15 @@ References
 .. [1] https://en.wikipedia.org/wiki/K-means_clustering
 """
 
-from typing import Sequence
 
 import numpy as np
 from sklearn.cluster import KMeans
 
-from darts.ad.scorers.scorers import FittableAnomalyScorer
-from darts.logging import raise_if_not
-from darts.timeseries import TimeSeries
+from darts.ad.scorers.scorers import WindowedAnomalyScorer
+from darts.logging import logger, raise_if_not, raise_log
 
 
-class KMeansScorer(FittableAnomalyScorer):
+class KMeansScorer(WindowedAnomalyScorer):
     def __init__(
         self,
         window: int = 1,
@@ -119,6 +117,8 @@ class KMeansScorer(FittableAnomalyScorer):
         if "n_init" not in self.kmeans_kwargs:
             self.kmeans_kwargs["n_init"] = 10
 
+        self.model = KMeans(**self.kmeans_kwargs)
+
         super().__init__(
             univariate_scorer=(not component_wise),
             window=window,
@@ -129,66 +129,9 @@ class KMeansScorer(FittableAnomalyScorer):
     def __str__(self):
         return "k-means Scorer"
 
-    def _fit_core(
-        self,
-        list_series: Sequence[TimeSeries],
-    ):
-
-        if (not self.component_wise) | (list_series[0].width == 1):
-            self.model = KMeans(**self.kmeans_kwargs).fit(
-                self._tabularize_series(
-                    list_series, concatenate=True, component_wise=False
-                )
-            )
-        else:
-            self.models = [
-                KMeans(**self.kmeans_kwargs).fit(tabular_data)
-                for tabular_data in self._tabularize_series(
-                    list_series, concatenate=True, component_wise=True
-                )
-            ]
-
-    def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
-
-        raise_if_not(
-            all([(self.width_trained_on == series.width) for series in list_series]),
-            "All series in 'series' must have the same number of components as the data used"
-            + f" for training the KMeans model, expected {self.width_trained_on} components.",
-        )
-
-        if (not self.component_wise) | (list_series[0].width == 1):
-            # only return the closest distance out of the k ones (k centroids)
-            list_np_anomaly_score = [
-                self.model.transform(tabular_data).min(axis=1)
-                for tabular_data in self._tabularize_series(
-                    list_series, concatenate=False, component_wise=False
-                )
-            ]
-            list_anomaly_score = [
-                TimeSeries.from_times_and_values(
-                    series.time_index[self.window - 1 :], np_anomaly_score
-                )
-                for series, np_anomaly_score in zip(list_series, list_np_anomaly_score)
-            ]
-
-        else:
-            list_np_anomaly_score = np.array(
-                [
-                    model.transform(tabular_data).min(axis=1)
-                    for model, tabular_data in zip(
-                        self.models,
-                        self._tabularize_series(
-                            list_series, concatenate=True, component_wise=True
-                        ),
-                    )
-                ]
-            )
-
-            list_anomaly_score = self._convert_tabular_to_series(
-                list_series, list_np_anomaly_score
-            )
-
-        if self.window > 1 and self.window_agg:
-            return self._fun_window_agg(list_anomaly_score, self.window)
-        else:
-            return list_anomaly_score
+    def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:
+        """Wrapper around model inference method"""
+        if not self._fit_called:
+            raise_log(ValueError("Scorer must be fitted."), logger)
+        # only return the closest distance out of the k ones (k centroids)
+        return model.transform(data).min(axis=1)

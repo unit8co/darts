@@ -7,6 +7,7 @@ Scorers Base Classes
 #     - add option to normalize the windows for kmeans? capture only the form and not the values.
 
 
+import copy
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
@@ -382,7 +383,11 @@ class FittableAnomalyScorer(AnomalyScorer):
     """Base class of scorers that do need training."""
 
     def __init__(
-        self, univariate_scorer, window, window_agg, diff_fn="abs_diff"
+        self,
+        univariate_scorer: bool,
+        window: int,
+        window_agg: bool,
+        diff_fn: str = "abs_diff",
     ) -> None:
         super().__init__(
             univariate_scorer=univariate_scorer, window=window, trainable=True
@@ -788,6 +793,88 @@ class FittableAnomalyScorer(AnomalyScorer):
             raise ValueError(
                 f"Metric should be 'diff' or 'abs_diff', found {self.diff_fn}"
             )
+
+
+class WindowedAnomalyScorer(FittableAnomalyScorer):
+    """Base class for anomaly scorers that rely on windows to detect anomalies"""
+
+    def __init__(
+        self, window: int, univariate_scorer: bool, window_agg: bool, diff_fn: str
+    ) -> None:
+        super().__init__(
+            window=window,
+            univariate_scorer=univariate_scorer,
+            window_agg=window_agg,
+            diff_fn=diff_fn,
+        )
+
+    def _fit_core(
+        self,
+        list_series: Sequence[TimeSeries],
+    ):
+        """Train one sub-model for each component when self.component_wise=True and series is multivariate"""
+        if (not self.component_wise) | (list_series[0].width == 1):
+            self.model.fit(
+                self._tabularize_series(
+                    list_series, concatenate=True, component_wise=False
+                )
+            )
+        else:
+            self.model = [
+                copy.deepcopy(self.model).fit(tabular_data)
+                for tabular_data in self._tabularize_series(
+                    list_series, concatenate=True, component_wise=True
+                )
+            ]
+
+    @abstractmethod
+    def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:
+        """Wrapper around model inference method"""
+        pass
+
+    def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+
+        raise_if_not(
+            all([(self.width_trained_on == series.width) for series in list_series]),
+            "All series in 'series' must have the same number of components as the data used"
+            + f" for training the model, expected {self.width_trained_on} components.",
+        )
+
+        if (not self.component_wise) | (list_series[0].width == 1):
+            list_np_anomaly_score = [
+                self._model_score_method(model=self.model, data=tabular_data)
+                for tabular_data in self._tabularize_series(
+                    list_series, concatenate=False, component_wise=False
+                )
+            ]
+            list_anomaly_score = [
+                TimeSeries.from_times_and_values(
+                    series.time_index[self.window - 1 :], np_anomaly_score
+                )
+                for series, np_anomaly_score in zip(list_series, list_np_anomaly_score)
+            ]
+
+        else:
+            list_np_anomaly_score = np.array(
+                [
+                    self._model_score_method(model=model, data=tabular_data)
+                    for model, tabular_data in zip(
+                        self.model,
+                        self._tabularize_series(
+                            list_series, concatenate=True, component_wise=True
+                        ),
+                    )
+                ]
+            )
+
+            list_anomaly_score = self._convert_tabular_to_series(
+                list_series, list_np_anomaly_score
+            )
+
+        if self.window > 1 and self.window_agg:
+            return self._fun_window_agg(list_anomaly_score, self.window)
+        else:
+            return list_anomaly_score
 
 
 class NLLScorer(AnomalyScorer):
