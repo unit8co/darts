@@ -90,12 +90,16 @@ class FilteringAnomalyModel(AnomalyModel):
 
         super().fit(series=series, allow_model_training=allow_model_training)
 
-        list_series = series2seq(series)
+        # interrupt training if nothing to fit
+        if not allow_model_training and not self.scorers_are_trainable:
+            logger.warning(
+                f"The filtering model {self.model.__class__.__name__} won't be trained"
+                + " because the parameter `allow_model_training` is set to False, and no scorer"
+                + " is fittable. ``.fit()`` method has no effect."
+            )
+            return
 
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input `series` must be of type Timeseries.",
-        )
+        list_series = series2seq(series)
 
         if allow_model_training:
             # fit filtering model
@@ -127,70 +131,6 @@ class FilteringAnomalyModel(AnomalyModel):
                 scorer.fit_from_prediction(list_series, list_pred)
 
         return self
-
-    def show_anomalies(
-        self,
-        series: TimeSeries,
-        actual_anomalies: TimeSeries = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        title: str = None,
-        metric: str = None,
-        **score_kwargs,
-    ):
-        """Plot the results of the anomaly model.
-
-        Computes the score on the given series input and shows the different anomaly scores with respect to time.
-
-        The plot will be composed of the following:
-
-        - the series itself with the output of the filtering model
-        - the anomaly score of each scorer. The scorer with different windows will be separated.
-        - the actual anomalies, if given.
-
-        It is possible to:
-
-        - add a title to the figure with the parameter `title`
-        - give personalized names for the scorers with `names_of_scorers`
-        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies are given
-
-        Parameters
-        ----------
-        series
-            The series to visualize anomalies from.
-        actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        names_of_scorers
-            Name of the scorers. Must be a list of length equal to the number of scorers in the anomaly_model.
-        title
-            Title of the figure
-        metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-            Default: "AUC_ROC"
-        score_kwargs
-            parameters for the `.score()` function
-        """
-
-        if isinstance(series, Sequence):
-            raise_if_not(
-                len(series) == 1,
-                f"`show_anomalies` expects one series, found a sequence of length {len(series)} as input.",
-            )
-
-            series = series[0]
-
-        anomaly_scores, model_output = self.score(
-            series, return_model_prediction=True, **score_kwargs
-        )
-
-        return self._show_anomalies(
-            series,
-            model_output=model_output,
-            anomaly_scores=anomaly_scores,
-            names_of_scorers=names_of_scorers,
-            actual_anomalies=actual_anomalies,
-            title=title,
-            metric=metric,
-        )
 
     def score(
         self,

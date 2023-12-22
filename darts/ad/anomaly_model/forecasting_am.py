@@ -121,12 +121,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             Fitted model
         """
 
-        raise_if_not(
-            type(allow_model_training) is bool,
-            f"`allow_model_training` must be Boolean, found type: {type(allow_model_training)}.",
-        )
+        super().fit(series=series, allow_model_training=allow_model_training)
 
-        # checks if model does not need training and all scorer(s) are not fittable
+        # interrupt training if nothing to fit
         if not allow_model_training and not self.scorers_are_trainable:
             logger.warning(
                 f"The forecasting model {self.model.__class__.__name__} won't be trained"
@@ -136,11 +133,6 @@ class ForecastingAnomalyModel(AnomalyModel):
             return
 
         list_series = series2seq(series)
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input `series` must be of type Timeseries.",
-        )
 
         list_past_covariates = self._prepare_covariates(
             past_covariates, list_series, "past"
@@ -253,104 +245,6 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
 
         return list_covariates if covariates is not None else None
-
-    def show_anomalies(
-        self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
-        forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
-        num_samples: int = 1,
-        actual_anomalies: TimeSeries = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        title: str = None,
-        metric: str = None,
-    ):
-        """Plot the results of the anomaly model.
-
-        Computes the score on the given series input and shows the different anomaly scores with respect to time.
-
-        The plot will be composed of the following:
-
-        - the series itself with the output of the forecasting model.
-        - the anomaly score for each scorer. The scorers with different windows will be separated.
-        - the actual anomalies, if given.
-
-        It is possible to:
-
-        - add a title to the figure with the parameter `title`
-        - give personalized names for the scorers with `names_of_scorers`
-        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
-            if the actual anomalies are provided.
-
-        Parameters
-        ----------
-        series
-            The series to visualize anomalies from.
-        past_covariates
-            An optional past-observed covariate series or sequence of series. This applies only if the model
-            supports past covariates.
-        future_covariates
-            An optional future-known covariate series or sequence of series. This applies only if the model
-            supports future covariates.
-        forecast_horizon
-            The forecast horizon for the predictions.
-        start
-            The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
-            directly.
-        num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
-        actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        names_of_scorers
-            Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
-        title
-            Title of the figure
-        metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-            Default: "AUC_ROC"
-        """
-
-        if isinstance(series, Sequence):
-            raise_if_not(
-                len(series) == 1,
-                f"`show_anomalies` expects one series, found a list of length {len(series)} as input.",
-            )
-
-            series = series[0]
-
-        raise_if_not(
-            isinstance(series, TimeSeries),
-            f"`show_anomalies` expects an input of type TimeSeries, found type: {type(series)}.",
-        )
-
-        anomaly_scores, model_output = self.score(
-            series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            forecast_horizon=forecast_horizon,
-            start=start,
-            num_samples=num_samples,
-            return_model_prediction=True,
-        )
-
-        return self._show_anomalies(
-            series,
-            model_output=model_output,
-            anomaly_scores=anomaly_scores,
-            names_of_scorers=names_of_scorers,
-            actual_anomalies=actual_anomalies,
-            title=title,
-            metric=metric,
-        )
 
     def score(
         self,
