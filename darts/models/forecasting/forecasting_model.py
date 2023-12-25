@@ -1388,6 +1388,69 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Currently this method only supports deterministic predictions (i.e. when models' predictions
         have only 1 sample).
 
+        Some darts models wrap scikit-learn like models (See, for instance :class:`RegressionModel`), i.e
+        they accept an argument ``model``. With the purpose of including 'model' in the grid search,
+        there are two possible options:
+
+        1. Give the key ``model`` in parameter as a valid list of instances of the scikit-learn like model used.
+
+           Example
+                .. highlight:: python
+                .. code-block:: python
+
+                    from sklearn.ensemble import RandomForestRegressor
+
+                    from darts.models import RegressionModel
+                    from darts.utils import timeseries_generation as tg
+
+                    parameters = {
+                        "model": [
+                            RandomForestRegressor(min_samples_split=2, min_samples_leaf=1),
+                            RandomForestRegressor(min_samples_split=3, min_samples_leaf=2),
+                        ],
+                        "lags": [1,2,3],
+                    }
+                    series = tg.sine_timeseries(length=100)
+
+                    RegressionModel.gridsearch(
+                        parameters=parameters, series=series, forecast_horizon=1
+                    )
+                ..
+
+        2. Give the key ``model`` in parameter as dictionary containing a special key
+           ``model_class`` which is the scikit-learn like model class that will be used
+           to pass arguments from the grid. The other keys/values are arguments passed to the wrapped
+           model class and they behave as an inner parameters dictionary
+
+           Example
+                .. highlight:: python
+                .. code-block:: python
+
+                    from sklearn.ensemble import RandomForestRegressor
+
+                    from darts.models import RegressionModel
+                    from darts.utils import timeseries_generation as tg
+
+                    parameters = {
+                        "model": {
+                            "model_class": RandomForestRegressor,
+                            "min_samples_split": [2,3],
+                            "min_samples_leaf": [1,2],
+                        },
+                        "lags": [1,2,3],
+                    }
+                    series = tg.sine_timeseries(length=100)
+
+                    RegressionModel.gridsearch(
+                        parameters=parameters, series=series, forecast_horizon=1
+                    )
+                ..
+
+            In order to keep consistency in the best-performing hyper-parameters returned in this method,
+            wrapped model arguments are returned with a suffix containing the name of the wrapped model class
+            and a dot separator. For example, the parameter ``min_samples_split`` in the example above will be
+            returned as ``RandomForestRegressor.min_samples_split``
+
         Parameters
         ----------
         model_class
@@ -1502,6 +1565,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if predict_kwargs is None:
             predict_kwargs = dict()
 
+        # Used if the darts model wraps a scikit-learn like model
+        wrapped_model_class = None
+
+        if "model" in parameters:
+            # Ask if model has been passed as a dictionary. This implies that the arguments
+            # of the wrapped model must be passed to the grid. If 'model' is passed as a
+            # list of instances of scikit-learn models, the behavior should work like
+            # any argument passed to the Darts model."
+            if isinstance(parameters["model"], dict):
+                if not "model_class" in parameters["model"]:
+                    raise_log(
+                        ValueError(
+                            "When the 'model' key is set as a dictionary, it must contain "
+                            "the 'model_class' key, which represents the class of the model "
+                            "to be wrapped."
+                        )
+                    )
+                wrapped_model_class = parameters["model"].pop("model_class")
+                # Create a flat dictionary by adding a suffix to the arguments of the wrapped model in
+                # order to distinguish them from the other arguments of the Darts model
+                parameters.update(
+                    {
+                        f"{wrapped_model_class.__name__}.{k}": v
+                        for k, v in parameters.pop("model").items()
+                    }
+                )
+
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
 
@@ -1516,6 +1606,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             zip(params_cross_product), verbose, total=len(params_cross_product)
         )
 
+        def _init_model_from_combination(param_combination_dict):
+            if wrapped_model_class is None:
+                return model_class(**param_combination_dict)
+
+            # Decode new keys created with the suffix wrapped_model.
+            wrapped_model_kwargs = {}
+            darts_model_kwargs = {}
+            for k, v in param_combination_dict.items():
+                if k.startswith(f"{wrapped_model_class.__name__}."):
+                    wrapped_model_kwargs[
+                        k.replace(f"{wrapped_model_class.__name__}.", "")
+                    ] = v
+                else:
+                    darts_model_kwargs[k] = v
+            return model_class(
+                model=wrapped_model_class(**wrapped_model_kwargs),
+                **darts_model_kwargs,
+            )
+
         def _evaluate_combination(param_combination) -> float:
             param_combination_dict = dict(
                 list(zip(parameters.keys(), param_combination))
@@ -1526,7 +1635,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "model_name"
                 ] = f"{current_time}_{param_combination_dict['model_name']}"
 
-            model = model_class(**param_combination_dict)
+            model = _init_model_from_combination(param_combination_dict)
+
             if use_fitted_values:  # fitted value mode
                 model._fit_wrapper(
                     series=series,
@@ -1587,8 +1697,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
 
         logger.info("Chosen parameters: " + str(best_param_combination))
-
-        return model_class(**best_param_combination), best_param_combination, min_error
+        return (
+            _init_model_from_combination(best_param_combination),
+            best_param_combination,
+            min_error,
+        )
 
     def residuals(
         self,
