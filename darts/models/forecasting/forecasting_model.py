@@ -1610,7 +1610,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if wrapped_model_class is None:
                 return model_class(**param_combination_dict)
 
-            # Decode new keys created with the suffix wrapped_model.
+            # Decode new keys created with the suffix.
             wrapped_model_kwargs = {}
             darts_model_kwargs = {}
             for k, v in param_combination_dict.items():
