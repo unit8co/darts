@@ -24,7 +24,7 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_if_not
-from darts.utils.utils import series2seq
+from darts.utils.utils import _build_tqdm_iterator, _parallel_apply, series2seq
 
 logger = get_logger(__name__)
 
@@ -51,79 +51,6 @@ class AnomalyScorer(ABC):
         self.univariate_scorer = univariate_scorer
 
         self.trainable = trainable
-
-    def _tabularize_series(
-        self, list_series: Sequence[TimeSeries], concatenate: bool, component_wise: bool
-    ) -> np.ndarray:
-        """Internal function called by scorers ``KmeansScorer``, ``PyODScorer``, ``WassersteinScorer``
-        for their ``fit()`` and ``score()`` functions.
-
-        Transforms a (sequence of) series into tabular data of size window `W`. The parameter `component_wise`
-        indicates how the rolling window must treat the different components if the series is multivariate.
-        If set to False, the rolling window will be done on each component independently. If set to True,
-        the `N` components will be concatenated to create windows of size `W` * `N`. The resulting tabular
-        data of each series are concatenated if the parameter `concatenate` is set to True.
-        """
-
-        list_np_series = [series.all_values(copy=False) for series in list_series]
-
-        if not component_wise:
-
-            tabular_data = [
-                sliding_window_view(arr, window_shape=self.window, axis=0).reshape(
-                    -1, self.window * len(arr[0])
-                )
-                for arr in list_np_series
-            ]
-
-            if concatenate:
-                return np.concatenate(tabular_data, axis=0)
-
-        else:
-
-            tabular_data = [
-                np.stack(
-                    sliding_window_view(arr, window_shape=self.window, axis=0), axis=1
-                ).reshape(len(arr[0]), -1, self.window)
-                for arr in list_np_series
-            ]
-
-            if concatenate:
-                return np.concatenate(tabular_data, axis=1)
-
-        return tabular_data
-
-    def _convert_tabular_to_series(
-        self, list_series: Sequence[TimeSeries], list_np_anomaly_score: np.ndarray
-    ) -> Sequence[TimeSeries]:
-        """Internal function called by scorers ``KmeansScorer``, ``PyODScorer``, ``WassersteinScorer``
-        for their ``score()`` functions when the parameter `component_wise` is set to True and the
-        (sequence of) series has more than 1 component.
-
-        Returns the resulting anomaly score as a (sequence of) series, from the np.array `list_np_anomaly_score`
-        containing the anomaly score of the (sequence of) series. For efficiency reasons, the anomaly scores were
-        computed in one go for each component (component-wise is set to True, so each component has its own fitted
-        model). If a list of series is given, each series will be concatenated by its components. The function
-        aims to split the anomaly score at the proper indexes to create an anomaly score for each series.
-        """
-        indice = 0
-        result = []
-        for series in list_series:
-            result.append(
-                TimeSeries.from_times_and_values(
-                    series.time_index[self.window - 1 :],
-                    list(
-                        zip(
-                            *list_np_anomaly_score[
-                                :, indice : indice + len(series) - self.window + 1
-                            ]
-                        )
-                    ),
-                )
-            )
-            indice += len(series) - self.window + 1
-
-        return result
 
     def _check_univariate_scorer(self, actual_anomalies: Sequence[TimeSeries]):
         """Checks if `actual_anomalies` contains only univariate series when the scorer has the
@@ -388,6 +315,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         window: int,
         window_agg: bool,
         diff_fn: str = "abs_diff",
+        n_jobs: int = 1,
     ) -> None:
         super().__init__(
             univariate_scorer=univariate_scorer, window=window, trainable=True
@@ -407,6 +335,8 @@ class FittableAnomalyScorer(AnomalyScorer):
             f"Parameter `window_agg` must be Boolean, found type: {type(window_agg)}.",
         )
         self.window_agg = window_agg
+
+        self._n_jobs = n_jobs
 
     def _fun_window_agg(
         self, list_scores: Sequence[TimeSeries], window: int
@@ -808,11 +738,82 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
             diff_fn=diff_fn,
         )
 
+    def _tabularize_series(
+        self, list_series: Sequence[TimeSeries], concatenate: bool, component_wise: bool
+    ) -> Union[Sequence[np.ndarray], np.ndarray]:
+        """Internal function called by WindowedAnomalyScorer ``fit()`` and ``score()`` functions.
+
+        Transforms a (sequence of) series into tabular data of size window `W`. The parameter `component_wise`
+        indicates how the rolling window must treat the different components if the series is multivariate.
+        If set to False, the rolling window will be done on each component independently. If set to True,
+        the `N` components will be concatenated to create windows of size `W` * `N`. The resulting tabular
+        data of each series are concatenated if the parameter `concatenate` is set to True.
+        """
+
+        list_np_series = [series.all_values(copy=False) for series in list_series]
+
+        if component_wise:
+
+            tabular_data = [
+                np.stack(
+                    sliding_window_view(arr, window_shape=self.window, axis=0), axis=1
+                ).reshape(len(arr[0]), -1, self.window)
+                for arr in list_np_series
+            ]
+
+        else:
+
+            tabular_data = [
+                sliding_window_view(arr, window_shape=self.window, axis=0).reshape(
+                    -1, self.window * len(arr[0])
+                )
+                for arr in list_np_series
+            ]
+
+        if concatenate:
+            return np.concatenate(tabular_data, axis=1 if component_wise else 0)
+
+        return tabular_data
+
+    def _convert_tabular_to_series(
+        self, list_series: Sequence[TimeSeries], list_np_anomaly_score: np.ndarray
+    ) -> Sequence[TimeSeries]:
+        """Internal function called by WindowedAnomalyScorer  ``score()`` functions when the parameter
+        `component_wise` is set to True and the (sequence of) series has more than 1 component.
+
+        Returns the resulting anomaly score as a (sequence of) series, from the np.array `list_np_anomaly_score`
+        containing the anomaly score of the (sequence of) series. For efficiency reasons, the anomaly scores were
+        computed in one go for each component (component-wise is set to True, so each component has its own fitted
+        model). If a list of series is given, each series will be concatenated by its components. The function
+        aims to split the anomaly score at the proper indexes to create an anomaly score for each series.
+        """
+        indice = 0
+        result = []
+        for series in list_series:
+            result.append(
+                TimeSeries.from_times_and_values(
+                    series.time_index[self.window - 1 :],
+                    list(
+                        zip(
+                            *list_np_anomaly_score[
+                                :, indice : indice + len(series) - self.window + 1
+                            ]
+                        )
+                    ),
+                )
+            )
+            indice += len(series) - self.window + 1
+
+        return result
+
     def _fit_core(
         self,
         list_series: Sequence[TimeSeries],
+        *args,
+        **kwargs,
     ):
         """Train one sub-model for each component when self.component_wise=True and series is multivariate"""
+
         if (not self.component_wise) | (list_series[0].width == 1):
             self.model.fit(
                 self._tabularize_series(
@@ -820,12 +821,21 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
                 )
             )
         else:
-            self.model = [
-                copy.deepcopy(self.model).fit(tabular_data)
-                for tabular_data in self._tabularize_series(
-                    list_series, concatenate=True, component_wise=True
-                )
-            ]
+            tabular_data = self._tabularize_series(
+                list_series, concatenate=True, component_wise=True
+            )
+
+            fit_iterator = zip(tabular_data, [None] * len(tabular_data))
+            input_iterator = _build_tqdm_iterator(
+                fit_iterator, verbose=False, desc=None, total=tabular_data.shape[1]
+            )
+            self.model = _parallel_apply(
+                input_iterator,
+                copy.deepcopy(self.model).fit,
+                n_jobs=self._n_jobs,
+                fn_args=args,
+                fn_kwargs=kwargs,
+            )
 
     @abstractmethod
     def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:
@@ -841,8 +851,8 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
             + f" for training the model, expected {self.width_trained_on} components.",
         )
 
+        # TODO: to parallelize, cannot vectorize since samples across series should not be mixed
         if (not self.component_wise) | (list_series[0].width == 1):
-            # TODO: vectorize as a single model is used on all components
             list_np_anomaly_score = [
                 self._model_score_method(model=self.model, data=tabular_data)
                 for tabular_data in self._tabularize_series(
