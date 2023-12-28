@@ -1574,7 +1574,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # list of instances of scikit-learn models, the behavior should work like
             # any argument passed to the Darts model."
             if isinstance(parameters["model"], dict):
-                if not "model_class" in parameters["model"]:
+                if "model_class" not in parameters["model"]:
                     raise_log(
                         ValueError(
                             "When the 'model' key is set as a dictionary, it must contain "
