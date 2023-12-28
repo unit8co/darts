@@ -842,7 +842,9 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         """Wrapper around model inference method"""
         pass
 
-    def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+    def _score_core(
+        self, list_series: Sequence[TimeSeries], *args, **kwargs
+    ) -> Sequence[TimeSeries]:
         """Apply the scorer (sub) model scoring method on the series components"""
 
         raise_if_not(
@@ -851,7 +853,6 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
             + f" for training the model, expected {self.width_trained_on} components.",
         )
 
-        # TODO: to parallelize, cannot vectorize since samples across series should not be mixed
         if (not self.component_wise) | (list_series[0].width == 1):
             list_np_anomaly_score = [
                 self._model_score_method(model=self.model, data=tabular_data)
@@ -867,16 +868,25 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
             ]
 
         else:
+
+            score_iterator = zip(
+                self.model,
+                self._tabularize_series(
+                    list_series, concatenate=True, component_wise=True
+                ),
+            )
+            input_iterator = _build_tqdm_iterator(
+                score_iterator, verbose=False, desc=None, total=len(self.model)
+            )
+
             list_np_anomaly_score = np.array(
-                [
-                    self._model_score_method(model=model, data=tabular_data)
-                    for model, tabular_data in zip(
-                        self.model,
-                        self._tabularize_series(
-                            list_series, concatenate=True, component_wise=True
-                        ),
-                    )
-                ]
+                _parallel_apply(
+                    input_iterator,
+                    self._model_score_method,
+                    n_jobs=self._n_jobs,
+                    fn_args=args,
+                    fn_kwargs=kwargs,
+                )
             )
 
             list_anomaly_score = self._convert_tabular_to_series(
