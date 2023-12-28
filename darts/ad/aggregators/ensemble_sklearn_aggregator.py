@@ -53,7 +53,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         return self
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
-
+        # assume that parallelization occurs at sklearn model level
         return [
             TimeSeries.from_times_and_values(
                 s.time_index,
