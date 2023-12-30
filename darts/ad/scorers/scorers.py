@@ -348,25 +348,23 @@ class FittableAnomalyScorer(AnomalyScorer):
         with values that represent how anomalous each past `W` is. If the parameter
         `window_agg` is set to True (default value), the scores for each point
         can be assigned by aggregating the anomaly scores for each window the point
-        is included in. This post-processing step is equivalent to rolling a window
-        on the reversed series and computing the mean function. The return anomaly
-        score represents the abnormality of each timestamp.
+        is included in.
+
+        This post-processing step is equivalent to a rolling average of length window
+        over the anomaly score series. The return anomaly score represents the abnormality
+        of each timestamp.
         """
         list_scores_point_wise = []
         for score in list_scores:
-
-            series_reversed = TimeSeries.from_values(score.all_values(copy=False)[::-1])
+            mean_score = np.empty(score.all_values().shape)
+            for idx_point in range(len(score)):
+                # "look ahead window" to account for the "look behind window" of the scorer
+                mean_score[idx_point] = score.all_values(copy=False)[
+                    idx_point : idx_point + window
+                ].mean(axis=0)
 
             score_point_wise = TimeSeries.from_times_and_values(
-                score.time_index,
-                series_reversed.window_transform(
-                    transforms={
-                        "window": window,
-                        "function": "mean",
-                        "mode": "rolling",
-                        "min_periods": 0,
-                    },
-                ).all_values(copy=False)[::-1],
+                score.time_index, mean_score, columns=score.components
             )
 
             list_scores_point_wise.append(score_point_wise)
@@ -824,7 +822,7 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
             tabular_data = self._tabularize_series(
                 list_series, concatenate=True, component_wise=True
             )
-
+            # parallelize fitting of the component-wise models
             fit_iterator = zip(tabular_data, [None] * len(tabular_data))
             input_iterator = _build_tqdm_iterator(
                 fit_iterator, verbose=False, desc=None, total=tabular_data.shape[1]
@@ -868,7 +866,7 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
             ]
 
         else:
-
+            # parallelize scoring of components by the corresponding sub-model
             score_iterator = zip(
                 self.model,
                 self._tabularize_series(

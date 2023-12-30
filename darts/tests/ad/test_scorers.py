@@ -21,6 +21,7 @@ from darts.ad.scorers import NormScorer as Norm
 from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
 from darts.ad.scorers.scorers import FittableAnomalyScorer, NLLScorer
 from darts.models import MovingAverageFilter
+from darts.utils.timeseries_generation import linear_timeseries
 
 list_NonFittableAnomalyScorer = [
     Norm(component_wise=False),
@@ -1731,3 +1732,51 @@ class TestAnomalyDetectionScorer:
 
         # same last value (by definition)
         assert score_T[-1] == score_F[-1]
+
+    def test_fun_window_agg(self):
+        """Verify that the anomaly score aggregation works as intented"""
+
+        # window = 2, alternating anomaly scores
+        window = 2
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = TimeSeries.from_values(np.resize([1, -1], 10))
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # in the last window, the score is not zeroed
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(), np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, -1]]).T
+        )
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
+
+        # window = 3, increment of 2 anomaly scores
+        window = 3
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = linear_timeseries(length=10, start_value=2, end_value=20)
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # on the last "window" values, difference of only 1 between consecutive aggregated scores
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(), np.array([[4, 6, 8, 10, 12, 14, 16, 18, 19, 20]]).T
+        )
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
+
+        # window = 6, increment of 2 anomaly scores
+        window = 6
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = linear_timeseries(length=10, start_value=2, end_value=20)
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # on the last "window" values, difference of only 1 between consecutive aggregated scores
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(), np.array([[7, 9, 11, 13, 15, 16, 17, 18, 19, 20]]).T
+        )
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
+
+        # window = 7, increment of 2 anomaly scores
+        window = 7
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = linear_timeseries(length=10, start_value=2, end_value=20)
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # on the last "window" values, difference of only 1 between consecutive aggregated scores
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(),
+            np.array([[8, 10, 12, 14, 15, 16, 17, 18, 19, 20]]).T,
+        )
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
