@@ -61,9 +61,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             while P and Q may either be integers or lists of positive integers
             specifying exactly which lag orders are included.
         trend: str
-            Parameter controlling the deterministic trend. 'n' indicates no trend,
-            'c' a constant term, 't' linear trend in time, and 'ct' includes both.
-            Default is 'c' for models without integration, and no trend for models with integration.
+        trend: Literal['n', 'c', 't', 'ct'] | Iterable[int], optional
+            Parameter controlling the deterministic trend. Can be specified as
+            a string where 'c' indicates a constant term, 't' indicates a
+            linear trend in time, and 'ct' includes both. Can also be specified
+            as an iterable defining a polynomial, as in `numpy.poly1d`, where
+            `[1,1,0,1]` would denote :math:`a + bt + ct^3`. Default is 'c' for
+            models without integration, and no trend for models with integration.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
