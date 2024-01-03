@@ -10,7 +10,7 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable, Literal
 
 import numpy as np
 from statsmodels import __version_tuple__ as statsmodels_version
@@ -32,10 +32,10 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         p: int = 12,
-        d: int = 1,
-        q: int = 0,
-        seasonal_order: Tuple[int, int, int, int] = (0, 0, 0, 0),
-        trend: Optional[str] = None,
+        d: int | Iterable[int] = 1,
+        q: int | Iterable[int] = 0,
+        seasonal_order: Tuple[int, int | Iterable[int], int | Iterable[int], int] = (0, 0, 0, 0),
+        trend: Optional[Literal['n', 'c', 't', 'ct'] | Iterable[int]] = None,
         random_state: Optional[int] = None,
         add_encoders: Optional[dict] = None,
     ):
@@ -45,16 +45,21 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         Parameters
         ----------
-        p : int
-            Order (number of time lags) of the autoregressive model (AR).
+        p : int | Iterable[int]
+            Order (number of time lags) of the autoregressive model (AR). A list
+            of integers can be given specifying exactly which lag orders are
+            included.
         d : int
             The order of differentiation; i.e., the number of times the data
             have had past values subtracted (I).
-        q : int
-            The size of the moving average window (MA).
-        seasonal_order: Tuple[int, int, int, int]
+        q : int | Iterable[int]
+            The size of the moving average window (MA). A list of integers can be
+            given specifying exactly which lag orders are included.
+        seasonal_order: Tuple[int | Iterable[int], int, int | Iterable[int], int]
             The (P,D,Q,s) order of the seasonal component for the AR parameters,
-            differences, MA parameters and periodicity.
+            differences, MA parameters and periodicity. D and s are always integers,
+            while P and Q may either be integers or lists of positive integers
+            specifying exactly which lag orders are included.
         trend: str
             Parameter controlling the deterministic trend. 'n' indicates no trend,
             'c' a constant term, 't' linear trend in time, and 'ct' includes both.
