@@ -200,7 +200,7 @@ def exponential_timeseries(
     freq: Union[str, int] = None,
     column_name: Optional[str] = "exponential",
     dtype: np.dtype = np.float64,
-    decay_rate:int = 10,
+    decay_rate: int = 10,
 ) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that

@@ -482,7 +482,7 @@ class RegressionModel(GlobalForecastingModel):
             labels,
             _,
             self._static_covariates_shape,
-            sample_weights
+            sample_weights,
         ) = create_lagged_training_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
@@ -554,7 +554,7 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates,
             future_covariates,
             max_samples_per_ts,
-            sample_weight
+            sample_weight,
         )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
@@ -608,7 +608,7 @@ class RegressionModel(GlobalForecastingModel):
             Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
             support multi-output regression natively.
         sample_weight
-            Optionally, sample weights. 
+            Optionally, sample weights.
             If a TimeSeries is passed, then those weights are used.
             If a string, then pre-defined weights are used. Can be one of: "linear", "linear_decay", "exponential_decay".
         **kwargs
@@ -698,7 +698,7 @@ class RegressionModel(GlobalForecastingModel):
                 sample_weight not in ["equal", "linear_decay", "exponential_decay"],
                 f"Invalid value for `sample_weight`: {sample_weight}. Possible values are: equal, linear_decay, exponential_decay.",
             )
-            
+
         super().fit(
             series=seq2series(series),
             past_covariates=seq2series(past_covariates),
@@ -752,7 +752,12 @@ class RegressionModel(GlobalForecastingModel):
             raise_log(ValueError("\n".join(component_lags_error_msg)), logger)
 
         self._fit_model(
-            series, past_covariates, future_covariates, max_samples_per_ts, sample_weight, **kwargs
+            series,
+            past_covariates,
+            future_covariates,
+            max_samples_per_ts,
+            sample_weight,
+            **kwargs,
         )
 
         return self

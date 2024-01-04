@@ -17,7 +17,11 @@ from numpy.lib.stride_tricks import as_strided
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.utils import get_single_series, series2seq
-from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries, exponential_timeseries
+from darts.utils.timeseries_generation import (
+    constant_timeseries,
+    linear_timeseries,
+    exponential_timeseries,
+)
 
 logger = get_logger(__name__)
 
@@ -40,7 +44,7 @@ def create_lagged_data(
     use_moving_windows: bool = True,
     is_training: bool = True,
     concatenate: bool = True,
-    sample_weight: Optional[str] = None
+    sample_weight: Optional[str] = None,
 ) -> Tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -282,7 +286,7 @@ def create_lagged_data(
     )
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
-    X, y, times, sample_weights = [], [], [], [] 
+    X, y, times, sample_weights = [], [], [], []
     for i in range(max(seq_ts_lens)):
         target_i = target_series[i] if target_series else None
         past_i = past_covariates[i] if past_covariates else None
@@ -324,18 +328,24 @@ def create_lagged_data(
         X.append(X_i)
         y.append(y_i)
         times.append(times_i)
-        
+
         if sample_weight:
             weights = None
-            if sample_weight == 'equal':
-                weights = constant_timeseries(1, start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
-            elif sample_weight == 'linear_decay':
-                weights = linear_timeseries(start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
-            elif sample_weight == 'exponential_decay':
-                weights = exponential_timeseries(start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
+            if sample_weight == "equal":
+                weights = constant_timeseries(
+                    1, start=times_i[0], end=times_i[-1], freq=times_i.freq
+                ).values()
+            elif sample_weight == "linear_decay":
+                weights = linear_timeseries(
+                    start=times_i[0], end=times_i[-1], freq=times_i.freq
+                ).values()
+            elif sample_weight == "exponential_decay":
+                weights = exponential_timeseries(
+                    start=times_i[0], end=times_i[-1], freq=times_i.freq
+                ).values()
             else:
                 raise ValueError(f"sample_weight {sample_weight} is not supported.")
-                    
+
             sample_weights.append(weights)
 
         # if instance of TimeSeries, convert to np.ndarray and append
@@ -496,7 +506,7 @@ def create_lagged_training_data(
         use_moving_windows=use_moving_windows,
         is_training=True,
         concatenate=concatenate,
-        sample_weight=sample_weight
+        sample_weight=sample_weight,
     )
 
 
