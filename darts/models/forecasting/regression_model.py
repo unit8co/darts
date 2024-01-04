@@ -610,7 +610,7 @@ class RegressionModel(GlobalForecastingModel):
         sample_weight
             Optionally, sample weights.
             If a TimeSeries is passed, then those weights are used.
-            If a string, then pre-defined weights are used. Can be one of: "linear", "linear_decay", "exponential_decay".
+            If a string, then pre-defined weights are used ("linear", "linear_decay", "exponential_decay").
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
