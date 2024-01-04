@@ -16,12 +16,12 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.utils import get_single_series, series2seq
 from darts.utils.timeseries_generation import (
     constant_timeseries,
-    linear_timeseries,
     exponential_timeseries,
+    linear_timeseries,
 )
+from darts.utils.utils import get_single_series, series2seq
 
 logger = get_logger(__name__)
 
