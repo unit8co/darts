@@ -696,7 +696,8 @@ class RegressionModel(GlobalForecastingModel):
         if isinstance(sample_weight, str):
             raise_if(
                 sample_weight not in ["equal", "linear_decay", "exponential_decay"],
-                f"Invalid value for `sample_weight`: {sample_weight}. Possible values are: equal, linear_decay, exponential_decay.",
+                f"Invalid value for `sample_weight`: {sample_weight}."
+                f"Possible values are: equal, linear_decay, exponential_decay.",
             )
 
         super().fit(
