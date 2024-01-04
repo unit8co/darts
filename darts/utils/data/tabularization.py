@@ -17,7 +17,7 @@ from numpy.lib.stride_tricks import as_strided
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.utils import get_single_series, series2seq
-from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries, exponential_timeseries
 
 logger = get_logger(__name__)
 
@@ -326,12 +326,19 @@ def create_lagged_data(
         times.append(times_i)
         
         if sample_weight:
+            weights = None
             if sample_weight == 'equal':
                 weights = constant_timeseries(1, start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
-                sample_weights.append(weights)
             elif sample_weight == 'linear_decay':
                 weights = linear_timeseries(start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
-                sample_weights.append(weights)
+            elif sample_weight == 'exponential_decay':
+                weights = exponential_timeseries(start=times_i[0], end=times_i[-1], freq=times_i.freq).values()
+            else:
+                raise ValueError(f"sample_weight {sample_weight} is not supported.")
+                    
+            sample_weights.append(weights)
+
+        # if instance of TimeSeries, convert to np.ndarray and append
 
     if concatenate:
         X = np.concatenate(X, axis=0)
@@ -596,7 +603,7 @@ def create_lagged_prediction_data(
         If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
         pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
     """
-    X, _, times, _ = create_lagged_data(
+    X, _, times, _, _ = create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
