@@ -17,7 +17,6 @@ from darts.utils.timeseries_generation import (
 
 
 class TestTimeSeries:
-
     times = pd.date_range("20130101", "20130110", freq="D")
     pd_series1 = pd.Series(range(10), index=times)
     pd_series2 = pd.Series(range(5, 15), index=times)
@@ -933,6 +932,33 @@ class TestTimeSeries:
         with pytest.raises(KeyError):
             _ = series[pd.RangeIndex(start, stop=end + 2 * freq, step=freq)]
 
+    def test_getitem_frequency_inferrence(self):
+        ts = self.series1
+        assert ts.freq == "D"
+        ts_got = ts[1::2]
+        assert ts_got.freq == "2D"
+        ts_got = ts[pd.Timestamp("20130103") :: 2]
+        assert ts_got.freq == "2D"
+
+        idx = pd.DatetimeIndex(["20130102", "20130105", "20130108"])
+        ts_idx = ts[idx]
+        assert ts_idx.freq == "3D"
+
+        # With BusinessDay frequency
+        offset = pd.offsets.BusinessDay()  # Closed on Saturdays & Sundays
+        dates1 = pd.date_range("20231101", "20231126", freq=offset)
+        values1 = np.ones(len(dates1))
+        ts = TimeSeries.from_times_and_values(dates1, values1)
+        assert ts.freq == ts[-4:].freq
+
+        # Using a step parameter
+        assert ts[1::3].freq == 3 * ts.freq
+        assert ts[pd.Timestamp("20231102") :: 4].freq == 4 * ts.freq
+
+        # Indexing with datetime index
+        idx = pd.date_range("20231101", "20231126", freq=offset)
+        assert ts[idx].freq == idx.freq
+
     def test_fill_missing_dates(self):
         with pytest.raises(ValueError):
             # Series cannot have date holes without automatic filling
@@ -1050,7 +1076,6 @@ class TestTimeSeries:
 
             series_target = TimeSeries.from_dataframe(df_full, time_col="date")
             for df, df_name in zip([df_full, df_holes], ["full", "holes"]):
-
                 # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'})
                 if offset_alias in offset_aliases_raise:
                     with pytest.raises(ValueError):
@@ -1519,7 +1544,6 @@ class TestTimeSeries:
 
 
 class TestTimeSeriesConcatenate:
-
     #
     # COMPONENT AXIS TESTS
     #
@@ -1735,7 +1759,6 @@ class TestTimeSeriesConcatenate:
 
 
 class TestTimeSeriesHierarchy:
-
     components = ["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]
 
     hierarchy = {
@@ -1912,7 +1935,6 @@ class TestTimeSeriesHierarchy:
 
 
 class TestTimeSeriesHeadTail:
-
     ts = TimeSeries(
         xr.DataArray(
             np.random.rand(10, 10, 10),
@@ -2185,7 +2207,6 @@ class TestTimeSeriesFromDataFrame:
 
 
 class TestSimpleStatistics:
-
     times = pd.date_range("20130101", "20130110", freq="D")
     values = np.random.rand(10, 2, 100)
     ar = xr.DataArray(
