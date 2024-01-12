@@ -74,7 +74,7 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
     ) -> TimeSeries:
         predictions = [
             model.predict(n=n, future_covariates=future_covariates)
-            if isinstance(model, FutureCovariatesLocalForecastingModel)
+            if model.supports_future_covariates
             else model.predict(n=n)
             for model in self._trained_models
         ]
