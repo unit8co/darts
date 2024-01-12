@@ -13,6 +13,7 @@ dist/
 examples/.ipynb_checkpoints/
 runs/
 .coverage
+.coverage.*
 htmlcov
 coverage.xml
 .darts
