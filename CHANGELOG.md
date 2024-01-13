@@ -12,7 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 **Fixed**
-
+- Fixed a bug when using a `TorchForecastingModel` with `use_reversible_instance_norm=True` and predicting with `n > output_chunk_length`. The input normalized multiple times. [#2160](https://github.com/unit8co/darts/pull/2160) by [FourierMourier](https://github.com/FourierMourier).
 ### For developers of the library:
 
 ## [0.27.1](https://github.com/unit8co/darts/tree/0.27.1) (2023-12-10)
