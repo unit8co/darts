@@ -707,17 +707,14 @@ if TORCH_AVAILABLE:
             ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
             # barebone model
             model = DLinearModel(
-                input_chunk_length=4,
-                output_chunk_length=1,
-                n_epochs=1,
+                input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
             )
             model.fit(self.series[:10])
             model.save(ckpt_path)
 
             # identical model
             loading_model = DLinearModel(
-                input_chunk_length=4,
-                output_chunk_length=1,
+                input_chunk_length=4, output_chunk_length=1, **tfm_kwargs
             )
             loading_model.load_weights(ckpt_path)
 
@@ -726,21 +723,26 @@ if TORCH_AVAILABLE:
                 input_chunk_length=4,
                 output_chunk_length=1,
                 optimizer_cls=torch.optim.AdamW,
+                **tfm_kwargs,
             )
             loading_model.load_weights(ckpt_path)
 
+            model_summary_kwargs = {
+                "pl_trainer_kwargs": dict(
+                    {"enable_model_sumamry": False}, **tfm_kwargs["pl_trainer_kwargs"]
+                )
+            }
             # different pl_trainer_kwargs
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                pl_trainer_kwargs={"enable_model_summary": False},
+                **model_summary_kwargs,
             )
             loading_model.load_weights(ckpt_path)
 
             # different input_chunk_length (tfm parameter)
             loading_model = DLinearModel(
-                input_chunk_length=4 + 1,
-                output_chunk_length=1,
+                input_chunk_length=4 + 1, output_chunk_length=1, **tfm_kwargs
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_path)
@@ -754,6 +756,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=4,
                 output_chunk_length=1,
                 kernel_size=10,
+                **tfm_kwargs,
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_path)
