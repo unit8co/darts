@@ -4974,10 +4974,18 @@ class TimeSeries:
             ):
                 _check_dt()
                 if isinstance(key.step, (int, np.int64)):
-                    # Calculate the frequency of the new ts
+                    # new frequency is multiple of original
                     new_freq = key.step * self.freq
-                else:
+                elif key.step is None:
                     new_freq = self.freq
+                else:
+                    new_freq = None
+                    raise_log(
+                        ValueError(
+                            f"Invalid slice step={key.step}. Only supports integer steps or `None`."
+                        ),
+                        logger=logger,
+                    )
 
                 # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})

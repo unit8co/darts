@@ -959,6 +959,28 @@ class TestTimeSeries:
         idx = pd.date_range("20231101", "20231126", freq=offset)
         assert ts[idx].freq == idx.freq
 
+    def test_getitem_frequency_inferrence_integer_index(self):
+        start = 2
+        freq = 3
+        ts = TimeSeries.from_times_and_values(
+            times=pd.RangeIndex(
+                start=start, stop=start + freq * len(self.series1), step=freq
+            ),
+            values=self.series1.values(),
+        )
+
+        assert ts.freq == freq
+        ts_got = ts[1::2]
+        assert ts_got.start_time() == start + freq
+        assert ts_got.freq == 2 * freq
+
+        idx = pd.RangeIndex(
+            start=start + 2 * freq, stop=start + 4 * freq, step=2 * freq
+        )
+        ts_idx = ts[idx]
+        assert ts_idx.start_time() == idx[0]
+        assert ts_idx.freq == 2 * freq
+
     def test_fill_missing_dates(self):
         with pytest.raises(ValueError):
             # Series cannot have date holes without automatic filling
