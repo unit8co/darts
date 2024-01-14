@@ -4953,18 +4953,21 @@ class TimeSeries:
                 key.stop, (int, np.int64)
             ):
                 xa_ = self._xa.isel({self._time_dim: key})
-                if self._has_datetime_index:
-                    if isinstance(key.step, (int, np.int64)):
-                        # Calculate the frequency of the new ts
-                        new_freq = key.step * self.freq
-                    else:
-                        new_freq = self.freq
+                if isinstance(key.step, (int, np.int64)):
+                    # new frequency is multiple of original
+                    new_freq = key.step * self.freq
+                elif key.step is None:
+                    new_freq = self.freq
                 else:
-                    new_freq = None  # Infer freq
-                _set_freq_in_xa(
-                    xa_,
-                    new_freq,
-                )  # indexing may discard the freq so we restore it...
+                    new_freq = None
+                    raise_log(
+                        ValueError(
+                            f"Invalid slice step={key.step}. Only supports integer steps or `None`."
+                        ),
+                        logger=logger,
+                    )
+                # indexing may discard the freq so we restore it...
+                _set_freq_in_xa(xa_, new_freq)
                 return self.__class__(xa_)
             elif isinstance(key.start, pd.Timestamp) or isinstance(
                 key.stop, pd.Timestamp
@@ -5046,13 +5049,18 @@ class TimeSeries:
                     # We have to restore a RangeIndex. But first we need to
                     # check the list is corresponding to a RangeIndex.
                     min_idx, max_idx = min(key), max(key)
-                    raise_if_not(
-                        key[0] == min_idx
+                    if (
+                        not key[0] == min_idx
                         and key[-1] == max_idx
-                        and max_idx + 1 - min_idx == len(key),
-                        "Indexing a TimeSeries with a list requires the list to contain monotically "
-                        + "increasing integers with no gap.",
-                    )
+                        and max_idx + 1 - min_idx == len(key)
+                    ):
+                        raise_log(
+                            ValueError(
+                                "Indexing a TimeSeries with a list requires the list to "
+                                "contain monotonically increasing integers with no gap."
+                            ),
+                            logger=logger,
+                        )
                     new_idx = orig_idx[min_idx : max_idx + 1]
                     xa_ = xa_.assign_coords({self._time_dim: new_idx})
 
