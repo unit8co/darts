@@ -76,6 +76,16 @@ with Darts using the Optuna library for hyperparameter optimization.
 
    examples/17-hyperparameter-optimization.ipynb
 
+Regression Models
+=================
+
+Regression models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/20-RegressionModel-examples.ipynb
+
 
 Fast Fourier Transform
 ======================
@@ -156,6 +166,26 @@ TFT model example notebook:
    :maxdepth: 1
 
    examples/13-TFT-examples.ipynb
+
+TimeSeries Dense Encoder (TiDE) Model
+=======================================
+
+TiDE model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/18-TiDE-examples.ipynb
+
+Ensemble Models
+=============================
+
+Ensemble models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/19-EnsembleModel-examples.ipynb
 
 Kalman Filter Model
 ===================

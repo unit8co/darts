@@ -184,7 +184,7 @@ def _get_values_or_raise(
     series_b
         A univariate (deterministic or stochastic) ``TimeSeries`` instance (the predicted series).
     intersect
-        A boolean for whether or not to only consider the time intersection between `series_a` and `series_b`
+        A boolean for whether to only consider the time intersection between `series_a` and `series_b`
     stochastic_quantile
         Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)
         or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
@@ -1212,3 +1212,80 @@ def rho_risk(
 
     rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
     return rho_loss / z_true
+
+
+# Quantile Loss (Pinball Loss)
+@multi_ts_support
+@multivariate_support
+def quantile_loss(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    tau: float = 0.5,
+    intersect: bool = True,
+    *,
+    reduction: Callable[[np.ndarray], float] = np.mean,
+    inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+    n_jobs: int = 1,
+    verbose: bool = False
+) -> float:
+    """
+    Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T`
+    and a time series of stochastic predictions (containing N samples) :math:`y'` of shape :math:`T  x N`
+    quantile loss is a metric that quantifies the accuracy of a specific quantile :math:`tau`
+    from the predicted value distribution.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    tau
+        The quantile (float [0, 1]) of interest for the loss.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate ``TimeSeries`` instances.
+    inter_reduction
+        Function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        ``Sequence[TimeSeries]``. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of ``TimeSeries`` received in input. Example: ``inter_reduction=np.mean``, will return the average of the
+        pairwise metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        The quantile loss metric
+    """
+
+    raise_if_not(
+        pred_series.is_stochastic,
+        "quantile (pinball) loss should only be computed for stochastic predicted TimeSeries.",
+    )
+
+    y, y_hat = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        stochastic_quantile=None,
+        remove_nan_union=True,
+    )
+
+    ts_length, _, sample_size = y_hat.shape
+    y = y.reshape(ts_length, -1, 1).repeat(sample_size, axis=2)
+    y_hat = y_hat.reshape(
+        ts_length, -1, sample_size
+    )  # make sure y shape == y_hat shape
+
+    errors = y - y_hat
+    losses = np.maximum((tau - 1) * errors, tau * errors)
+    return losses.mean()
