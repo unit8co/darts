@@ -10,7 +10,7 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import Iterable, Literal, Optional, Tuple
+from typing import Iterable, Literal, Optional, Tuple, Union
 
 import numpy as np
 from statsmodels import __version_tuple__ as statsmodels_version
@@ -32,15 +32,17 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         p: int = 12,
-        d: int | Iterable[int] = 1,
-        q: int | Iterable[int] = 0,
-        seasonal_order: Tuple[int, int | Iterable[int], int | Iterable[int], int] = (
+        d: Union[int, Iterable[int]] = 1,
+        q: Union[int, Iterable[int]] = 0,
+        seasonal_order: Tuple[
+            int, Union[int, Iterable[int]], Union[int, Iterable[int]], int
+        ] = (
             0,
             0,
             0,
             0,
         ),
-        trend: Optional[Literal["n", "c", "t", "ct"] | Iterable[int]] = None,
+        trend: Optional[Union[Literal["n", "c", "t", "ct"], Iterable[int]]] = None,
         random_state: Optional[int] = None,
         add_encoders: Optional[dict] = None,
     ):
