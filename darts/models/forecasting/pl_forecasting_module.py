@@ -71,6 +71,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        shift_output_chunk: int,
         train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
@@ -156,6 +157,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.input_chunk_length = input_chunk_length
         # output_chunk_length is a property
         self._output_chunk_length = output_chunk_length
+        self.shift_output_chunk = shift_output_chunk
 
         # define the loss function
         self.criterion = loss_fn
