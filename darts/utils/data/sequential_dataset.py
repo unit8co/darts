@@ -27,6 +27,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
     ):
@@ -71,13 +72,13 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         """
 
         super().__init__()
-
+        shift = input_chunk_length + output_chunk_shift
         self.ds = GenericShiftedDataset(
             target_series=target_series,
             covariates=covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            shift=input_chunk_length,
+            shift=shift,
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
@@ -100,6 +101,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
     ):
@@ -144,13 +146,13 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         """
 
         super().__init__()
-
+        shift = input_chunk_length + output_chunk_shift
         self.ds = GenericShiftedDataset(
             target_series=target_series,
             covariates=covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            shift=input_chunk_length,
+            shift=shift,
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
@@ -173,6 +175,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
     ):
@@ -218,14 +221,14 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         """
 
         super().__init__()
-
+        shift = input_chunk_length + output_chunk_shift
         # This dataset is in charge of historical future covariates
         self.ds_past = GenericShiftedDataset(
             target_series=target_series,
             covariates=covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            shift=input_chunk_length,
+            shift=shift,
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.HISTORIC_FUTURE,
@@ -238,7 +241,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             covariates=covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            shift=input_chunk_length,
+            shift=shift,
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
@@ -276,6 +279,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
     ):
@@ -324,14 +328,14 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         """
 
         super().__init__()
-
+        shift = input_chunk_length + output_chunk_shift
         # This dataset is in charge of serving past covariates
         self.ds_past = GenericShiftedDataset(
             target_series=target_series,
             covariates=past_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            shift=input_chunk_length,
+            shift=shift,
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
@@ -344,6 +348,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             covariates=future_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=use_static_covariates,
         )
@@ -382,6 +387,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
     ):
@@ -429,14 +435,14 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             Whether to use/include static covariate data from input series.
         """
         super().__init__()
-
+        shift = input_chunk_length + output_chunk_shift
         # This dataset is in charge of serving past covariates
         self.ds_past = GenericShiftedDataset(
             target_series=target_series,
             covariates=past_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            shift=input_chunk_length,
+            shift=shift,
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
@@ -449,7 +455,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             covariates=future_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            shift=input_chunk_length,
+            shift=shift,
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,

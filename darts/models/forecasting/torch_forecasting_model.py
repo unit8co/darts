@@ -2009,6 +2009,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def output_chunk_shift(self) -> int:
+        return (
+            self.model.output_chunk_shift
+            if self.model_created
+            else self.pl_module_params["output_chunk_shift"]
+        )
+
+    @property
     def _is_probabilistic(self) -> bool:
         return (
             self.model._is_probabilistic
@@ -2681,6 +2689,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )

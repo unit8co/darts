@@ -365,6 +365,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int,
         num_encoder_layers: int = 1,
         num_decoder_layers: int = 1,
         decoder_output_dim: int = 16,
