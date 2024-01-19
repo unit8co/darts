@@ -50,7 +50,8 @@ def io_processor(forward):
 
         # x is input batch tuple which by definition has the past features in the first element starting with the
         # first n target features
-        x: Tuple = args[0][0]
+        # assuming `args[0][0]` is torch.Tensor we could clone it to prevent target re-normalization
+        x: Tuple = args[0][0].clone()
         # apply reversible instance normalization
         x[:, :, : self.n_targets] = self.rin(x[:, :, : self.n_targets])
         # run the forward pass
