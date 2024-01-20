@@ -54,7 +54,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False)
 
@@ -63,7 +63,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_relative_index=True,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False)
             model.fit(ts_integer_index, verbose=False)
@@ -246,7 +246,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(target_multi)
             preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
@@ -258,7 +258,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(target_multi.with_static_covariates(None))
             preds = model.predict(n=2, series=target_multi)
@@ -404,7 +404,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type="RMSNorm",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model1.fit(series, epochs=1)
 
@@ -413,7 +413,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type=nn.LayerNorm,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(series, epochs=1)
 
@@ -423,6 +423,70 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_relative_index=True,
                     norm_type="invalid",
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model4.fit(series, epochs=1)
+
+        @pytest.mark.parametrize("shift", [3, 7, 10])
+        def test_output_shift(self, shift):
+            """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length."""
+            icl = 7
+            ocl = 7
+            series = tg.linear_timeseries(
+                length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            )
+
+            model = self.helper_create_model(icl, ocl, shift)
+            model.fit(series)
+
+            # no auto-regression with shifted output
+            with pytest.raises(ValueError) as err:
+                _ = model.predict(n=ocl + 1)
+            assert str(err.value).startswith("Cannot perform auto-regression")
+
+            # pred starts with a shift
+            for ocl_test in [ocl - 1, ocl]:
+                pred = model.predict(n=ocl_test)
+                assert (
+                    pred.start_time() == series.end_time() + (shift + 1) * series.freq
+                )
+                assert len(pred) == ocl_test
+                assert pred.freq == series.freq
+
+            # check that shifted output chunk results with encoders are the
+            # same as using identical future covariate
+
+            # model trained on encoders
+            model_enc_shift = self.helper_create_model(
+                icl,
+                ocl,
+                shift,
+                add_encoders={"datetime_attribute": {"future": ["dayofweek"]}},
+            )
+            model_enc_shift.fit(series)
+
+            # model trained with identical future covariates
+            model_fc_shift = self.helper_create_model(icl, ocl, shift)
+
+            fc_day = tg.datetime_attribute_timeseries(
+                series,
+                attribute="dayofweek",
+                add_length=ocl + shift,
+            )
+            model_fc_shift.fit(series, future_covariates=fc_day)
+
+            pred_enc = model_enc_shift.predict(n=ocl)
+            pred_fc = model_fc_shift.predict(n=ocl)
+            assert pred_enc == pred_fc
+
+        def helper_create_model(self, icl, ocl, shift, **kwargs):
+            return TFTModel(
+                input_chunk_length=icl,
+                output_chunk_length=ocl,
+                output_chunk_shift=shift,
+                add_relative_index=True,
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs,
+                **kwargs,
+            )

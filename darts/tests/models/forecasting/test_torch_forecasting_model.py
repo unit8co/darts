@@ -12,10 +12,7 @@ from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.tests.conftest import tfm_kwargs
-from darts.utils.timeseries_generation import (
-    datetime_attribute_timeseries,
-    linear_timeseries,
-)
+from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -1443,33 +1440,6 @@ if TORCH_AVAILABLE:
                 _ = model.predict(n=n, past_covariates=pc)
                 _ = model.predict(n=n, future_covariates=fc)
                 _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
-
-            # check that shifted output chunk results with encoders are the
-            # same as using identical future covariate
-            ocl, shift = 2, 3
-            model_enc_shift = self.helper_create_DLinearModel(
-                work_dir=tmpdir_fn,
-                add_encoders={"datetime_attribute": {"future": ["dayofweek"]}},
-                output_chunk_length=ocl,
-                output_chunk_shift=shift,
-            )
-            model_fc_shift = self.helper_create_DLinearModel(
-                work_dir=tmpdir_fn,
-                output_chunk_length=ocl,
-                output_chunk_shift=shift,
-            )
-            model_enc_shift.fit(series)
-
-            fc_day = datetime_attribute_timeseries(
-                series,
-                attribute="dayofweek",
-                add_length=ocl + shift,
-            )
-            model_fc_shift.fit(series, future_covariates=fc_day)
-
-            pred_enc = model_enc_shift.predict(n=ocl)
-            pred_fc = model_fc_shift.predict(n=ocl)
-            assert pred_enc == pred_fc
 
         @pytest.mark.parametrize("model_config", models)
         def test_rin(self, model_config):
