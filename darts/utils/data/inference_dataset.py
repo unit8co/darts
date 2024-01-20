@@ -75,10 +75,17 @@ class InferenceDataset(ABC, Dataset):
                 past_end + max(0, n - output_chunk_length) * covariate_series.freq
             )
         else:  # CovariateType.FUTURE
-            future_end = past_end + max(n, output_chunk_length) * covariate_series.freq
+            # optionally, for future part of future covariates shift start and end by `output_chunk_shift`
+            future_end = (
+                past_end
+                + (max(n, output_chunk_length) + output_chunk_shift)
+                * covariate_series.freq
+            )
 
         future_start = (
-            past_end + covariate_series.freq if future_end != past_end else future_end
+            past_end + covariate_series.freq * (1 + output_chunk_shift)
+            if future_end != past_end
+            else future_end
         )
 
         if input_chunk_length == 0:  # for regression ensemble models
@@ -110,7 +117,7 @@ class InferenceDataset(ABC, Dataset):
                 logger=logger,
             )
 
-        # extract the index position (index) from time_index value
+        # extract the index position (integer index) from time_index value
         covariate_start = covariate_series.time_index.get_loc(past_start)
         covariate_end = covariate_series.time_index.get_loc(future_end) + 1
         return covariate_start, covariate_end
@@ -299,7 +306,7 @@ class GenericInferenceDataset(InferenceDataset):
             if self.input_chunk_length != 0:  # regular models
                 past_covariate, future_covariate = (
                     covariate[: self.input_chunk_length],
-                    covariate[self.input_chunk_length :],
+                    covariate[self.input_chunk_length + self.output_chunk_shift :],
                 )
             else:  # regression ensemble models have a input_chunk_length == 0 part for using predictions as input
                 past_covariate, future_covariate = covariate, covariate
