@@ -2712,6 +2712,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 

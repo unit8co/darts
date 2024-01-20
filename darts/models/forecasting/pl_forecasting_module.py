@@ -248,7 +248,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         batch
             output of Darts' :class:`InferenceDataset` - tuple of ``(past_target, past_covariates,
-            historic_future_covariates, future_covariates, future_past_covariates, input_timeseries)``
+            historic_future_covariates, future_covariates, future_past_covariates, input time series,
+            prediction start time step)``
         batch_idx
             the batch index of the current batch
         dataloader_idx

@@ -50,6 +50,7 @@ class InferenceDataset(ABC, Dataset):
         covariate_type: CovariateType,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int,
         n: int,
     ):
         """returns tuple of (past_start, past_end, future_start, future_end)"""
@@ -125,6 +126,7 @@ class GenericInferenceDataset(InferenceDataset):
         bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         covariate_type: CovariateType = CovariateType.PAST,
         use_static_covariates: bool = True,
     ):
@@ -170,13 +172,6 @@ class GenericInferenceDataset(InferenceDataset):
             [covariates] if isinstance(covariates, TimeSeries) else covariates
         )
 
-        self.covariate_type = covariate_type
-
-        self.n = n
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
-        self.use_static_covariates = use_static_covariates
-
         if not (covariates is None or len(self.target_series) == len(self.covariates)):
             raise_log(
                 ValueError(
@@ -192,6 +187,23 @@ class GenericInferenceDataset(InferenceDataset):
                 ),
                 logger=logger,
             )
+
+        if output_chunk_shift and n > output_chunk_length:
+            raise_log(
+                ValueError(
+                    "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
+                    "shifted output chunk `(output_chunk_shift > 0)`."
+                ),
+                logger=logger,
+            )
+
+        self.covariate_type = covariate_type
+
+        self.n = n
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.output_chunk_shift = output_chunk_shift
+        self.use_static_covariates = use_static_covariates
 
         self.stride = stride
         if bounds is None:
@@ -276,6 +288,7 @@ class GenericInferenceDataset(InferenceDataset):
                 covariate_type=self.covariate_type,
                 input_chunk_length=self.input_chunk_length,
                 output_chunk_length=self.output_chunk_length,
+                output_chunk_shift=self.output_chunk_shift,
                 n=self.n,
             )
 
@@ -314,7 +327,7 @@ class GenericInferenceDataset(InferenceDataset):
             future_covariate,
             static_covariate,
             target_series,
-            past_end + target_series.freq,
+            past_end + target_series.freq * (1 + self.output_chunk_shift),
         )
 
 
@@ -328,6 +341,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         covariate_type: CovariateType = CovariateType.PAST,
         use_static_covariates: bool = True,
     ):
@@ -373,6 +387,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=covariate_type,
             use_static_covariates=use_static_covariates,
         )
@@ -402,6 +417,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         stride: int = 0,
         bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
+        output_chunk_shift: int = 0,
         covariate_type: CovariateType = CovariateType.FUTURE,
         use_static_covariates: bool = True,
     ):
@@ -439,6 +455,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=n,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=covariate_type,
             use_static_covariates=use_static_covariates,
         )
@@ -482,6 +499,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
         """
@@ -521,6 +539,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.HISTORIC_FUTURE,
             use_static_covariates=use_static_covariates,
         )
@@ -533,6 +552,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             stride=stride,
             bounds=bounds,
             input_chunk_length=input_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
         )
@@ -580,6 +600,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
         """
@@ -625,6 +646,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
         )
@@ -638,6 +660,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             use_static_covariates=use_static_covariates,
         )
 
@@ -689,6 +712,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
         """
@@ -733,6 +757,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
         )
@@ -745,6 +770,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             stride=stride,
             bounds=bounds,
             input_chunk_length=input_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
         )
