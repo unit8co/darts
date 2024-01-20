@@ -2454,7 +2454,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = False
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2558,7 +2558,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2655,7 +2655,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2749,7 +2749,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2900,7 +2900,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
