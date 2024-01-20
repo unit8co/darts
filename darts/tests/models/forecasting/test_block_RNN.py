@@ -5,6 +5,7 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.tests.conftest import tfm_kwargs
+from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
@@ -84,7 +85,7 @@ if TORCH_AVAILABLE:
                 model="RNN",
                 n_epochs=1,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model1.fit(self.series)
             preds1 = model1.predict(n=3)
@@ -96,7 +97,7 @@ if TORCH_AVAILABLE:
                 model=ModuleValid1,
                 n_epochs=1,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series)
             preds2 = model2.predict(n=3)
@@ -108,7 +109,7 @@ if TORCH_AVAILABLE:
                 model=ModuleValid2,
                 n_epochs=1,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model3.fit(self.series)
             preds3 = model2.predict(n=3)
@@ -132,7 +133,7 @@ if TORCH_AVAILABLE:
                 work_dir=tmpdir_module,
                 save_checkpoints=True,
                 force_reset=True,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
@@ -153,7 +154,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 model="RNN",
                 n_epochs=2,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
@@ -184,3 +185,76 @@ if TORCH_AVAILABLE:
 
         def test_pred_length(self):
             self.helper_test_pred_length(BlockRNNModel, self.series)
+
+        @pytest.mark.parametrize("shift", [3, 7, 10])
+        def test_output_shift(self, shift):
+            """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length."""
+            icl = 7
+            ocl = 7
+            series = tg.linear_timeseries(
+                length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            )
+
+            model = self.helper_create_model(icl, ocl, shift)
+            model.fit(series)
+
+            # no auto-regression with shifted output
+            with pytest.raises(ValueError) as err:
+                _ = model.predict(n=ocl + 1)
+            assert str(err.value).startswith("Cannot perform auto-regression")
+
+            # pred starts with a shift
+            for ocl_test in [ocl - 1, ocl]:
+                pred = model.predict(n=ocl_test)
+                assert (
+                    pred.start_time() == series.end_time() + (shift + 1) * series.freq
+                )
+                assert len(pred) == ocl_test
+                assert pred.freq == series.freq
+
+            # check that shifted output chunk results with encoders are the
+            # same as using identical covariates
+
+            # model trained on encoders
+            model_enc_shift = self.helper_create_model(
+                icl,
+                ocl,
+                shift,
+                add_encoders={"datetime_attribute": {"past": ["dayofweek"]}},
+            )
+            model_enc_shift.fit(series)
+
+            # model trained with identical covariates
+            model_fc_shift = self.helper_create_model(icl, ocl, shift)
+
+            covs = tg.datetime_attribute_timeseries(
+                series,
+                attribute="dayofweek",
+                add_length=ocl + shift,
+            )
+            model_fc_shift.fit(
+                series,
+                past_covariates=covs,
+            )
+
+            pred_enc = model_enc_shift.predict(n=ocl)
+            pred_fc = model_fc_shift.predict(n=ocl)
+            assert pred_enc == pred_fc
+
+            # past covs too short
+            with pytest.raises(ValueError) as err:
+                _ = model_fc_shift.predict(
+                    n=ocl, past_covariates=covs[: -(ocl + shift + 1)]
+                )
+            assert "provided past covariates at dataset index" in str(err.value)
+
+        def helper_create_model(self, icl, ocl, shift, **kwargs):
+            return BlockRNNModel(
+                input_chunk_length=icl,
+                output_chunk_length=ocl,
+                output_chunk_shift=shift,
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs,
+                **kwargs,
+            )

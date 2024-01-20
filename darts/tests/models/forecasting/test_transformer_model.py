@@ -64,7 +64,7 @@ if TORCH_AVAILABLE:
                 work_dir=tmpdir_module,
                 save_checkpoints=True,
                 force_reset=True,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
@@ -120,7 +120,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     activation="invalid",
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model1.fit(self.series, epochs=1)
 
@@ -129,7 +129,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 activation="gelu",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series, epochs=1)
             assert isinstance(
@@ -144,7 +144,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 activation="SwiGLU",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model3.fit(self.series, epochs=1)
             assert isinstance(
@@ -169,7 +169,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 norm_type="RMSNorm",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             y1 = model1.fit(self.series, epochs=1)
 
@@ -177,7 +177,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 norm_type=nn.LayerNorm,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             y2 = model2.fit(self.series, epochs=1)
 
@@ -186,7 +186,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 activation="gelu",
                 norm_type="RMSNorm",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             y3 = model3.fit(self.series, epochs=1)
 
@@ -200,6 +200,79 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     norm_type="invalid",
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model4.fit(self.series, epochs=1)
+
+        @pytest.mark.parametrize("shift", [3, 7, 10])
+        def test_output_shift(self, shift):
+            """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length."""
+            icl = 7
+            ocl = 7
+            series = tg.linear_timeseries(
+                length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            )
+
+            model = self.helper_create_model(icl, ocl, shift)
+            model.fit(series)
+
+            # no auto-regression with shifted output
+            with pytest.raises(ValueError) as err:
+                _ = model.predict(n=ocl + 1)
+            assert str(err.value).startswith("Cannot perform auto-regression")
+
+            # pred starts with a shift
+            for ocl_test in [ocl - 1, ocl]:
+                pred = model.predict(n=ocl_test)
+                assert (
+                    pred.start_time() == series.end_time() + (shift + 1) * series.freq
+                )
+                assert len(pred) == ocl_test
+                assert pred.freq == series.freq
+
+            # check that shifted output chunk results with encoders are the
+            # same as using identical covariates
+
+            # model trained on encoders
+            model_enc_shift = self.helper_create_model(
+                icl,
+                ocl,
+                shift,
+                add_encoders={"datetime_attribute": {"past": ["dayofweek"]}},
+            )
+            model_enc_shift.fit(series)
+
+            # model trained with identical covariates
+            model_fc_shift = self.helper_create_model(icl, ocl, shift)
+
+            covs = tg.datetime_attribute_timeseries(
+                series,
+                attribute="dayofweek",
+                add_length=ocl + shift,
+            )
+            model_fc_shift.fit(
+                series,
+                past_covariates=covs,
+            )
+
+            pred_enc = model_enc_shift.predict(n=ocl)
+            pred_fc = model_fc_shift.predict(n=ocl)
+            assert pred_enc == pred_fc
+
+            # past covs too short
+            with pytest.raises(ValueError) as err:
+                _ = model_fc_shift.predict(
+                    n=ocl, past_covariates=covs[: -(ocl + shift + 1)]
+                )
+            assert "provided past covariates at dataset index" in str(err.value)
+
+        def helper_create_model(self, icl, ocl, shift, **kwargs):
+            return TransformerModel(
+                input_chunk_length=icl,
+                output_chunk_length=ocl,
+                output_chunk_shift=shift,
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs,
+                **kwargs,
+            )

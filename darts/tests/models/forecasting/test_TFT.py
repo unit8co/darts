@@ -454,30 +454,47 @@ if TORCH_AVAILABLE:
                 assert pred.freq == series.freq
 
             # check that shifted output chunk results with encoders are the
-            # same as using identical future covariate
+            # same as using identical covariates
 
             # model trained on encoders
             model_enc_shift = self.helper_create_model(
                 icl,
                 ocl,
                 shift,
-                add_encoders={"datetime_attribute": {"future": ["dayofweek"]}},
+                add_encoders={
+                    "datetime_attribute": {
+                        "future": ["dayofweek"],
+                        "past": ["dayofweek"],
+                    }
+                },
             )
             model_enc_shift.fit(series)
 
-            # model trained with identical future covariates
+            # model trained with identical covariates
             model_fc_shift = self.helper_create_model(icl, ocl, shift)
 
-            fc_day = tg.datetime_attribute_timeseries(
+            covs = tg.datetime_attribute_timeseries(
                 series,
                 attribute="dayofweek",
                 add_length=ocl + shift,
             )
-            model_fc_shift.fit(series, future_covariates=fc_day)
+            model_fc_shift.fit(series, past_covariates=covs, future_covariates=covs)
 
             pred_enc = model_enc_shift.predict(n=ocl)
             pred_fc = model_fc_shift.predict(n=ocl)
             assert pred_enc == pred_fc
+
+            # future covs too short
+            with pytest.raises(ValueError) as err:
+                _ = model_fc_shift.predict(n=ocl, future_covariates=covs[:-1])
+            assert "provided future covariates at dataset index" in str(err.value)
+
+            # past covs too short
+            with pytest.raises(ValueError) as err:
+                _ = model_fc_shift.predict(
+                    n=ocl, past_covariates=covs[: -(ocl + shift + 1)]
+                )
+            assert "provided past covariates at dataset index" in str(err.value)
 
         def helper_create_model(self, icl, ocl, shift, **kwargs):
             return TFTModel(
