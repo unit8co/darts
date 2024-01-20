@@ -487,7 +487,12 @@ class RNNModel(DualCovariatesTorchModel):
         model_kwargs = {key: val for key, val in self.model_params.items()}
 
         for kwarg, default_value in zip(
-            ["output_chunk_length", "use_reversible_instance_norm"], [1, False]
+            [
+                "output_chunk_length",
+                "use_reversible_instance_norm",
+                "output_chunk_shift",
+            ],
+            [1, False, 0],
         ):
             if model_kwargs.get(kwarg) is not None:
                 logger.warning(

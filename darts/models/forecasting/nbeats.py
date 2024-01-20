@@ -538,6 +538,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         generic_architecture: bool = True,
         num_stacks: int = 30,
         num_blocks: int = 1,
@@ -573,6 +574,10 @@ class NBEATSModel(PastCovariatesTorchModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`.
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend

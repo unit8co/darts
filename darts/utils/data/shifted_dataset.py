@@ -59,7 +59,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
         length
             The length of the emitted past and future series.
         shift
-            The number of time steps by which to shift the output relative to the input.
+            The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -133,7 +133,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
         length
             The length of the emitted past and future series.
         shift
-            The number of time steps by which to shift the output relative to the input.
+            The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -210,7 +210,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         length
             The length of the emitted past and future series.
         shift
-            The number of time steps by which to shift the output relative to the input.
+            The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -317,7 +317,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         length
             The length of the emitted past and future series.
         shift
-            The number of time steps by which to shift the output relative to the input.
+            The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -423,7 +423,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         length
             The length of the emitted past and future series.
         shift
-            The number of time steps by which to shift the output relative to the input.
+            The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -519,7 +519,7 @@ class GenericShiftedDataset(TrainingDataset):
         output_chunk_length
             The length of the emitted future series.
         shift
-            The number of time steps by which to shift the output chunks relative to the input chunks.
+            The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         shift_covariates
             Whether to shift the covariates forward the same way as the target.
             FutureCovariatesModel's require this set to True, while PastCovariatesModel's require this set to False.

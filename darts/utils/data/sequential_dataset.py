@@ -60,6 +60,8 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             The length of the emitted past series.
         output_chunk_length
             The length of the emitted future series.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -134,6 +136,8 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             The length of the emitted past series.
         output_chunk_length
             The length of the emitted future series.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -209,6 +213,8 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             The length of the emitted past series.
         output_chunk_length
             The length of the emitted future series.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -316,6 +322,8 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             The length of the emitted past series.
         output_chunk_length
             The length of the emitted future series.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -424,6 +432,8 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             The length of the emitted past series.
         output_chunk_length
             The length of the emitted future series.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and

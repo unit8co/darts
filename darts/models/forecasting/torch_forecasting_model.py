@@ -2397,6 +2397,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=past_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2423,6 +2424,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2500,6 +2502,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2525,6 +2528,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             stride=stride,
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2597,6 +2601,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2618,6 +2623,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2837,6 +2843,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2859,6 +2866,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 

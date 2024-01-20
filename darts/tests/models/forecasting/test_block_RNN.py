@@ -51,6 +51,7 @@ if TORCH_AVAILABLE:
             input_size=1,
             input_chunk_length=1,
             output_chunk_length=1,
+            output_chunk_shift=0,
             hidden_dim=25,
             target_size=1,
             nr_params=1,

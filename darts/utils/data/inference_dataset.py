@@ -167,6 +167,8 @@ class GenericInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -380,6 +382,8 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -449,6 +453,8 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -532,6 +538,8 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -639,6 +647,8 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -750,6 +760,8 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
