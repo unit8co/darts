@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -841,10 +842,10 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.scorers.scorers.AnomalyScorer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.scorers.</span></span><span class="sig-name descname"><span class="pre">AnomalyScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">univariate_scorer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/scorers.html#AnomalyScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.scorers.AnomalyScorer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Base class for all anomaly scorers</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -856,7 +857,7 @@
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -985,10 +986,10 @@ Default: “AUC_ROC”</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.scorers.scorers.FittableAnomalyScorer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.scorers.</span></span><span class="sig-name descname"><span class="pre">FittableAnomalyScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">univariate_scorer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diff_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'abs_diff'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/scorers.html#FittableAnomalyScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.scorers.FittableAnomalyScorer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.ad.scorers.scorers.AnomalyScorer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnomalyScorer</span></code></a></p>
 <p>Base class of scorers that do need training.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1000,7 +1001,7 @@ Default: “AUC_ROC”</p></li>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1303,10 +1304,10 @@ Default: “AUC_ROC”</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.scorers.scorers.NLLScorer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.scorers.</span></span><span class="sig-name descname"><span class="pre">NLLScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/scorers.html#NLLScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.scorers.NLLScorer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.ad.scorers.scorers.NonFittableAnomalyScorer" title="darts.ad.scorers.scorers.NonFittableAnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.ad.scorers.scorers.NonFittableAnomalyScorer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.ad.scorers.scorers.NonFittableAnomalyScorer" title="darts.ad.scorers.scorers.NonFittableAnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NonFittableAnomalyScorer</span></code></a></p>
 <p>Parent class for all LikelihoodScorer</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1318,7 +1319,7 @@ Default: “AUC_ROC”</p></li>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1452,10 +1453,10 @@ Default: “AUC_ROC”</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.scorers.scorers.NonFittableAnomalyScorer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.scorers.</span></span><span class="sig-name descname"><span class="pre">NonFittableAnomalyScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">univariate_scorer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/scorers.html#NonFittableAnomalyScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.scorers.NonFittableAnomalyScorer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.ad.scorers.scorers.AnomalyScorer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnomalyScorer</span></code></a></p>
 <p>Base class of anomaly scorers that do not need training.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1467,7 +1468,7 @@ Default: “AUC_ROC”</p></li>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1633,13 +1634,13 @@ Default: “AUC_ROC”</p></li>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

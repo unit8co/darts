@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,17 +834,17 @@
               <div>
                 
   <span class="target" id="module-darts.datasets"></span><section id="datasets">
-<h1>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h1>
+<h1>Datasets<a class="headerlink" href="#datasets" title="Permalink to this heading">¶</a></h1>
 <p>A few popular time series datasets</p>
 <div class="toctree-wrapper compound">
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.AirPassengersDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">AirPassengersDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#AirPassengersDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.AirPassengersDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Monthly Air Passengers Dataset, from 1949 to 1960.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -877,7 +878,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.AusBeerDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">AusBeerDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#AusBeerDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.AusBeerDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Total quarterly beer production in Australia (in megalitres) from 1956:Q1 to 2008:Q3 <a class="reference internal" href="#r58abd249d9bc-1" id="id1">[1]</a>.</p>
 <p class="rubric">References</p>
 <dl class="citation">
@@ -886,7 +887,7 @@ Downloads the dataset if it is not present already</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -920,7 +921,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.AustralianTourismDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">AustralianTourismDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#AustralianTourismDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.AustralianTourismDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>A single multivariate TimeSeries, containing monthly tourism numbers over
 36 months in Australia. The numbers are broken down per region
 (“NSW”, “VIC”, “QLD”, “SA”, “WA”, “TAS”, “NT”), reason (“Hol”, “VFR”, “Bus”, “Oth”),
@@ -935,7 +936,7 @@ where we pre-computed the groupings per region (not available in the original da
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -969,7 +970,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ETTh1Dataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTh1Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTh1Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTh1Dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
 The dataset ranges from 2016/07 to 2018/07 taken hourly.
 Source: <a class="reference internal" href="#r3006dd7a64b3-1" id="id3">[1]</a> <a class="reference internal" href="#r3006dd7a64b3-2" id="id4">[2]</a></p>
@@ -994,7 +995,7 @@ Source: <a class="reference internal" href="#r3006dd7a64b3-1" id="id3">[1]</a> <
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1028,7 +1029,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ETTh2Dataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTh2Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTh2Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTh2Dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
 The dataset ranges from 2016/07 to 2018/07 taken hourly.
 Source: <a class="reference internal" href="#r1f0974863715-1" id="id5">[1]</a> <a class="reference internal" href="#r1f0974863715-2" id="id6">[2]</a></p>
@@ -1053,7 +1054,7 @@ Source: <a class="reference internal" href="#r1f0974863715-1" id="id5">[1]</a> <
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1087,7 +1088,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ETTm1Dataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTm1Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTm1Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTm1Dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
 The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
 Source: <a class="reference internal" href="#rc373e99cf30b-1" id="id7">[1]</a> <a class="reference internal" href="#rc373e99cf30b-2" id="id8">[2]</a></p>
@@ -1112,7 +1113,7 @@ Source: <a class="reference internal" href="#rc373e99cf30b-1" id="id7">[1]</a> <
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1146,7 +1147,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ETTm2Dataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTm2Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTm2Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTm2Dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
 The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
 Source: <a class="reference internal" href="#rb66d6fdaeb78-1" id="id9">[1]</a> <a class="reference internal" href="#rb66d6fdaeb78-2" id="id10">[2]</a></p>
@@ -1171,7 +1172,7 @@ Source: <a class="reference internal" href="#rb66d6fdaeb78-1" id="id9">[1]</a> <
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1205,7 +1206,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ElectricityConsumptionZurichDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ElectricityConsumptionZurichDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ElectricityConsumptionZurichDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ElectricityConsumptionZurichDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Electricity Consumption of households &amp; SMEs (low voltage) and businesses &amp; services (medium voltage) in the
 city of Zurich <a class="reference internal" href="#raea44f74a260-1" id="id11">[1]</a>, with values recorded every 15 minutes.</p>
 <p>The electricity consumption is combined with weather measurements recorded by three different
@@ -1241,7 +1242,7 @@ The time index was converted from CET time zone to UTC.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1275,7 +1276,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ElectricityDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ElectricityDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#ElectricityDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ElectricityDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Measurements of electric power consumption in one household with 15 minute sampling rate.
 370 client’s consumption are recorded in kW.
 Source: <a class="reference internal" href="#r42a9c7d6d279-1" id="id13">[1]</a></p>
@@ -1289,7 +1290,7 @@ one for each household.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1306,7 +1307,7 @@ one for each household.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1340,7 +1341,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.EnergyDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">EnergyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#EnergyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.EnergyDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Hourly energy dataset coming from <a class="reference internal" href="#rf60cd4cd05a4-1" id="id14">[1]</a>.</p>
 <p>Contains a time series with 28 hourly components between 2014-12-31 23:00:00 and 2018-12-31 22:00:00</p>
 <p class="rubric">References</p>
@@ -1350,7 +1351,7 @@ Downloads the dataset if it is not present already</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1384,7 +1385,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ExchangeRateDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ExchangeRateDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#ExchangeRateDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ExchangeRateDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada, Switzerland, China, Japan, New Zealand,
 and Singapore, ranging from 1990 to 2016. Unfortunately, there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.
 Source: <a class="reference internal" href="#r6ab25be89118-1" id="id15">[1]</a></p>
@@ -1395,7 +1396,7 @@ Source: <a class="reference internal" href="#r6ab25be89118-1" id="id15">[1]</a><
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1412,7 +1413,7 @@ Source: <a class="reference internal" href="#r6ab25be89118-1" id="id15">[1]</a><
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1446,11 +1447,11 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.GasRateCO2Dataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">GasRateCO2Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#GasRateCO2Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Gas Rate CO2 dataset
 Two components, length 296 (integer time index)</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1484,7 +1485,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.HeartRateDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">HeartRateDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#HeartRateDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.HeartRateDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>The series contains 1800 evenly-spaced measurements of instantaneous heart rate from a single subject.
 The measurements (in units of beats per minute) occur at 0.5 second intervals, so that the length of
 each series is exactly 15 minutes.</p>
@@ -1497,7 +1498,7 @@ It uses an integer time index.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1531,7 +1532,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.ILINetDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ILINetDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#ILINetDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ILINetDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>ILI describes the number of patients seen with influenzalike illness and the total number of patients. It includes
 weekly data from the Centers for Disease Control and Prevention of the United States from 1997 to 2022.
 Source: <a class="reference internal" href="#ree20fb22807f-1" id="id17">[1]</a> <a class="reference internal" href="#ree20fb22807f-2" id="id18">[2]</a> <a class="reference internal" href="#ree20fb22807f-3" id="id19">[3]</a> <a class="reference internal" href="#ree20fb22807f-4" id="id20">[4]</a></p>
@@ -1565,7 +1566,7 @@ Source: <a class="reference internal" href="#ree20fb22807f-1" id="id17">[1]</a> 
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1599,10 +1600,10 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.IceCreamHeaterDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">IceCreamHeaterDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#IceCreamHeaterDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.IceCreamHeaterDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Monthly sales of heaters and ice cream between January 2004 and June 2020.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1636,10 +1637,10 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.MonthlyMilkDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">MonthlyMilkDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Monthly production of milk (in pounds per cow) between January 1962 and December 1975</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1673,11 +1674,11 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.MonthlyMilkIncompleteDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">MonthlyMilkIncompleteDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkIncompleteDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkIncompleteDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Monthly production of milk (in pounds per cow) between January 1962 and December 1975.
 Has some missing values.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1711,7 +1712,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.SunspotsDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">SunspotsDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#SunspotsDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.SunspotsDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Monthly Sunspot Numbers, 1749 - 1983</p>
 <p>Monthly mean relative sunspot numbers from 1749 to 1983.
 Collected at Swiss Federal Observatory, Zurich until 1960, then Tokyo Astronomical Observatory.</p>
@@ -1723,7 +1724,7 @@ Collected at Swiss Federal Observatory, Zurich until 1960, then Tokyo Astronomic
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1757,7 +1758,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.TaylorDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TaylorDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TaylorDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TaylorDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
 Discussed in Taylor (2003) <a class="reference internal" href="#r0041d9a8a6dc-1" id="id22">[1]</a>, and kindly provided by James W Taylor <a class="reference internal" href="#r0041d9a8a6dc-2" id="id23">[2]</a>. Units: Megawatts
 (Uses an integer time index).</p>
@@ -1772,7 +1773,7 @@ Journal of the Operational Research Society, 54, 799-805.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1806,10 +1807,10 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.TemperatureDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TemperatureDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TemperatureDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TemperatureDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Daily temperature in Melbourne between 1981 and 1990</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1843,7 +1844,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.TrafficDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TrafficDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#TrafficDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TrafficDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department of Transportation. The data describes
 the road occupancy rates (between 0 and 1) measured by 862 different sensors on San Francisco Bay area freeways. The raw data is in <a class="reference external" href="http://pems.dot.ca.gov">http://pems.dot.ca.gov</a>.
 Source: <a class="reference internal" href="#r860edad1c9c7-1" id="id24">[1]</a></p>
@@ -1854,7 +1855,7 @@ Source: <a class="reference internal" href="#r860edad1c9c7-1" id="id24">[1]</a><
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1871,7 +1872,7 @@ Source: <a class="reference internal" href="#r860edad1c9c7-1" id="id24">[1]</a><
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1905,7 +1906,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.USGasolineDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">USGasolineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#USGasolineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.USGasolineDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Weekly U.S. Product Supplied of Finished Motor Gasoline between 1991-02-08 and 2021-04-30</p>
 <p>Obtained from <a class="reference internal" href="#r82273ef589c5-1" id="id25">[1]</a>.</p>
 <p class="rubric">References</p>
@@ -1915,7 +1916,7 @@ Downloads the dataset if it is not present already</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1949,7 +1950,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.UberTLCDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">UberTLCDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hourly'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#UberTLCDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.UberTLCDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>14.3 million Uber pickups from January to June 2015. The data is resampled to hourly or daily based sample_freq
 on using the locationID as the target.
 Source: <a class="reference internal" href="#r426d30237afa-1" id="id26">[1]</a></p>
@@ -1963,7 +1964,7 @@ one for each locationID.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1983,7 +1984,7 @@ one for each locationID.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2017,7 +2018,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.WeatherDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WeatherDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#WeatherDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WeatherDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Weather includes 21 indicators of weather, such as air
 temperature, and humidity. The data was recorded every
 10 min for 2020 in Germany.
@@ -2032,7 +2033,7 @@ Source: <a class="reference internal" href="#r8a946e6db2bc-1" id="id27">[1]</a> 
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2049,7 +2050,7 @@ Source: <a class="reference internal" href="#r8a946e6db2bc-1" id="id27">[1]</a> 
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2083,7 +2084,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.WineDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WineDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Australian total wine sales by wine makers in bottles &lt;= 1 litre. Monthly between Jan 1980 and Aug 1994.
 Source: <a class="reference internal" href="#r186e955f2024-1" id="id29">[1]</a></p>
 <p class="rubric">References</p>
@@ -2093,7 +2094,7 @@ Source: <a class="reference internal" href="#r186e955f2024-1" id="id29">[1]</a><
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2127,7 +2128,7 @@ Downloads the dataset if it is not present already</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.WoolyDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WoolyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WoolyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WoolyDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 – Sep 1994.
 Source: <a class="reference internal" href="#r3f37309b76f8-1" id="id30">[1]</a></p>
 <p class="rubric">References</p>
@@ -2137,7 +2138,7 @@ Source: <a class="reference internal" href="#r3f37309b76f8-1" id="id30">[1]</a><
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2166,6 +2167,14 @@ Downloads the dataset if it is not present already</p>
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="darts.datasets.pd_above_v22">
+<span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">pd_above_v22</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#darts.datasets.pd_above_v22" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overall usage of this package:
+from darts.datasets import AirPassengersDataset
+ts: TimeSeries = AirPassengersDataset.load()</p>
 </dd></dl>
 
 </section>
@@ -2204,13 +2213,13 @@ Downloads the dataset if it is not present already</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

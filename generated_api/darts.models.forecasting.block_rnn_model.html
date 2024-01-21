@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -835,11 +836,11 @@
               <div>
                 
   <section id="block-recurrent-neural-networks">
-<h1>Block Recurrent Neural Networks<a class="headerlink" href="#block-recurrent-neural-networks" title="Permalink to this headline">¶</a></h1>
+<h1>Block Recurrent Neural Networks<a class="headerlink" href="#block-recurrent-neural-networks" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.block_rnn_model.</span></span><span class="sig-name descname"><span class="pre">BlockRNNModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RNN'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rnn_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_fc_sizes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/block_rnn_model.html#BlockRNNModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.torch_forecasting_model.PastCovariatesTorchModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code></p>
 <p>Block Recurrent Neural Network Model (RNNs).</p>
 <p>This is a neural network model that uses an RNN encoder to encode fixed-length input chunks, and
 a fully connected network to produce fixed-length outputs.</p>
@@ -1014,7 +1015,7 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 that can be used to improve the forecasts quality compared to this simple usage example.</p>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1091,7 +1092,7 @@ that can be used to improve the forecasts quality compared to this simple usage 
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2315,7 +2316,7 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.CustomBlockRNNModule">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.block_rnn_model.</span></span><span class="sig-name descname"><span class="pre">CustomBlockRNNModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nr_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers_out_fc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/block_rnn_model.html#CustomBlockRNNModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.CustomBlockRNNModule" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">PLPastCovariatesModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>This class allows to create custom block RNN modules that can later be used with Darts’
 <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel" title="darts.models.forecasting.block_rnn_model.BlockRNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockRNNModel</span></code></a>. It adds the backbone that is required to be used with Darts’
 <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> and <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel" title="darts.models.forecasting.block_rnn_model.BlockRNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockRNNModel</span></code></a>.</p>
@@ -2342,7 +2343,7 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2410,7 +2411,7 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2868,13 +2869,13 @@ It contains the prediction at the last time step of the sequence.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

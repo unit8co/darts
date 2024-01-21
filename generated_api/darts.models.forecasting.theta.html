@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,11 +834,11 @@
               <div>
                 
   <span class="target" id="module-darts.models.forecasting.theta"></span><section id="theta-method">
-<h1>Theta Method<a class="headerlink" href="#theta-method" title="Permalink to this headline">¶</a></h1>
+<h1>Theta Method<a class="headerlink" href="#theta-method" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.theta.</span></span><span class="sig-name descname"><span class="pre">FourTheta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonality_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">season_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trend_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TrendMode.LINEAR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#FourTheta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.LocalForecastingModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
 <p>An implementation of the 4Theta method with configurable <cite>theta</cite> parameter.</p>
 <p>See M4 competition <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">solution</a>.</p>
 <p>The training time series is de-seasonalized according to <cite>seasonality_period</cite>,
@@ -887,7 +888,7 @@ implementation of the algorithm, which can potentially be slower.</p>
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -949,7 +950,7 @@ implementation of the algorithm, which can potentially be slower.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1749,7 +1750,7 @@ Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.theta.</span></span><span class="sig-name descname"><span class="pre">Theta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonality_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">season_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#Theta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.Theta" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.LocalForecastingModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
 <p>An implementation of the Theta method with configurable <cite>theta</cite> parameter. See <a class="reference internal" href="#ra93aca907cd8-1" id="id1">[1]</a>.</p>
 <p>The training time series is de-seasonalized according to <cite>seasonality_period</cite>,
 or an inferred seasonality period.</p>
@@ -1792,7 +1793,7 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">Seasona
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1854,7 +1855,7 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">Seasona
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2657,13 +2658,13 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

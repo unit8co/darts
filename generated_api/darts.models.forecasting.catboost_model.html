@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,13 +834,13 @@
               <div>
                 
   <span class="target" id="module-darts.models.forecasting.catboost_model"></span><section id="catboost-model">
-<h1>CatBoost model<a class="headerlink" href="#catboost-model" title="Permalink to this headline">¶</a></h1>
+<h1>CatBoost model<a class="headerlink" href="#catboost-model" title="Permalink to this heading">¶</a></h1>
 <p>CatBoost based regression model.</p>
 <p>This implementation comes with the ability to produce probabilistic forecasts.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.catboost_model.CatBoostModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.catboost_model.</span></span><span class="sig-name descname"><span class="pre">CatBoostModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/catboost_model.html#CatBoostModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.regression_model.RegressionModel</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.regression_model._LikelihoodMixin</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_LikelihoodMixin</span></code></p>
 <p>CatBoost Model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -927,7 +928,7 @@ that all target <cite>series</cite> have the same static covariate dimensionalit
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -995,7 +996,7 @@ that all target <cite>series</cite> have the same static covariate dimensionalit
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1874,13 +1875,13 @@ wrapping the univariate model in a <cite>sklearn.multioutput.MultiOutputRegresso
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

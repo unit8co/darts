@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -835,11 +836,11 @@
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.transformers.diff"></span><section id="differencing-transformer">
-<h1>Differencing Transformer<a class="headerlink" href="#differencing-transformer" title="Permalink to this headline">¶</a></h1>
+<h1>Differencing Transformer<a class="headerlink" href="#differencing-transformer" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.diff.Diff">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.diff.</span></span><span class="sig-name descname"><span class="pre">Diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropna</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Diff'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/diff.html#Diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.diff.Diff" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">InvertibleDataTransformer</span></code></a></p>
 <p>Differencing data transformer.</p>
 <p>Differencing is typically applied to a time series to make it stationary; see <a class="reference internal" href="#r24a31a9d97d0-1" id="id1">[1]</a> for further details.
 The transformation is applied independently over each dimension (component) and sample of the time series.</p>
@@ -919,7 +920,7 @@ required amount of time.</p></li>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -931,7 +932,7 @@ required amount of time.</p></li>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1473,13 +1474,13 @@ from this.</p></li>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

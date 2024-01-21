@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,11 +834,11 @@
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.encoders.encoder_base"></span><section id="encoder-base-classes">
-<h1>Encoder Base Classes<a class="headerlink" href="#encoder-base-classes" title="Permalink to this headline">¶</a></h1>
+<h1>Encoder Base Classes<a class="headerlink" href="#encoder-base-classes" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoder_base.</span></span><span class="sig-name descname"><span class="pre">CovariatesIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoder_base.html#CovariatesIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p><a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a> generates a time index for covariates at training and inference /
 prediction time with methods <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_train_idx" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_train_idx"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_train_idx()</span></code></a>, and <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_inference_idx" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_inference_idx"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate_inference_idx()</span></code></a>.
 Without user <cite>covariates</cite>, it generates the minimum required covariate times spans for the corresponding
@@ -875,7 +876,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -887,7 +888,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -986,10 +987,10 @@ specific forecasting model. These requirements are derived from parameters set a
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoder_base.Encoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoder_base.</span></span><span class="sig-name descname"><span class="pre">Encoder</span></span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoder_base.html#Encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoder_base.Encoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract class for all encoders</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1004,7 +1005,7 @@ specific forecasting model. These requirements are derived from parameters set a
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1105,10 +1106,10 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoder_base.FutureCovariatesIndexGenerator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoder_base.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoder_base.html#FutureCovariatesIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoder_base.FutureCovariatesIndexGenerator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a></p>
 <p>Generates index for future covariates on train and inference datasets.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1120,7 +1121,7 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1174,7 +1175,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1186,7 +1187,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1285,10 +1286,10 @@ specific forecasting model. These requirements are derived from parameters set a
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoder_base.PastCovariatesIndexGenerator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoder_base.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoder_base.html#PastCovariatesIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoder_base.PastCovariatesIndexGenerator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator" title="darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariatesIndexGenerator</span></code></a></p>
 <p>Generates index for past covariates on train and inference datasets</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1300,7 +1301,7 @@ specific forecasting model. These requirements are derived from parameters set a
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1354,7 +1355,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1366,7 +1367,7 @@ in scenario B. Corresponds to the lag values from <cite>lags_past_covariates</ci
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1471,7 +1472,7 @@ specific forecasting model. These requirements are derived from parameters set a
 when <cite>transform()</cite> is called for the first time. This ensures proper transformation of train, validation and
 inference dataset covariates. User-supplied covariates are not transformed.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1483,7 +1484,7 @@ inference dataset covariates. User-supplied covariates are not transformed.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1503,7 +1504,7 @@ inference dataset covariates. User-supplied covariates are not transformed.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1515,7 +1516,7 @@ inference dataset covariates. User-supplied covariates are not transformed.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1561,13 +1562,13 @@ user-defined covariates.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoder_base.SingleEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoder_base.</span></span><span class="sig-name descname"><span class="pre">SingleEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoder_base.html#SingleEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.Encoder" title="darts.dataprocessing.encoders.encoder_base.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.Encoder</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoder_base.Encoder" title="darts.dataprocessing.encoders.encoder_base.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">Encoder</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p><cite>SingleEncoder</cite>: Abstract class for single index encoders.
 Single encoders can be used to implement new encoding techniques.
 Each single encoder must implement an <cite>_encode()</cite> method that carries the encoding logic.</p>
 <p>The <cite>_encode()</cite> method must take an <cite>index</cite> as input and generate a encoded single <cite>TimeSeries</cite> as output.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1594,7 +1595,7 @@ Each single encoder must implement an <cite>_encode()</cite> method that carries
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1623,7 +1624,7 @@ For future covariates encoders use a <cite>FutureCovariatesIndexGenerator</cite>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1650,7 +1651,7 @@ For future covariates encoders use a <cite>FutureCovariatesIndexGenerator</cite>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1715,7 +1716,7 @@ For future covariates encoders use a <cite>FutureCovariatesIndexGenerator</cite>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoder_base.SingleEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoder_base.SingleEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoder_base.SingleEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -1859,13 +1860,13 @@ with <cite>Encoder.encode_inference()</cite>.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,11 +834,11 @@
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.transformers.static_covariates_transformer"></span><section id="static-covariates-transformer">
-<h1>Static Covariates Transformer<a class="headerlink" href="#static-covariates-transformer" title="Permalink to this headline">¶</a></h1>
+<h1>Static Covariates Transformer<a class="headerlink" href="#static-covariates-transformer" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.static_covariates_transformer.</span></span><span class="sig-name descname"><span class="pre">StaticCovariatesTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer_cat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols_cat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'StaticCovariatesTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">InvertibleDataTransformer</span></code></a></p>
 <p>Generic wrapper class for scalers/encoders/transformers of static covariates. This transformer acts
 only on static covariates of the series passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">transform()</span></code>, <code class="docutils literal notranslate"><span class="pre">fit_transform()</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code>. It can both scale numerical features, as well as encode categorical features.</p>
@@ -903,7 +904,7 @@ required amount of time.</p></li>
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -915,7 +916,7 @@ required amount of time.</p></li>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1439,13 +1440,13 @@ from this.</p></li>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

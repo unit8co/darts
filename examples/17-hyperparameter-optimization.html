@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -637,7 +638,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Hyper-parameters-Optimization-for-Electricity-Load-Forecasting">
-<h1>Hyper-parameters Optimization for Electricity Load Forecasting<a class="headerlink" href="#Hyper-parameters-Optimization-for-Electricity-Load-Forecasting" title="Permalink to this headline">¶</a></h1>
+<h1>Hyper-parameters Optimization for Electricity Load Forecasting<a class="headerlink" href="#Hyper-parameters-Optimization-for-Electricity-Load-Forecasting" title="Permalink to this heading">¶</a></h1>
 <p>In this notebook, we demonstrate how to carry out hyperparameter optimization using a deep learning forecasting model in order to accurately forecast electricity loads with confidence intervals.</p>
 <p>We will work with <a class="reference external" href="https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014">this dataset</a> (readily available in <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code>), which contains measurements of the electricity consumption for 370 clients of a Portuguese energy company, obtained with a 15 minutes frequency. We will attempt to forecast over a horizon of 2 weeks. At this frequency, this means we attempt to forecast 2,688 time steps in the future. This is a quite demanding requirements, and we will try to find
 a <em>good</em> model to do this.</p>
@@ -687,7 +688,7 @@ weeks), while keeping a small overall model size.</p>
 </div>
 </div>
 <section id="Data-Preparation">
-<h2>Data Preparation<a class="headerlink" href="#Data-Preparation" title="Permalink to this headline">¶</a></h2>
+<h2>Data Preparation<a class="headerlink" href="#Data-Preparation" title="Permalink to this heading">¶</a></h2>
 <p>The following cell can take a few minutes to execute. It’ll download about 250 MB of data from the Internet. We specify <code class="docutils literal notranslate"><span class="pre">multivariate=False</span></code>, so we get a list of 370 <em>univariate</em> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. We could also have specified <code class="docutils literal notranslate"><span class="pre">multivariate=True</span></code> to obtain one <em>multivariate</em> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing 370 components.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -806,7 +807,7 @@ create these longer validation sets dynamically); it will be mainly useful for e
 </div>
 </section>
 <section id="Build-a-Simple-Linear-Model">
-<h2>Build a Simple Linear Model<a class="headerlink" href="#Build-a-Simple-Linear-Model" title="Permalink to this headline">¶</a></h2>
+<h2>Build a Simple Linear Model<a class="headerlink" href="#Build-a-Simple-Linear-Model" title="Permalink to this heading">¶</a></h2>
 <p>We start off without any hyperparameter optimization, and try a simple linear regression model first. It will serve as a baseline. In this model, we use a lookback window of 1 week.</p>
 <p><strong>Note:</strong> doing significantly better than linear regression is often not trivial! We recommend to always consider at least one such reasonably simple baseline first, before jumping to more complex models.</p>
 <p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> wraps around <code class="docutils literal notranslate"><span class="pre">sklearn.linear_model.LinearRegression</span></code>, which may take a significant amount of processing and memory. Running this cell takes a couple of minutes, and we recommend skipping it unless you have at least 20GB of RAM on your system.</p>
@@ -895,7 +896,7 @@ linear regression sMAPE: 16.01 +- 20.59
 <p>This model is already doing quite well out of the box! Let’s see now if we can do better using deep learning.</p>
 </section>
 <section id="Build-a-Simple-TCN-Model">
-<h2>Build a Simple TCN Model<a class="headerlink" href="#Build-a-Simple-TCN-Model" title="Permalink to this headline">¶</a></h2>
+<h2>Build a Simple TCN Model<a class="headerlink" href="#Build-a-Simple-TCN-Model" title="Permalink to this heading">¶</a></h2>
 <p>We now build a <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tcn_model.html">TCN model</a> with some simple choice of hyperparameters, but without any hyperparameter optimization.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -1101,7 +1102,7 @@ First TCN model sMAPE: 16.94 +- 20.03
 <li><p>…</p></li>
 </ul>
 <section id="One-Option:-using-gridsearch()">
-<h3>One Option: using <code class="docutils literal notranslate"><span class="pre">gridsearch()</span></code><a class="headerlink" href="#One-Option:-using-gridsearch()" title="Permalink to this headline">¶</a></h3>
+<h3>One Option: using <code class="docutils literal notranslate"><span class="pre">gridsearch()</span></code><a class="headerlink" href="#One-Option:-using-gridsearch()" title="Permalink to this heading">¶</a></h3>
 <p>One way to try and optimize these hyper-parameters is to try all combinations (assuming we have discretized our parameters). Darts offers a <code class="docutils literal notranslate"><span class="pre">gridsearch()</span></code> method to do just that. The advantage is that it is very simple to use. However, it also has severe drawbacks:</p>
 <ul class="simple">
 <li><p>It takes exponential time in the number of hyper-parameters: grid-searching over any non-trivial number of hyperparameters thus quickly becomes intractable.</p></li>
@@ -1112,7 +1113,7 @@ First TCN model sMAPE: 16.94 +- 20.03
 </section>
 </section>
 <section id="Using-Optuna">
-<h2>Using Optuna<a class="headerlink" href="#Using-Optuna" title="Permalink to this headline">¶</a></h2>
+<h2>Using Optuna<a class="headerlink" href="#Using-Optuna" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://optuna.org/">Optuna</a> is a very nice open-source library for hyperparameter optimization. It’s based on ideas such as Bayesian optimization, which balance exploration (of the hyperparameter space) with exploitation (namely, exploring more the parts of the space that look more promising). It can also use pruning in order to stop unpromising experiments early.</p>
 <p>It’s very easy to make it work: Optuna will take care of suggesting (sampling) hyper-parameters for us, and more or less all we need to do is to compute the objective value for a set of hyperparameters. In our case it consists in using these hyperparameters to build a model, train it, and report the obtained validation accuracy. We also setup a PyTorch Lightning pruning callback in order to early-stop unpromising experiments. All of this is done in the <code class="docutils literal notranslate"><span class="pre">objective()</span></code> function below.</p>
 <div class="nbinput nblast docutils container">
@@ -1389,7 +1390,7 @@ if (outputEl) {{
 </div>
 </section>
 <section id="Picking-up-the-best-model">
-<h2>Picking up the best model<a class="headerlink" href="#Picking-up-the-best-model" title="Permalink to this headline">¶</a></h2>
+<h2>Picking up the best model<a class="headerlink" href="#Picking-up-the-best-model" title="Permalink to this heading">¶</a></h2>
 <p>After running the hyperparameter optimization for a couple of hours on a GPU, we got:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Best value: 14.720555851487694, Best params: {&#39;days_in&#39;: 14, &#39;days_out&#39;: 6, &#39;kernel_size&#39;: 19, &#39;num_filters&#39;: 19, &#39;weight_norm&#39;: True, &#39;dilation_base&#39;: 4, &#39;dropout&#39;: 0.07718156729165897, &#39;lr&#39;: 0.0008841998396117885, &#39;dayofweek&#39;: False}
 </pre></div>
@@ -1650,10 +1651,10 @@ linear regression, on test set sMAPE: 20.07 +- 22.67
 </div>
 </section>
 <section id="Conclusions">
-<h2>Conclusions<a class="headerlink" href="#Conclusions" title="Permalink to this headline">¶</a></h2>
+<h2>Conclusions<a class="headerlink" href="#Conclusions" title="Permalink to this heading">¶</a></h2>
 <p>We have seen in this notebook that Optuna can be seamlessly used to optimize the hyper-parameters of Darts’ models. In fact, there’s nothing really particular to Darts when it comes to hyperparameter optimization: Optuna and other libraries can be used as they would with other frameworks. The only thing to be aware of are the PyTorch Ligthning integrations, which are available through Darts.</p>
 <section id="Side-conclusion:-shall-we-go-with-linear-regression-or-TCN-to-forecast-electricty-consumption?">
-<h3>Side conclusion: shall we go with linear regression or TCN to forecast electricty consumption?<a class="headerlink" href="#Side-conclusion:-shall-we-go-with-linear-regression-or-TCN-to-forecast-electricty-consumption?" title="Permalink to this headline">¶</a></h3>
+<h3>Side conclusion: shall we go with linear regression or TCN to forecast electricty consumption?<a class="headerlink" href="#Side-conclusion:-shall-we-go-with-linear-regression-or-TCN-to-forecast-electricty-consumption?" title="Permalink to this heading">¶</a></h3>
 <p>Both approaches have pros and cons.</p>
 <p><strong>Pros of linear regression:</strong></p>
 <ul class="simple">
@@ -1727,13 +1728,13 @@ linear regression, on test set sMAPE: 20.07 +- 22.67
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

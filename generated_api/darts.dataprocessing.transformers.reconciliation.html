@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,7 +834,7 @@
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.transformers.reconciliation"></span><section id="hierarchical-reconciliation">
-<h1>Hierarchical Reconciliation<a class="headerlink" href="#hierarchical-reconciliation" title="Permalink to this headline">¶</a></h1>
+<h1>Hierarchical Reconciliation<a class="headerlink" href="#hierarchical-reconciliation" title="Permalink to this heading">¶</a></h1>
 <p>A set of posthoc hierarchical reconciliation transformers. These transformers
 work on any <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (e.g., a forecast) that contain a <code class="docutils literal notranslate"><span class="pre">hierarchy</span></code>.</p>
 <p>A <code class="docutils literal notranslate"><span class="pre">hierarchy</span></code> is a dict that maps each component to their parent(s) in the hierarchy.
@@ -841,10 +842,10 @@ It can be added to a <code class="docutils literal notranslate"><span class="pre
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">BottomUpReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BaseDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#BottomUpReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDataTransformer</span></code></a></p>
 <p>Performs bottom up reconciliation, as defined <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html">here</a>.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -856,7 +857,7 @@ It can be added to a <code class="docutils literal notranslate"><span class="pre
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1020,7 +1021,7 @@ Dimensions without coordinates: sample
 </dd></dl>
 
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1032,7 +1033,7 @@ Dimensions without coordinates: sample
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1335,7 +1336,7 @@ from this.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">MinTReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ols'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#MinTReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a></p>
 <p>MinT Reconcilator.</p>
 <p>This implements the MinT reconciliation approach presented in <a class="reference internal" href="#rdd2082bb2d42-1" id="id1">[1]</a> and
 summarised in <a class="reference internal" href="#rdd2082bb2d42-2" id="id2">[2]</a>.</p>
@@ -1376,7 +1377,7 @@ trace minimization</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1388,7 +1389,7 @@ trace minimization</a></p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1786,13 +1787,13 @@ from this.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">TopDownReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FittableDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#TopDownReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a></p>
 <p>Performs top down reconciliation, as defined <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html">here</a>.</p>
 <p>This estimator computes the proportions (of the base components w.r.t. the top component)
 based on the TimeSeries provided to the method <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>. If the historical series
 is provided, then the historical proportions will be used.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1804,7 +1805,7 @@ is provided, then the historical proportions will be used.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1994,7 +1995,7 @@ Dimensions without coordinates: sample
 </dd></dl>
 
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2006,7 +2007,7 @@ Dimensions without coordinates: sample
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2444,13 +2445,13 @@ from this.</p></li>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -633,7 +634,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Quickstart">
-<h1>Quickstart<a class="headerlink" href="#Quickstart" title="Permalink to this headline">¶</a></h1>
+<h1>Quickstart<a class="headerlink" href="#Quickstart" title="Permalink to this heading">¶</a></h1>
 <p>In this notebook, we go over the main functionalities of the library:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="#Installing-Darts">Installing Darts</a></p></li>
@@ -650,7 +651,7 @@ div.rendered_html tbody tr:hover {
 <p>We will only show some minimal “get started” examples here. For more in depth information, you can refer to our <a class="reference external" href="https://unit8co.github.io/darts/userguide.html">user guide</a> and <a class="reference external" href="https://unit8co.github.io/darts/examples.html">example notebooks</a>.</p>
 </section>
 <section id="Installing-Darts">
-<h1>Installing Darts<a class="headerlink" href="#Installing-Darts" title="Permalink to this headline">¶</a></h1>
+<h1>Installing Darts<a class="headerlink" href="#Installing-Darts" title="Permalink to this heading">¶</a></h1>
 <p>We recommend using some virtual environment. Then there are mainly two ways.</p>
 <p>With pip:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>pip install darts
@@ -680,11 +681,11 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Building-and-manipulating-TimeSeries">
-<h1>Building and manipulating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Building-and-manipulating-TimeSeries" title="Permalink to this headline">¶</a></h1>
+<h1>Building and manipulating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Building-and-manipulating-TimeSeries" title="Permalink to this heading">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is the main data class in Darts. A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> represents a univariate or multivariate time series, with a proper time index. The time index can either be of type <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> (containing datetimes), or of type <code class="docutils literal notranslate"><span class="pre">pandas.RangeIndex</span></code> (containing integers; useful for representing sequential data without specific timestamps). In some cases, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can even represent <em>probabilistic</em> series, in order for instance to obtain confidence intervals. All models in
 Darts consume <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> and produce <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 <section id="Read-data-and-build-a-TimeSeries">
-<h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this headline">¶</a></h2>
+<h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be built easily using a few factory methods:</p>
 <ul class="simple">
 <li><p>From an entire Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe()</span></code> (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe">docs</a>).</p></li>
@@ -714,7 +715,7 @@ Darts consume <code class="docutils literal notranslate"><span class="pre">TimeS
 </div>
 </section>
 <section id="Some-TimeSeries-Operations">
-<h2>Some <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> Operations<a class="headerlink" href="#Some-TimeSeries-Operations" title="Permalink to this headline">¶</a></h2>
+<h2>Some <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> Operations<a class="headerlink" href="#Some-TimeSeries-Operations" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> support different kinds of operations - here are a few examples.</p>
 <p><strong>splitting</strong></p>
 <p>We can also split at a fraction of the series, at a pandas <code class="docutils literal notranslate"><span class="pre">Timestamp</span></code> or at an integer index value.</p>
@@ -906,7 +907,7 @@ Darts consume <code class="docutils literal notranslate"><span class="pre">TimeS
 </div>
 </section>
 <section id="Creating-a-training-and-validation-series">
-<h2>Creating a training and validation series<a class="headerlink" href="#Creating-a-training-and-validation-series" title="Permalink to this headline">¶</a></h2>
+<h2>Creating a training and validation series<a class="headerlink" href="#Creating-a-training-and-validation-series" title="Permalink to this heading">¶</a></h2>
 <p>For what follows, we will split our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> into a training and a validation series. Note: in general, it is also a good practice to keep a test series aside and never touch it until the end of the process. Here, we just build a training and a validation series for simplicity.</p>
 <p>The training series will be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing values until January 1958 (excluded), and the validation series a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the rest:</p>
 <div class="nbinput docutils container">
@@ -930,9 +931,9 @@ Darts consume <code class="docutils literal notranslate"><span class="pre">TimeS
 </section>
 </section>
 <section id="Training-forecasting-models-and-making-predictions">
-<h1>Training forecasting models and making predictions<a class="headerlink" href="#Training-forecasting-models-and-making-predictions" title="Permalink to this headline">¶</a></h1>
+<h1>Training forecasting models and making predictions<a class="headerlink" href="#Training-forecasting-models-and-making-predictions" title="Permalink to this heading">¶</a></h1>
 <section id="Playing-with-toy-models">
-<h2>Playing with toy models<a class="headerlink" href="#Playing-with-toy-models" title="Permalink to this headline">¶</a></h2>
+<h2>Playing with toy models<a class="headerlink" href="#Playing-with-toy-models" title="Permalink to this heading">¶</a></h2>
 <p>There is a collection of “naive” baseline models in Darts, which can be very useful to get an idea of the bare minimum accuracy that one could expect. For example, the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal(K)</span></code> model always “repeats” the value that occured <code class="docutils literal notranslate"><span class="pre">K</span></code> time steps ago.</p>
 <p>In its most naive form, when <code class="docutils literal notranslate"><span class="pre">K=1</span></code>, this model simply always repeats the last value of the training series:</p>
 <div class="nbinput docutils container">
@@ -960,7 +961,7 @@ Darts consume <code class="docutils literal notranslate"><span class="pre">TimeS
 </div>
 <p>It’s very easy to fit models and produce predictions on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. All the models have a <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and a <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. This is similar to <a class="reference external" href="https://scikit-learn.org/">Scikit-learn</a>, except that it is specific to time series. The <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function takes in argument the training time series on which to fit the model, and the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function takes in argument the number of time steps (after the end of the training series) over which to forecast.</p>
 <section id="Inspect-Seasonality">
-<h3>Inspect Seasonality<a class="headerlink" href="#Inspect-Seasonality" title="Permalink to this headline">¶</a></h3>
+<h3>Inspect Seasonality<a class="headerlink" href="#Inspect-Seasonality" title="Permalink to this heading">¶</a></h3>
 <p>Our model above is perhaps a bit too naive. We can already improve by exploiting the seasonality in the data. It seems quite obvious that the data has a yearly seasonality, which we can confirm by looking at the auto-correlation function (ACF), and highlighting the lag <code class="docutils literal notranslate"><span class="pre">m=12</span></code>:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -1003,7 +1004,7 @@ There is seasonality of order 12.
 </div>
 </section>
 <section id="A-less-naive-model">
-<h3>A less naive model<a class="headerlink" href="#A-less-naive-model" title="Permalink to this headline">¶</a></h3>
+<h3>A less naive model<a class="headerlink" href="#A-less-naive-model" title="Permalink to this heading">¶</a></h3>
 <p>Let’s try the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal</span></code> model again with a seasonality of 12:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
@@ -1057,7 +1058,7 @@ There is seasonality of order 12.
 </section>
 </section>
 <section id="Computing-error-metrics">
-<h2>Computing error metrics<a class="headerlink" href="#Computing-error-metrics" title="Permalink to this headline">¶</a></h2>
+<h2>Computing error metrics<a class="headerlink" href="#Computing-error-metrics" title="Permalink to this heading">¶</a></h2>
 <p>This looks already like a fairly decent forecast, and we did not use any non-naive model yet. In fact - any model should be able to beat this.</p>
 <p>So what’s the error we will have to beat? We will use the <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_percentage_error">Mean Absolute Percentage Error (MAPE)</a> (note that in practice there are often good reasons <em>not</em> to use the MAPE - we use it here as it is quite convenient and scale independent). In Darts it is a simple function call:</p>
 <div class="nbinput docutils container">
@@ -1086,7 +1087,7 @@ Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 <p><code class="docutils literal notranslate"><span class="pre">darts.metrics</span></code> contains many more metrics to compare time series. The metrics will compare only common slices of series when the two series are not aligned, and parallelize computation over a large number of pairs of series - but let’s not get ahead of ourselves.</p>
 </section>
 <section id="Quickly-try-out-several-models">
-<h2>Quickly try out several models<a class="headerlink" href="#Quickly-try-out-several-models" title="Permalink to this headline">¶</a></h2>
+<h2>Quickly try out several models<a class="headerlink" href="#Quickly-try-out-several-models" title="Permalink to this heading">¶</a></h2>
 <p>Darts is built to make it easy to train and validate several models in a unified way. Let’s train a few more and compute their respective MAPE on the validation set:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
@@ -1122,7 +1123,7 @@ model Theta(2) obtains MAPE: 8.15%
 </div>
 <p>Here, we did only built these models with their default parameters. We can probably do better if we fine-tune to our problem. Let’s try with the Theta method.</p>
 <section id="Searching-for-hyper-parameters-with-the-Theta-method">
-<h3>Searching for hyper-parameters with the Theta method<a class="headerlink" href="#Searching-for-hyper-parameters-with-the-Theta-method" title="Permalink to this headline">¶</a></h3>
+<h3>Searching for hyper-parameters with the Theta method<a class="headerlink" href="#Searching-for-hyper-parameters-with-the-Theta-method" title="Permalink to this heading">¶</a></h3>
 <p>The model <code class="docutils literal notranslate"><span class="pre">Theta</span></code> contains an implementation of Assimakopoulos and Nikolopoulos’ Theta method. This method has had some success, particularly in the M3-competition.</p>
 <p>Though the value of the Theta parameter is often set to 0 in applications, our implementation supports a variable value for parameter tuning purposes. Let’s try to find a good value for Theta:</p>
 <div class="nbinput nblast docutils container">
@@ -1196,7 +1197,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 </section>
 </section>
 <section id="Backtesting:-simulate-historical-forecasting">
-<h1>Backtesting: simulate historical forecasting<a class="headerlink" href="#Backtesting:-simulate-historical-forecasting" title="Permalink to this headline">¶</a></h1>
+<h1>Backtesting: simulate historical forecasting<a class="headerlink" href="#Backtesting:-simulate-historical-forecasting" title="Permalink to this heading">¶</a></h1>
 <p>So at this point we have a model that performs well on our validation set, and that’s good. But, how can we know the performance we <em>would have obtained</em> if we <em>had been using this model</em> historically?</p>
 <p>Backtesting simulates predictions that would have been obtained historically with a given model. It can take a while to produce, since the model is (by default) re-trained every time the simulated prediction time advances.</p>
 <p>Such simulated forecasts are always defined with respect to a <em>forecast horizon</em>, which is the number of time steps that separate the prediction time from the forecast time. In the example below, we simulate forecasts done for 3 months in the future (compared to prediction time). The result of calling <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> is (by default) a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> that contains those 3-months ahead forecasts:</p>
@@ -1384,7 +1385,7 @@ MAPE = 4.45%
 <p>The residual analysis also reflects an improved performance in that we now have a distribution of the residuals centred at value 0, and the ACF values, although not insignificant, have lower magnitudes.</p>
 </section>
 <section id="Machine-learning-and-global-models">
-<h1>Machine learning and global models<a class="headerlink" href="#Machine-learning-and-global-models" title="Permalink to this headline">¶</a></h1>
+<h1>Machine learning and global models<a class="headerlink" href="#Machine-learning-and-global-models" title="Permalink to this heading">¶</a></h1>
 <p>Darts has a rich support for machine learning and deep learning forecasting models; for instance:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html">RegressionModel</a> can wrap around any sklearn-compatible regression model to produce forecasts (it has its own <a class="reference external" href="#Regression-forecasting-models">section below</a>).</p></li>
@@ -1398,7 +1399,7 @@ MAPE = 4.45%
 <p>This is a key point of using ML-based models for forecasting: more often than not, ML models (especially deep learning models) need to be trained on large amounts of data, which often means a large amount of separate yet related time series.</p>
 <p>In Darts, the basic way to specify multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is using a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (for instance, a simple list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>).</p>
 <section id="A-toy-example-with-two-series">
-<h2>A toy example with two series<a class="headerlink" href="#A-toy-example-with-two-series" title="Permalink to this headline">¶</a></h2>
+<h2>A toy example with two series<a class="headerlink" href="#A-toy-example-with-two-series" title="Permalink to this heading">¶</a></h2>
 <p>These models can be trained on thousands of series. Here, for the sake of illustration, we will load two distinct series - the air traffic passenger count and another series containing the number of pounds of milk produced per cow monthly. We also cast our series to <code class="docutils literal notranslate"><span class="pre">np.float32</span></code> as that will slightly speedup the training:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
@@ -1454,7 +1455,7 @@ MAPE = 4.45%
 <p>Note how we can scale several series in one go. We can also parallelize this sort of operations over multiple processors by specifying <code class="docutils literal notranslate"><span class="pre">n_jobs</span></code>.</p>
 </section>
 <section id="Using-deep-learning:-example-with-N-BEATS">
-<h2>Using deep learning: example with N-BEATS<a class="headerlink" href="#Using-deep-learning:-example-with-N-BEATS" title="Permalink to this headline">¶</a></h2>
+<h2>Using deep learning: example with N-BEATS<a class="headerlink" href="#Using-deep-learning:-example-with-N-BEATS" title="Permalink to this heading">¶</a></h2>
 <p>Next, we will build an <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html">N-BEATS model</a>. This model can be tuned with many hyper-parameters (such as number of stacks, layers, etc). Here, for simplicity, we will use it with default hyper-parameters. The only two hyper-parameters that we have to provide are:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>: this is the “lookback window” of the model - i.e., how many time steps of history the neural network takes as input to produce its output in a forward pass.</p></li>
@@ -1579,7 +1580,7 @@ HPU available: False, using: 0 HPUs
 </section>
 </section>
 <section id="Covariates:-using-external-data">
-<h1>Covariates: using external data<a class="headerlink" href="#Covariates:-using-external-data" title="Permalink to this headline">¶</a></h1>
+<h1>Covariates: using external data<a class="headerlink" href="#Covariates:-using-external-data" title="Permalink to this heading">¶</a></h1>
 <p>In addition to the <strong>target</strong> series (the series we are interested to forecast), many models in Darts also accept <strong>covariates</strong> series in input. Covariates are series that we do not want to forecast, but which can provide helpful additional information to the models. Both the targets and covariates can be multivariate or univariate.</p>
 <p>There are two kinds of covariate time series in Darts:</p>
 <ul class="simple">
@@ -1746,7 +1747,7 @@ HPU available: False, using: 0 HPUs
 </div>
 <p>It seems that now the model captures better the trend of the air series (which also perturbs a bit the forecasts of the milk series).</p>
 <section id="Encoders:-using-covariates-for-free">
-<h2>Encoders: using covariates for free<a class="headerlink" href="#Encoders:-using-covariates-for-free" title="Permalink to this headline">¶</a></h2>
+<h2>Encoders: using covariates for free<a class="headerlink" href="#Encoders:-using-covariates-for-free" title="Permalink to this heading">¶</a></h2>
 <p>Using covariates related to the calendar or time axis (such as months and years as in our example above) is so frequent that deep learning models in Darts have a built-in functionality to use such covariates out of the box.</p>
 <p>To easily integrate such covariates to your model, you can simply specify the <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> parameter at model creation. This parameter has to be a dictionary containing informations about what should be encoded as extra covariates. Here is an example of what such a dictionary could look like, for a model supporting both past and future covariates:</p>
 <div class="nbinput nblast docutils container">
@@ -1887,7 +1888,7 @@ HPU available: False, using: 0 HPUs
 </section>
 </section>
 <section id="Regression-forecasting-models">
-<h1>Regression forecasting models<a class="headerlink" href="#Regression-forecasting-models" title="Permalink to this headline">¶</a></h1>
+<h1>Regression forecasting models<a class="headerlink" href="#Regression-forecasting-models" title="Permalink to this heading">¶</a></h1>
 <p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html">RegressionModel’s</a> are forecasting models which wrap around sklearn-compatible regression models. The inner regression model is used to predict future values of the target series, as a function of certain lags of the target, past and future covariates. Behind the scenes, the time series are tabularized in order to build a training dataset in the right format.</p>
 <p>By default, the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> will do a linear regression. It is very easy to use any desired sklearn-compatible regression model by specifying the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter, but for convenience Darts also provides a couple of ready-made models out of the box:</p>
 <ul class="simple">
@@ -2032,7 +2033,7 @@ MAPE = 3.66
 <p>Our best model so far!</p>
 </section>
 <section id="Probabilistic-forecasts">
-<h1>Probabilistic forecasts<a class="headerlink" href="#Probabilistic-forecasts" title="Permalink to this headline">¶</a></h1>
+<h1>Probabilistic forecasts<a class="headerlink" href="#Probabilistic-forecasts" title="Permalink to this heading">¶</a></h1>
 <p>Some models can produce probabilistic forecasts. This is the case for all deep learning models (such as <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, etc …), as well as for <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>. The full list is <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">available on the Darts README page</a>.</p>
 <p>For <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>, one can simply specify a <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> parameter to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. The returned <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> will then be composed of <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> Monte Carlo samples describing the distribution of the time series’ values. The advantage of relying on Monte Carlo samples (in contrast to, say, explicit confidence intervals) is that they can be used to describe any parametric or non-parametric joint distribution over components, and compute arbitrary
 quantiles.</p>
@@ -2060,7 +2061,7 @@ quantiles.</p>
 </div>
 </div>
 <section id="With-neural-networks">
-<h2>With neural networks<a class="headerlink" href="#With-neural-networks" title="Permalink to this headline">¶</a></h2>
+<h2>With neural networks<a class="headerlink" href="#With-neural-networks" title="Permalink to this heading">¶</a></h2>
 <p>With neural networks, one has to give a <code class="docutils literal notranslate"><span class="pre">Likelihood</span></code> object to the model. The likelihoods specify which distribution the model will try to fit, along with potential prior values for the distributions’ parameters. The full list of available likelihoods is <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html">available in the docs</a>.</p>
 <p>Using likelihoods is easy. For instance, here is what training an <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> to fit a Laplace likelihood looks like:</p>
 <div class="nbinput docutils container">
@@ -2274,13 +2275,13 @@ HPU available: False, using: 0 HPUs
 </div>
 </div>
 <section id="Types-of-distributions">
-<h3>Types of distributions<a class="headerlink" href="#Types-of-distributions" title="Permalink to this headline">¶</a></h3>
+<h3>Types of distributions<a class="headerlink" href="#Types-of-distributions" title="Permalink to this heading">¶</a></h3>
 <p>The likelihood has to be compatible with the domain of your time series’ values. For instance <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.PoissonLikelihood">PoissonLikelihood</a> can be used on discrete positive values, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ExponentialLikelihood">ExponentialLikelihood</a> can be used on real positive values, and
 <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BetaLikelihood">BetaLikelihood</a> on real values in <span class="math notranslate nohighlight">\((0,1)\)</span>.</p>
 <p>It is also possible to use <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">QuantileRegression</a> to apply a quantile loss and fit some desired quantiles directly.</p>
 </section>
 <section id="Evaluating-Probabilistic-Forecasts">
-<h3>Evaluating Probabilistic Forecasts<a class="headerlink" href="#Evaluating-Probabilistic-Forecasts" title="Permalink to this headline">¶</a></h3>
+<h3>Evaluating Probabilistic Forecasts<a class="headerlink" href="#Evaluating-Probabilistic-Forecasts" title="Permalink to this heading">¶</a></h3>
 <p>How can we evaluate the quality of probabilistic forecasts? By default, most metrics functions (such as <code class="docutils literal notranslate"><span class="pre">mape()</span></code>) will keep working but look only at the median forecast. It is also possible to use the <span class="math notranslate nohighlight">\(\rho\)</span>-risk metric (or quantile loss), which quantifies the error for each predicted quantiles:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
@@ -2311,7 +2312,7 @@ rho-risk at quantile 0.95: 0.02
 </div>
 </section>
 <section id="Using-Quantile-Loss">
-<h3>Using Quantile Loss<a class="headerlink" href="#Using-Quantile-Loss" title="Permalink to this headline">¶</a></h3>
+<h3>Using Quantile Loss<a class="headerlink" href="#Using-Quantile-Loss" title="Permalink to this heading">¶</a></h3>
 <p>Could we do better by fitting these quantiles directly? We can just use a <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> likelihood:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[53]:
@@ -2430,12 +2431,12 @@ rho-risk at quantile 0.95: 0.01
 </section>
 </section>
 <section id="Ensembling-models">
-<h1>Ensembling models<a class="headerlink" href="#Ensembling-models" title="Permalink to this headline">¶</a></h1>
+<h1>Ensembling models<a class="headerlink" href="#Ensembling-models" title="Permalink to this heading">¶</a></h1>
 <p><em>Ensembling</em> is about combining the forecasts produced by several models, in order to obtain a final - and hopefully better forecast.</p>
 <p>For instance, in our example of a <a class="reference external" href="#A-less-naive-model">less naive model above</a>, we manually combined a naive seasonal model with a naive drift model. Here, we will show how models forecasts can be automatically combined, naively using a <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code>, or learned using <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>.</p>
 <p>It is of course also possible to use <code class="docutils literal notranslate"><span class="pre">past</span></code> and/or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> with ensemble model but they will be passed only to the models supporting them when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
 <section id="Naive-Ensembling">
-<h2>Naive Ensembling<a class="headerlink" href="#Naive-Ensembling" title="Permalink to this headline">¶</a></h2>
+<h2>Naive Ensembling<a class="headerlink" href="#Naive-Ensembling" title="Permalink to this heading">¶</a></h2>
 <p>Naive ensembling just takes the average of the forecasts of several models. Darts provides a <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code>, which allows to do this while still manipulating only one forecasting model (which, for instance, allows for easier backtesting):</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[55]:
@@ -2481,7 +2482,7 @@ MAPE = 11.88
 </div>
 </section>
 <section id="Learned-Ensembling">
-<h2>Learned Ensembling<a class="headerlink" href="#Learned-Ensembling" title="Permalink to this headline">¶</a></h2>
+<h2>Learned Ensembling<a class="headerlink" href="#Learned-Ensembling" title="Permalink to this heading">¶</a></h2>
 <p>As expected in this case, the naive ensemble doesn’t give great results (although in some cases it could!)</p>
 <p>We can sometimes do better if we see the ensembling as a supervised regression problem: given a set of forecasts (features), find a model that combines them in order to minimise errors on the target. This is what the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> does. It accepts three parameters:</p>
 <ul class="simple">
@@ -2614,10 +2615,10 @@ MAPE = 4.81
 </section>
 </section>
 <section id="Filtering-models">
-<h1>Filtering models<a class="headerlink" href="#Filtering-models" title="Permalink to this headline">¶</a></h1>
+<h1>Filtering models<a class="headerlink" href="#Filtering-models" title="Permalink to this heading">¶</a></h1>
 <p>In addition to <em>forecasting</em> models, which are able to predict future values of series, Darts also contains a couple of helpful <em>filtering</em> models, which can model “in sample” series’ values distributions.</p>
 <section id="Fitting-a-Kalman-Filter">
-<h2>Fitting a Kalman Filter<a class="headerlink" href="#Fitting-a-Kalman-Filter" title="Permalink to this headline">¶</a></h2>
+<h2>Fitting a Kalman Filter<a class="headerlink" href="#Fitting-a-Kalman-Filter" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code> implements a <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.filtering.kalman_filter.html">Kalman Filter</a>. The implementation relies on <a class="reference external" href="https://nfoursid.readthedocs.io/en/latest/source/kalman.html">nfoursid</a>, so it is for instance possible to provide a <code class="docutils literal notranslate"><span class="pre">nfoursid.kalman.Kalman</span></code> object containing a transition matrix, process noise covariance, observation noise covariance etc.</p>
 <p>It is also possible to do system identification by calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> to “train” the Kalman Filter using the N4SID system identification algorithm:</p>
 <div class="nbinput docutils container">
@@ -2645,7 +2646,7 @@ MAPE = 4.81
 </div>
 </section>
 <section id="Inferring-missing-values-with-Gaussian-Processes">
-<h2>Inferring missing values with Gaussian Processes<a class="headerlink" href="#Inferring-missing-values-with-Gaussian-Processes" title="Permalink to this headline">¶</a></h2>
+<h2>Inferring missing values with Gaussian Processes<a class="headerlink" href="#Inferring-missing-values-with-Gaussian-Processes" title="Permalink to this heading">¶</a></h2>
 <p>Darts also contains a <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code> which can be used for probabilistic modeling of series:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[59]:
@@ -2683,7 +2684,7 @@ MAPE = 4.81
 </section>
 </section>
 <section id="A-Word-of-Caution">
-<h1>A Word of Caution<a class="headerlink" href="#A-Word-of-Caution" title="Permalink to this headline">¶</a></h1>
+<h1>A Word of Caution<a class="headerlink" href="#A-Word-of-Caution" title="Permalink to this heading">¶</a></h1>
 <p>So is N-BEATS, exponential smoothing, or a Bayesian ridge regression trained on milk production the best approach for predicting the future number of airline passengers? Well, at this point it’s actually hard to say exactly which one is best. Our time series is small, and our validation set is even smaller. In such cases, it’s very easy to overfit the whole forecasting exercise to such a small validation set. That’s especially true if the number of available models and their degrees of freedom
 is high (such as for deep learning models), or if we played with many models on a single test set (as done in this notebook).</p>
 <p>As data scientists, it is our responsibility to understand the extent to which our models can be trusted. So always take results with a grain of salt, especially on small datasets, and apply the scientific method before making any kind of forecast :) Happy modeling!</p>
@@ -2732,13 +2733,13 @@ is high (such as for deep learning models), or if we played with many models on 
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,7 +834,7 @@
               <div>
                 
   <span class="target" id="module-darts.explainability.tft_explainer"></span><section id="tft-explainer-for-temporal-fusion-transformer-tftmodel">
-<h1>TFT Explainer for Temporal Fusion Transformer (TFTModel)<a class="headerlink" href="#tft-explainer-for-temporal-fusion-transformer-tftmodel" title="Permalink to this headline">¶</a></h1>
+<h1>TFT Explainer for Temporal Fusion Transformer (TFTModel)<a class="headerlink" href="#tft-explainer-for-temporal-fusion-transformer-tftmodel" title="Permalink to this heading">¶</a></h1>
 <p>The <cite>TFTExplainer</cite> uses a trained <a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code></a> and extracts the
 explainability information from the model.</p>
 <ul class="simple">
@@ -851,7 +852,7 @@ on the given past and future input. The attention is aggregated over all attenti
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.explainability.tft_explainer.</span></span><span class="sig-name descname"><span class="pre">TFTExplainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.explainability.explainability._ForecastingModelExplainer</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_ForecastingModelExplainer</span></code></p>
 <p>Explainer class for the <cite>TFTModel</cite>.</p>
 <p><strong>Definitions</strong></p>
 <ul class="simple">
@@ -895,7 +896,7 @@ for the explanations. The same requirements apply as for <cite>background_series
 </pre></div>
 </div>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -959,7 +960,7 @@ Otherwise, leave it empty to compute the explanation on the background from <cit
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer.model">
-<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><span class="pre">darts.models.forecasting.tft_model.TFTModel</span></a></em><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.model" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><span class="pre">TFTModel</span></a></em><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.model" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1052,13 +1053,13 @@ on the encoder (input chunk)</p></li>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

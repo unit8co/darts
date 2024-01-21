@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -840,12 +841,12 @@
   <span class="target" id="module-darts.dataprocessing.dtw.cost_matrix"></span><dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.CostMatrix">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.cost_matrix.</span></span><span class="sig-name descname"><span class="pre">CostMatrix</span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>(n+1) x (m+1) Matrix
 Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1, j-1) in series1 and series2.</p>
 <p>Row 0 and column 0, are typically set to infinity, to prevent matching before the first element</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -853,8 +854,9 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dense</span></code></a>()</p></td>
 <td><p><dl class="field-list simple">
-<dt class="field-odd">returns</dt>
-<dd class="field-odd"><p></p></dd>
+<dt class="field-odd">rtype</dt>
+<dd class="field-odd"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
+</dd>
 </dl>
 </p></td>
 </tr>
@@ -890,11 +892,8 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_dense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix.to_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p></p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
 </dd>
 </dl>
 </dd></dl>
@@ -904,9 +903,9 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.cost_matrix.</span></span><span class="sig-name descname"><span class="pre">DenseCostMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#DenseCostMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, <a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.cost_matrix.CostMatrix</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">CostMatrix</span></code></a></p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -960,7 +959,7 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1109,8 +1108,9 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dense</span></code></a>()</p></td>
 <td><p><dl class="field-list simple">
-<dt class="field-odd">returns</dt>
-<dd class="field-odd"><p></p></dd>
+<dt class="field-odd">rtype</dt>
+<dd class="field-odd"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
+</dd>
 </dl>
 </p></td>
 </tr>
@@ -2506,14 +2506,11 @@ For example, <code class="docutils literal notranslate"><span class="pre">a.resh
 <li><p><strong>refcheck</strong> (<em>bool</em><em>, </em><em>optional</em>) – If False, reference count will not be checked. Default is True.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None</p>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
 <li><p><strong>ValueError</strong> – If <cite>a</cite> does not own its own data or references or views to it exist,
 and the data memory must be changed.
 PyPy only: will always raise if the data memory must be changed, since
@@ -2626,11 +2623,8 @@ bytes into the field.</p>
 <li><p><strong>offset</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of bytes into the field at which to place <cite>val</cite>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -3004,11 +2998,8 @@ position in the next row.  As such, the strides for the array <cite>x</cite> wil
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense">
 <span class="sig-name descname"><span class="pre">to_dense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#DenseCostMatrix.to_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p></p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3366,9 +3357,9 @@ contiguous last axis, even if the rest of the axes are not C-contiguous:</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.cost_matrix.</span></span><span class="sig-name descname"><span class="pre">SparseCostMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.cost_matrix.CostMatrix</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">CostMatrix</span></code></a></p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3376,8 +3367,9 @@ contiguous last axis, even if the rest of the axes are not C-contiguous:</p>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense" title="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dense</span></code></a>()</p></td>
 <td><p><dl class="field-list simple">
-<dt class="field-odd">returns</dt>
-<dd class="field-odd"><p></p></dd>
+<dt class="field-odd">rtype</dt>
+<dd class="field-odd"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
+</dd>
 </dl>
 </p></td>
 </tr>
@@ -3413,11 +3405,8 @@ contiguous last axis, even if the rest of the axes are not C-contiguous:</p>
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense">
 <span class="sig-name descname"><span class="pre">to_dense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix.to_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p></p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3459,13 +3448,13 @@ contiguous last axis, even if the rest of the axes are not C-contiguous:</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -598,7 +599,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Filtering-and-predicting-using-the-darts-filters">
-<h1>Filtering and predicting using the darts filters<a class="headerlink" href="#Filtering-and-predicting-using-the-darts-filters" title="Permalink to this headline">¶</a></h1>
+<h1>Filtering and predicting using the darts filters<a class="headerlink" href="#Filtering-and-predicting-using-the-darts-filters" title="Permalink to this heading">¶</a></h1>
 <p>In this notebook, we will look at the Kalman filtering algorithm being used to improve the quality of data affected by noise. White noise is a common component in data retrieved from any kind of sensors.</p>
 <p>The Kalman filter is a different kind of model in Darts, in that it’s a <code class="docutils literal notranslate"><span class="pre">FilteringModel</span></code> (and not a <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code>), which can be used to smooth series. In the case of the Kalman filter the “actual” underlying values of the observations are inferred using the state-space model of a linear dynamical system. This system can be provided as an input, or can be fitted on data.</p>
 <p>In this notebook, we’ll generate a simple synthetic dataset and see how the Kalman filter can be used to denoise it. Note that this is a toy example, mostly to show how the Darts Kalman filter API works.</p>
@@ -621,7 +622,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Step-response-of-a-first-order-system">
-<h2>Step response of a first order system<a class="headerlink" href="#Step-response-of-a-first-order-system" title="Permalink to this headline">¶</a></h2>
+<h2>Step response of a first order system<a class="headerlink" href="#Step-response-of-a-first-order-system" title="Permalink to this heading">¶</a></h2>
 <p>A common shape of signal seen in measurements is that of the exponential approach to a steady state, for example in systems converging to a setpoint. We start by preparing the input (control signal) and output, and add noise to obtain realistic observations.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -731,7 +732,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Spiral-drawing">
-<h2>Spiral drawing<a class="headerlink" href="#Spiral-drawing" title="Permalink to this headline">¶</a></h2>
+<h2>Spiral drawing<a class="headerlink" href="#Spiral-drawing" title="Permalink to this heading">¶</a></h2>
 <p>First let’s produce a simple drawing and add a significant white noise to it.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -845,13 +846,13 @@ div.rendered_html tbody tr:hover {
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

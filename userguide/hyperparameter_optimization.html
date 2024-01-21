@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -248,13 +249,13 @@
               <div>
                 
   <section id="hyperparameter-optimization-in-darts">
-<h1>Hyperparameter Optimization in Darts<a class="headerlink" href="#hyperparameter-optimization-in-darts" title="Permalink to this headline">¶</a></h1>
+<h1>Hyperparameter Optimization in Darts<a class="headerlink" href="#hyperparameter-optimization-in-darts" title="Permalink to this heading">¶</a></h1>
 <p>There is nothing special in Darts when it comes to hyperparameter optimization.
 The main thing to be aware of is probably the existence of PyTorch Lightning callbacks for early stopping and pruning of experiments with Darts’ deep learning based TorchForecastingModels.
 Below, we show examples of hyperparameter optimization done with <a class="reference external" href="https://optuna.org/">Optuna</a> and
 <a class="reference external" href="https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html">Ray Tune</a>.</p>
 <section id="hyperparameter-optimization-with-optuna">
-<h2>Hyperparameter optimization with Optuna<a class="headerlink" href="#hyperparameter-optimization-with-optuna" title="Permalink to this headline">¶</a></h2>
+<h2>Hyperparameter optimization with Optuna<a class="headerlink" href="#hyperparameter-optimization-with-optuna" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://optuna.org/">Optuna</a> is a great option for hyperparameter optimization with Darts. Below, we show a minimal example
 using PyTorch Lightning callbacks for pruning experiments.
 For the sake of the example, we train a <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> on a single series, and optimize (probably overfitting) its hyperparameters by minimizing the prediction error on a validation set.
@@ -387,7 +388,7 @@ for a more complete example.</p>
 </div>
 </section>
 <section id="hyperparameter-optimization-with-ray-tune">
-<h2>Hyperparameter optimization with Ray Tune<a class="headerlink" href="#hyperparameter-optimization-with-ray-tune" title="Permalink to this headline">¶</a></h2>
+<h2>Hyperparameter optimization with Ray Tune<a class="headerlink" href="#hyperparameter-optimization-with-ray-tune" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html">Ray Tune</a> is another option for hyperparameter optimization with automatic pruning.</p>
 <p>Here is an example of how to use Ray Tune to with the <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> model using the <a class="reference external" href="https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/">Asynchronous Hyperband scheduler</a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -491,7 +492,7 @@ for a more complete example.</p>
 </div>
 </section>
 <section id="hyperparameter-optimization-using-gridsearch">
-<h2>Hyperparameter optimization using <code class="docutils literal notranslate"><span class="pre">gridsearch()</span></code><a class="headerlink" href="#hyperparameter-optimization-using-gridsearch" title="Permalink to this headline">¶</a></h2>
+<h2>Hyperparameter optimization using <code class="docutils literal notranslate"><span class="pre">gridsearch()</span></code><a class="headerlink" href="#hyperparameter-optimization-using-gridsearch" title="Permalink to this heading">¶</a></h2>
 <p>Each forecasting models in Darts offer a <code class="docutils literal notranslate"><span class="pre">gridsearch()</span></code> method for basic hyperparameter search.
 This method is limited to very simple cases, with very few hyperparameters, and working with a single time series only.</p>
 </section>
@@ -531,13 +532,13 @@ This method is limited to very simple cases, with very few hyperparameters, and 
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

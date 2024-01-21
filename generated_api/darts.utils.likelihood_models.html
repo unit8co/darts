@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -835,7 +836,7 @@
               <div>
                 
   <span class="target" id="module-darts.utils.likelihood_models"></span><section id="likelihood-models">
-<h1>Likelihood Models<a class="headerlink" href="#likelihood-models" title="Permalink to this headline">¶</a></h1>
+<h1>Likelihood Models<a class="headerlink" href="#likelihood-models" title="Permalink to this heading">¶</a></h1>
 <p>The likelihood models contain all the logic needed to train and use Darts’ neural network models in
 a probabilistic way. This essentially means computing an appropriate training loss and sample from the
 distribution, given the parameters of the distribution.</p>
@@ -861,7 +862,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BernoulliLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">BernoulliLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BernoulliLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Bernoulli distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Bernoulli_distribution">https://en.wikipedia.org/wiki/Bernoulli_distribution</a></p>
 <ul class="simple">
@@ -878,7 +879,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -890,7 +891,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -982,7 +983,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BetaLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">BetaLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BetaLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Beta distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Beta_distribution">https://en.wikipedia.org/wiki/Beta_distribution</a></p>
 <ul class="simple">
@@ -1000,7 +1001,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1012,7 +1013,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1104,7 +1105,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.CauchyLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">CauchyLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_xzero</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#CauchyLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Cauchy Distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Cauchy_distribution">https://en.wikipedia.org/wiki/Cauchy_distribution</a></p>
 <ul class="simple">
@@ -1125,7 +1126,7 @@ requires a large value for <cite>num_samples</cite> for sampling predictions.</p
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1137,7 +1138,7 @@ requires a large value for <cite>num_samples</cite> for sampling predictions.</p
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1229,7 +1230,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ContinuousBernoulliLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">ContinuousBernoulliLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ContinuousBernoulliLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Continuous Bernoulli distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution">https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution</a></p>
 <ul class="simple">
@@ -1246,7 +1247,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1258,7 +1259,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1350,7 +1351,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.DirichletLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">DirichletLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alphas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#DirichletLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Dirichlet distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Dirichlet_distribution">https://en.wikipedia.org/wiki/Dirichlet_distribution</a></p>
 <ul class="simple">
@@ -1368,7 +1369,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1380,7 +1381,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1472,7 +1473,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ExponentialLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">ExponentialLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ExponentialLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Exponential distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Exponential_distribution">https://en.wikipedia.org/wiki/Exponential_distribution</a></p>
 <ul class="simple">
@@ -1489,7 +1490,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1501,7 +1502,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1593,7 +1594,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GammaLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GammaLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GammaLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Gamma distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Gamma_distribution">https://en.wikipedia.org/wiki/Gamma_distribution</a></p>
 <ul class="simple">
@@ -1611,7 +1612,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1623,7 +1624,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1715,7 +1716,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GaussianLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GaussianLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_nll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GaussianLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Univariate Gaussian distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Normal_distribution">https://en.wikipedia.org/wiki/Normal_distribution</a></p>
 <p>Instead of the pure negative log likelihood (NLL) loss, the loss function used
@@ -1748,7 +1749,7 @@ Default: 0. (equivalent to NLL)</p></li>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1760,7 +1761,7 @@ Default: 0. (equivalent to NLL)</p></li>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1852,7 +1853,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GeometricLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GeometricLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GeometricLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GeometricLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Geometric distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Geometric_distribution">https://en.wikipedia.org/wiki/Geometric_distribution</a></p>
 <ul class="simple">
@@ -1869,7 +1870,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1881,7 +1882,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1973,7 +1974,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GumbelLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GumbelLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GumbelLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GumbelLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Gumbel distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Gumbel_distribution">https://en.wikipedia.org/wiki/Gumbel_distribution</a></p>
 <ul class="simple">
@@ -1991,7 +1992,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2003,7 +2004,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2095,7 +2096,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.HalfNormalLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">HalfNormalLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#HalfNormalLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Half-normal distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Half-normal_distribution">https://en.wikipedia.org/wiki/Half-normal_distribution</a></p>
 <ul class="simple">
@@ -2112,7 +2113,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2124,7 +2125,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2216,7 +2217,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LaplaceLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">LaplaceLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LaplaceLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LaplaceLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Laplace distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Laplace_distribution">https://en.wikipedia.org/wiki/Laplace_distribution</a></p>
 <ul class="simple">
@@ -2234,7 +2235,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2246,7 +2247,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2338,10 +2339,10 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.Likelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">Likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#Likelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract class for a likelihood model.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2353,7 +2354,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2445,7 +2446,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LogNormalLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">LogNormalLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LogNormalLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Log-normal distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Log-normal_distribution">https://en.wikipedia.org/wiki/Log-normal_distribution</a></p>
 <ul class="simple">
@@ -2463,7 +2464,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2475,7 +2476,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2567,7 +2568,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.NegativeBinomialLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">NegativeBinomialLikelihood</span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#NegativeBinomialLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Negative Binomial distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Negative_binomial_distribution">https://en.wikipedia.org/wiki/Negative_binomial_distribution</a></p>
 <p>It does not support priors.</p>
@@ -2579,7 +2580,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <p>Behind the scenes the distribution is reparameterized so that the actual outputs of the
 network are in terms of the mean <span class="math notranslate nohighlight">\(\mu\)</span> and shape <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2591,7 +2592,7 @@ network are in terms of the mean <span class="math notranslate nohighlight">\(\m
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2683,7 +2684,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.PoissonLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">PoissonLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#PoissonLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Poisson distribution. Can typically be used to model event counts during time intervals, when the events
 happen independently of the time since the last event.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Poisson_distribution">https://en.wikipedia.org/wiki/Poisson_distribution</a></p>
@@ -2701,7 +2702,7 @@ happen independently of the time since the last event.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2713,7 +2714,7 @@ happen independently of the time since the last event.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2805,7 +2806,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.QuantileRegression">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">QuantileRegression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>The “likelihood” corresponding to quantile regression.
 It uses the Quantile Loss Metric for custom quantiles centered around q=0.5.</p>
 <p>This class can be used as any other Likelihood objects even though it is not
@@ -2816,7 +2817,7 @@ representing the likelihood of a well defined distribution.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2828,7 +2829,7 @@ representing the likelihood of a well defined distribution.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2929,7 +2930,7 @@ quantiles closest to the sampled value.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.WeibullLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">WeibullLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#WeibullLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.WeibullLikelihood" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 <p>Weibull distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Weibull_distribution">https://en.wikipedia.org/wiki/Weibull_distribution</a></p>
 <ul class="simple">
@@ -2944,7 +2945,7 @@ quantiles closest to the sampled value.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2956,7 +2957,7 @@ quantiles closest to the sampled value.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3081,13 +3082,13 @@ and the parameters given in <cite>model_output</cite>.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -853,7 +854,7 @@
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.encoders.encoders"></span><section id="time-axes-encoders">
-<h1>Time Axes Encoders<a class="headerlink" href="#time-axes-encoders" title="Permalink to this headline">¶</a></h1>
+<h1>Time Axes Encoders<a class="headerlink" href="#time-axes-encoders" title="Permalink to this heading">¶</a></h1>
 <p>Encoders can generate past and/or future covariates series by encoding the index of a TimeSeries <cite>series</cite>.
 Each encoder class has methods <cite>encode_train()</cite>, <cite>encode_inference()</cite>, and <cite>encode_train_inference()</cite> to generate the
 encodings for training and inference.</p>
@@ -914,7 +915,7 @@ The requirements for model parameter <cite>add_encoders</cite> are described in 
 </ul>
 </section>
 <section id="singleencoder">
-<h1>SingleEncoder<a class="headerlink" href="#singleencoder" title="Permalink to this headline">¶</a></h1>
+<h1>SingleEncoder<a class="headerlink" href="#singleencoder" title="Permalink to this heading">¶</a></h1>
 <p>The SingleEncoders from {X}{SingleEncoder} are:</p>
 <ul>
 <li><dl>
@@ -972,7 +973,7 @@ For <cite>series</cite> with an integer index: <code class="docutils literal not
 </ul>
 </section>
 <section id="sequentialencoder">
-<h1>SequentialEncoder<a class="headerlink" href="#sequentialencoder" title="Permalink to this headline">¶</a></h1>
+<h1>SequentialEncoder<a class="headerlink" href="#sequentialencoder" title="Permalink to this heading">¶</a></h1>
 <p>The SequentialEncoder combines the logic of all SingleEncoders from above and has additional benefits:</p>
 <ul class="simple">
 <li><p>use multiple encoders at once</p></li>
@@ -1024,11 +1025,11 @@ TorchForecastingModel (this is only meant to illustrate many features at once).<
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.CallableIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">CallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#CallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.CallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a></p>
 <p><cite>CallableIndexEncoder</cite>: Applies a user-defined callable to encode the underlying index for past and future
 covariates.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1055,7 +1056,7 @@ covariates.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1086,7 +1087,7 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1113,7 +1114,7 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1178,7 +1179,7 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.CallableIndexEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.CallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.CallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -1289,10 +1290,10 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">CyclicTemporalEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#CyclicTemporalEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a></p>
 <p><cite>CyclicTemporalEncoder</cite>: Cyclic encoding of time series datetime attributes.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1319,7 +1320,7 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1352,7 +1353,7 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1379,7 +1380,7 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1444,7 +1445,7 @@ For more information, check out <a class="reference internal" href="darts.utils.
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -1555,11 +1556,11 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">DatetimeAttributeEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#DatetimeAttributeEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a></p>
 <p><cite>DatetimeAttributeEncoder</cite>: Adds pd.DatatimeIndex attribute information derived from the index as scalars.
 Requires the underlying TimeSeries to have a pd.DatetimeIndex</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1586,7 +1587,7 @@ Requires the underlying TimeSeries to have a pd.DatetimeIndex</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1618,7 +1619,7 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1645,7 +1646,7 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1710,7 +1711,7 @@ For more information, check out <a class="reference internal" href="darts.utils.
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -1821,11 +1822,11 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureCallableIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureCallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#FutureCallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureCallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CallableIndexEncoder" title="darts.dataprocessing.encoders.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.CallableIndexEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CallableIndexEncoder" title="darts.dataprocessing.encoders.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">CallableIndexEncoder</span></code></a></p>
 <p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for future covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1852,7 +1853,7 @@ TimeSeries’ time index.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1892,7 +1893,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1919,7 +1920,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1984,7 +1985,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureCallableIndexEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureCallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureCallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -2095,10 +2096,10 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureCyclicEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureCyclicEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#FutureCyclicEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureCyclicEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder" title="darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder" title="darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">CyclicTemporalEncoder</span></code></a></p>
 <p><cite>CyclicEncoder</cite>: Cyclic encoding of future covariates datetime attributes.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2125,7 +2126,7 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2166,7 +2167,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2193,7 +2194,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2258,7 +2259,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureCyclicEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureCyclicEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureCyclicEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -2369,10 +2370,10 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureDatetimeAttributeEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureDatetimeAttributeEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#FutureDatetimeAttributeEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureDatetimeAttributeEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder" title="darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder" title="darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeAttributeEncoder</span></code></a></p>
 <p>Datetime attribute encoder for future covariates.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2399,7 +2400,7 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2440,7 +2441,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2467,7 +2468,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2532,7 +2533,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureDatetimeAttributeEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureDatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureDatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -2643,11 +2644,11 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureIntegerIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureIntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#FutureIntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureIntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder" title="darts.dataprocessing.encoders.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.IntegerIndexEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder" title="darts.dataprocessing.encoders.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntegerIndexEncoder</span></code></a></p>
 <p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for future covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2674,7 +2675,7 @@ TimeSeries’ time index.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2711,7 +2712,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2738,7 +2739,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2804,7 +2805,7 @@ will return the absolute position (in the transformed space).</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.FutureIntegerIndexEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureIntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.FutureIntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -2915,11 +2916,11 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.IntegerIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">IntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#IntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a></p>
 <p>IntegerIndexEncoder: Adds integer index value (position) derived from the underlying TimeSeries’ time index
 for past and future covariates.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2946,7 +2947,7 @@ for past and future covariates.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2974,7 +2975,7 @@ target series end time will be used as a reference to evaluate the relative inde
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3001,7 +3002,7 @@ target series end time will be used as a reference to evaluate the relative inde
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3067,7 +3068,7 @@ will return the absolute position (in the transformed space).</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.IntegerIndexEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -3178,11 +3179,11 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastCallableIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">PastCallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#PastCallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastCallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CallableIndexEncoder" title="darts.dataprocessing.encoders.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.CallableIndexEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CallableIndexEncoder" title="darts.dataprocessing.encoders.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">CallableIndexEncoder</span></code></a></p>
 <p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for past covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3209,7 +3210,7 @@ TimeSeries’ time index.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3249,7 +3250,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3276,7 +3277,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3341,7 +3342,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastCallableIndexEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastCallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastCallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -3452,10 +3453,10 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastCyclicEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">PastCyclicEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#PastCyclicEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastCyclicEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder" title="darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder" title="darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">CyclicTemporalEncoder</span></code></a></p>
 <p><cite>CyclicEncoder</cite>: Cyclic encoding of past covariates datetime attributes.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3482,7 +3483,7 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3523,7 +3524,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3550,7 +3551,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3615,7 +3616,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastCyclicEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastCyclicEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastCyclicEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -3726,10 +3727,10 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastDatetimeAttributeEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">PastDatetimeAttributeEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#PastDatetimeAttributeEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastDatetimeAttributeEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder" title="darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder" title="darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeAttributeEncoder</span></code></a></p>
 <p>Datetime attribute encoder for past covariates.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3756,7 +3757,7 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3797,7 +3798,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3824,7 +3825,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3889,7 +3890,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastDatetimeAttributeEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastDatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastDatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -4000,11 +4001,11 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastIntegerIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">PastIntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#PastIntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastIntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder" title="darts.dataprocessing.encoders.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoders.IntegerIndexEncoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder" title="darts.dataprocessing.encoders.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntegerIndexEncoder</span></code></a></p>
 <p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for past covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4031,7 +4032,7 @@ TimeSeries’ time index.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4068,7 +4069,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4095,7 +4096,7 @@ Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> o
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4161,7 +4162,7 @@ will return the absolute position (in the transformed space).</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.PastIntegerIndexEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastIntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.PastIntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
 <cite>Encoder.encode_inference()</cite> have been called.</p>
 <dl class="field-list simple">
@@ -4272,12 +4273,12 @@ with <cite>Encoder.encode_inference()</cite>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.encoders.encoders.</span></span><span class="sig-name descname"><span class="pre">SequentialEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">takes_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">takes_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/encoders/encoders.html#SequentialEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.Encoder" title="darts.dataprocessing.encoders.encoder_base.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.encoders.encoder_base.Encoder</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.Encoder" title="darts.dataprocessing.encoders.encoder_base.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">Encoder</span></code></a></p>
 <p>A <cite>SequentialEncoder</cite> object can store and control multiple past and future covariates encoders at once.
 It provides the same functionality as single encoders (<cite>encode_train()</cite>, <cite>encode_inference()</cite>,
 <cite>encode_train_inference()</cite>).</p>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4322,7 +4323,7 @@ It provides the same functionality as single encoders (<cite>encode_train()</cit
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4427,7 +4428,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4472,7 +4473,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4494,7 +4495,7 @@ Corresponds to the lag values from parameter <cite>lags_future_covariates</cite>
 </table>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.indexes.base.Index</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Index</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Index</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the covariates component names generated by <cite>SequentialEncoder.past_encoders</cite> and
 <cite>SequentialEncoder.future_encoders</cite>. A tuple of (past encoded components, future encoded components).
 Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
@@ -4606,7 +4607,7 @@ future or past covariates encoder</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.encoders">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.encoders" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">SingleEncoder</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">SingleEncoder</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.encoders" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a tuple of (past covariates encoders, future covariates encoders)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4640,7 +4641,7 @@ future or past covariates encoder</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.future_components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.future_components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.future_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the future covariates component names generated by <cite>SequentialEncoder.future_encoders</cite>.
 Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
 <dl class="field-list simple">
@@ -4652,7 +4653,7 @@ Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.future_encoders">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.future_encoders" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.future_encoders" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the future covariates encoders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4663,7 +4664,7 @@ Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.future_transformer">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer" title="darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer"><span class="pre">darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer</span></a></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.future_transformer" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer" title="darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer"><span class="pre">SequentialEncoderTransformer</span></a></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.future_transformer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the future transformer object</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4674,7 +4675,7 @@ Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.past_components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.past_components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.past_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the past covariates component names generated by <cite>SequentialEncoder.past_encoders</cite>.
 Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
 <dl class="field-list simple">
@@ -4686,7 +4687,7 @@ Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.past_encoders">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">darts.dataprocessing.encoders.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.past_encoders" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder" title="darts.dataprocessing.encoders.encoder_base.SingleEncoder"><span class="pre">SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.past_encoders" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the past covariates encoders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4697,7 +4698,7 @@ Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.encoders.encoders.SequentialEncoder.past_transformer">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer" title="darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer"><span class="pre">darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer</span></a></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.past_transformer" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer" title="darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer"><span class="pre">SequentialEncoderTransformer</span></a></em><a class="headerlink" href="#darts.dataprocessing.encoders.encoders.SequentialEncoder.past_transformer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the past transformer object</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4767,13 +4768,13 @@ with <cite>Encoder.encode_inference()</cite>.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -675,11 +676,11 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Data-(pre)-processing-using-DataTransformer-and-Pipeline">
-<h1>Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Data-(pre)-processing-using-DataTransformer-and-Pipeline" title="Permalink to this headline">¶</a></h1>
+<h1>Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Data-(pre)-processing-using-DataTransformer-and-Pipeline" title="Permalink to this heading">¶</a></h1>
 <p>In this notebook, we will demonstrate how to perform some common preprocessing tasks using <code class="docutils literal notranslate"><span class="pre">darts</span></code></p>
 <p>As a toy example, we will use the <a class="reference external" href="https://www.kaggle.com/tejasgosavi/monthlymilkproductionpounds">Monthly Milk Production dataset</a>.</p>
 <section id="The-DataTransformer-abstraction">
-<h2>The <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> abstraction<a class="headerlink" href="#The-DataTransformer-abstraction" title="Permalink to this headline">¶</a></h2>
+<h2>The <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> abstraction<a class="headerlink" href="#The-DataTransformer-abstraction" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> aims to provide a unified way of dealing with transformations of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">transform()</span></code> is implemented by all transformers. This method takes in either a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> of a sequence of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, applies the transformation and returns it as a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>/sequence of `TimeSeries.</p></li>
@@ -688,7 +689,7 @@ div.rendered_html tbody tr:hover {
 </ul>
 </section>
 <section id="Setting-up-the-example">
-<h2>Setting up the example<a class="headerlink" href="#Setting-up-the-example" title="Permalink to this headline">¶</a></h2>
+<h2>Setting up the example<a class="headerlink" href="#Setting-up-the-example" title="Permalink to this heading">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -738,7 +739,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Reading-the-data-and-creating-a-time-series">
-<h3>Reading the data and creating a time series<a class="headerlink" href="#Reading-the-data-and-creating-a-time-series" title="Permalink to this headline">¶</a></h3>
+<h3>Reading the data and creating a time series<a class="headerlink" href="#Reading-the-data-and-creating-a-time-series" title="Permalink to this heading">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -814,7 +815,7 @@ Dimensions without coordinates: sample
 </section>
 </section>
 <section id="Using-a-transformer:-Rescaling-a-time-series-using-Scaler.">
-<h2>Using a transformer: Rescaling a time series using <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>.<a class="headerlink" href="#Using-a-transformer:-Rescaling-a-time-series-using-Scaler." title="Permalink to this headline">¶</a></h2>
+<h2>Using a transformer: Rescaling a time series using <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>.<a class="headerlink" href="#Using-a-transformer:-Rescaling-a-time-series-using-Scaler." title="Permalink to this heading">¶</a></h2>
 <p>Some applications may require your datapoints to be between 0 and 1 (e.g. to feed a time series to a Neural Network based forecasting model). This is easily achieved using the default <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>, which is a wrapper around <code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler(feature_range=(0,</span> <span class="pre">1))</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -947,7 +948,7 @@ Dimensions without coordinates: sample
 <p>Note that the <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> also allows to specify other scalers in its constructor, as long as they implement <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">transform()</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> methods on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (typically scalers from <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code>)</p>
 </section>
 <section id="Another-example-:-MissingValuesFiller">
-<h2>Another example : <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code><a class="headerlink" href="#Another-example-:-MissingValuesFiller" title="Permalink to this headline">¶</a></h2>
+<h2>Another example : <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code><a class="headerlink" href="#Another-example-:-MissingValuesFiller" title="Permalink to this heading">¶</a></h2>
 <p>Let’s look at handling missing values in a dataset.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -1005,7 +1006,7 @@ Dimensions without coordinates: sample
 </div>
 </section>
 <section id="Mapper-and-InvertibleMapper:-A-special-kind-of-transformers">
-<h2><code class="docutils literal notranslate"><span class="pre">Mapper</span></code> and <code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code>: A special kind of transformers<a class="headerlink" href="#Mapper-and-InvertibleMapper:-A-special-kind-of-transformers" title="Permalink to this headline">¶</a></h2>
+<h2><code class="docutils literal notranslate"><span class="pre">Mapper</span></code> and <code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code>: A special kind of transformers<a class="headerlink" href="#Mapper-and-InvertibleMapper:-A-special-kind-of-transformers" title="Permalink to this heading">¶</a></h2>
 <p>Sometimes you may want to perform a simple <code class="docutils literal notranslate"><span class="pre">map()</span></code> function on the data. This can also be done using data transformers. <code class="docutils literal notranslate"><span class="pre">Mapper</span></code> takes in a function and applies it to the data elementwise when calling <code class="docutils literal notranslate"><span class="pre">transform()</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code> also allows to specify an inverse function at creation (if there is one) and provides the <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> method.</p>
 <div class="nbinput docutils container">
@@ -1041,7 +1042,7 @@ Dimensions without coordinates: sample
 </div>
 </div>
 <section id="More-complex-(and-useful)-transformations">
-<h3>More complex (and useful) transformations<a class="headerlink" href="#More-complex-(and-useful)-transformations" title="Permalink to this headline">¶</a></h3>
+<h3>More complex (and useful) transformations<a class="headerlink" href="#More-complex-(and-useful)-transformations" title="Permalink to this heading">¶</a></h3>
 <p>In the Monthly Milk Production dataset used earlier, some of the difference between the months comes from the fact that some months contain more days than others, resulting in a larger production of milk during those months. This makes the time series more complex, and thus harder to predict.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
@@ -1188,7 +1189,7 @@ Dimensions without coordinates: sample
 </section>
 </section>
 <section id="Chaining-transformations-:-introducing-Pipeline">
-<h2>Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Chaining-transformations-:-introducing-Pipeline" title="Permalink to this headline">¶</a></h2>
+<h2>Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Chaining-transformations-:-introducing-Pipeline" title="Permalink to this heading">¶</a></h2>
 <p>Now suppose that we both want to apply the above transformation (daily averaging), and rescale the dataset between 0 and 1 to use a Neural Network based forecasting model. Instead of applying these two transformations separately, and then inversing them separately, we can use a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -1255,7 +1256,7 @@ Dimensions without coordinates: sample
 </div>
 </section>
 <section id="Processing-multiple-TimeSeries">
-<h2>Processing multiple TimeSeries<a class="headerlink" href="#Processing-multiple-TimeSeries" title="Permalink to this headline">¶</a></h2>
+<h2>Processing multiple TimeSeries<a class="headerlink" href="#Processing-multiple-TimeSeries" title="Permalink to this heading">¶</a></h2>
 <p>Often, we have to deal with multiple TimeSeries. DARTS supports Sequences of TimeSeries as input to transformers and pipelines, so that you don’t have to take care of processing each sample separately. Furthermore, it will take care of storing the parameters used by each scaler while transforming different TimeSeries (e.g., with scalers).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
@@ -1305,7 +1306,7 @@ Dimensions without coordinates: sample
 </div>
 </section>
 <section id="Monitoring-&amp;-parallelising-data-processing">
-<h2>Monitoring &amp; parallelising data processing<a class="headerlink" href="#Monitoring-&-parallelising-data-processing" title="Permalink to this headline">¶</a></h2>
+<h2>Monitoring &amp; parallelising data processing<a class="headerlink" href="#Monitoring-&-parallelising-data-processing" title="Permalink to this heading">¶</a></h2>
 <p>Sometimes, we could also have to deal with huge datasets. In this cases, processing each sample sequentially can take quite a long time. Darts can help both monitoring the transformations, and processing multiple samples in parallel, when possible.</p>
 <p>Setting the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> parameter in each transformer or pipeline while create some progress bars:</p>
 <div class="nbinput docutils container">
@@ -1407,13 +1408,13 @@ Dimensions without coordinates: sample
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

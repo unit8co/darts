@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -613,7 +614,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="TimeSeries-Deep-Encoder">
-<h1>TimeSeries Deep Encoder<a class="headerlink" href="#TimeSeries-Deep-Encoder" title="Permalink to this headline">¶</a></h1>
+<h1>TimeSeries Deep Encoder<a class="headerlink" href="#TimeSeries-Deep-Encoder" title="Permalink to this heading">¶</a></h1>
 <p>This notebook walks through how to use Darts’ <code class="docutils literal notranslate"><span class="pre">TiDEModel</span></code> and benchmarks it against <code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code>.</p>
 <p>TiDE (Time-series Dense Encoder) is a pure DL encoder-decoder architecture. It is special in that the temporal decoder can help mitigate the effects of anomalous samples on a forecast (Fig. 4 in the paper).</p>
 <p>See the original paper and model description here: <a class="reference external" href="http://arxiv.org/abs/2304.08424">http://arxiv.org/abs/2304.08424</a>.</p>
@@ -670,7 +671,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Model-Parameter-Setup">
-<h1>Model Parameter Setup<a class="headerlink" href="#Model-Parameter-Setup" title="Permalink to this headline">¶</a></h1>
+<h1>Model Parameter Setup<a class="headerlink" href="#Model-Parameter-Setup" title="Permalink to this heading">¶</a></h1>
 <p>Boilerplate code is no fun, especially in the context of training multiple models to compare performance. To avoid this, we use a common configuration that can be used with any Darts <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>.</p>
 <p>A few interesting things about these parameters:</p>
 <ul class="simple">
@@ -729,7 +730,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Data-Loading-and-preparation">
-<h1>Data Loading and preparation<a class="headerlink" href="#Data-Loading-and-preparation" title="Permalink to this headline">¶</a></h1>
+<h1>Data Loading and preparation<a class="headerlink" href="#Data-Loading-and-preparation" title="Permalink to this heading">¶</a></h1>
 <p>We consider the Australian quarterly beer sales in megaliters.</p>
 <p>Before training, we split the data into train, validation, and test sets. The model will learn from the train set, use the validation set to determine when to stop training, and finally be evaluated on the test set.</p>
 <p>To avoid leaking information from the validation and test sets, we scale the data based on the properties of the train set.</p>
@@ -777,7 +778,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Model-configuration">
-<h1>Model configuration<a class="headerlink" href="#Model-configuration" title="Permalink to this headline">¶</a></h1>
+<h1>Model configuration<a class="headerlink" href="#Model-configuration" title="Permalink to this heading">¶</a></h1>
 <p>Using the already established shared arguments, we can see that the default parameters for NHiTS and TiDE are used. The only exception is that TiDE is tested both with and without <a class="reference external" href="https://openreview.net/forum?id=cGDAkQo1C0p">Reversible Instance Normalization</a>.</p>
 <p>We then iterate through the model dictionary and train all of the models. When using early stopping it is important to save checkpoints. This allows us to continue past the best model configuration and then restore the optimal weights once training has been completed.</p>
 <div class="nbinput nblast docutils container">
@@ -882,7 +883,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Results">
-<h1>Results<a class="headerlink" href="#Results" title="Permalink to this headline">¶</a></h1>
+<h1>Results<a class="headerlink" href="#Results" title="Permalink to this heading">¶</a></h1>
 <p>In this case, vanilla TiDE is similarly accurate as NHiTs. Including reversible instance normalization (<code class="docutils literal notranslate"><span class="pre">RINorm</span></code>) drastically helped to improve the TiDE forecasts (Keep in mind that this is just an example, and it is not always guaranteed to improve performance).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -946,13 +947,13 @@ div.rendered_html tbody tr:hover {
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

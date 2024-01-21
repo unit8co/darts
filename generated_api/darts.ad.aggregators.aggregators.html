@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -841,9 +842,9 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.aggregators.aggregators.Aggregator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.aggregators.aggregators.</span></span><span class="sig-name descname"><span class="pre">Aggregator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/aggregators/aggregators.html#Aggregator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.aggregators.aggregators.Aggregator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -908,10 +909,10 @@ input into a (sequence of) univariate binary series.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.aggregators.aggregators.FittableAggregator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.aggregators.aggregators.</span></span><span class="sig-name descname"><span class="pre">FittableAggregator</span></span><a class="reference internal" href="../_modules/darts/ad/aggregators/aggregators.html#FittableAggregator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.aggregators.aggregators.FittableAggregator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.ad.aggregators.aggregators.Aggregator" title="darts.ad.aggregators.aggregators.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.ad.aggregators.aggregators.Aggregator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.ad.aggregators.aggregators.Aggregator" title="darts.ad.aggregators.aggregators.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a></p>
 <p>Base class of Aggregators that do need training.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -994,10 +995,10 @@ input into a (sequence of) univariate binary series.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.aggregators.aggregators.NonFittableAggregator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.aggregators.aggregators.</span></span><span class="sig-name descname"><span class="pre">NonFittableAggregator</span></span><a class="reference internal" href="../_modules/darts/ad/aggregators/aggregators.html#NonFittableAggregator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.aggregators.aggregators.NonFittableAggregator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.ad.aggregators.aggregators.Aggregator" title="darts.ad.aggregators.aggregators.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.ad.aggregators.aggregators.Aggregator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.ad.aggregators.aggregators.Aggregator" title="darts.ad.aggregators.aggregators.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a></p>
 <p>Base class of Aggregators that do not need training.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1094,13 +1095,13 @@ input into a (sequence of) univariate binary series.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

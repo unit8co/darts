@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -699,7 +700,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Static-Covariates">
-<h1>Static Covariates<a class="headerlink" href="#Static-Covariates" title="Permalink to this headline">¶</a></h1>
+<h1>Static Covariates<a class="headerlink" href="#Static-Covariates" title="Permalink to this heading">¶</a></h1>
 <p>Static covariates are characteristics of a time series / constants which do not change over time. When dealing with multiple time series, static covariates can help specific models improve forecasts. Darts’ models will only consider static covariates embedded in the target series (the series for which we want to predict future values) and not past and/or future covariates (external data).</p>
 <p>In this tutorial we look at:</p>
 <ol class="arabic simple">
@@ -734,7 +735,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="1.-Defining-static-covariates">
-<h2>1. Defining static covariates<a class="headerlink" href="#1.-Defining-static-covariates" title="Permalink to this headline">¶</a></h2>
+<h2>1. Defining static covariates<a class="headerlink" href="#1.-Defining-static-covariates" title="Permalink to this heading">¶</a></h2>
 <p>Define your static covariates as a pd.DataFrame where the columns represent the static variables and rows stand for the components of the uni/multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> they will be added to.</p>
 <ul class="simple">
 <li><p>The number of rows must either be 1 or equal to the number of components from <code class="docutils literal notranslate"><span class="pre">series</span></code>.</p></li>
@@ -770,7 +771,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="2.-Add-static-covariates-to-an-existing-TimeSeries">
-<h2>2. Add static covariates to an existing TimeSeries<a class="headerlink" href="#2.-Add-static-covariates-to-an-existing-TimeSeries" title="Permalink to this headline">¶</a></h2>
+<h2>2. Add static covariates to an existing TimeSeries<a class="headerlink" href="#2.-Add-static-covariates-to-an-existing-TimeSeries" title="Permalink to this heading">¶</a></h2>
 <p>Create a new series from an existing TimeSeries with added static covariates using method <code class="docutils literal notranslate"><span class="pre">with_static_covariates()</span></code> (see docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_static_covariates">here</a>)</p>
 <ul class="simple">
 <li><p>Single row static covarites with multivariate <code class="docutils literal notranslate"><span class="pre">series</span></code> creates “global_components” which are mapped to all components</p></li>
@@ -812,7 +813,7 @@ comp3               1.0   b
 </div>
 </section>
 <section id="3.-Adding-static-covariates-at-TimeSeries-construction">
-<h2>3. Adding static covariates at TimeSeries construction<a class="headerlink" href="#3.-Adding-static-covariates-at-TimeSeries-construction" title="Permalink to this headline">¶</a></h2>
+<h2>3. Adding static covariates at TimeSeries construction<a class="headerlink" href="#3.-Adding-static-covariates-at-TimeSeries-construction" title="Permalink to this heading">¶</a></h2>
 <p>Static covariates can also directly be added when creating a time series with parameter <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code> in most of <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_*()</span></code> methods.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -843,7 +844,7 @@ comp3               1.0   b
 </div>
 </section>
 <section id="Using-static-covariates-with-multiple-TimeSeries">
-<h2>Using static covariates with multiple TimeSeries<a class="headerlink" href="#Using-static-covariates-with-multiple-TimeSeries" title="Permalink to this headline">¶</a></h2>
+<h2>Using static covariates with multiple TimeSeries<a class="headerlink" href="#Using-static-covariates-with-multiple-TimeSeries" title="Permalink to this heading">¶</a></h2>
 <p>Static covariates are only really useful if we use them across multiple TimeSeries. By convention, the static covariates layout (pd.DataFrame columns, index) has to be the same for all series.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -879,7 +880,7 @@ global_components  SERIES2  0.75
 </div>
 </section>
 <section id="4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()">
-<h2>4. Extract a list of time series by groups from a DataFrame using <code class="docutils literal notranslate"><span class="pre">from_group_dataframe()</span></code><a class="headerlink" href="#4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()" title="Permalink to this headline">¶</a></h2>
+<h2>4. Extract a list of time series by groups from a DataFrame using <code class="docutils literal notranslate"><span class="pre">from_group_dataframe()</span></code><a class="headerlink" href="#4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()" title="Permalink to this heading">¶</a></h2>
 <p>If your DataFrame contains multiple time series which are stacked vertically, you can use <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_group_dataframe()</span></code> (see the docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_group_dataframe">here</a>) to extract them as a list of TimeSeries instances. This requires a column or list of columns for which the DataFrame should grouped by (parameter <code class="docutils literal notranslate"><span class="pre">group_cols</span></code>). <code class="docutils literal notranslate"><span class="pre">group_cols</span></code> will automatically be added as static covariates to
 the individual series. Additional columns can be used as static covariates with parameter <code class="docutils literal notranslate"><span class="pre">static_cols</span></code>.</p>
 <p>In the example below, we generate a DataFrame which contains data of two distinct time series (overlapping/repeating dates) “SERIES1” and “SERIES2” and extract the TimeSeries with <code class="docutils literal notranslate"><span class="pre">from_group_dataframe()</span></code>.</p>
@@ -963,7 +964,7 @@ global_components  SERIES2  0.75
 </div>
 </section>
 <section id="5.-Scaling/Encoding/Transforming-static-covariate-data">
-<h2>5. Scaling/Encoding/Transforming static covariate data<a class="headerlink" href="#5.-Scaling/Encoding/Transforming-static-covariate-data" title="Permalink to this headline">¶</a></h2>
+<h2>5. Scaling/Encoding/Transforming static covariate data<a class="headerlink" href="#5.-Scaling/Encoding/Transforming-static-covariate-data" title="Permalink to this heading">¶</a></h2>
 <p>There might be the need to scale numeric static covariates or encode categorical static covariates as not all models can handle non numeric static covariates.</p>
 <p>Use <code class="docutils literal notranslate"><span class="pre">StaticCovariatesTransformer</span></code> (see the docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#staticcovariatestransformer">here</a>) to scale/transform static covariates. By default it uses a <code class="docutils literal notranslate"><span class="pre">MinMaxScaler</span></code> to scale numeric data, and a <code class="docutils literal notranslate"><span class="pre">OrdinalEncoder</span></code> to encode categorical data. Both the numeric and categorical transformers will be fit globally on static covariate data of all time series passed to
 <code class="docutils literal notranslate"><span class="pre">StaticCovariatesTransformer.fit()</span></code></p>
@@ -1009,7 +1010,7 @@ global_components  1.0   1.0
 </div>
 </section>
 <section id="6.-Forecasting-example-with-TFTModel-and-static-covariates">
-<h2>6. Forecasting example with <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> and static covariates<a class="headerlink" href="#6.-Forecasting-example-with-TFTModel-and-static-covariates" title="Permalink to this headline">¶</a></h2>
+<h2>6. Forecasting example with <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> and static covariates<a class="headerlink" href="#6.-Forecasting-example-with-TFTModel-and-static-covariates" title="Permalink to this heading">¶</a></h2>
 <p>Now let’s find out if adding static covariates to a forecasting problem can improve predictive accuracy. We’ll use <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> which supports numeric and categorical static covariates.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -1030,7 +1031,7 @@ global_components  1.0   1.0
 </div>
 </div>
 <section id="6.1-Experiment-setup">
-<h3>6.1 Experiment setup<a class="headerlink" href="#6.1-Experiment-setup" title="Permalink to this headline">¶</a></h3>
+<h3>6.1 Experiment setup<a class="headerlink" href="#6.1-Experiment-setup" title="Permalink to this heading">¶</a></h3>
 <p>For our experiment, we generate two time series: a fully sine wave series (label = smooth) and sine wave series with some irregularities every other period (label = irregular, see the ramps at periods 2 and 4).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
@@ -1108,7 +1109,7 @@ global_components  1.0   1.0
 </section>
 </section>
 <section id="6.2-Forecasting-without-static-covariates">
-<h2>6.2 Forecasting without static covariates<a class="headerlink" href="#6.2-Forecasting-without-static-covariates" title="Permalink to this headline">¶</a></h2>
+<h2>6.2 Forecasting without static covariates<a class="headerlink" href="#6.2-Forecasting-without-static-covariates" title="Permalink to this heading">¶</a></h2>
 <p>Let’s train the first model without any static covariates</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
@@ -1158,7 +1159,7 @@ global_components  1.0   1.0
 <p>As expected, the model was not able to determine the type of the underlying prediciton series (smooth or irregular) and generate a sine-wave like forecast for both.</p>
 </section>
 <section id="6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)">
-<h2>6.3 Forecasting with 0/1 binary static covariates (numeric)<a class="headerlink" href="#6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)" title="Permalink to this headline">¶</a></h2>
+<h2>6.3 Forecasting with 0/1 binary static covariates (numeric)<a class="headerlink" href="#6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)" title="Permalink to this heading">¶</a></h2>
 <p>Now let’s repeat the experiment but this time we add information about the curve type as a binary (numeric) static covariate named <code class="docutils literal notranslate"><span class="pre">&quot;curve_type&quot;</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -1227,7 +1228,7 @@ irregular                 0.0
 <p>That already looks much better! The model was able to identify the curve type/category from the binary static covariate feature.</p>
 </section>
 <section id="6.4-Forecasting-with-categorical-static-covariates">
-<h2>6.4 Forecasting with categorical static covariates<a class="headerlink" href="#6.4-Forecasting-with-categorical-static-covariates" title="Permalink to this headline">¶</a></h2>
+<h2>6.4 Forecasting with categorical static covariates<a class="headerlink" href="#6.4-Forecasting-with-categorical-static-covariates" title="Permalink to this heading">¶</a></h2>
 <p>The last experiment already showed promising results. So why not only use binary features for categorical data? While it might have worked well for our two time series, if we had more curve types we’d need to one hot encode the feature into a binary variable for each category. With a lot of categories, this lead to a large number of features/predictors and multicollinearity which can lower the model’s predictive accuracy.</p>
 <p>As a last experiment, let’s use the curve type as a categorical feature. <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> learns an embedding for categorical features. Darts’ <code class="docutils literal notranslate"><span class="pre">TorchForecastingModels</span></code> (such as <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>) only support numeric data. Before training we need to transform the <code class="docutils literal notranslate"><span class="pre">&quot;curve_type&quot;</span></code> into a integer-valued feature with <code class="docutils literal notranslate"><span class="pre">StaticCovariatesTransformer</span></code> (see section 5.).</p>
 <div class="nbinput docutils container">
@@ -1419,13 +1420,13 @@ RMSE  0.289051  0.138122  0.138631
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

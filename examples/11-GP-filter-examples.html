@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -608,7 +609,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Filtering-and-predicting-using-the-Gaussian-Process-filter">
-<h1>Filtering and predicting using the Gaussian Process filter<a class="headerlink" href="#Filtering-and-predicting-using-the-Gaussian-Process-filter" title="Permalink to this headline">¶</a></h1>
+<h1>Filtering and predicting using the Gaussian Process filter<a class="headerlink" href="#Filtering-and-predicting-using-the-Gaussian-Process-filter" title="Permalink to this heading">¶</a></h1>
 <p>In this notebook, we will look at filtering noisy data by fitting a Gaussian Process on it.</p>
 <p>The Gaussian Process filter, just like the Kalman filter, is a <code class="docutils literal notranslate"><span class="pre">FilteringModel</span></code> in Darts (and not a <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code>). <code class="docutils literal notranslate"><span class="pre">FilteringModel</span></code>s can be used to smooth series, or to attempt to infer the “true” data from the data corrupted by noise.</p>
 <p>In the case of the Gaussian Process, this is done by making assumptions about the shape of the underlying function on which the true data points lie. These assumptions (e.g. smoothness, periodicity, …) are encoded in the kernels.</p>
@@ -633,7 +634,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Adding-white-noise-to-a-sine-wave">
-<h2>Adding white noise to a sine wave<a class="headerlink" href="#Adding-white-noise-to-a-sine-wave" title="Permalink to this headline">¶</a></h2>
+<h2>Adding white noise to a sine wave<a class="headerlink" href="#Adding-white-noise-to-a-sine-wave" title="Permalink to this heading">¶</a></h2>
 <p>We create a simple sine wave signal and add Gaussian noise to it.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -668,7 +669,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Infer-the-mean-of-a-Gaussian-Process-using-a-periodic-kernel">
-<h2>Infer the mean of a Gaussian Process using a periodic kernel<a class="headerlink" href="#Infer-the-mean-of-a-Gaussian-Process-using-a-periodic-kernel" title="Permalink to this headline">¶</a></h2>
+<h2>Infer the mean of a Gaussian Process using a periodic kernel<a class="headerlink" href="#Infer-the-mean-of-a-Gaussian-Process-using-a-periodic-kernel" title="Permalink to this heading">¶</a></h2>
 <p>Next, we fit a Gaussian Process on the data using the <code class="docutils literal notranslate"><span class="pre">ExpSineSquared</span></code> kernel. This kernel encodes a periodicity assumption, which is appropriate for our data. You can try to uncomment the <code class="docutils literal notranslate"><span class="pre">kernel</span> <span class="pre">=</span> <span class="pre">RBF()</span></code> line to change the kernel to an <code class="docutils literal notranslate"><span class="pre">RBF</span></code> kernel, which only imposes smoothness of the function. See <a class="reference external" href="https://www.cs.toronto.edu/~duvenaud/cookbook/">The Kernel Cookbook</a> for more information about (Gaussian Process) kernels and how to combine them.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code> constructor takes the same arguments as scikit-learn’s <code class="docutils literal notranslate"><span class="pre">GaussianProcessRegressor</span></code> on which is relies. The kernels implemented in scikit-learn can be found <a class="reference external" href="https://scikit-learn.org/stable/modules/gaussian_process.html#kernels-for-gaussian-processes">here</a>.</p>
 <p>Here, we set a relative noise variance of <code class="docutils literal notranslate"><span class="pre">alpha=0.2</span></code> because we know exactly how much noise we added before, but in practice this will have to estimated.</p>
@@ -712,7 +713,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Sample-from-a-Gaussian-Process">
-<h2>Sample from a Gaussian Process<a class="headerlink" href="#Sample-from-a-Gaussian-Process" title="Permalink to this headline">¶</a></h2>
+<h2>Sample from a Gaussian Process<a class="headerlink" href="#Sample-from-a-Gaussian-Process" title="Permalink to this heading">¶</a></h2>
 <p>The Gaussian Process is a probabilistic model, meaning that the predictions of the model are distributions instead of single values.</p>
 <p>Before, we just used the mean of these distributions at the points of interest to plot a curve. Here instead, we will sample from the distributions and plot the 90% confidence interval. From this we can see that the uncertainty about the underlying data is larger around the crests and troughs than elsewhere.</p>
 <div class="nbinput docutils container">
@@ -748,7 +749,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Sample-from-a-Gaussian-Process-with-missing-data-points">
-<h2>Sample from a Gaussian Process with missing data points<a class="headerlink" href="#Sample-from-a-Gaussian-Process-with-missing-data-points" title="Permalink to this headline">¶</a></h2>
+<h2>Sample from a Gaussian Process with missing data points<a class="headerlink" href="#Sample-from-a-Gaussian-Process-with-missing-data-points" title="Permalink to this heading">¶</a></h2>
 <p>We can even use the Gaussian Process filter on time series with missing (NaN) data points.</p>
 <p>For our periodic signal, the Gaussian Process estimates the missing data very well using the periodic kernel. You can see how this changes and the uncertainty increases when using the RBF kernel instead.</p>
 <div class="nbinput docutils container">
@@ -837,13 +838,13 @@ div.rendered_html tbody tr:hover {
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

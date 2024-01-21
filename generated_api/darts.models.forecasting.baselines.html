@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -835,12 +836,12 @@
               <div>
                 
   <span class="target" id="module-darts.models.forecasting.baselines"></span><section id="baseline-models">
-<h1>Baseline Models<a class="headerlink" href="#baseline-models" title="Permalink to this headline">¶</a></h1>
+<h1>Baseline Models<a class="headerlink" href="#baseline-models" title="Permalink to this heading">¶</a></h1>
 <p>A collection of simple benchmark models for univariate series.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.baselines.NaiveDrift">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.baselines.</span></span><span class="sig-name descname"><span class="pre">NaiveDrift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/baselines.html#NaiveDrift"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.baselines.NaiveDrift" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.LocalForecastingModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
 <p>Naive Drift Model</p>
 <p>This model fits a line between the first and last point of the training series,
 and extends it in the future. For a training series of length <span class="math notranslate nohighlight">\(T\)</span>, we have:</p>
@@ -863,7 +864,7 @@ and extends it in the future. For a training series of length <span class="math 
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -925,7 +926,7 @@ and extends it in the future. For a training series of length <span class="math 
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1695,7 +1696,7 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.baselines.NaiveEnsembleModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.baselines.</span></span><span class="sig-name descname"><span class="pre">NaiveEnsembleModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forecasting_models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_forecasting_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/baselines.html#NaiveEnsembleModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.baselines.NaiveEnsembleModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel" title="darts.models.forecasting.ensemble_model.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.ensemble_model.EnsembleModel</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel" title="darts.models.forecasting.ensemble_model.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">EnsembleModel</span></code></a></p>
 <p>Naive combination model</p>
 <p>Naive implementation of <cite>EnsembleModel</cite>
 Returns the average of all predictions of the constituent models</p>
@@ -1730,7 +1731,7 @@ pretrained <cite>GlobalForecastingModels</cite>). Default: <code class="docutils
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1792,7 +1793,7 @@ pretrained <cite>GlobalForecastingModels</cite>). Default: <code class="docutils
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2592,7 +2593,7 @@ same likelihood.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.baselines.NaiveMean">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.baselines.</span></span><span class="sig-name descname"><span class="pre">NaiveMean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/baselines.html#NaiveMean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.baselines.NaiveMean" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.LocalForecastingModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
 <p>Naive Mean Model</p>
 <p>This model has no parameter, and always predicts the
 mean value of the training series.</p>
@@ -2613,7 +2614,7 @@ mean value of the training series.</p>
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2675,7 +2676,7 @@ mean value of the training series.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3445,7 +3446,7 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.baselines.NaiveMovingAverage">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.baselines.</span></span><span class="sig-name descname"><span class="pre">NaiveMovingAverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/baselines.html#NaiveMovingAverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.baselines.NaiveMovingAverage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.LocalForecastingModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
 <p>Naive Moving Average Model</p>
 <p>This model forecasts using an auto-regressive moving average (ARMA).</p>
 <dl class="field-list simple">
@@ -3470,7 +3471,7 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3532,7 +3533,7 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4302,7 +4303,7 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.baselines.NaiveSeasonal">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.baselines.</span></span><span class="sig-name descname"><span class="pre">NaiveSeasonal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">K</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/baselines.html#NaiveSeasonal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.baselines.NaiveSeasonal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.LocalForecastingModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
 <p>Naive Seasonal Model</p>
 <p>This model always predicts the value of <cite>K</cite> time steps ago.
 When <cite>K=1</cite>, this model predicts the last value of the training set.
@@ -4330,7 +4331,7 @@ When <cite>K&gt;1</cite>, it repeats the last <cite>K</cite> values of the train
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -4392,7 +4393,7 @@ When <cite>K&gt;1</cite>, it repeats the last <cite>K</cite> values of the train
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -5195,13 +5196,13 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;Regress
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -722,10 +723,10 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Transfer-Learning-for-Time-Series-Forecasting-with-Darts">
-<h1>Transfer Learning for Time Series Forecasting with Darts<a class="headerlink" href="#Transfer-Learning-for-Time-Series-Forecasting-with-Darts" title="Permalink to this headline">¶</a></h1>
+<h1>Transfer Learning for Time Series Forecasting with Darts<a class="headerlink" href="#Transfer-Learning-for-Time-Series-Forecasting-with-Darts" title="Permalink to this heading">¶</a></h1>
 <p>Authors: Julien Herzen, Florian Ravasi, Guillaume Raille, Gaël Grosch.</p>
 <section id="Overview">
-<h2>Overview<a class="headerlink" href="#Overview" title="Permalink to this headline">¶</a></h2>
+<h2>Overview<a class="headerlink" href="#Overview" title="Permalink to this heading">¶</a></h2>
 <p>The goal of this notebook is to explore transfer learning for time series forecasting – that is, training forecasting models on one time series dataset and using it on another. The notebook is 100% self-contained – i.e., it also contains the necessary commands to install dependencies and download the datasets being used.</p>
 <p>Depending on what constitutes a “learning task”, what we call transfer learning here can also be seen under the angle of meta-learning (or “learning to learn”), where models can adapt themselves to new tasks (e.g. forecasting a new time series) at inference time without further training [1].</p>
 <p>This notebook is an adaptation of a workshop on “Forecasting and Meta-Learning” that was given at the Applied Machine Learning Days conference in Lausanne, Switzerland, in March 2022. It contains the following parts:</p>
@@ -739,7 +740,7 @@ div.rendered_html tbody tr:hover {
 <p>The compute durations written for the different models have been obtained by running the notebook on a Apple Silicon M2 CPU, with Python 3.10.13 and Darts 0.27.0.</p>
 </section>
 <section id="Part-0:-Setup">
-<h2>Part 0: Setup<a class="headerlink" href="#Part-0:-Setup" title="Permalink to this headline">¶</a></h2>
+<h2>Part 0: Setup<a class="headerlink" href="#Part-0:-Setup" title="Permalink to this heading">¶</a></h2>
 <p>First, we need to have the right libraries and make the right imports. For the deep learning models, it helps to have a GPU, but this is not mandatory.</p>
 <p>The following two cells need to be run only once. They install the dependencies and download all the required datasets.</p>
 <div class="nbinput nblast docutils container">
@@ -832,7 +833,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Datasets-loading-methods">
-<h3>Datasets loading methods<a class="headerlink" href="#Datasets-loading-methods" title="Permalink to this headline">¶</a></h3>
+<h3>Datasets loading methods<a class="headerlink" href="#Datasets-loading-methods" title="Permalink to this heading">¶</a></h3>
 <p>Here, we define some helper methods to load the three datasets we’ll be playing with: <code class="docutils literal notranslate"><span class="pre">air</span></code>, <code class="docutils literal notranslate"><span class="pre">m3</span></code> and <code class="docutils literal notranslate"><span class="pre">m4</span></code>.</p>
 <p>All the methods below return two list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>: one list of training series and one list of “test” series (of length <code class="docutils literal notranslate"><span class="pre">HORIZON</span></code>).</p>
 <p>For convenience, all the series are already scaled here, by multiplying each of them by a constant so that the largest value is 1. Such scaling is necessary for many models to work correctly (esp. deep learning models). It does not affect the sMAPE values, so we can evaluate the accuracy of our algorithms on the scaled series. In a real application, we would have to keep the Darts <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> objects somewhere in order to inverse-scale the forecasts.</p>
@@ -1014,9 +1015,9 @@ div.rendered_html tbody tr:hover {
 </section>
 </section>
 <section id="Part-1:-Local-models-on-the-air-dataset">
-<h2>Part 1: Local models on the <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-1:-Local-models-on-the-air-dataset" title="Permalink to this headline">¶</a></h2>
+<h2>Part 1: Local models on the <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-1:-Local-models-on-the-air-dataset" title="Permalink to this heading">¶</a></h2>
 <section id="Inspecting-Data">
-<h3>Inspecting Data<a class="headerlink" href="#Inspecting-Data" title="Permalink to this headline">¶</a></h3>
+<h3>Inspecting Data<a class="headerlink" href="#Inspecting-Data" title="Permalink to this heading">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset contains the number of air passengers that flew in or out of the USA per carrier (or airline company) from the year 2000 until 2019.</p>
 <p>First, we can load the train and test series by calling <code class="docutils literal notranslate"><span class="pre">load_air()</span></code> function that we have defined above.</p>
 <div class="nbinput docutils container">
@@ -1119,7 +1120,7 @@ done. There are 245 series, with average training length 154.06938775510204
 </div>
 </section>
 <section id="A-useful-function-to-evaluate-models">
-<h3>A useful function to evaluate models<a class="headerlink" href="#A-useful-function-to-evaluate-models" title="Permalink to this headline">¶</a></h3>
+<h3>A useful function to evaluate models<a class="headerlink" href="#A-useful-function-to-evaluate-models" title="Permalink to this heading">¶</a></h3>
 <p>Below, we write a small function that will make our life easier for quickly trying and comparing different local models. We loop through each serie, fit a model and then evaluate on our test dataset.</p>
 <blockquote>
 <div><p>⚠️ <code class="docutils literal notranslate"><span class="pre">tqdm</span></code> is optional and is only there to help display the training progress (as you will see it can take some time when training 300+ time series)</p>
@@ -1148,7 +1149,7 @@ done. There are 245 series, with average training length 154.06938775510204
 </div>
 </section>
 <section id="Building-and-evaluating-models">
-<h3>Building and evaluating models<a class="headerlink" href="#Building-and-evaluating-models" title="Permalink to this headline">¶</a></h3>
+<h3>Building and evaluating models<a class="headerlink" href="#Building-and-evaluating-models" title="Permalink to this heading">¶</a></h3>
 <p>We can now try a first forecasting model on this dataset. As a first step, it is usually a good practice to see how a (very) naive model blindly repeating the last value of the training series performs. This can be done in Darts using a <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal">NaiveSeasonal</a> model:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -1341,7 +1342,7 @@ computing sMAPEs...
 </div>
 </section>
 <section id="Comparing-models">
-<h3>Comparing models<a class="headerlink" href="#Comparing-models" title="Permalink to this headline">¶</a></h3>
+<h3>Comparing models<a class="headerlink" href="#Comparing-models" title="Permalink to this heading">¶</a></h3>
 <p>Below, we define a function that will be useful to visualise how models compare to each other in terms of median sMAPE, and time required to obtain the forecasts.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
@@ -1407,12 +1408,12 @@ computing sMAPEs...
 </div>
 </section>
 <section id="Conclusions-so-far">
-<h3>Conclusions so far<a class="headerlink" href="#Conclusions-so-far" title="Permalink to this headline">¶</a></h3>
+<h3>Conclusions so far<a class="headerlink" href="#Conclusions-so-far" title="Permalink to this heading">¶</a></h3>
 <p>ARIMA gives the best results, but it is also (by far) the most time-consuming model. The Exponential Smoothing model provides an interesting tradeoff, with good forecasting accuracy and lower computational cost. Can we maybe find a better compromise by considering <em>global</em> models - i.e., models that are trained only once, jointly on all time series?</p>
 </section>
 </section>
 <section id="Part-2:-Global-models-on-the-air-dataset">
-<h2>Part 2: Global models on the <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-2:-Global-models-on-the-air-dataset" title="Permalink to this headline">¶</a></h2>
+<h2>Part 2: Global models on the <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-2:-Global-models-on-the-air-dataset" title="Permalink to this heading">¶</a></h2>
 <p>In this section we will use “global models” - that is, models that are fit on multiple series at once. Darts has essentially two kinds of global models:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">RegressionModels</span></code> which are wrappers around sklearn-like regression models (Part 2.1).</p></li>
@@ -1443,7 +1444,7 @@ computing sMAPEs...
 </div>
 </div>
 <section id="Part-2.1:-Using-Darts-RegressionModels.">
-<h3>Part 2.1: Using Darts <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s.<a class="headerlink" href="#Part-2.1:-Using-Darts-RegressionModels." title="Permalink to this headline">¶</a></h3>
+<h3>Part 2.1: Using Darts <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s.<a class="headerlink" href="#Part-2.1:-Using-Darts-RegressionModels." title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> in Darts are forecasting models that can wrap around any “scikit-learn compatible” regression model to obtain forecasts. Compared to deep learning, they represent good “go-to” global models because they typically don’t have many hyper-parameters and can be faster to train. In addition, Darts also offers some “pre-packaged” regression models such as <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>.</p>
 <p>We’ll now use our function <code class="docutils literal notranslate"><span class="pre">eval_global_models()</span></code>. In the following cells, we will try using some regression models, for example:</p>
 <ul class="simple">
@@ -1540,7 +1541,7 @@ computing sMAPEs...
 </div>
 </section>
 <section id="Part-2.2:-Using-deep-learning">
-<h3>Part 2.2: Using deep learning<a class="headerlink" href="#Part-2.2:-Using-deep-learning" title="Permalink to this headline">¶</a></h3>
+<h3>Part 2.2: Using deep learning<a class="headerlink" href="#Part-2.2:-Using-deep-learning" title="Permalink to this heading">¶</a></h3>
 <p>Below, we will train an N-BEATS model on our <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset. Again, you can refer to <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html">the API doc</a> for documentation on the hyper-parameters. The following hyper-parameters should be a good starting point, and training should take in the order of a minute or two if you’re using a (somewhat slow) Colab GPU.</p>
 <p>During training, you can have a look at the <a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a>.</p>
 <div class="nbinput nblast docutils container">
@@ -1710,13 +1711,13 @@ computing sMAPEs...
 </div>
 </section>
 <section id="id1">
-<h3>Conclusions so far<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<h3>Conclusions so far<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
 <p>So it looks like a linear regression model trained jointly on all series is now providing the best tradeoff between accuracy and speed. Linear regression is often the way to go!</p>
 <p>Our deep learning model N-BEATS is not doing great. Note that we haven’t tried to tune it to this problem explicitly, doing so might have produced more accurate results. Instead of spending time tuning it though, in the next part we will see if it can do better by being trained on an entirely different dataset.</p>
 </section>
 </section>
 <section id="Part-3:-Training-an-N-BEATS-model-on-m4-dataset-and-use-it-to-forecast-air-dataset">
-<h2>Part 3: Training an N-BEATS model on <code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset and use it to forecast <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-3:-Training-an-N-BEATS-model-on-m4-dataset-and-use-it-to-forecast-air-dataset" title="Permalink to this headline">¶</a></h2>
+<h2>Part 3: Training an N-BEATS model on <code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset and use it to forecast <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-3:-Training-an-N-BEATS-model-on-m4-dataset-and-use-it-to-forecast-air-dataset" title="Permalink to this heading">¶</a></h2>
 <p>Deep learning models often do better when trained on <em>large</em> datasets. Let’s try to load all 48,000 monthly time series in the M4 dataset and train our model once more on this larger dataset.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
@@ -1926,7 +1927,7 @@ computing sMAPEs...
 </div>
 </div>
 <section id="id2">
-<h3>Conclusions so far<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<h3>Conclusions so far<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
 <p>Although it’s not the absolute best in terms of accuracy, our N-BEATS model trained on <code class="docutils literal notranslate"><span class="pre">m4</span></code> reaches competitive accuracies. This is quite remarkable because this model has <em>not</em> been trained on <em>any</em> of the <code class="docutils literal notranslate"><span class="pre">air</span></code> series we’ve asked it to forecast! The forecasting step with N-BEATS is more than 1000x faster than the fit-predict step we needed with ARIMA, and also faster than with linear regression.</p>
 <p>Just for the fun, we can also inspect manually how this model does on another series – for example, the monthly milk production series available in <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code>:</p>
 <div class="nbinput docutils container">
@@ -1985,7 +1986,7 @@ HPU available: False, using: 0 HPUs
 </div>
 </section>
 <section id="Try-training-other-global-models-on-m4-and-applying-on-airline-passengers">
-<h3>Try training other global models on <code class="docutils literal notranslate"><span class="pre">m4</span></code> and applying on airline passengers<a class="headerlink" href="#Try-training-other-global-models-on-m4-and-applying-on-airline-passengers" title="Permalink to this headline">¶</a></h3>
+<h3>Try training other global models on <code class="docutils literal notranslate"><span class="pre">m4</span></code> and applying on airline passengers<a class="headerlink" href="#Try-training-other-global-models-on-m4-and-applying-on-airline-passengers" title="Permalink to this heading">¶</a></h3>
 <p>Let’s now try to train other global models on the M4 dataset in order to see if we can get similar results. Below, we will train some <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s on the full <code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset. This can be quite slow. To have faster training we could use e.g., <code class="docutils literal notranslate"><span class="pre">random.choices(m4_train,</span> <span class="pre">k=5000)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">m4_train</span></code> to limit the size of the training set. We could also specify some small enough value for <code class="docutils literal notranslate"><span class="pre">max_samples_per_ts</span></code> in order to limit the number of training samples.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
@@ -2096,7 +2097,7 @@ computing sMAPEs...
 </section>
 </section>
 <section id="Part-4-and-recap:-Use-the-same-model-on-M3-dataset">
-<h2>Part 4 and recap: Use the same model on M3 dataset<a class="headerlink" href="#Part-4-and-recap:-Use-the-same-model-on-M3-dataset" title="Permalink to this headline">¶</a></h2>
+<h2>Part 4 and recap: Use the same model on M3 dataset<a class="headerlink" href="#Part-4-and-recap:-Use-the-same-model-on-M3-dataset" title="Permalink to this heading">¶</a></h2>
 <p>OK, now, were we lucky with the airline passengers dataset? Let’s see by repeating the entire process on a new dataset :) You will see that it actually requires very few lines of code. As a new dataset, we will use <code class="docutils literal notranslate"><span class="pre">m3</span></code>, which contains about 1,400 monthly series from the M3 competition.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
@@ -2537,7 +2538,7 @@ computing sMAPEs...
 it to forecast.</p>
 </section>
 <section id="Conclusions">
-<h2>Conclusions<a class="headerlink" href="#Conclusions" title="Permalink to this headline">¶</a></h2>
+<h2>Conclusions<a class="headerlink" href="#Conclusions" title="Permalink to this heading">¶</a></h2>
 <p>Transfer learning and meta learning is definitely an interesting phenomenon that is at the moment under-explored in time series forecasting. When does it succeed? When does it fail? Can fine tuning help? When should it be used? Many of these questions still have to be explored but we hope to have shown that doing so is quite easy with Darts models.</p>
 <p>Now, which method is best for your case? As always, it depends. If you’re dealing mostly with isolated series that have a sufficient history, classical methods such as ARIMA will get you a long way. Even on larger datasets, if compute power is not too much an issue, they can represent interesting out-of-the-box options. On the other hand if you’re dealing with larger number of series, or series of higher dimensionalities, ML methods and global models will often be the way to go. They can capture
 patterns across wide ranges of different time series, and are in general faster to run. Don’t under-estimate linear regression based models in this category! If you have reasons to believe you need to capture more complex patterns, or if inference speed is <em>really</em> important for you, give deep learning methods a shot. N-BEATS has proved its worth for meta-learning [1], but this can potentially work with other models too.</p>
@@ -2579,13 +2580,13 @@ patterns across wide ranges of different time series, and are in general faster 
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

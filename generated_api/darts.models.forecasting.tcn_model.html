@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,11 +834,11 @@
               <div>
                 
   <span class="target" id="module-darts.models.forecasting.tcn_model"></span><section id="temporal-convolutional-network">
-<h1>Temporal Convolutional Network<a class="headerlink" href="#temporal-convolutional-network" title="Permalink to this headline">¶</a></h1>
+<h1>Temporal Convolutional Network<a class="headerlink" href="#temporal-convolutional-network" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.tcn_model.TCNModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.tcn_model.</span></span><span class="sig-name descname"><span class="pre">TCNModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_filters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dilation_base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/tcn_model.html#TCNModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.tcn_model.TCNModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.torch_forecasting_model.PastCovariatesTorchModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code></p>
 <p>Temporal Convolutional Network Model (TCN).</p>
 <p>This is an implementation of a dilated TCN used for forecasting, inspired from <a class="reference internal" href="#r632dab2f2590-1" id="id1">[1]</a>.</p>
 <p>This model supports past covariates (known for <cite>input_chunk_length</cite> points before prediction time).</p>
@@ -1009,7 +1010,7 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 techniques that can be used to improve the forecasts quality compared to this simple usage example.</p>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1080,7 +1081,7 @@ techniques that can be used to improve the forecasts quality compared to this si
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1725,7 +1726,7 @@ and the inner lists contain the different historical forecasts.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.tcn_model.TCNModel.likelihood">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><span class="pre">darts.utils.likelihood_models.Likelihood</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.tcn_model.TCNModel.likelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><span class="pre">Likelihood</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.tcn_model.TCNModel.likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]</p>
@@ -2345,13 +2346,13 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

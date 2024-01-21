@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,17 +834,17 @@
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.dtw.window"></span><section id="dtw-windows">
-<h1>DTW Windows<a class="headerlink" href="#dtw-windows" title="Permalink to this headline">¶</a></h1>
+<h1>DTW Windows<a class="headerlink" href="#dtw-windows" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">CRWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ranges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#CRWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.Window" title="darts.dataprocessing.dtw.window.Window"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.window.Window</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.Window" title="darts.dataprocessing.dtw.window.Window"><code class="xref py py-class docutils literal notranslate"><span class="pre">Window</span></code></a></p>
 <p>Compressed row representation window.
 Stores the range of active grid cells in each column.
 Any window with contiguous columns can be expressed as a CRWindow.
 Supports efficient iterative construction and updates.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -880,7 +881,7 @@ with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -985,7 +986,7 @@ If (i,j) is not an active grid cell returns -1</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.CRWindow.column_ranges">
-<span class="sig-name descname"><span class="pre">column_ranges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">array.array</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.column_ranges" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">column_ranges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">array</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.CRWindow.column_ranges" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1022,7 +1023,7 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">Itakura</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_slope</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#Itakura"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow" title="darts.dataprocessing.dtw.window.CRWindow"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.window.CRWindow</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow" title="darts.dataprocessing.dtw.window.CRWindow"><code class="xref py py-class docutils literal notranslate"><span class="pre">CRWindow</span></code></a></p>
 <p>Forms the Itakura parallelogram, where max_slope determines the slope of the steeper side.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>                                     <span class="n">x</span>
@@ -1048,7 +1049,7 @@ If (i,j) is not an active grid cell returns -1</p>
 </pre></div>
 </div>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1080,7 +1081,7 @@ If (i,j) is not an active grid cell returns -1</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1185,7 +1186,7 @@ If (i,j) is not an active grid cell returns -1</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Itakura.column_ranges">
-<span class="sig-name descname"><span class="pre">column_ranges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">array.array</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.column_ranges" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">column_ranges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">array</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.Itakura.column_ranges" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1222,11 +1223,11 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.NoWindow">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">NoWindow</span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#NoWindow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.NoWindow" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.Window" title="darts.dataprocessing.dtw.window.Window"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.window.Window</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.Window" title="darts.dataprocessing.dtw.window.Window"><code class="xref py py-class docutils literal notranslate"><span class="pre">Window</span></code></a></p>
 <p>Window covers the entire grid,
 meaning every possible alignment between series1 and series2 is considered.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1324,11 +1325,11 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">SakoeChiba</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window_size</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#SakoeChiba"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow" title="darts.dataprocessing.dtw.window.CRWindow"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.window.CRWindow</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.window.CRWindow" title="darts.dataprocessing.dtw.window.CRWindow"><code class="xref py py-class docutils literal notranslate"><span class="pre">CRWindow</span></code></a></p>
 <p>Forms a diagonal window where window_size controls the maximum allowed shift between the two series.
 If both time-series have the same time axis, window_size corresponds to the maximum number of time periods</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1360,7 +1361,7 @@ If both time-series have the same time axis, window_size corresponds to the maxi
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1465,7 +1466,7 @@ If (i,j) is not an active grid cell returns -1</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.SakoeChiba.column_ranges">
-<span class="sig-name descname"><span class="pre">column_ranges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">array.array</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_ranges" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">column_ranges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">array</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.window.SakoeChiba.column_ranges" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1502,9 +1503,9 @@ If (i,j) is not an active grid cell returns -1</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.window.Window">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.window.</span></span><span class="sig-name descname"><span class="pre">Window</span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/window.html#Window"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.window.Window" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1640,13 +1641,13 @@ If (i,j) is not an active grid cell returns -1</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

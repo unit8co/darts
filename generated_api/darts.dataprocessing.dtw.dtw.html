@@ -32,6 +32,7 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -833,7 +834,7 @@
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.dtw.dtw"></span><section id="dynamic-time-warping-dtw">
-<h1>Dynamic Time Warping (DTW)<a class="headerlink" href="#dynamic-time-warping-dtw" title="Permalink to this headline">¶</a></h1>
+<h1>Dynamic Time Warping (DTW)<a class="headerlink" href="#dynamic-time-warping-dtw" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.dtw.DTWAlignment">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.dtw.</span></span><span class="sig-name descname"><span class="pre">DTWAlignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cost</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment" title="Permalink to this definition">¶</a></dt>
@@ -895,7 +896,7 @@
 </dd></dl>
 
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -923,7 +924,7 @@
 </table>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="id0">
-<span class="sig-name descname"><span class="pre">cost</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><span class="pre">darts.dataprocessing.dtw.cost_matrix.CostMatrix</span></a></em><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">cost</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><span class="pre">CostMatrix</span></a></em><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1025,12 +1026,12 @@ with lines between them indicating the alignment selected by the DTW algorithm.<
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="id3">
-<span class="sig-name descname"><span class="pre">series1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></em><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">series1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">TimeSeries</span></a></em><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="id4">
-<span class="sig-name descname"><span class="pre">series2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></em><a class="headerlink" href="#id4" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">series2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">TimeSeries</span></a></em><a class="headerlink" href="#id4" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1127,13 +1128,13 @@ Increasing radius trades solution accuracy for performance.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

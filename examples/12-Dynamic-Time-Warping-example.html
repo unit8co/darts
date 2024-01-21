@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -671,7 +672,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Dynamic-Time-Warping-(DTW)">
-<h1>Dynamic Time Warping (DTW)<a class="headerlink" href="#Dynamic-Time-Warping-(DTW)" title="Permalink to this headline">¶</a></h1>
+<h1>Dynamic Time Warping (DTW)<a class="headerlink" href="#Dynamic-Time-Warping-(DTW)" title="Permalink to this heading">¶</a></h1>
 <p>The following offers a demonstration of the capabalities of the DTW module within darts. Dynamic Time Warping allows you to compare two time series of different lengths and time axes. The algorithm will determine the optimal alignment between elements in the two series, such that the pair-wise distance between them is minimized.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -732,7 +733,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Read-and-Format">
-<h2>Read and Format<a class="headerlink" href="#Read-and-Format" title="Permalink to this headline">¶</a></h2>
+<h2>Read and Format<a class="headerlink" href="#Read-and-Format" title="Permalink to this heading">¶</a></h2>
 <p>Here we simply read the CSV file containing the number of sunspots, and transform the values into the desired format. We resample the dateset to eliminate high-frequency noise, as we are only interested in the general shape.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -754,7 +755,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Determine-the-Number-of-Peaks">
-<h2>Determine the Number of Peaks<a class="headerlink" href="#Determine-the-Number-of-Peaks" title="Permalink to this headline">¶</a></h2>
+<h2>Determine the Number of Peaks<a class="headerlink" href="#Determine-the-Number-of-Peaks" title="Permalink to this heading">¶</a></h2>
 <p>We observe that the series is composed of a series of sharp peaks and troughs. Let’s quickly determine the number of periods to consider. We begin by applying a moving average filter to the series, to eliminate false local maxima. Then we simply count the number of local maxima returned by <code class="docutils literal notranslate"><span class="pre">argrelextrema</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -781,7 +782,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Generate-a-Pattern-to-Compare-With">
-<h2>Generate a Pattern to Compare With<a class="headerlink" href="#Generate-a-Pattern-to-Compare-With" title="Permalink to this headline">¶</a></h2>
+<h2>Generate a Pattern to Compare With<a class="headerlink" href="#Generate-a-Pattern-to-Compare-With" title="Permalink to this heading">¶</a></h2>
 <p>Here we simply construct a simplified pattern based on the previous observation, of linear peaks and troughs. We ensure that the mean is 0 and range is 1, to make it easier to fit to the data.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -807,7 +808,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Fit-the-Pattern-to-the-Series">
-<h2>Fit the Pattern to the Series<a class="headerlink" href="#Fit-the-Pattern-to-the-Series" title="Permalink to this headline">¶</a></h2>
+<h2>Fit the Pattern to the Series<a class="headerlink" href="#Fit-the-Pattern-to-the-Series" title="Permalink to this heading">¶</a></h2>
 <p>We rescale and shift the data to be inline with the actual series. Then we create a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, with the same time axis as the Sunspot dataset. While this is not necessary to perform Dynamic Time Warping, it will enable us to plot and compare the initial alignment. Since our pattern is slightly longer than the Sunspot time series itself, we drop all values past the end date.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -838,7 +839,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Quantitative-Comparison">
-<h2>Quantitative Comparison<a class="headerlink" href="#Quantitative-Comparison" title="Permalink to this headline">¶</a></h2>
+<h2>Quantitative Comparison<a class="headerlink" href="#Quantitative-Comparison" title="Permalink to this heading">¶</a></h2>
 <p>We can use MEAN ABSOLUTE ERROR also known as <code class="docutils literal notranslate"><span class="pre">mae</span></code>, to evaluate how closely our simple pattern fits the data. Looking at the plot above it is clear that that there is some fluctuation in the time between peaks, leading to a misalignment and a relatively high error.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -861,10 +862,10 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Enter-Dynamic-Time-Warping">
-<h2>Enter Dynamic Time Warping<a class="headerlink" href="#Enter-Dynamic-Time-Warping" title="Permalink to this headline">¶</a></h2>
+<h2>Enter Dynamic Time Warping<a class="headerlink" href="#Enter-Dynamic-Time-Warping" title="Permalink to this heading">¶</a></h2>
 <p>Fortunately finding the optimal alignment between two series is exactly what DTW was designed for! All we have to do is call the dtw with two time series.</p>
 <section id="No-Window">
-<h3>No Window<a class="headerlink" href="#No-Window" title="Permalink to this headline">¶</a></h3>
+<h3>No Window<a class="headerlink" href="#No-Window" title="Permalink to this heading">¶</a></h3>
 <p>The default behaviour is to consider all possible alignments between the time series. This becomes obvious when we plot the cost matrix, together with the path using <code class="docutils literal notranslate"><span class="pre">.plot()</span></code>. The cost matrix indicates the total cost/distance of the alignment that would match (i,j) together. For our timeseries we observe a dark green band passing through the diagonal. This indicates that the two time series are mostly aligned to begin with.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
@@ -886,7 +887,7 @@ div.rendered_html tbody tr:hover {
 </section>
 </section>
 <section id="Multi-Grid">
-<h2>Multi-Grid<a class="headerlink" href="#Multi-Grid" title="Permalink to this headline">¶</a></h2>
+<h2>Multi-Grid<a class="headerlink" href="#Multi-Grid" title="Permalink to this heading">¶</a></h2>
 <p>Computing all possible alignment quickly becomes computationally expensive on large datasets (quadratic complexity).</p>
 <p>Instead we can use the multi grid solver, which runs in near linear-time. The solver determines the optimal path first on a smaller grid, and then recursively reprojects and refines the path, each time doubling the resolution. Simply enabling the multi-grid solver (linear complexity) will usually result in a large speed-up, without much loss of accuracy.</p>
 <p>The parameter <code class="docutils literal notranslate"><span class="pre">multi_grid_radius</span></code> controls how much to extend the search window by from the path found at a lower resolution. In other words, you gain accuracy at the cost of performance by increasing it.</p>
@@ -911,7 +912,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Diagonal-Window-(SakoeChiba)">
-<h2>Diagonal Window (SakoeChiba)<a class="headerlink" href="#Diagonal-Window-(SakoeChiba)" title="Permalink to this headline">¶</a></h2>
+<h2>Diagonal Window (SakoeChiba)<a class="headerlink" href="#Diagonal-Window-(SakoeChiba)" title="Permalink to this heading">¶</a></h2>
 <p>The SakoeChiba window forms a diagonal band, determined by the <code class="docutils literal notranslate"><span class="pre">window_size</span></code> parameter. The window is best applied when you know that the two time series are already mostly aligned or want to constrain the amount of warping. It will ensure that element n in one series, is only every matched with element n-window_size in the other.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -932,7 +933,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Parallelogram-Window-(Itakura)">
-<h2>Parallelogram Window (Itakura)<a class="headerlink" href="#Parallelogram-Window-(Itakura)" title="Permalink to this headline">¶</a></h2>
+<h2>Parallelogram Window (Itakura)<a class="headerlink" href="#Parallelogram-Window-(Itakura)" title="Permalink to this heading">¶</a></h2>
 <p>The parameter <code class="docutils literal notranslate"><span class="pre">max_slope</span></code> controls the gradient of the steeper side of the parallelogram. For our time-series the window is somewhat wastefull as the optimal path does not deviate significantly from the diagonal.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
@@ -953,7 +954,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Comparison-of-the-Different-Alignments">
-<h2>Comparison of the Different Alignments<a class="headerlink" href="#Comparison-of-the-Different-Alignments" title="Permalink to this headline">¶</a></h2>
+<h2>Comparison of the Different Alignments<a class="headerlink" href="#Comparison-of-the-Different-Alignments" title="Permalink to this heading">¶</a></h2>
 <p>Though each of the windows will have resulted in different runtimes, the length of the paths are effectively identical. Were we to constrain the windows further or reduce the multi_grid_radius, we would find the optimal path to be a shorter than the rest.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
@@ -985,7 +986,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Visualizing-the-Alignment">
-<h2>Visualizing the Alignment<a class="headerlink" href="#Visualizing-the-Alignment" title="Permalink to this headline">¶</a></h2>
+<h2>Visualizing the Alignment<a class="headerlink" href="#Visualizing-the-Alignment" title="Permalink to this heading">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
@@ -1004,7 +1005,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Warped-Time-Series">
-<h3>Warped Time Series<a class="headerlink" href="#Warped-Time-Series" title="Permalink to this headline">¶</a></h3>
+<h3>Warped Time Series<a class="headerlink" href="#Warped-Time-Series" title="Permalink to this heading">¶</a></h3>
 <p>Once we have found an aligment, we can produce two warped series, of the same length. Since we’ve warped the time dimension, by default the new warped series are indexed by <code class="docutils literal notranslate"><span class="pre">pd.RangeIndex</span></code>. Now our simple pattern matches up with the series, despite them not doing so originally!</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -1028,7 +1029,7 @@ div.rendered_html tbody tr:hover {
 </section>
 </section>
 <section id="id1">
-<h2>Quantitative Comparison<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<h2>Quantitative Comparison<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
 <p>We can again apply the <code class="docutils literal notranslate"><span class="pre">mae</span></code> metric, however this time to our warped series. If we were interested only in the similarity after warping, we could also just have called the helper function <code class="docutils literal notranslate"><span class="pre">dtw_metric</span></code>. Notice the ~65% reduction in the error between the warped series!</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -1051,7 +1052,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Finding-Matching-Subsequences">
-<h2>Finding Matching Subsequences<a class="headerlink" href="#Finding-Matching-Subsequences" title="Permalink to this headline">¶</a></h2>
+<h2>Finding Matching Subsequences<a class="headerlink" href="#Finding-Matching-Subsequences" title="Permalink to this heading">¶</a></h2>
 <p>Given the alignment we can find matching subsequences of the two time series.</p>
 <ol class="arabic simple">
 <li><p>The difference between two elements is smaller than some threshold</p></li>
@@ -1119,7 +1120,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Visualizing-the-Matching-Subsequences">
-<h2>Visualizing the Matching Subsequences<a class="headerlink" href="#Visualizing-the-Matching-Subsequences" title="Permalink to this headline">¶</a></h2>
+<h2>Visualizing the Matching Subsequences<a class="headerlink" href="#Visualizing-the-Matching-Subsequences" title="Permalink to this heading">¶</a></h2>
 <p>We can simply slice the warped shape series by the RangeIndex to extract the subsequence.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
@@ -1181,13 +1182,13 @@ div.rendered_html tbody tr:hover {
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -835,11 +836,11 @@
               <div>
                 
   <span class="target" id="module-darts.utils.losses"></span><section id="pytorch-loss-functions">
-<h1>PyTorch Loss Functions<a class="headerlink" href="#pytorch-loss-functions" title="Permalink to this headline">¶</a></h1>
+<h1>PyTorch Loss Functions<a class="headerlink" href="#pytorch-loss-functions" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.losses.</span></span><span class="sig-name descname"><span class="pre">MAELoss</span></span><a class="reference internal" href="../_modules/darts/utils/losses.html#MAELoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.losses.MAELoss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
 <p>MAE loss as defined in: <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_error">https://en.wikipedia.org/wiki/Mean_absolute_error</a>.</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
@@ -848,7 +849,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is co
 \sum_{t=1}^{T}{\left| y_t - \hat{y}_t \right|}.\]</div>
 <p>Note that this is the same as torch.nn.L1Loss.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -2338,7 +2339,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.losses.</span></span><span class="sig-name descname"><span class="pre">MapeLoss</span></span><a class="reference internal" href="../_modules/darts/utils/losses.html#MapeLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.losses.MapeLoss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
 <p>MAPE loss as defined in: <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_percentage_error">https://en.wikipedia.org/wiki/Mean_absolute_percentage_error</a>.</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
@@ -2349,7 +2350,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is co
 100 usually used for computing MAPE values, as it impacts only the magnitude of the gradients
 and not their direction.</p>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -3839,7 +3840,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.losses.</span></span><span class="sig-name descname"><span class="pre">SmapeLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_denom_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/losses.html#SmapeLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.losses.SmapeLoss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
 <p>sMAPE loss as defined in <a class="reference external" href="https://robjhyndman.com/hyndsight/smape/">https://robjhyndman.com/hyndsight/smape/</a> (Chen and Yang 2004)</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
@@ -3856,7 +3857,7 @@ and not their direction.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -5379,13 +5380,13 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

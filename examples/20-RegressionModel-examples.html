@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -705,7 +706,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Regression-Models">
-<h1>Regression Models<a class="headerlink" href="#Regression-Models" title="Permalink to this headline">¶</a></h1>
+<h1>Regression Models<a class="headerlink" href="#Regression-Models" title="Permalink to this heading">¶</a></h1>
 <p>The following is a in depth demonstration of the regression models in Darts - from basic to advanced features, including:</p>
 <ul class="simple">
 <li><p>Darts’ regression models</p></li>
@@ -808,7 +809,7 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 </div>
 </div>
 <section id="Input-Dataset">
-<h2>Input Dataset<a class="headerlink" href="#Input-Dataset" title="Permalink to this headline">¶</a></h2>
+<h2>Input Dataset<a class="headerlink" href="#Input-Dataset" title="Permalink to this heading">¶</a></h2>
 <p>For this notebook, we use the Electricity Consumption Dataset from households in Zurich, Switzerland.</p>
 <p>The dataset has a quarter-hourly frequency (15 Min time intervals), but we resample it to hourly frequency to keep things simple.</p>
 <p><strong>Target series</strong> (the series we want to forecast): - <strong>Value_NE5</strong>: Electricity consumption by households on grid level 5 (in kWh).</p>
@@ -861,7 +862,7 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 </div>
 </div>
 <section id="Darts-Regression-Models">
-<h3>Darts Regression Models<a class="headerlink" href="#Darts-Regression-Models" title="Permalink to this headline">¶</a></h3>
+<h3>Darts Regression Models<a class="headerlink" href="#Darts-Regression-Models" title="Permalink to this heading">¶</a></h3>
 <p>Regression is a statistical method used in data science and machine learning to model the relationship between a dependent variable (target <code class="docutils literal notranslate"><span class="pre">y</span></code>) and one or more independent variables (features <code class="docutils literal notranslate"><span class="pre">X</span></code>).</p>
 <p>For convenience, the core Darts package ships with a couple of regression models: - <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>: fully integrated sklearn models - <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>: wrap the Darts Model API around any sklearn-like model - <code class="docutils literal notranslate"><span class="pre">XGBModel</span></code>: wrapper around <a class="reference external" href="https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor">XGBoost’s</a> <code class="docutils literal notranslate"><span class="pre">XGBRegressor</span></code></p>
 <p>In addition to these, we also offer a unified API for some state of the art regression models that can be installed following our <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">installation guide</a>:</p>
@@ -874,7 +875,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </section>
 </section>
 <section id="Target-and-covariates-lags">
-<h2>Target and covariates lags<a class="headerlink" href="#Target-and-covariates-lags" title="Permalink to this headline">¶</a></h2>
+<h2>Target and covariates lags<a class="headerlink" href="#Target-and-covariates-lags" title="Permalink to this heading">¶</a></h2>
 <p>A lagged feature is the value of a feature at a previous or future time step compared to some reference point.</p>
 <p>In Darts, the value of the lag specifies the position of the feature value relative to the first predicted target time step <code class="docutils literal notranslate"><span class="pre">y_t0</span></code> for each observation/sample (a row in <code class="docutils literal notranslate"><span class="pre">X</span></code>).</p>
 <ul class="simple">
@@ -892,7 +893,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <p>There are multiple ways to define your lags <code class="docutils literal notranslate"><span class="pre">(int,</span> <span class="pre">List[int],</span> <span class="pre">Tuple[int,</span> <span class="pre">int],</span> <span class="pre">...)</span></code>. You can find out more about this in the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel">RegressionModel docs</a>.</p>
 </section>
 <section id="Lagged-data-extraction">
-<h2>Lagged data extraction<a class="headerlink" href="#Lagged-data-extraction" title="Permalink to this headline">¶</a></h2>
+<h2>Lagged data extraction<a class="headerlink" href="#Lagged-data-extraction" title="Permalink to this heading">¶</a></h2>
 <p>Now, let’s have a look at how <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> is extracted for training using the scenario from below:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">lags=[-4,-3,-2,-1]</span></code>: use the last 4 target values (green) before the first predicted time step (orange) as <code class="docutils literal notranslate"><span class="pre">X</span></code> features.</p></li>
@@ -902,7 +903,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <p><em>Note: This example only shows target ``lags`` extraction, but the same is applied to ``lags_past/future_covariates``.</em></p>
 <p><img alt="forecast_single_model_ocl3" src="../_images/regression_model_train.png" /></p>
 <section id="Examples">
-<h3>Examples<a class="headerlink" href="#Examples" title="Permalink to this headline">¶</a></h3>
+<h3>Examples<a class="headerlink" href="#Examples" title="Permalink to this heading">¶</a></h3>
 <p>Let’s try to apply this to our electricity dataset. Assume, we want to predict the consumption of the next couple of hours after the end of our training set.</p>
 <p>As input features we give it the consumption at the same hour from one and two days ago -&gt; <code class="docutils literal notranslate"><span class="pre">lags=[-24,</span> <span class="pre">-48]</span></code>.</p>
 <div class="nbinput docutils container">
@@ -939,7 +940,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </section>
 </section>
 <section id="Covariates-based-forecasting">
-<h2>Covariates-based forecasting<a class="headerlink" href="#Covariates-based-forecasting" title="Permalink to this headline">¶</a></h2>
+<h2>Covariates-based forecasting<a class="headerlink" href="#Covariates-based-forecasting" title="Permalink to this heading">¶</a></h2>
 <p>To use external data next to the history of our target series, we specify past and/or future covariates lags and then pass <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and/or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
 <p>Let’s assume that instead of having weather measurements, we actually have weather forecasts. Then we could use them as future_covariates. <strong>We only do this here for demonstration purposes!</strong></p>
 <p>Below is an example that uses the last 24 hours (<code class="docutils literal notranslate"><span class="pre">24</span></code>) from hour target series (electricity consumption) and the values at the predicted time step (<code class="docutils literal notranslate"><span class="pre">[0]</span></code>) of our weather “forecasts”.</p>
@@ -976,7 +977,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Using-only-covariates">
-<h2>Using only covariates<a class="headerlink" href="#Using-only-covariates" title="Permalink to this headline">¶</a></h2>
+<h2>Using only covariates<a class="headerlink" href="#Using-only-covariates" title="Permalink to this heading">¶</a></h2>
 <p>Sometimes, we might also be interested in a forecasting model that purely relies on the covariates values.</p>
 <p>To do this, specify at least one of <code class="docutils literal notranslate"><span class="pre">lags_past_covariates</span></code> or <code class="docutils literal notranslate"><span class="pre">lags_future_covariates</span></code> and set <code class="docutils literal notranslate"><span class="pre">lags=None</span></code>. Darts regression models are trained in a supervised manner, so we still have to provide the target series for training.</p>
 <p>How well can we predict the electricity consumption using only the weather “forecasts” as input?</p>
@@ -1045,7 +1046,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Component-specific-lags">
-<h2>Component-specific lags<a class="headerlink" href="#Component-specific-lags" title="Permalink to this headline">¶</a></h2>
+<h2>Component-specific lags<a class="headerlink" href="#Component-specific-lags" title="Permalink to this heading">¶</a></h2>
 <p>If the target or any of the covariates is multivariate (has multiple components/columns), we can use dedicated lags for each component. Just pass a dictionary to the <code class="docutils literal notranslate"><span class="pre">lags*</span></code> parameters with the component name as key and the lags as value.</p>
 <p>In the example below, we set the default lags to <code class="docutils literal notranslate"><span class="pre">(24,1)</span></code> (used for the covariates components <code class="docutils literal notranslate"><span class="pre">'T</span> <span class="pre">[°C]'</span></code> and <code class="docutils literal notranslate"><span class="pre">'StrGlo</span> <span class="pre">[W/ms]'</span></code>) and give feature <code class="docutils literal notranslate"><span class="pre">'RainDur</span> <span class="pre">[min]'</span></code> a dedicated lag <code class="docutils literal notranslate"><span class="pre">[0]</span></code>.</p>
 <div class="nbinput docutils container">
@@ -1083,7 +1084,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Model’s-output-chunk-length">
-<h2>Model’s output chunk length<a class="headerlink" href="#Model’s-output-chunk-length" title="Permalink to this headline">¶</a></h2>
+<h2>Model’s output chunk length<a class="headerlink" href="#Model’s-output-chunk-length" title="Permalink to this heading">¶</a></h2>
 <p>This key parameter sets the <em>number of time steps that can be predicted at once by the internal regression model</em>.</p>
 <p>It is not the same as forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> from <code class="docutils literal notranslate"><span class="pre">predict()</span></code> which is the <strong>desired</strong> the number of generated prediction points, that is achieved either with: - a single shot forecast (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>), or - an auto-regressive forecast, consuming its own forecast (and future values of covariates) as input for additional predictions (otherwise)</p>
 <p>For example, if we want our model to forecast the next 24 hours of electricity consumption based on the last day of consumption, setting <code class="docutils literal notranslate"><span class="pre">output_chunk_length=24</span></code> ensures that the model will not consume its forecasts or future values of our covariates to predict the entire day.</p>
@@ -1126,12 +1127,12 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Multi-model-forecasting">
-<h2>Multi-model forecasting<a class="headerlink" href="#Multi-model-forecasting" title="Permalink to this headline">¶</a></h2>
+<h2>Multi-model forecasting<a class="headerlink" href="#Multi-model-forecasting" title="Permalink to this heading">¶</a></h2>
 <p>When <code class="docutils literal notranslate"><span class="pre">output_chunk_length&gt;1</span></code>, the model behavior can be further parametrized by modifying the <code class="docutils literal notranslate"><span class="pre">multi_models</span></code> argument.</p>
 <p><code class="docutils literal notranslate"><span class="pre">multi_models=True</span></code> is the default behavior in Darts and was shown above. We create <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> copies of the model, and train each of them to predict one of the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> time steps (using the same inputs). This approach is more computationally and memory intensive but tends to yield better results.</p>
 </section>
 <section id="Single-model-forecasting">
-<h2>Single-model forecasting<a class="headerlink" href="#Single-model-forecasting" title="Permalink to this headline">¶</a></h2>
+<h2>Single-model forecasting<a class="headerlink" href="#Single-model-forecasting" title="Permalink to this heading">¶</a></h2>
 <p>When <code class="docutils literal notranslate"><span class="pre">multi_model=False</span></code>, we use a single model and train it to predict only the last point in <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. This reduces model complexity as only a single set of coefficients will be trained and stored.</p>
 <p>We are still able to predict all points from 1 until <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> by shifting the lags during tabularization. This means that a new set of input values is used for each forecasted value. Due to the shifting, the minimum length requirement for the training series will also be increased.</p>
 <div class="nbinput docutils container">
@@ -1175,7 +1176,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Visualization">
-<h2>Visualization<a class="headerlink" href="#Visualization" title="Permalink to this headline">¶</a></h2>
+<h2>Visualization<a class="headerlink" href="#Visualization" title="Permalink to this heading">¶</a></h2>
 <p>To vizualize what is happening under the hood, let’s simplify the model a bit and show the process for different parameters.</p>
 <p>Model setup: <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel(lags=[-4,</span> <span class="pre">-3,</span> <span class="pre">-2,</span> <span class="pre">-1],</span> <span class="pre">output_chunk_length=2,</span> <span class="pre">multi_models=True)</span></code>.</p>
 <p>When calling <code class="docutils literal notranslate"><span class="pre">predict(n=4)</span></code>, the input series is processed as follows:</p>
@@ -1187,7 +1188,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <p>The same process also occurs during tabularizion for training the model: each green chunk is paired with an orange value, constituting the training dataset.</p>
 </section>
 <section id="Probabilistic-forecasting">
-<h2>Probabilistic forecasting<a class="headerlink" href="#Probabilistic-forecasting" title="Permalink to this headline">¶</a></h2>
+<h2>Probabilistic forecasting<a class="headerlink" href="#Probabilistic-forecasting" title="Permalink to this heading">¶</a></h2>
 <p>To make a model probablistic, set parameter <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> to <code class="docutils literal notranslate"><span class="pre">quantile</span></code> or <code class="docutils literal notranslate"><span class="pre">poisson</span></code> when creating a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>. At prediction time, probabilistic models can either : - use Monte Carlo sampling to generate samples based on the fitted distribution parameters when <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> - return the fitted distribution parameters when <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code></p>
 <p>Note that when using the <code class="docutils literal notranslate"><span class="pre">quantile</span></code> regressor, each quantile will be fitted by a different model.</p>
 <p>Probabilistic models will generate different forecasts each time <code class="docutils literal notranslate"><span class="pre">predict()</span></code> is called with <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>. To get reproducible results, set the random seed when creating the model and call the methods in the exact same order.</p>
@@ -1234,11 +1235,11 @@ Value_NE5_q0.95 : 20418.7421875
 </div>
 </section>
 <section id="MultiOutputRegressor-wrapper">
-<h2>MultiOutputRegressor wrapper<a class="headerlink" href="#MultiOutputRegressor-wrapper" title="Permalink to this headline">¶</a></h2>
+<h2>MultiOutputRegressor wrapper<a class="headerlink" href="#MultiOutputRegressor-wrapper" title="Permalink to this heading">¶</a></h2>
 <p>Some regression models support native multi-output support. This is required to fit and predict: - multiple outputs/multiple target steps (with <code class="docutils literal notranslate"><span class="pre">output_chunk_length&gt;1</span></code> and <code class="docutils literal notranslate"><span class="pre">multi_models=True</span></code>) - probabilistic models using quantile regression - multivariates series</p>
 <p>For models that don’t support it, Darts wraps sklearn’s <code class="docutils literal notranslate"><span class="pre">MultiOutputRegressor</span></code> around them to handle the logic under the hood.</p>
 <section id="Explainability">
-<h3>Explainability<a class="headerlink" href="#Explainability" title="Permalink to this headline">¶</a></h3>
+<h3>Explainability<a class="headerlink" href="#Explainability" title="Permalink to this heading">¶</a></h3>
 <p>We offer explainability for the regression models with Darts’ <code class="docutils literal notranslate"><span class="pre">ShapExplainer</span></code>. The explainer uses <a class="reference external" href="https://github.com/shap/shap">shap</a>, a library based on game theory, to give insights into feature importances over time for our forecast horizon.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
@@ -1307,16 +1308,16 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 </section>
 <section id="Conclusion">
-<h3>Conclusion<a class="headerlink" href="#Conclusion" title="Permalink to this headline">¶</a></h3>
+<h3>Conclusion<a class="headerlink" href="#Conclusion" title="Permalink to this heading">¶</a></h3>
 <p>By tabularizing the data and unifying the API across libraries, Darts closes the gap between traditional regression problems and timeseries forecasting.</p>
 <p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> and its sub-classes offer a wide range of functionalities which can be used to build strong models in just a few lines of codes.</p>
 </section>
 </section>
 </section>
 <section id="Appendix">
-<h1>Appendix<a class="headerlink" href="#Appendix" title="Permalink to this headline">¶</a></h1>
+<h1>Appendix<a class="headerlink" href="#Appendix" title="Permalink to this heading">¶</a></h1>
 <section id="RegressionModel">
-<h2>RegressionModel<a class="headerlink" href="#RegressionModel" title="Permalink to this headline">¶</a></h2>
+<h2>RegressionModel<a class="headerlink" href="#RegressionModel" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> wraps the Darts API around any sklearn regression model. With this we can use the model in the same way as any other Darts forecasting models.</p>
 <p>As an examnple, fitting a Bayesian ridge regression on the example dataset takes only a few lines:</p>
 <div class="nbinput docutils container">
@@ -1389,7 +1390,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 <p>One of the limitation of the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> class is that it does not provide probabilistic forecasting out of the box but it is possible to implement it by creating a new class inheriting from both <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">_LikelihoodMixin</span></code> and implementing the missing methods (the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> class can be use as a template).</p>
 <section id="Custom-model">
-<h3>Custom model<a class="headerlink" href="#Custom-model" title="Permalink to this headline">¶</a></h3>
+<h3>Custom model<a class="headerlink" href="#Custom-model" title="Permalink to this heading">¶</a></h3>
 <p>You can even implement your own model as long as it works with tabular data and provides the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -1450,7 +1451,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 </section>
 <section id="Example-of-the-boosted-tree-models">
-<h3>Example of the boosted tree models<a class="headerlink" href="#Example-of-the-boosted-tree-models" title="Permalink to this headline">¶</a></h3>
+<h3>Example of the boosted tree models<a class="headerlink" href="#Example-of-the-boosted-tree-models" title="Permalink to this heading">¶</a></h3>
 <p>Make sure to have the dependencies for lightgbm and catboost installed. You can check out our installation guide <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">here</a></p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
@@ -1545,13 +1546,13 @@ CatboostModel MAPE: 2.373275454432286
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -835,7 +836,7 @@
               <div>
                 
   <span class="target" id="module-darts.timeseries"></span><section id="timeseries">
-<h1>Timeseries<a class="headerlink" href="#timeseries" title="Permalink to this headline">¶</a></h1>
+<h1>Timeseries<a class="headerlink" href="#timeseries" title="Permalink to this heading">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is the main class in <cite>darts</cite>.
 It represents a univariate or multivariate time series, deterministic or stochastic.</p>
 <p>The values are stored in an array of shape <cite>(time, dimensions, samples)</cite>, where
@@ -898,7 +899,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 </dl>
 </div>
 <p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -985,7 +986,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="longtable table autosummary">
+<table class="autosummary longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -1379,7 +1380,7 @@ Leave it to True unless you know what you are doing.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.bottom_level_series">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bottom_level_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.bottom_level_series" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bottom_level_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.bottom_level_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>The series containing the bottom-level components of this series in the same
 order as they appear in the series, or None if the series has no hierarchy.</p>
 <p>The returned series is multivariate if there are multiple bottom components.</p>
@@ -1392,7 +1393,7 @@ order as they appear in the series, or None if the series has no hierarchy.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.columns">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.columns" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.columns" title="Permalink to this definition">¶</a></dt>
 <dd><p>The names of the components, as a Pandas Index.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1403,7 +1404,7 @@ order as they appear in the series, or None if the series has no hierarchy.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.components">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.components" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Index</span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.components" title="Permalink to this definition">¶</a></dt>
 <dd><p>The names of the components, as a Pandas Index.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1581,7 +1582,7 @@ The timestamp may not be in the series. If it is, the timestamp will be dropped.
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.duration">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">duration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas._libs.tslibs.timedeltas.Timedelta</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.duration" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">duration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Timedelta</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.duration" title="Permalink to this definition">¶</a></dt>
 <dd><p>The duration of this time series (as a time delta or int).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1635,7 +1636,7 @@ or an integer (if indexed by RangeIndex)</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.freq">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">freq</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas._libs.tslibs.offsets.DateOffset</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.freq" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">freq</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">DateOffset</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.freq" title="Permalink to this definition">¶</a></dt>
 <dd><p>The frequency of the series.
 A <cite>pd.DateOffset</cite> if series is indexed with a <cite>pd.DatetimeIndex</cite>.
 An integer (step size) if series is indexed with a <cite>pd.RangeIndex</cite>.</p>
@@ -1970,7 +1971,7 @@ If a string, represents the frequency of the pandas DatetimeIndex (see <a class=
 supported frequencies).
 If an integer, represents the step size of the pandas Index or pandas RangeIndex.</p>
 </p></li>
-<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Columns to be used by the underlying pandas DataFrame.</p></li>
+<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNotStr</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Columns to be used by the underlying pandas DataFrame.</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
 DataFrame. If a Series, the index represents the static variables. The covariates are globally ‘applied’
@@ -2021,7 +2022,7 @@ The series will have an integer index (RangeIndex).</p>
 <li><p><strong>values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
 and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
 should be (time, component), and in the latter case (time, component, sample).</p></li>
-<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Columns to be used by the underlying pandas DataFrame.</p></li>
+<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNotStr</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Columns to be used by the underlying pandas DataFrame.</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
 DataFrame. If a Series, the index represents the static variables. The covariates are globally ‘applied’
@@ -3079,7 +3080,7 @@ or an integer (if indexed by RangeIndex)</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.static_covariates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the static covariates contained in the series as a pandas DataFrame.
 The columns represent the static variables and the rows represent the components of the uni/multivariate
 series.</p>
@@ -3206,7 +3207,7 @@ a deterministic <code class="docutils literal notranslate"><span class="pre">Tim
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.time_index">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">time_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.indexes.datetimes.DatetimeIndex</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.range.RangeIndex</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.time_index" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">time_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">DatetimeIndex</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">RangeIndex</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.time_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>The time index of this time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -3281,7 +3282,7 @@ covariates can be added with input argument <cite>static_covariates</cite>.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.top_level_series">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">top_level_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.top_level_series" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">top_level_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">TimeSeries</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.top_level_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>The univariate series containing the single top-level component of this series,
 or None if the series has no hierarchy.</p>
 <dl class="field-list simple">
@@ -3725,13 +3726,13 @@ When <cite>axis=0</cite> or <cite>axis=2</cite>, the hierarchy of the first seri
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

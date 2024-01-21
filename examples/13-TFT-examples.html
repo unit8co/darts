@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -681,7 +682,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Temporal-Fusion-Transformer">
-<h1>Temporal Fusion Transformer<a class="headerlink" href="#Temporal-Fusion-Transformer" title="Permalink to this headline">¶</a></h1>
+<h1>Temporal Fusion Transformer<a class="headerlink" href="#Temporal-Fusion-Transformer" title="Permalink to this heading">¶</a></h1>
 <p>In this notebook, we show two examples of how two use Darts’ <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>. If you are new to darts, we recommend you first follow the <a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html">quick start</a> notebook.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -736,7 +737,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Temporal-Fusion-Transformer-(TFT)">
-<h2>Temporal Fusion Transformer (TFT)<a class="headerlink" href="#Temporal-Fusion-Transformer-(TFT)" title="Permalink to this headline">¶</a></h2>
+<h2>Temporal Fusion Transformer (TFT)<a class="headerlink" href="#Temporal-Fusion-Transformer-(TFT)" title="Permalink to this heading">¶</a></h2>
 <p>Darts’ <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> incorporates the following main components from the original Temporal Fusion Transformer (TFT) architecture as outlined in <a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">this paper</a>:</p>
 <ul class="simple">
 <li><p>gating mechanisms: skip over unused components of the model architecture</p></li>
@@ -746,7 +747,7 @@ div.rendered_html tbody tr:hover {
 <li><p>prediction intervals: per default, produces quantile forecasts instead of deterministic values</p></li>
 </ul>
 <section id="Training">
-<h3>Training<a class="headerlink" href="#Training" title="Permalink to this headline">¶</a></h3>
+<h3>Training<a class="headerlink" href="#Training" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> can be trained with past and future covariates. It is trained sequentially on fixed-size chunks consisting of an encoder and a decoder part:</p>
 <ul class="simple">
 <li><p>encoder: past input with <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code></p>
@@ -764,9 +765,9 @@ div.rendered_html tbody tr:hover {
 <p>In each iteration, the model produces a quantile prediction of shape <code class="docutils literal notranslate"><span class="pre">(output_chunk_length,</span> <span class="pre">n_quantiles)</span></code> on the decoder part.</p>
 </section>
 <section id="Forecast">
-<h3>Forecast<a class="headerlink" href="#Forecast" title="Permalink to this headline">¶</a></h3>
+<h3>Forecast<a class="headerlink" href="#Forecast" title="Permalink to this heading">¶</a></h3>
 <section id="Probabilistic-Forecast">
-<h4>Probabilistic Forecast<a class="headerlink" href="#Probabilistic-Forecast" title="Permalink to this headline">¶</a></h4>
+<h4>Probabilistic Forecast<a class="headerlink" href="#Probabilistic-Forecast" title="Permalink to this heading">¶</a></h4>
 <p>Per default, <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> produces probabilistic quantile forecasts using <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code>. This gives the range of likely target values at each prediction step. Most deep learning models in Darts’ - including <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> - support <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> and 16 other likelihoods to produce probabilistic forecasts by setting <code class="docutils literal notranslate"><span class="pre">likelihood=MyLikelihood()</span></code> at model creation.</p>
 <p>To produce meaningful results, set <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;&gt;</span> <span class="pre">1</span></code> when predicting. For example:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>model.predict(*args, **kwargs, num_samples=200)
@@ -776,7 +777,7 @@ div.rendered_html tbody tr:hover {
 <p>If <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>, you have to supply additional future values for the covariates you passed to <code class="docutils literal notranslate"><span class="pre">model.train()</span></code>.</p>
 </section>
 <section id="Deterministic-Forecast">
-<h4>Deterministic Forecast<a class="headerlink" href="#Deterministic-Forecast" title="Permalink to this headline">¶</a></h4>
+<h4>Deterministic Forecast<a class="headerlink" href="#Deterministic-Forecast" title="Permalink to this heading">¶</a></h4>
 <p>To produce deterministic rather than probabilistic forecasts, set parameter <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> to <code class="docutils literal notranslate"><span class="pre">None</span></code> and <code class="docutils literal notranslate"><span class="pre">loss_fn</span></code> to a PyTorch loss function at model creation. For example:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>model = TFTModel(*args, **kwargs, likelihood=None, loss_fn=torch.nn.MSELoss())
 ...
@@ -802,7 +803,7 @@ model.predict(*args, **kwargs, num_samples=1)
 </section>
 </section>
 <section id="Air-Passenger-Example">
-<h2>Air Passenger Example<a class="headerlink" href="#Air-Passenger-Example" title="Permalink to this headline">¶</a></h2>
+<h2>Air Passenger Example<a class="headerlink" href="#Air-Passenger-Example" title="Permalink to this heading">¶</a></h2>
 <p>This data set that is highly dependent on covariates. Knowing the month tells us a lot about the seasonal component, whereas the year determines the effect of the trend component.</p>
 <p>Additionally, let’s convert the time index to integer values and use them as covariates as well.</p>
 <p>All of the three covariates are known in the future, and can be used as <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> with the <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>.</p>
@@ -851,7 +852,7 @@ model.predict(*args, **kwargs, num_samples=1)
 </div>
 </div>
 <section id="Create-a-model">
-<h3>Create a model<a class="headerlink" href="#Create-a-model" title="Permalink to this headline">¶</a></h3>
+<h3>Create a model<a class="headerlink" href="#Create-a-model" title="Permalink to this heading">¶</a></h3>
 <p>If you want to produce deterministic forecasts rather than quantile forecasts, you can use a PyTorch loss function (i.e., set <code class="docutils literal notranslate"><span class="pre">loss_fn=torch.nn.MSELoss()</span></code> and <code class="docutils literal notranslate"><span class="pre">likelihood=None</span></code>).</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> can only be used if some future input is given. Optional parameters <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> and <code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code> can be useful, especially if we don’t have any future input available. They generate encoded temporal data that is used as future covariates.</p>
 <p>Since we already have future covariates defined in our example they are commented out.</p>
@@ -904,7 +905,7 @@ model.predict(*args, **kwargs, num_samples=1)
 </div>
 </section>
 <section id="Train-the-TFT">
-<h3>Train the TFT<a class="headerlink" href="#Train-the-TFT" title="Permalink to this headline">¶</a></h3>
+<h3>Train the TFT<a class="headerlink" href="#Train-the-TFT" title="Permalink to this heading">¶</a></h3>
 <p>In what follows, we can just provide the whole <code class="docutils literal notranslate"><span class="pre">covariates</span></code> series as <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> argument to the model; the model will slice these covariates and use only what it needs in order to train on forecasting the target <code class="docutils literal notranslate"><span class="pre">train_transformed</span></code>:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -932,7 +933,7 @@ TFTModel(hidden_size=64, lstm_layers=1, num_attention_heads=4, full_attention=Fa
 </div>
 </section>
 <section id="Look-at-predictions-on-the-validation-set">
-<h3>Look at predictions on the validation set<a class="headerlink" href="#Look-at-predictions-on-the-validation-set" title="Permalink to this headline">¶</a></h3>
+<h3>Look at predictions on the validation set<a class="headerlink" href="#Look-at-predictions-on-the-validation-set" title="Permalink to this heading">¶</a></h3>
 <p>We perform a one-shot prediction of 24 months using the “current” model - i.e., the model at the end of the training procedure:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -975,7 +976,7 @@ TFTModel(hidden_size=64, lstm_layers=1, num_attention_heads=4, full_attention=Fa
 </div>
 </section>
 <section id="Backtesting">
-<h3>Backtesting<a class="headerlink" href="#Backtesting" title="Permalink to this headline">¶</a></h3>
+<h3>Backtesting<a class="headerlink" href="#Backtesting" title="Permalink to this heading">¶</a></h3>
 <p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> model, to see how it performs with a forecast horizon of 12 months over the last 3 years:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
@@ -1072,7 +1073,7 @@ MAPE: 4.90%
 </section>
 </section>
 <section id="Monthly-ice-cream-sales">
-<h2>Monthly ice cream sales<a class="headerlink" href="#Monthly-ice-cream-sales" title="Permalink to this headline">¶</a></h2>
+<h2>Monthly ice cream sales<a class="headerlink" href="#Monthly-ice-cream-sales" title="Permalink to this heading">¶</a></h2>
 <p>Let’s try a another data set. That of monthly ice cream and heater sales since 2004. Our target is to predict future ice cream sales. First, we build the time series from the data, and check its periodicity.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -1124,7 +1125,7 @@ MAPE: 4.90%
 </div>
 </div>
 <section id="Process-the-data">
-<h3>Process the data<a class="headerlink" href="#Process-the-data" title="Permalink to this headline">¶</a></h3>
+<h3>Process the data<a class="headerlink" href="#Process-the-data" title="Permalink to this heading">¶</a></h3>
 <p>We again have a 12-month seasonality. This time we will not define monthly future covariates -&gt; we let the model handle this itself!</p>
 <p>Let’s define past covariates instead. What if we used past data of heater sales to predict ice cream sales?</p>
 <div class="nbinput nblast docutils container">
@@ -1165,7 +1166,7 @@ MAPE: 4.90%
 </div>
 </section>
 <section id="Create-a-model-with-automatically-generated-future-covariates-and-train-it">
-<h3>Create a model with automatically generated future covariates and train it<a class="headerlink" href="#Create-a-model-with-automatically-generated-future-covariates-and-train-it" title="Permalink to this headline">¶</a></h3>
+<h3>Create a model with automatically generated future covariates and train it<a class="headerlink" href="#Create-a-model-with-automatically-generated-future-covariates-and-train-it" title="Permalink to this heading">¶</a></h3>
 <p>Since we don’t have future covariates defined, we need tell the model to generate future covariates itself.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>: can add multiple encodings as past and / or future covariates from datetime attributes, cyclic repeating temporal patterns, index positions and customm functions for index encodings. You can even add a transformer that handles proper scaling of the training, validation and prediction data! Read more about it in the <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#temporal-fusion-transformer-tft">from here</a></p></li>
@@ -1219,7 +1220,7 @@ TFTModel(hidden_size=32, lstm_layers=1, num_attention_heads=4, full_attention=Fa
 </div>
 </section>
 <section id="id1">
-<h3>Look at predictions on the validation set<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<h3>Look at predictions on the validation set<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
 <p>Again, we perform a one-shot prediction of 24 months using the “current” model - i.e., the model at the end of the training procedure:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
@@ -1253,7 +1254,7 @@ TFTModel(hidden_size=32, lstm_layers=1, num_attention_heads=4, full_attention=Fa
 </div>
 </section>
 <section id="id2">
-<h3>Backtesting<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<h3>Backtesting<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
 <p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> model, to see how it performs with a forecast horizon of 12 months over the last 2 years:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -1334,7 +1335,7 @@ MAPE: 5.32%
 </div>
 </section>
 <section id="Explainability">
-<h3>Explainability<a class="headerlink" href="#Explainability" title="Permalink to this headline">¶</a></h3>
+<h3>Explainability<a class="headerlink" href="#Explainability" title="Permalink to this heading">¶</a></h3>
 <p>Let’s try to understand what our <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> model has learned. It would be nice to see the feature importance and how much the model attentds to past and future input.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">TFTExplainer</span></code> does exactly that! You can find the documentation <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.explainability.tft_explainer.html">here</a>.</p>
 <div class="nbinput nblast docutils container">
@@ -1631,7 +1632,7 @@ MAPE: 5.32%
 </div>
 </section>
 <section id="Some-more-information">
-<h3>Some more information<a class="headerlink" href="#Some-more-information" title="Permalink to this headline">¶</a></h3>
+<h3>Some more information<a class="headerlink" href="#Some-more-information" title="Permalink to this heading">¶</a></h3>
 <p>Although we have only looked at a single univariate forecasting example, the <code class="docutils literal notranslate"><span class="pre">TFTExplainer</span></code> can be seemlessly applied to multivariate and / or multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> use cases.</p>
 </section>
 </section>
@@ -1671,13 +1672,13 @@ MAPE: 5.32%
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

@@ -32,10 +32,11 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -598,7 +599,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Probabilistic-RNN">
-<h1>Probabilistic RNN<a class="headerlink" href="#Probabilistic-RNN" title="Permalink to this headline">¶</a></h1>
+<h1>Probabilistic RNN<a class="headerlink" href="#Probabilistic-RNN" title="Permalink to this heading">¶</a></h1>
 <p>In this notebook, we show an example of how a probabilistic RNN can be used with darts. This type of RNN was inspired by, and is almost identical to DeepAR: <a class="reference external" href="https://arxiv.org/abs/1704.04110">https://arxiv.org/abs/1704.04110</a></p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -672,7 +673,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Variable-noise-series">
-<h2>Variable noise series<a class="headerlink" href="#Variable-noise-series" title="Permalink to this headline">¶</a></h2>
+<h2>Variable noise series<a class="headerlink" href="#Variable-noise-series" title="Permalink to this heading">¶</a></h2>
 <p>As a toy example we create a target time series that is created by taking the some of a sine wave and a gaussian noise series. To make things interesting, the intensity of the gaussian noise is also modulated by a sine wave (with a different frequency). This means that the effect of the noise gets stronger and weaker in an oscillating fashion. The idea is to test whether a probabilistic RNN can model this oscillating uncertainty in its predictions.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -790,7 +791,7 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0, training_length=5
 <p>We can see that, on top of correctly predicting the, granted, simple oscillatory behavior of the target, the RNN correctly expresses more uncertainty in its predictions when the noise component is higher.</p>
 </section>
 <section id="Daily-energy-production">
-<h2>Daily energy production<a class="headerlink" href="#Daily-energy-production" title="Permalink to this headline">¶</a></h2>
+<h2>Daily energy production<a class="headerlink" href="#Daily-energy-production" title="Permalink to this heading">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
@@ -1014,13 +1015,13 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=2, dropout=0.2, training_length
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
 </p>
     </div>
     

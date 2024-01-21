@@ -141,12 +141,13 @@ Under the hood, Darts has 5 types of ``{X}CovariatesModel`` classes implemented 
      - 
      - ✅
      - ✅
+   * - ``SplitCovariatesModel``
+     - ✅
+     - ✅
+     - ✅
+     - 
    * - ``MixedCovariatesModel``
      - ✅
-     - ✅
-     - ✅
-     - ✅
-   * - ``SplitCovariatesModel``
      - ✅
      - ✅
      - ✅
@@ -163,8 +164,8 @@ Each Torch Forecasting Model inherits from one ``{X}CovariatesModel`` (covariate
      - ``Past``
      - ``Future``
      - ``Dual``
-     - ``Mixed``
      - ``Split``
+     - ``Mixed``
    * - ``RNNModel``
      - 
      - 
@@ -199,21 +200,22 @@ Each Torch Forecasting Model inherits from one ``{X}CovariatesModel`` (covariate
      - 
      - 
      - 
-     - ✅
      - 
+     - ✅
    * - ``NLinearModel``
      - 
      - 
      - 
-     - ✅
      - 
+     - ✅
    * - ``DLinearModel``
      - 
      - 
      - 
-     - ✅
      - 
+     - ✅
    * - ``TiDEModel``
+     - 
      - 
      - 
      - 
