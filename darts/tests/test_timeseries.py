@@ -1155,8 +1155,8 @@ class TestTimeSeries:
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
 
-        resampled_timeseries = timeseries.resample("H")
-        assert resampled_timeseries.freq_str == "H"
+        resampled_timeseries = timeseries.resample("h")
+        assert resampled_timeseries.freq_str.lower() == "h"
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101020000")] == 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102020000")] == 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109090000")] == 8
