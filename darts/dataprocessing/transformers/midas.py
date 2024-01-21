@@ -101,7 +101,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                 ),
                 logger=logger,
             )
-        self._low_freq = low_freq
+        self._low_freq = pd.tseries.frequencies.to_offset(low_freq).freqstr
         self._strip = strip
         self._drop_static_covariates = drop_static_covariates
         self._sep = "_midas_"
