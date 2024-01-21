@@ -18,6 +18,8 @@ from darts.utils.utils import _build_tqdm_iterator
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
+pd_above_v22 = pd.__version__ >= "2.2"
+
 """
     Overall usage of this package:
     from darts.datasets import AirPassengersDataset
@@ -886,6 +888,12 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
             df.index.name = "Timestamp"
             df.to_csv(self._get_path_dataset())
 
+        # pandas v2.2.0 introduced some changes
+        hash_expected = (
+            "485d81e9902cc0ccb1f86d7e01fb37cd"
+            if pd_above_v22
+            else "a019125b7f9c1afeacb0ae60ce7455ef"
+        )
         # hash value for dataset with weather data
         super().__init__(
             metadata=DatasetLoaderMetadata(
@@ -895,7 +903,7 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
                     "ewz_stromabgabe_netzebenen_stadt_zuerich/"
                     "download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv"
                 ),
-                hash="a019125b7f9c1afeacb0ae60ce7455ef",
+                hash=hash_expected,
                 header_time="Timestamp",
                 freq="15min",
                 pre_process_csv_fn=pre_process_dataset,
