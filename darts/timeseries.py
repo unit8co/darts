@@ -5332,6 +5332,243 @@ class TimeSeries(TimeSeriesOld):
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
 
+class TimeSeriesNew(TimeSeries):
+    def __getitem__(
+        self,
+        key: Union[
+            pd.DatetimeIndex,
+            pd.RangeIndex,
+            List[str],
+            List[int],
+            List[pd.Timestamp],
+            str,
+            int,
+            pd.Timestamp,
+            Any,
+        ],
+    ) -> Self:
+        """Allow indexing on darts TimeSeries.
+
+        The supported index types are the following base types as a single value, a list or a slice:
+        - pd.Timestamp -> return a TimeSeries corresponding to the value(s) at the given timestamp(s).
+        - str -> return a TimeSeries including the column(s) (components) specified as str.
+        - int -> return a TimeSeries with the value(s) at the given row (time) index.
+
+        `pd.DatetimeIndex` and `pd.RangeIndex` are also supported and will return the corresponding value(s)
+        at the provided time indices.
+
+        .. warning::
+            slices use pandas convention of including both ends of the slice.
+
+        Notes
+        -----
+        For integer-indexed series, integers or slices of integer will return the result
+        of ``isel()``. That is, if integer ``i`` is provided, it returns the ``i``-th value
+        along the series, which is not necessarily the value where the time index is equal to ``i``
+        (e.g., if the time index does not start at 0). In contrast, calling this method with a
+        ``pd.RangeIndex`` returns the result of ``sel()`` - i.e., the values where the time
+        index matches the provided range index.
+        """
+
+        def _check_dt():
+            if not self._has_datetime_index:
+                raise_log(
+                    ValueError(
+                        "Attempted indexing a series with a DatetimeIndex or a timestamp, "
+                        "but the series uses a RangeIndex."
+                    ),
+                    logger,
+                )
+
+        def _check_range():
+            if self._has_datetime_index:
+                raise_log(
+                    ValueError(
+                        "Attempted indexing a series with a RangeIndex, "
+                        "but the series uses a DatetimeIndex."
+                    ),
+                    logger,
+                )
+
+        def _set_freq_in_xa(xa_: xr.DataArray, freq=None):
+            # mutates the DataArray to make sure it contains the freq
+            if isinstance(xa_.get_index(self._time_dim), pd.DatetimeIndex):
+                if freq is None:
+                    freq = xa_.get_index(self._time_dim).inferred_freq
+                if freq is not None:
+                    xa_.get_index(self._time_dim).freq = to_offset(freq)
+                else:
+                    xa_.get_index(self._time_dim).freq = self._freq
+
+        adapt_covs_on_component = (
+            True
+            if self.has_static_covariates and len(self.static_covariates) > 1
+            else False
+        )
+
+        # handle DatetimeIndex and RangeIndex:
+        if isinstance(key, pd.DatetimeIndex):
+            _check_dt()
+            xa_ = self._xa.sel({self._time_dim: key})
+
+            # indexing may discard the freq so we restore it...
+            # if the DateTimeIndex already has an associated freq, use it
+            # otherwise key.freq is None and the freq will be inferred
+            _set_freq_in_xa(xa_, key.freq)
+
+            return self.__class__(xa_)
+        elif isinstance(key, pd.RangeIndex):
+            _check_range()
+            xa_ = self._xa.sel({self._time_dim: key})
+
+            # sel() gives us an Int64Index. We have to set the RangeIndex.
+            # see: https://github.com/pydata/xarray/issues/6256
+            xa_ = xa_.assign_coords({self.time_dim: key})
+
+            return self.__class__(xa_)
+
+        # handle slices:
+        elif isinstance(key, slice):
+            if isinstance(key.start, str) or isinstance(key.stop, str):
+                xa_ = self._xa.sel({DIMS[1]: key})
+                # selecting components discards the hierarchy, if any
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG],
+                    None,
+                )
+                return self.__class__(xa_)
+            elif isinstance(key.start, (int, np.int64)) or isinstance(
+                key.stop, (int, np.int64)
+            ):
+                xa_ = self._xa.isel({self._time_dim: key})
+                if xa_.get_index(self._time_dim).freq is None:
+                    # indexing may discard the freq so we restore it...
+                    if key.step is None:
+                        new_freq = self.freq
+                    else:
+                        # new frequency is multiple of original
+                        new_freq = key.step * self.freq
+                    _set_freq_in_xa(xa_, new_freq)
+                return self.__class__(xa_)
+            elif isinstance(key.start, pd.Timestamp) or isinstance(
+                key.stop, pd.Timestamp
+            ):
+                _check_dt()
+                if isinstance(key.step, (int, np.int64)):
+                    # new frequency is multiple of original
+                    new_freq = key.step * self.freq
+                elif key.step is None:
+                    new_freq = self.freq
+                else:
+                    new_freq = None
+                    raise_log(
+                        ValueError(
+                            f"Invalid slice step={key.step}. Only supports integer steps or `None`."
+                        ),
+                        logger=logger,
+                    )
+
+                # indexing may discard the freq so we restore it...
+                xa_ = self._xa.sel({self._time_dim: key})
+                _set_freq_in_xa(xa_, new_freq)
+                return self.__class__(xa_)
+
+        # handle simple types:
+        elif isinstance(key, str):
+            # have to put key in a list not to drop the dimension
+            xa_ = self._xa.sel({DIMS[1]: [key]})
+            # selecting components discards the hierarchy, if any
+            xa_ = _xarray_with_attrs(
+                xa_,
+                xa_.attrs[STATIC_COV_TAG].loc[[key]]
+                if adapt_covs_on_component
+                else xa_.attrs[STATIC_COV_TAG],
+                None,
+            )
+            return self.__class__(xa_)
+        elif isinstance(key, (int, np.int64)):
+            xa_ = self._xa.isel({self._time_dim: [key]})
+
+            # restore a RangeIndex if needed:
+            time_idx = xa_.get_index(self._time_dim)
+            if pd.api.types.is_integer_dtype(time_idx) and not isinstance(
+                time_idx, pd.RangeIndex
+            ):
+                xa_ = xa_.assign_coords(
+                    {
+                        self._time_dim: pd.RangeIndex(
+                            start=time_idx[0],
+                            stop=time_idx[0] + self.freq,
+                            step=self.freq,
+                        )
+                    }
+                )
+
+            _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+            return self.__class__(xa_)
+        elif isinstance(key, pd.Timestamp):
+            _check_dt()
+
+            # indexing may discard the freq so we restore it...
+            xa_ = self._xa.sel({self._time_dim: [key]})
+            _set_freq_in_xa(xa_)
+            return self.__class__(xa_)
+
+        # handle lists:
+        if isinstance(key, list):
+            if all(isinstance(s, str) for s in key):
+                # when string(s) are provided, we consider it as (a list of) component(s)
+                xa_ = self._xa.sel({DIMS[1]: key})
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    xa_.attrs[STATIC_COV_TAG].loc[key]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG],
+                    None,
+                )
+                return self.__class__(xa_)
+            elif all(isinstance(i, (int, np.int64)) for i in key):
+                xa_ = self._xa.isel({self._time_dim: key})
+
+                # indexing may discard the freq so we restore it...
+                _set_freq_in_xa(xa_)
+
+                orig_idx = self.time_index
+                if isinstance(orig_idx, pd.RangeIndex):
+                    # We have to restore a RangeIndex. But first we need to
+                    # check the list is corresponding to a RangeIndex.
+                    min_idx, max_idx = min(key), max(key)
+                    if (
+                        not key[0] == min_idx
+                        and key[-1] == max_idx
+                        and max_idx + 1 - min_idx == len(key)
+                    ):
+                        raise_log(
+                            ValueError(
+                                "Indexing a TimeSeries with a list requires the list to "
+                                "contain monotonically increasing integers with no gap."
+                            ),
+                            logger=logger,
+                        )
+                    new_idx = orig_idx[min_idx : max_idx + 1]
+                    xa_ = xa_.assign_coords({self._time_dim: new_idx})
+
+                return self.__class__(xa_)
+
+            elif all(isinstance(t, pd.Timestamp) for t in key):
+                _check_dt()
+
+                # indexing may discard the freq so we restore it...
+                xa_ = self._xa.sel({self._time_dim: key})
+                _set_freq_in_xa(xa_)
+                return self.__class__(xa_)
+
+        raise_log(IndexError("The type of your index was not matched."), logger)
+
+
 class TimeSeriesNoCopy(TimeSeries):
     def __init__(self, xa: xr.DataArray):
         """
