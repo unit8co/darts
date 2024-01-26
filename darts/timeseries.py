@@ -74,7 +74,7 @@ DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
 
 
-class TimeSeries:
+class TimeSeriesOld:
     def __init__(self, xa: xr.DataArray):
         """
         Create a TimeSeries from a (well formed) DataArray.
@@ -738,7 +738,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
-    ) -> List["TimeSeries"]:
+    ) -> List[Self]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -849,7 +849,7 @@ class TimeSeries:
 
         # create a list with multiple TimeSeries and add static covariates
         return [
-            TimeSeries.from_dataframe(
+            cls.from_dataframe(
                 df=split,
                 time_col=time_col,
                 value_cols=value_cols,
@@ -1248,7 +1248,7 @@ class TimeSeries:
         return self._bottom_level_components
 
     @property
-    def top_level_series(self) -> Optional["TimeSeries"]:
+    def top_level_series(self) -> Optional[Self]:
         """
         The univariate series containing the single top-level component of this series,
         or None if the series has no hierarchy.
@@ -1256,7 +1256,7 @@ class TimeSeries:
         return self[self.top_level_component] if self.has_hierarchy else None
 
     @property
-    def bottom_level_series(self) -> Optional[List["TimeSeries"]]:
+    def bottom_level_series(self) -> Optional[List[Self]]:
         """
         The series containing the bottom-level components of this series in the same
         order as they appear in the series, or None if the series has no hierarchy.
@@ -1930,12 +1930,12 @@ class TimeSeries:
 
     def concatenate(
         self,
-        other: "TimeSeries",
+        other: Self,
         axis: Optional[Union[str, int]] = 0,
         ignore_time_axis: Optional[bool] = False,
         ignore_static_covariates: bool = False,
         drop_hierarchy: bool = True,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Concatenate another timeseries to the current one along given axis.
 
@@ -2158,7 +2158,7 @@ class TimeSeries:
 
     def _split_at(
         self, split_point: Union[pd.Timestamp, float, int], after: bool = True
-    ) -> Tuple["TimeSeries", "TimeSeries"]:
+    ) -> Tuple[Self, Self]:
         # Get index with not after in order to avoid moving twice if split_point is not in self
         point_index = self.get_index_at_point(split_point, not after)
         return (
@@ -2168,7 +2168,7 @@ class TimeSeries:
 
     def split_after(
         self, split_point: Union[pd.Timestamp, float, int]
-    ) -> Tuple["TimeSeries", "TimeSeries"]:
+    ) -> Tuple[Self, Self]:
         """
         Splits the series in two, after a provided `split_point`.
 
@@ -2191,7 +2191,7 @@ class TimeSeries:
 
     def split_before(
         self, split_point: Union[pd.Timestamp, float, int]
-    ) -> Tuple["TimeSeries", "TimeSeries"]:
+    ) -> Tuple[Self, Self]:
         """
         Splits the series in two, before a provided `split_point`.
 
@@ -2386,7 +2386,7 @@ class TimeSeries:
                 ValueError("start_ts must be an int or a pandas Timestamp."), logger
             )
 
-    def slice_intersect(self, other: "TimeSeries") -> Self:
+    def slice_intersect(self, other: Self) -> Self:
         """
         Return a ``TimeSeries`` slice of this series, where the time index has been intersected with the one
         of the `other` series.
@@ -2629,7 +2629,7 @@ class TimeSeries:
         """
         return self.__class__(self._xa.copy().cumsum(axis=0))
 
-    def has_same_time_as(self, other: "TimeSeries") -> bool:
+    def has_same_time_as(self, other: Self) -> bool:
         """
         Checks whether this series has the same time index as `other`.
 
@@ -2647,7 +2647,7 @@ class TimeSeries:
             return False
         return (other.time_index == self.time_index).all()
 
-    def append(self, other: "TimeSeries") -> Self:
+    def append(self, other: Self) -> Self:
         """
         Appends another series to this series along the time axis.
 
@@ -2743,7 +2743,7 @@ class TimeSeries:
             )
         )
 
-    def prepend(self, other: "TimeSeries") -> Self:
+    def prepend(self, other: Self) -> Self:
         """
         Prepends (i.e. adds to the beginning) another series to this series along the time axis.
 
@@ -2941,7 +2941,7 @@ class TimeSeries:
             )
         )
 
-    def stack(self, other: "TimeSeries") -> "TimeSeries":
+    def stack(self, other: Self) -> Self:
         """
         Stacks another univariate or multivariate TimeSeries with the same time index on top of
         the current one (along the component axis).
@@ -3017,7 +3017,7 @@ class TimeSeries:
         one_hot: bool = False,
         cyclic: bool = False,
         tz: Optional[str] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Build a new series with one (or more) additional component(s) that contain an attribute
         of the time index of the series.
@@ -3064,7 +3064,7 @@ class TimeSeries:
         prov: str = None,
         state: str = None,
         tz: Optional[str] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Adds a binary univariate component to the current series that equals 1 at every index that
         corresponds to selected country's holiday, and 0 otherwise.
@@ -3287,7 +3287,7 @@ class TimeSeries:
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
         include_current: Optional[bool] = True,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
 
@@ -4307,7 +4307,7 @@ class TimeSeries:
 
     def _combine_arrays(
         self,
-        other: Union["TimeSeries", xr.DataArray, np.ndarray],
+        other: Union[Self, xr.DataArray, np.ndarray],
         combine_fn: Callable[[np.ndarray, np.ndarray], np.ndarray],
     ) -> Self:
         """
@@ -5085,246 +5085,8 @@ class TimeSeries:
         raise_log(IndexError("The type of your index was not matched."), logger)
 
 
-class TimeSeriesNoCopy(TimeSeries):
-    def __init__(self, xa: xr.DataArray):
-        """
-        Create a TimeSeries from a (well formed) DataArray.
-        It is recommended to use the factory methods to create TimeSeries instead.
-
-        See Also
-        --------
-        TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
-        TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
-        TimeSeries.from_series : Create from a :class:`pandas.Series`.
-        TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
-        TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
-        TimeSeries.from_csv : Create from a CSV file.
-        TimeSeries.from_json : Create from a JSON file.
-        TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
-        """
-        raise_if_not(
-            isinstance(xa, xr.DataArray),
-            "Data must be provided as an xarray DataArray instance. "
-            "If you need to create a TimeSeries from another type "
-            "(e.g. a DataFrame), look at TimeSeries factory methods "
-            "(e.g. TimeSeries.from_dataframe(), "
-            "TimeSeries.from_xarray(), TimeSeries.from_values()"
-            "TimeSeries.from_times_and_values(), etc...).",
-            logger,
-        )
-        raise_if_not(
-            len(xa.shape) == 3,
-            f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
-            logger,
-        )
-
-        # Ideally values should be np.float, otherwise certain functionalities like diff()
-        # relying on np.nan (which is a float) won't work very properly.
-        raise_if_not(
-            np.issubdtype(xa.values.dtype, np.number),
-            "The time series must contain numeric values only.",
-            logger,
-        )
-
-        val_dtype = xa.values.dtype
-        if not (
-            np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
-        ):
-            logger.warning(
-                "TimeSeries is using a numeric type different from np.float32 or np.float64. "
-                "Not all functionalities may work properly. It is recommended casting your data to floating "
-                "point numbers before using TimeSeries."
-            )
-
-        if xa.dims[-2:] != DIMS[-2:]:
-            # The first dimension represents the time and may be named differently.
-            raise_log(
-                ValueError(
-                    "The last two dimensions of the DataArray must be named {}".format(
-                        DIMS[-2:]
-                    )
-                ),
-                logger,
-            )
-
-        # check that columns/component names are unique
-        components = xa.get_index(DIMS[1])
-        raise_if_not(
-            len(set(components)) == len(components),
-            "The components (columns) names must be unique. Provided: {}".format(
-                components
-            ),
-            logger,
-        )
-
-        self._time_dim = str(
-            xa.dims[0]
-        )  # how the time dimension is named; we convert hashable to string
-
-        # The following sorting returns a copy, which we are relying on.
-        # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
-        # https://github.com/pydata/xarray/issues/5466
-        # We sort only if the time axis is not already sorted (monotonically increasing).
-        self._xa = self._sort_index(xa, copy=False)
-
-        self._time_index = self._xa.get_index(self._time_dim)
-
-        if not isinstance(self._time_index, VALID_INDEX_TYPES):
-            raise_log(
-                ValueError(
-                    "The time dimension of the DataArray must be indexed either with a DatetimeIndex "
-                    "or with an RangeIndex."
-                ),
-                logger,
-            )
-
-        self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
-
-        if self._has_datetime_index:
-            freq_tmp = xa.get_index(
-                self._time_dim
-            ).freq  # store original freq (see bug of sortby() above).
-            self._freq: pd.DateOffset = (
-                freq_tmp
-                if freq_tmp is not None
-                else to_offset(self._xa.get_index(self._time_dim).inferred_freq)
-            )
-            raise_if(
-                self._freq is None,
-                "The time index of the provided DataArray is missing the freq attribute, and the frequency could "
-                "not be directly inferred. "
-                "This probably comes from inconsistent date frequencies with missing dates. "
-                "If you know the actual frequency, try setting `fill_missing_dates=True, freq=actual_frequency`. "
-                "If not, try setting `fill_missing_dates=True, freq=None` to see if a frequency can be inferred.",
-                logger,
-            )
-
-            self._freq_str: str = self._freq.freqstr
-
-            # reset freq inside the xarray index (see bug of sortby() above).
-            self._xa.get_index(self._time_dim).freq = self._freq
-
-            # We have to check manually if the index is complete for non-empty series. Another way could
-            # be to rely on `inferred_freq` being present, but this fails for series of length < 3.
-            if len(self._time_index) > 0:
-                is_index_complete = (
-                    len(
-                        pd.date_range(
-                            self._time_index.min(),
-                            self._time_index.max(),
-                            freq=self._freq,
-                        ).difference(self._time_index)
-                    )
-                    == 0
-                )
-
-                raise_if_not(
-                    is_index_complete,
-                    "Not all timestamps seem to be present in the time index. Does "
-                    "the series contain holes? If you are using a factory method, "
-                    "try specifying `fill_missing_dates=True` "
-                    "or specify the `freq` parameter.",
-                    logger,
-                )
-        else:
-            self._freq: int = self._time_index.step
-            self._freq_str = None
-
-        # check static covariates
-        static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
-        raise_if_not(
-            isinstance(static_covariates, (pd.Series, pd.DataFrame))
-            or static_covariates is None,
-            "`static_covariates` must be either a pandas Series, DataFrame or None",
-            logger,
-        )
-        # check if valid static covariates for multivariate TimeSeries
-        if isinstance(static_covariates, pd.DataFrame):
-            n_components = len(static_covariates)
-            raise_if(
-                n_components > 1 and n_components != self.n_components,
-                "When passing a multi-row pandas DataFrame, the number of rows must match the number of "
-                "components of the TimeSeries object (multi-component/multi-row static covariates must map to each "
-                "TimeSeries component).",
-                logger,
-            )
-            static_covariates = static_covariates.copy()
-        elif isinstance(static_covariates, pd.Series):
-            static_covariates = static_covariates.to_frame().T
-        else:  # None
-            pass
-
-        # prepare static covariates:
-        if static_covariates is not None:
-            static_covariates.index = (
-                self.components
-                if len(static_covariates) == self.n_components
-                else [DEFAULT_GLOBAL_STATIC_COV_NAME]
-            )
-            static_covariates.columns.name = STATIC_COV_TAG
-            # convert numerical columns to same dtype as series
-            # we get all numerical columns, except those that have right dtype already
-            cols_to_cast = static_covariates.select_dtypes(
-                include=np.number, exclude=self.dtype
-            ).columns
-
-            changes = {col: self.dtype for col in cols_to_cast}
-            # Calling astype is costly even when there's no change...
-            if len(changes) > 0:
-                static_covariates = static_covariates.astype(changes, copy=False)
-
-        # handle hierarchy
-        hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
-        self._top_level_component = None
-        self._bottom_level_components = None
-        if hierarchy is not None:
-            raise_if_not(
-                isinstance(hierarchy, dict),
-                "The hierarchy must be a dict mapping (non-top) component names to their parent(s) in the hierarchy.",
-            )
-            # pre-compute grouping informations
-            components_set = set(self.components)
-            children = set(hierarchy.keys())
-
-            # convert string ancestors to list of strings
-            hierarchy = {
-                k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()
-            }
-
-            raise_if_not(
-                all(c in components_set for c in children),
-                "The keys of the hierarchy must be time series components",
-            )
-            ancestors = set().union(*hierarchy.values())
-            raise_if_not(
-                all(a in components_set for a in ancestors),
-                "The values of the hierarchy must only contain component names matching those of the series.",
-            )
-            hierarchy_top = components_set - children
-            raise_if_not(
-                len(hierarchy_top) == 1,
-                "The hierarchy must be such that only one component does "
-                + "not appear as a key (the top level component).",
-            )
-            self._top_level_component = hierarchy_top.pop()
-            raise_if_not(
-                self._top_level_component in ancestors,
-                "Invalid hierarchy. Component {} appears as it should be top-level, but "
-                + "does not appear as an ancestor in the hierarchy dict.",
-            )
-            bottom_level = components_set - ancestors
-
-            # maintain the same order as the original components
-            self._bottom_level_components = [
-                c for c in self.components if c in bottom_level
-            ]
-
-        # Store static covariates and hierarchy in attributes (potentially storing None)
-        self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
-
-
-class TimeSeriesRaiseLog(TimeSeries):
-    def __init__(self, xa: xr.DataArray):
+class TimeSeries(TimeSeriesOld):
+    def __init__(self, xa: xr.DataArray, copy=True):
         """
         Create a TimeSeries from a (well formed) DataArray.
         It is recommended to use the factory methods to create TimeSeries instead.
@@ -5398,15 +5160,14 @@ class TimeSeriesRaiseLog(TimeSeries):
                 logger,
             )
 
-        self._time_dim = str(
-            xa.dims[0]
-        )  # how the time dimension is named; we convert hashable to string
+        # how the time dimension is named; we convert hashable to string
+        self._time_dim = str(xa.dims[0])
 
         # The following sorting returns a copy, which we are relying on.
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
         # We sort only if the time axis is not already sorted (monotonically increasing).
-        self._xa = self._sort_index(xa, copy=False)
+        self._xa = self._sort_index(xa, copy=copy)
         self._time_index = self._xa.get_index(self._time_dim)
 
         if not isinstance(self._time_index, VALID_INDEX_TYPES):
@@ -5421,14 +5182,17 @@ class TimeSeriesRaiseLog(TimeSeries):
         self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
 
         if self._has_datetime_index:
-            freq_tmp = xa.get_index(
-                self._time_dim
-            ).freq  # store original freq (see bug of sortby() above).
-            self._freq: pd.DateOffset = (
-                freq_tmp
-                if freq_tmp is not None
-                else to_offset(self._xa.get_index(self._time_dim).inferred_freq)
-            )
+            # store original freq (see bug of sortby() above).
+            freq_tmp = xa.get_index(self._time_dim).freq
+
+            # if original frequency is known and positive (n > 0 -> increasing time index),
+            # it is guaranteed that original array was sorted and new freq must be the same.
+            # otherwise infer the frequency from the sorted array
+            if freq_tmp is not None and freq_tmp.n > 0:
+                self._freq = freq_tmp
+            else:
+                self._freq = to_offset(self._xa.get_index(self._time_dim).inferred_freq)
+
             if self._freq is None:
                 raise_log(
                     ValueError(
@@ -5445,30 +5209,6 @@ class TimeSeriesRaiseLog(TimeSeries):
 
             # reset freq inside the xarray index (see bug of sortby() above).
             self._xa.get_index(self._time_dim).freq = self._freq
-
-            # We have to check manually if the index is complete for non-empty series. Another way could
-            # be to rely on `inferred_freq` being present, but this fails for series of length < 3.
-            if len(self._time_index) > 0:
-                is_index_complete = (
-                    len(
-                        pd.date_range(
-                            self._time_index.min(),
-                            self._time_index.max(),
-                            freq=self._freq,
-                        ).difference(self._time_index)
-                    )
-                    == 0
-                )
-                if not is_index_complete:
-                    raise_log(
-                        ValueError(
-                            "Not all timestamps seem to be present in the time index. Does "
-                            "the series contain holes? If you are using a factory method, "
-                            "try specifying `fill_missing_dates=True` "
-                            "or specify the `freq` parameter."
-                        ),
-                        logger,
-                    )
         else:
             self._freq: int = self._time_index.step
             self._freq_str = None
@@ -5493,12 +5233,13 @@ class TimeSeriesRaiseLog(TimeSeries):
                 raise_log(
                     ValueError(
                         "When passing a multi-row pandas DataFrame, the number of rows must match the number of "
-                        "components of the TimeSeries object (multi-component/multi-row static covariates must "
-                        "map to each TimeSeries component)."
+                        "components of the TimeSeries object (multi-component/multi-row static covariates "
+                        "must map to each TimeSeries component)."
                     ),
                     logger,
                 )
-            static_covariates = static_covariates.copy()
+            if copy:
+                static_covariates = static_covariates.copy()
         elif isinstance(static_covariates, pd.Series):
             static_covariates = static_covariates.to_frame().T
         else:  # None
@@ -5518,10 +5259,11 @@ class TimeSeriesRaiseLog(TimeSeries):
                 include=np.number, exclude=self.dtype
             ).columns
 
-            changes = {col: self.dtype for col in cols_to_cast}
             # Calling astype is costly even when there's no change...
-            if len(changes) > 0:
-                static_covariates = static_covariates.astype(changes, copy=False)
+            if not cols_to_cast.empty:
+                static_covariates = static_covariates.astype(
+                    {col: self.dtype for col in cols_to_cast}, copy=False
+                )
 
         # handle hierarchy
         hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
@@ -5531,8 +5273,8 @@ class TimeSeriesRaiseLog(TimeSeries):
             if not isinstance(hierarchy, dict):
                 raise_log(
                     ValueError(
-                        "The hierarchy must be a dict mapping (non-top) component names "
-                        "to their parent(s) in the hierarchy."
+                        "The hierarchy must be a dict mapping (non-top) component names to their parent(s) "
+                        "in the hierarchy."
                     ),
                     logger,
                 )
@@ -5556,7 +5298,8 @@ class TimeSeriesRaiseLog(TimeSeries):
             if not all(a in components_set for a in ancestors):
                 raise_log(
                     ValueError(
-                        "The values of the hierarchy must only contain component names matching those of the series."
+                        "The values of the hierarchy must only contain component names matching those "
+                        "of the series."
                     ),
                     logger,
                 )
@@ -5573,8 +5316,8 @@ class TimeSeriesRaiseLog(TimeSeries):
             if self._top_level_component not in ancestors:
                 raise_log(
                     ValueError(
-                        "Invalid hierarchy. Component {} appears as it should be top-level, but does not "
-                        "appear as an ancestor in the hierarchy dict."
+                        "Invalid hierarchy. Component {} appears as it should be top-level, but "
+                        "does not appear as an ancestor in the hierarchy dict."
                     ),
                     logger,
                 )
@@ -5585,11 +5328,11 @@ class TimeSeriesRaiseLog(TimeSeries):
                 c for c in self.components if c in bottom_level
             ]
 
-        # Store static covariates and hierarchy in attributes (potentially storing None)
+        # # Store static covariates and hierarchy in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
 
-class TimeSeriesNew(TimeSeries):
+class TimeSeriesNoCopy(TimeSeries):
     def __init__(self, xa: xr.DataArray):
         """
         Create a TimeSeries from a (well formed) DataArray.
@@ -5606,247 +5349,7 @@ class TimeSeriesNew(TimeSeries):
         TimeSeries.from_json : Create from a JSON file.
         TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
         """
-        if not isinstance(xa, xr.DataArray):
-            raise_log(
-                ValueError(
-                    "Data must be provided as an xarray DataArray instance. "
-                    "If you need to create a TimeSeries from another type "
-                    "(e.g. a DataFrame), look at TimeSeries factory methods "
-                    "(e.g. TimeSeries.from_dataframe(), "
-                    "TimeSeries.from_xarray(), TimeSeries.from_values()"
-                    "TimeSeries.from_times_and_values(), etc...)."
-                ),
-                logger,
-            )
-        if not len(xa.shape) == 3:
-            raise_log(
-                ValueError(
-                    f"TimeSeries require DataArray of dimensionality 3 ({DIMS})."
-                ),
-                logger,
-            )
-
-        # Ideally values should be np.float, otherwise certain functionalities like diff()
-        # relying on np.nan (which is a float) won't work very properly.
-        if not np.issubdtype(xa.values.dtype, np.number):
-            raise_log(
-                ValueError("The time series must contain numeric values only."), logger
-            )
-
-        val_dtype = xa.values.dtype
-        if not (
-            np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
-        ):
-            logger.warning(
-                "TimeSeries is using a numeric type different from np.float32 or np.float64. "
-                "Not all functionalities may work properly. It is recommended casting your data to floating "
-                "point numbers before using TimeSeries."
-            )
-
-        if xa.dims[-2:] != DIMS[-2:]:
-            # The first dimension represents the time and may be named differently.
-            raise_log(
-                ValueError(
-                    "The last two dimensions of the DataArray must be named {}".format(
-                        DIMS[-2:]
-                    )
-                ),
-                logger,
-            )
-
-        # check that columns/component names are unique
-        components = xa.get_index(DIMS[1])
-        if not len(set(components)) == len(components):
-            raise_log(
-                ValueError(
-                    f"The components (columns) names must be unique. Provided: {components}"
-                ),
-                logger,
-            )
-
-        self._time_dim = str(
-            xa.dims[0]
-        )  # how the time dimension is named; we convert hashable to string
-
-        # The following sorting returns a copy, which we are relying on.
-        # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
-        # https://github.com/pydata/xarray/issues/5466
-        # We sort only if the time axis is not already sorted (monotonically increasing).
-        self._xa = self._sort_index(xa, copy=True)
-        self._time_index = self._xa.get_index(self._time_dim)
-
-        if not isinstance(self._time_index, VALID_INDEX_TYPES):
-            raise_log(
-                ValueError(
-                    "The time dimension of the DataArray must be indexed either with a DatetimeIndex "
-                    "or with an RangeIndex."
-                ),
-                logger,
-            )
-
-        self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
-
-        if self._has_datetime_index:
-            freq_tmp = xa.get_index(
-                self._time_dim
-            ).freq  # store original freq (see bug of sortby() above).
-            self._freq: pd.DateOffset = (
-                freq_tmp
-                if freq_tmp is not None
-                else to_offset(self._xa.get_index(self._time_dim).inferred_freq)
-            )
-            if self._freq is None:
-                raise_log(
-                    ValueError(
-                        "The time index of the provided DataArray is missing the freq attribute, and the frequency "
-                        "could not be directly inferred. This probably comes from inconsistent date frequencies with "
-                        "missing dates. If you know the actual frequency, try setting `fill_missing_dates=True, "
-                        "freq=actual_frequency`. If not, try setting `fill_missing_dates=True, freq=None` to see if a "
-                        "frequency can be inferred."
-                    ),
-                    logger,
-                )
-
-            self._freq_str: str = self._freq.freqstr
-
-            # reset freq inside the xarray index (see bug of sortby() above).
-            self._xa.get_index(self._time_dim).freq = self._freq
-
-            # We have to check manually if the index is complete for non-empty series. Another way could
-            # be to rely on `inferred_freq` being present, but this fails for series of length < 3.
-            # if len(self._time_index) > 0:
-            #     is_index_complete = (
-            #         len(
-            #             pd.date_range(
-            #                 self._time_index.min(),
-            #                 self._time_index.max(),
-            #                 freq=self._freq,
-            #             ).difference(self._time_index)
-            #         )
-            #         == 0
-            #     )
-            #     if not is_index_complete:
-            #         raise_log(
-            #             ValueError(
-            #                 "Not all timestamps seem to be present in the time index. Does "
-            #                 "the series contain holes? If you are using a factory method, "
-            #                 "try specifying `fill_missing_dates=True` "
-            #                 "or specify the `freq` parameter."
-            #             ),
-            #             logger
-            #         )
-        else:
-            self._freq: int = self._time_index.step
-            self._freq_str = None
-
-        # # check static covariates
-        # static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
-        # if not (isinstance(static_covariates, (pd.Series, pd.DataFrame)) or static_covariates is None):
-        #     raise_log(
-        #         ValueError("`static_covariates` must be either a pandas Series, DataFrame or None"),
-        #         logger
-        #     )
-        #
-        # # check if valid static covariates for multivariate TimeSeries
-        # if isinstance(static_covariates, pd.DataFrame):
-        #     n_components = len(static_covariates)
-        #     if n_components > 1 and n_components != self.n_components:
-        #         raise_log(
-        #             ValueError(
-        #                 "When passing a multi-row pandas DataFrame, the number of rows must match the number of "
-        #                 "components of the TimeSeries object (multi-component/multi-row static covariates
-        #                 must map to each TimeSeries component)."
-        #             ),
-        #             logger
-        #         )
-        #     static_covariates = static_covariates.copy()
-        # elif isinstance(static_covariates, pd.Series):
-        #     static_covariates = static_covariates.to_frame().T
-        # else:  # None
-        #     pass
-
-        # # prepare static covariates:
-        # if static_covariates is not None:
-        #     static_covariates.index = (
-        #         self.components
-        #         if len(static_covariates) == self.n_components
-        #         else [DEFAULT_GLOBAL_STATIC_COV_NAME]
-        #     )
-        #     static_covariates.columns.name = STATIC_COV_TAG
-        #     # convert numerical columns to same dtype as series
-        #     # we get all numerical columns, except those that have right dtype already
-        #     cols_to_cast = static_covariates.select_dtypes(
-        #         include=np.number, exclude=self.dtype
-        #     ).columns
-        #
-        #     changes = {col: self.dtype for col in cols_to_cast}
-        #     # Calling astype is costly even when there's no change...
-        #     if len(changes) > 0:
-        #         static_covariates = static_covariates.astype(changes, copy=False)
-        #
-        # # handle hierarchy
-        # hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
-        # self._top_level_component = None
-        # self._bottom_level_components = None
-        # if hierarchy is not None:
-        #     if not isinstance(hierarchy, dict):
-        #         raise_log(
-        #             ValueError(
-        #                 "The hierarchy must be a dict mapping (non-top) component names to their parent(s) "
-        #                 "in the hierarchy."
-        #             ),
-        #             logger
-        #         )
-        #     # pre-compute grouping informations
-        #     components_set = set(self.components)
-        #     children = set(hierarchy.keys())
-        #
-        #     # convert string ancestors to list of strings
-        #     hierarchy = {
-        #         k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()
-        #     }
-        #
-        #     if not all(c in components_set for c in children):
-        #         raise_log(
-        #             ValueError("The keys of the hierarchy must be time series components"),
-        #             logger
-        #         )
-        #     ancestors = set().union(*hierarchy.values())
-        #     if not all(a in components_set for a in ancestors):
-        #         raise_log(
-        #             ValueError(
-        #                 "The values of the hierarchy must only contain component names matching those "
-        #                 "of the series."
-        #             ),
-        #             logger
-        #         )
-        #     hierarchy_top = components_set - children
-        #     if not len(hierarchy_top) == 1:
-        #         raise_log(
-        #             ValueError(
-        #                 "The hierarchy must be such that only one component does not appear as a key "
-        #                 "(the top level component)."
-        #             ),
-        #             logger
-        #         )
-        #     self._top_level_component = hierarchy_top.pop()
-        #     if self._top_level_component not in ancestors:
-        #         raise_log(
-        #             ValueError(
-        #                 "Invalid hierarchy. Component {} appears as it should be top-level, but "
-        #                 "does not appear as an ancestor in the hierarchy dict."
-        #             ),
-        #             logger,
-        #         )
-        #     bottom_level = components_set - ancestors
-        #
-        #     # maintain the same order as the original components
-        #     self._bottom_level_components = [
-        #         c for c in self.components if c in bottom_level
-        #     ]
-        #
-        # # Store static covariates and hierarchy in attributes (potentially storing None)
-        # self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
+        super().__init__(xa, copy=False)
 
 
 def _xarray_with_attrs(xa_, static_covariates, hierarchy):
@@ -5859,7 +5362,7 @@ def _xarray_with_attrs(xa_, static_covariates, hierarchy):
     return xa_
 
 
-def _concat_static_covs(series: Sequence["TimeSeries"]) -> Optional[pd.DataFrame]:
+def _concat_static_covs(series: Sequence[TimeSeries]) -> Optional[pd.DataFrame]:
     """Concatenates static covariates along component dimension (rows of static covariates). For stacking or
     concatenating TimeSeries along component dimension (axis=1).
 
@@ -5918,7 +5421,7 @@ def _concat_static_covs(series: Sequence["TimeSeries"]) -> Optional[pd.DataFrame
     )
 
 
-def _concat_hierarchy(series: Sequence["TimeSeries"]):
+def _concat_hierarchy(series: Sequence[TimeSeries]):
     """
     Used to concatenate the hierarchies of multiple TimeSeries, when concatenating series
     along axis 1 (components). This simply merges the hierarchy dictionaries.
@@ -5931,7 +5434,7 @@ def _concat_hierarchy(series: Sequence["TimeSeries"]):
 
 
 def concatenate(
-    series: Sequence["TimeSeries"],
+    series: Sequence[TimeSeries],
     axis: Union[str, int] = 0,
     ignore_time_axis: bool = False,
     ignore_static_covariates: bool = False,
