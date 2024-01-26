@@ -7,6 +7,12 @@ from darts.dataprocessing.transformers import MIDAS
 from darts.models import LinearRegressionModel
 from darts.utils.timeseries_generation import generate_index, linear_timeseries
 
+# TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)
+pd_above_v22 = pd.__version__ >= "2.2"
+freq_quarter_end = "QE" if pd_above_v22 else "Q"
+freq_month_end = "ME" if pd_above_v22 else "M"
+freq_minute = "min" if pd_above_v22 else "T"
+
 
 class TestMIDAS:
     monthly_ts = linear_timeseries(
@@ -57,7 +63,7 @@ class TestMIDAS:
         assert self.monthly_ts == inversed_quarterly_ts_midas
 
         # to quarter end
-        midas_2 = MIDAS(low_freq="Q")
+        midas_2 = MIDAS(low_freq=freq_quarter_end)
         quarterly_ts_midas = midas_2.fit_transform(self.monthly_ts)
         assert quarterly_ts_midas == self.quarterly_with_quarter_end_index_ts
 
@@ -332,23 +338,28 @@ class TestMIDAS:
             columns=[f"values_midas_{i}" for i in range(60)],
         )
 
-        midas = MIDAS(low_freq="T")
+        midas = MIDAS(low_freq=freq_minute)
         minute_ts_midas = midas.fit_transform(second_ts)
         assert minute_ts_midas == minute_ts
         second_ts_midas = midas.inverse_transform(minute_ts_midas)
         assert second_ts_midas == second_ts
+
+    def test_error_with_invalid_freq(self):
+        with pytest.raises(ValueError) as err:
+            _ = MIDAS(low_freq="MEE")
+        assert str(err.value).startswith("Cannot infer period alias for")
 
     def test_error_when_from_low_to_high(self):
         """
         Tests if the transformer raises an error when the user asks for a transform in the wrong direction.
         """
         # wrong direction : low to high freq
-        midas_1 = MIDAS(low_freq="M")
+        midas_1 = MIDAS(low_freq=freq_month_end)
         with pytest.raises(ValueError):
             midas_1.fit_transform(self.quarterly_ts)
 
         # transform to same index requested
-        midas_2 = MIDAS(low_freq="Q")
+        midas_2 = MIDAS(low_freq=freq_quarter_end)
         with pytest.raises(ValueError):
             midas_2.fit_transform(self.quarterly_ts)
 
@@ -365,7 +376,7 @@ class TestMIDAS:
             times=daily_times, values=daily_values, columns=["values"]
         )
 
-        midas = MIDAS(low_freq="M")
+        midas = MIDAS(low_freq=freq_month_end)
         with pytest.raises(ValueError) as msg:
             midas.fit_transform(daily_ts)
         assert str(msg.value).startswith(
@@ -403,7 +414,7 @@ class TestMIDAS:
         assert pred_monthly.time_index.equals(monthly_test_ts.time_index)
 
         # "Q" = QuarterEnd, the 2 "hidden" months must be retrieved
-        midas_quarterly = MIDAS(low_freq="Q")
+        midas_quarterly = MIDAS(low_freq=freq_quarter_end)
         quarterly_train_ts = midas_quarterly.fit_transform(monthly_train_ts)
         quarterly_test_ts = midas_quarterly.transform(monthly_test_ts)
 
@@ -439,12 +450,12 @@ class TestMIDAS:
 
         ts_to_transform = [self.monthly_ts, quarterly_univariate_ts]
         # ==> with stripping: not enough months, first series will be empty
-        midas_yearly = MIDAS(low_freq="AS", strip=True)
+        midas_yearly = MIDAS(low_freq="YS", strip=True)
 
         list_yearly_ts = midas_yearly.fit_transform(ts_to_transform)
         assert len(list_yearly_ts) == 2
         assert len(list_yearly_ts[0]) == 0
-        assert list_yearly_ts[0].freq == "AS"
+        assert list_yearly_ts[0].freq == "YS"
         assert list_yearly_ts[0].n_components == 12
 
         # 4 quarters in a year
@@ -456,13 +467,13 @@ class TestMIDAS:
         inverse_transformed = midas_yearly.inverse_transform(list_yearly_ts)
         assert len(inverse_transformed) == 2
         assert len(inverse_transformed[0]) == 0
-        assert inverse_transformed[0].freq == "M"
+        assert inverse_transformed[0].freq == freq_month_end
         assert inverse_transformed[0].n_components == 1
 
         assert ts_to_transform[1:] == inverse_transformed[1:]
 
         # ==> without stripping: first series will be partially empty
-        midas_yearly = MIDAS(low_freq="AS", strip=False)
+        midas_yearly = MIDAS(low_freq="YS", strip=False)
         list_yearly_ts = midas_yearly.fit_transform(ts_to_transform)
         # 12 months in a year, original ts contains only 9 values, the missing data are nan
         np.testing.assert_array_almost_equal(
