@@ -5331,8 +5331,6 @@ class TimeSeries(TimeSeriesOld):
         # # Store static covariates and hierarchy in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
-
-class TimeSeriesNew(TimeSeries):
     def __getitem__(
         self,
         key: Union[
@@ -5390,15 +5388,21 @@ class TimeSeriesNew(TimeSeries):
                     logger,
                 )
 
-        def _set_freq_in_xa(xa_: xr.DataArray, freq=None):
+        def _set_freq_in_xa(xa_in: xr.DataArray, freq=None):
             # mutates the DataArray to make sure it contains the freq
-            if isinstance(xa_.get_index(self._time_dim), pd.DatetimeIndex):
+            if isinstance(xa_in.get_index(self._time_dim), pd.DatetimeIndex):
                 if freq is None:
-                    freq = xa_.get_index(self._time_dim).inferred_freq
+                    freq = xa_in.get_index(self._time_dim).inferred_freq
                 if freq is not None:
-                    xa_.get_index(self._time_dim).freq = to_offset(freq)
+                    xa_in.get_index(self._time_dim).freq = freq
                 else:
-                    xa_.get_index(self._time_dim).freq = self._freq
+                    xa_in.get_index(self._time_dim).freq = self._freq
+
+        def _get_freq(xa_in: xr.DataArray):
+            if self._has_datetime_index:
+                return xa_in.get_index(self._time_dim).freq
+            else:
+                return xa_in.get_index(self._time_dim).step
 
         adapt_covs_on_component = (
             True
@@ -5411,7 +5415,7 @@ class TimeSeriesNew(TimeSeries):
             _check_dt()
             xa_ = self._xa.sel({self._time_dim: key})
 
-            # indexing may discard the freq so we restore it...
+            # indexing may discard the freq, so we restore it...
             # if the DateTimeIndex already has an associated freq, use it
             # otherwise key.freq is None and the freq will be inferred
             _set_freq_in_xa(xa_, key.freq)
@@ -5444,14 +5448,14 @@ class TimeSeriesNew(TimeSeries):
                 key.stop, (int, np.int64)
             ):
                 xa_ = self._xa.isel({self._time_dim: key})
-                if xa_.get_index(self._time_dim).freq is None:
-                    # indexing may discard the freq so we restore it...
+                if _get_freq(xa_) is None:
+                    # indexing may discard the freq, so we restore it...
                     if key.step is None:
-                        new_freq = self.freq
+                        freq = self.freq
                     else:
                         # new frequency is multiple of original
-                        new_freq = key.step * self.freq
-                    _set_freq_in_xa(xa_, new_freq)
+                        freq = key.step * self.freq
+                    _set_freq_in_xa(xa_, freq)
                 return self.__class__(xa_)
             elif isinstance(key.start, pd.Timestamp) or isinstance(
                 key.stop, pd.Timestamp
@@ -5460,8 +5464,8 @@ class TimeSeriesNew(TimeSeries):
 
                 # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
-                if xa_.get_index(self._time_dim).freq is None:
-                    # indexing may discard the freq so we restore it...
+                if _get_freq(xa_) is None:
+                    # indexing may discard the freq, so we restore it...
                     if key.step is None:
                         freq = self.freq
                     else:
@@ -5502,14 +5506,16 @@ class TimeSeriesNew(TimeSeries):
                     }
                 )
 
-            _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+            _set_freq_in_xa(
+                xa_, freq=self.freq
+            )  # indexing may discard the freq, so we restore it...
             return self.__class__(xa_)
         elif isinstance(key, pd.Timestamp):
             _check_dt()
 
-            # indexing may discard the freq so we restore it...
+            # indexing may discard the freq, so we restore it...
             xa_ = self._xa.sel({self._time_dim: [key]})
-            _set_freq_in_xa(xa_)
+            _set_freq_in_xa(xa_, self.freq)
             return self.__class__(xa_)
 
         # handle lists:
@@ -5528,7 +5534,7 @@ class TimeSeriesNew(TimeSeries):
             elif all(isinstance(i, (int, np.int64)) for i in key):
                 xa_ = self._xa.isel({self._time_dim: key})
 
-                # indexing may discard the freq so we restore it...
+                # indexing may discard the freq, so we restore it...
                 _set_freq_in_xa(xa_)
 
                 orig_idx = self.time_index
@@ -5556,7 +5562,7 @@ class TimeSeriesNew(TimeSeries):
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
 
-                # indexing may discard the freq so we restore it...
+                # indexing may discard the freq, so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
                 _set_freq_in_xa(xa_)
                 return self.__class__(xa_)
@@ -5564,7 +5570,11 @@ class TimeSeriesNew(TimeSeries):
         raise_log(IndexError("The type of your index was not matched."), logger)
 
 
-class TimeSeriesNoCopy(TimeSeries):
+class TimeSeriesNew(TimeSeries):
+    pass
+
+
+class TimeSeriesNoCopy(TimeSeriesNew):
     def __init__(self, xa: xr.DataArray):
         """
         Create a TimeSeries from a (well formed) DataArray.
