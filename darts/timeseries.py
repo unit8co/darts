@@ -5569,6 +5569,150 @@ class TimeSeries(TimeSeriesOld):
 
         raise_log(IndexError("The type of your index was not matched."), logger)
 
+    @classmethod
+    def from_xarray(
+        cls,
+        xa: xr.DataArray,
+        fill_missing_dates: Optional[bool] = False,
+        freq: Optional[Union[str, int]] = None,
+        fillna_value: Optional[float] = None,
+    ) -> Self:
+        """
+        Return a TimeSeries instance built from an xarray DataArray.
+        The dimensions of the DataArray have to be (time, component, sample), in this order. The time
+        dimension can have an arbitrary name, but component and sample must be named "component" and "sample",
+        respectively.
+
+        The first dimension (time), and second dimension (component) must be indexed (i.e., have coordinates).
+        The time must be indexed either with a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can
+        be converted to a RangeIndex. It is better if the index has no holes; alternatively setting
+        `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the provided
+        `fillna_value` numeric value, if any).
+
+        If two components have the same name or are not strings, this method will disambiguate the components
+        names by appending a suffix of the form "<name>_N" to the N-th column with name "name".
+        The component names in the static covariates and hierarchy (if any) are *not* disambiguated.
+
+        Parameters
+        ----------
+        xa
+            The xarray DataArray
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+            with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
+            provided timestamps. See :meth:`_fill_missing_dates() <TimeSeries._fill_missing_dates>` for more info.
+        freq
+            Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+            to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+            If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            supported frequencies).
+            If an integer, represents the step size of the pandas Index or pandas RangeIndex.
+        fillna_value
+            Optionally, a numeric value to fill missing values (NaNs) with.
+
+        Returns
+        -------
+        TimeSeries
+            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+        """
+        xa_index = xa.get_index(xa.dims[0])
+
+        has_datetime_index = isinstance(xa_index, pd.DatetimeIndex)
+        has_range_index = isinstance(xa_index, pd.RangeIndex)
+        has_integer_index = not (has_datetime_index or has_range_index)
+
+        has_frequency = (
+            has_datetime_index and xa_index.freq is not None
+        ) or has_range_index
+
+        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
+        if fill_missing_dates:
+            xa_ = cls._fill_missing_dates(xa, freq=freq)
+        # provided index does not have a freq; using the provided freq
+        elif (
+            (has_datetime_index or has_integer_index)
+            and freq is not None
+            and not has_frequency
+        ):
+            xa_ = cls._restore_xarray_from_frequency(xa, freq=freq)
+        # index is an integer index and no freq is provided; try convert it to pd.RangeIndex
+        elif has_integer_index and freq is None:
+            xa_ = cls._integer_to_range_indexed_xarray(xa)
+        else:
+            xa_ = xa
+        if fillna_value is not None:
+            xa_ = xa_.fillna(fillna_value)
+
+        # clean components (columns) names if needed (if names are not unique, or not strings)
+        components = xa_.get_index(DIMS[1])
+        if len(set(components)) != len(components) or any(
+            [not isinstance(s, str) for s in components]
+        ):
+
+            def _clean_component_list(columns) -> List[str]:
+                # return a list of string containing column names
+                # make each column name unique in case some columns have the same names
+                clist = columns.to_list()
+
+                # convert everything to string if needed
+                for i, column in enumerate(clist):
+                    if not isinstance(column, str):
+                        clist[i] = str(column)
+
+                has_duplicate = len(set(clist)) != len(clist)
+                while has_duplicate:
+                    # we may have to loop several times (e.g. we could have columns ["0", "0_1", "0"] and not
+                    # noticing when renaming the last "0" into "0_1" that "0_1" already exists...)
+                    name_to_occurence = defaultdict(int)
+                    for i, column in enumerate(clist):
+                        name_to_occurence[clist[i]] += 1
+
+                        if name_to_occurence[clist[i]] > 1:
+                            clist[i] = clist[i] + "_{}".format(
+                                name_to_occurence[clist[i]] - 1
+                            )
+
+                    has_duplicate = len(set(clist)) != len(clist)
+
+                return clist
+
+            time_index_name = xa_.dims[0]
+            columns_list = _clean_component_list(components)
+
+            # Note: an option here could be to also rename the component names in the static covariates
+            # and/or hierarchy, if any. However, we decide not to do so as those are directly dependent on the
+            # component names to work properly, so in case there's any name conflict it's better solved
+            # by the user than handled by silent renaming, which can change the way things work.
+
+            # TODO: is there a way to just update the component index without re-creating a new DataArray?
+            # -> Answer: Yes, but it's slower: e.g.:
+            # ```
+            # xa_ = xa_.assign_coords(
+            #     {
+            #         time_index_name: xa_.get_index(time_index_name),
+            #         DIMS[1]: columns_list
+            #     }
+            # )
+            # ```
+            xa_ = xr.DataArray(
+                xa_.values,
+                dims=xa_.dims,
+                coords={
+                    time_index_name: xa_.get_index(time_index_name),
+                    DIMS[1]: columns_list,
+                },
+                attrs=xa_.attrs,
+            )
+
+        # We cast the array to float
+        if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(
+            xa_.values.dtype, np.float64
+        ):
+            return cls(xa_)
+        else:
+            return cls(xa_.astype(np.float64))
+
 
 class TimeSeriesNew(TimeSeries):
     pass
