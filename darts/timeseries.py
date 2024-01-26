@@ -5457,23 +5457,18 @@ class TimeSeriesNew(TimeSeries):
                 key.stop, pd.Timestamp
             ):
                 _check_dt()
-                if isinstance(key.step, (int, np.int64)):
-                    # new frequency is multiple of original
-                    new_freq = key.step * self.freq
-                elif key.step is None:
-                    new_freq = self.freq
-                else:
-                    new_freq = None
-                    raise_log(
-                        ValueError(
-                            f"Invalid slice step={key.step}. Only supports integer steps or `None`."
-                        ),
-                        logger=logger,
-                    )
 
                 # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
-                _set_freq_in_xa(xa_, new_freq)
+                if xa_.get_index(self._time_dim).freq is None:
+                    # indexing may discard the freq so we restore it...
+                    if key.step is None:
+                        freq = self.freq
+                    else:
+                        # new frequency is multiple of original
+                        freq = key.step * self.freq
+
+                    _set_freq_in_xa(xa_, freq)
                 return self.__class__(xa_)
 
         # handle simple types:
