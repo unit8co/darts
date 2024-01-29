@@ -5859,30 +5859,6 @@ class TimeSeries(TimeSeriesOld):
         ]
 
 
-class TimeSeriesNew(TimeSeries):
-    pass
-
-
-class TimeSeriesNoCopy(TimeSeriesNew):
-    def __init__(self, xa: xr.DataArray):
-        """
-        Create a TimeSeries from a (well formed) DataArray.
-        It is recommended to use the factory methods to create TimeSeries instead.
-
-        See Also
-        --------
-        TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
-        TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
-        TimeSeries.from_series : Create from a :class:`pandas.Series`.
-        TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
-        TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
-        TimeSeries.from_csv : Create from a CSV file.
-        TimeSeries.from_json : Create from a JSON file.
-        TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
-        """
-        super().__init__(xa, copy=False)
-
-
 def _xarray_with_attrs(xa_, static_covariates, hierarchy):
     """Return an DataArray instance with static covariates and hierarchy stored in the array's attributes.
     Warning: This is an inplace operation (mutable) and should only be called from within TimeSeries construction
