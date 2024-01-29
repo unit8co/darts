@@ -756,6 +756,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
+        drop_group_cols: Optional[Union[List[str], str]] = None,
     ) -> List[Self]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
@@ -803,6 +804,8 @@ class TimeSeries:
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
+        drop_group_cols
+            Optionally, a string or list of strings with `group_cols` column(s) to exclude from the static covariates.
 
         Returns
         -------
@@ -817,6 +820,27 @@ class TimeSeries:
             )
 
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
+        if drop_group_cols is not None:
+            drop_group_cols = (
+                [drop_group_cols]
+                if not isinstance(drop_group_cols, list)
+                else drop_group_cols
+            )
+            invalid_cols = set(drop_group_cols) - set(group_cols)
+            if invalid_cols:
+                raise_log(
+                    ValueError(
+                        f"Found invalid `drop_group_cols` columns. All columns must be in the passed `group_cols`. "
+                        f"Expected any of: {group_cols}, received: {invalid_cols}."
+                    ),
+                    logger=logger,
+                )
+            drop_group_col_idx = [
+                idx for idx, col in enumerate(group_cols) if col in drop_group_cols
+            ]
+        else:
+            drop_group_cols = []
+            drop_group_col_idx = []
         if static_cols is not None:
             static_cols = (
                 [static_cols] if not isinstance(static_cols, list) else static_cols
@@ -824,6 +848,9 @@ class TimeSeries:
         else:
             static_cols = []
         static_cov_cols = group_cols + static_cols
+        extract_static_cov_cols = [
+            col for col in static_cov_cols if col not in drop_group_cols
+        ]
         extract_time_col = [] if time_col is None else [time_col]
 
         if value_cols is None:
@@ -849,6 +876,17 @@ class TimeSeries:
                 if not isinstance(static_cov_vals, tuple)
                 else static_cov_vals
             )
+            # optionally, exclude group columns from static covariates
+            if drop_group_col_idx:
+                if len(drop_group_col_idx) == len(group_cols):
+                    static_cov_vals = tuple()
+                else:
+                    static_cov_vals = tuple(
+                        val
+                        for idx, val in enumerate(static_cov_vals)
+                        if idx not in drop_group_col_idx
+                    )
+
             # check that for each group there is only one unique value per column in `static_cols`
             if static_cols:
                 static_cols_valid = [
@@ -873,7 +911,9 @@ class TimeSeries:
             # store static covariate Series and group DataFrame (without static cov columns)
             splits.append(
                 (
-                    pd.DataFrame([static_cov_vals], columns=static_cov_cols),
+                    pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                    if extract_static_cov_cols
+                    else None,
                     group[extract_value_cols],
                 )
             )

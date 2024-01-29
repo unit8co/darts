@@ -154,6 +154,79 @@ class TestTimeSeriesStaticCovariate:
             )
             assert (ts.static_covariates_values(copy=False) == [[i, j, 1]]).all()
 
+        # drop group columns gives same time series with dropped static covariates
+        # drop first column
+        ts_groups4 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            static_cols=["constant"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1"],
+        )
+        assert len(ts_groups4) == self.n_groups * 2
+        for idx, ts in enumerate(ts_groups4):
+            i = idx // 2
+            j = idx % 2
+            assert ts.static_covariates.shape == (1, 2)
+            assert ts.static_covariates.columns.equals(pd.Index(["st2", "constant"]))
+            assert (ts.static_covariates_values(copy=False) == [[j, 1]]).all()
+
+        # drop last column
+        ts_groups5 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            static_cols=["constant"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st2"],
+        )
+        assert len(ts_groups5) == self.n_groups * 2
+        for idx, ts in enumerate(ts_groups5):
+            i = idx // 2
+            assert ts.static_covariates.shape == (1, 2)
+            assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
+            assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
+
+        # drop all columns
+        ts_groups6 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            static_cols=["constant"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+        )
+        assert len(ts_groups6) == self.n_groups * 2
+        for idx, ts in enumerate(ts_groups6):
+            assert ts.static_covariates.shape == (1, 1)
+            assert ts.static_covariates.columns.equals(pd.Index(["constant"]))
+            assert (ts.static_covariates_values(copy=False) == [[1]]).all()
+
+        # drop all static covariates (no `static_cols`, all `group_cols` dropped)
+        ts_groups7 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+        )
+        assert len(ts_groups7) == self.n_groups * 2
+        for idx, ts in enumerate(ts_groups7):
+            assert ts.static_covariates is None
+
+        # drop col is not part of `group_cols`
+        with pytest.raises(ValueError) as err:
+            _ = TimeSeries.from_group_dataframe(
+                df=self.df_long_multi,
+                group_cols=["st1", "st2"],
+                static_cols=["constant"],
+                time_col="times",
+                value_cols=value_cols,
+                drop_group_cols=["constant"],
+            )
+        assert str(err.value).endswith("received: {'constant'}.")
+
         df = copy.deepcopy(self.df_long_multi)
         df.loc[:, "non_static"] = np.arange(len(df))
         # non static columns as static columns should raise an error
