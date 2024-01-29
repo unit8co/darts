@@ -74,8 +74,8 @@ DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
 
 
-class TimeSeriesOld:
-    def __init__(self, xa: xr.DataArray):
+class TimeSeries:
+    def __init__(self, xa: xr.DataArray, copy=True):
         """
         Create a TimeSeries from a (well formed) DataArray.
         It is recommended to use the factory methods to create TimeSeries instead.
@@ -91,29 +91,32 @@ class TimeSeriesOld:
         TimeSeries.from_json : Create from a JSON file.
         TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
         """
-        raise_if_not(
-            isinstance(xa, xr.DataArray),
-            "Data must be provided as an xarray DataArray instance. "
-            "If you need to create a TimeSeries from another type "
-            "(e.g. a DataFrame), look at TimeSeries factory methods "
-            "(e.g. TimeSeries.from_dataframe(), "
-            "TimeSeries.from_xarray(), TimeSeries.from_values()"
-            "TimeSeries.from_times_and_values(), etc...).",
-            logger,
-        )
-        raise_if_not(
-            len(xa.shape) == 3,
-            f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
-            logger,
-        )
+        if not isinstance(xa, xr.DataArray):
+            raise_log(
+                ValueError(
+                    "Data must be provided as an xarray DataArray instance. "
+                    "If you need to create a TimeSeries from another type "
+                    "(e.g. a DataFrame), look at TimeSeries factory methods "
+                    "(e.g. TimeSeries.from_dataframe(), "
+                    "TimeSeries.from_xarray(), TimeSeries.from_values()"
+                    "TimeSeries.from_times_and_values(), etc...)."
+                ),
+                logger,
+            )
+        if not len(xa.shape) == 3:
+            raise_log(
+                ValueError(
+                    f"TimeSeries require DataArray of dimensionality 3 ({DIMS})."
+                ),
+                logger,
+            )
 
         # Ideally values should be np.float, otherwise certain functionalities like diff()
         # relying on np.nan (which is a float) won't work very properly.
-        raise_if_not(
-            np.issubdtype(xa.values.dtype, np.number),
-            "The time series must contain numeric values only.",
-            logger,
-        )
+        if not np.issubdtype(xa.values.dtype, np.number):
+            raise_log(
+                ValueError("The time series must contain numeric values only."), logger
+            )
 
         val_dtype = xa.values.dtype
         if not (
@@ -138,24 +141,22 @@ class TimeSeriesOld:
 
         # check that columns/component names are unique
         components = xa.get_index(DIMS[1])
-        raise_if_not(
-            len(set(components)) == len(components),
-            "The components (columns) names must be unique. Provided: {}".format(
-                components
-            ),
-            logger,
-        )
+        if not len(set(components)) == len(components):
+            raise_log(
+                ValueError(
+                    f"The components (columns) names must be unique. Provided: {components}"
+                ),
+                logger,
+            )
 
-        self._time_dim = str(
-            xa.dims[0]
-        )  # how the time dimension is named; we convert hashable to string
+        # how the time dimension is named; we convert hashable to string
+        self._time_dim = str(xa.dims[0])
 
         # The following sorting returns a copy, which we are relying on.
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
         # We sort only if the time axis is not already sorted (monotonically increasing).
-        self._xa = self._sort_index(xa, copy=True)
-
+        self._xa = self._sort_index(xa, copy=copy)
         self._time_index = self._xa.get_index(self._time_dim)
 
         if not isinstance(self._time_index, VALID_INDEX_TYPES):
@@ -170,74 +171,64 @@ class TimeSeriesOld:
         self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
 
         if self._has_datetime_index:
-            freq_tmp = xa.get_index(
-                self._time_dim
-            ).freq  # store original freq (see bug of sortby() above).
-            self._freq: pd.DateOffset = (
-                freq_tmp
-                if freq_tmp is not None
-                else to_offset(self._xa.get_index(self._time_dim).inferred_freq)
-            )
-            raise_if(
-                self._freq is None,
-                "The time index of the provided DataArray is missing the freq attribute, and the frequency could "
-                "not be directly inferred. "
-                "This probably comes from inconsistent date frequencies with missing dates. "
-                "If you know the actual frequency, try setting `fill_missing_dates=True, freq=actual_frequency`. "
-                "If not, try setting `fill_missing_dates=True, freq=None` to see if a frequency can be inferred.",
-                logger,
-            )
+            # store original freq (see bug of sortby() above).
+            freq_tmp = xa.get_index(self._time_dim).freq
+
+            # if original frequency is known and positive (n > 0 -> increasing time index),
+            # it is guaranteed that original array was sorted and new freq must be the same.
+            # otherwise, infer the frequency from the sorted array
+            if freq_tmp is not None and freq_tmp.n > 0:
+                self._freq = freq_tmp
+            else:
+                self._freq = to_offset(self._xa.get_index(self._time_dim).inferred_freq)
+
+            if self._freq is None:
+                raise_log(
+                    ValueError(
+                        "The time index of the provided DataArray is missing the freq attribute, and the frequency "
+                        "could not be directly inferred. This probably comes from inconsistent date frequencies with "
+                        "missing dates. If you know the actual frequency, try setting `fill_missing_dates=True, "
+                        "freq=actual_frequency`. If not, try setting `fill_missing_dates=True, freq=None` to see if a "
+                        "frequency can be inferred."
+                    ),
+                    logger,
+                )
 
             self._freq_str: str = self._freq.freqstr
 
             # reset freq inside the xarray index (see bug of sortby() above).
             self._xa.get_index(self._time_dim).freq = self._freq
-
-            # We have to check manually if the index is complete for non-empty series. Another way could
-            # be to rely on `inferred_freq` being present, but this fails for series of length < 3.
-            if len(self._time_index) > 0:
-                is_index_complete = (
-                    len(
-                        pd.date_range(
-                            self._time_index.min(),
-                            self._time_index.max(),
-                            freq=self._freq,
-                        ).difference(self._time_index)
-                    )
-                    == 0
-                )
-
-                raise_if_not(
-                    is_index_complete,
-                    "Not all timestamps seem to be present in the time index. Does "
-                    "the series contain holes? If you are using a factory method, "
-                    "try specifying `fill_missing_dates=True` "
-                    "or specify the `freq` parameter.",
-                    logger,
-                )
         else:
             self._freq: int = self._time_index.step
             self._freq_str = None
 
         # check static covariates
         static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
-        raise_if_not(
+        if not (
             isinstance(static_covariates, (pd.Series, pd.DataFrame))
-            or static_covariates is None,
-            "`static_covariates` must be either a pandas Series, DataFrame or None",
-            logger,
-        )
+            or static_covariates is None
+        ):
+            raise_log(
+                ValueError(
+                    "`static_covariates` must be either a pandas Series, DataFrame or None"
+                ),
+                logger,
+            )
+
         # check if valid static covariates for multivariate TimeSeries
         if isinstance(static_covariates, pd.DataFrame):
             n_components = len(static_covariates)
-            raise_if(
-                n_components > 1 and n_components != self.n_components,
-                "When passing a multi-row pandas DataFrame, the number of rows must match the number of "
-                "components of the TimeSeries object (multi-component/multi-row static covariates must map to each "
-                "TimeSeries component).",
-                logger,
-            )
-            static_covariates = static_covariates.copy()
+            if n_components > 1 and n_components != self.n_components:
+                raise_log(
+                    ValueError(
+                        "When passing a multi-row pandas DataFrame, the number of rows must match the number of "
+                        "components of the TimeSeries object (multi-component/multi-row static covariates "
+                        "must map to each TimeSeries component)."
+                    ),
+                    logger,
+                )
+            if copy:
+                static_covariates = static_covariates.copy()
         elif isinstance(static_covariates, pd.Series):
             static_covariates = static_covariates.to_frame().T
         else:  # None
@@ -257,20 +248,25 @@ class TimeSeriesOld:
                 include=np.number, exclude=self.dtype
             ).columns
 
-            changes = {col: self.dtype for col in cols_to_cast}
             # Calling astype is costly even when there's no change...
-            if len(changes) > 0:
-                static_covariates = static_covariates.astype(changes, copy=False)
+            if not cols_to_cast.empty:
+                static_covariates = static_covariates.astype(
+                    {col: self.dtype for col in cols_to_cast}, copy=False
+                )
 
         # handle hierarchy
         hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
         self._top_level_component = None
         self._bottom_level_components = None
         if hierarchy is not None:
-            raise_if_not(
-                isinstance(hierarchy, dict),
-                "The hierarchy must be a dict mapping (non-top) component names to their parent(s) in the hierarchy.",
-            )
+            if not isinstance(hierarchy, dict):
+                raise_log(
+                    ValueError(
+                        "The hierarchy must be a dict mapping (non-top) component names to their parent(s) "
+                        "in the hierarchy."
+                    ),
+                    logger,
+                )
             # pre-compute grouping informations
             components_set = set(self.components)
             children = set(hierarchy.keys())
@@ -280,27 +276,40 @@ class TimeSeriesOld:
                 k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()
             }
 
-            raise_if_not(
-                all(c in components_set for c in children),
-                "The keys of the hierarchy must be time series components",
-            )
+            if not all(c in components_set for c in children):
+                raise_log(
+                    ValueError(
+                        "The keys of the hierarchy must be time series components"
+                    ),
+                    logger,
+                )
             ancestors = set().union(*hierarchy.values())
-            raise_if_not(
-                all(a in components_set for a in ancestors),
-                "The values of the hierarchy must only contain component names matching those of the series.",
-            )
+            if not all(a in components_set for a in ancestors):
+                raise_log(
+                    ValueError(
+                        "The values of the hierarchy must only contain component names matching those "
+                        "of the series."
+                    ),
+                    logger,
+                )
             hierarchy_top = components_set - children
-            raise_if_not(
-                len(hierarchy_top) == 1,
-                "The hierarchy must be such that only one component does "
-                + "not appear as a key (the top level component).",
-            )
+            if not len(hierarchy_top) == 1:
+                raise_log(
+                    ValueError(
+                        "The hierarchy must be such that only one component does not appear as a key "
+                        "(the top level component)."
+                    ),
+                    logger,
+                )
             self._top_level_component = hierarchy_top.pop()
-            raise_if_not(
-                self._top_level_component in ancestors,
-                "Invalid hierarchy. Component {} appears as it should be top-level, but "
-                + "does not appear as an ancestor in the hierarchy dict.",
-            )
+            if self._top_level_component not in ancestors:
+                raise_log(
+                    ValueError(
+                        "Invalid hierarchy. Component {} appears as it should be top-level, but "
+                        "does not appear as an ancestor in the hierarchy dict."
+                    ),
+                    logger,
+                )
             bottom_level = components_set - ancestors
 
             # maintain the same order as the original components
@@ -308,7 +317,7 @@ class TimeSeriesOld:
                 c for c in self.components if c in bottom_level
             ]
 
-        # Store static covariates and hierarchy in attributes (potentially storing None)
+        # store static covariates and hierarchy in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
     """
@@ -433,6 +442,15 @@ class TimeSeriesOld:
             # by the user than handled by silent renaming, which can change the way things work.
 
             # TODO: is there a way to just update the component index without re-creating a new DataArray?
+            # -> Answer: Yes, but it's slower: e.g.:
+            # ```
+            # xa_ = xa_.assign_coords(
+            #     {
+            #         time_index_name: xa_.get_index(time_index_name),
+            #         DIMS[1]: columns_list
+            #     }
+            # )
+            # ```
             xa_ = xr.DataArray(
                 xa_.values,
                 dims=xa_.dims,
@@ -806,6 +824,19 @@ class TimeSeriesOld:
         else:
             static_cols = []
         static_cov_cols = group_cols + static_cols
+        extract_time_col = [] if time_col is None else [time_col]
+
+        if value_cols is None:
+            value_cols = df.columns.drop(static_cov_cols + extract_time_col).tolist()
+        extract_value_cols = [value_cols] if isinstance(value_cols, str) else value_cols
+
+        df = df[static_cov_cols + extract_value_cols + extract_time_col]
+
+        # sort on entire `df` to avoid having to sort individually later on
+        if time_col:
+            df.index = pd.DatetimeIndex(df[time_col])
+            df = df.drop(columns=time_col)
+        df = df.sort_index()
 
         # split df by groups, and store group values and static values (static covariates)
         # single elements group columns must be unpacked for same groupby() behavior across different pandas versions
@@ -843,7 +874,7 @@ class TimeSeriesOld:
             splits.append(
                 (
                     pd.DataFrame([static_cov_vals], columns=static_cov_cols),
-                    group.drop(columns=static_cov_cols),
+                    group[extract_value_cols],
                 )
             )
 
@@ -851,8 +882,6 @@ class TimeSeriesOld:
         return [
             cls.from_dataframe(
                 df=split,
-                time_col=time_col,
-                value_cols=value_cols,
                 fill_missing_dates=fill_missing_dates,
                 freq=freq,
                 fillna_value=fillna_value,
@@ -4884,491 +4913,6 @@ class TimeSeriesOld:
         """
 
         def _check_dt():
-            raise_if_not(
-                self._has_datetime_index,
-                "Attempted indexing a series with a DatetimeIndex or a timestamp, "
-                "but the series uses a RangeIndex.",
-                logger,
-            )
-
-        def _check_range():
-            raise_if(
-                self._has_datetime_index,
-                "Attempted indexing a series with a RangeIndex, "
-                "but the series uses a DatetimeIndex.",
-                logger,
-            )
-
-        def _set_freq_in_xa(xa_: xr.DataArray, freq=None):
-            # mutates the DataArray to make sure it contains the freq
-            if isinstance(xa_.get_index(self._time_dim), pd.DatetimeIndex):
-                if freq is None:
-                    freq = xa_.get_index(self._time_dim).inferred_freq
-                if freq is not None:
-                    xa_.get_index(self._time_dim).freq = to_offset(freq)
-                else:
-                    xa_.get_index(self._time_dim).freq = self._freq
-
-        adapt_covs_on_component = (
-            True
-            if self.has_static_covariates and len(self.static_covariates) > 1
-            else False
-        )
-
-        # handle DatetimeIndex and RangeIndex:
-        if isinstance(key, pd.DatetimeIndex):
-            _check_dt()
-            xa_ = self._xa.sel({self._time_dim: key})
-
-            # indexing may discard the freq so we restore it...
-            # if the DateTimeIndex already has an associated freq, use it
-            # otherwise key.freq is None and the freq will be inferred
-            _set_freq_in_xa(xa_, key.freq)
-
-            return self.__class__(xa_)
-        elif isinstance(key, pd.RangeIndex):
-            _check_range()
-            xa_ = self._xa.sel({self._time_dim: key})
-
-            # sel() gives us an Int64Index. We have to set the RangeIndex.
-            # see: https://github.com/pydata/xarray/issues/6256
-            xa_ = xa_.assign_coords({self.time_dim: key})
-
-            return self.__class__(xa_)
-
-        # handle slices:
-        elif isinstance(key, slice):
-            if isinstance(key.start, str) or isinstance(key.stop, str):
-                xa_ = self._xa.sel({DIMS[1]: key})
-                # selecting components discards the hierarchy, if any
-                xa_ = _xarray_with_attrs(
-                    xa_,
-                    xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
-                    if adapt_covs_on_component
-                    else xa_.attrs[STATIC_COV_TAG],
-                    None,
-                )
-                return self.__class__(xa_)
-            elif isinstance(key.start, (int, np.int64)) or isinstance(
-                key.stop, (int, np.int64)
-            ):
-                xa_ = self._xa.isel({self._time_dim: key})
-                if isinstance(key.step, (int, np.int64)):
-                    # new frequency is multiple of original
-                    new_freq = key.step * self.freq
-                elif key.step is None:
-                    new_freq = self.freq
-                else:
-                    new_freq = None
-                    raise_log(
-                        ValueError(
-                            f"Invalid slice step={key.step}. Only supports integer steps or `None`."
-                        ),
-                        logger=logger,
-                    )
-                # indexing may discard the freq so we restore it...
-                _set_freq_in_xa(xa_, new_freq)
-                return self.__class__(xa_)
-            elif isinstance(key.start, pd.Timestamp) or isinstance(
-                key.stop, pd.Timestamp
-            ):
-                _check_dt()
-                if isinstance(key.step, (int, np.int64)):
-                    # new frequency is multiple of original
-                    new_freq = key.step * self.freq
-                elif key.step is None:
-                    new_freq = self.freq
-                else:
-                    new_freq = None
-                    raise_log(
-                        ValueError(
-                            f"Invalid slice step={key.step}. Only supports integer steps or `None`."
-                        ),
-                        logger=logger,
-                    )
-
-                # indexing may discard the freq so we restore it...
-                xa_ = self._xa.sel({self._time_dim: key})
-                _set_freq_in_xa(xa_, new_freq)
-                return self.__class__(xa_)
-
-        # handle simple types:
-        elif isinstance(key, str):
-            # have to put key in a list not to drop the dimension
-            xa_ = self._xa.sel({DIMS[1]: [key]})
-            # selecting components discards the hierarchy, if any
-            xa_ = _xarray_with_attrs(
-                xa_,
-                xa_.attrs[STATIC_COV_TAG].loc[[key]]
-                if adapt_covs_on_component
-                else xa_.attrs[STATIC_COV_TAG],
-                None,
-            )
-            return self.__class__(xa_)
-        elif isinstance(key, (int, np.int64)):
-            xa_ = self._xa.isel({self._time_dim: [key]})
-
-            # restore a RangeIndex if needed:
-            time_idx = xa_.get_index(self._time_dim)
-            if pd.api.types.is_integer_dtype(time_idx) and not isinstance(
-                time_idx, pd.RangeIndex
-            ):
-                xa_ = xa_.assign_coords(
-                    {
-                        self._time_dim: pd.RangeIndex(
-                            start=time_idx[0],
-                            stop=time_idx[0] + self.freq,
-                            step=self.freq,
-                        )
-                    }
-                )
-
-            _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
-            return self.__class__(xa_)
-        elif isinstance(key, pd.Timestamp):
-            _check_dt()
-
-            # indexing may discard the freq so we restore it...
-            xa_ = self._xa.sel({self._time_dim: [key]})
-            _set_freq_in_xa(xa_)
-            return self.__class__(xa_)
-
-        # handle lists:
-        if isinstance(key, list):
-            if all(isinstance(s, str) for s in key):
-                # when string(s) are provided, we consider it as (a list of) component(s)
-                xa_ = self._xa.sel({DIMS[1]: key})
-                xa_ = _xarray_with_attrs(
-                    xa_,
-                    xa_.attrs[STATIC_COV_TAG].loc[key]
-                    if adapt_covs_on_component
-                    else xa_.attrs[STATIC_COV_TAG],
-                    None,
-                )
-                return self.__class__(xa_)
-            elif all(isinstance(i, (int, np.int64)) for i in key):
-                xa_ = self._xa.isel({self._time_dim: key})
-
-                # indexing may discard the freq so we restore it...
-                _set_freq_in_xa(xa_)
-
-                orig_idx = self.time_index
-                if isinstance(orig_idx, pd.RangeIndex):
-                    # We have to restore a RangeIndex. But first we need to
-                    # check the list is corresponding to a RangeIndex.
-                    min_idx, max_idx = min(key), max(key)
-                    if (
-                        not key[0] == min_idx
-                        and key[-1] == max_idx
-                        and max_idx + 1 - min_idx == len(key)
-                    ):
-                        raise_log(
-                            ValueError(
-                                "Indexing a TimeSeries with a list requires the list to "
-                                "contain monotonically increasing integers with no gap."
-                            ),
-                            logger=logger,
-                        )
-                    new_idx = orig_idx[min_idx : max_idx + 1]
-                    xa_ = xa_.assign_coords({self._time_dim: new_idx})
-
-                return self.__class__(xa_)
-
-            elif all(isinstance(t, pd.Timestamp) for t in key):
-                _check_dt()
-
-                # indexing may discard the freq so we restore it...
-                xa_ = self._xa.sel({self._time_dim: key})
-                _set_freq_in_xa(xa_)
-                return self.__class__(xa_)
-
-        raise_log(IndexError("The type of your index was not matched."), logger)
-
-
-class TimeSeries(TimeSeriesOld):
-    def __init__(self, xa: xr.DataArray, copy=True):
-        """
-        Create a TimeSeries from a (well formed) DataArray.
-        It is recommended to use the factory methods to create TimeSeries instead.
-
-        See Also
-        --------
-        TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
-        TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
-        TimeSeries.from_series : Create from a :class:`pandas.Series`.
-        TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
-        TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
-        TimeSeries.from_csv : Create from a CSV file.
-        TimeSeries.from_json : Create from a JSON file.
-        TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
-        """
-        if not isinstance(xa, xr.DataArray):
-            raise_log(
-                ValueError(
-                    "Data must be provided as an xarray DataArray instance. "
-                    "If you need to create a TimeSeries from another type "
-                    "(e.g. a DataFrame), look at TimeSeries factory methods "
-                    "(e.g. TimeSeries.from_dataframe(), "
-                    "TimeSeries.from_xarray(), TimeSeries.from_values()"
-                    "TimeSeries.from_times_and_values(), etc...)."
-                ),
-                logger,
-            )
-        if not len(xa.shape) == 3:
-            raise_log(
-                ValueError(
-                    f"TimeSeries require DataArray of dimensionality 3 ({DIMS})."
-                ),
-                logger,
-            )
-
-        # Ideally values should be np.float, otherwise certain functionalities like diff()
-        # relying on np.nan (which is a float) won't work very properly.
-        if not np.issubdtype(xa.values.dtype, np.number):
-            raise_log(
-                ValueError("The time series must contain numeric values only."), logger
-            )
-
-        val_dtype = xa.values.dtype
-        if not (
-            np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
-        ):
-            logger.warning(
-                "TimeSeries is using a numeric type different from np.float32 or np.float64. "
-                "Not all functionalities may work properly. It is recommended casting your data to floating "
-                "point numbers before using TimeSeries."
-            )
-
-        if xa.dims[-2:] != DIMS[-2:]:
-            # The first dimension represents the time and may be named differently.
-            raise_log(
-                ValueError(
-                    "The last two dimensions of the DataArray must be named {}".format(
-                        DIMS[-2:]
-                    )
-                ),
-                logger,
-            )
-
-        # check that columns/component names are unique
-        components = xa.get_index(DIMS[1])
-        if not len(set(components)) == len(components):
-            raise_log(
-                ValueError(
-                    f"The components (columns) names must be unique. Provided: {components}"
-                ),
-                logger,
-            )
-
-        # how the time dimension is named; we convert hashable to string
-        self._time_dim = str(xa.dims[0])
-
-        # The following sorting returns a copy, which we are relying on.
-        # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
-        # https://github.com/pydata/xarray/issues/5466
-        # We sort only if the time axis is not already sorted (monotonically increasing).
-        self._xa = self._sort_index(xa, copy=copy)
-        self._time_index = self._xa.get_index(self._time_dim)
-
-        if not isinstance(self._time_index, VALID_INDEX_TYPES):
-            raise_log(
-                ValueError(
-                    "The time dimension of the DataArray must be indexed either with a DatetimeIndex "
-                    "or with an RangeIndex."
-                ),
-                logger,
-            )
-
-        self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
-
-        if self._has_datetime_index:
-            # store original freq (see bug of sortby() above).
-            freq_tmp = xa.get_index(self._time_dim).freq
-
-            # if original frequency is known and positive (n > 0 -> increasing time index),
-            # it is guaranteed that original array was sorted and new freq must be the same.
-            # otherwise infer the frequency from the sorted array
-            if freq_tmp is not None and freq_tmp.n > 0:
-                self._freq = freq_tmp
-            else:
-                self._freq = to_offset(self._xa.get_index(self._time_dim).inferred_freq)
-
-            if self._freq is None:
-                raise_log(
-                    ValueError(
-                        "The time index of the provided DataArray is missing the freq attribute, and the frequency "
-                        "could not be directly inferred. This probably comes from inconsistent date frequencies with "
-                        "missing dates. If you know the actual frequency, try setting `fill_missing_dates=True, "
-                        "freq=actual_frequency`. If not, try setting `fill_missing_dates=True, freq=None` to see if a "
-                        "frequency can be inferred."
-                    ),
-                    logger,
-                )
-
-            self._freq_str: str = self._freq.freqstr
-
-            # reset freq inside the xarray index (see bug of sortby() above).
-            self._xa.get_index(self._time_dim).freq = self._freq
-        else:
-            self._freq: int = self._time_index.step
-            self._freq_str = None
-
-        # check static covariates
-        static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
-        if not (
-            isinstance(static_covariates, (pd.Series, pd.DataFrame))
-            or static_covariates is None
-        ):
-            raise_log(
-                ValueError(
-                    "`static_covariates` must be either a pandas Series, DataFrame or None"
-                ),
-                logger,
-            )
-
-        # check if valid static covariates for multivariate TimeSeries
-        if isinstance(static_covariates, pd.DataFrame):
-            n_components = len(static_covariates)
-            if n_components > 1 and n_components != self.n_components:
-                raise_log(
-                    ValueError(
-                        "When passing a multi-row pandas DataFrame, the number of rows must match the number of "
-                        "components of the TimeSeries object (multi-component/multi-row static covariates "
-                        "must map to each TimeSeries component)."
-                    ),
-                    logger,
-                )
-            if copy:
-                static_covariates = static_covariates.copy()
-        elif isinstance(static_covariates, pd.Series):
-            static_covariates = static_covariates.to_frame().T
-        else:  # None
-            pass
-
-        # prepare static covariates:
-        if static_covariates is not None:
-            static_covariates.index = (
-                self.components
-                if len(static_covariates) == self.n_components
-                else [DEFAULT_GLOBAL_STATIC_COV_NAME]
-            )
-            static_covariates.columns.name = STATIC_COV_TAG
-            # convert numerical columns to same dtype as series
-            # we get all numerical columns, except those that have right dtype already
-            cols_to_cast = static_covariates.select_dtypes(
-                include=np.number, exclude=self.dtype
-            ).columns
-
-            # Calling astype is costly even when there's no change...
-            if not cols_to_cast.empty:
-                static_covariates = static_covariates.astype(
-                    {col: self.dtype for col in cols_to_cast}, copy=False
-                )
-
-        # handle hierarchy
-        hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
-        self._top_level_component = None
-        self._bottom_level_components = None
-        if hierarchy is not None:
-            if not isinstance(hierarchy, dict):
-                raise_log(
-                    ValueError(
-                        "The hierarchy must be a dict mapping (non-top) component names to their parent(s) "
-                        "in the hierarchy."
-                    ),
-                    logger,
-                )
-            # pre-compute grouping informations
-            components_set = set(self.components)
-            children = set(hierarchy.keys())
-
-            # convert string ancestors to list of strings
-            hierarchy = {
-                k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()
-            }
-
-            if not all(c in components_set for c in children):
-                raise_log(
-                    ValueError(
-                        "The keys of the hierarchy must be time series components"
-                    ),
-                    logger,
-                )
-            ancestors = set().union(*hierarchy.values())
-            if not all(a in components_set for a in ancestors):
-                raise_log(
-                    ValueError(
-                        "The values of the hierarchy must only contain component names matching those "
-                        "of the series."
-                    ),
-                    logger,
-                )
-            hierarchy_top = components_set - children
-            if not len(hierarchy_top) == 1:
-                raise_log(
-                    ValueError(
-                        "The hierarchy must be such that only one component does not appear as a key "
-                        "(the top level component)."
-                    ),
-                    logger,
-                )
-            self._top_level_component = hierarchy_top.pop()
-            if self._top_level_component not in ancestors:
-                raise_log(
-                    ValueError(
-                        "Invalid hierarchy. Component {} appears as it should be top-level, but "
-                        "does not appear as an ancestor in the hierarchy dict."
-                    ),
-                    logger,
-                )
-            bottom_level = components_set - ancestors
-
-            # maintain the same order as the original components
-            self._bottom_level_components = [
-                c for c in self.components if c in bottom_level
-            ]
-
-        # # Store static covariates and hierarchy in attributes (potentially storing None)
-        self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
-
-    def __getitem__(
-        self,
-        key: Union[
-            pd.DatetimeIndex,
-            pd.RangeIndex,
-            List[str],
-            List[int],
-            List[pd.Timestamp],
-            str,
-            int,
-            pd.Timestamp,
-            Any,
-        ],
-    ) -> Self:
-        """Allow indexing on darts TimeSeries.
-
-        The supported index types are the following base types as a single value, a list or a slice:
-        - pd.Timestamp -> return a TimeSeries corresponding to the value(s) at the given timestamp(s).
-        - str -> return a TimeSeries including the column(s) (components) specified as str.
-        - int -> return a TimeSeries with the value(s) at the given row (time) index.
-
-        `pd.DatetimeIndex` and `pd.RangeIndex` are also supported and will return the corresponding value(s)
-        at the provided time indices.
-
-        .. warning::
-            slices use pandas convention of including both ends of the slice.
-
-        Notes
-        -----
-        For integer-indexed series, integers or slices of integer will return the result
-        of ``isel()``. That is, if integer ``i`` is provided, it returns the ``i``-th value
-        along the series, which is not necessarily the value where the time index is equal to ``i``
-        (e.g., if the time index does not start at 0). In contrast, calling this method with a
-        ``pd.RangeIndex`` returns the result of ``sel()`` - i.e., the values where the time
-        index matches the provided range index.
-        """
-
-        def _check_dt():
             if not self._has_datetime_index:
                 raise_log(
                     ValueError(
@@ -5471,7 +5015,6 @@ class TimeSeries(TimeSeriesOld):
                     else:
                         # new frequency is multiple of original
                         freq = key.step * self.freq
-
                     _set_freq_in_xa(xa_, freq)
                 return self.__class__(xa_)
 
@@ -5505,10 +5048,8 @@ class TimeSeries(TimeSeriesOld):
                         )
                     }
                 )
-
-            _set_freq_in_xa(
-                xa_, freq=self.freq
-            )  # indexing may discard the freq, so we restore it...
+            # indexing may discard the freq, so we restore it...
+            _set_freq_in_xa(xa_, freq=self.freq)
             return self.__class__(xa_)
         elif isinstance(key, pd.Timestamp):
             _check_dt()
@@ -5568,295 +5109,6 @@ class TimeSeries(TimeSeriesOld):
                 return self.__class__(xa_)
 
         raise_log(IndexError("The type of your index was not matched."), logger)
-
-    @classmethod
-    def from_xarray(
-        cls,
-        xa: xr.DataArray,
-        fill_missing_dates: Optional[bool] = False,
-        freq: Optional[Union[str, int]] = None,
-        fillna_value: Optional[float] = None,
-    ) -> Self:
-        """
-        Return a TimeSeries instance built from an xarray DataArray.
-        The dimensions of the DataArray have to be (time, component, sample), in this order. The time
-        dimension can have an arbitrary name, but component and sample must be named "component" and "sample",
-        respectively.
-
-        The first dimension (time), and second dimension (component) must be indexed (i.e., have coordinates).
-        The time must be indexed either with a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can
-        be converted to a RangeIndex. It is better if the index has no holes; alternatively setting
-        `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the provided
-        `fillna_value` numeric value, if any).
-
-        If two components have the same name or are not strings, this method will disambiguate the components
-        names by appending a suffix of the form "<name>_N" to the N-th column with name "name".
-        The component names in the static covariates and hierarchy (if any) are *not* disambiguated.
-
-        Parameters
-        ----------
-        xa
-            The xarray DataArray
-        fill_missing_dates
-            Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
-            with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
-            provided timestamps. See :meth:`_fill_missing_dates() <TimeSeries._fill_missing_dates>` for more info.
-        freq
-            Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
-            to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
-            If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
-            supported frequencies).
-            If an integer, represents the step size of the pandas Index or pandas RangeIndex.
-        fillna_value
-            Optionally, a numeric value to fill missing values (NaNs) with.
-
-        Returns
-        -------
-        TimeSeries
-            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
-        """
-        xa_index = xa.get_index(xa.dims[0])
-
-        has_datetime_index = isinstance(xa_index, pd.DatetimeIndex)
-        has_range_index = isinstance(xa_index, pd.RangeIndex)
-        has_integer_index = not (has_datetime_index or has_range_index)
-
-        has_frequency = (
-            has_datetime_index and xa_index.freq is not None
-        ) or has_range_index
-
-        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
-        if fill_missing_dates:
-            xa_ = cls._fill_missing_dates(xa, freq=freq)
-        # provided index does not have a freq; using the provided freq
-        elif (
-            (has_datetime_index or has_integer_index)
-            and freq is not None
-            and not has_frequency
-        ):
-            xa_ = cls._restore_xarray_from_frequency(xa, freq=freq)
-        # index is an integer index and no freq is provided; try convert it to pd.RangeIndex
-        elif has_integer_index and freq is None:
-            xa_ = cls._integer_to_range_indexed_xarray(xa)
-        else:
-            xa_ = xa
-        if fillna_value is not None:
-            xa_ = xa_.fillna(fillna_value)
-
-        # clean components (columns) names if needed (if names are not unique, or not strings)
-        components = xa_.get_index(DIMS[1])
-        if len(set(components)) != len(components) or any(
-            [not isinstance(s, str) for s in components]
-        ):
-
-            def _clean_component_list(columns) -> List[str]:
-                # return a list of string containing column names
-                # make each column name unique in case some columns have the same names
-                clist = columns.to_list()
-
-                # convert everything to string if needed
-                for i, column in enumerate(clist):
-                    if not isinstance(column, str):
-                        clist[i] = str(column)
-
-                has_duplicate = len(set(clist)) != len(clist)
-                while has_duplicate:
-                    # we may have to loop several times (e.g. we could have columns ["0", "0_1", "0"] and not
-                    # noticing when renaming the last "0" into "0_1" that "0_1" already exists...)
-                    name_to_occurence = defaultdict(int)
-                    for i, column in enumerate(clist):
-                        name_to_occurence[clist[i]] += 1
-
-                        if name_to_occurence[clist[i]] > 1:
-                            clist[i] = clist[i] + "_{}".format(
-                                name_to_occurence[clist[i]] - 1
-                            )
-
-                    has_duplicate = len(set(clist)) != len(clist)
-
-                return clist
-
-            time_index_name = xa_.dims[0]
-            columns_list = _clean_component_list(components)
-
-            # Note: an option here could be to also rename the component names in the static covariates
-            # and/or hierarchy, if any. However, we decide not to do so as those are directly dependent on the
-            # component names to work properly, so in case there's any name conflict it's better solved
-            # by the user than handled by silent renaming, which can change the way things work.
-
-            # TODO: is there a way to just update the component index without re-creating a new DataArray?
-            # -> Answer: Yes, but it's slower: e.g.:
-            # ```
-            # xa_ = xa_.assign_coords(
-            #     {
-            #         time_index_name: xa_.get_index(time_index_name),
-            #         DIMS[1]: columns_list
-            #     }
-            # )
-            # ```
-            xa_ = xr.DataArray(
-                xa_.values,
-                dims=xa_.dims,
-                coords={
-                    time_index_name: xa_.get_index(time_index_name),
-                    DIMS[1]: columns_list,
-                },
-                attrs=xa_.attrs,
-            )
-
-        # We cast the array to float
-        if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(
-            xa_.values.dtype, np.float64
-        ):
-            return cls(xa_)
-        else:
-            return cls(xa_.astype(np.float64))
-
-    @classmethod
-    def from_group_dataframe(
-        cls,
-        df: pd.DataFrame,
-        group_cols: Union[List[str], str],
-        time_col: Optional[str] = None,
-        value_cols: Optional[Union[List[str], str]] = None,
-        static_cols: Optional[Union[List[str], str]] = None,
-        fill_missing_dates: Optional[bool] = False,
-        freq: Optional[Union[str, int]] = None,
-        fillna_value: Optional[float] = None,
-    ) -> List[Self]:
-        """
-        Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
-        One column (or the DataFrame index) has to represent the time,
-        a list of columns `group_cols` must be used for extracting the individual TimeSeries by groups,
-        and a list of columns `value_cols` has to represent the values for the individual time series.
-        Values from columns ``group_cols`` and ``static_cols`` are added as static covariates to the resulting
-        TimeSeries objects. These can be viewed with `my_series.static_covariates`. Different to `group_cols`,
-        `static_cols` only adds the static values but are not used to extract the TimeSeries groups.
-
-        Parameters
-        ----------
-        df
-            The DataFrame
-        group_cols
-            A string or list of strings representing the columns from the DataFrame by which to extract the
-            individual TimeSeries groups.
-        time_col
-            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
-            timestamps) or a RangeIndex (if it contains integers).
-            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-            either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can be converted to a
-            RangeIndex. Be aware that the index must represents the actual index of each individual time series group
-            (can contain non-unique values). It is better if the index has no holes; alternatively setting
-            `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the provided
-            `fillna_value` numeric value, if any).
-        value_cols
-            A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
-            `None`, the whole DataFrame will be used.
-        static_cols
-            A string or list of strings representing static variable columns from the DataFrame that should be
-            appended as static covariates to the resulting TimeSeries groups. Different to `group_cols`, the
-            DataFrame is not grouped by these columns. Note that for every group, there must be exactly one
-            unique value.
-        fill_missing_dates
-            Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
-            with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
-            provided timestamps. See :meth:`_fill_missing_dates() <TimeSeries._fill_missing_dates>` for more info.
-        freq
-            Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
-            to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
-            If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
-            supported frequencies).
-            If an integer, represents the step size of the pandas Index or pandas RangeIndex.
-        fillna_value
-            Optionally, a numeric value to fill missing values (NaNs) with.
-
-        Returns
-        -------
-        List[TimeSeries]
-            A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.
-        """
-        if time_col is None and df.index.is_monotonic_increasing:
-            logger.warning(
-                "UserWarning: `time_col` was not set and `df` has a monotonically increasing (time) index. This "
-                "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
-                "index represents the actual index of each individual time series group."
-            )
-
-        group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
-        if static_cols is not None:
-            static_cols = (
-                [static_cols] if not isinstance(static_cols, list) else static_cols
-            )
-        else:
-            static_cols = []
-        static_cov_cols = group_cols + static_cols
-        extract_time_col = [] if time_col is None else [time_col]
-
-        if value_cols is None:
-            value_cols = df.columns.drop(static_cov_cols + extract_time_col).tolist()
-        extract_value_cols = [value_cols] if isinstance(value_cols, str) else value_cols
-
-        df = df[static_cov_cols + extract_value_cols + extract_time_col]
-
-        if time_col:
-            df.index = pd.DatetimeIndex(df[time_col])
-            df = df.drop(columns=time_col)
-
-        df = df.sort_index()
-
-        # split df by groups, and store group values and static values (static covariates)
-        # single elements group columns must be unpacked for same groupby() behavior across different pandas versions
-        splits = []
-        for static_cov_vals, group in df.groupby(
-            group_cols[0] if len(group_cols) == 1 else group_cols
-        ):
-            static_cov_vals = (
-                (static_cov_vals,)
-                if not isinstance(static_cov_vals, tuple)
-                else static_cov_vals
-            )
-            # check that for each group there is only one unique value per column in `static_cols`
-            if static_cols:
-                static_cols_valid = [
-                    len(group[col].unique()) == 1 for col in static_cols
-                ]
-                if not all(static_cols_valid):
-                    # encountered performance issues when evaluating the error message from below in every
-                    # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
-                    invalid_cols = [
-                        static_col
-                        for static_col, is_valid in zip(static_cols, static_cols_valid)
-                        if not is_valid
-                    ]
-                    raise_if(
-                        True,
-                        f"Encountered more than one unique value in group {group} for given static columns: "
-                        f"{invalid_cols}.",
-                        logger,
-                    )
-                # add the static covariates to the group values
-                static_cov_vals += tuple(group[static_cols].values[0])
-            # store static covariate Series and group DataFrame (without static cov columns)
-            splits.append(
-                (
-                    pd.DataFrame([static_cov_vals], columns=static_cov_cols),
-                    group[extract_value_cols],
-                )
-            )
-        print("done")
-        # create a list with multiple TimeSeries and add static covariates
-        return [
-            cls.from_dataframe(
-                df=split,
-                fill_missing_dates=fill_missing_dates,
-                freq=freq,
-                fillna_value=fillna_value,
-                static_covariates=static_covs,
-            )
-            for static_covs, split in splits
-        ]
 
 
 def _xarray_with_attrs(xa_, static_covariates, hierarchy):
