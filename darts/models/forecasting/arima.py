@@ -10,7 +10,7 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import Iterable, Literal, Optional, Tuple, Union
+from typing import Literal, Optional, Sequence, Tuple, TypeAlias, Union
 
 import numpy as np
 from statsmodels import __version_tuple__ as statsmodels_version
@@ -28,21 +28,22 @@ logger = get_logger(__name__)
 statsmodels_above_0135 = statsmodels_version > (0, 13, 5)
 
 
+IntOrIntSequence: TypeAlias = Union[int, Sequence[int]]
+
+
 class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
-        p: int = 12,
-        d: Union[int, Iterable[int]] = 1,
-        q: Union[int, Iterable[int]] = 0,
-        seasonal_order: Tuple[
-            int, Union[int, Iterable[int]], Union[int, Iterable[int]], int
-        ] = (
+        p: IntOrIntSequence = 12,
+        d: int = 1,
+        q: IntOrIntSequence = 0,
+        seasonal_order: Tuple[int, IntOrIntSequence, IntOrIntSequence, int] = (
             0,
             0,
             0,
             0,
         ),
-        trend: Optional[Union[Literal["n", "c", "t", "ct"], Iterable[int]]] = None,
+        trend: Optional[Union[Literal["n", "c", "t", "ct"], Sequence[int]]] = None,
         random_state: Optional[int] = None,
         add_encoders: Optional[dict] = None,
     ):
@@ -52,27 +53,27 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         Parameters
         ----------
-        p : int | Iterable[int]
-            Order (number of time lags) of the autoregressive model (AR). A list
-            of integers can be given specifying exactly which lag orders are
-            included.
+        p : int | Sequence[int]
+            Order (number of time lags) of the autoregressive model (AR). A
+            sequence of integers can be given specifying exactly which lag
+            orders are included.
         d : int
             The order of differentiation; i.e., the number of times the data
             have had past values subtracted (I).
-        q : int | Iterable[int]
-            The size of the moving average window (MA). A list of integers can be
-            given specifying exactly which lag orders are included.
-        seasonal_order: Tuple[int | Iterable[int], int, int | Iterable[int], int]
+        q : int | Sequence[int]
+            The size of the moving average window (MA). A sequence of integers
+            can be given specifying exactly which lag orders are included.
+        seasonal_order: Tuple[int | Sequence[int], int, int | Sequence[int], int]
             The (P,D,Q,s) order of the seasonal component for the AR parameters,
             differences, MA parameters and periodicity. D and s are always integers,
-            while P and Q may either be integers or lists of positive integers
+            while P and Q may either be integers or sequence of positive integers
             specifying exactly which lag orders are included.
         trend: str
-        trend: Literal['n', 'c', 't', 'ct'] | Iterable[int], optional
+        trend: Literal['n', 'c', 't', 'ct'] | Sequence[int], optional
             Parameter controlling the deterministic trend. Can be specified as
             a string where 'c' indicates a constant term, 't' indicates a
             linear trend in time, and 'ct' includes both. Can also be specified
-            as an iterable defining a polynomial, as in `numpy.poly1d`, where
+            as an sequence defining a polynomial, as in `numpy.poly1d`, where
             `[1,1,0,1]` would denote :math:`a + bt + ct^3`. Default is 'c' for
             models without integration, and no trend for models with integration.
         add_encoders
