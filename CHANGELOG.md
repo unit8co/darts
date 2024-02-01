@@ -6,7 +6,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-- Added utility functions for Huggingface Hub integration. Upload/download Darts Forecasting models. [#2201](https://github.com/unit8co/darts/pull/2201)
+- Added utility functions for Huggingface Hub integration. Upload/download Darts TimeSeries and ForecastingModel instances. [#2201](https://github.com/unit8co/darts/pull/2201)
   by [Ivelin Ivanov](https://github.com/ivelin).
 
 
