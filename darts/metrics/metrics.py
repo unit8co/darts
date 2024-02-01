@@ -514,11 +514,11 @@ def coefficient_of_variation(
         The Coefficient of Variation
     """
 
-    return (
-        100
-        * rmse(actual_series, pred_series, intersect)
-        / actual_series.pd_dataframe(copy=False).mean().mean()
+    y_true, y_pred = _get_values_or_raise(
+        actual_series, pred_series, intersect, remove_nan_union=True
     )
+
+    return 100 * rmse(y_true, y_pred) / y_true.pd_dataframe(copy=False).mean().mean()
 
 
 @multi_ts_support
