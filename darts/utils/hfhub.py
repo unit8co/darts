@@ -6,7 +6,9 @@ from typing import Optional
 from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from huggingface_hub import snapshot_download, upload_folder, create_repo
+from darts.logging import get_logger
 
+logger = get_logger(__name__)
 
 class HFHub:
     """
@@ -45,6 +47,10 @@ class HFHub:
         model_class: object = None,
     ) -> ForecastingModel:
         with tempfile.TemporaryDirectory() as tmpdirname:
+            logger.info(
+                "HFHub model files downloaded to local temp dir: ",
+                 os.listdir(tmpdirname)
+            )            
             snapshot_download(
                 repo_id=repo_id, local_dir=tmpdirname, token=self.HF_TOKEN
             )
@@ -85,7 +91,10 @@ class HFHub:
                 local_dir=tmpdirname,
                 token=self.HF_TOKEN,
             )
-            print(os.listdir(tmpdirname))
+            logger.info(
+                "HFHub data files downloaded to local temp dir: ",
+                 os.listdir(tmpdirname)
+            )            
             df = pd.read_parquet(
                 f"{tmpdirname}/{series_name}.parquet", engine="pyarrow"
             )
