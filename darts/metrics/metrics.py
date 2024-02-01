@@ -517,8 +517,8 @@ def coefficient_of_variation(
     y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-
-    return 100 * rmse(y_true, y_pred) / y_true.pd_dataframe(copy=False).mean().mean()
+    # not calling rmse as y_true and y_pred are np.ndarray
+    return 100 * np.mean((y_true - y_pred) ** 2) / y_true.mean()
 
 
 @multi_ts_support
