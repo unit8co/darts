@@ -228,8 +228,10 @@ class BlockRNNModel(PastCovariatesTorchModel):
             model's covariate support).
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
-            input chunk end). This will create a gap between the input and output. Predictions will start
-            `output_chunk_shift` steps after the end of the target `series`.
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"), or a subclass of
             :class:`CustomBlockRNNModule` (the class itself, not an object of the class) with a custom logic.

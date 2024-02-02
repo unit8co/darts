@@ -369,8 +369,10 @@ class TransformerModel(PastCovariatesTorchModel):
             model's covariate support).
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
-            input chunk end). This will create a gap between the input and output. Predictions will start
-            `output_chunk_shift` steps after the end of the target `series`.
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
         d_model
             The number of expected features in the transformer encoder/decoder inputs (default=64).
         nhead
