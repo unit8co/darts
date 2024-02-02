@@ -1,3 +1,4 @@
+import itertools
 import os
 from typing import Any, Dict, Optional
 from unittest.mock import patch
@@ -6,13 +7,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.tests.conftest import tfm_kwargs
-from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -1376,9 +1377,9 @@ if TORCH_AVAILABLE:
             assert scores["worst"] > scores["suggested"]
 
         def test_encoders(self, tmpdir_fn):
-            series = linear_timeseries(length=10)
-            pc = linear_timeseries(length=12)
-            fc = linear_timeseries(length=13)
+            series = tg.linear_timeseries(length=10)
+            pc = tg.linear_timeseries(length=12)
+            fc = tg.linear_timeseries(length=13)
             # 1 == output_chunk_length, 3 > output_chunk_length
             ns = [1, 3]
 
@@ -1539,3 +1540,117 @@ if TORCH_AVAILABLE:
                 **tfm_kwargs,
                 **kwargs,
             )
+
+        @pytest.mark.parametrize(
+            "config",
+            itertools.product(
+                [
+                    (TFTModel, {"add_relative_index": True}),
+                    (TiDEModel, {}),
+                    (NLinearModel, {}),
+                    (DLinearModel, {}),
+                    (NBEATSModel, {}),
+                    (NHiTSModel, {}),
+                    (TransformerModel, {}),
+                    (TCNModel, {}),
+                    (BlockRNNModel, {}),
+                ],
+                [3, 7, 10],
+            ),
+        )
+        def test_output_shift(self, config):
+            """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length.
+            RNNModel does not support shift output chunk.
+            """
+            # model_cls = TFTModel
+            (model_cls, add_params), shift = config
+            icl = 8
+            ocl = 7
+            series = tg.linear_timeseries(
+                length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            )
+
+            model = self.helper_create_torch_model(
+                model_cls, icl, ocl, shift, **add_params
+            )
+            model.fit(series)
+
+            # no auto-regression with shifted output
+            with pytest.raises(ValueError) as err:
+                _ = model.predict(n=ocl + 1)
+            assert str(err.value).startswith("Cannot perform auto-regression")
+
+            # pred starts with a shift
+            for ocl_test in [ocl - 1, ocl]:
+                pred = model.predict(n=ocl_test)
+                assert (
+                    pred.start_time() == series.end_time() + (shift + 1) * series.freq
+                )
+                assert len(pred) == ocl_test
+                assert pred.freq == series.freq
+
+            # check that shifted output chunk results with encoders are the
+            # same as using identical covariates
+
+            # model trained on encoders
+            cov_support = []
+            covs = {}
+            if model.supports_past_covariates:
+                cov_support.append("past")
+                covs["past_covariates"] = tg.datetime_attribute_timeseries(
+                    series,
+                    attribute="dayofweek",
+                    add_length=0,
+                )
+            if model.supports_future_covariates:
+                cov_support.append("future")
+                covs["future_covariates"] = tg.datetime_attribute_timeseries(
+                    series,
+                    attribute="dayofweek",
+                    add_length=ocl + shift,
+                )
+
+            if not cov_support:
+                return
+
+            add_encoders = {
+                "datetime_attribute": {cov: ["dayofweek"] for cov in cov_support}
+            }
+            model_enc_shift = self.helper_create_torch_model(
+                model_cls, icl, ocl, shift, add_encoders=add_encoders, **add_params
+            )
+            model_enc_shift.fit(series)
+
+            # model trained with identical covariates
+            model_fc_shift = self.helper_create_torch_model(
+                model_cls, icl, ocl, shift, **add_params
+            )
+
+            model_fc_shift.fit(series, **covs)
+
+            pred_enc = model_enc_shift.predict(n=ocl)
+            pred_fc = model_fc_shift.predict(n=ocl)
+            assert pred_enc == pred_fc
+
+            # covs too short
+            for cov_name in cov_support:
+                with pytest.raises(ValueError) as err:
+                    add_covs = {
+                        cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
+                    }
+                    _ = model_fc_shift.predict(n=ocl, **add_covs)
+                assert f"provided {cov_name} covariates at dataset index" in str(
+                    err.value
+                )
+
+        def helper_create_torch_model(self, model_cls, icl, ocl, shift, **kwargs):
+            params = {
+                "input_chunk_length": icl,
+                "output_chunk_length": ocl,
+                "output_chunk_shift": shift,
+                "n_epochs": 1,
+                "random_state": 42,
+            }
+            params.update(tfm_kwargs)
+            params.update(kwargs)
+            return model_cls(**params)
