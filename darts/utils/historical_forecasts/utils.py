@@ -417,7 +417,8 @@ def _get_historical_forecastable_time_index(
     # longest possible time index for target
     if is_training:
         start = (
-            series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
+            series.start_time()
+            + (max_target_lag - output_chunk_shift - min_target_lag + 1) * series.freq
         )
     else:
         start = series.start_time() - min_target_lag * series.freq
@@ -430,7 +431,8 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_pc = (
                 past_covariates.start_time()
-                - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
+                + (max_target_lag - output_chunk_shift - min_past_cov_lag + 1)
+                * past_covariates.freq
             )
         else:
             start_pc = (
@@ -440,7 +442,7 @@ def _get_historical_forecastable_time_index(
         shift_pc_end = max_past_cov_lag
         if is_autoregression:
             # we step back in case of auto-regression
-            shift_pc_end += forecast_horizon - (max_target_lag + 1)
+            shift_pc_end += forecast_horizon - (max_target_lag - output_chunk_shift + 1)
         end_pc = past_covariates.end_time() - shift_pc_end * past_covariates.freq
 
         intersect_ = (
@@ -453,7 +455,8 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_fc = (
                 future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
+                + (max_target_lag - output_chunk_shift - min_future_cov_lag + 1)
+                * future_covariates.freq
             )
         else:
             start_fc = (
@@ -464,7 +467,7 @@ def _get_historical_forecastable_time_index(
         shift_fc_end = max_future_cov_lag
         if is_autoregression:
             # we step back in case of auto-regression
-            shift_fc_end += forecast_horizon - (max_target_lag + 1)
+            shift_fc_end += forecast_horizon - (max_target_lag - output_chunk_shift + 1)
         end_fc = future_covariates.end_time() - shift_fc_end * future_covariates.freq
 
         intersect_ = (
@@ -475,9 +478,13 @@ def _get_historical_forecastable_time_index(
     # overlap_end = True -> predictions must not go beyond end of target series
     if (
         not overlap_end
-        and intersect_[1] + (forecast_horizon - 1) * series.freq > series.end_time()
+        and intersect_[1] + (forecast_horizon + output_chunk_shift - 1) * series.freq
+        > series.end_time()
     ):
-        intersect_ = (intersect_[0], end - forecast_horizon * series.freq)
+        intersect_ = (
+            intersect_[0],
+            end - (forecast_horizon + output_chunk_shift) * series.freq,
+        )
 
     # end comes before the start
     if intersect_[1] < intersect_[0]:

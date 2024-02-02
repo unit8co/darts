@@ -879,8 +879,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
-            past_covariates_ = past_covariates[idx] if past_covariates else None
-            future_covariates_ = future_covariates[idx] if future_covariates else None
+            past_covariates_ = (
+                past_covariates[idx] if past_covariates else self.past_covariate_series
+            )
+            future_covariates_ = (
+                future_covariates[idx]
+                if future_covariates
+                else self.future_covariate_series
+            )
 
             # predictable time indexes (assuming model is already trained)
             historical_forecasts_time_index_predict = (

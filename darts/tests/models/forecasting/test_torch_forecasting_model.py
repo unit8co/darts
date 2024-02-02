@@ -1666,6 +1666,7 @@ if TORCH_AVAILABLE:
                 last_points_only=False,
                 enable_optimization=True,
             )
+            assert len(hist_fc_opt) == 1
             assert hist_fc_opt[0].time_index.equals(pred_last_hist_fc.time_index)
             np.testing.assert_array_almost_equal(
                 hist_fc_opt[0].values(copy=False), pred_last_hist_fc.values(copy=False)
