@@ -397,6 +397,7 @@ class EnsembleModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
             max_lag = None
@@ -408,7 +409,7 @@ class EnsembleModel(GlobalForecastingModel):
                     max_lag = aggregator(max_lag, curr_lag)
             return max_lag
 
-        lag_aggregators = (min, max, min, max, min, max)
+        lag_aggregators = (min, max, min, max, min, max, max)
         return tuple(
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         )

@@ -402,10 +402,14 @@ def _get_historical_forecastable_time_index(
         max_past_cov_lag,
         min_future_cov_lag,
         max_future_cov_lag,
+        output_chunk_shift,
     ) = model.extreme_lags
 
     # max_target_lag < 0 are local models which can predict for n (horizon) -> infinity (no auto-regression)
-    is_autoregression = max_target_lag >= 0 and forecast_horizon > max_target_lag + 1
+    is_autoregression = (
+        max_target_lag >= 0
+        and forecast_horizon > max_target_lag - output_chunk_shift + 1
+    )
 
     if min_target_lag is None:
         min_target_lag = 0
@@ -719,6 +723,7 @@ def _get_historical_forecast_boundaries(
         max_past_cov_lag,
         min_future_cov_lag,
         max_future_cov_lag,
+        output_chunk_shift,
     ) = model.extreme_lags
 
     # target lags are <= 0

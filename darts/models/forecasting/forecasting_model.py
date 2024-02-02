@@ -412,12 +412,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         """
         A 6-tuple containing in order:
         (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
-        lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
-        index.
+        lag, max future covariate lag, output shift). If 0 is the index of the first prediction, then all lags are
+        relative to this index.
 
         See examples below.
 
@@ -434,28 +435,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Notes
         -----
         maximum target lag (second value) cannot be `None` and is always larger than or equal to 0.
+
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 1, None, None, None, None)
+        (-3, 1, None, None, None, None, 0)
+        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2, output_chunk_shift=2)
+        >>> model.fit(train_series)
+        >>> model.extreme_lags
+        (-3, 1, None, None, None, None, 2)
         >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 6, -4, -1,  None, None)
+        (-5, 6, -4, -1,  None, None, 0)
         >>> model = LinearRegressionModel(lags=[3, 5], lags_future_covariates = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 6, None, None, 4, 6)
+        (-5, 6, None, None, 4, 6, 0)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 6, None, None, None, None)
+        (-10, 6, None, None, None, None, 0)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 6, None, None, 4, 6)
+        (-10, 6, None, None, 4, 6, 0)
         """
         pass
 
@@ -471,52 +477,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
+            output_chunk_shift,
         ) = self.extreme_lags
 
         return max(
             max_target_lag + 1,
             max_future_cov_lag + 1 if max_future_cov_lag else 0,
         ) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
-        )
-
-    @property
-    def _predict_sample_time_index_length(self) -> int:
-        """
-        Required time_index length for one `predict` function call, for any model.
-        """
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = self.extreme_lags
-
-        return (max_future_cov_lag + 1 if max_future_cov_lag else 0) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
-        )
-
-    @property
-    def _predict_sample_time_index_past_length(self) -> int:
-        """
-        Required time_index length in the past for one `predict` function call, for any model.
-        """
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = self.extreme_lags
-
-        return -min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
@@ -2120,12 +2087,13 @@ class LocalForecastingModel(ForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
-        return -self.min_train_series_length, -1, None, None, None, None
+        return -self.min_train_series_length, -1, None, None, None, None, 0
 
     @property
     def supports_transferrable_series_prediction(self) -> bool:
@@ -2596,12 +2564,13 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
-        return -self.min_train_series_length, -1, None, None, 0, 0
+        return -self.min_train_series_length, -1, None, None, 0, 0, 0
 
 
 class TransferableFutureCovariatesLocalForecastingModel(

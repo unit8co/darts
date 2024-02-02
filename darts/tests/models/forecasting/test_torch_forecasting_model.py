@@ -1545,7 +1545,14 @@ if TORCH_AVAILABLE:
             "config",
             itertools.product(
                 [
-                    (TFTModel, {"add_relative_index": True}),
+                    (
+                        TFTModel,
+                        {
+                            "add_relative_index": True,
+                            "likelihood": None,
+                            "loss_fn": torch.nn.MSELoss(),
+                        },
+                    ),
                     (TiDEModel, {}),
                     (NLinearModel, {}),
                     (DLinearModel, {}),
@@ -1631,6 +1638,38 @@ if TORCH_AVAILABLE:
             pred_enc = model_enc_shift.predict(n=ocl)
             pred_fc = model_fc_shift.predict(n=ocl)
             assert pred_enc == pred_fc
+
+            # check that historical forecasts works properly
+            hist_fc_start = -(ocl + shift)
+            pred_last_hist_fc = model_fc_shift.predict(
+                n=ocl, series=series[:hist_fc_start]
+            )
+            # non-optimized hist fc
+            hist_fc = model_fc_shift.historical_forecasts(
+                series=series,
+                start=hist_fc_start,
+                start_format="position",
+                retrain=False,
+                forecast_horizon=ocl,
+                last_points_only=False,
+                enable_optimization=False,
+            )
+            assert len(hist_fc) == 1
+            assert hist_fc[0] == pred_last_hist_fc
+            # optimized hist fc, due to batch predictions, slight deviations in values
+            hist_fc_opt = model_fc_shift.historical_forecasts(
+                series=series,
+                start=hist_fc_start,
+                start_format="position",
+                retrain=False,
+                forecast_horizon=ocl,
+                last_points_only=False,
+                enable_optimization=True,
+            )
+            assert hist_fc_opt[0].time_index.equals(pred_last_hist_fc.time_index)
+            np.testing.assert_array_almost_equal(
+                hist_fc_opt[0].values(copy=False), pred_last_hist_fc.values(copy=False)
+            )
 
             # covs too short
             for cov_name in cov_support:

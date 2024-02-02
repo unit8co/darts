@@ -313,7 +313,7 @@ class RegressionEnsembleModel(EnsembleModel):
             # when it's not clearly defined, extreme_lags returns
             # min_train_serie_length for the LocalForecastingModels
             for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _ = model.extreme_lags
+                min_target_lag, _, _, _, _, _, _ = model.extreme_lags
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 
@@ -447,6 +447,7 @@ class RegressionEnsembleModel(EnsembleModel):
     def extreme_lags(
         self,
     ) -> Tuple[
+        Optional[int],
         Optional[int],
         Optional[int],
         Optional[int],

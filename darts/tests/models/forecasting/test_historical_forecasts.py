@@ -1445,6 +1445,7 @@ class TestHistoricalforecast:
             max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
+            output_chunk_shift,
         ) = model.extreme_lags
 
         past_lag = min(
@@ -1546,6 +1547,7 @@ class TestHistoricalforecast:
             max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
+            output_chunk_shift,
         ) = model.extreme_lags
 
         past_lag = min(
