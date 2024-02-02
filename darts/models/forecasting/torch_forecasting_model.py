@@ -2471,7 +2471,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
@@ -2577,7 +2577,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
@@ -2676,7 +2676,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
@@ -2772,7 +2772,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
@@ -2925,7 +2925,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,

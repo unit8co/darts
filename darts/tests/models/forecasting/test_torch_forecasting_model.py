@@ -1569,7 +1569,6 @@ if TORCH_AVAILABLE:
             """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length.
             RNNModel does not support shift output chunk.
             """
-            # model_cls = TFTModel
             (model_cls, add_params), shift = config
             icl = 8
             ocl = 7

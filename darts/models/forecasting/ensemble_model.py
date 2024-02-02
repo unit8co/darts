@@ -397,7 +397,7 @@ class EnsembleModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
             max_lag = None

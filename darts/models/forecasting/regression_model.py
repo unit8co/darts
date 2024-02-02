@@ -420,7 +420,7 @@ class RegressionModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         min_target_lag = self.lags["target"][0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1

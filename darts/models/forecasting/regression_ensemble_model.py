@@ -453,7 +453,7 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         extreme_lags_ = super().extreme_lags
         # shift min_target_lag in the past to account for the regression model training set

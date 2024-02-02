@@ -412,10 +412,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         """
-        A 6-tuple containing in order:
+        A 7-tuple containing in order:
         (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
         lag, max future covariate lag, output shift). If 0 is the index of the first prediction, then all lags are
         relative to this index.
@@ -2095,7 +2095,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
@@ -2572,7 +2572,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
-        Optional[int],
+        int,
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
