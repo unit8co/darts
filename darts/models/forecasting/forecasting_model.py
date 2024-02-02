@@ -663,6 +663,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+            shifted by `output_chunk_shift` points into the future.
             Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
