@@ -15,7 +15,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - All `TimeSeries` creation methods     
     - Additional boosts for slicing with integers and Timestamps
     - Additional boosts for `from_group_dataframe()` by performing some of the heavy-duty computations on the entire DataFrame, rather than iteratively on the group level.
-  - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `droup_group_cols`.
+  - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 
 **Fixed**
 

@@ -103,7 +103,7 @@ class TimeSeries:
                 ),
                 logger,
             )
-        if not len(xa.shape) == 3:
+        if len(xa.shape) != 3:
             raise_log(
                 ValueError(
                     f"TimeSeries require DataArray of dimensionality 3 ({DIMS})."
@@ -820,7 +820,7 @@ class TimeSeries:
             )
 
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
-        if drop_group_cols is not None:
+        if drop_group_cols:
             drop_group_cols = (
                 [drop_group_cols]
                 if not isinstance(drop_group_cols, list)
@@ -5033,28 +5033,18 @@ class TimeSeries:
             ):
                 xa_ = self._xa.isel({self._time_dim: key})
                 if _get_freq(xa_) is None:
-                    # indexing may discard the freq, so we restore it...
-                    if key.step is None:
-                        freq = self.freq
-                    else:
-                        # new frequency is multiple of original
-                        freq = key.step * self.freq
+                    # indexing discarded the freq; we restore it
+                    freq = key.step * self.freq if key.step else self.freq
                     _set_freq_in_xa(xa_, freq)
                 return self.__class__(xa_)
             elif isinstance(key.start, pd.Timestamp) or isinstance(
                 key.stop, pd.Timestamp
             ):
                 _check_dt()
-
-                # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
                 if _get_freq(xa_) is None:
-                    # indexing may discard the freq, so we restore it...
-                    if key.step is None:
-                        freq = self.freq
-                    else:
-                        # new frequency is multiple of original
-                        freq = key.step * self.freq
+                    # indexing discarded the freq; we restore it
+                    freq = key.step * self.freq if key.step else self.freq
                     _set_freq_in_xa(xa_, freq)
                 return self.__class__(xa_)
 
