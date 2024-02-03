@@ -123,6 +123,11 @@ class RegressionEnsembleModel(EnsembleModel):
                 lags=None, lags_future_covariates=[0], fit_intercept=False
             )
         elif isinstance(regression_model, RegressionModel):
+            raise_if_not(
+                regression_model.multi_models,
+                "`regression_model.multi_models = False` is not supported for `RegressionEnsembleModel.",
+                logger,
+            )
             regression_model = regression_model
         else:
             # scikit-learn like model
