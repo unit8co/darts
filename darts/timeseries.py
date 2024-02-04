@@ -3607,6 +3607,20 @@ class TimeSeries:
         if isinstance(transforms, dict):
             transforms = [transforms]
 
+        comp_names_map = None
+        if self.hierarchy:
+            several_transforms = len(transforms) > 1
+            partial_transform = (
+                "components" in transforms[0]
+                and transforms[0]["components"] != self.components
+            )
+            # warning message in case of transform introducing ambiguity in the hierarchy
+            if several_transforms or partial_transform:
+                logger.warning(
+                    "The hierarchy cannot be automatically updated, due to partial or chained transforms."
+                )
+                comp_names_map = dict()
+
         raise_if_not(
             all([isinstance(tr, dict) for tr in transforms]),
             "`transforms` must be a non-empty dictionary or a non-empty list of dictionaries.",
@@ -3688,6 +3702,14 @@ class TimeSeries:
                 [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
             )
 
+            if comp_names_map:
+                comp_names_map.update(
+                    {
+                        comp_name: f"{name_prefix}_{comp_name}"
+                        for comp_name in comps_to_transform
+                    }
+                )
+
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
             # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
@@ -3741,6 +3763,15 @@ class TimeSeries:
         # revert dataframe to TimeSeries
         new_index = original_index.__class__(resulting_transformations.index)
 
+        if comp_names_map:
+            new_hierarchy = dict()
+            for k, v in self.hierarchy.items():
+                new_hierarchy[comp_names_map[k]] = [
+                    comp_names_map[old_name] for old_name in v
+                ]
+        else:
+            new_hierarchy = None
+
         transformed_time_series = TimeSeries.from_times_and_values(
             times=new_index,
             values=resulting_transformations.values.reshape(
@@ -3748,7 +3779,7 @@ class TimeSeries:
             ),
             columns=new_columns,
             static_covariates=self.static_covariates,
-            hierarchy=self.hierarchy,
+            hierarchy=new_hierarchy,
         )
 
         return transformed_time_series
