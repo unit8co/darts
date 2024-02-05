@@ -194,7 +194,7 @@ class RegressionModel(GlobalForecastingModel):
         self.lags: Dict[str, List[int]] = {}
         self.component_lags: Dict[str, Dict[str, List[int]]] = {}
         self.input_dim = None
-        self.multi_models = multi_models
+        self.multi_models = True if multi_models or output_chunk_length == 1 else False
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
         self._lagged_feature_names: Optional[List[str]] = None
