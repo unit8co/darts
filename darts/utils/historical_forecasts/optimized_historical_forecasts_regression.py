@@ -19,7 +19,7 @@ from darts.utils.timeseries_generation import generate_index
 logger = get_logger(__name__)
 
 
-def _optimized_historical_forecasts_regression_last_points_only(
+def _optimized_historical_forecasts_last_points_only(
     model,
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -33,6 +33,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     scaler: Scaler = None,
+    **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -87,16 +88,24 @@ def _optimized_historical_forecasts_regression_last_points_only(
             shift = model.output_chunk_length - forecast_horizon
 
             hist_fct_tgt_start -= shift * unit
-            hist_fct_pc_start -= shift * unit
-            hist_fct_fc_start -= shift * unit
+            hist_fct_pc_start -= (
+                shift * unit if hist_fct_pc_start is not None else hist_fct_pc_start
+            )
+            hist_fct_fc_start -= (
+                shift * unit if hist_fct_fc_start is not None else hist_fct_fc_start
+            )
 
             hist_fct_tgt_end -= shift * unit
-            hist_fct_pc_end -= shift * unit
-            hist_fct_fc_end -= shift * unit
+            hist_fct_pc_end -= (
+                shift * unit if hist_fct_pc_end is not None else hist_fct_pc_end
+            )
+            hist_fct_fc_end -= (
+                shift * unit if hist_fct_fc_end is not None else hist_fct_fc_end
+            )
 
         X, times = create_lagged_prediction_data(
             target_series=None
-            if len(model.lags.get("target", [])) == 0
+            if model._get_lags("target") is None
             else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
@@ -104,9 +113,9 @@ def _optimized_historical_forecasts_regression_last_points_only(
             future_covariates=None
             if future_covariates_ is None
             else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
-            lags=model.lags.get("target", None),
-            lags_past_covariates=model.lags.get("past", None),
-            lags_future_covariates=model.lags.get("future", None),
+            lags=model._get_lags("target"),
+            lags_past_covariates=model._get_lags("past"),
+            lags_future_covariates=model._get_lags("future"),
             uses_static_covariates=model.uses_static_covariates,
             last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
@@ -123,6 +132,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
             x=np.repeat(X, num_samples, axis=0),
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
 
@@ -166,7 +176,7 @@ def _optimized_historical_forecasts_regression_last_points_only(
     return forecasts_list if len(series) > 1 else forecasts_list[0]
 
 
-def _optimized_historical_forecasts_regression_all_points(
+def _optimized_historical_forecasts_all_points(
     model,
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -180,6 +190,7 @@ def _optimized_historical_forecasts_regression_all_points(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     scaler: Scaler = None,
+    **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -227,7 +238,7 @@ def _optimized_historical_forecasts_regression_all_points(
 
         # Additional shift, to account for the model output_chunk_length
         shift_start = 0
-        shift_end = 0
+        # shift_end = 0
         if model.output_chunk_length > 1:
             # used to convert the shift into the appropriate unit
             unit = freq if series_.has_datetime_index else 1
@@ -236,20 +247,20 @@ def _optimized_historical_forecasts_regression_all_points(
                 shift_start = model.output_chunk_length - 1
 
                 hist_fct_tgt_start -= shift_start * unit
-                hist_fct_pc_start -= shift_start * unit
-                hist_fct_fc_start -= shift_start * unit
-
-            # last lagged inputs are removed as the last prediction of length output_chunk_length will include them
-            if model.output_chunk_length == forecast_horizon:
-                shift_end = model.output_chunk_length - 1
-
-                hist_fct_tgt_end += shift_end * unit
-                hist_fct_pc_end += shift_end * unit
-                hist_fct_fc_end += shift_end * unit
+                hist_fct_pc_start -= (
+                    shift_start * unit
+                    if hist_fct_pc_start is not None
+                    else hist_fct_pc_start
+                )
+                hist_fct_fc_start -= (
+                    shift_start * unit
+                    if hist_fct_fc_start is not None
+                    else hist_fct_fc_start
+                )
 
         X, _ = create_lagged_prediction_data(
             target_series=None
-            if len(model.lags.get("target", [])) == 0
+            if model._get_lags("target") is None
             else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
@@ -257,9 +268,9 @@ def _optimized_historical_forecasts_regression_all_points(
             future_covariates=None
             if future_covariates_ is None
             else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
-            lags=model.lags.get("target", None),
-            lags_past_covariates=model.lags.get("past", None),
-            lags_future_covariates=model.lags.get("future", None),
+            lags=model._get_lags("target"),
+            lags_past_covariates=model._get_lags("past"),
+            lags_future_covariates=model._get_lags("future"),
             uses_static_covariates=model.uses_static_covariates,
             last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
@@ -276,6 +287,7 @@ def _optimized_historical_forecasts_regression_all_points(
             x=np.repeat(X, num_samples, axis=0),
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
         )
 
         # reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
@@ -288,16 +300,7 @@ def _optimized_historical_forecasts_regression_all_points(
                 len(forecast_components),
                 num_samples,
             )
-
-            if (
-                forecast_horizon == model.output_chunk_length
-                and forecast_horizon > 1
-                and not overlap_end
-            ):
-                forecast = forecast[:-shift_end:stride]
-            # only keep the prediction of the first forecast_horizon sub-models
-            else:
-                forecast = forecast[::stride, :forecast_horizon]
+            forecast = forecast[::stride, :forecast_horizon]
         else:
             # forecast has shape ((forecastable_index_length-1)*num_samples, 1, n_component)
             # and the components are interleaved
@@ -318,9 +321,6 @@ def _optimized_historical_forecasts_regression_all_points(
                     :,
                     :,
                 ]
-            # apply stride, remove the last windows
-            elif forecast_horizon > 1 and not overlap_end:
-                forecast = forecast[: -forecast_horizon + 1 : stride, 0, 0, :, :, :]
             # apply stride
             else:
                 forecast = forecast[::stride, 0, 0, :, :, :]

@@ -61,6 +61,7 @@ class NaiveMean(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
+        show_warnings: bool = True,
     ):
         super().predict(n, num_samples)
         forecast = np.tile(self.mean_val, (n, 1))
@@ -125,6 +126,7 @@ class NaiveSeasonal(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
+        show_warnings: bool = True,
     ):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
@@ -174,6 +176,7 @@ class NaiveDrift(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
+        show_warnings: bool = True,
     ):
         super().predict(n, num_samples)
         first, last = (
@@ -244,6 +247,7 @@ class NaiveMovingAverage(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
+        show_warnings: bool = True,
     ):
         super().predict(n, num_samples)
 
@@ -332,8 +336,12 @@ class NaiveEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    past_covariates=past_covariates
+                    if model.supports_past_covariates
+                    else None,
+                    future_covariates=future_covariates
+                    if model.supports_future_covariates
+                    else None,
                 )
 
         return self

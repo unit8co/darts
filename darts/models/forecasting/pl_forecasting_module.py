@@ -3,6 +3,7 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import pytorch_lightning as pl
@@ -42,13 +43,15 @@ def io_processor(forward):
         normalizes batch input target features, and inverse transform the forward output back to the original scale
     """
 
+    @wraps(forward)
     def forward_wrapper(self, *args, **kwargs):
         if not self.use_reversible_instance_norm:
             return forward(self, *args, **kwargs)
 
         # x is input batch tuple which by definition has the past features in the first element starting with the
         # first n target features
-        x: Tuple = args[0][0]
+        # assuming `args[0][0]` is torch.Tensor we could clone it to prevent target re-normalization
+        x: Tuple = args[0][0].clone()
         # apply reversible instance normalization
         x[:, :, : self.n_targets] = self.rin(x[:, :, : self.n_targets])
         # run the forward pass
@@ -96,9 +99,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         input_chunk_length
-            Number of input past time steps per chunk.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            Number of output time steps per chunk.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         train_sample_shape
             Shape of the model's input, used to instantiate model without calling ``fit_from_dataset`` and
             perform sanity check on new training/inference datasets used for re-training or prediction.
@@ -184,6 +194,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
         self.pred_n_jobs: Optional[int] = None
+        self.predict_likelihood_parameters: Optional[bool] = None
 
     @property
     def first_prediction_index(self) -> int:
@@ -241,7 +252,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         dataloader_idx
             the dataloader index
         """
-        input_data_tuple, batch_input_series = batch[:-1], batch[-1]
+        input_data_tuple, batch_input_series, batch_pred_starts = (
+            batch[:-2],
+            batch[-2],
+            batch[-1],
+        )
 
         # number of individual series to be predicted in current batch
         num_series = input_data_tuple[0].shape[0]
@@ -303,8 +318,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 else None,
                 with_static_covs=False if self.predict_likelihood_parameters else True,
                 with_hierarchy=False if self.predict_likelihood_parameters else True,
+                pred_start=pred_start,
             )
-            for batch_idx, input_series in enumerate(batch_input_series)
+            for batch_idx, (input_series, pred_start) in enumerate(
+                zip(batch_input_series, batch_pred_starts)
+            )
         )
         return ts_forecasts
 

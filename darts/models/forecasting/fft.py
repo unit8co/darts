@@ -255,6 +255,7 @@ class FFT(LocalForecastingModel):
         >>> FFT(required_matches={'month'}, trend='exp')
 
         Simple usage example, using one of the dataset available in darts
+
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import FFT
         >>> series = AirPassengersDataset().load()
@@ -365,7 +366,13 @@ class FFT(LocalForecastingModel):
 
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ):
         super().predict(n, num_samples)
         trend_forecast = np.array(
             [self.trend_function(i + len(self.training_series)) for i in range(n)]

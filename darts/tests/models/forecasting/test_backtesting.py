@@ -465,6 +465,26 @@ class TestBacktesting:
         )
         assert score > 0.9
 
+    @pytest.mark.parametrize("model_cls", [Theta, ARIMA])
+    def test_backtest_bad_covariates(self, model_cls):
+        """Passing unsupported covariate should raise an exception"""
+        series = lt(start_value=1, end_value=10, length=31, dtype="float32")
+        model = model_cls()
+        bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
+        model.backtest(series=series, **bt_kwargs)
+
+        with pytest.raises(ValueError) as msg:
+            model.backtest(series=series, past_covariates=series, **bt_kwargs)
+        assert str(msg.value).startswith(
+            "Model cannot be fit/trained with `past_covariates`."
+        )
+        if not model.supports_future_covariates:
+            with pytest.raises(ValueError) as msg:
+                model.backtest(series=series, future_covariates=series, **bt_kwargs)
+            assert str(msg.value).startswith(
+                "Model cannot be fit/trained with `future_covariates`."
+            )
+
     def test_gridsearch(self):
         np.random.seed(1)
 
@@ -631,3 +651,46 @@ class TestBacktesting:
             "pl_trainer_kwargs": [tfm_kwargs["pl_trainer_kwargs"]],
         }
         TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape)
+
+    @pytest.mark.parametrize(
+        "model_cls,parameters",
+        zip([NaiveSeasonal, ARIMA], [{"K": [1, 2]}, {"p": [18, 4]}]),
+    )
+    def test_gridsearch_bad_covariates(self, model_cls, parameters):
+        """Passing unsupported covariate should raise an exception"""
+        dummy_series = get_dummy_series(
+            ts_length=100, lt_end_value=1, st_value_offset=0
+        ).astype(np.float32)
+
+        ts_train, ts_val = dummy_series.split_before(split_point=0.8)
+
+        bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
+
+        model = model_cls()
+        model_cls.gridsearch(
+            parameters=parameters, series=ts_train, val_series=ts_val, **bt_kwargs
+        )
+
+        with pytest.raises(ValueError) as msg:
+            model_cls.gridsearch(
+                parameters=parameters,
+                series=ts_train,
+                past_covariates=dummy_series,
+                val_series=ts_val,
+                **bt_kwargs
+            )
+        assert str(msg.value).startswith(
+            "Model cannot be fit/trained with `past_covariates`."
+        )
+        if not model.supports_future_covariates:
+            with pytest.raises(ValueError) as msg:
+                model_cls.gridsearch(
+                    parameters=parameters,
+                    series=ts_train,
+                    future_covariates=dummy_series,
+                    val_series=ts_val,
+                    **bt_kwargs
+                )
+            assert str(msg.value).startswith(
+                "Model cannot be fit/trained with `future_covariates`."
+            )

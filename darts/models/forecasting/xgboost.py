@@ -25,6 +25,10 @@ from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
 
+# Check whether we are running xgboost >= 2.0.0 for quantile regression
+tokens = xgb.__version__.split(".")
+xgb_200_or_above = int(tokens[0]) >= 2
+
 
 def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
     """Custom loss function for XGBoost to compute quantile loss gradient.
@@ -93,9 +97,12 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
         output_chunk_length
-            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -116,7 +123,8 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         likelihood
@@ -140,6 +148,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         Examples
         --------
         Deterministic forecasting, using past/future covariates (optional)
+
         >>> from darts.datasets import WeatherDataset
         >>> from darts.models import XGBModel
         >>> series = WeatherDataset().load()
@@ -182,8 +191,12 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             if likelihood in {"poisson"}:
                 self.kwargs["objective"] = f"count:{likelihood}"
             elif likelihood == "quantile":
+                if xgb_200_or_above:
+                    # leverage built-in Quantile Regression
+                    self.kwargs["objective"] = "reg:quantileerror"
                 self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
                 self._model_container = self._get_model_container()
+
             self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
 
         super().__init__(
@@ -248,12 +261,17 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 )
             ]
 
+        # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
+        #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         if self.likelihood == "quantile":
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in self.quantiles:
-                obj_func = partial(xgb_quantile_loss, quantile=quantile)
-                self.kwargs["objective"] = obj_func
+                if xgb_200_or_above:
+                    self.kwargs["quantile_alpha"] = quantile
+                else:
+                    objective = partial(xgb_quantile_loss, quantile=quantile)
+                    self.kwargs["objective"] = objective
                 self.model = xgb.XGBRegressor(**self.kwargs)
 
                 super().fit(

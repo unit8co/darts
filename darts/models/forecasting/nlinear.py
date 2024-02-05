@@ -23,14 +23,14 @@ class _NLinearModule(PLMixedCovariatesModule):
 
     def __init__(
         self,
-        input_dim,
-        output_dim,
-        future_cov_dim,
-        static_cov_dim,
-        nr_params,
-        shared_weights,
-        const_init,
-        normalize,
+        input_dim: int,
+        output_dim: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
+        nr_params: int,
+        shared_weights: bool,
+        const_init: bool,
+        normalize: bool,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -44,16 +44,16 @@ class _NLinearModule(PLMixedCovariatesModule):
         future_cov_dim
             Number of components in the future covariates
         static_cov_dim
-            Dimensionality of the static covariates
+            Dimensionality of the static covariates (either component-specific or shared)
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         shared_weights
             Whether to use shared weights for the components of the series.
             ** Ignores covariates when True. **
-        normalize
-            Whether to apply the "normalization" described in the paper.
         const_init
             Whether to initialize the weights to 1/in_len
+        normalize
+            Whether to apply the "normalization" described in the paper.
 
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
@@ -94,9 +94,6 @@ class _NLinearModule(PLMixedCovariatesModule):
             layer_in_dim = self.input_chunk_length * self.input_dim
             layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
 
-            # for static cov, we take the number of components of the target, times static cov dim
-            layer_in_dim_static_cov = self.output_dim * self.static_cov_dim
-
         self.layer = _create_linear_layer(layer_in_dim, layer_out_dim)
 
         if self.future_cov_dim != 0:
@@ -106,7 +103,7 @@ class _NLinearModule(PLMixedCovariatesModule):
             )
         if self.static_cov_dim != 0:
             self.linear_static_cov = _create_linear_layer(
-                layer_in_dim_static_cov, layer_out_dim
+                self.static_cov_dim, layer_out_dim
             )
 
     @io_processor
@@ -144,7 +141,8 @@ class _NLinearModule(PLMixedCovariatesModule):
             if self.normalize:
                 # get last values only for target features
                 seq_last = x[:, -1:, : self.output_dim].detach()
-                x = x - seq_last
+                # normalize the target features only (ignore the covariates)
+                x[:, :, : self.output_dim] = x[:, :, : self.output_dim] - seq_last
 
             x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
             x = x.view(
@@ -174,6 +172,7 @@ class _NLinearModule(PLMixedCovariatesModule):
 
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
             if self.normalize:
+                # model only forecasts target components, no need to slice
                 x = x + seq_last.view(seq_last.shape + (1,))
         return x
 
@@ -191,15 +190,23 @@ class NLinearModel(MixedCovariatesTorchModel):
     ):
         """An implementation of the NLinear model, as presented in [1]_.
 
-        This implementation is improved by allowing the optional use of past covariates,
-        future covariates and static covariates, and by making the model optionally probabilistic.
+        This implementation is improved by allowing the optional use of past covariates (known for
+        `input_chunk_length` points before prediction time), future covariates (known for `output_chunk_length`
+        points after prediction time) and static covariates, as well as supporting probabilistic forecasting.
 
         Parameters
         ----------
         input_chunk_length
-            The length of the input sequence fed to the model.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         shared_weights
             Whether to use shared weights for all components of multivariate series.
 
@@ -275,7 +282,7 @@ class NLinearModel(MixedCovariatesTorchModel):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -300,7 +307,8 @@ class NLinearModel(MixedCovariatesTorchModel):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         random_state
@@ -427,8 +435,11 @@ class NLinearModel(MixedCovariatesTorchModel):
         )
         future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
 
-        # dimension is (component, static_dim), we extract static_dim
-        static_cov_dim = train_sample[4].shape[1] if train_sample[4] is not None else 0
+        if train_sample[4] is None:
+            static_cov_dim = 0
+        else:
+            # account for component-specific or shared static covariates representation
+            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
 
         output_dim = train_sample[-1].shape[1]
 

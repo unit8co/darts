@@ -151,7 +151,7 @@ class TestEnsembleModels:
     def test_call_backtest_naive_ensemble_local_models(self):
         ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
         ensemble.fit(self.series1)
-        assert ensemble.extreme_lags == (-10, 0, None, None, None, None)
+        assert ensemble.extreme_lags == (-10, -1, None, None, None, None)
         ensemble.backtest(self.series1)
 
     def test_predict_univariate_ensemble_local_models(self):
