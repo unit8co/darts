@@ -4,6 +4,7 @@ from .optimized_historical_forecasts_regression import (
 )
 from .utils import (
     _check_optimizable_historical_forecasts_global_models,
+    _fit_transform_series_if_both_exist,
     _get_historical_forecast_boundaries,
     _historical_forecasts_general_checks,
     _historical_forecasts_start_warnings,
