@@ -18,7 +18,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 
 **Fixed**
-- Fixed bug when calling `window_transform` on a `TimeSeries` with a hierarchy; the hierachy is preserved for single transform applied to all the components, or set one `None` otherwise. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed bug when calling `window_transform` on a `TimeSeries` with a hierarchy; the hierarchy is preserved for single transformations applied to all components, or removed (`None`) otherwise. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:
 
