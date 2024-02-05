@@ -360,7 +360,7 @@ class TestRegressionEnsembleModels:
 
         with pytest.raises(ValueError):
             # covariates are too short (ends too early)
-            ensemble.fit(ts, future_covariates=future_covs[:-1])
+            ensemble.fit(ts, future_covariates=future_covs[: -min(ocl1, ocl2)])
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_univar(self):
@@ -551,7 +551,7 @@ class TestRegressionEnsembleModels:
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
         # -10 comes from the maximum minimum train series length of all models
-        assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
+        assert ensemble.extreme_lags == (-10 - regr_train_n, -1, None, None, None, None)
         ensemble.backtest(self.sine_series)
 
     def test_extreme_lags(self):
@@ -883,6 +883,31 @@ class TestRegressionEnsembleModels:
         assert all(
             pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values()
         ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
+
+    def test_wrong_model_creation_params(self):
+        """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the forecasting
+        model predictions), it is not supported."""
+        forcasting_models = [
+            self.get_deterministic_global_model(2),
+            self.get_deterministic_global_model([-5, -7]),
+        ]
+        RegressionEnsembleModel(
+            forecasting_models=forcasting_models,
+            regression_train_n_points=10,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=[0], output_chunk_length=2, multi_models=True
+            ),
+        )
+        with pytest.raises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=forcasting_models,
+                regression_train_n_points=10,
+                regression_model=LinearRegressionModel(
+                    lags_future_covariates=[0],
+                    output_chunk_length=2,
+                    multi_models=False,
+                ),
+            )
 
     @staticmethod
     def get_probabilistic_global_model(

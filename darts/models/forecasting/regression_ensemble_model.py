@@ -123,6 +123,11 @@ class RegressionEnsembleModel(EnsembleModel):
                 lags=None, lags_future_covariates=[0], fit_intercept=False
             )
         elif isinstance(regression_model, RegressionModel):
+            raise_if_not(
+                regression_model.multi_models,
+                "Cannot use `regression_model` that was created with `multi_models = False`.",
+                logger,
+            )
             regression_model = regression_model
         else:
             # scikit-learn like model
@@ -369,8 +374,12 @@ class RegressionEnsembleModel(EnsembleModel):
                 # maximize covariate usage
                 model._fit_wrapper(
                     series=forecast_training,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    past_covariates=past_covariates
+                    if model.supports_past_covariates
+                    else None,
+                    future_covariates=future_covariates
+                    if model.supports_future_covariates
+                    else None,
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
@@ -407,8 +416,12 @@ class RegressionEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    past_covariates=past_covariates
+                    if model.supports_past_covariates
+                    else None,
+                    future_covariates=future_covariates
+                    if model.supports_future_covariates
+                    else None,
                 )
         return self
 

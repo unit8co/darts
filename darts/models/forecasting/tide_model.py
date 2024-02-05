@@ -383,11 +383,9 @@ class TiDEModel(MixedCovariatesTorchModel):
         but attempts to provide better performance at lower computational cost by introducing
         multilayer perceptron (MLP)-based encoder-decoders without attention.
 
-        The model is implemented as a :class:`MixedCovariatesTorchModel`, which means that it supports
-        both past and future covariates, as well as static covariates. Probabilistic forecasting is supported through
-        the use of a `likelihood` instead of a `loss_fn`.
-        The original paper does not describe how past covariates are treated in detail, so we assume that they are
-        passed to the encoder as-is.
+        This model supports past covariates (known for `input_chunk_length` points before prediction time),
+        future covariates (known for `output_chunk_length` points after prediction time), static covariates,
+        as well as probabilistic forecasting.
 
         The encoder and decoder are implemented as a series of residual blocks. The number of residual blocks in
         the encoder and decoder can be controlled via ``num_encoder_layers`` and ``num_decoder_layers`` respectively.
@@ -397,9 +395,16 @@ class TiDEModel(MixedCovariatesTorchModel):
         Parameters
         ----------
         input_chunk_length
-            The length of the input sequence fed to the model.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         num_encoder_layers
             The number of residual blocks in the encoder.
         num_decoder_layers
@@ -473,7 +478,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -498,7 +503,8 @@ class TiDEModel(MixedCovariatesTorchModel):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         random_state
@@ -516,7 +522,6 @@ class TiDEModel(MixedCovariatesTorchModel):
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:
-
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
@@ -691,13 +696,3 @@ class TiDEModel(MixedCovariatesTorchModel):
     @property
     def supports_multivariate(self) -> bool:
         return True
-
-    def predict(self, n, *args, **kwargs):
-        # since we have future covariates, the inference dataset for future input must be at least of length
-        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
-        # `input_chunk_length`.
-
-        if n >= self.output_chunk_length:
-            return super().predict(n, *args, **kwargs)
-        else:
-            return super().predict(self.output_chunk_length, *args, **kwargs)[:n]

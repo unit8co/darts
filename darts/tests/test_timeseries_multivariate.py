@@ -120,6 +120,7 @@ class TestTimeSeriesMultivariate:
         series1 = TimeSeries.from_dataframe(dataframe1)
 
         assert (series1.strip().time_index == self.times1[1:-1]).all()
+        assert (series1.strip(how="any").time_index == self.times1[2:-2]).all()
 
     """
     Testing new multivariate methods.
