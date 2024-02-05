@@ -39,16 +39,13 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         self._trained_models = []
 
         series = seq2series(series)
-        components = split_multivariate(series)
-        if self.supports_future_covariates:
-            self._trained_models = [
-                self.model.untrained_model().fit(c, future_covariates)
-                for c in components
-            ]
-        else:
-            self._trained_models = [
-                self.model.untrained_model().fit(c) for c in components
-            ]
+        for comp in series.components:
+            self._trained_models.append(
+                self.model.untrained_model().fit(
+                    series=series.univariate_component(comp),
+                    future_covariates=future_covariates if self.supports_future_covariates else None
+                )
+            )
 
         return self
 
