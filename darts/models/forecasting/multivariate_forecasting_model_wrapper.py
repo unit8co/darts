@@ -2,7 +2,7 @@
 Multivariate forecasting model wrapper
 -------------------------
 
-A wrapper around local forecasting models which allows forecasting multiple components
+A wrapper around local forecasting models to enable multivariate series training and forecasting. One model is trained for each component of the target series, independently of the others hence ignoring the potential interactions between its components.
 """
 from typing import List, Optional, Tuple
 
