@@ -1528,7 +1528,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Class property defining the minimum required length for the training series;
         overriding the default value of 3 of ForecastingModel
         """
-        return self.input_chunk_length + self.output_chunk_length
+        return (
+            self.input_chunk_length + self.output_chunk_length + self.output_chunk_shift
+        )
 
     @staticmethod
     def _batch_collate_fn(batch: List[Tuple]) -> Tuple:

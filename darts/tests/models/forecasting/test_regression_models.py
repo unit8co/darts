@@ -1687,12 +1687,13 @@ class TestRegressionModels:
                     },
                 ),
             ],
+            [0, 5],
             [True, False],
         ),
     )
     def test_component_specific_lags_forecasts(self, config):
         """Verify that the same lags, defined using int/list or dictionnaries yield the same results"""
-        (list_lags, dict_lags), multiple_series = config
+        (list_lags, dict_lags), output_chunk_shift, multiple_series = config
         multivar_target = "lags" in dict_lags and len(dict_lags["lags"]) > 1
         multivar_future_cov = (
             "lags_future_covariates" in dict_lags
@@ -1726,7 +1727,9 @@ class TestRegressionModels:
             future_cov = [future_cov, future_cov]
 
         # the lags are identical across the components for each series
-        model = LinearRegressionModel(**list_lags)
+        model = LinearRegressionModel(
+            **list_lags, output_chunk_shift=output_chunk_shift
+        )
         model.fit(
             series=series,
             past_covariates=past_cov if model.supports_past_covariates else None,
@@ -1734,12 +1737,24 @@ class TestRegressionModels:
         )
 
         # the lags are specified for each component, individually
-        model2 = LinearRegressionModel(**dict_lags)
+        model2 = LinearRegressionModel(
+            **dict_lags, output_chunk_shift=output_chunk_shift
+        )
         model2.fit(
             series=series,
             past_covariates=past_cov if model2.supports_past_covariates else None,
             future_covariates=future_cov if model2.supports_future_covariates else None,
         )
+
+        if "lags_future_covariates" in list_lags:
+            assert model.lags["future_covariates"] == [
+                lag_ + output_chunk_shift
+                for lag_ in list_lags["lags_future_coavariates"]
+            ]
+            assert model.component_lags["future_covariates"] == {
+                comp_: [lag_ + output_chunk_shift for lag_ in lags_]
+                for comp_, lags_ in dict_lags["lags_future_covariates"].items()
+            }
 
         # n == output_chunk_length
         pred = model.predict(
