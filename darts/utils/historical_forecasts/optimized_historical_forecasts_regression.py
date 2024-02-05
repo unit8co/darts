@@ -13,7 +13,6 @@ from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.historical_forecasts import _fit_transform_series_if_both_exist
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.timeseries_generation import generate_index
 
@@ -48,16 +47,18 @@ def _optimized_historical_forecasts_last_points_only(
 
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        past_covariates_ = _fit_transform_series_if_both_exist(
-            past_covariates_, past_covariates_transformer
-        )
+        if past_covariates_ and past_covariates_transformer:
+            past_covariates_ = past_covariates_transformer.fit_transform(
+                past_covariates_
+            )
 
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        future_covariates_ = _fit_transform_series_if_both_exist(
-            future_covariates_, future_covariates_transformer
-        )
+        if future_covariates_ and future_covariates_transformer:
+            future_covariates_ = future_covariates_transformer.fit_transform(
+                future_covariates_
+            )
 
         freq = series_.freq
         forecast_components = (
@@ -209,16 +210,18 @@ def _optimized_historical_forecasts_all_points(
     forecasts_list = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        past_covariates_ = _fit_transform_series_if_both_exist(
-            past_covariates_, past_covariates_transformer
-        )
+        if past_covariates_ and past_covariates_transformer:
+            past_covariates_ = past_covariates_transformer.fit_transform(
+                past_covariates_
+            )
 
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        future_covariates_ = _fit_transform_series_if_both_exist(
-            future_covariates_, future_covariates_transformer
-        )
+        if future_covariates_ and future_covariates_transformer:
+            future_covariates_ = future_covariates_transformer.fit_transform(
+                future_covariates_
+            )
 
         freq = series_.freq
         forecast_components = (

@@ -1,8 +1,6 @@
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, Union
 
-from darts.dataprocessing.transformers import FittableDataTransformer
-
 try:
     from typing import Literal
 except ImportError:
@@ -876,14 +874,3 @@ def _process_predict_start_points_bounds(
     bounds[:, 1] -= steps_too_long
     cum_lengths = np.cumsum(np.diff(bounds) // stride + 1)
     return bounds, cum_lengths
-
-
-def _fit_transform_series_if_both_exist(
-    series: Optional[TimeSeries], transformer: Optional[FittableDataTransformer]
-) -> Optional[TimeSeries]:
-    if series is None:
-        return None
-    if transformer is None:
-        return series
-
-    return transformer.fit_transform(series)

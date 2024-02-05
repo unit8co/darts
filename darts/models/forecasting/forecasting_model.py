@@ -43,7 +43,6 @@ from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
-    _fit_transform_series_if_both_exist,
     _get_historical_forecast_predict_index,
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
@@ -943,16 +942,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates_ = (
                 past_covariates[idx] if past_covariates is not None else None
             )
-            past_covariates_ = _fit_transform_series_if_both_exist(
-                past_covariates_, past_covariates_transformer
-            )
+            if past_covariates_ and past_covariates_transformer:
+                past_covariates_ = past_covariates_transformer.fit_transform(
+                    past_covariates_
+                )
 
             future_covariates_ = (
                 future_covariates[idx] if future_covariates is not None else None
             )
-            future_covariates_ = _fit_transform_series_if_both_exist(
-                future_covariates_, future_covariates_transformer
-            )
+            if future_covariates_ and future_covariates_transformer:
+                future_covariates_ = future_covariates_transformer.fit_transform(
+                    future_covariates_
+                )
 
             # predictable time indexes (assuming model is already trained)
             historical_forecasts_time_index_predict = (
