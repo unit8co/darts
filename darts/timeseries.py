@@ -3610,10 +3610,9 @@ class TimeSeries:
         comp_names_map = None
         if self.hierarchy:
             several_transforms = len(transforms) > 1
-            partial_transform = (
-                "components" in transforms[0]
-                and transforms[0]["components"] != self.components
-            )
+            partial_transform = "components" in transforms[0] and len(
+                set(transforms[0]["components"]).intersection(set(self.components))
+            ) == len(self.components)
             # warning message in case of transform introducing ambiguity in the hierarchy
             if several_transforms or partial_transform:
                 logger.warning(
