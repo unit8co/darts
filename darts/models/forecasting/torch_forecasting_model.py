@@ -30,6 +30,8 @@ from abc import ABC, abstractmethod
 from glob import glob
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+from darts.dataprocessing.transformers import FittableDataTransformer
+
 try:
     from typing import Literal
 except ImportError:
@@ -2049,6 +2051,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        past_covariates_transformer: Optional[FittableDataTransformer] = None,
+        future_covariates_transformer: Optional[FittableDataTransformer] = None,
         **kwargs,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
@@ -2080,6 +2084,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             show_warnings=show_warnings,
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            past_covariates_transformer=past_covariates_transformer,
+            future_covariates_transformer=future_covariates_transformer,
             **kwargs,
         )
         return forecasts_list

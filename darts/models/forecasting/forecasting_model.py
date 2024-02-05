@@ -921,7 +921,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 verbose=verbose,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                series_transformer=series_transformer,
                 past_covariates_transformer=past_covariates_transformer,
                 future_covariates_transformer=future_covariates_transformer,
                 **predict_kwargs,

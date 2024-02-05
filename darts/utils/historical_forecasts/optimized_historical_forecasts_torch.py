@@ -1,5 +1,7 @@
 from typing import List, Optional, Sequence, Union
 
+from darts.dataprocessing.transformers import FittableDataTransformer
+
 try:
     from typing import Literal
 except ImportError:
@@ -36,6 +38,8 @@ def _optimized_historical_forecasts(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
+    past_covariates_transformer: Optional[FittableDataTransformer] = None,
+    future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
@@ -48,9 +52,19 @@ def _optimized_historical_forecasts(
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
+        if past_covariates_ and past_covariates_transformer:
+            past_covariates_ = past_covariates_transformer.fit_transform(
+                past_covariates_
+            )
+
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
+        if future_covariates_ and future_covariates_transformer:
+            future_covariates_ = future_covariates_transformer.fit_transform(
+                future_covariates_
+            )
+
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (
             hist_fct_start,
