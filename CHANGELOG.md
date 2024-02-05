@@ -19,6 +19,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 - Fixed bug when calling `window_transform` on a `TimeSeries` with a hierarchy; the hierarchy is preserved for single transformations applied to all components, or removed (`None`) otherwise. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug in `coefficient_of_variaton()` with `intersect=True`, where the coefficient was not computed on the intersection. [#2202](https://github.com/unit8co/darts/pull/2202) by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:
 
