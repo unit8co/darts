@@ -640,7 +640,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        scaler: Scaler = None,
+        series_transformer: Optional[InvertibleDataTransformer] = None,
+        past_covariates_transformer: Optional[Union[FittableDataTransformer, InvertibleDataTransformer]] = None,
+        future_covariates_transformer: Optional[Union[FittableDataTransformer, InvertibleDataTransformer]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Union[
