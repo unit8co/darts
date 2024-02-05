@@ -125,7 +125,7 @@ class RegressionEnsembleModel(EnsembleModel):
         elif isinstance(regression_model, RegressionModel):
             raise_if_not(
                 regression_model.multi_models,
-                "`regression_model.multi_models = False` is not supported for `RegressionEnsembleModel.",
+                "Cannot use `regression_model` that was created with `multi_models = False`.",
                 logger,
             )
             regression_model = regression_model
