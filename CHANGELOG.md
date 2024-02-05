@@ -19,7 +19,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 - Fixed a bug in probabilistic `LinearRegressionModel.fit()`; the `model` attribute was not giving access to all the underlying estimators. [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
-- Fixed a bug in `RegressionEsembleModel` constructor; an exception is raised when trying to use a `regression_model` created with `multi_models=False` (not supported). [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
+- Raise an error in `RegressionEsembleModel` when the `regression_model` was created with `multi_models=False` (not supported). [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:
 
