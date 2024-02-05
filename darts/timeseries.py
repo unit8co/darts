@@ -5427,10 +5427,3 @@ def _finite_rows_boundaries(
     last_finite_row = len(finite_rows) - finite_rows[::-1].argmax() - 1
 
     return first_finite_row, last_finite_row
-
-
-def split_multivariate(time_series: TimeSeries):
-    """split multivariate TimeSeries into a list of univariate TimeSeries"""
-    return [
-        time_series.univariate_component(i) for i in range(time_series.n_components)
-    ]

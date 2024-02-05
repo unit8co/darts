@@ -2,17 +2,19 @@
 Multivariate forecasting model wrapper
 -------------------------
 
-A wrapper around local forecasting models to enable multivariate series training and forecasting. One model is trained for each component of the target series, independently of the others hence ignoring the potential interactions between its components.
+A wrapper around local forecasting models to enable multivariate series training and forecasting. One model is trained
+for each component of the target series, independently of the others hence ignoring the potential interactions between
+its components.
 """
 from typing import List, Optional, Tuple
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries, concatenate, split_multivariate
+from darts.timeseries import TimeSeries, concatenate
 from darts.utils.utils import seq2series
 
 logger = get_logger(__name__)
@@ -21,10 +23,10 @@ logger = get_logger(__name__)
 class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel):
     def __init__(self, model: LocalForecastingModel):
         """
-        Wrapper around LocalForecastingModel allowing it to predict multivariate TimeSeries.
+        Wrapper for univariate LocalForecastingModel to enable multivariate series training and forecasting.
 
-        A copy of the provided model will be trained on each of the components of the provided series separately.
-        Parameters
+        A copy of the provided model will be trained independently on each component of the target series, ignoring the
+        potential interactions.
         ----------
         model
             Model used to predict individual components
@@ -43,7 +45,9 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
             self._trained_models.append(
                 self.model.untrained_model().fit(
                     series=series.univariate_component(comp),
-                    future_covariates=future_covariates if self.supports_future_covariates else None
+                    future_covariates=future_covariates
+                    if self.supports_future_covariates
+                    else None,
                 )
             )
 
@@ -57,8 +61,6 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         num_samples: int = 1,
         **kwargs,
     ) -> TimeSeries:
-        # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
-        # will be passed to `_predict()` (some future covariates local models require it ex. Kalman)
         return self._predict(n, future_covariates, num_samples, **kwargs)
 
     def _predict(
@@ -70,14 +72,24 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         **kwargs,
     ) -> TimeSeries:
         predictions = [
-            model.predict(n=n, future_covariates=future_covariates)
-            if model.supports_future_covariates
-            else model.predict(n=n)
+            model.predict(
+                n=n,
+                future_covariates=future_covariates
+                if self.supports_future_covariates
+                else None,
+            )
             for model in self._trained_models
         ]
 
-        multivariate_series = concatenate(predictions, axis=1)
-        return multivariate_series
+        raise_if_not(
+            len(predictions) == len(self._trained_models),
+            "Prediction contains {} components but {} models were fitted".format(
+                len(predictions),
+                len(self._trained_models),
+            ),
+        )
+
+        return concatenate(predictions, axis=1)
 
     @property
     def extreme_lags(
