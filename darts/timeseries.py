@@ -3607,7 +3607,7 @@ class TimeSeries:
         if isinstance(transforms, dict):
             transforms = [transforms]
 
-        comp_names_map = None
+        convert_hierarchy = False
         if self.hierarchy:
             several_transforms = len(transforms) > 1
             partial_transform = "components" in transforms[0] and len(
@@ -3618,6 +3618,8 @@ class TimeSeries:
                 logger.warning(
                     "The hierarchy cannot be automatically updated, due to partial or chained transforms."
                 )
+            else:
+                convert_hierarchy = True
                 comp_names_map = dict()
 
         raise_if_not(
@@ -3701,7 +3703,7 @@ class TimeSeries:
                 [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
             )
 
-            if comp_names_map:
+            if convert_hierarchy:
                 comp_names_map.update(
                     {
                         comp_name: f"{name_prefix}_{comp_name}"
@@ -3762,7 +3764,7 @@ class TimeSeries:
         # revert dataframe to TimeSeries
         new_index = original_index.__class__(resulting_transformations.index)
 
-        if comp_names_map:
+        if convert_hierarchy:
             new_hierarchy = dict()
             for k, v in self.hierarchy.items():
                 new_hierarchy[comp_names_map[k]] = [
