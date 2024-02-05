@@ -9,10 +9,11 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
-from darts.dataprocessing.transformers import Scaler
+from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.historical_forecasts import _fit_transform_series_if_both_exist
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.timeseries_generation import generate_index
 
@@ -32,7 +33,8 @@ def _optimized_historical_forecasts_last_points_only(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
-    scaler: Scaler = None,
+    past_covariates_transformer: Optional[FittableDataTransformer] = None,
+    future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
@@ -46,9 +48,17 @@ def _optimized_historical_forecasts_last_points_only(
 
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
+        past_covariates_ = _fit_transform_series_if_both_exist(
+            past_covariates_, past_covariates_transformer
+        )
+
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
+        future_covariates_ = _fit_transform_series_if_both_exist(
+            future_covariates_, future_covariates_transformer
+        )
+
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -167,10 +177,6 @@ def _optimized_historical_forecasts_last_points_only(
             static_covariates=series_.static_covariates,
             hierarchy=series_.hierarchy,
         )
-        is_scaler_used = len(model.lags.get("target", [])) != 0 and scaler is not None
-        if is_scaler_used:
-            scaling_values = series_[:hist_fct_tgt_end]
-            forecast_value = scaler.fit(scaling_values).transform(forecast_value)
         forecasts_list.append(forecast_value)
 
     return forecasts_list if len(series) > 1 else forecasts_list[0]
@@ -189,7 +195,8 @@ def _optimized_historical_forecasts_all_points(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
-    scaler: Scaler = None,
+    past_covariates_transformer: Optional[FittableDataTransformer] = None,
+    future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
@@ -202,9 +209,17 @@ def _optimized_historical_forecasts_all_points(
     forecasts_list = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
+        past_covariates_ = _fit_transform_series_if_both_exist(
+            past_covariates_, past_covariates_transformer
+        )
+
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
+        future_covariates_ = _fit_transform_series_if_both_exist(
+            future_covariates_, future_covariates_transformer
+        )
+
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -344,12 +359,6 @@ def _optimized_historical_forecasts_all_points(
                 static_covariates=series_.static_covariates,
                 hierarchy=series_.hierarchy,
             )
-            is_scaler_used = (
-                len(model.lags.get("target", [])) != 0 and scaler is not None
-            )
-            if is_scaler_used:
-                scaling_values = series_[:hist_fct_tgt_end]
-                forecast_value = scaler.fit(scaling_values).transform(forecast_value)
             forecasts_.append(forecast_value)
         forecasts_list.append(forecasts_)
     return forecasts_list if len(series) > 1 else forecasts_list[0]

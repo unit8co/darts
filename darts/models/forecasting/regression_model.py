@@ -29,6 +29,11 @@ if their static covariates do not have the same size, the shorter ones are padde
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+from darts.dataprocessing.transformers import (
+    FittableDataTransformer,
+    InvertibleDataTransformer,
+)
+
 try:
     from typing import Literal
 except ImportError:
@@ -1111,7 +1116,11 @@ class RegressionModel(GlobalForecastingModel):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-        scaler=None,
+        series_transformer: Optional[
+            Union[FittableDataTransformer, InvertibleDataTransformer]
+        ] = None,
+        past_covariates_transformer: Optional[FittableDataTransformer] = None,
+        future_covariates_transformer: Optional[FittableDataTransformer] = None,
         **kwargs,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
@@ -1148,7 +1157,8 @@ class RegressionModel(GlobalForecastingModel):
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                scaler=scaler,
+                past_covariates_transformer=past_covariates_transformer,
+                future_covariates_transformer=future_covariates_transformer,
                 **kwargs,
             )
         else:
@@ -1165,6 +1175,8 @@ class RegressionModel(GlobalForecastingModel):
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                past_covariates_transformer=past_covariates_transformer,
+                future_covariates_transformer=future_covariates_transformer,
                 **kwargs,
             )
 
