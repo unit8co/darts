@@ -1066,6 +1066,8 @@ class RegressionModel(GlobalForecastingModel):
                 else None,
                 with_static_covs=False if predict_likelihood_parameters else True,
                 with_hierarchy=False if predict_likelihood_parameters else True,
+                pred_start=input_tgt.end_time()
+                + (1 + self.output_chunk_shift) * input_tgt.freq,
             )
             for idx_ts, (row, input_tgt) in enumerate(zip(predictions, series))
         ]
