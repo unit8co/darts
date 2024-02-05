@@ -245,6 +245,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
             for quantile in self.quantiles:
                 self.kwargs["quantile"] = quantile
+                # assign the Quantile regressor to self.model to leverage existing logic
                 self.model = QuantileRegressor(**self.kwargs)
                 super().fit(
                     series=series,
@@ -255,6 +256,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 )
 
                 self._model_container[quantile] = self.model
+
+            # replace the last trained QuantileRegressor with the dictionnary of Regressors.
+            self.model = self._model_container
 
             return self
 
