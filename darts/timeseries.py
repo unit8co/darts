@@ -3607,20 +3607,28 @@ class TimeSeries:
         if isinstance(transforms, dict):
             transforms = [transforms]
 
+        new_hierarchy = None
         convert_hierarchy = False
         if self.hierarchy:
-            several_transforms = len(transforms) > 1
-            partial_transform = "components" in transforms[0] and len(
-                set(transforms[0]["components"]).intersection(set(self.components))
-            ) == len(self.components)
-            # warning message in case of transform introducing ambiguity in the hierarchy
-            if several_transforms or partial_transform:
+            overlapping_transforms = False
+            transformed_components = set()
+            for tr in transforms:
+                tr_comps = set(
+                    tr["components"] if "components" in tr else self.components
+                )
+                if len(transformed_components.intersection(tr_comps)) > 0:
+                    overlapping_transforms = True
+                    break
+                else:
+                    transformed_components = transformed_components.union(tr_comps)
+
+            if overlapping_transforms:
                 logger.warning(
-                    "The hierarchy cannot be automatically updated, due to partial or chained transforms."
+                    "The hierarchy cannot be retained, due to overlapping transforms."
                 )
             else:
-                convert_hierarchy = True
                 comp_names_map = dict()
+                convert_hierarchy = True
 
         raise_if_not(
             all([isinstance(tr, dict) for tr in transforms]),
@@ -3765,13 +3773,10 @@ class TimeSeries:
         new_index = original_index.__class__(resulting_transformations.index)
 
         if convert_hierarchy:
-            new_hierarchy = dict()
-            for k, v in self.hierarchy.items():
-                new_hierarchy[comp_names_map[k]] = [
-                    comp_names_map[old_name] for old_name in v
-                ]
-        else:
-            new_hierarchy = None
+            new_hierarchy = {
+                comp_names_map[k]: [comp_names_map[old_name] for old_name in v]
+                for k, v in self.hierarchy.items()
+            }
 
         transformed_time_series = TimeSeries.from_times_and_values(
             times=new_index,
