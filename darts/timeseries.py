@@ -3356,6 +3356,7 @@ class TimeSeries:
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
         include_current: Optional[bool] = True,
+        keep_old_names: Optional[bool] = False,
     ) -> Self:
         """
         Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
@@ -3454,10 +3455,14 @@ class TimeSeries:
 
         keep_non_transformed
             ``False`` to return the transformed components only, ``True`` to return all original components along
-            the transformed ones. Default is ``False``.
+            the transformed ones. Default is ``False``. If the series has a hierarchy, must be set to ``False``.
 
         include_current
             ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
+        keep_old_names
+            Indicate if the transformed components should be renamed or not. Must be set to ``False`` if
+            `keep_non_transformed = True` or the number of transformation is greater than 1.
 
         Returns
         -------
@@ -3607,24 +3612,52 @@ class TimeSeries:
         if isinstance(transforms, dict):
             transforms = [transforms]
 
+        several_transforms = len(transforms) > 1
+
+        # check if some transformations are applied to the same components
+        overlapping_transforms = False
+        transformed_components = set()
+        for tr in transforms:
+            if not isinstance(tr, dict):
+                raise_log(
+                    ValueError("Every entry in `transforms` must be a dictionary"),
+                    logger,
+                )
+            tr_comps = set(tr["components"] if "components" in tr else self.components)
+            if len(transformed_components.intersection(tr_comps)) > 0:
+                overlapping_transforms = True
+            transformed_components = transformed_components.union(tr_comps)
+
+        partial_transforms = transformed_components != set(self.components)
+
+        if keep_old_names and overlapping_transforms:
+            raise_log(
+                ValueError(
+                    "Cannot keep the original components names as some transforms are overlapping "
+                    "(applied to the same components). Set `keep_old_names` to `False`."
+                ),
+                logger,
+            )
+
+        # actually, this could be allowed to allow transformation "in place"?
+        # keep_non_transformed can be changed to False/ignored if the transforms are not partial
+        if keep_old_names and keep_non_transformed:
+            raise_log(
+                ValueError(
+                    "`keep_old_names = True` and `keep_non_transformed = True` is not supported due to "
+                    " the ambiguity."
+                ),
+                logger,
+            )
+
         new_hierarchy = None
         convert_hierarchy = False
         if self.hierarchy:
-            overlapping_transforms = False
-            transformed_components = set()
-            for tr in transforms:
-                tr_comps = set(
-                    tr["components"] if "components" in tr else self.components
-                )
-                if len(transformed_components.intersection(tr_comps)) > 0:
-                    overlapping_transforms = True
-                    break
-                else:
-                    transformed_components = transformed_components.union(tr_comps)
-
-            if overlapping_transforms:
+            # the partial_transform covers for scenario keep_non_transformed = True
+            if several_transforms or partial_transforms:
                 logger.warning(
-                    "The hierarchy cannot be retained, due to overlapping transforms."
+                    "The hierarchy cannot be retained, either because there is more than one transform or "
+                    "because the transform is not applied to all the components of the series."
                 )
             else:
                 comp_names_map = dict()
@@ -3707,17 +3740,19 @@ class TimeSeries:
                 f"{'_'+str(min_periods) if min_periods>1 else ''}"
             )
 
-            new_columns.extend(
-                [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
-            )
-
-            if convert_hierarchy:
-                comp_names_map.update(
-                    {
-                        comp_name: f"{name_prefix}_{comp_name}"
-                        for comp_name in comps_to_transform
-                    }
+            if keep_old_names:
+                new_columns.extend(comps_to_transform)
+            else:
+                new_columns.extend(
+                    [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
                 )
+                if convert_hierarchy:
+                    comp_names_map.update(
+                        {
+                            comp_name: f"{name_prefix}_{comp_name}"
+                            for comp_name in comps_to_transform
+                        }
+                    )
 
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
@@ -3773,10 +3808,13 @@ class TimeSeries:
         new_index = original_index.__class__(resulting_transformations.index)
 
         if convert_hierarchy:
-            new_hierarchy = {
-                comp_names_map[k]: [comp_names_map[old_name] for old_name in v]
-                for k, v in self.hierarchy.items()
-            }
+            if keep_old_names:
+                new_hierarchy = self.hierarchy
+            else:
+                new_hierarchy = {
+                    comp_names_map[k]: [comp_names_map[old_name] for old_name in v]
+                    for k, v in self.hierarchy.items()
+                }
 
         transformed_time_series = TimeSeries.from_times_and_values(
             times=new_index,
