@@ -46,7 +46,7 @@ Install the `prophet` package (version 1.1.1 or more recent) using the [Prophet 
 #### CatBoostModel
 Install the `catboost` package (version 1.0.6 or more recent) using the [CatBoost install guide](https://catboost.ai/en/docs/concepts/python-installation)
 
-#### LightGBMModel
+#### LightGBModel
 Install the `lightgbm` package (version 3.2.0 or more recent) using the [LightGBM install guide](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html)
 
 ### Enabling GPU support
