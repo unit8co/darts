@@ -74,12 +74,12 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             specifying exactly which lag orders are included.
         trend: str
         trend: Literal['n', 'c', 't', 'ct'] | Sequence[int], optional
-            Parameter controlling the deterministic trend. Can be specified as
-            a string where 'c' indicates a constant term, 't' indicates a
-            linear trend in time, and 'ct' includes both. Can also be specified
-            as an sequence defining a polynomial, as in `numpy.poly1d`, where
-            `[1,1,0,1]` would denote :math:`a + bt + ct^3`. Default is 'c' for
-            models without integration, and no trend for models with integration.
+            Parameter controlling the deterministic trend. Either a string or sequence of integers.
+            If a string, can be 'n' for no trend, 'c' for a constant term, 't' for a linear trend in time,
+            and 'ct' for a constant term and linear trend.
+            If a sequence of integers, defines a polynomial according to `numpy.poly1d` [1]_. E.g., `[1,1,0,1]` would
+            translate to :math:`a + bt + ct^3`.
+            Default is 'c' for models without integration, and 'n' for models with integration.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -124,6 +124,10 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                [481.07892911],
                [502.11286509],
                [555.50153984]])
+
+        References
+        ----------
+        .. [1] https://numpy.org/doc/stable/reference/generated/numpy.poly1d.html
         """
         super().__init__(add_encoders=add_encoders)
         self.order = p, d, q
