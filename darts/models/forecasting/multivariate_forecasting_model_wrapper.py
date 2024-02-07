@@ -42,14 +42,15 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
 
         series = seq2series(series)
         for comp in series.components:
-            self._trained_models.append(
+            comp = series.univariate_component(comp)
+            component_model = (
                 self.model.untrained_model().fit(
-                    series=series.univariate_component(comp),
-                    future_covariates=future_covariates
-                    if self.supports_future_covariates
-                    else None,
+                    series=comp, future_covariates=future_covariates
                 )
+                if self.supports_future_covariates
+                else self.model.untrained_model().fit(series=comp)
             )
+            self._trained_models.append(component_model)
 
         return self
 
@@ -72,12 +73,9 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
         **kwargs,
     ) -> TimeSeries:
         predictions = [
-            model.predict(
-                n=n,
-                future_covariates=future_covariates
-                if self.supports_future_covariates
-                else None,
-            )
+            model.predict(n=n, future_covariates=future_covariates)
+            if self.supports_future_covariates
+            else model.predict(n=n)
             for model in self._trained_models
         ]
 
