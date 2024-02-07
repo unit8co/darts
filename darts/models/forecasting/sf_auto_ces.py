@@ -62,6 +62,7 @@ class StatsForecastAutoCES(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
+        show_warnings: bool = True,
     ):
         super().predict(n, num_samples)
         forecast_dict = self.model.predict(

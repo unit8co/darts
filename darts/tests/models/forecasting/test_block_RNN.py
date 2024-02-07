@@ -9,7 +9,13 @@ from darts.tests.conftest import tfm_kwargs
 logger = get_logger(__name__)
 
 try:
-    from darts.models.forecasting.block_rnn_model import BlockRNNModel, _BlockRNNModule
+    import torch.nn as nn
+
+    from darts.models.forecasting.block_rnn_model import (
+        BlockRNNModel,
+        CustomBlockRNNModule,
+        _BlockRNNModule,
+    )
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -19,11 +25,28 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
+    class ModuleValid1(_BlockRNNModule):
+        """Wrapper around the _BlockRNNModule"""
+
+        def __init__(self, **kwargs):
+            super().__init__(name="RNN", **kwargs)
+
+    class ModuleValid2(CustomBlockRNNModule):
+        """Just a linear layer."""
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.linear = nn.Linear(self.input_size, self.target_size)
+
+        def forward(self, x_in):
+            x = self.linear(x_in[0])
+            return x.view(len(x), -1, self.target_size, self.nr_params)
+
     class TestBlockRNNModel:
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
-        module = _BlockRNNModule(
+        module_invalid = _BlockRNNModule(
             "RNN",
             input_size=1,
             input_chunk_length=1,
@@ -37,19 +60,59 @@ if TORCH_AVAILABLE:
         )
 
         def test_creation(self):
-            with pytest.raises(ValueError):
-                # cannot choose any string
+            # cannot choose any string
+            with pytest.raises(ValueError) as msg:
                 BlockRNNModel(
                     input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?"
                 )
-            # can give a custom module
+            assert str(msg.value).startswith("`model` is not a valid RNN model.")
+
+            # cannot create from a class instance
+            with pytest.raises(ValueError) as msg:
+                _ = BlockRNNModel(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    model=self.module_invalid,
+                )
+            assert str(msg.value).startswith("`model` is not a valid RNN model.")
+
+            # can create from valid module name
             model1 = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, model=self.module
+                input_chunk_length=1,
+                output_chunk_length=1,
+                model="RNN",
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs
             )
+            model1.fit(self.series)
+            preds1 = model1.predict(n=3)
+
+            # can create from a custom class itself
             model2 = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, model="RNN"
+                input_chunk_length=1,
+                output_chunk_length=1,
+                model=ModuleValid1,
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs
             )
-            assert model1.model.__repr__() == model2.model.__repr__()
+            model2.fit(self.series)
+            preds2 = model2.predict(n=3)
+            np.testing.assert_array_equal(preds1.all_values(), preds2.all_values())
+
+            model3 = BlockRNNModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                model=ModuleValid2,
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs
+            )
+            model3.fit(self.series)
+            preds3 = model2.predict(n=3)
+            assert preds3.all_values().shape == preds2.all_values().shape
+            assert preds3.time_index.equals(preds2.time_index)
 
         def test_fit(self, tmpdir_module):
             # Test basic fit()

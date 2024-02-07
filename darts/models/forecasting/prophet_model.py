@@ -106,7 +106,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
                     'custom': {'future': [encode_year]},
-                    'transformer': Scaler()
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         cap
@@ -593,6 +594,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         freq = "".join(re.split("[^a-zA-Z-]*", freq)).split("-")[0]
 
         seconds_per_day = 86400
+        days = 0
         if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith(
             ("A", "BA", "Y", "BY", "RE")
         ):  # year
@@ -611,23 +613,28 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             days = 1 * 7 / 5
         elif freq in ["D"]:  # day
             days = 1.0
-        elif freq in ["H", "BH", "CBH"]:  # hour
-            days = 1 / 24
-        elif freq in ["T", "min"]:  # minute
-            days = 1 / (24 * 60)
-        elif freq in ["S"]:  # second
-            days = 1 / seconds_per_day
-        elif freq in ["L", "ms"]:  # millisecond
-            days = 1 / (seconds_per_day * 10**3)
-        elif freq in ["U", "us"]:  # microsecond
-            days = 1 / (seconds_per_day * 10**6)
-        elif freq in ["N"]:  # nanosecond
-            days = 1 / (seconds_per_day * 10**9)
         else:
-            raise ValueError(
-                "freq {} not understood. Please report if you think this is in error.".format(
-                    freq
-                )
+            # all freqs higher than "D" are lower case in pandas >= 2.2.0
+            freq_lower = freq.lower()
+            if freq_lower in ["h", "bh", "cbh"]:  # hour
+                days = 1 / 24
+            elif freq_lower in ["t", "min"]:  # minute
+                days = 1 / (24 * 60)
+            elif freq_lower in ["s"]:  # second
+                days = 1 / seconds_per_day
+            elif freq_lower in ["l", "ms"]:  # millisecond
+                days = 1 / (seconds_per_day * 10**3)
+            elif freq_lower in ["u", "us"]:  # microsecond
+                days = 1 / (seconds_per_day * 10**6)
+            elif freq_lower in ["n"]:  # nanosecond
+                days = 1 / (seconds_per_day * 10**9)
+
+        if not days:
+            raise_log(
+                ValueError(
+                    f"freq {freq} not understood. Please report if you think this is in error."
+                ),
+                logger=logger,
             )
         return freq_times * days
 

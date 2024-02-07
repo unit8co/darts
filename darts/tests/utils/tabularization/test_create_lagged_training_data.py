@@ -1132,37 +1132,44 @@ class TestCreateLaggedTrainingData:
             assert np.allclose(expected_X, X[:, :, 0])
             assert np.allclose(expected_y, y[:, :, 0])
 
-    def test_lagged_training_data_extend_past_and_future_covariates_datetime_idx(self):
+    @pytest.mark.parametrize("freq", ["D", "MS", "Y"])
+    def test_lagged_training_data_extend_past_and_future_covariates_datetime_idx(
+        self, freq
+    ):
         """
         Tests that `create_lagged_training_data` correctly handles case where features
         and labels can be created for a time that is *not* contained in `past_covariates`
         and/or `future_covariates`. This particular test checks this behaviour by using
-        datetime index timeseries.
+        datetime index timeseries and three different frequencies: daily, month start and
+        year end.
 
         More specifically, we define the series and lags such that a training example can
         be generated for time `target.end_time()`, even though this time isn't contained in
         neither `past` nor `future`.
         """
-        # Can create feature for time `t = '1/11/2000'`, but this time isn't in `past` or `future`:
+        # Can create feature for time `t = '1/1/2000'+11*freq`, but this time isn't in `past` or `future`:
         target = linear_timeseries(
             start=pd.Timestamp("1/1/2000"),
-            end=pd.Timestamp("1/11/2000"),
             start_value=1,
             end_value=2,
+            length=11,
+            freq=freq,
         )
         lags = [-1]
         past = linear_timeseries(
             start=pd.Timestamp("1/1/2000"),
-            end=pd.Timestamp("1/9/2000"),
             start_value=2,
             end_value=3,
+            length=9,
+            freq=freq,
         )
         lags_past = [-2]
         future = linear_timeseries(
             start=pd.Timestamp("1/1/2000"),
-            end=pd.Timestamp("1/7/2000"),
             start_value=3,
             end_value=4,
+            length=7,
+            freq=freq,
         )
         lags_future = [-4]
         # Only want to check very last generated observation:
