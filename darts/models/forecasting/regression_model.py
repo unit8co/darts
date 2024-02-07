@@ -461,10 +461,32 @@ class RegressionModel(GlobalForecastingModel):
     def output_chunk_length(self) -> int:
         return self._output_chunk_length
 
-    def get_multioutput_estimator(self, horizon, target_dim):
+    def get_multioutput_estimator(self, horizon: int, target_dim: int):
+        """For model relying on MultiOutputRegressor, return the estimator forecasting the `horizon`th step
+        of the `target_dim`th components.
+
+        Parameters
+        ----------
+        horizon
+            Index of the step within the forecasted horizon
+        target_dim
+            Index of the target component
+        """
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
             "The sklearn model is not a MultiOutputRegressor object.",
+            logger,
+        )
+        raise_if_not(
+            horizon < self.output_chunk_length,
+            f"`horizon` should be strictly smaller than `output_chunk_length` ({self.output_chunk_length}).",
+            logger,
+        )
+        raise_if_not(
+            target_dim < self.input_dim["target"],
+            f"`target_dim` should be strictly smaller than the number of components in the target "
+            f"({self.input_dim['target']}).",
+            logger,
         )
 
         return self.model.estimators_[horizon + target_dim]
