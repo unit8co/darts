@@ -10,7 +10,12 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import Literal, Optional, Sequence, Tuple, TypeAlias, Union
+from typing import Literal, Optional, Sequence, Tuple, Union
+
+try:
+    from typing import TypeAlias
+except ImportError:
+    from typing_extensions import TypeAlias
 
 import numpy as np
 from statsmodels import __version_tuple__ as statsmodels_version
