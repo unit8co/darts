@@ -3234,7 +3234,7 @@ class TimeSeries:
         # TODO: check
         if method == "pad":
             new_xa = resample.pad()
-        elif method == "bfill":
+        elif method in ["bfill", "backfill"]:
             new_xa = resample.backfill()
         else:
             raise_log(ValueError(f"Unknown method: {method}"), logger)
