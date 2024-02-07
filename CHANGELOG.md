@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 **Improved**
+- Improvements to `ARIMA` documentation: Specified possible `p`, `d`, `P`, `D`, `trend` advanced options that are available in statsmodels. More explanations on the behaviour of the parameters were added. [#2142](https://github.com/unit8co/darts/pull/2142) by [MarcBresson](https://github.com/MarcBresson)
 
 **Fixed**
 
