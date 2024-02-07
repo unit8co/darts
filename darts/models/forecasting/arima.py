@@ -54,9 +54,8 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         Parameters
         ----------
         p : int | Sequence[int]
-            Order (number of time lags) of the autoregressive model (AR). A
-            sequence of integers can be given specifying exactly which lag
-            orders are included.
+            Order (number of time lags) of the autoregressive model (AR).
+            If a sequence of integers, specifies the exact lags to include.
         d : int
             The order of differentiation; i.e., the number of times the data
             have had past values subtracted (I).
