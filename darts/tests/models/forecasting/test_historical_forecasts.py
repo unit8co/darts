@@ -357,8 +357,22 @@ class TestHistoricalforecast:
                 **tfm_kwargs,
             )
 
-    def test_historical_forecasts_transferrable_future_cov_local_models(self):
-        model = ARIMA()
+    @pytest.mark.parametrize(
+        "arima_args",
+        [
+            {},
+            {
+                "p": np.array([1, 2, 3, 4]),
+                "q": (2, 3),
+                "seasonal_order": ([1, 5], 1, (1, 2, 3), 6),
+                "trend": [0, 0, 2, 1],
+            },
+        ],
+    )
+    def test_historical_forecasts_transferrable_future_cov_local_models(
+        self, arima_args: dict
+    ):
+        model = ARIMA(**arima_args)
         assert model.min_train_series_length == 30
         series = tg.sine_timeseries(length=31)
         res = model.historical_forecasts(
