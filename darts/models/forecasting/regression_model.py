@@ -478,14 +478,15 @@ class RegressionModel(GlobalForecastingModel):
             logger,
         )
         raise_if_not(
-            horizon < self.output_chunk_length,
-            f"`horizon` should be strictly smaller than `output_chunk_length` ({self.output_chunk_length}).",
+            0 <= horizon < self.output_chunk_length,
+            f"`horizon` should be greater than 0 and strictly smaller than `output_chunk_length` "
+            f"({self.output_chunk_length}).",
             logger,
         )
         raise_if_not(
-            target_dim < self.input_dim["target"],
-            f"`target_dim` should be strictly smaller than the number of components in the target "
-            f"({self.input_dim['target']}).",
+            0 <= target_dim < self.input_dim["target"],
+            f"`target_dim` should be greater than 0 and strictly smaller than the number of components "
+            f"in the target ({self.input_dim['target']}).",
             logger,
         )
 
