@@ -5,7 +5,7 @@ import pytest
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -27,17 +27,17 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class TFTModelTestCase(DartsBaseTestClass):
+    class TestTFTModel:
         def test_quantile_regression(self):
             q_no_50 = [0.1, 0.4, 0.9]
             q_non_symmetric = [0.2, 0.5, 0.9]
 
             # if a QuantileLoss is used, it must have to q=0.5 quantile
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 QuantileRegression(q_no_50)
 
             # if a QuantileLoss is used, it must be symmetric around q=0.5 quantile (i.e. [0.1, 0.5, 0.9])
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 QuantileRegression(q_non_symmetric)
 
         def test_future_covariate_handling(self):
@@ -45,8 +45,8 @@ if TORCH_AVAILABLE:
             ts_integer_index = TimeSeries.from_values(values=ts_time_index.values())
 
             # model requires future covariates without cyclic encoding
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1)
-            with self.assertRaises(ValueError):
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1, **tfm_kwargs)
+            with pytest.raises(ValueError):
                 model.fit(ts_time_index, verbose=False)
 
             # should work with cyclic encoding for time index
@@ -54,12 +54,16 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False)
 
             # should work with relative index both with time index and integer index
             model = TFTModel(
-                input_chunk_length=1, output_chunk_length=1, add_relative_index=True
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_relative_index=True,
+                **tfm_kwargs
             )
             model.fit(ts_time_index, verbose=False)
             model.fit(ts_integer_index, verbose=False)
@@ -92,6 +96,7 @@ if TORCH_AVAILABLE:
                 "loss_fn": MSELoss(),
                 "random_state": 42,
             }
+            kwargs_TFT_quick_test = dict(kwargs_TFT_quick_test, **tfm_kwargs)
 
             # univariate
             first_var = ts.columns[0]
@@ -156,6 +161,7 @@ if TORCH_AVAILABLE:
                 "random_state": 42,
                 "add_encoders": {"cyclic": {"future": "hour"}},
             }
+            kwargs_TFT_full_coverage = dict(kwargs_TFT_full_coverage, **tfm_kwargs)
 
             self.helper_test_prediction_accuracy(
                 season_length,
@@ -187,7 +193,10 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 add_encoders={"cyclic": {"future": "hour"}},
                 categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
-                pl_trainer_kwargs={"fast_dev_run": True},
+                pl_trainer_kwargs={
+                    "fast_dev_run": True,
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                },
             )
             model.fit(target_multi, verbose=False)
 
@@ -237,6 +246,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
+                **tfm_kwargs
             )
             model.fit(target_multi)
             preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
@@ -248,6 +258,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
+                **tfm_kwargs
             )
             model.fit(target_multi.with_static_covariates(None))
             preds = model.predict(n=2, series=target_multi)
@@ -314,8 +325,8 @@ if TORCH_AVAILABLE:
             ts_list = [ts] if isinstance(ts, TimeSeries) else ts
 
             for y_hat_i, ts_i in zip(y_hat_list, ts_list):
-                self.assertEqual(len(y_hat_i), predict_n)
-                self.assertEqual(y_hat_i.n_components, ts_i.n_components)
+                assert len(y_hat_i) == predict_n
+                assert y_hat_i.n_components == ts_i.n_components
 
         def helper_test_prediction_accuracy(
             self,
@@ -341,12 +352,10 @@ if TORCH_AVAILABLE:
             )
 
             y_true = ts[y_hat.start_time() : y_hat.end_time()]
-            self.assertTrue(
-                np.allclose(
-                    y_true[1:-1].all_values(),
-                    y_hat[1:-1].all_values(),
-                    atol=absolute_tolarance,
-                )
+            assert np.allclose(
+                y_true[1:-1].all_values(),
+                y_hat[1:-1].all_values(),
+                atol=absolute_tolarance,
             )
 
         @staticmethod
@@ -372,7 +381,7 @@ if TORCH_AVAILABLE:
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=(100 if model._is_probabilistic() else 1),
+                num_samples=(100 if model._is_probabilistic else 1),
             )
 
             if isinstance(y_hat, TimeSeries):
@@ -395,6 +404,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type="RMSNorm",
+                **tfm_kwargs
             )
             model1.fit(series, epochs=1)
 
@@ -403,14 +413,16 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type=nn.LayerNorm,
+                **tfm_kwargs
             )
             model2.fit(series, epochs=1)
 
-            with self.assertRaises(AttributeError):
+            with pytest.raises(AttributeError):
                 model4 = base_model(
                     input_chunk_length=1,
                     output_chunk_length=1,
                     add_relative_index=True,
                     norm_type="invalid",
+                    **tfm_kwargs
                 )
                 model4.fit(series, epochs=1)

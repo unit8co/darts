@@ -58,12 +58,16 @@ class Croston(FutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
 
@@ -74,6 +78,23 @@ class Croston(FutureCovariatesLocalForecastingModel):
         .. [2] Ruud H. Teunter, Aris A. Syntetos, and M. Zied Babai.
                Intermittent demand: Linking forecasting to inventory obsolescence.
                European Journal of Operational Research, 214(3):606 – 615, 2011.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import Croston
+        >>> series = AirPassengersDataset().load()
+        >>> # use the optimized version to automatically select best alpha parameter
+        >>> model = Croston(version="optimized")
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[461.7666],
+               [461.7666],
+               [461.7666],
+               [461.7666],
+               [461.7666],
+               [461.7666]])
         """
         super().__init__(add_encoders=add_encoders)
         raise_if_not(
@@ -97,6 +118,10 @@ class Croston(FutureCovariatesLocalForecastingModel):
             self.model = CrostonTSB(alpha_d=self.alpha_d, alpha_p=self.alpha_p)
 
         self.version = version
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
@@ -132,8 +157,10 @@ class Croston(FutureCovariatesLocalForecastingModel):
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         return True
 
+    @property
     def _is_probabilistic(self) -> bool:
         return False

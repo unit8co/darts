@@ -27,9 +27,15 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -39,6 +45,12 @@ from darts.utils.data.tabularization import (
     add_static_covariates_to_lagged_data,
     create_lagged_component_names,
     create_lagged_training_data,
+)
+from darts.utils.historical_forecasts import (
+    _check_optimizable_historical_forecasts_global_models,
+    _optimized_historical_forecasts_all_points,
+    _optimized_historical_forecasts_last_points_only,
+    _process_historical_forecast_input,
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import (
@@ -50,23 +62,18 @@ from darts.utils.utils import (
 
 logger = get_logger(__name__)
 
-try:
-    from catboost import CatBoostRegressor
-except ModuleNotFoundError:
-    logger.warning(
-        "The catboost module could not be imported. "
-        "To enable support for CatBoostRegressor, "
-        "follow the instruction in the README: "
-        "https://github.com/unit8co/darts/blob/master/INSTALL.md"
-    )
+LAGS_TYPE = Union[int, List[int], Dict[str, Union[int, List[int]]]]
+FUTURE_LAGS_TYPE = Union[
+    Tuple[int, int], List[int], Dict[str, Union[Tuple[int, int], List[int]]]
+]
 
 
 class RegressionModel(GlobalForecastingModel):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        lags: Optional[LAGS_TYPE] = None,
+        lags_past_covariates: Optional[LAGS_TYPE] = None,
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
         add_encoders: Optional[dict] = None,
         model=None,
@@ -79,21 +86,40 @@ class RegressionModel(GlobalForecastingModel):
         Parameters
         ----------
         lags
-            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise, a list of integers with lags is required (each lag must be < 0).
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
-            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
-            with lags < 0 is required.
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
-            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
-            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
-            of integers with lags is required.
+            Lagged `future_covariates` values used to predict the next time step/s.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0`
+            corresponds the first predicted time step of each sample.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         output_chunk_length
-            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -106,12 +132,16 @@ class RegressionModel(GlobalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         model
@@ -125,19 +155,57 @@ class RegressionModel(GlobalForecastingModel):
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
-            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import RegressionModel
+        >>> from sklearn.linear_model import Ridge
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # wrap around the sklearn Ridge model
+        >>> model = RegressionModel(
+        >>>     model=Ridge(),
+        >>>     lags=12,
+        >>>     lags_past_covariates=4,
+        >>>     lags_future_covariates=(0,6),
+        >>>     output_chunk_length=6
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[1005.73340676],
+               [1005.71159051],
+               [1005.7322616 ],
+               [1005.76314504],
+               [1005.82204348],
+               [1005.89100967]])
         """
 
         super().__init__(add_encoders=add_encoders)
 
         self.model = model
-        self.lags = {}
-        self.output_chunk_length = None
+        self.lags: Dict[str, List[int]] = {}
+        self.component_lags: Dict[str, Dict[str, List[int]]] = {}
         self.input_dim = None
-        self.multi_models = multi_models
+        self.multi_models = True if multi_models or output_chunk_length == 1 else False
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
         self._lagged_feature_names: Optional[List[str]] = None
+
+        # check and set output_chunk_length
+        raise_if_not(
+            isinstance(output_chunk_length, int) and output_chunk_length > 0,
+            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
+            logger=logger,
+        )
+        self._output_chunk_length = output_chunk_length
 
         # model checks
         if self.model is None:
@@ -160,101 +228,159 @@ class RegressionModel(GlobalForecastingModel):
             "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
         )
 
-        lags_type_checks = [
-            (lags, "lags"),
-            (lags_past_covariates, "lags_past_covariates"),
-        ]
-
-        for _lags, lags_name in lags_type_checks:
-            raise_if_not(
-                isinstance(_lags, (int, list)) or _lags is None,
-                f"`{lags_name}` must be of type int or list. Given: {type(_lags)}.",
-            )
-            raise_if(
-                isinstance(_lags, bool),
-                f"`{lags_name}` must be of type int or list, not bool.",
-            )
-
-        raise_if_not(
-            isinstance(lags_future_covariates, (tuple, list))
-            or lags_future_covariates is None,
-            f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.",
+        # convert lags arguments to list of int
+        # lags attribute should always be accessed with self._get_lags(), not self.lags.get()
+        self.lags, self.component_lags = self._generate_lags(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
         )
-
-        if isinstance(lags_future_covariates, tuple):
-            raise_if_not(
-                len(lags_future_covariates) == 2
-                and isinstance(lags_future_covariates[0], int)
-                and isinstance(lags_future_covariates[1], int),
-                "`lags_future_covariates` tuple must be of length 2, and must contain two integers",
-            )
-            raise_if(
-                isinstance(lags_future_covariates[0], bool)
-                or isinstance(lags_future_covariates[1], bool),
-                "`lags_future_covariates` tuple must contain integers, not bool",
-            )
-
-        # set lags
-        if isinstance(lags, int):
-            raise_if_not(lags > 0, f"`lags` must be strictly positive. Given: {lags}.")
-            # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
-            self.lags["target"] = list(range(-lags, 0))
-        elif isinstance(lags, list):
-            for lag in lags:
-                raise_if(
-                    not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `lags` must be a strictly negative integer. Given: {lags}.",
-                )
-            if lags:
-                self.lags["target"] = sorted(lags)
-
-        if isinstance(lags_past_covariates, int):
-            raise_if_not(
-                lags_past_covariates > 0,
-                f"`lags_past_covariates` must be an integer > 0. Given: {lags_past_covariates}.",
-            )
-            self.lags["past"] = list(range(-lags_past_covariates, 0))
-        elif isinstance(lags_past_covariates, list):
-            for lag in lags_past_covariates:
-                raise_if(
-                    not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `lags_covariates` must be an integer < 0. Given: {lags_past_covariates}.",
-                )
-            if lags_past_covariates:
-                self.lags["past"] = sorted(lags_past_covariates)
-
-        if isinstance(lags_future_covariates, tuple):
-            raise_if_not(
-                lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"`lags_future_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
-            )
-            if (
-                lags_future_covariates[0] is not None
-                and lags_future_covariates[1] is not None
-            ):
-                if not (
-                    lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0
-                ):
-                    self.lags["future"] = list(
-                        range(-lags_future_covariates[0], lags_future_covariates[1])
-                    )
-        elif isinstance(lags_future_covariates, list):
-            for lag in lags_future_covariates:
-                raise_if(
-                    not isinstance(lag, int) or isinstance(lag, bool),
-                    f"Every element of `lags_future_covariates` must be an integer. Given: {lags_future_covariates}.",
-                )
-            if lags_future_covariates:
-                self.lags["future"] = sorted(lags_future_covariates)
-
-        # check and set output_chunk_length
-        raise_if_not(
-            isinstance(output_chunk_length, int) and output_chunk_length > 0,
-            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
-        )
-        self.output_chunk_length = output_chunk_length
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
+
+    def _generate_lags(
+        self,
+        lags: Optional[LAGS_TYPE],
+        lags_past_covariates: Optional[LAGS_TYPE],
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE],
+    ) -> Tuple[Dict[str, List[int]], Dict[str, Dict[str, List[int]]]]:
+        """
+        Based on the type of the argument and the nature of the covariates, perform some sanity checks before
+        converting the lags to a list of integer.
+
+        If lags are provided as a dictionary, the lags values are contained in self.component_lags and the self.lags
+        attributes contain only the extreme values
+        If the lags are provided as integer, list, tuple or dictionary containing only the 'default_lags' keys, the lags
+        values are contained in the self.lags attribute and the self.component_lags is an empty dictionary.
+        """
+        processed_lags: Dict[str, List[int]] = dict()
+        processed_component_lags: Dict[str, Dict[str, List[int]]] = dict()
+        for lags_values, lags_name, lags_abbrev in zip(
+            [lags, lags_past_covariates, lags_future_covariates],
+            ["lags", "lags_past_covariates", "lags_future_covariates"],
+            ["target", "past", "future"],
+        ):
+            if lags_values is None:
+                continue
+
+            # converting to dictionary to run sanity checks
+            if not isinstance(lags_values, dict):
+                lags_values = {"default_lags": lags_values}
+            elif len(lags_values) == 0:
+                raise_log(
+                    ValueError(
+                        f"When passed as a dictionary, `{lags_name}` must contain at least one key."
+                    ),
+                    logger,
+                )
+
+            invalid_type = False
+            supported_types = ""
+            min_lags = None
+            max_lags = None
+            tmp_components_lags: Dict[str, List[int]] = dict()
+            for comp_name, comp_lags in lags_values.items():
+                if lags_name == "lags_future_covariates":
+                    if isinstance(comp_lags, tuple):
+                        raise_if_not(
+                            len(comp_lags) == 2
+                            and isinstance(comp_lags[0], int)
+                            and isinstance(comp_lags[1], int),
+                            f"`{lags_name}` - `{comp_name}`: tuple must be of length 2, and must contain two integers",
+                            logger,
+                        )
+
+                        raise_if(
+                            isinstance(comp_lags[0], bool)
+                            or isinstance(comp_lags[1], bool),
+                            f"`{lags_name}` - `{comp_name}`: tuple must contain integers, not bool",
+                            logger,
+                        )
+
+                        raise_if_not(
+                            comp_lags[0] >= 0 and comp_lags[1] >= 0,
+                            f"`{lags_name}` - `{comp_name}`: tuple must contain positive integers. Given: {comp_lags}.",
+                            logger,
+                        )
+                        raise_if(
+                            comp_lags[0] == 0 and comp_lags[1] == 0,
+                            f"`{lags_name}` - `{comp_name}`: tuple cannot be (0, 0) as it corresponds to an empty "
+                            f"list of lags.",
+                            logger,
+                        )
+                        tmp_components_lags[comp_name] = list(
+                            range(-comp_lags[0], comp_lags[1])
+                        )
+                    elif isinstance(comp_lags, list):
+                        for lag in comp_lags:
+                            raise_if(
+                                not isinstance(lag, int) or isinstance(lag, bool),
+                                f"`{lags_name}` - `{comp_name}`: list must contain only integers. Given: {comp_lags}.",
+                                logger,
+                            )
+                        tmp_components_lags[comp_name] = sorted(comp_lags)
+                    else:
+                        invalid_type = True
+                        supported_types = "tuple or a list"
+                else:
+                    if isinstance(comp_lags, int):
+                        raise_if_not(
+                            comp_lags > 0,
+                            f"`{lags_name}` - `{comp_name}`: integer must be strictly positive . Given: {comp_lags}.",
+                            logger,
+                        )
+                        tmp_components_lags[comp_name] = list(range(-comp_lags, 0))
+                    elif isinstance(comp_lags, list):
+                        for lag in comp_lags:
+                            raise_if(
+                                not isinstance(lag, int) or (lag >= 0),
+                                f"`{lags_name}` - `{comp_name}`: list must contain only strictly negative integers. "
+                                f"Given: {comp_lags}.",
+                                logger,
+                            )
+                        tmp_components_lags[comp_name] = sorted(comp_lags)
+                    else:
+                        invalid_type = True
+                        supported_types = "strictly positive integer or a list"
+
+                if invalid_type:
+                    raise_log(
+                        ValueError(
+                            f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
+                            f"Gived : {type(comp_lags)}."
+                        ),
+                        logger,
+                    )
+
+                # extracting min and max lags va
+                if min_lags is None:
+                    min_lags = tmp_components_lags[comp_name][0]
+                else:
+                    min_lags = min(min_lags, tmp_components_lags[comp_name][0])
+
+                if max_lags is None:
+                    max_lags = tmp_components_lags[comp_name][-1]
+                else:
+                    max_lags = max(max_lags, tmp_components_lags[comp_name][-1])
+
+            # revert to shared lags logic when applicable
+            if list(tmp_components_lags.keys()) == ["default_lags"]:
+                processed_lags[lags_abbrev] = tmp_components_lags["default_lags"]
+            else:
+                processed_lags[lags_abbrev] = [min_lags, max_lags]
+                processed_component_lags[lags_abbrev] = tmp_components_lags
+
+        return processed_lags, processed_component_lags
+
+    def _get_lags(self, lags_type: str):
+        """
+        If lags were specified in a component-wise manner, they are contained in self.component_lags and
+        the values in self.lags should be ignored as they correspond just the extreme values.
+        """
+        if lags_type in self.component_lags:
+            return self.component_lags[lags_type]
+        else:
+            return self.lags.get(lags_type, None)
 
     @property
     def _model_encoder_settings(
@@ -295,16 +421,12 @@ class RegressionModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
     ]:
-        min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
+        min_target_lag = self.lags["target"][0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1
-        min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
-        max_past_cov_lag = self.lags.get("past")[-1] if "past" in self.lags else None
-        min_future_cov_lag = (
-            self.lags.get("future")[0] if "future" in self.lags else None
-        )
-        max_future_cov_lag = (
-            self.lags.get("future")[-1] if "future" in self.lags else None
-        )
+        min_past_cov_lag = self.lags["past"][0] if "past" in self.lags else None
+        max_past_cov_lag = self.lags["past"][-1] if "past" in self.lags else None
+        min_future_cov_lag = self.lags["future"][0] if "future" in self.lags else None
+        max_future_cov_lag = self.lags["future"][-1] if "future" in self.lags else None
         return (
             min_target_lag,
             max_target_lag,
@@ -313,6 +435,14 @@ class RegressionModel(GlobalForecastingModel):
             min_future_cov_lag,
             max_future_cov_lag,
         )
+
+    @property
+    def supports_multivariate(self) -> bool:
+        """
+        If available, uses `model`'s native multivariate support. If not available, obtains multivariate support by
+        wrapping the univariate model in a `sklearn.multioutput.MultiOutputRegressor`.
+        """
+        return True
 
     @property
     def min_train_series_length(self) -> int:
@@ -327,6 +457,10 @@ class RegressionModel(GlobalForecastingModel):
     def min_train_samples(self) -> int:
         return 2
 
+    @property
+    def output_chunk_length(self) -> int:
+        return self._output_chunk_length
+
     def get_multioutput_estimator(self, horizon, target_dim):
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
@@ -335,49 +469,56 @@ class RegressionModel(GlobalForecastingModel):
 
         return self.model.estimators_[horizon + target_dim]
 
-    def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
-        # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
-        extra_shift = max(0, max(lags[-1] for lags in self.lags.values()))
-
-        if overlap_end:
-            last_valid_pred_time = series.time_index[-1 - extra_shift]
-        else:
-            last_valid_pred_time = series.time_index[-forecast_horizon - extra_shift]
-
-        return last_valid_pred_time
-
     def _create_lagged_data(
-        self, target_series, past_covariates, future_covariates, max_samples_per_ts
+        self,
+        target_series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries],
+        future_covariates: Sequence[TimeSeries],
+        max_samples_per_ts: int,
     ):
-        lags = self.lags.get("target")
-        lags_past_covariates = self.lags.get("past")
-        lags_future_covariates = self.lags.get("future")
-
-        features, labels, _ = create_lagged_training_data(
+        (
+            features,
+            labels,
+            _,
+            self._static_covariates_shape,
+        ) = create_lagged_training_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
+            lags=self._get_lags("target"),
+            lags_past_covariates=self._get_lags("past"),
+            lags_future_covariates=self._get_lags("future"),
+            uses_static_covariates=self.uses_static_covariates,
+            last_static_covariates_shape=None,
             max_samples_per_ts=max_samples_per_ts,
             multi_models=self.multi_models,
             check_inputs=False,
             concatenate=False,
         )
 
+        expected_nb_feat = (
+            features[0].shape[1]
+            if isinstance(features, Sequence)
+            else features.shape[1]
+        )
         for i, (X_i, y_i) in enumerate(zip(features, labels)):
+            # TODO: account for scenario where two wrong shapes can silently hide the problem
+            if expected_nb_feat != X_i.shape[1]:
+                shape_error_msg = []
+                for ts, cov_name, arg_name in zip(
+                    [target_series, past_covariates, future_covariates],
+                    ["target", "past", "future"],
+                    ["series", "past_covariates", "future_covariates"],
+                ):
+                    if ts is not None and ts[i].width != self.input_dim[cov_name]:
+                        shape_error_msg.append(
+                            f"Expected {self.input_dim[cov_name]} components but received "
+                            f"{ts[i].width} components at index {i} of `{arg_name}`."
+                        )
+                raise_log(ValueError("\n".join(shape_error_msg)), logger)
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
-
-        features, static_covariates_shape = add_static_covariates_to_lagged_data(
-            features,
-            target_series,
-            uses_static_covariates=self.uses_static_covariates,
-            last_shape=None,
-        )
-        self._static_covariates_shape = static_covariates_shape
 
         training_samples = np.concatenate(features, axis=0)
         training_labels = np.concatenate(labels, axis=0)
@@ -386,10 +527,10 @@ class RegressionModel(GlobalForecastingModel):
 
     def _fit_model(
         self,
-        target_series,
-        past_covariates,
-        future_covariates,
-        max_samples_per_ts,
+        target_series: Sequence[TimeSeries],
+        past_covariates: Sequence[TimeSeries],
+        future_covariates: Sequence[TimeSeries],
+        max_samples_per_ts: int,
         **kwargs,
     ):
         """
@@ -414,9 +555,9 @@ class RegressionModel(GlobalForecastingModel):
             target_series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags=self.lags.get("target"),
-            lags_past_covariates=self.lags.get("past"),
-            lags_future_covariates=self.lags.get("future"),
+            lags=self._get_lags("target"),
+            lags_past_covariates=self._get_lags("past"),
+            lags_future_covariates=self._get_lags("future"),
             output_chunk_length=self.output_chunk_length,
             concatenate=False,
             use_static_covariates=self.uses_static_covariates,
@@ -459,6 +600,8 @@ class RegressionModel(GlobalForecastingModel):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        self._verify_static_covariates(series[0].static_covariates)
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
@@ -515,7 +658,7 @@ class RegressionModel(GlobalForecastingModel):
                     self.model = MultiOutputRegressor(
                         self.model, n_jobs=n_jobs_multioutput_wrapper
                     )
-                elif isinstance(self.model, CatBoostRegressor):
+                elif self.model.__class__.__name__ == "CatBoostRegressor":
                     if (
                         self.model.get_params()["loss_function"]
                         == "RMSEWithUncertainty"
@@ -536,6 +679,52 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
         )
+        variate2arg = {
+            "target": "lags",
+            "past": "lags_past_covariates",
+            "future": "lags_future_covariates",
+        }
+
+        # if provided, component-wise lags must be defined for all the components of the first series
+        component_lags_error_msg = []
+        for variate_type, variate in zip(
+            ["target", "past", "future"], [series, past_covariates, future_covariates]
+        ):
+            if variate_type not in self.component_lags:
+                continue
+
+            # ignore the fallback lags entry
+            provided_components = set(self.component_lags[variate_type].keys())
+            required_components = set(variate[0].components)
+
+            wrong_components = list(
+                provided_components - {"default_lags"} - required_components
+            )
+            missing_keys = list(required_components - provided_components)
+            # lags were specified for unrecognized components
+            if len(wrong_components) > 0:
+                component_lags_error_msg.append(
+                    f"The `{variate2arg[variate_type]}` dictionary specifies lags for components that are not "
+                    f"present in the series : {wrong_components}. They must be removed to avoid any ambiguity."
+                )
+            elif len(missing_keys) > 0 and "default_lags" not in provided_components:
+                component_lags_error_msg.append(
+                    f"The {variate2arg[variate_type]} dictionary is missing the lags for the following components "
+                    f"present in the series: {missing_keys}. The key 'default_lags' can be used to provide lags for "
+                    f"all the non-explicitely defined components."
+                )
+            else:
+                # reorder the components based on the input series, insert the default when necessary
+                self.component_lags[variate_type] = {
+                    comp_name: self.component_lags[variate_type][comp_name]
+                    if comp_name in self.component_lags[variate_type]
+                    else self.component_lags[variate_type]["default_lags"]
+                    for comp_name in variate[0].components
+                }
+
+        # single error message for all the lags arguments
+        if len(component_lags_error_msg) > 0:
+            raise_log(ValueError("\n".join(component_lags_error_msg)), logger)
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
@@ -551,6 +740,8 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
@@ -570,32 +761,49 @@ class RegressionModel(GlobalForecastingModel):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Currently this parameter is ignored for regression models.
+            Number of times a prediction is sampled from a probabilistic model. Should be set to 1
+            for deterministic models.
+        verbose
+            Optionally, whether to print progress.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
         """
-        raise_if(
-            not self._is_probabilistic() and num_samples > 1,
-            "`num_samples > 1` is only supported for probabilistic models.",
-            logger,
-        )
-
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
-            raise_if(
-                self.training_series is None,
-                "Input series has to be provided after fitting on multiple series.",
-            )
+            if self.training_series is None:
+                raise_log(
+                    ValueError(
+                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                        "or from not having fit the model yet."
+                    ),
+                    logger,
+                )
             series = self.training_series
 
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        self._verify_static_covariates(series[0].static_covariates)
+
+        # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -603,13 +811,16 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = series2seq(self.past_covariate_series)
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = series2seq(self.future_covariate_series)
-
-        super().predict(n, series, past_covariates, future_covariates, num_samples)
+        super().predict(
+            n,
+            series,
+            past_covariates,
+            future_covariates,
+            num_samples,
+            verbose,
+            predict_likelihood_parameters,
+            show_warnings,
+        )
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {
@@ -719,23 +930,61 @@ class RegressionModel(GlobalForecastingModel):
                     series_matrix = np.concatenate(
                         [series_matrix, predictions[-1]], axis=1
                     )
-                np_X.append(
-                    series_matrix[
-                        :,
-                        [
-                            lag - (shift + last_step_shift)
-                            for lag in self.lags["target"]
-                        ],
-                    ].reshape(len(series) * num_samples, -1)
-                )
+                # component-wise lags
+                if "target" in self.component_lags:
+                    tmp_X = [
+                        series_matrix[
+                            :,
+                            [lag - (shift + last_step_shift) for lag in comp_lags],
+                            comp_i,
+                        ]
+                        for comp_i, (comp, comp_lags) in enumerate(
+                            self.component_lags["target"].items()
+                        )
+                    ]
+                    # values are grouped by component
+                    np_X.append(
+                        np.concatenate(tmp_X, axis=1).reshape(
+                            len(series) * num_samples, -1
+                        )
+                    )
+                else:
+                    # values are grouped by lags
+                    np_X.append(
+                        series_matrix[
+                            :,
+                            [
+                                lag - (shift + last_step_shift)
+                                for lag in self.lags["target"]
+                            ],
+                        ].reshape(len(series) * num_samples, -1)
+                    )
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
             for cov_type in ["past", "future"]:
                 if cov_type in covariate_matrices:
-                    np_X.append(
-                        covariate_matrices[cov_type][
-                            :, relative_cov_lags[cov_type] + t_pred
-                        ].reshape(len(series) * num_samples, -1)
-                    )
+                    # component-wise lags
+                    if cov_type in self.component_lags:
+                        tmp_X = [
+                            covariate_matrices[cov_type][
+                                :,
+                                np.array(comp_lags) - self.lags[cov_type][0] + t_pred,
+                                comp_i,
+                            ]
+                            for comp_i, (comp, comp_lags) in enumerate(
+                                self.component_lags[cov_type].items()
+                            )
+                        ]
+                        np_X.append(
+                            np.concatenate(tmp_X, axis=1).reshape(
+                                len(series) * num_samples, -1
+                            )
+                        )
+                    else:
+                        np_X.append(
+                            covariate_matrices[cov_type][
+                                :, relative_cov_lags[cov_type] + t_pred
+                            ].reshape(len(series) * num_samples, -1)
+                        )
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
@@ -753,7 +1002,9 @@ class RegressionModel(GlobalForecastingModel):
             X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
-            prediction = self._predict_and_sample(X, num_samples, **kwargs)
+            prediction = self._predict_and_sample(
+                X, num_samples, predict_likelihood_parameters, **kwargs
+            )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
             predictions.append(prediction[:, last_step_shift:])
@@ -765,20 +1016,33 @@ class RegressionModel(GlobalForecastingModel):
         predictions = np.moveaxis(
             predictions.reshape(len(series), num_samples, n, -1), 1, -1
         )
+
         # build time series from the predicted values starting after end of series
         predictions = [
-            self._build_forecast_series(row, input_tgt)
-            for row, input_tgt in zip(predictions, series)
+            self._build_forecast_series(
+                points_preds=row,
+                input_series=input_tgt,
+                custom_components=self._likelihood_components_names(input_tgt)
+                if predict_likelihood_parameters
+                else None,
+                with_static_covs=False if predict_likelihood_parameters else True,
+                with_hierarchy=False if predict_likelihood_parameters else True,
+            )
+            for idx_ts, (row, input_tgt) in enumerate(zip(predictions, series))
         ]
 
         return predictions[0] if called_with_single_series else predictions
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
+        """By default, the regression model returns a single sample."""
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-
         return prediction.reshape(k, self.pred_dim, -1)
 
     @property
@@ -803,8 +1067,104 @@ class RegressionModel(GlobalForecastingModel):
         return self.model.__str__()
 
     @property
+    def supports_past_covariates(self) -> bool:
+        return len(self.lags.get("past", [])) > 0
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return len(self.lags.get("future", [])) > 0
+
+    @property
     def supports_static_covariates(self) -> bool:
         return True
+
+    def _check_optimizable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings: bool,
+    ) -> bool:
+        """
+        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
+        (no auto-regression required).
+        """
+        return _check_optimizable_historical_forecasts_global_models(
+            model=self,
+            forecast_horizon=forecast_horizon,
+            retrain=retrain,
+            show_warnings=show_warnings,
+            allow_autoregression=False,
+        )
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Optional[Sequence[TimeSeries]],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        **kwargs,
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
+        """
+        For RegressionModels we create the lagged prediction data once per series using a moving window.
+        With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
+        forecastable index and series.
+        Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.
+
+        TODO: support forecast_horizon > output_chunk_length (auto-regression)
+        """
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            allow_autoregression=False,
+        )
+
+        # TODO: move the loop here instead of duplicated code in each sub-routine?
+        if last_points_only:
+            return _optimized_historical_forecasts_last_points_only(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                start_format=start_format,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                **kwargs,
+            )
+        else:
+            return _optimized_historical_forecasts_all_points(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                start_format=start_format,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                **kwargs,
+            )
 
 
 class _LikelihoodMixin:
@@ -845,15 +1205,30 @@ class _LikelihoodMixin:
 
         return quantiles, median_idx
 
-    def _predict_quantiles(
-        self, x: np.ndarray, num_samples: int, **kwargs
+    def _likelihood_components_names(
+        self, input_series: TimeSeries
+    ) -> Optional[List[str]]:
+        if self.likelihood == "quantile":
+            return self._quantiles_generate_components_names(input_series)
+        elif self.likelihood == "poisson":
+            return self._likelihood_generate_components_names(input_series, ["lambda"])
+        else:
+            return None
+
+    def _predict_quantile(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
         """
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
 
-        if num_samples == 1:
+        # if predict_likelihood_parameters is True, all the quantiles must be predicted
+        if num_samples == 1 and not predict_likelihood_parameters:
             # return median
             fitted = self._model_container[0.5]
             return fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
@@ -865,15 +1240,30 @@ class _LikelihoodMixin:
             model_output = fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
-        # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        return model_outputs
 
-        sampled = self._quantile_sampling(model_outputs)
+    def _predict_poisson(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        """
+        X is of shape (n_series * n_samples, n_regression_features)
+        """
+        k = x.shape[0]
+        # shape (n_series * n_samples, output_chunk_length, n_components)
+        return self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
 
-        # sampled has shape (n_series * n_samples, output_chunk_length, n_components)
-
-        return sampled
-
-    def _predict_normal(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
+    def _predict_normal(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
         """Method intended for CatBoost's RMSEWithUncertainty loss. Returns samples
         computed from double-valued inputs [mean, variance].
         X is of shape (n_series * n_samples, n_regression_features)
@@ -888,13 +1278,12 @@ class _LikelihoodMixin:
         output_dim = len(model_output.shape)
 
         # deterministic case: we return the mean only
-        if num_samples == 1:
+        if num_samples == 1 and not predict_likelihood_parameters:
             # univariate & single-chunk output
             if output_dim <= 2:
                 output_slice = model_output[:, 0]
             else:
                 output_slice = model_output[0, :, :]
-
             return output_slice.reshape(k, self.pred_dim, -1)
 
         # probabilistic case
@@ -908,64 +1297,22 @@ class _LikelihoodMixin:
             # shape becomes: (n_components * output_chunk_length, num_samples, 2)
             model_output = model_output.transpose()
 
-        return self._normal_sampling(model_output, num_samples)
+        # shape (n_components * output_chunk_length, num_samples, 2)
+        return model_output
 
-    def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
-        """Sampling method for CatBoost's [mean, variance] output.
-        model_output is of shape (n_components * output_chunk_length, n_samples, 2),
-        where the last 2 dimensions are mu and sigma.
-        """
-        shape = model_output.shape
-        chunk_len = self.pred_dim
-
-        # treating each component separately
-        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
-
-        list_of_samples = [
-            self._rng.normal(
-                mu_sigma[:, 0],  # mean vector
-                mu_sigma[:, 1],  # diagonal covariance matrix
-            )
-            for mu_sigma in mu_sigma_list
-        ]
-
-        samples_transposed = np.array(list_of_samples).transpose()
-        samples_reshaped = samples_transposed.reshape(n_samples, chunk_len, -1)
-
-        return samples_reshaped
-
-    def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
-        """
-        X is of shape (n_series * n_samples, n_regression_features)
-        """
-        k = x.shape[0]
-
-        model_output = self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
-        if num_samples == 1:
-            return model_output
-
-        return self._poisson_sampling(model_output)
-
-    def _poisson_sampling(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
-        """
-
-        return self._rng.poisson(lam=model_output).astype(float)
-
-    def _quantile_sampling(self, model_output: np.ndarray) -> np.ndarray:
+    def _sampling_quantile(self, model_output: np.ndarray) -> np.ndarray:
         """
         Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
         quantiles closest to the sampled value.
 
-        model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
+        model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         """
-        num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
+        k, n_timesteps, n_components, n_quantiles = model_output.shape
 
         # obtain samples
         probs = self._rng.uniform(
             size=(
-                num_samples,
+                k,
                 n_timesteps,
                 n_components,
                 1,
@@ -1010,7 +1357,116 @@ class _LikelihoodMixin:
         weights = (probs - left_q) / (right_q - left_q)
         inter = left_value + weights * (right_value - left_value)
 
+        # shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)
         return inter.squeeze(-1)
+
+    def _sampling_poisson(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
+        """
+        return self._rng.poisson(lam=model_output).astype(float)
+
+    def _sampling_normal(self, model_output: np.ndarray) -> np.ndarray:
+        """Sampling method for CatBoost's [mean, variance] output.
+        model_output is of shape (n_components * output_chunk_length, n_samples, 2) where the last dimension
+        contain mu and sigma.
+        """
+        n_entries, n_samples, n_params = model_output.shape
+
+        # treating each component separately
+        mu_sigma_list = [model_output[i, :, :] for i in range(n_entries)]
+
+        list_of_samples = [
+            self._rng.normal(
+                mu_sigma[:, 0],  # mean vector
+                mu_sigma[:, 1],  # diagonal covariance matrix
+            )
+            for mu_sigma in mu_sigma_list
+        ]
+
+        samples_transposed = np.array(list_of_samples).transpose()
+        samples_reshaped = samples_transposed.reshape(n_samples, self.pred_dim, -1)
+
+        return samples_reshaped
+
+    def _params_quantile(self, model_output: np.ndarray) -> np.ndarray:
+        """Quantiles on the last dimension, grouped by component"""
+        k, n_timesteps, n_components, n_quantiles = model_output.shape
+        # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
+        return model_output.reshape(k, n_timesteps, n_components * n_quantiles)
+
+    def _params_poisson(self, model_output: np.ndarray) -> np.ndarray:
+        """Lambdas on the last dimension, grouped by component"""
+        return model_output
+
+    def _params_normal(self, model_output: np.ndarray) -> np.ndarray:
+        """[mu, sigma] on the last dimension, grouped by component"""
+        shape = model_output.shape
+        n_samples = shape[1]
+
+        # extract mu and sigma for each component
+        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
+
+        # reshape to (n_samples, output_chunk_length, 2)
+        params_transposed = np.array(mu_sigma_list).transpose()
+        params_reshaped = params_transposed.reshape(n_samples, self.pred_dim, -1)
+        return params_reshaped
+
+    def _predict_and_sample_likelihood(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        likelihood: str,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        model_output = getattr(self, f"_predict_{likelihood}")(
+            x, num_samples, predict_likelihood_parameters, **kwargs
+        )
+        if predict_likelihood_parameters:
+            return getattr(self, f"_params_{likelihood}")(model_output)
+        else:
+            if num_samples == 1:
+                return model_output
+            else:
+                return getattr(self, f"_sampling_{likelihood}")(model_output)
+
+    def _num_parameters_quantile(self) -> int:
+        return len(self.quantiles)
+
+    def _num_parameters_poisson(self) -> int:
+        return 1
+
+    def _num_parameters_normal(self) -> int:
+        return 2
+
+    @property
+    def num_parameters(self) -> int:
+        """Mimic function of Likelihood class"""
+        likelihood = self.likelihood
+        if likelihood is None:
+            return 0
+        elif likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._num_parameters_normal()
+        else:
+            return getattr(self, f"_num_parameters_{likelihood}")()
+
+    def _quantiles_generate_components_names(
+        self, input_series: TimeSeries
+    ) -> List[str]:
+        return self._likelihood_generate_components_names(
+            input_series,
+            [f"q{quantile:.2f}" for quantile in self._model_container.keys()],
+        )
+
+    def _likelihood_generate_components_names(
+        self, input_series: TimeSeries, parameter_names: List[str]
+    ) -> List[str]:
+        return [
+            f"{tgt_name}_{param_n}"
+            for tgt_name in input_series.components
+            for param_n in parameter_names
+        ]
 
 
 class _QuantileModelContainer(OrderedDict):
@@ -1051,9 +1507,12 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
         output_chunk_length
-            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -1066,12 +1525,16 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         model
@@ -1085,7 +1548,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
-            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical.

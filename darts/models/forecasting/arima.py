@@ -13,6 +13,7 @@ References
 from typing import Optional, Tuple
 
 import numpy as np
+from statsmodels import __version_tuple__ as statsmodels_version
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
 from darts.logging import get_logger
@@ -22,6 +23,9 @@ from darts.models.forecasting.forecasting_model import (
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
+
+# Check whether we are running statsmodels >= 0.13.5 or not:
+statsmodels_above_0135 = statsmodels_version > (0, 13, 5)
 
 
 class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
@@ -67,25 +71,57 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import ARIMA
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
+        >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define ARIMA parameters
+        >>> model = ARIMA(p=12, d=1, q=2)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> pred.values()
+        array([[451.36489334],
+               [416.88972829],
+               [443.10520391],
+               [481.07892911],
+               [502.11286509],
+               [555.50153984]])
         """
         super().__init__(add_encoders=add_encoders)
         self.order = p, d, q
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
-        self._random_state = (
-            random_state
-            if random_state is None
-            else np.random.RandomState(random_state)
-        )
+        if statsmodels_above_0135:
+            self._random_state = (
+                random_state
+                if random_state is None
+                else np.random.RandomState(random_state)
+            )
+        else:
+            self._random_state = None
+            np.random.seed(random_state if random_state is not None else 0)
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
@@ -149,6 +185,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
                 random_state=self._random_state,
+                anchor="end",
                 exog=future_covariates.values(copy=False)
                 if future_covariates
                 else None,
@@ -165,6 +202,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         return self._build_forecast_series(forecast)
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True
 

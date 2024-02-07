@@ -3,6 +3,7 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import pytorch_lightning as pl
@@ -12,6 +13,7 @@ import torchmetrics
 from joblib import Parallel, delayed
 
 from darts.logging import get_logger, raise_if, raise_log
+from darts.models.components.layer_norm_variants import RINorm
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.timeseries_generation import _build_forecast_series
@@ -22,6 +24,45 @@ logger = get_logger(__name__)
 # Check whether we are running pytorch-lightning >= 1.6.0 or not:
 tokens = pl.__version__.split(".")
 pl_160_or_above = int(tokens[0]) > 1 or int(tokens[0]) == 1 and int(tokens[1]) >= 6
+
+
+def io_processor(forward):
+    """Applies some input / output processing to PLForecastingModule.forward.
+    Note that this wrapper must be added to each of PLForecastinModule's subclasses forward methods.
+    Here is an example how to add the decorator:
+
+    ```python
+        @io_processor
+        def forward(self, *args, **kwargs)
+            pass
+    ```
+
+    Applies
+    -------
+    Reversible Instance Normalization
+        normalizes batch input target features, and inverse transform the forward output back to the original scale
+    """
+
+    @wraps(forward)
+    def forward_wrapper(self, *args, **kwargs):
+        if not self.use_reversible_instance_norm:
+            return forward(self, *args, **kwargs)
+
+        # x is input batch tuple which by definition has the past features in the first element starting with the
+        # first n target features
+        # assuming `args[0][0]` is torch.Tensor we could clone it to prevent target re-normalization
+        x: Tuple = args[0][0].clone()
+        # apply reversible instance normalization
+        x[:, :, : self.n_targets] = self.rin(x[:, :, : self.n_targets])
+        # run the forward pass
+        out = forward(self, *((x, *args[0][1:]), *args[1:]), **kwargs)
+        # inverse transform target output back to original scale; by definition the first output
+        if isinstance(out, tuple):
+            return self.rin.inverse(out[0]), *out[1:]
+        else:
+            return self.rin.inverse(out)
+
+    return forward_wrapper
 
 
 class PLForecastingModule(pl.LightningModule, ABC):
@@ -40,6 +81,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
+        use_reversible_instance_norm: bool = False,
     ) -> None:
         """
         PyTorch Lightning-based Forecasting Module.
@@ -57,9 +99,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
         Parameters
         ----------
         input_chunk_length
-            Number of input past time steps per chunk.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            Number of output time steps per chunk.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
         train_sample_shape
             Shape of the model's input, used to instantiate model without calling ``fit_from_dataset`` and
             perform sanity check on new training/inference datasets used for re-training or prediction.
@@ -84,11 +133,18 @@ class PLForecastingModule(pl.LightningModule, ABC):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__()
 
         # save hyper parameters for saving/loading
-        # do not save type nn.Module params
         self.save_hyperparameters(ignore=["loss_fn", "torch_metrics"])
 
         raise_if(
@@ -98,7 +154,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         )
 
         self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
+        # output_chunk_length is a property
+        self._output_chunk_length = output_chunk_length
 
         # define the loss function
         self.criterion = loss_fn
@@ -107,6 +164,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
         self.train_sample_shape = train_sample_shape
+        self.n_targets = (
+            train_sample_shape[0][1] if train_sample_shape is not None else 1
+        )
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
@@ -116,21 +176,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
 
-        if torch_metrics is None:
-            torch_metrics = torchmetrics.MetricCollection([])
-        elif isinstance(torch_metrics, torchmetrics.Metric):
-            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
-        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
-            pass
-        else:
-            raise_log(
-                AttributeError(
-                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
-                ),
-                logger,
-            )
+        # convert torch_metrics to torchmetrics.MetricCollection
+        torch_metrics = self.configure_torch_metrics(torch_metrics)
         self.train_metrics = torch_metrics.clone(prefix="train_")
         self.val_metrics = torch_metrics.clone(prefix="val_")
+
+        # reversible instance norm
+        self.use_reversible_instance_norm = use_reversible_instance_norm
+        if use_reversible_instance_norm:
+            self.rin = RINorm(input_dim=self.n_targets)
+        else:
+            self.rin = None
 
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
@@ -138,6 +194,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
         self.pred_n_jobs: Optional[int] = None
+        self.predict_likelihood_parameters: Optional[bool] = None
 
     @property
     def first_prediction_index(self) -> int:
@@ -195,7 +252,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         dataloader_idx
             the dataloader index
         """
-        input_data_tuple, batch_input_series = batch[:-1], batch[-1]
+        input_data_tuple, batch_input_series, batch_pred_starts = (
+            batch[:-2],
+            batch[-2],
+            batch[-1],
+        )
 
         # number of individual series to be predicted in current batch
         num_series = input_data_tuple[0].shape[0]
@@ -252,13 +313,27 @@ class PLForecastingModule(pl.LightningModule, ABC):
             delayed(_build_forecast_series)(
                 [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                 input_series,
+                custom_columns=self.likelihood.likelihood_components_names(input_series)
+                if self.predict_likelihood_parameters
+                else None,
+                with_static_covs=False if self.predict_likelihood_parameters else True,
+                with_hierarchy=False if self.predict_likelihood_parameters else True,
+                pred_start=pred_start,
             )
-            for batch_idx, input_series in enumerate(batch_input_series)
+            for batch_idx, (input_series, pred_start) in enumerate(
+                zip(batch_input_series, batch_pred_starts)
+            )
         )
         return ts_forecasts
 
     def set_predict_parameters(
-        self, n: int, num_samples: int, roll_size: int, batch_size: int, n_jobs: int
+        self,
+        n: int,
+        num_samples: int,
+        roll_size: int,
+        batch_size: int,
+        n_jobs: int,
+        predict_likelihood_parameters: bool,
     ) -> None:
         """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
         self.pred_n = n
@@ -266,6 +341,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size = roll_size
         self.pred_batch_size = batch_size
         self.pred_n_jobs = n_jobs
+        self.predict_likelihood_parameters = predict_likelihood_parameters
 
     def _compute_loss(self, output, target):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
@@ -377,13 +453,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
         for module in self._get_mc_dropout_modules():
             module.mc_dropout_enabled = active
 
+    @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
-    def _produce_predict_output(self, x: Tuple):
+    def _produce_predict_output(self, x: Tuple) -> torch.Tensor:
         if self.likelihood:
             output = self(x)
-            return self.likelihood.sample(output)
+            if self.predict_likelihood_parameters:
+                return self.likelihood.predict_likelihood_parameters(output)
+            else:
+                return self.likelihood.sample(output)
         else:
             return self(x).squeeze(dim=-1)
 
@@ -392,12 +472,33 @@ class PLForecastingModule(pl.LightningModule, ABC):
         checkpoint["model_dtype"] = self.dtype
         # we must save the shape of the input to be able to instanciate the model without calling fit_from_dataset
         checkpoint["train_sample_shape"] = self.train_sample_shape
+        # we must save the loss to properly restore it when resuming training
+        checkpoint["loss_fn"] = self.criterion
+        # we must save the metrics to continue outputing them when resuming training
+        checkpoint["torch_metrics_train"] = self.train_metrics
+        checkpoint["torch_metrics_val"] = self.val_metrics
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
         # before parameters are loaded by PyTorch-Lightning
         dtype = checkpoint["model_dtype"]
         self.to_dtype(dtype)
+
+        # restoring attributes necessary to resume from training properly
+        if (
+            "loss_fn" in checkpoint.keys()
+            and "torch_metrics_train" in checkpoint.keys()
+        ):
+            self.criterion = checkpoint["loss_fn"]
+            self.train_metrics = checkpoint["torch_metrics_train"]
+            self.val_metrics = checkpoint["torch_metrics_val"]
+        else:
+            # explicitly indicate to the user that there is a bug
+            logger.warning(
+                "This checkpoint was generated with darts <= 0.24.0, if a custom loss "
+                "was used to train the model, it won't be properly loaded. Similarly, "
+                "the torch metrics won't be restored from the checkpoint."
+            )
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""
@@ -424,6 +525,33 @@ class PLForecastingModule(pl.LightningModule, ABC):
             current_epoch += 1
 
         return current_epoch
+
+    @property
+    def output_chunk_length(self) -> Optional[int]:
+        """
+        Number of time steps predicted at once by the model.
+        """
+        return self._output_chunk_length
+
+    @staticmethod
+    def configure_torch_metrics(
+        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+    ) -> torchmetrics.MetricCollection:
+        """process the torch_metrics parameter."""
+        if torch_metrics is None:
+            torch_metrics = torchmetrics.MetricCollection([])
+        elif isinstance(torch_metrics, torchmetrics.Metric):
+            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
+        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
+            pass
+        else:
+            raise_log(
+                AttributeError(
+                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
+                ),
+                logger,
+            )
+        return torch_metrics
 
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
@@ -482,7 +610,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             dim=dim_component,
         )
 
-        out = self._produce_predict_output((input_past, static_covariates))[
+        out = self._produce_predict_output(x=(input_past, static_covariates))[
             :, self.first_prediction_index :, :
         ]
 
@@ -531,9 +659,10 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 ] = future_past_covariates[:, left_past:right_past, :]
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output((input_past, static_covariates))[
+            out = self._produce_predict_output(x=(input_past, static_covariates))[
                 :, self.first_prediction_index :, :
             ]
+
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length
 

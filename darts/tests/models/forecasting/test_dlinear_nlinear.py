@@ -1,5 +1,3 @@
-import shutil
-import tempfile
 from itertools import product
 
 import numpy as np
@@ -9,7 +7,7 @@ import pytest
 from darts import concatenate
 from darts.logging import get_logger
 from darts.metrics import rmse
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -29,18 +27,12 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class DlinearNlinearModelsTestCase(DartsBaseTestClass):
+    class TestDlinearNlinearModels:
         np.random.seed(42)
         torch.manual_seed(42)
 
-        def setUp(self):
-            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
-
-        def tearDown(self):
-            shutil.rmtree(self.temp_work_dir)
-
         def test_creation(self):
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 DLinearModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -48,7 +40,7 @@ if TORCH_AVAILABLE:
                     likelihood=GaussianLikelihood(),
                 )
 
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 NLinearModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -71,7 +63,8 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
-                    **kwargs
+                    **kwargs,
+                    **tfm_kwargs
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -82,16 +75,17 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
-                self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+                assert abs(pred2 - 10) < abs(pred - 10)
 
                 # test short predict
                 pred3 = model2.predict(n=1)
-                self.assertEqual(len(pred3), 1)
+                assert len(pred3) == 1
 
-        def test_logtensorboard(self):
+        def test_logtensorboard(self, tmpdir_module):
             ts = tg.constant_timeseries(length=50, value=10)
 
             for model_cls in [DLinearModel, NLinearModel]:
@@ -101,8 +95,11 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=1,
                     log_tensorboard=True,
-                    work_dir=self.temp_work_dir,
-                    pl_trainer_kwargs={"log_every_n_steps": 1},
+                    work_dir=tmpdir_module,
+                    pl_trainer_kwargs={
+                        "log_every_n_steps": 1,
+                        **tfm_kwargs["pl_trainer_kwargs"],
+                    },
                 )
                 model.fit(ts)
                 model.predict(n=2)
@@ -121,6 +118,7 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=True,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model_not_shared = model_cls(
                     input_chunk_length=5,
@@ -129,13 +127,14 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=False,
                     random_state=42,
+                    **tfm_kwargs
                 )
                 model_shared.fit(ts)
                 model_not_shared.fit(ts)
                 pred_shared = model_shared.predict(n=2)
                 pred_not_shared = model_not_shared.predict(n=2)
-                self.assertTrue(
-                    np.any(np.not_equal(pred_shared.values(), pred_not_shared.values()))
+                assert np.any(
+                    np.not_equal(pred_shared.values(), pred_not_shared.values())
                 )
 
         def test_multivariate_and_covariates(self):
@@ -175,8 +174,13 @@ if TORCH_AVAILABLE:
                 val2,
                 fut_cov1,
                 fut_cov2,
+                past_cov1=None,
+                past_cov2=None,
+                val_past_cov1=None,
+                val_past_cov2=None,
                 cls=DLinearModel,
                 lkl=None,
+                **kwargs
             ):
                 model = cls(
                     input_chunk_length=50,
@@ -185,10 +189,17 @@ if TORCH_AVAILABLE:
                     const_init=True,
                     likelihood=lkl,
                     random_state=42,
+                    **tfm_kwargs
                 )
 
                 model.fit(
                     [train1, train2],
+                    past_covariates=[past_cov1, past_cov2]
+                    if past_cov1 is not None
+                    else None,
+                    val_past_covariates=[val_past_cov1, val_past_cov2]
+                    if val_past_cov1 is not None
+                    else None,
                     future_covariates=[fut_cov1, fut_cov2]
                     if fut_cov1 is not None
                     else None,
@@ -199,6 +210,9 @@ if TORCH_AVAILABLE:
                     series=[train1, train2],
                     future_covariates=[fut_cov1, fut_cov2]
                     if fut_cov1 is not None
+                    else None,
+                    past_covariates=[fut_cov1, fut_cov2]
+                    if past_cov1 is not None
                     else None,
                     n=len(val1),
                     num_samples=500 if lkl is not None else 1,
@@ -211,6 +225,10 @@ if TORCH_AVAILABLE:
 
             train1, val1 = series1.split_after(0.7)
             train2, val2 = series2.split_after(0.7)
+            past_cov1 = train1.copy()
+            past_cov2 = train2.copy()
+            val_past_cov1 = val1.copy()
+            val_past_cov2 = val2.copy()
 
             for model, lkl in product(
                 [DLinearModel, NLinearModel], [None, GaussianLikelihood()]
@@ -219,8 +237,8 @@ if TORCH_AVAILABLE:
                 e1, e2 = _eval_model(
                     train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
                 )
-                self.assertLessEqual(e1, 0.34)
-                self.assertLessEqual(e2, 0.28)
+                assert e1 <= 0.34
+                assert e2 <= 0.28
 
                 e1, e2 = _eval_model(
                     train1.with_static_covariates(None),
@@ -232,14 +250,14 @@ if TORCH_AVAILABLE:
                     cls=model,
                     lkl=lkl,
                 )
-                self.assertLessEqual(e1, 0.32)
-                self.assertLessEqual(e2, 0.28)
+                assert e1 <= 0.32
+                assert e2 <= 0.28
 
                 e1, e2 = _eval_model(
                     train1, train2, val1, val2, None, None, cls=model, lkl=lkl
                 )
-                self.assertLessEqual(e1, 0.40)
-                self.assertLessEqual(e2, 0.34)
+                assert e1 <= 0.40
+                assert e2 <= 0.34
 
                 e1, e2 = _eval_model(
                     train1.with_static_covariates(None),
@@ -251,8 +269,39 @@ if TORCH_AVAILABLE:
                     cls=model,
                     lkl=lkl,
                 )
-                self.assertLessEqual(e1, 0.40)
-                self.assertLessEqual(e2, 0.34)
+                assert e1 <= 0.40
+                assert e2 <= 0.34
+
+            e1, e2 = _eval_model(
+                train1,
+                train2,
+                val1,
+                val2,
+                fut_cov1,
+                fut_cov2,
+                past_cov1=past_cov1,
+                past_cov2=past_cov2,
+                val_past_cov1=val_past_cov1,
+                val_past_cov2=val_past_cov2,
+                cls=NLinearModel,
+                lkl=None,
+                normalize=True,
+            )
+            # can only fit models with past/future covariates when shared_weights=False
+            for model in [DLinearModel, NLinearModel]:
+                for shared_weights in [True, False]:
+                    model_instance = model(
+                        5, 5, shared_weights=shared_weights, **tfm_kwargs
+                    )
+                    assert model_instance.supports_past_covariates == (
+                        not shared_weights
+                    )
+                    assert model_instance.supports_future_covariates == (
+                        not shared_weights
+                    )
+                    if shared_weights:
+                        with pytest.raises(ValueError):
+                            model_instance.fit(series1, future_covariates=fut_cov1)
 
         def test_optional_static_covariates(self):
             series = tg.sine_timeseries(length=20).with_static_covariates(
@@ -265,6 +314,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=True,
                     n_epochs=1,
+                    **tfm_kwargs
                 )
                 model.fit(series)
                 with pytest.raises(ValueError):
@@ -276,6 +326,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
+                    **tfm_kwargs
                 )
                 model.fit(series)
                 preds = model.predict(n=2, series=series.with_static_covariates(None))
@@ -287,6 +338,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
+                    **tfm_kwargs
                 )
                 model.fit(series.with_static_covariates(None))
                 preds = model.predict(n=2, series=series)

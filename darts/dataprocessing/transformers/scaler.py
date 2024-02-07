@@ -54,10 +54,10 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         name
             A specific name for the scaler
         global_fit
-            Optionally, whether all of the `TimeSeries` passed to the `fit()` method should be used to fit
+            Optionally, whether all `TimeSeries` passed to the `fit()` method should be used to fit
             a *single* set of parameters, or if a different set of parameters should be independently fitted
             to each provided `TimeSeries`. If `True`, then a `Sequence[TimeSeries]` is passed to `ts_fit`
-            and a single set of parameters is fitted using all of the provided `TimeSeries`. If `False`, then
+            and a single set of parameters is fitted using all provided `TimeSeries`. If `False`, then
             each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters
             if yielded for each of these fitting operations. See `FittableDataTransformer` documentation for
             further details.
