@@ -1225,7 +1225,7 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
-            scaler=Scaler(),
+            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
@@ -1240,7 +1240,7 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
-            scaler=Scaler(),
+            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
@@ -1257,7 +1257,7 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
-            scaler=Scaler(),
+            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
