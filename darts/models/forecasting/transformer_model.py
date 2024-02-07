@@ -409,7 +409,7 @@ class TransformerModel(PastCovariatesTorchModel):
         The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
         very suitable to be trained with GPUs.
 
-        The transformer architecture implemented here is based on [1]_ abd uses teacher forcing [4]_.
+        The transformer architecture implemented here is based on [1]_ and uses teacher forcing [4]_.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
 
