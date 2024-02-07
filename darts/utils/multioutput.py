@@ -1,13 +1,20 @@
+from sklearn import __version__ as sklearn_version
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
 from sklearn.multioutput import _fit_estimator
 from sklearn.utils.multiclass import check_classification_targets
-from sklearn.utils.validation import _check_fit_params, has_fit_parameter
+from sklearn.utils.validation import has_fit_parameter
 
-try:
+if sklearn_version >= "1.4":
+    # sklearn renamed `_check_fit_params` to `_check_method_params` in v1.4
+    from sklearn.utils.validation import _check_method_params
+else:
+    from sklearn.utils.validation import _check_fit_params as _check_method_params
+
+if sklearn_version >= "1.3":
     # delayed was moved from sklearn.utils.fixes to sklearn.utils.parallel in v1.3
     from sklearn.utils.parallel import Parallel, delayed
-except ImportError:
+else:
     from joblib import Parallel
     from sklearn.utils.fixes import delayed
 
@@ -65,7 +72,7 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
         ):
             raise ValueError("Underlying estimator does not support sample weights.")
 
-        fit_params_validated = _check_fit_params(X, fit_params)
+        fit_params_validated = _check_method_params(X, fit_params)
 
         if "eval_set" in fit_params_validated.keys():
             # with validation set

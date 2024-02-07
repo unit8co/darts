@@ -28,11 +28,17 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
-        cap: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        cap: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
-        floor: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        floor: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
         **prophet_kwargs,
     ):
@@ -92,12 +98,16 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         cap
@@ -124,6 +134,32 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import Prophet
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
+        >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # adding a seasonality (daily, weekly and yearly are included by default) and holidays
+        >>> model = Prophet(
+        >>>     add_seasonalities={
+        >>>         'name':"quarterly_seasonality",
+        >>>         'seasonal_periods':4,
+        >>>         'fourier_order':5
+        >>>         },
+        >>> )
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[472.26891239],
+               [467.56955721],
+               [494.47230467],
+               [493.10568429],
+               [497.54686113],
+               [539.11716811]])
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -558,6 +594,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         freq = "".join(re.split("[^a-zA-Z-]*", freq)).split("-")[0]
 
         seconds_per_day = 86400
+        days = 0
         if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith(
             ("A", "BA", "Y", "BY", "RE")
         ):  # year
@@ -576,23 +613,28 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             days = 1 * 7 / 5
         elif freq in ["D"]:  # day
             days = 1.0
-        elif freq in ["H", "BH", "CBH"]:  # hour
-            days = 1 / 24
-        elif freq in ["T", "min"]:  # minute
-            days = 1 / (24 * 60)
-        elif freq in ["S"]:  # second
-            days = 1 / seconds_per_day
-        elif freq in ["L", "ms"]:  # millisecond
-            days = 1 / (seconds_per_day * 10**3)
-        elif freq in ["U", "us"]:  # microsecond
-            days = 1 / (seconds_per_day * 10**6)
-        elif freq in ["N"]:  # nanosecond
-            days = 1 / (seconds_per_day * 10**9)
         else:
-            raise ValueError(
-                "freq {} not understood. Please report if you think this is in error.".format(
-                    freq
-                )
+            # all freqs higher than "D" are lower case in pandas >= 2.2.0
+            freq_lower = freq.lower()
+            if freq_lower in ["h", "bh", "cbh"]:  # hour
+                days = 1 / 24
+            elif freq_lower in ["t", "min"]:  # minute
+                days = 1 / (24 * 60)
+            elif freq_lower in ["s"]:  # second
+                days = 1 / seconds_per_day
+            elif freq_lower in ["l", "ms"]:  # millisecond
+                days = 1 / (seconds_per_day * 10**3)
+            elif freq_lower in ["u", "us"]:  # microsecond
+                days = 1 / (seconds_per_day * 10**6)
+            elif freq_lower in ["n"]:  # nanosecond
+                days = 1 / (seconds_per_day * 10**9)
+
+        if not days:
+            raise_log(
+                ValueError(
+                    f"freq {freq} not understood. Please report if you think this is in error."
+                ),
+                logger=logger,
             )
         return freq_times * days
 
