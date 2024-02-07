@@ -120,14 +120,10 @@ class TemporalBatchNorm1d(nn.Module):
         self.norm = nn.BatchNorm1d(feature_size)
 
     def forward(self, input):
-        input = self._reshape_input(input)  # Reshape N L C -> N C L
+        input = input.swapaxes(1, 2)
         input = self.norm(input)
-        input = self._reshape_input(input)
+        input = input.swapaxes(1, 2)
         return input if len(input) > 1 else input[0]
-
-    def _reshape_input(self, x):
-        shape = x.shape
-        return x.reshape(shape[0], shape[2], shape[1])
 
 
 class ExtractRnnOutput(nn.Module):
