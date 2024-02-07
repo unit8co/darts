@@ -65,8 +65,8 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             The order of differentiation; i.e., the number of times the data
             have had past values subtracted (I).
         q : int | Sequence[int]
-            The size of the moving average window (MA). A sequence of integers
-            can be given specifying exactly which lag orders are included.
+            The size of the moving average window (MA).
+            If a sequence of integers, specifies the exact lags to include in the window.
         seasonal_order: Tuple[int | Sequence[int], int, int | Sequence[int], int]
             The (P,D,Q,s) order of the seasonal component for the AR parameters,
             differences, MA parameters and periodicity. D and s are always integers,
