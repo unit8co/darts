@@ -25,6 +25,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `coefficient_of_variaton()` with `intersect=True`, where the coefficient was not computed on the intersection. [#2202](https://github.com/unit8co/darts/pull/2202) by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:
+- Updated pre-commit hooks to the latest version using `pre-commit autoupdate`.
+- Change `pyupgrade` pre-commit hook argument to `--py39-plus`. This allows for [type rewriting](https://github.com/asottile/pyupgrade?tab=readme-ov-file#pep-585-typing-rewrites).
 
 ## [0.27.2](https://github.com/unit8co/darts/tree/0.27.2) (2023-01-21)
 ### For users of the library:
