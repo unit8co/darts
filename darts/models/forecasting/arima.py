@@ -72,7 +72,6 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             differences (D), MA parameters (Q) and periodicity (s). D and s are always integers,
             while P and Q may either be integers or sequence of positive integers
             specifying exactly which lag orders are included.
-        trend: str
         trend: Literal['n', 'c', 't', 'ct'] | Sequence[int], optional
             Parameter controlling the deterministic trend. Either a string or sequence of integers.
             If a string, can be 'n' for no trend, 'c' for a constant term, 't' for a linear trend in time,
