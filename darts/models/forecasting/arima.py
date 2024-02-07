@@ -10,7 +10,7 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import Literal, Optional, Sequence, Tuple, Union
+from typing import List, Literal, Optional, Sequence, Tuple, Union
 
 try:
     from typing import TypeAlias
@@ -48,7 +48,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             0,
             0,
         ),
-        trend: Optional[Union[Literal["n", "c", "t", "ct"], Sequence[int]]] = None,
+        trend: Optional[Union[Literal["n", "c", "t", "ct"], List[int]]] = None,
         random_state: Optional[int] = None,
         add_encoders: Optional[dict] = None,
     ):
@@ -72,12 +72,14 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             differences (D), MA parameters (Q) and periodicity (s). D and s are always integers,
             while P and Q may either be integers or sequence of positive integers
             specifying exactly which lag orders are included.
-        trend: Literal['n', 'c', 't', 'ct'] | Sequence[int], optional
-            Parameter controlling the deterministic trend. Either a string or sequence of integers.
+        trend: Literal['n', 'c', 't', 'ct'] | list[int], optional
+            Parameter controlling the deterministic trend. Either a string or list of integers.
             If a string, can be 'n' for no trend, 'c' for a constant term, 't' for a linear trend in time,
             and 'ct' for a constant term and linear trend.
-            If a sequence of integers, defines a polynomial according to `numpy.poly1d` [1]_. E.g., `[1,1,0,1]` would
+            If a list of integers, defines a polynomial according to `numpy.poly1d` [1]_. E.g., `[1,1,0,1]` would
             translate to :math:`a + bt + ct^3`.
+            Trend term of lower order than `d + D` cannot be as they would be eliminated due to the differencing
+            operation.
             Default is 'c' for models without integration, and 'n' for models with integration.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
