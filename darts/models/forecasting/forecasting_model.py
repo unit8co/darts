@@ -1483,6 +1483,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        if not isinstance(parameters, dict):
+            raise_log(
+                ValueError(
+                    f"`parameters` should be a dictionary, received a: {type(parameters)}."
+                )
+            )
+
         if not all(isinstance(params, list) for params in parameters.values()):
             raise_log(
                 ValueError(
