@@ -1483,10 +1483,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        if not all(isinstance(params, list) for params in parameters.values()):
+            raise_log(
+                ValueError(
+                    "Every value in the `parameters` dictionary should be a list (possibly with only one element)."
+                ),
+                logger,
+            )
+
         if use_fitted_values:
             raise_if_not(
-                hasattr(model_class(), "fitted_values"),
-                "The model must have a fitted_values attribute to compare with the train TimeSeries",
+                hasattr(
+                    model_class(**{k: v[0] for k, v in parameters.items()}),
+                    "fitted_values",
+                ),
+                "The model must have a fitted_values attribute to compare with the train TimeSeries (local models)",
                 logger,
             )
 
