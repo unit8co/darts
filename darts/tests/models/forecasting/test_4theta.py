@@ -61,7 +61,7 @@ class TestFourTheta:
         linear_series = lt(length=50)
         series = sine_series + linear_series
         train_series, val_series = series.split_before(series.time_index[-10])
-        thetas = np.linspace(-3, 3, 30)
+        thetas = list(np.linspace(-3, 3, 30))
         best_model, _, _ = FourTheta.select_best_model(train_series, thetas)
         model = FourTheta(
             random.choice(thetas),
