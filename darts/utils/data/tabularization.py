@@ -31,6 +31,7 @@ def create_lagged_data(
     lags_past_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
     lags_future_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
     output_chunk_length: int = 1,
+    output_chunk_shift: int = 0,
     uses_static_covariates: bool = True,
     last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     max_samples_per_ts: Optional[int] = None,
@@ -140,9 +141,6 @@ def create_lagged_data(
     target_series
         Optionally, the series for the regression model to predict. Must be specified if `is_training = True`.
         Can be specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
-    output_chunk_length
-        Optionally, the number of timesteps ahead into the future the regression model is to predict. Must
-        best specified if `is_training = True`.
     past_covariates
         Optionally, the past covariates series that the regression model will use as inputs. Unlike the
         `target_series`, `past_covariates` are *not* to be predicted by the regression model. Can be
@@ -153,7 +151,7 @@ def create_lagged_data(
     lags
         Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
         auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
-        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
+        `lags = [-3, -1]` will extract `target_series` values which are 3 time steps and 1 time step away from
         the current value). If the lags are provided as a dictionary, the lags values are specific to each
         component in the target series.
     lags_past_covariates
@@ -164,8 +162,14 @@ def create_lagged_data(
         Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and
         `lags_past_covariates`, `lags_future_covariates` values can be positive (i.e. use values *after* time `t`
         to predict target at time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or
-        negative (i.e. use values *before* time `t` to predict target at time `t`). If the lags are provided as
+        negative (i.e. use values *before* time `t` to predict target at time `t`). If `output_chunk_shift > 0`, the
+        lags are relative to the first time step of the shifted output chunk. If the lags are provided as
         a dictionary, the lags values are specific to each component in the future covariates series.
+    output_chunk_length
+        Optionally, the number of time steps ahead into the future the regression model is to predict. Must
+        best specified if `is_training = True`.
+    output_chunk_shift
+        Optionally, the number of time steps to shift the output chunk ahead into the future.
     uses_static_covariates
         Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
         have identical shapes across all target series.
@@ -177,9 +181,9 @@ def create_lagged_data(
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
         especially in cases where many observations could be generated.
     multi_models
-        Optionally, specifies whether the regression model predicts multiple timesteps into the future. If `True`,
-        then the regression model is assumed to predict all of the timesteps from time `t` to `t+output_chunk_length`.
-        If `False`, then the regression model is assumed to predict *only* the timestep at `t+output_chunk_length`.
+        Optionally, specifies whether the regression model predicts multiple time steps into the future. If `True`,
+        then the regression model is assumed to predict all of the time steps from time `t` to `t+output_chunk_length`.
+        If `False`, then the regression model is assumed to predict *only* the time step at `t+output_chunk_length`.
         This input is ignored if `is_training = False`.
     check_inputs
         Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
@@ -286,6 +290,7 @@ def create_lagged_data(
             X_i, y_i, times_i = _create_lagged_data_by_moving_window(
                 target_i,
                 output_chunk_length,
+                output_chunk_shift,
                 past_i,
                 future_i,
                 lags,
@@ -300,6 +305,7 @@ def create_lagged_data(
             X_i, y_i, times_i = _create_lagged_data_by_intersecting_times(
                 target_i,
                 output_chunk_length,
+                output_chunk_shift,
                 past_i,
                 future_i,
                 lags,
@@ -332,6 +338,7 @@ def create_lagged_data(
 def create_lagged_training_data(
     target_series: Union[TimeSeries, Sequence[TimeSeries]],
     output_chunk_length: int,
+    output_chunk_shift: int,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     lags: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
@@ -364,7 +371,9 @@ def create_lagged_training_data(
     target_series
         The series for the regression model to predict.
     output_chunk_length
-        The number of timesteps ahead into the future the regression model is to predict.
+        The number of time steps ahead into the future the regression model is to predict.
+    output_chunk_shift
+        Optionally, the number of time steps to shift the output chunk ahead into the future.
     past_covariates
         Optionally, the past covariates series that the regression model will use as inputs. Unlike the
         `target_series`, `past_covariates` are *not* to be predicted by the regression model.
@@ -374,7 +383,7 @@ def create_lagged_training_data(
     lags
         Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
         auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
-        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
+        `lags = [-3, -1]` will extract `target_series` values which are 3 time steps and 1 time step away from
         the current value). If the lags are provided as a dictionary, the lags values are specific to each
         component in the target series.
     lags_past_covariates
@@ -398,9 +407,9 @@ def create_lagged_training_data(
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
         especially in cases where many observations could be generated.
     multi_models
-        Optionally, specifies whether the regression model predicts multiple timesteps into the future. If `True`,
-        then the regression model is assumed to predict all of the timesteps from time `t` to `t+output_chunk_length`.
-        If `False`, then the regression model is assumed to predict *only* the timestep at `t+output_chunk_length`.
+        Optionally, specifies whether the regression model predicts multiple time steps into the future. If `True`,
+        then the regression model is assumed to predict all of the time steps from time `t` to `t+output_chunk_length`.
+        If `False`, then the regression model is assumed to predict *only* the time step at `t+output_chunk_length`.
     check_inputs
         Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
         to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
@@ -460,6 +469,7 @@ def create_lagged_training_data(
         lags_past_covariates=lags_past_covariates,
         lags_future_covariates=lags_future_covariates,
         output_chunk_length=output_chunk_length,
+        output_chunk_shift=output_chunk_shift,
         uses_static_covariates=uses_static_covariates,
         last_static_covariates_shape=last_static_covariates_shape,
         max_samples_per_ts=max_samples_per_ts,
@@ -507,7 +517,7 @@ def create_lagged_prediction_data(
     lags
         Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
         auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
-        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
+        `lags = [-3, -1]` will extract `target_series` values which are 3 time steps and 1 time step away from
         the current value). If the lags are provided as a dictionary, the lags values are specific to each
         component in the target series.
     lags_past_covariates
@@ -798,6 +808,7 @@ def create_lagged_component_names(
 def _create_lagged_data_by_moving_window(
     target_series: Optional[TimeSeries],
     output_chunk_length: int,
+    output_chunk_shift: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     lags: Optional[Union[Sequence[int], Dict[str, List[int]]]],
@@ -829,6 +840,7 @@ def _create_lagged_data_by_moving_window(
         lags_past_covariates,
         lags_future_covariates,
         output_chunk_length,
+        output_chunk_shift,
         is_training=is_training,
         return_min_and_max_lags=True,
         check_inputs=check_inputs,
@@ -1017,6 +1029,7 @@ def _extract_lagged_vals_from_windows(
 def _create_lagged_data_by_intersecting_times(
     target_series: TimeSeries,
     output_chunk_length: int,
+    output_chunk_shift: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     lags: Optional[Sequence[int]],
@@ -1044,6 +1057,7 @@ def _create_lagged_data_by_intersecting_times(
         lags_past_covariates,
         lags_future_covariates,
         output_chunk_length,
+        output_chunk_shift,
         is_training=is_training,
         return_min_and_max_lags=True,
         check_inputs=check_inputs,
@@ -1145,6 +1159,7 @@ def _get_feature_times(
     lags_past_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
     lags_future_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]] = None,
     output_chunk_length: int = 1,
+    output_chunk_shift: int = 0,
     is_training: bool = True,
     return_min_and_max_lags: bool = False,
     check_inputs: bool = True,
@@ -1170,7 +1185,7 @@ def _get_feature_times(
     The values contained in `lags_future_covariates`, on the other hand, can be negative, zero, or positive; this
     means that there are three cases to consider:
         1. Both `min_lag` and `max_lag` are positive, which means that all the values in `lags_future_covariates`
-        are negative. In this case, `min_lag` and `max_lag` correspond to the to the smallest and largest
+        are negative. In this case, `min_lag` and `max_lag` correspond to the smallest and largest
         lag magnitudes respectively. For example:
                 `lags_future_covariates = [-3, -2, -1] -> min_lag = 1, max_lag = 3`
         2. `min_lag` is non-positive (i.e. zero or negative), but `max_lag` is positive, which means that
@@ -1188,16 +1203,16 @@ def _get_feature_times(
         2. `max_lag <= 0` is a sufficient condition for `min_lag` and `max_lag` both being non-positive (i.e. Case 2).
 
     To extract feature times from a `target_series` when `is_training = True`, the following steps are performed:
-        1. The first `max_lag` times of the series are excluded; these times have too few preceeding values to
+        1. The first `max_lag` times of the series are excluded; these times have too few preceding values to
         construct features from.
-        2. The last `output_chunk_length - 1` times are excluded; these times have too few succeeding times
-        to construct labels from.
+        2. The last `output_chunk_length - 1` times are excluded; these times have too few
+        succeeding times to construct labels from.
 
     To extract feature times from a `target_series` when `is_training = False`, the following steps are performed:
         1. An additional `min_lag` times are appended to the end of the series; although these times are not contained
         in the original series, we're able to construct features for them since we only need the values of the series
         from time `t - max_lag` to `t - min_lag` to construct a feature for time `t`.
-        2. The first `max_lag` times of the series are then excluded; these times have too few preceeding values to
+        2. The first `max_lag` times of the series are then excluded; these times have too few preceding values to
         construct features from.
     The exact same procedure is performed to extract the feature times from a `past_covariates` series.
 
@@ -1245,8 +1260,10 @@ def _get_feature_times(
     lags_future_covariates
         Optionally, the lags of `future_covariates` to be used as features.
     output_chunk_length
-        Optionally, the number of timesteps ahead into the future the regression model is to predict. This is ignored
+        Optionally, the number of time steps ahead into the future the regression model is to predict. This is ignored
         if `is_training = False`.
+    output_chunk_shift
+        Optionally, the number of time steps to shift the output chunk ahead into the future.
     is_training
         Optionally, specifies that training data is to be generated from the specified series. If `True`,
         `target_series`, `output_chunk_length`, and `multi_models` must all be specified.
@@ -1312,11 +1329,12 @@ def _get_feature_times(
 
         if check_inputs and (series_i is not None):
             _check_series_length(
-                series_i,
-                lags_i,
-                output_chunk_length,
-                is_training,
-                name_i,
+                series=series_i,
+                lags=lags_i,
+                output_chunk_length=output_chunk_length,
+                output_chunk_shift=output_chunk_shift,
+                is_training=is_training,
+                name=name_i,
             )
         series_specified = series_i is not None
         lags_specified = lags_i is not None
@@ -1692,6 +1710,7 @@ def _check_series_length(
     series: TimeSeries,
     lags: Union[None, Sequence[int]],
     output_chunk_length: int,
+    output_chunk_shift: int,
     is_training: bool,
     name: Literal["target_series", "past_covariates", "future_covariates"],
 ) -> None:
@@ -1707,9 +1726,11 @@ def _check_series_length(
             "-min(lags) + output_chunk_length"
             if lags_specified
             else "output_chunk_length"
-        )
+        ) + " + output_chunk_shift"
         minimum_len = (
-            -min(lags) + output_chunk_length if lags_specified else output_chunk_length
+            output_chunk_length
+            + output_chunk_shift
+            + (-min(lags) if lags_specified else 0)
         )
     elif lags_specified:
         lags_name = "lags" if name == "target_series" else f"lags_{name}"
@@ -1720,7 +1741,7 @@ def _check_series_length(
             series.n_timesteps < minimum_len,
             (
                 f"`{name}` must have at least "
-                f"`{minimum_len_str}` = {minimum_len} timesteps; "
+                f"`{minimum_len_str}` = {minimum_len} time steps; "
                 f"instead, it only has {series.n_timesteps}."
             ),
         )

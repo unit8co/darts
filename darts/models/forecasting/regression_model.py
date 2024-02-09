@@ -523,6 +523,7 @@ class RegressionModel(GlobalForecastingModel):
         ) = create_lagged_training_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             lags=self._get_lags("target"),

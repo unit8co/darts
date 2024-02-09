@@ -149,7 +149,7 @@ def _optimized_historical_forecasts_last_points_only(
 
         forecasts_list.append(
             TimeSeries.from_times_and_values(
-                times=times[0] + model.output_chunk_shift
+                times=times[0]
                 if stride == 1 and model.output_chunk_length == 1
                 else generate_index(
                     start=hist_fct_start

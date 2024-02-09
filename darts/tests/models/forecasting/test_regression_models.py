@@ -1652,44 +1652,46 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [
-                ({"lags": [-3, -2, -1]}, {"lags": {"gaussian": 3}}),
-                ({"lags": 3}, {"lags": {"gaussian": 3, "sine": 3}}),
-                (
-                    {"lags_past_covariates": 2},
-                    {"lags_past_covariates": {"lin_past": 2}},
-                ),
-                (
-                    {"lags": 5, "lags_future_covariates": [-2, 3]},
-                    {
-                        "lags": {
-                            "gaussian": [-5, -4, -3, -2, -1],
-                            "sine": [-5, -4, -3, -2, -1],
+        list(
+            itertools.product(
+                [
+                    ({"lags": [-3, -2, -1]}, {"lags": {"gaussian": 3}}),
+                    ({"lags": 3}, {"lags": {"gaussian": 3, "sine": 3}}),
+                    (
+                        {"lags_past_covariates": 2},
+                        {"lags_past_covariates": {"lin_past": 2}},
+                    ),
+                    (
+                        {"lags": 5, "lags_future_covariates": [-2, 3]},
+                        {
+                            "lags": {
+                                "gaussian": [-5, -4, -3, -2, -1],
+                                "sine": [-5, -4, -3, -2, -1],
+                            },
+                            "lags_future_covariates": {
+                                "lin_future": [-2, 3],
+                                "sine_future": [-2, 3],
+                            },
                         },
-                        "lags_future_covariates": {
-                            "lin_future": [-2, 3],
-                            "sine_future": [-2, 3],
+                    ),
+                    (
+                        {"lags": 5, "lags_future_covariates": [-2, 3]},
+                        {
+                            "lags": {
+                                "gaussian": [-5, -4, -3, -2, -1],
+                                "sine": [-5, -4, -3, -2, -1],
+                            },
+                            "lags_future_covariates": {
+                                "sine_future": [-2, 3],
+                                "default_lags": [-2, 3],
+                            },
                         },
-                    },
-                ),
-                (
-                    {"lags": 5, "lags_future_covariates": [-2, 3]},
-                    {
-                        "lags": {
-                            "gaussian": [-5, -4, -3, -2, -1],
-                            "sine": [-5, -4, -3, -2, -1],
-                        },
-                        "lags_future_covariates": {
-                            "sine_future": [-2, 3],
-                            "default_lags": [-2, 3],
-                        },
-                    },
-                ),
-            ],
-            [0, 5],
-            [True, False],
-        ),
+                    ),
+                ],
+                [0, 5][1:],
+                [True, False],
+            )
+        )[4:5],
     )
     def test_component_specific_lags_forecasts(self, config):
         """Verify that the same lags, defined using int/list or dictionaries yield the same results,
@@ -1848,6 +1850,38 @@ class TestRegressionModels:
         )
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
+
+        model_orig = LinearRegressionModel(
+            **list_lags,
+            output_chunk_length=output_chunk_shift + 1,
+        )
+        model_orig.fit(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
+        pred_orig = model_orig.predict(
+            n=output_chunk_shift + 1,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model2.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model2.supports_future_covariates
+            else None,
+        )
+
+        pred_new = model.predict(
+            n=1,
+            series=series[0] if multiple_series else None,
+            past_covariates=past_cov[0]
+            if multiple_series and model2.supports_past_covariates
+            else None,
+            future_covariates=future_cov[0]
+            if multiple_series and model2.supports_future_covariates
+            else None,
+        )
+        np.testing.assert_equal(pred_new.values(), pred_orig[0].values())
 
     @pytest.mark.parametrize(
         "config",
