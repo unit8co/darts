@@ -452,6 +452,7 @@ class RegressionModel(GlobalForecastingModel):
             if "target" in self.lags
             else self.output_chunk_length,
         )
+        # must be coherent with min_train_samples
 
     @property
     def min_train_samples(self) -> int:
