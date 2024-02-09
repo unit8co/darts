@@ -481,6 +481,8 @@ def _get_historical_forecastable_time_index(
 
     # if RegressionModel is not multi_models, it looks further in the past
     is_multi_models = getattr(model, "multi_models", None)
+    # should shift just to that we can squeeze 2 samples from the series for training, but
+    # indeed output_chunk_length for forecast (since they are not optional)
     if is_multi_models is not None and not is_multi_models:
         intersect_ = (
             intersect_[0] + (model.output_chunk_length - 1) * series.freq,
