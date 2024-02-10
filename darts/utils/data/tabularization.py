@@ -102,7 +102,7 @@ def create_lagged_data(
     `lags_future_covariates` can contain negative, positive, and/or zero lag values (i.e. we *can* use the values of
     `future_covariates` at time `t` or beyond to predict the value of `target_series` at time `t`).
 
-    The exact method used to construct `X` and `y` depends on whether all of the specified timeseries are
+    The exact method used to construct `X` and `y` depends on whether all specified timeseries are
     of the same frequency or not:
         - If all specified timeseries are of the same frequency, `strided_moving_window` is used to extract
         contiguous time blocks from each timeseries; the lagged variables are then extracted from each window.
@@ -112,7 +112,7 @@ def create_lagged_data(
     In cases where it can be validly applied, the 'moving window' method is expected to be faster than the
     'intersecting time' method. However, in exceptional cases where only a small number of lags are being
     extracted, but the difference between the lag values is large (e.g. `lags = [-1, -1000]`), the 'moving
-    window' method is expected to consume significantly more memory, since it extracts all of the series values
+    window' method is expected to consume significantly more memory, since it extracts all series values
     between the maximum and minimum lags as 'windows', before actually extracting the specific requested lag values.
 
     In order for the lagged features of a series to be added to `X`, *both* that series and the corresponding lags
@@ -182,7 +182,7 @@ def create_lagged_data(
         especially in cases where many observations could be generated.
     multi_models
         Optionally, specifies whether the regression model predicts multiple time steps into the future. If `True`,
-        then the regression model is assumed to predict all of the time steps from time `t` to `t+output_chunk_length`.
+        then the regression model is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
         If `False`, then the regression model is assumed to predict *only* the time step at `t+output_chunk_length`.
         This input is ignored if `is_training = False`.
     check_inputs
@@ -190,9 +190,9 @@ def create_lagged_data(
         to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
         should be set to `True`.
     use_moving_windows
-        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all
         provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
-        will always be used, even when all of the provided series are of the same frequency. In general, setting
+        will always be used, even when all provided series are of the same frequency. In general, setting
         to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
         details.
     is_training
@@ -207,7 +207,7 @@ def create_lagged_data(
         a `Sequence[np.ndarray]`. If each series input is specified as a `Sequence[TimeSeries]` and
         `concatenate = False`, `X` and `y` will be lists whose `i`th element corresponds to the feature matrix or label
         array formed by the `i`th `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True`
-        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all of the
+        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
 
@@ -408,16 +408,16 @@ def create_lagged_training_data(
         especially in cases where many observations could be generated.
     multi_models
         Optionally, specifies whether the regression model predicts multiple time steps into the future. If `True`,
-        then the regression model is assumed to predict all of the time steps from time `t` to `t+output_chunk_length`.
+        then the regression model is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
         If `False`, then the regression model is assumed to predict *only* the time step at `t+output_chunk_length`.
     check_inputs
         Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
         to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
         should be set to `True`.
     use_moving_windows
-        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all
         provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
-        will always be used, even when all of the provided series are of the same frequency. In general, setting
+        will always be used, even when all provided series are of the same frequency. In general, setting
         to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
         details.
     concatenate
@@ -425,7 +425,7 @@ def create_lagged_training_data(
         a `Sequence[np.ndarray]`. If each series input is specified as a `Sequence[TimeSeries]` and
         `concatenate = False`, `X` and `y` will be lists whose `i`th element corresponds to the feature matrix or label
         array formed by the `i`th `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True`
-        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all of the
+        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
 
@@ -545,9 +545,9 @@ def create_lagged_prediction_data(
         to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
         should be set to `True`.
     use_moving_windows
-        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all
         provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
-        will always be used, even when all of the provided series are of the same frequency. In general, setting
+        will always be used, even when all provided series are of the same frequency. In general, setting
         to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
         details.
     concatenate
@@ -555,7 +555,7 @@ def create_lagged_prediction_data(
         `Sequence[np.ndarray]`. If each series input is specified as a `Sequence[TimeSeries]` and `concatenate = False`,
         `X` will be a list whose `i`th element corresponds to the feature matrix or label array formed by the `i`th
         `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True` when
-        `Sequence[TimeSeries]` are provided, then `X` will be an array created by concatenating all of the feature
+        `Sequence[TimeSeries]` are provided, then `X` will be an array created by concatenating all feature
         arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
 
@@ -935,7 +935,7 @@ def _create_lagged_data_by_moving_window(
                 first_window_start_idx : first_window_end_idx + num_samples - 1, :, :
             ]
             windows = strided_moving_window(
-                vals, window_len, stride=1, axis=0, check_inputs=False
+                x=vals, window_len=window_len, stride=1, axis=0, check_inputs=False
             )
             # Within each window, the `-1` indexed value (i.e. the value at the very end of
             # the window) corresponds to time `t - min_lag_i`. The negative index of the time
@@ -958,9 +958,11 @@ def _create_lagged_data_by_moving_window(
     if is_training:
         # All values between times `t` and `t + output_chunk_length` used as labels:
         # Window taken between times `t` and `t + output_chunk_length - 1`:
-        first_window_start_idx = target_start_time_idx
+        first_window_start_idx = target_start_time_idx + output_chunk_shift
         # Add `+ 1` since end index is exclusive in Python:
-        first_window_end_idx = target_start_time_idx + output_chunk_length
+        first_window_end_idx = (
+            target_start_time_idx + output_chunk_length + output_chunk_shift
+        )
         # To create `(num_samples - 1)` other windows in addition to first window,
         # must take `(num_samples - 1)` values ahead of `first_window_end_idx`
         vals = target_series.all_values(copy=False)[
@@ -969,7 +971,7 @@ def _create_lagged_data_by_moving_window(
             :,
         ]
         windows = strided_moving_window(
-            vals,
+            x=vals,
             window_len=output_chunk_length,
             stride=1,
             axis=0,
@@ -995,7 +997,7 @@ def _extract_lagged_vals_from_windows(
     is done such that the order of elements along axis 1 matches the pattern
     described in the docstring of `create_lagged_data`.
 
-    If `lags_to_extract` is not specified, all of the values within each window is extracted.
+    If `lags_to_extract` is not specified, all values within each window is extracted.
     If `lags_to_extract` is specified as an np.ndarray, then only those values within each window that
     are indexed by `lags_to_extract` will be returned. In such cases, the shape of the returned
     lagged values is `(num_windows, num_components * lags_to_extract.size, num_series)`. For example,
@@ -1128,10 +1130,16 @@ def _create_lagged_data_by_intersecting_times(
     if is_training:
         if multi_models:
             # All points between time `t` and `t + output_chunk_length - 1` are labels:
-            idx_to_get = label_shared_time_idx + np.arange(output_chunk_length)
+            idx_to_get = (
+                label_shared_time_idx
+                + np.arange(output_chunk_length)
+                + output_chunk_shift
+            )
         else:
             # Only point at time `t + output_chunk_length - 1` is a label:
-            idx_to_get = label_shared_time_idx + output_chunk_length - 1
+            idx_to_get = (
+                label_shared_time_idx + output_chunk_length + output_chunk_shift - 1
+            )
         # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
         lagged_vals = target_series.all_values(copy=False)[idx_to_get, :, :]
         # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
@@ -1167,7 +1175,7 @@ def _get_feature_times(
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
     `future_covariates` that *could* be used to create features. The returned tuple of times can then be passed
-    to `get_shared_times` to compute the 'eligible time points' shared by all of the specified series.
+    to `get_shared_times` to compute the 'eligible time points' shared by all specified series.
 
     Notes
     -----
@@ -1205,7 +1213,7 @@ def _get_feature_times(
     To extract feature times from a `target_series` when `is_training = True`, the following steps are performed:
         1. The first `max_lag` times of the series are excluded; these times have too few preceding values to
         construct features from.
-        2. The last `output_chunk_length - 1` times are excluded; these times have too few
+        2. The last `output_chunk_length - output_chunk_shift - 1` times are excluded; these times have too few
         succeeding times to construct labels from.
 
     To extract feature times from a `target_series` when `is_training = False`, the following steps are performed:
@@ -1344,7 +1352,10 @@ def _get_feature_times(
         min_lag_i = -max(lags_i) if lags_specified else None
         if is_label_series:
             # Exclude last `output_chunk_length - 1` times:
-            end_idx = -output_chunk_length + 1 if output_chunk_length > 1 else None
+            if not output_chunk_shift:
+                end_idx = -output_chunk_length + 1 if output_chunk_length > 1 else None
+            else:
+                end_idx = -output_chunk_length - output_chunk_shift + 1
             times_i = times_i[:end_idx]
         elif series_specified and lags_specified:
             # Prepend times to start of series - see Step 1a for extracting
@@ -1355,7 +1366,9 @@ def _get_feature_times(
             # Append times to end of series - see Step 1b for extracting features
             # times from `future_covariates`, or Step 1 for extracting features
             # from `target_series`/`past_covariates` in `Notes`:
-            new_end = times_i[-1] + series_i.freq * min_lag_i if min_lag_i > 0 else None
+            new_end = (
+                times_i[-1] + series_i.freq * (min_lag_i) if min_lag_i > 0 else None
+            )
             times_i = _extend_time_index(
                 times_i, series_i.freq, new_start=new_start, new_end=new_end
             )
@@ -1378,6 +1391,7 @@ def _get_feature_times(
             warnings.warn(
                 f"`{specified}` was specified without accompanying `{unspecified}` and, thus, will be ignored."
             )
+
         feature_times.append(times_i)
         # Note `max_lag_i` and `min_lag_i` if requested:
         if series_specified and lags_specified:
@@ -1397,7 +1411,7 @@ def get_shared_times(
     *series_or_times: Union[TimeSeries, pd.Index, None], sort: bool = True
 ) -> pd.Index:
     """
-    Returns the times shared by all of the specified `TimeSeries` or time indexes (i.e. the intersection of all
+    Returns the times shared by all specified `TimeSeries` or time indexes (i.e. the intersection of all
     these times). If `sort = True`, then these shared times are sorted from earliest to latest. Any `TimeSeries` or
     time indices in `series_or_times` that aren't specified (i.e. are `None`) are simply ignored.
 
@@ -1411,7 +1425,7 @@ def get_shared_times(
     Returns
     -------
     shared_times
-        The time indices present in all of the specified `TimeSeries` and/or time indices.
+        The time indices present in all specified `TimeSeries` and/or time indices.
 
     Raises
     ------
@@ -1471,13 +1485,13 @@ def get_shared_times_bounds(
     *series_or_times: Sequence[Union[TimeSeries, pd.Index, None]]
 ) -> Union[Tuple[pd.Index, pd.Index], None]:
     """
-    Returns the latest `start_time` and the earliest `end_time` among all of the non-`None` `series_or_times`;
+    Returns the latest `start_time` and the earliest `end_time` among all non-`None` `series_or_times`;
     these are (non-tight) lower and upper `bounds` on the intersection of all these `series_or_times` respectively.
-    If no potential overlap exists between all of the specified series, `None` is returned instead.
+    If no potential overlap exists between all specified series, `None` is returned instead.
 
     Notes
     -----
-    If all of the specified `series_or_times` are of the same frequency, then `get_shared_times_bounds`
+    If all specified `series_or_times` are of the same frequency, then `get_shared_times_bounds`
     returns tight `bounds` (i.e. the earliest and latest time within the intersection of all the timeseries
     is returned). To see this, suppose we have three equal-frequency series with observations made at different
     times:
@@ -1491,7 +1505,7 @@ def get_shared_times_bounds(
         Series 2:    |---|---
         Series 3:  --|---|-
                          UB
-    If the specified timeseries are *not* all of the same frequency, then the returned `bounds` is potentially non-tight
+    If the specified timeseries are *not* of the same frequency, then the returned `bounds` is potentially non-tight
     (i.e. `LB <= intersection.start_time() < intersection.end_time() <= UB`, where `intersection` are the times shared
     by all specified timeseries)
 
@@ -1658,7 +1672,7 @@ def _extend_time_index(
 
 def _get_freqs(*series: Union[TimeSeries, None]):
     """
-    Returns list with the frequency of all of the specified (i.e. non-`None`) `series`.
+    Returns list with the frequency of all specified (i.e. non-`None`) `series`.
     """
     freqs = []
     for ts in series:
@@ -1669,7 +1683,7 @@ def _get_freqs(*series: Union[TimeSeries, None]):
 
 def _all_equal_freq(*series: Union[TimeSeries, None]) -> bool:
     """
-    Returns `True` is all of the specified (i.e. non-`None`) `series` have the same frequency.
+    Returns `True` if all specified (i.e. non-`None`) `series` have the same frequency.
     """
     freqs = _get_freqs(*series)
     return len(set(freqs)) == 1
