@@ -465,7 +465,7 @@ class RegressionModel(GlobalForecastingModel):
             max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
-            0,
+            self.output_chunk_shift,
         )
 
     @property
@@ -914,14 +914,19 @@ class RegressionModel(GlobalForecastingModel):
 
                 # check for sufficient covariate data
                 if not (cov.start_time() <= start_ts and cov.end_time() >= end_ts):
+                    index_text = (
+                        " "
+                        if called_with_single_series
+                        else f" at list/sequence index {idx} "
+                    )
                     raise_log(
                         ValueError(
-                            f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently "
-                            f"long. Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                            f"The `{cov_type}_covariates`{index_text}are not long enough. "
+                            f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
                             f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
-                            f"`output_chunk_length={self.output_chunk_length}`, the {cov_type}_covariate has to range "
-                            f"from {start_ts} until {end_ts} (inclusive), but it ranges only from {cov.start_time()} "
-                            f"until {cov.end_time()}."
+                            f"`output_chunk_length={self.output_chunk_length}`, the `{cov_type}_covariates` have to "
+                            f"range from {start_ts} until {end_ts} (inclusive), but they only range from "
+                            f"{cov.start_time()} until {cov.end_time()}."
                         ),
                         logger=logger,
                     )

@@ -1474,73 +1474,6 @@ if TORCH_AVAILABLE:
                 == self.multivariate_series.n_components
             )
 
-        def helper_equality_encoders(
-            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
-        ):
-            if first_encoders is None:
-                first_encoders = {}
-            if second_encoders is None:
-                second_encoders = {}
-            assert {k: v for k, v in first_encoders.items() if k != "transformer"} == {
-                k: v for k, v in second_encoders.items() if k != "transformer"
-            }
-
-        def helper_equality_encoders_transfo(
-            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
-        ):
-            if first_encoders is None:
-                first_encoders = {}
-            if second_encoders is None:
-                second_encoders = {}
-            assert (
-                first_encoders.get("transformer", None).__class__
-                == second_encoders.get("transformer", None).__class__
-            )
-
-        def helper_create_RNNModel(self, model_name: str, tmpdir_fn):
-            return RNNModel(
-                input_chunk_length=4,
-                hidden_dim=3,
-                add_encoders={
-                    "cyclic": {"past": ["month"]},
-                    "datetime_attribute": {
-                        "past": ["hour"],
-                    },
-                    "transformer": Scaler(),
-                },
-                n_epochs=2,
-                model_name=model_name,
-                work_dir=tmpdir_fn,
-                force_reset=True,
-                save_checkpoints=True,
-                **tfm_kwargs,
-            )
-
-        def helper_create_DLinearModel(
-            self,
-            work_dir: Optional[str] = None,
-            model_name: str = "unitest_model",
-            add_encoders: Optional[Dict] = None,
-            save_checkpoints: bool = False,
-            likelihood: Optional[Likelihood] = None,
-            output_chunk_length: int = 1,
-            **kwargs,
-        ):
-            return DLinearModel(
-                input_chunk_length=4,
-                output_chunk_length=output_chunk_length,
-                model_name=model_name,
-                add_encoders=add_encoders,
-                work_dir=work_dir,
-                save_checkpoints=save_checkpoints,
-                random_state=42,
-                force_reset=True,
-                n_epochs=1,
-                likelihood=likelihood,
-                **tfm_kwargs,
-                **kwargs,
-            )
-
         @pytest.mark.parametrize(
             "config",
             itertools.product(
@@ -1569,10 +1502,11 @@ if TORCH_AVAILABLE:
             """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length.
             RNNModel does not support shift output chunk.
             """
+            np.random.seed(0)
             (model_cls, add_params), shift = config
             icl = 8
             ocl = 7
-            series = tg.linear_timeseries(
+            series = tg.gaussian_timeseries(
                 length=28, start=pd.Timestamp("2000-01-01"), freq="d"
             )
 
@@ -1652,6 +1586,7 @@ if TORCH_AVAILABLE:
                 forecast_horizon=ocl,
                 last_points_only=False,
                 enable_optimization=False,
+                **covs,
             )
             assert len(hist_fc) == 1
             assert hist_fc[0] == pred_last_hist_fc
@@ -1664,6 +1599,7 @@ if TORCH_AVAILABLE:
                 forecast_horizon=ocl,
                 last_points_only=False,
                 enable_optimization=True,
+                **covs,
             )
             assert len(hist_fc_opt) == 1
             assert hist_fc_opt[0].time_index.equals(pred_last_hist_fc.time_index)
@@ -1681,6 +1617,73 @@ if TORCH_AVAILABLE:
                 assert f"provided {cov_name} covariates at dataset index" in str(
                     err.value
                 )
+
+        def helper_equality_encoders(
+            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        ):
+            if first_encoders is None:
+                first_encoders = {}
+            if second_encoders is None:
+                second_encoders = {}
+            assert {k: v for k, v in first_encoders.items() if k != "transformer"} == {
+                k: v for k, v in second_encoders.items() if k != "transformer"
+            }
+
+        def helper_equality_encoders_transfo(
+            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        ):
+            if first_encoders is None:
+                first_encoders = {}
+            if second_encoders is None:
+                second_encoders = {}
+            assert (
+                first_encoders.get("transformer", None).__class__
+                == second_encoders.get("transformer", None).__class__
+            )
+
+        def helper_create_RNNModel(self, model_name: str, tmpdir_fn):
+            return RNNModel(
+                input_chunk_length=4,
+                hidden_dim=3,
+                add_encoders={
+                    "cyclic": {"past": ["month"]},
+                    "datetime_attribute": {
+                        "past": ["hour"],
+                    },
+                    "transformer": Scaler(),
+                },
+                n_epochs=2,
+                model_name=model_name,
+                work_dir=tmpdir_fn,
+                force_reset=True,
+                save_checkpoints=True,
+                **tfm_kwargs,
+            )
+
+        def helper_create_DLinearModel(
+            self,
+            work_dir: Optional[str] = None,
+            model_name: str = "unitest_model",
+            add_encoders: Optional[Dict] = None,
+            save_checkpoints: bool = False,
+            likelihood: Optional[Likelihood] = None,
+            output_chunk_length: int = 1,
+            **kwargs,
+        ):
+            return DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=output_chunk_length,
+                model_name=model_name,
+                add_encoders=add_encoders,
+                work_dir=work_dir,
+                save_checkpoints=save_checkpoints,
+                random_state=42,
+                force_reset=True,
+                n_epochs=1,
+                likelihood=likelihood,
+                **tfm_kwargs,
+                **kwargs,
+            )
 
         def helper_create_torch_model(self, model_cls, icl, ocl, shift, **kwargs):
             params = {

@@ -895,7 +895,9 @@ def _create_lagged_data_by_moving_window(
             # for all feature times - these values will become labels.
             # If `start_time` not included in `time_index_i`, can 'manually' calculate
             # what its index *would* be if `time_index_i` were extended to include that time:
-            if not is_target_series and (time_index_i[-1] < start_time):
+            if time_index_i[0] == start_time:
+                start_time_idx = 0
+            elif not is_target_series and (time_index_i[-1] < start_time):
                 # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’)
                 if pd.to_timedelta(series_i.freq, errors="coerce") is not pd.NaT:
                     start_time_idx = (
@@ -916,7 +918,7 @@ def _create_lagged_data_by_moving_window(
                             )
                         )
                     )
-            elif not is_target_series and (time_index_i[0] >= start_time):
+            elif not is_target_series and (time_index_i[0] > start_time):
                 start_time_idx = max_lag_i
             # If `start_time` *is* included in `time_index_i`, need to binary search `time_index_i`
             # for its position:

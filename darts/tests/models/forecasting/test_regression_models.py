@@ -1787,6 +1787,10 @@ class TestRegressionModels:
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
 
+        # auto-regression not support for shifted output (tested in `test_output_shift`)
+        if output_chunk_shift:
+            return
+
         # n > output_chunk_length
         pred = model.predict(
             max_forecast,
@@ -2043,6 +2047,169 @@ class TestRegressionModels:
                 pred_[-ocl_shifted:].all_values(copy=False),
                 pred_shift_adj_.all_values(copy=False),
             )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                {"lags": [-1, -3]},
+                {"lags_past_covariates": 2},
+                {"lags_future_covariates": [-2, -1]},
+                {"lags_future_covariates": [1, 2]},
+                {
+                    "lags": 5,
+                    "lags_past_covariates": [-3, -1],
+                },
+                {"lags": [-5, -4], "lags_future_covariates": [-2, 0, 1, 2]},
+                {
+                    "lags": 5,
+                    "lags_past_covariates": 4,
+                    "lags_future_covariates": [-3, 1],
+                },
+            ],
+            [3, 7, 10],
+        ),
+    )
+    def test_output_shift(self, config):
+        """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length."""
+        np.random.seed(0)
+        lags, shift = config
+        ocl = 7
+        series = tg.gaussian_timeseries(
+            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+        )
+
+        model_target_only = LinearRegressionModel(
+            lags=3,
+            output_chunk_length=ocl,
+            output_chunk_shift=shift,
+        )
+        model_target_only.fit(series)
+
+        # no auto-regression with shifted output
+        with pytest.raises(ValueError) as err:
+            _ = model_target_only.predict(n=ocl + 1)
+        assert str(err.value).startswith("Cannot perform auto-regression")
+
+        # pred starts with a shift
+        for ocl_test in [ocl - 1, ocl]:
+            pred = model_target_only.predict(n=ocl_test)
+            assert pred.start_time() == series.end_time() + (shift + 1) * series.freq
+            assert len(pred) == ocl_test
+            assert pred.freq == series.freq
+
+        # check that shifted output chunk results with encoders are the
+        # same as using identical covariates
+        model = LinearRegressionModel(
+            **lags,
+            output_chunk_length=ocl,
+            output_chunk_shift=shift,
+        )
+
+        series, past_cov, future_cov = self.helper_generate_input_series_from_lags(
+            lags,
+            {},
+            multiple_series=False,
+            output_chunk_shift=shift,
+            max_forecast=ocl,
+            output_chunk_length=ocl,
+            add_length=2,  # add length for hist fc that don't use target lags
+        )
+
+        # model trained on encoders
+        cov_support = []
+        covs = {}
+        if model.supports_past_covariates:
+            cov_support.append("past")
+            covs["past_covariates"] = tg.datetime_attribute_timeseries(
+                past_cov,
+                attribute="dayofweek",
+                add_length=0,
+            )
+        if model.supports_future_covariates:
+            cov_support.append("future")
+            covs["future_covariates"] = tg.datetime_attribute_timeseries(
+                future_cov,
+                attribute="dayofweek",
+                add_length=0,
+            )
+
+        if not cov_support:
+            return
+
+        add_encoders = {
+            "datetime_attribute": {cov: ["dayofweek"] for cov in cov_support}
+        }
+        model_enc_shift = LinearRegressionModel(
+            **lags,
+            output_chunk_length=ocl,
+            output_chunk_shift=shift,
+            add_encoders=add_encoders,
+        )
+        model_enc_shift.fit(series)
+
+        # model trained with identical covariates
+        model_fc_shift = LinearRegressionModel(
+            **lags,
+            output_chunk_length=ocl,
+            output_chunk_shift=shift,
+        )
+        model_fc_shift.fit(series, **covs)
+
+        pred_enc = model_enc_shift.predict(n=ocl)
+        pred_fc = model_fc_shift.predict(n=ocl)
+        assert pred_enc == pred_fc
+
+        # check that historical forecasts works properly
+        hist_fc_start = -(ocl + shift)
+        pred_last_hist_fc = model_fc_shift.predict(n=ocl, series=series[:hist_fc_start])
+        # non-optimized hist fc
+        hist_fc = model_fc_shift.historical_forecasts(
+            series=series,
+            start=hist_fc_start,
+            start_format="position",
+            retrain=False,
+            forecast_horizon=ocl,
+            last_points_only=False,
+            enable_optimization=False,
+            **covs,
+        )
+        assert len(hist_fc) == 1
+        assert hist_fc[0] == pred_last_hist_fc
+        # optimized hist fc, routine: last_points_only=False
+        hist_fc_opt = model_fc_shift.historical_forecasts(
+            series=series,
+            start=hist_fc_start,
+            start_format="position",
+            retrain=False,
+            forecast_horizon=ocl,
+            last_points_only=False,
+            enable_optimization=True,
+            **covs,
+        )
+        assert len(hist_fc_opt) == 1
+        assert hist_fc_opt[0].time_index.equals(pred_last_hist_fc.time_index)
+        np.testing.assert_array_almost_equal(
+            hist_fc_opt[0].values(copy=False), pred_last_hist_fc.values(copy=False)
+        )
+
+        # optimized hist fc, routine: last_points_only=True
+        hist_fc_opt = model_fc_shift.historical_forecasts(
+            series=series,
+            start=hist_fc_start,
+            start_format="position",
+            retrain=False,
+            forecast_horizon=ocl,
+            last_points_only=True,
+            enable_optimization=True,
+            **covs,
+        )
+        assert isinstance(hist_fc_opt, TimeSeries)
+        assert len(hist_fc_opt) == 1
+        assert hist_fc_opt.start_time() == pred_last_hist_fc.end_time()
+        np.testing.assert_array_almost_equal(
+            hist_fc_opt.values(copy=False), pred_last_hist_fc[-1].values(copy=False)
+        )
 
     @pytest.mark.parametrize(
         "config",
@@ -2629,6 +2796,7 @@ class TestRegressionModels:
         output_chunk_shift,
         max_forecast,
         output_chunk_length: int = 1,
+        add_length: int = 0,
     ):
         np.random.seed(0)
         if dict_lags:
@@ -2650,7 +2818,7 @@ class TestRegressionModels:
         autoreg_add_steps = max(max_forecast - model.output_chunk_length, 0)
 
         # create series based on the model parameters
-        n_s = model.min_train_series_length
+        n_s = model.min_train_series_length + add_length
         series = tg.gaussian_timeseries(length=n_s, column_name="gaussian")
         if multivar_target:
             series = series.stack(tg.sine_timeseries(length=n_s, column_name="sine"))

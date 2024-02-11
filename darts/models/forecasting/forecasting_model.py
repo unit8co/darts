@@ -329,6 +329,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
+        if self.output_chunk_shift and n > self.output_chunk_length:
+            raise_log(
+                ValueError(
+                    "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
+                    "shifted output chunk `(output_chunk_shift > 0)`."
+                ),
+                logger=logger,
+            )
+
         if not self._is_probabilistic and num_samples > 1:
             raise_log(
                 ValueError(
