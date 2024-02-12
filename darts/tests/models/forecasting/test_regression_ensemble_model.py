@@ -892,6 +892,31 @@ class TestRegressionEnsembleModels:
             pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values()
         ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
 
+    def test_wrong_model_creation_params(self):
+        """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the forecasting
+        model predictions), it is not supported."""
+        forcasting_models = [
+            self.get_deterministic_global_model(2),
+            self.get_deterministic_global_model([-5, -7]),
+        ]
+        RegressionEnsembleModel(
+            forecasting_models=forcasting_models,
+            regression_train_n_points=10,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=[0], output_chunk_length=2, multi_models=True
+            ),
+        )
+        with pytest.raises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=forcasting_models,
+                regression_train_n_points=10,
+                regression_model=LinearRegressionModel(
+                    lags_future_covariates=[0],
+                    output_chunk_length=2,
+                    multi_models=False,
+                ),
+            )
+
     @staticmethod
     def get_probabilistic_global_model(
         lags: Union[int, List[int]],

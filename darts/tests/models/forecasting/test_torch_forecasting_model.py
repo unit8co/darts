@@ -1189,29 +1189,35 @@ if TORCH_AVAILABLE:
                 # should not raise an error
                 model.fit(self.series, epochs=1)
 
-        def test_lr_schedulers(self):
-
-            lr_schedulers = [
+        @pytest.mark.parametrize(
+            "lr_scheduler",
+            [
                 (torch.optim.lr_scheduler.StepLR, {"step_size": 10}),
                 (
                     torch.optim.lr_scheduler.ReduceLROnPlateau,
-                    {"threshold": 0.001, "monitor": "train_loss"},
+                    {
+                        "threshold": 0.001,
+                        "monitor": "train_loss",
+                        "interval": "step",
+                        "frequency": 2,
+                    },
                 ),
                 (torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.09}),
-            ]
-
-            for lr_scheduler_cls, lr_scheduler_kwargs in lr_schedulers:
-                model = RNNModel(
-                    12,
-                    "RNN",
-                    10,
-                    10,
-                    lr_scheduler_cls=lr_scheduler_cls,
-                    lr_scheduler_kwargs=lr_scheduler_kwargs,
-                    **tfm_kwargs,
-                )
-                # should not raise an error
-                model.fit(self.series, epochs=1)
+            ],
+        )
+        def test_lr_schedulers(self, lr_scheduler):
+            lr_scheduler_cls, lr_scheduler_kwargs = lr_scheduler
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                lr_scheduler_cls=lr_scheduler_cls,
+                lr_scheduler_kwargs=lr_scheduler_kwargs,
+                **tfm_kwargs,
+            )
+            # should not raise an error
+            model.fit(self.series, epochs=1)
 
         def test_wrong_model_creation_params(self):
             valid_kwarg = {"pl_trainer_kwargs": {}}
