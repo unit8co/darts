@@ -16,7 +16,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.utils import get_single_series, series2seq
+from darts.utils.utils import get_single_series, n_steps_between, series2seq
 
 logger = get_logger(__name__)
 
@@ -886,6 +886,9 @@ def _create_lagged_data_by_moving_window(
         is_target_series = is_training and (i == 0)
         if is_target_series or series_and_lags_specified:
             time_index_i = series_i.time_index
+
+            if time_index_i[0] == start_time:
+                start_time_idx = 0
             # If lags are sufficiently large, `series_i` may not contain all
             # feature times. For example, if `lags_past_covariates = [-50]`,
             # then we can construct features for time `51` using the value
@@ -895,31 +898,19 @@ def _create_lagged_data_by_moving_window(
             # for all feature times - these values will become labels.
             # If `start_time` not included in `time_index_i`, can 'manually' calculate
             # what its index *would* be if `time_index_i` were extended to include that time:
-            if time_index_i[0] == start_time:
-                start_time_idx = 0
             elif not is_target_series and (time_index_i[-1] < start_time):
-                # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’)
-                if pd.to_timedelta(series_i.freq, errors="coerce") is not pd.NaT:
-                    start_time_idx = (
-                        len(time_index_i)
-                        - 1
-                        + (start_time - time_index_i[-1]) // series_i.freq
+                start_time_idx = (
+                    len(time_index_i)
+                    - 1
+                    + n_steps_between(
+                        end=start_time, start=time_index_i[-1], freq=series_i.freq
                     )
-                else:
-                    # Create a temporary DatetimeIndex to extract the actual start index.
-                    start_time_idx = (
-                        len(time_index_i)
-                        - 1
-                        + len(
-                            pd.date_range(
-                                start=time_index_i[-1] + series_i.freq,
-                                end=start_time,
-                                freq=series_i.freq,
-                            )
-                        )
-                    )
+                )
+            # future covariates can start after `start_time` if all lags are > 0
             elif not is_target_series and (time_index_i[0] > start_time):
-                start_time_idx = max_lag_i
+                start_time_idx = -n_steps_between(
+                    end=time_index_i[0], start=start_time, freq=series_i.freq
+                )
             # If `start_time` *is* included in `time_index_i`, need to binary search `time_index_i`
             # for its position:
             else:
