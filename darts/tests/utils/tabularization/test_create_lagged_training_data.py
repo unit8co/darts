@@ -973,10 +973,8 @@ class TestCreateLaggedTrainingData:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
-            )
+        itertools.product(
+            [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
         ),
     )
     def test_lagged_training_data_single_point(self, config):
