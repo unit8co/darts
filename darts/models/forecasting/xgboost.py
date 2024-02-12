@@ -258,7 +258,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                     past_covariates=val_past_covariates,
                     future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
-                )
+                )[:2]
             ]
 
         # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
@@ -324,7 +324,9 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         # more than for other regression models
         return max(
             3,
-            -self.lags["target"][0] + self.output_chunk_length + 1
-            if "target" in self.lags
-            else self.output_chunk_length,
+            (
+                -self.lags["target"][0] + self.output_chunk_length + 1
+                if "target" in self.lags
+                else self.output_chunk_length
+            ),
         )

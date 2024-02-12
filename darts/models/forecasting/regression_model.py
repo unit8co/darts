@@ -699,6 +699,9 @@ class RegressionModel(GlobalForecastingModel):
                 f"Invalid value for `sample_weight`: {sample_weight}."
                 f"Possible values are: equal, linear_decay, exponential_decay.",
             )
+        elif isinstance(sample_weight, TimeSeries):
+            # The error is caught later, should we still verify it here?
+            pass
 
         super().fit(
             series=seq2series(series),

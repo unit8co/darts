@@ -343,6 +343,8 @@ def create_lagged_data(
                 weights = exponential_timeseries(
                     start=times_i[0], end=times_i[-1], freq=times_i.freq
                 ).values()
+            elif isinstance(sample_weight, TimeSeries):
+                weights = sample_weight.values()
             else:
                 raise ValueError(f"sample_weight {sample_weight} is not supported.")
 
