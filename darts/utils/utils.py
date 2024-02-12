@@ -427,16 +427,12 @@ def n_steps_between(
 
     Examples
     --------
-    >>> n_steps_between(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-03-01"), freq="")
-    1
+    >>> n_steps_between(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-03-01"), freq="M")
+    2
     >>> n_steps_between(start=0, end=2, freq=1)
     2
     >>> n_steps_between(start=0, end=2, freq=2)
     1
-    >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
-    >>> model.fit(train_series, past_covariates=past_covariates)
-    >>> model.extreme_lags
-    (-5, 6, -4, -1,  None, None, 0)
     """
     freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
     valid_int = (
