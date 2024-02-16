@@ -1186,30 +1186,46 @@ class TestRegressionModels:
             ocl,
         )
 
-    @pytest.mark.parametrize("mode", [True, False])
-    def test_min_train_series_length(self, mode):
-        lgbm_cls = LightGBMModel if lgbm_available else XGBModel
-        cb_cls = CatBoostModel if cb_available else XGBModel
-        model = lgbm_cls(lags=4, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                LightGBMModel if lgbm_available else XGBModel,
+                CatBoostModel if cb_available else XGBModel,
+                XGBModel,
+                LinearRegressionModel,
+                RandomForest,
+            ],
+            [3, [-5, -3]],
+            [[0], [-3, 0], [-2, 3]],
+            [1, 5],
+            [True, False],
+        ),
+    )
+    def test_min_train_series_length(self, config):
+        """Make sure min_train_series_length is coherent with min_train_samples"""
+        model_cls, lags, lags_fc, ocl, multi_models = config
+        model = model_cls(
+            lags=lags,
+            lags_future_covariates=lags_fc,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
         )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = cb_cls(lags=2, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+
+        # RegressionModel overwrite the min_train_samples attribute
+        assert model.min_train_samples == 2
+
+        # check the number of samples created for the (sub-)model(s)
+        ts = tg.sine_timeseries(length=model.min_train_series_length)
+        X, _ = model._create_lagged_data(
+            target_series=ts,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
         )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = lgbm_cls(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = XGBModel(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
+
+        # min_train_series_length should generate exactly the minimum number of samples
+        assert X.shape[0] == model.min_train_samples
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_historical_forecast(self, mode):

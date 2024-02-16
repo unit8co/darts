@@ -446,13 +446,15 @@ class RegressionModel(GlobalForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        return max(
-            3,
-            -self.lags["target"][0] + self.output_chunk_length
-            if "target" in self.lags
-            else self.output_chunk_length,
+        """Override ForecastingModel implementation to account for lags and min_train_samples"""
+        # greatest lags (absolute value)
+        required_length = -self.lags["target"][0] if "target" in self.lags else 0
+        required_length += (
+            self.output_chunk_length  # predicted target
+            + self.min_train_samples  # account for lags shift/sliding window
+            - 1  # remove the sample corresponding to ocl
         )
-        # must be coherent with min_train_samples
+        return max(3, required_length)
 
     @property
     def min_train_samples(self) -> int:
@@ -475,7 +477,7 @@ class RegressionModel(GlobalForecastingModel):
         target_series: Sequence[TimeSeries],
         past_covariates: Sequence[TimeSeries],
         future_covariates: Sequence[TimeSeries],
-        max_samples_per_ts: int,
+        max_samples_per_ts: Optional[int],
     ):
         (
             features,
