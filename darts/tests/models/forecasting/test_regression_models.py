@@ -16,6 +16,7 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
+from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
@@ -1224,6 +1225,7 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
+            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
@@ -1238,6 +1240,7 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
+            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
@@ -1254,6 +1257,7 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
+            series_transformer=Scaler(),
         )
         assert len(result) == 21
 

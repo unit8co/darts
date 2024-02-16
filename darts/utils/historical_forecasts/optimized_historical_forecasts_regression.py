@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
+from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_prediction_data
@@ -31,6 +32,8 @@ def _optimized_historical_forecasts_last_points_only(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
+    past_covariates_transformer: Optional[FittableDataTransformer] = None,
+    future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
@@ -41,11 +44,22 @@ def _optimized_historical_forecasts_last_points_only(
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
+
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
+        if past_covariates_ and past_covariates_transformer:
+            past_covariates_ = past_covariates_transformer.fit_transform(
+                past_covariates_
+            )
+
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
+        if future_covariates_ and future_covariates_transformer:
+            future_covariates_ = future_covariates_transformer.fit_transform(
+                future_covariates_
+            )
+
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -122,7 +136,7 @@ def _optimized_historical_forecasts_last_points_only(
         )
 
         # stride can be applied directly (same for input and historical forecasts)
-        X = X[0][::stride, :, 0]
+        X = X[0][::stride, :, 0]  # shape ()
 
         # repeat rows for probabilistic forecast
         forecast = model._predict_and_sample(
@@ -132,6 +146,9 @@ def _optimized_historical_forecasts_last_points_only(
             **kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
+
+        # transpose to
+        # (k, (forecastable_index_length-1)*num_samples, n_component, 1)
         # where k = output_chunk length if multi_models, 1 otherwise
 
         # reshape into (forecasted indexes, n_components, n_samples), components are interleaved
@@ -147,22 +164,22 @@ def _optimized_historical_forecasts_last_points_only(
                 :,
             ]
 
-        forecasts_list.append(
-            TimeSeries.from_times_and_values(
-                times=times[0]
-                if stride == 1 and model.output_chunk_length == 1
-                else generate_index(
-                    start=hist_fct_start + (forecast_horizon - 1) * freq,
-                    length=forecast.shape[0],
-                    freq=freq * stride,
-                    name=series_.time_index.name,
-                ),
-                values=forecast,
-                columns=forecast_components,
-                static_covariates=series_.static_covariates,
-                hierarchy=series_.hierarchy,
-            )
+        forecast_value = TimeSeries.from_times_and_values(
+            times=times[0]
+            if stride == 1 and model.output_chunk_length == 1
+            else generate_index(
+                start=hist_fct_start + (forecast_horizon - 1) * freq,
+                length=forecast.shape[0],
+                freq=freq * stride,
+                name=series_.time_index.name,
+            ),
+            values=forecast,
+            columns=forecast_components,
+            static_covariates=series_.static_covariates,
+            hierarchy=series_.hierarchy,
         )
+        forecasts_list.append(forecast_value)
+
     return forecasts_list if len(series) > 1 else forecasts_list[0]
 
 
@@ -179,6 +196,8 @@ def _optimized_historical_forecasts_all_points(
     overlap_end: bool = False,
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
+    past_covariates_transformer: Optional[FittableDataTransformer] = None,
+    future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
@@ -191,9 +210,19 @@ def _optimized_historical_forecasts_all_points(
     forecasts_list = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
+        if past_covariates_ and past_covariates_transformer:
+            past_covariates_ = past_covariates_transformer.fit_transform(
+                past_covariates_
+            )
+
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
+        if future_covariates_ and future_covariates_transformer:
+            future_covariates_ = future_covariates_transformer.fit_transform(
+                future_covariates_
+            )
+
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -326,15 +355,13 @@ def _optimized_historical_forecasts_all_points(
         for idx_ftc, step_fct in enumerate(
             range(0, forecast.shape[0] * stride, stride)
         ):
-            forecasts_.append(
-                TimeSeries.from_times_and_values(
-                    times=new_times[step_fct : step_fct + forecast_horizon],
-                    values=forecast[idx_ftc],
-                    columns=forecast_components,
-                    static_covariates=series_.static_covariates,
-                    hierarchy=series_.hierarchy,
-                )
+            forecast_value = TimeSeries.from_times_and_values(
+                times=new_times[step_fct : step_fct + forecast_horizon],
+                values=forecast[idx_ftc],
+                columns=forecast_components,
+                static_covariates=series_.static_covariates,
+                hierarchy=series_.hierarchy,
             )
-
+            forecasts_.append(forecast_value)
         forecasts_list.append(forecasts_)
     return forecasts_list if len(series) > 1 else forecasts_list[0]

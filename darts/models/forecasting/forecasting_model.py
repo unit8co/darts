@@ -34,6 +34,10 @@ import pandas as pd
 
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.transformers import (
+    FittableDataTransformer,
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
@@ -639,6 +643,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        series_transformer: Optional[
+            Union[FittableDataTransformer, InvertibleDataTransformer]
+        ] = None,
+        past_covariates_transformer: Optional[FittableDataTransformer] = None,
+        future_covariates_transformer: Optional[FittableDataTransformer] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Union[
@@ -747,6 +756,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``False``
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+
+        series_transformer
+            If model is retrained, data transformer re-fit on the training data at each historical forecast step.
+            The fitted transformer is used to transform the input either for model training or prediction.
+            Inverse transformation will be applied to the prediction.
+
+        past_covariates_transformer
+            If model is retrained, data transformer re-fit on the training data at each historical forecast step.
+            The fitted transformer is used to transform the input for model training
+
+        future_covariates_transformer
+            If model is retrained, data transformer re-fit on the training data at each historical forecast step.
+            The fitted transformer is used to transform the input for model training
+
+
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -897,6 +921,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 verbose=verbose,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                past_covariates_transformer=past_covariates_transformer,
+                future_covariates_transformer=future_covariates_transformer,
                 **predict_kwargs,
             )
 
@@ -912,8 +938,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
-            past_covariates_ = past_covariates[idx] if past_covariates else None
-            future_covariates_ = future_covariates[idx] if future_covariates else None
+            past_covariates_ = (
+                past_covariates[idx] if past_covariates is not None else None
+            )
+            if past_covariates_ and past_covariates_transformer:
+                past_covariates_ = past_covariates_transformer.fit_transform(
+                    past_covariates_
+                )
+
+            future_covariates_ = (
+                future_covariates[idx] if future_covariates is not None else None
+            )
+            if future_covariates_ and future_covariates_transformer:
+                future_covariates_ = future_covariates_transformer.fit_transform(
+                    future_covariates_
+                )
 
             # predictable time indexes (assuming model is already trained)
             historical_forecasts_time_index_predict = (
@@ -1019,6 +1058,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length_ and len(train_series) > train_length_:
                     train_series = train_series[-train_length_:]
 
+                train_transformed = False
                 # testing `retrain` to exclude `False` and `0`
                 if (
                     retrain
@@ -1037,6 +1077,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ):
                         # avoid fitting the same model multiple times
                         model = model.untrained_model()
+
+                        if series_transformer is not None:
+                            if isinstance(series_transformer, FittableDataTransformer):
+                                series_transformer.fit(train_series)
+                            # remember that series was already transformed for later forecast
+                            train_transformed = True
+                            train_series = series_transformer.transform(train_series)
+
                         model._fit_wrapper(
                             series=train_series,
                             past_covariates=past_covariates_,
@@ -1084,6 +1132,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         values=np.array([np.NaN]),
                     )
 
+                if series_transformer is not None and not train_transformed:
+                    train_series = series_transformer.transform(train_series)
+
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
                     series=train_series,
@@ -1095,6 +1146,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     show_warnings=show_predict_warnings,
                     **predict_kwargs,
                 )
+
+                if series_transformer is not None:
+                    forecast = series_transformer.inverse_transform(forecast)
+
                 show_predict_warnings = False
 
                 if forecast_components is None:
@@ -2069,6 +2124,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        series_transformer: Optional[
+            Union[FittableDataTransformer, InvertibleDataTransformer]
+        ] = None,
+        past_covariates_transformer: Optional[FittableDataTransformer] = None,
+        future_covariates_transformer: Optional[FittableDataTransformer] = None,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
