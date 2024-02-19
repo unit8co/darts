@@ -1475,6 +1475,34 @@ class TestRegressionModels:
 
         assert error_both > error_both_multi_ts
 
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (RegressionModel(lags=4), 10),
+            (RegressionModel(lags=8, model=LinearRegression()), 20),
+            (RegressionModel(lags=16, model=RandomForestRegressor()), 50),
+            (
+                RegressionModel(lags=2, model=HistGradientBoostingRegressor()),
+                100,
+            ),
+        ],
+    )
+    def test_correct_generated_weights(self, config):
+        model, training_size = config
+        train_y = self.sine_univariate1[:training_size]
+        _, _, weights = model._create_lagged_data(
+            target_series=train_y,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
+            sample_weight="equal",
+        )
+
+        weights_size = training_size - len(model.lags["target"])
+
+        assert len(weights) == weights_size
+        assert (weights == [1] * weights_size).all()
+
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
         model = RegressionModel(lags_future_covariates=[-2], multi_models=mode)
@@ -1580,9 +1608,11 @@ class TestRegressionModels:
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @patch.object(
-        darts.models.forecasting.lgbm.lgb.LGBMRegressor
-        if lgbm_available
-        else darts.models.utils.NotImportedModule,
+        (
+            darts.models.forecasting.lgbm.lgb.LGBMRegressor
+            if lgbm_available
+            else darts.models.utils.NotImportedModule
+        ),
         "fit",
     )
     def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
@@ -1745,22 +1775,30 @@ class TestRegressionModels:
         pred = model.predict(
             1,
             series=series[0] if multiple_series else None,
-            past_covariates=past_cov[0]
-            if multiple_series and model.supports_past_covariates
-            else None,
-            future_covariates=future_cov[0]
-            if multiple_series and model.supports_future_covariates
-            else None,
+            past_covariates=(
+                past_cov[0]
+                if multiple_series and model.supports_past_covariates
+                else None
+            ),
+            future_covariates=(
+                future_cov[0]
+                if multiple_series and model.supports_future_covariates
+                else None
+            ),
         )
         pred2 = model2.predict(
             1,
             series=series[0] if multiple_series else None,
-            past_covariates=past_cov[0]
-            if multiple_series and model2.supports_past_covariates
-            else None,
-            future_covariates=future_cov[0]
-            if multiple_series and model2.supports_future_covariates
-            else None,
+            past_covariates=(
+                past_cov[0]
+                if multiple_series and model2.supports_past_covariates
+                else None
+            ),
+            future_covariates=(
+                future_cov[0]
+                if multiple_series and model2.supports_future_covariates
+                else None
+            ),
         )
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
@@ -1769,22 +1807,30 @@ class TestRegressionModels:
         pred = model.predict(
             3,
             series=series[0] if multiple_series else None,
-            past_covariates=past_cov[0]
-            if multiple_series and model.supports_past_covariates
-            else None,
-            future_covariates=future_cov[0]
-            if multiple_series and model.supports_future_covariates
-            else None,
+            past_covariates=(
+                past_cov[0]
+                if multiple_series and model.supports_past_covariates
+                else None
+            ),
+            future_covariates=(
+                future_cov[0]
+                if multiple_series and model.supports_future_covariates
+                else None
+            ),
         )
         pred2 = model2.predict(
             3,
             series=series[0] if multiple_series else None,
-            past_covariates=past_cov[0]
-            if multiple_series and model2.supports_past_covariates
-            else None,
-            future_covariates=future_cov[0]
-            if multiple_series and model2.supports_future_covariates
-            else None,
+            past_covariates=(
+                past_cov[0]
+                if multiple_series and model2.supports_past_covariates
+                else None
+            ),
+            future_covariates=(
+                future_cov[0]
+                if multiple_series and model2.supports_future_covariates
+                else None
+            ),
         )
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
@@ -1863,24 +1909,32 @@ class TestRegressionModels:
         model.predict(
             1,
             series=series[0] if multiple_series else None,
-            past_covariates=past_cov[0]
-            if multiple_series and model.supports_past_covariates
-            else None,
-            future_covariates=future_cov[0]
-            if multiple_series and model.supports_future_covariates
-            else None,
+            past_covariates=(
+                past_cov[0]
+                if multiple_series and model.supports_past_covariates
+                else None
+            ),
+            future_covariates=(
+                future_cov[0]
+                if multiple_series and model.supports_future_covariates
+                else None
+            ),
         )
 
         # n > output_chunk_length
         model.predict(
             7,
             series=series[0] if multiple_series else None,
-            past_covariates=past_cov[0]
-            if multiple_series and model.supports_past_covariates
-            else None,
-            future_covariates=future_cov[0]
-            if multiple_series and model.supports_future_covariates
-            else None,
+            past_covariates=(
+                past_cov[0]
+                if multiple_series and model.supports_past_covariates
+                else None
+            ),
+            future_covariates=(
+                future_cov[0]
+                if multiple_series and model.supports_future_covariates
+                else None
+            ),
         )
 
     @pytest.mark.parametrize(
@@ -2250,9 +2304,11 @@ class TestRegressionModels:
 
     @pytest.mark.skipif(not cb_available, reason="requires catboost")
     @patch.object(
-        darts.models.forecasting.catboost_model.CatBoostRegressor
-        if cb_available
-        else darts.models.utils.NotImportedModule,
+        (
+            darts.models.forecasting.catboost_model.CatBoostRegressor
+            if cb_available
+            else darts.models.utils.NotImportedModule
+        ),
         "fit",
     )
     def test_catboost_model_with_eval_set(self, lgb_fit_patch):
@@ -2350,32 +2406,37 @@ class TestRegressionModels:
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @pytest.mark.parametrize(
         "model",
-        [
-            LightGBMModel(
-                lags=1,
-                lags_past_covariates=1,
-                output_chunk_length=1,
-                categorical_past_covariates=["does_not_exist", "past_cov_cat_dummy"],
-                categorical_static_covariates=["product_id"],
-            ),
-            LightGBMModel(
-                lags=1,
-                lags_past_covariates=1,
-                output_chunk_length=1,
-                categorical_past_covariates=[
-                    "past_cov_cat_dummy",
-                ],
-                categorical_static_covariates=["does_not_exist"],
-            ),
-            LightGBMModel(
-                lags=1,
-                lags_past_covariates=1,
-                output_chunk_length=1,
-                categorical_future_covariates=["does_not_exist"],
-            ),
-        ]
-        if lgbm_available
-        else [],
+        (
+            [
+                LightGBMModel(
+                    lags=1,
+                    lags_past_covariates=1,
+                    output_chunk_length=1,
+                    categorical_past_covariates=[
+                        "does_not_exist",
+                        "past_cov_cat_dummy",
+                    ],
+                    categorical_static_covariates=["product_id"],
+                ),
+                LightGBMModel(
+                    lags=1,
+                    lags_past_covariates=1,
+                    output_chunk_length=1,
+                    categorical_past_covariates=[
+                        "past_cov_cat_dummy",
+                    ],
+                    categorical_static_covariates=["does_not_exist"],
+                ),
+                LightGBMModel(
+                    lags=1,
+                    lags_past_covariates=1,
+                    output_chunk_length=1,
+                    categorical_future_covariates=["does_not_exist"],
+                ),
+            ]
+            if lgbm_available
+            else []
+        ),
     )
     def test_fit_with_categorical_features_raises_error(self, model):
         (
@@ -2415,9 +2476,11 @@ class TestRegressionModels:
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @patch.object(
-        darts.models.forecasting.lgbm.lgb.LGBMRegressor
-        if lgbm_available
-        else darts.models.utils.NotImportedModule,
+        (
+            darts.models.forecasting.lgbm.lgb.LGBMRegressor
+            if lgbm_available
+            else darts.models.utils.NotImportedModule
+        ),
         "fit",
     )
     def test_lgbm_categorical_features_passed_to_fit_correctly(self, lgb_fit_patch):
