@@ -1170,27 +1170,11 @@ class RegressionModel(GlobalForecastingModel):
             )
 
     @property
-    def _predict_sample_time_index_length(self) -> int:
-        """
-        Required time_index length for one `predict` function call, for regression model.
-        """
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = self.extreme_lags
-
-        return (
-            max_future_cov_lag + 1 if max_future_cov_lag else 0
-        ) + self._predict_sample_time_index_past_length
-
-    @property
     def _predict_sample_time_index_past_length(self) -> int:
         """
-        Required time_index length in the past for one `predict` function call, for regression model.
+        Required time_index length in the past for one `predict` function call.
+
+        Overwritte `ForecastingModel` definition to account for lags shift induced by `multi_models=False`
         """
         (
             min_target_lag,
