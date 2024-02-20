@@ -627,9 +627,11 @@ class TestTimeSeries:
     def helper_test_append(test_case, test_series: TimeSeries):
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
-        assert seriesA.append(seriesB) == test_series
-        assert seriesA.append(seriesB).freq == test_series.freq
-        assert test_series.time_index.equals(seriesA.append(seriesB).time_index)
+        appended = seriesA.append(seriesB)
+        assert appended == test_series
+        assert appended.freq == test_series.freq
+        assert test_series.time_index.equals(appended.time_index)
+        assert appended.components.equals(seriesA.components)
 
         # Creating a gap is not allowed
         seriesC = test_series.drop_before(pd.Timestamp("20130108"))
@@ -648,23 +650,26 @@ class TestTimeSeries:
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
         arrayB = seriesB.all_values()
-        assert seriesA.append_values(arrayB) == test_series
-        assert test_series.time_index.equals(seriesA.append_values(arrayB).time_index)
+        appended = seriesA.append_values(arrayB)
+        assert appended == test_series
+        assert test_series.time_index.equals(appended.time_index)
 
         # arrayB shape shouldn't affect append_values output:
         squeezed_arrayB = arrayB.squeeze()
-        assert seriesA.append_values(squeezed_arrayB) == test_series
-        assert test_series.time_index.equals(
-            seriesA.append_values(squeezed_arrayB).time_index
-        )
+        appended_sq = seriesA.append_values(squeezed_arrayB)
+        assert appended_sq == test_series
+        assert test_series.time_index.equals(appended_sq.time_index)
+        assert appended_sq.components.equals(seriesA.components)
 
     @staticmethod
     def helper_test_prepend(test_case, test_series: TimeSeries):
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
-        assert seriesB.prepend(seriesA) == test_series
-        assert seriesB.prepend(seriesA).freq == test_series.freq
-        assert test_series.time_index.equals(seriesB.prepend(seriesA).time_index)
+        prepended = seriesB.prepend(seriesA)
+        assert prepended == test_series
+        assert prepended.freq == test_series.freq
+        assert test_series.time_index.equals(prepended.time_index)
+        assert prepended.components.equals(seriesB.components)
 
         # Creating a gap is not allowed
         seriesC = test_series.drop_before(pd.Timestamp("20130108"))
@@ -683,15 +688,17 @@ class TestTimeSeries:
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
         arrayA = seriesA.data_array().values
-        assert seriesB.prepend_values(arrayA) == test_series
-        assert test_series.time_index.equals(seriesB.prepend_values(arrayA).time_index)
+        prepended = seriesB.prepend_values(arrayA)
+        assert prepended == test_series
+        assert test_series.time_index.equals(prepended.time_index)
+        assert prepended.components.equals(test_series.components)
 
         # arrayB shape shouldn't affect append_values output:
         squeezed_arrayA = arrayA.squeeze()
-        assert seriesB.prepend_values(squeezed_arrayA) == test_series
-        assert test_series.time_index.equals(
-            seriesB.prepend_values(squeezed_arrayA).time_index
-        )
+        prepended_sq = seriesB.prepend_values(squeezed_arrayA)
+        assert prepended_sq == test_series
+        assert test_series.time_index.equals(prepended_sq.time_index)
+        assert prepended_sq.components.equals(test_series.components)
 
     def test_slice(self):
         TestTimeSeries.helper_test_slice(self, self.series1)
@@ -711,8 +718,8 @@ class TestTimeSeries:
     def test_append(self):
         TestTimeSeries.helper_test_append(self, self.series1)
         # Check `append` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2)
-        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="A")
+        series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         appended = series_1.append(series_2)
         expected_vals = np.concatenate(
             [series_1.all_values(), series_2.all_values()], axis=0
@@ -720,6 +727,7 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
+        assert appended.components.equals(series_1.components)
 
     def test_append_values(self):
         TestTimeSeries.helper_test_append_values(self, self.series1)
@@ -732,12 +740,13 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
+        assert appended.components.equals(series.components)
 
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
         # Check `prepend` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2)
-        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="A")
+        series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         prepended = series_2.prepend(series_1)
         expected_vals = np.concatenate(
             [series_1.all_values(), series_2.all_values()], axis=0
@@ -745,6 +754,7 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
+        assert prepended.components.equals(series_1.components)
 
     def test_prepend_values(self):
         TestTimeSeries.helper_test_prepend_values(self, self.series1)
@@ -757,6 +767,7 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=-3, stop=11, step=2)
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
+        assert prepended.components.equals(series.components)
 
     def test_with_values(self):
         vals = np.random.rand(5, 10, 3)
