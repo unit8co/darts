@@ -2809,8 +2809,6 @@ class TimeSeries:
                 times=idx,
                 fill_missing_dates=False,
                 static_covariates=self.static_covariates,
-                columns=self.columns,
-                hierarchy=self.hierarchy,
             )
         )
 
