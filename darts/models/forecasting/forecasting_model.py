@@ -473,13 +473,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        return max(
-            max_target_lag + 1,
-            max_future_cov_lag + 1 if max_future_cov_lag else 0,
-        ) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
+        return (
+            max(
+                max_target_lag + 1,
+                max_future_cov_lag + 1 if max_future_cov_lag else 0,
+            )
+            + self._predict_sample_time_index_past_length
         )
 
     @property
@@ -496,11 +495,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        return (max_future_cov_lag + 1 if max_future_cov_lag else 0) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
-        )
+        return (
+            max_future_cov_lag + 1 if max_future_cov_lag else 0
+        ) + self._predict_sample_time_index_past_length
 
     @property
     def _predict_sample_time_index_past_length(self) -> int:

@@ -1212,8 +1212,15 @@ class TestRegressionModels:
             multi_models=multi_models,
         )
 
-        # RegressionModel overwrite the min_train_samples attribute
-        assert model.min_train_samples == 2
+        # min_train_samples is overwritten in LGBM, Catboost and XGB
+        if (
+            (lgbm_available and isinstance(model, LightGBMModel))
+            or (cb_available and isinstance(model, CatBoostModel))
+            or isinstance(model, XGBModel)
+        ):
+            assert model.min_train_samples == 2
+        else:
+            assert model.min_train_samples == 1
 
         # check the number of samples created for the (sub-)model(s)
         ts = tg.sine_timeseries(length=model.min_train_series_length)

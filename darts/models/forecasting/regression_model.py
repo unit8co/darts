@@ -458,7 +458,7 @@ class RegressionModel(GlobalForecastingModel):
 
     @property
     def min_train_samples(self) -> int:
-        return 2
+        return 1
 
     @property
     def output_chunk_length(self) -> int:
@@ -1168,6 +1168,49 @@ class RegressionModel(GlobalForecastingModel):
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
+
+    @property
+    def _predict_sample_time_index_length(self) -> int:
+        """
+        Required time_index length for one `predict` function call, for regression model.
+        """
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            max_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        return (
+            max_future_cov_lag + 1 if max_future_cov_lag else 0
+        ) + self._predict_sample_time_index_past_length
+
+    @property
+    def _predict_sample_time_index_past_length(self) -> int:
+        """
+        Required time_index length in the past for one `predict` function call, for regression model.
+        """
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            max_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        lags_shift = 0 if self.multi_models else self.output_chunk_length - 1
+
+        return (
+            -min(
+                min_target_lag if min_target_lag else 0,
+                min_past_cov_lag if min_past_cov_lag else 0,
+                min_future_cov_lag if min_future_cov_lag else 0,
+            )
+            + lags_shift
+        )
 
 
 class _LikelihoodMixin:

@@ -298,3 +298,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
     @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def min_train_samples(self) -> int:
+        return 2
