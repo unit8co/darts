@@ -1490,10 +1490,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
             )
 
-        if not all(isinstance(params, list) for params in parameters.values()):
+        if not all(
+            isinstance(params, (list, np.ndarray)) for params in parameters.values()
+        ):
             raise_log(
                 ValueError(
-                    "Every value in the `parameters` dictionary should be a list (possibly with only one element)."
+                    "Every value in the `parameters` dictionary should be a list or a np.ndarray."
                 ),
                 logger,
             )
