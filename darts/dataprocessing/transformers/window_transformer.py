@@ -20,6 +20,7 @@ class WindowTransformer(BaseDataTransformer):
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
         include_current: Optional[bool] = True,
+        keep_old_names: Optional[bool] = False,
         name: str = "WindowTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -128,6 +129,10 @@ class WindowTransformer(BaseDataTransformer):
         include_current
             ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
 
+        keep_old_names
+            Indicate if the transformed components should be renamed or not. Must be set to ``False`` if
+            `keep_non_transformed = True` or the number of transformation is greater than 1.
+
         name
             A specific name for the transformer.
 
@@ -147,6 +152,7 @@ class WindowTransformer(BaseDataTransformer):
         self.treat_na = treat_na
         self.forecasting_safe = forecasting_safe
         self.include_current = include_current
+        self.keep_old_names = keep_old_names
         super().__init__(name, n_jobs, verbose)
 
     @staticmethod

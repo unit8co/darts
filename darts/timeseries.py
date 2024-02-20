@@ -911,9 +911,11 @@ class TimeSeries:
             # store static covariate Series and group DataFrame (without static cov columns)
             splits.append(
                 (
-                    pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-                    if extract_static_cov_cols
-                    else None,
+                    (
+                        pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                        if extract_static_cov_cols
+                        else None
+                    ),
                     group[extract_value_cols],
                 )
             )
@@ -2338,7 +2340,7 @@ class TimeSeries:
             A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
         """
         raise_if_not(
-            type(start_ts) == type(end_ts),
+            type(start_ts) is type(end_ts),
             "The two timestamps provided to slice() have to be of the same type.",
             logger,
         )
@@ -3612,8 +3614,6 @@ class TimeSeries:
         if isinstance(transforms, dict):
             transforms = [transforms]
 
-        several_transforms = len(transforms) > 1
-
         # check if some transformations are applied to the same components
         overlapping_transforms = False
         transformed_components = set()
@@ -3645,22 +3645,22 @@ class TimeSeries:
             raise_log(
                 ValueError(
                     "`keep_old_names = True` and `keep_non_transformed = True` is not supported due to "
-                    " the ambiguity."
+                    "the ambiguity."
                 ),
                 logger,
             )
 
         new_hierarchy = None
         convert_hierarchy = False
+        comp_names_map = dict()
         if self.hierarchy:
             # the partial_transform covers for scenario keep_non_transformed = True
-            if several_transforms or partial_transforms:
+            if len(transforms) > 1 or partial_transforms:
                 logger.warning(
                     "The hierarchy cannot be retained, either because there is more than one transform or "
                     "because the transform is not applied to all the components of the series."
                 )
             else:
-                comp_names_map = dict()
                 convert_hierarchy = True
 
         raise_if_not(
@@ -3743,14 +3743,17 @@ class TimeSeries:
             if keep_old_names:
                 new_columns.extend(comps_to_transform)
             else:
-                new_columns.extend(
-                    [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
-                )
+                names_w_prefix = [
+                    f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform
+                ]
+                new_columns.extend(names_w_prefix)
                 if convert_hierarchy:
                     comp_names_map.update(
                         {
-                            comp_name: f"{name_prefix}_{comp_name}"
-                            for comp_name in comps_to_transform
+                            c_name: new_c_name
+                            for c_name, new_c_name in zip(
+                                comps_to_transform, names_w_prefix
+                            )
                         }
                     )
 
@@ -4518,9 +4521,9 @@ class TimeSeries:
 
         time_dim = xa.dims[0]
         sorted_xa = cls._sort_index(xa, copy=False)
-        time_index: Union[
-            pd.Index, pd.RangeIndex, pd.DatetimeIndex
-        ] = sorted_xa.get_index(time_dim)
+        time_index: Union[pd.Index, pd.RangeIndex, pd.DatetimeIndex] = (
+            sorted_xa.get_index(time_dim)
+        )
 
         if isinstance(time_index, pd.DatetimeIndex):
             has_datetime_index = True
@@ -5097,9 +5100,11 @@ class TimeSeries:
                 # selecting components discards the hierarchy, if any
                 xa_ = _xarray_with_attrs(
                     xa_,
-                    xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
-                    if adapt_covs_on_component
-                    else xa_.attrs[STATIC_COV_TAG],
+                    (
+                        xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
+                        if adapt_covs_on_component
+                        else xa_.attrs[STATIC_COV_TAG]
+                    ),
                     None,
                 )
                 return self.__class__(xa_)
@@ -5130,9 +5135,11 @@ class TimeSeries:
             # selecting components discards the hierarchy, if any
             xa_ = _xarray_with_attrs(
                 xa_,
-                xa_.attrs[STATIC_COV_TAG].loc[[key]]
-                if adapt_covs_on_component
-                else xa_.attrs[STATIC_COV_TAG],
+                (
+                    xa_.attrs[STATIC_COV_TAG].loc[[key]]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG]
+                ),
                 None,
             )
             return self.__class__(xa_)
@@ -5171,9 +5178,11 @@ class TimeSeries:
                 xa_ = self._xa.sel({DIMS[1]: key})
                 xa_ = _xarray_with_attrs(
                     xa_,
-                    xa_.attrs[STATIC_COV_TAG].loc[key]
-                    if adapt_covs_on_component
-                    else xa_.attrs[STATIC_COV_TAG],
+                    (
+                        xa_.attrs[STATIC_COV_TAG].loc[key]
+                        if adapt_covs_on_component
+                        else xa_.attrs[STATIC_COV_TAG]
+                    ),
                     None,
                 )
                 return self.__class__(xa_)

@@ -19,6 +19,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 - Improvements to `TorchForecastingModel`:
   - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `WindowTransformer` and `window_transform`:
+  - Added `keep_old_names` argument to indicated if transformed components should be renamed. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
 
 **Fixed**
 - Fixed bug when calling `window_transform` on a `TimeSeries` with a hierarchy; the hierarchy is preserved for single transformations applied to all components, or removed (`None`) otherwise. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
