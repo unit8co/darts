@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 **Improved**
+- Improvements to `ARIMA` documentation: Specified possible `p`, `d`, `P`, `D`, `trend` advanced options that are available in statsmodels. More explanations on the behaviour of the parameters were added. [#2142](https://github.com/unit8co/darts/pull/2142) by [MarcBresson](https://github.com/MarcBresson)
 - Improvements to `TimeSeries`: [#2196](https://github.com/unit8co/darts/pull/2196) by [Dennis Bader](https://github.com/dennisbader).
   - 🚀🚀🚀 Significant performance boosts for several `TimeSeries` methods resulting increased efficiency across the entire `Darts` library. Up to 2x faster creation times for series indexed with "regular" frequencies (e.g. Daily, hourly, ...), and >100x for series indexed with "special" frequencies (e.g. "W-MON", ...). Affects:
     - All `TimeSeries` creation methods     
@@ -26,6 +27,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `TimeSeries.append/prepend_values()`, where the components names and the hierarchy were reset. [#2237](https://github.com/unit8co/darts/pull/2237) by [Antoine Madrona](https://github.com/madtoinou).
 
 ### For developers of the library:
+- Updated pre-commit hooks to the latest version using `pre-commit autoupdate`.
+- Change `pyupgrade` pre-commit hook argument to `--py38-plus`. This allows for [type rewriting](https://github.com/asottile/pyupgrade?tab=readme-ov-file#pep-585-typing-rewrites).
 
 ## [0.27.2](https://github.com/unit8co/darts/tree/0.27.2) (2023-01-21)
 ### For users of the library:
