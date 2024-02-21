@@ -804,7 +804,7 @@ class TFTModel(MixedCovariatesTorchModel):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -848,7 +848,6 @@ class TFTModel(MixedCovariatesTorchModel):
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:
-
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
@@ -1191,13 +1190,3 @@ class TFTModel(MixedCovariatesTorchModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
-
-    def predict(self, n, *args, **kwargs):
-        # since we have future covariates, the inference dataset for future input must be at least of length
-        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
-        # `input_chunk_length`.
-
-        if n >= self.output_chunk_length:
-            return super().predict(n, *args, **kwargs)
-        else:
-            return super().predict(self.output_chunk_length, *args, **kwargs)[:n]

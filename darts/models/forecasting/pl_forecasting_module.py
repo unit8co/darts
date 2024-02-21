@@ -3,6 +3,7 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import pytorch_lightning as pl
@@ -42,13 +43,15 @@ def io_processor(forward):
         normalizes batch input target features, and inverse transform the forward output back to the original scale
     """
 
+    @wraps(forward)
     def forward_wrapper(self, *args, **kwargs):
         if not self.use_reversible_instance_norm:
             return forward(self, *args, **kwargs)
 
         # x is input batch tuple which by definition has the past features in the first element starting with the
         # first n target features
-        x: Tuple = args[0][0]
+        # assuming `args[0][0]` is torch.Tensor we could clone it to prevent target re-normalization
+        x: Tuple = args[0][0].clone()
         # apply reversible instance normalization
         x[:, :, : self.n_targets] = self.rin(x[:, :, : self.n_targets])
         # run the forward pass
@@ -399,16 +402,25 @@ class PLForecastingModule(pl.LightningModule, ABC):
             lr_sched_kws = {k: v for k, v in self.lr_scheduler_kwargs.items()}
             lr_sched_kws["optimizer"] = optimizer
 
-            # ReduceLROnPlateau requires a metric to "monitor" which must be set separately, most others do not
-            lr_monitor = lr_sched_kws.pop("monitor", None)
+            # lr scheduler can be configured with lightning; defaults below
+            lr_config_params = {
+                "monitor": "val_loss",
+                "interval": "epoch",
+                "frequency": 1,
+                "strict": True,
+                "name": None,
+            }
+            # update config with user params
+            lr_config_params = {
+                k: (v if k not in lr_sched_kws else lr_sched_kws.pop(k))
+                for k, v in lr_config_params.items()
+            }
 
             lr_scheduler = _create_from_cls_and_kwargs(
                 self.lr_scheduler_cls, lr_sched_kws
             )
-            return [optimizer], {
-                "scheduler": lr_scheduler,
-                "monitor": lr_monitor if lr_monitor is not None else "val_loss",
-            }
+
+            return [optimizer], dict({"scheduler": lr_scheduler}, **lr_config_params)
         else:
             return optimizer
 

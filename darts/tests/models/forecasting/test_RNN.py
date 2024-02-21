@@ -11,11 +11,7 @@ logger = get_logger(__name__)
 try:
     import torch.nn as nn
 
-    from darts.models.forecasting.block_rnn_model import (
-        BlockRNNModel,
-        CustomBlockRNNModule,
-        _BlockRNNModule,
-    )
+    from darts.models.forecasting.rnn_model import CustomRNNModule, RNNModel, _RNNModule
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -25,51 +21,50 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
-    class ModuleValid1(_BlockRNNModule):
-        """Wrapper around the _BlockRNNModule"""
+    class ModuleValid1(_RNNModule):
+        """Wrapper around the _RNNModule"""
 
         def __init__(self, **kwargs):
             super().__init__(name="RNN", **kwargs)
 
-    class ModuleValid2(CustomBlockRNNModule):
+    class ModuleValid2(CustomRNNModule):
         """Just a linear layer."""
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
             self.linear = nn.Linear(self.input_size, self.target_size)
 
-        def forward(self, x_in):
+        def forward(self, x_in, h=None):
             x = self.linear(x_in[0])
             return x.view(len(x), -1, self.target_size, self.nr_params)
 
-    class TestBlockRNNModel:
+    class TestRNNModel:
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
-        module_invalid = _BlockRNNModule(
-            "RNN",
-            input_size=1,
+        module_invalid = _RNNModule(
+            name="RNN",
             input_chunk_length=1,
             output_chunk_length=1,
+            input_size=1,
             hidden_dim=25,
+            num_layers=1,
             target_size=1,
             nr_params=1,
-            num_layers=1,
-            num_layers_out_fc=[],
             dropout=0,
         )
 
         def test_creation(self):
             # cannot choose any string
             with pytest.raises(ValueError) as msg:
-                BlockRNNModel(
+                RNNModel(
                     input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?"
                 )
             assert str(msg.value).startswith("`model` is not a valid RNN model.")
 
             # cannot create from a class instance
             with pytest.raises(ValueError) as msg:
-                _ = BlockRNNModel(
+                _ = RNNModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
                     model=self.module_invalid,
@@ -77,7 +72,7 @@ if TORCH_AVAILABLE:
             assert str(msg.value).startswith("`model` is not a valid RNN model.")
 
             # can create from valid module name
-            model1 = BlockRNNModel(
+            model1 = RNNModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 model="RNN",
@@ -89,7 +84,7 @@ if TORCH_AVAILABLE:
             preds1 = model1.predict(n=3)
 
             # can create from a custom class itself
-            model2 = BlockRNNModel(
+            model2 = RNNModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 model=ModuleValid1,
@@ -101,7 +96,7 @@ if TORCH_AVAILABLE:
             preds2 = model2.predict(n=3)
             np.testing.assert_array_equal(preds1.all_values(), preds2.all_values())
 
-            model3 = BlockRNNModel(
+            model3 = RNNModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 model=ModuleValid2,
@@ -116,13 +111,13 @@ if TORCH_AVAILABLE:
 
         def test_fit(self, tmpdir_module):
             # Test basic fit()
-            model = BlockRNNModel(
+            model = RNNModel(
                 input_chunk_length=1, output_chunk_length=1, n_epochs=2, **tfm_kwargs
             )
             model.fit(self.series)
 
             # Test fit-save-load cycle
-            model2 = BlockRNNModel(
+            model2 = RNNModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 model="LSTM",
@@ -147,7 +142,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_array_equal(pred1.values(), pred2.values())
 
             # Another random model should not
-            model3 = BlockRNNModel(
+            model3 = RNNModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 model="RNN",
@@ -182,4 +177,4 @@ if TORCH_AVAILABLE:
             assert pred.width == 1
 
         def test_pred_length(self):
-            self.helper_test_pred_length(BlockRNNModel, self.series)
+            self.helper_test_pred_length(RNNModel, self.series)

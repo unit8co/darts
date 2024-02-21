@@ -194,7 +194,7 @@ class RegressionModel(GlobalForecastingModel):
         self.lags: Dict[str, List[int]] = {}
         self.component_lags: Dict[str, Dict[str, List[int]]] = {}
         self.input_dim = None
-        self.multi_models = multi_models
+        self.multi_models = True if multi_models or output_chunk_length == 1 else False
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
         self._lagged_feature_names: Optional[List[str]] = None
@@ -772,6 +772,8 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
         """
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series

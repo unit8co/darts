@@ -707,17 +707,14 @@ if TORCH_AVAILABLE:
             ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
             # barebone model
             model = DLinearModel(
-                input_chunk_length=4,
-                output_chunk_length=1,
-                n_epochs=1,
+                input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
             )
             model.fit(self.series[:10])
             model.save(ckpt_path)
 
             # identical model
             loading_model = DLinearModel(
-                input_chunk_length=4,
-                output_chunk_length=1,
+                input_chunk_length=4, output_chunk_length=1, **tfm_kwargs
             )
             loading_model.load_weights(ckpt_path)
 
@@ -726,21 +723,26 @@ if TORCH_AVAILABLE:
                 input_chunk_length=4,
                 output_chunk_length=1,
                 optimizer_cls=torch.optim.AdamW,
+                **tfm_kwargs,
             )
             loading_model.load_weights(ckpt_path)
 
+            model_summary_kwargs = {
+                "pl_trainer_kwargs": dict(
+                    {"enable_model_sumamry": False}, **tfm_kwargs["pl_trainer_kwargs"]
+                )
+            }
             # different pl_trainer_kwargs
             loading_model = DLinearModel(
                 input_chunk_length=4,
                 output_chunk_length=1,
-                pl_trainer_kwargs={"enable_model_summary": False},
+                **model_summary_kwargs,
             )
             loading_model.load_weights(ckpt_path)
 
             # different input_chunk_length (tfm parameter)
             loading_model = DLinearModel(
-                input_chunk_length=4 + 1,
-                output_chunk_length=1,
+                input_chunk_length=4 + 1, output_chunk_length=1, **tfm_kwargs
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_path)
@@ -754,6 +756,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=4,
                 output_chunk_length=1,
                 kernel_size=10,
+                **tfm_kwargs,
             )
             with pytest.raises(ValueError) as error_msg:
                 loading_model.load_weights(ckpt_path)
@@ -1185,29 +1188,35 @@ if TORCH_AVAILABLE:
                 # should not raise an error
                 model.fit(self.series, epochs=1)
 
-        def test_lr_schedulers(self):
-
-            lr_schedulers = [
+        @pytest.mark.parametrize(
+            "lr_scheduler",
+            [
                 (torch.optim.lr_scheduler.StepLR, {"step_size": 10}),
                 (
                     torch.optim.lr_scheduler.ReduceLROnPlateau,
-                    {"threshold": 0.001, "monitor": "train_loss"},
+                    {
+                        "threshold": 0.001,
+                        "monitor": "train_loss",
+                        "interval": "step",
+                        "frequency": 2,
+                    },
                 ),
                 (torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.09}),
-            ]
-
-            for lr_scheduler_cls, lr_scheduler_kwargs in lr_schedulers:
-                model = RNNModel(
-                    12,
-                    "RNN",
-                    10,
-                    10,
-                    lr_scheduler_cls=lr_scheduler_cls,
-                    lr_scheduler_kwargs=lr_scheduler_kwargs,
-                    **tfm_kwargs,
-                )
-                # should not raise an error
-                model.fit(self.series, epochs=1)
+            ],
+        )
+        def test_lr_schedulers(self, lr_scheduler):
+            lr_scheduler_cls, lr_scheduler_kwargs = lr_scheduler
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                lr_scheduler_cls=lr_scheduler_cls,
+                lr_scheduler_kwargs=lr_scheduler_kwargs,
+                **tfm_kwargs,
+            )
+            # should not raise an error
+            model.fit(self.series, epochs=1)
 
         def test_wrong_model_creation_params(self):
             valid_kwarg = {"pl_trainer_kwargs": {}}

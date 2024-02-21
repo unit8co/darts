@@ -236,6 +236,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return getattr(self, "likelihood", None) is not None
 
     @property
+    @abstractmethod
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+        pass
+
+    @property
     def uses_past_covariates(self) -> bool:
         """
         Whether the model uses past covariates, once fitted.
@@ -278,7 +286,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return None
 
     @abstractmethod
-    def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
         Parameters
@@ -288,6 +302,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
@@ -315,49 +333,59 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _fit_wrapper(
         self,
         series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
         **kwargs,
     ):
-        supported_params = inspect.signature(self.fit).parameters
-        kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
-
+        add_kwargs = {}
         # handle past and future covariates based on model support
-        for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
-            covs_name = f"{name}_covariates"
+        for covs, covs_name in zip(
+            [past_covariates, future_covariates],
+            ["past_covariates", "future_covariates"],
+        ):
             if getattr(self, f"supports_{covs_name}"):
-                kwargs_[covs_name] = covs
+                add_kwargs[covs_name] = covs
             elif covs is not None:
                 raise_log(
                     ValueError(f"Model cannot be fit/trained with `{covs_name}`."),
                     logger,
                 )
-        self.fit(series, **kwargs_)
+        self.fit(series=series, **add_kwargs, **kwargs)
 
     def _predict_wrapper(
         self,
         n: int,
+        series: Optional[TimeSeries] = None,
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        predict_likelihood_parameters: bool = False,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        supported_params = set(inspect.signature(self.predict).parameters)
+        add_kwargs = {}
+        # not all models supports input `series` at inference
+        if self.supports_transferrable_series_prediction:
+            add_kwargs["series"] = series
 
-        # if predict() accepts covariates, the model might not support them at inference
-        for covs_name in ["past_covariates", "future_covariates"]:
-            if covs_name in kwargs and not getattr(self, f"supports_{covs_name}"):
-                if kwargs[covs_name] is None:
-                    supported_params = supported_params - {covs_name}
-                else:
-                    raise_log(
-                        ValueError(
-                            f"Model prediction does not support `{covs_name}`, either because it "
-                            f"does not support `{covs_name}` in general, or because it was fit/trained "
-                            f"without using `{covs_name}`."
-                        ),
-                        logger,
-                    )
+        # even if predict() accepts covariates, the model might not support them at inference
+        for covs, name in zip(
+            [past_covariates, future_covariates],
+            ["past_covariates", "future_covariates"],
+        ):
+            if getattr(self, f"supports_{name}"):
+                add_kwargs[name] = covs
+            elif covs is not None:
+                raise_log(
+                    ValueError(
+                        f"Model prediction does not support `{name}`, either because it "
+                        f"does not support `{name}` in general, or because it was fit/trained "
+                        f"without using `{name}`."
+                    ),
+                    logger,
+                )
 
-        kwargs_ = {k: v for k, v in kwargs.items() if k in supported_params}
-        return self.predict(n, **kwargs_)
+        if self.supports_likelihood_parameter_prediction:
+            add_kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
+        return self.predict(n=n, **add_kwargs, **kwargs)
 
     @property
     def min_train_series_length(self) -> int:
@@ -2099,6 +2127,13 @@ class LocalForecastingModel(ForecastingModel, ABC):
         #  that use an input to predict an output.
         return -self.min_train_series_length, -1, None, None, None, None
 
+    @property
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+        return False
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -2314,6 +2349,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """
         return True
 
+    @property
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+        return True
+
     def _sanity_check_predict_likelihood_parameters(
         self, n: int, output_chunk_length: Union[int, None], num_samples: int
     ):
@@ -2420,6 +2462,8 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
@@ -2437,6 +2481,10 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
@@ -2580,6 +2628,8 @@ class TransferableFutureCovariatesLocalForecastingModel(
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> TimeSeries:
         """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
@@ -2605,6 +2655,10 @@ class TransferableFutureCovariatesLocalForecastingModel(
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
@@ -2698,6 +2752,13 @@ class TransferableFutureCovariatesLocalForecastingModel(
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
         """
         pass
+
+    @property
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+        return True
 
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:

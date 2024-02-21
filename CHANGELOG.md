@@ -6,15 +6,52 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.27.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.27.2...master)
 
 ### For users of the library:
 **Improved**
+- Improvements to `ARIMA` documentation: Specified possible `p`, `d`, `P`, `D`, `trend` advanced options that are available in statsmodels. More explanations on the behaviour of the parameters were added. [#2142](https://github.com/unit8co/darts/pull/2142) by [MarcBresson](https://github.com/MarcBresson)
+- Improvements to `TimeSeries`: [#2196](https://github.com/unit8co/darts/pull/2196) by [Dennis Bader](https://github.com/dennisbader).
+  - 🚀🚀🚀 Significant performance boosts for several `TimeSeries` methods resulting increased efficiency across the entire `Darts` library. Up to 2x faster creation times for series indexed with "regular" frequencies (e.g. Daily, hourly, ...), and >100x for series indexed with "special" frequencies (e.g. "W-MON", ...). Affects:
+    - All `TimeSeries` creation methods     
+    - Additional boosts for slicing with integers and Timestamps
+    - Additional boosts for `from_group_dataframe()` by performing some of the heavy-duty computations on the entire DataFrame, rather than iteratively on the group level.
+  - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
+- Improvements to `TorchForecastingModel`:
+  - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
+- Fixed a bug in probabilistic `LinearRegressionModel.fit()`, where the `model` attribute was not pointing to all underlying estimators. [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
+- Raise an error in `RegressionEsembleModel` when the `regression_model` was created with `multi_models=False` (not supported). [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug in `coefficient_of_variaton()` with `intersect=True`, where the coefficient was not computed on the intersection. [#2202](https://github.com/unit8co/darts/pull/2202) by [Antoine Madrona](https://github.com/madtoinou).
+
+### For developers of the library:
+- Updated pre-commit hooks to the latest version using `pre-commit autoupdate`.
+- Change `pyupgrade` pre-commit hook argument to `--py38-plus`. This allows for [type rewriting](https://github.com/asottile/pyupgrade?tab=readme-ov-file#pep-585-typing-rewrites).
+
+## [0.27.2](https://github.com/unit8co/darts/tree/0.27.2) (2023-01-21)
+### For users of the library:
+**Improved**
+- Added `darts.utils.statistics.plot_ccf` that can be used to plot the cross correlation between a time series (e.g. target series) and the lagged values of another time series (e.g. covariates series). [#2122](https://github.com/unit8co/darts/pull/2122) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `TimeSeries`: Improved the time series frequency inference when using slices or pandas DatetimeIndex as keys for `__getitem__`. [#2152](https://github.com/unit8co/darts/pull/2152) by [DavidKleindienst](https://github.com/DavidKleindienst).
+
+**Fixed**
+- Fixed a bug when using a `TorchForecastingModel` with `use_reversible_instance_norm=True` and predicting with `n > output_chunk_length`. The input normalized multiple times. [#2160](https://github.com/unit8co/darts/pull/2160) by [FourierMourier](https://github.com/FourierMourier).
 
 ### For developers of the library:
 
+## [0.27.1](https://github.com/unit8co/darts/tree/0.27.1) (2023-12-10)
+### For users of the library:
+**Improved**
+- 🔴 Added `CustomRNNModule` and `CustomBlockRNNModule` for defining custom RNN modules that can be used with `RNNModel` and `BlockRNNModel`. The custom `model` must now be a subclass of the custom modules. [#2088](https://github.com/unit8co/darts/pull/2088) by [Dennis Bader](https://github.com/dennisbader).
+
+**Fixed**
+- Fixed a bug in historical forecasts, where some `fit/predict_kwargs` were not passed to the underlying model's fit/predict methods. [#2103](https://github.com/unit8co/darts/pull/2103) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed an import error when trying to create a `TorchForecastingModel` with PyTorch Lightning v<2.0.0. [#2087](https://github.com/unit8co/darts/pull/2087) by [Eschibli](https://github.com/eschibli).
+- Fixed a bug when creating a `RNNModel` with a custom `model`. [#2088](https://github.com/unit8co/darts/pull/2088) by [Dennis Bader](https://github.com/dennisbader).
+
+### For developers of the library:
+- Added a folder `docs/generated_api` to define custom .rst files for generating the documentation. [#2115](https://github.com/unit8co/darts/pull/2115) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.27.0](https://github.com/unit8co/darts/tree/0.27.0) (2023-11-18)
 ### For users of the library:

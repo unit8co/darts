@@ -521,7 +521,7 @@ class GenericShiftedDataset(TrainingDataset):
         shift
             The number of time steps by which to shift the output chunks relative to the input chunks.
         shift_covariates
-            Whether or not to shift the covariates forward the same way as the target.
+            Whether to shift the covariates forward the same way as the target.
             FutureCovariatesModel's require this set to True, while PastCovariatesModel's require this set to False.
         max_samples_per_ts
             This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced

@@ -93,7 +93,15 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         .. [1] https://en.wikipedia.org/wiki/Mixed-data_sampling
         .. [2] https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects
         """
-        self._low_freq = low_freq
+        if pd.tseries.frequencies.get_period_alias(low_freq) is None:
+            raise_log(
+                ValueError(
+                    f"Cannot infer period alias for `low_freq={low_freq}`. "
+                    f"Is it a valid pandas offset/frequency alias?"
+                ),
+                logger=logger,
+            )
+        self._low_freq = pd.tseries.frequencies.to_offset(low_freq).freqstr
         self._strip = strip
         self._drop_static_covariates = drop_static_covariates
         self._sep = "_midas_"

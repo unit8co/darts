@@ -124,6 +124,8 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> TimeSeries:
         # we override `predict()` to pass a non-None `series`, so that historic_future_covariates

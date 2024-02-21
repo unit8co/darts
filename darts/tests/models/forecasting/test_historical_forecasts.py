@@ -357,8 +357,22 @@ class TestHistoricalforecast:
                 **tfm_kwargs,
             )
 
-    def test_historical_forecasts_transferrable_future_cov_local_models(self):
-        model = ARIMA()
+    @pytest.mark.parametrize(
+        "arima_args",
+        [
+            {},
+            {
+                "p": np.array([1, 2, 3, 4]),
+                "q": (2, 3),
+                "seasonal_order": ([1, 5], 1, (1, 2, 3), 6),
+                "trend": [0, 0, 2, 1],
+            },
+        ],
+    )
+    def test_historical_forecasts_transferrable_future_cov_local_models(
+        self, arima_args: dict
+    ):
+        model = ARIMA(**arima_args)
         assert model.min_train_series_length == 30
         series = tg.sine_timeseries(length=31)
         res = model.historical_forecasts(
@@ -2014,10 +2028,7 @@ class TestHistoricalforecast:
         """check that the parameters provided in fit_kwargs are correctly processed"""
         valid_fit_kwargs = {"max_samples_per_ts": 3}
         invalid_fit_kwargs = {"series": self.ts_pass_train}
-        if model_type == "regression":
-            unsupported_fit_kwargs = {"trainer": None}
-        else:
-            unsupported_fit_kwargs = {"n_jobs_multioutput_wrapper": False}
+        unsupported_fit_kwargs = {"unsupported": "unsupported"}
 
         n = 2
         model = self.create_model(1, use_ll=False, model_type=model_type)
@@ -2043,17 +2054,15 @@ class TestHistoricalforecast:
         assert len(hist_fc) == n
 
         # passing unsupported argument
-        hist_fc = model.historical_forecasts(
-            self.ts_pass_train,
-            forecast_horizon=1,
-            start=len(self.ts_pass_train) - n,
-            retrain=True,
-            enable_optimization=enable_optimization,
-            fit_kwargs=unsupported_fit_kwargs,
-        )
-
-        assert hist_fc.components.equals(self.ts_pass_train.components)
-        assert len(hist_fc) == n
+        with pytest.raises(TypeError):
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                forecast_horizon=1,
+                start=len(self.ts_pass_train) - n,
+                retrain=True,
+                enable_optimization=enable_optimization,
+                fit_kwargs=unsupported_fit_kwargs,
+            )
 
         # passing hist_fc parameters in fit_kwargs, with retrain=False
         hist_fc = model.historical_forecasts(
@@ -2089,12 +2098,11 @@ class TestHistoricalforecast:
     def test_predict_kwargs(self, model_type, enable_optimization):
         """check that the parameters provided in predict_kwargs are correctly processed"""
         invalid_predict_kwargs = {"predict_likelihood_parameters": False}
+        unsupported_predict_kwargs = {"unsupported": "unsupported"}
         if model_type == "regression":
             valid_predict_kwargs = {}
-            unsupported_predict_kwargs = {"batch_size": 10}
         else:
             valid_predict_kwargs = {"batch_size": 10}
-            unsupported_predict_kwargs = {"unsupported": "unsupported"}
 
         n = 2
         model = self.create_model(1, use_ll=False, model_type=model_type)
@@ -2118,18 +2126,16 @@ class TestHistoricalforecast:
         assert hist_fc.components.equals(self.ts_pass_train.components)
         assert len(hist_fc) == n
 
-        # passing unsupported argument
-        hist_fc = model.historical_forecasts(
-            self.ts_pass_train,
-            forecast_horizon=1,
-            start=len(self.ts_pass_train) - n,
-            retrain=False,
-            enable_optimization=enable_optimization,
-            predict_kwargs=unsupported_predict_kwargs,
-        )
-
-        assert hist_fc.components.equals(self.ts_pass_train.components)
-        assert len(hist_fc) == n
+        # passing unsupported prediction argument
+        with pytest.raises(TypeError):
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                forecast_horizon=1,
+                start=len(self.ts_pass_train) - n,
+                retrain=False,
+                enable_optimization=enable_optimization,
+                predict_kwargs=unsupported_predict_kwargs,
+            )
 
         # passing hist_fc parameters in predict_kwargs, interfering with the logic
         with pytest.raises(ValueError) as msg:
