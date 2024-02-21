@@ -4521,7 +4521,9 @@ class TimeSeries:
 
         time_dim = xa.dims[0]
         sorted_xa = cls._sort_index(xa, copy=False)
-        time_index: Union[pd.Index, pd.RangeIndex, pd.DatetimeIndex] = (
+        time_index: Union[
+            pd.Index, pd.RangeIndex, pd.DatetimeIndex
+        ] = (
             sorted_xa.get_index(time_dim)
         )
 
