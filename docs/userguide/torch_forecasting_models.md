@@ -466,6 +466,7 @@ model.fit(...)
 MLflow using interface (UI) and autologging to track Dart's pytorch models. 
 ```python
 import pandas as pd
+import torchmetrics
 from torchmetrics import MeanAbsolutePercentageError
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
@@ -489,7 +490,6 @@ torch_metrics = torchmetrics.regression.MeanAbsolutePercentageError()
 ## Run this command with environment activated: mlflow ui --port xxxx  (e.g. 5000, 5001, 5002)
 # Copy and paste url from command line to web browser
 import mlflow
-import torchmetrics
 from mlflow.data.pandas_dataset import PandasDataset
 
 mlflow.pytorch.autolog(log_every_n_epoch=1, log_every_n_step=None, 
@@ -505,7 +505,7 @@ model_name = "Darts"
 
 with mlflow.start_run(nested=True) as run:
 
-    dataset: PandasDataset = mlflow.data.from_pandas(series, source="AirPassengersDataset")
+    dataset: PandasDataset = mlflow.data.from_pandas(series.pd_dataframe(), source="AirPassengersDataset")
 
     # Log the dataset to the MLflow Run. Specify the "training" context to indicate that the
     # dataset is used for model training
