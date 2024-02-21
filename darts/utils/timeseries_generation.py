@@ -60,7 +60,7 @@ def generate_index(
         logger,
     )
     raise_if(
-        end is not None and start is not None and type(start) != type(end),
+        end is not None and start is not None and type(start) is not type(end),
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
         logger,
     )
@@ -311,14 +311,14 @@ def gaussian_timeseries(
         A white noise TimeSeries created as indicated above.
     """
 
-    if type(mean) == np.ndarray:
+    if isinstance(mean, np.ndarray):
         raise_if_not(
             mean.shape == (length,),
             "If a vector of means is provided, "
             "it requires the same length as the TimeSeries.",
             logger,
         )
-    if type(std) == np.ndarray:
+    if isinstance(std, np.ndarray):
         raise_if_not(
             std.shape == (length, length),
             "If a matrix of standard deviations is provided, "
@@ -683,6 +683,10 @@ def datetime_attribute_timeseries(
         "week_of_year": 52,
     }
 
+    # ensure the one-hot encoding covers the whole range
+    # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Timestamp.html#pandas.Timestamp
+    one_indexed_freq = ["month", "day", "week", "weekofyear", "week_of_year"]
+
     if attribute not in ["week", "weekofyear", "week_of_year"]:
         values = getattr(time_index, attribute)
     else:
@@ -704,10 +708,12 @@ def datetime_attribute_timeseries(
     if one_hot:
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
-        for i in range(1, num_values_dict[attribute] + 1):
+        shift = 1 if attribute in one_indexed_freq else 0
+        attribute_range = range(shift, num_values_dict[attribute] + shift)
+        for i in attribute_range:
             if not (i in values_df.columns):
                 values_df[i] = 0
-        values_df = values_df[range(1, num_values_dict[attribute] + 1)]
+        values_df = values_df[attribute_range]
 
         if with_columns is None:
             with_columns = [

@@ -17,6 +17,8 @@ from darts.utils.timeseries_generation import (
     sine_timeseries,
 )
 
+ONE_INDEXED_FREQS = ["month", "day", "week", "weekofyear", "week_of_year"]
+
 
 class TestTimeSeriesGeneration:
     def test_constant_timeseries(self):
@@ -345,21 +347,21 @@ class TestTimeSeriesGeneration:
         for coef_assert in [[-1], [-1, 1.618], [1, 2, 3], list(range(10))]:
             test_calculation(coef=coef_assert)
 
-    def test_datetime_attribute_timeseries(self):
+    @staticmethod
+    def helper_routine(idx, attr, vals_exp, **kwargs):
+        ts = datetime_attribute_timeseries(idx, attribute=attr, **kwargs)
+        vals_exp = np.array(vals_exp, dtype=ts.dtype)
+        if len(vals_exp.shape) == 1:
+            vals_act = ts.values()[:, 0]
+        else:
+            vals_act = ts.values()
+        np.testing.assert_array_almost_equal(vals_act, vals_exp)
+
+    def test_datetime_attribute_timeseries_wrong_args(self):
         idx = generate_index(start=pd.Timestamp("2000-01-01"), length=48, freq="h")
-
-        def helper_routine(idx, attr, vals_exp, **kwargs):
-            ts = datetime_attribute_timeseries(idx, attribute=attr, **kwargs)
-            vals_exp = np.array(vals_exp, dtype=ts.dtype)
-            if len(vals_exp.shape) == 1:
-                vals_act = ts.values()[:, 0]
-            else:
-                vals_act = ts.values()
-            np.testing.assert_array_almost_equal(vals_act, vals_exp)
-
         # no pd.DatetimeIndex
         with pytest.raises(ValueError) as err:
-            helper_routine(
+            self.helper_routine(
                 pd.RangeIndex(start=0, stop=len(idx)), "h", vals_exp=np.arange(len(idx))
             )
         assert str(err.value).startswith(
@@ -368,23 +370,27 @@ class TestTimeSeriesGeneration:
 
         # invalid attribute
         with pytest.raises(ValueError) as err:
-            helper_routine(idx, "h", vals_exp=np.arange(len(idx)))
+            self.helper_routine(idx, "h", vals_exp=np.arange(len(idx)))
         assert str(err.value).startswith(
             "attribute `h` needs to be an attribute of pd.DatetimeIndex."
         )
 
         # no time zone aware index
         with pytest.raises(ValueError) as err:
-            helper_routine(idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx)))
+            self.helper_routine(
+                idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx))
+            )
         assert "`time_index` must be time zone naive." == str(err.value)
 
+    def test_datetime_attribute_timeseries(self):
+        idx = generate_index(start=pd.Timestamp("2000-01-01"), length=48, freq="h")
         # ===> datetime attribute
         # hour
         vals = [i for i in range(24)] * 2
-        helper_routine(idx, "hour", vals_exp=vals)
+        self.helper_routine(idx, "hour", vals_exp=vals)
 
         # hour from TimeSeries
-        helper_routine(
+        self.helper_routine(
             TimeSeries.from_times_and_values(times=idx, values=np.arange(len(idx))),
             "hour",
             vals_exp=vals,
@@ -392,45 +398,105 @@ class TestTimeSeriesGeneration:
 
         # tz=CET is +1 hour to UTC
         vals = vals[1:] + [0]
-        helper_routine(idx, "hour", vals_exp=vals, tz="CET")
+        self.helper_routine(idx, "hour", vals_exp=vals, tz="CET")
 
         # day
         vals = [1] * 24 + [2] * 24
-        helper_routine(idx, "day", vals_exp=vals)
+        self.helper_routine(idx, "day", vals_exp=vals)
 
         # dayofweek
         vals = [5] * 24 + [6] * 24
-        helper_routine(idx, "dayofweek", vals_exp=vals)
+        self.helper_routine(idx, "dayofweek", vals_exp=vals)
 
         # month
         vals = [1] * 48
-        helper_routine(idx, "month", vals_exp=vals)
+        self.helper_routine(idx, "month", vals_exp=vals)
 
-        # ===> one hot encoded
-        # month
-        vals = [1] + [0] * 11
-        vals = [vals for _ in range(48)]
-        helper_routine(idx, "month", vals_exp=vals, one_hot=True)
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ("M", "month", 12),
+            ("H", "hour", 24),
+            ("D", "weekday", 7),
+            ("s", "second", 60),
+            ("W", "weekofyear", 52),
+        ],
+    )
+    def test_datetime_attribute_timeseries_one_hot(self, config):
+        base_freq, attribute_freq, period = config
+        # first month/year, week/year, day/week, hour/day, second/hour
+        simple_start = pd.Timestamp("2000-01-03")
+        idx = generate_index(start=simple_start, length=period, freq=base_freq)
+        vals = np.eye(period)
 
-        # tz=CET, month
-        vals = [1] + [0] * 11
-        vals = [vals for _ in range(48)]
-        helper_routine(idx, "month", vals_exp=vals, tz="CET", one_hot=True)
+        # simple start
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
+        # with time-zone
+        if attribute_freq == "hour":
+            # shift to mimic conversion from UTC to CET
+            vals = np.roll(vals, shift=-1, axis=0)
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, tz="CET", one_hot=True)
 
-        # ===> sine/cosine cyclic encoding
-        # hour (period = 24 hours in one day)
-        period = 24
+        # missing values
+        cut_period = period // 3
+        idx = generate_index(
+            start=pd.Timestamp("2000-01-03"), length=cut_period, freq=base_freq
+        )
+        vals = np.eye(period)
+        # removing missing rows
+        vals = vals[:cut_period]
+        # mask missing attribute values
+        vals[:, cut_period:] = 0
+
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
+
+        # shifted time index
+        shifted_start = pd.Timestamp("2000-03-02 03:00:03")
+        # 3rd month/year, day/week, hour/day, second/hour
+        shift = 3
+        # 9th week of year
+        if attribute_freq == "weekofyear":
+            shift = 9
+
+        # 1-indexed attributes, the columns are shifted by one
+        if attribute_freq in ONE_INDEXED_FREQS:
+            shift -= 1
+
+        idx = generate_index(start=shifted_start, length=period, freq=base_freq)
+        vals = np.eye(period)
+        # shift values
+        vals = np.roll(vals, shift=-shift, axis=0)
+
+        # shifted start
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
+
+    @pytest.mark.parametrize("config", [("h", "hour", 24), ("M", "month", 12)])
+    def test_datetime_attribute_timeseries_cyclic(self, config):
+        base_freq, attribute_freq, period = config
+        idx = generate_index(
+            start=pd.Timestamp("2000-01-01"), length=2 * period, freq=base_freq
+        )
+
+        if attribute_freq in ONE_INDEXED_FREQS:
+            shift = 1
+        else:
+            shift = 0
+
         freq = 2 * np.pi / period
-        vals_dta = [i for i in range(24)] * 2
+        vals_dta = [i for i in range(shift, period + shift)] * 2
         vals = np.array(vals_dta)
         sin_vals = np.sin(freq * vals)[:, None]
         cos_vals = np.cos(freq * vals)[:, None]
-        vals = np.concatenate([sin_vals, cos_vals], axis=1)
-        helper_routine(idx, "hour", vals_exp=vals, cyclic=True)
+        vals_exp = np.concatenate([sin_vals, cos_vals], axis=1)
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, cyclic=True)
 
-        # tz=CET, hour
-        vals = np.array(vals_dta[1:] + [0])
+        # with time-zone conversion
+        if attribute_freq == "hour":
+            # UTC to CET shift by 1 hour
+            vals = np.array(vals_dta[1:] + vals_dta[0:1])
         sin_vals = np.sin(freq * vals)[:, None]
         cos_vals = np.cos(freq * vals)[:, None]
-        vals = np.concatenate([sin_vals, cos_vals], axis=1)
-        helper_routine(idx, "hour", vals_exp=vals, tz="CET", cyclic=True)
+        vals_exp = np.concatenate([sin_vals, cos_vals], axis=1)
+        self.helper_routine(
+            idx, attribute_freq, vals_exp=vals_exp, tz="CET", cyclic=True
+        )
