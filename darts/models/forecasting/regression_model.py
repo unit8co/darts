@@ -465,6 +465,8 @@ class RegressionModel(GlobalForecastingModel):
         """For model relying on MultiOutputRegressor, return the estimator forecasting the `horizon`th step
         of the `target_dim`th components.
 
+        Estimators are grouped by output_chunk_length, then by component.
+
         Parameters
         ----------
         horizon
@@ -490,7 +492,9 @@ class RegressionModel(GlobalForecastingModel):
             logger,
         )
 
-        return self.model.estimators_[horizon + target_dim]
+        # when multi_models=True, one model per horizon and target component
+        idx_estimator = self.multi_models * self.input_dim["target"] * horizon + target_dim
+        return self.model.estimators_[idx_estimator]
 
     def _create_lagged_data(
         self,
