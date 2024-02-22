@@ -10,7 +10,12 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import Optional, Tuple
+from typing import List, Literal, Optional, Sequence, Tuple, Union
+
+try:
+    from typing import TypeAlias
+except ImportError:
+    from typing_extensions import TypeAlias
 
 import numpy as np
 from statsmodels import __version_tuple__ as statsmodels_version
@@ -28,14 +33,22 @@ logger = get_logger(__name__)
 statsmodels_above_0135 = statsmodels_version > (0, 13, 5)
 
 
+IntOrIntSequence: TypeAlias = Union[int, Sequence[int]]
+
+
 class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
-        p: int = 12,
+        p: IntOrIntSequence = 12,
         d: int = 1,
-        q: int = 0,
-        seasonal_order: Tuple[int, int, int, int] = (0, 0, 0, 0),
-        trend: Optional[str] = None,
+        q: IntOrIntSequence = 0,
+        seasonal_order: Tuple[int, IntOrIntSequence, IntOrIntSequence, int] = (
+            0,
+            0,
+            0,
+            0,
+        ),
+        trend: Optional[Union[Literal["n", "c", "t", "ct"], List[int]]] = None,
         random_state: Optional[int] = None,
         add_encoders: Optional[dict] = None,
     ):
@@ -45,20 +58,29 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         Parameters
         ----------
-        p : int
+        p : int | Sequence[int]
             Order (number of time lags) of the autoregressive model (AR).
+            If a sequence of integers, specifies the exact lags to include.
         d : int
             The order of differentiation; i.e., the number of times the data
             have had past values subtracted (I).
-        q : int
+        q : int | Sequence[int]
             The size of the moving average window (MA).
-        seasonal_order: Tuple[int, int, int, int]
-            The (P,D,Q,s) order of the seasonal component for the AR parameters,
-            differences, MA parameters and periodicity.
-        trend: str
-            Parameter controlling the deterministic trend. 'n' indicates no trend,
-            'c' a constant term, 't' linear trend in time, and 'ct' includes both.
-            Default is 'c' for models without integration, and no trend for models with integration.
+            If a sequence of integers, specifies the exact lags to include in the window.
+        seasonal_order: Tuple[int | Sequence[int], int, int | Sequence[int], int]
+            The (P,D,Q,s) order of the seasonal component for the AR parameters (P),
+            differences (D), MA parameters (Q) and periodicity (s). D and s are always integers,
+            while P and Q may either be integers or sequence of positive integers
+            specifying exactly which lag orders are included.
+        trend: Literal['n', 'c', 't', 'ct'] | list[int], optional
+            Parameter controlling the deterministic trend. Either a string or list of integers.
+            If a string, can be 'n' for no trend, 'c' for a constant term, 't' for a linear trend in time,
+            and 'ct' for a constant term and linear trend.
+            If a list of integers, defines a polynomial according to `numpy.poly1d` [1]_. E.g., `[1,1,0,1]` would
+            translate to :math:`a + bt + ct^3`.
+            Trend term of lower order than `d + D` cannot be as they would be eliminated due to the differencing
+            operation.
+            Default is 'c' for models without integration, and 'n' for models with integration.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -103,6 +125,10 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                [481.07892911],
                [502.11286509],
                [555.50153984]])
+
+        References
+        ----------
+        .. [1] https://numpy.org/doc/stable/reference/generated/numpy.poly1d.html
         """
         super().__init__(add_encoders=add_encoders)
         self.order = p, d, q
