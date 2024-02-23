@@ -198,6 +198,7 @@ class RegressionModel(GlobalForecastingModel):
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
         self._lagged_feature_names: Optional[List[str]] = None
+        self._lagged_label_names: Optional[List[str]] = None
 
         # check and set output_chunk_length
         raise_if_not(
@@ -578,7 +579,7 @@ class RegressionModel(GlobalForecastingModel):
         self.model.fit(training_samples, training_labels, **kwargs)
 
         # generate and store the lagged components names (for feature importance analysis)
-        self._lagged_feature_names, _ = create_lagged_component_names(
+        self._lagged_feature_names, self._lagged_label_names = create_lagged_component_names(
             target_series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -1089,6 +1090,17 @@ class RegressionModel(GlobalForecastingModel):
                 covariate acts globally on a multivariate target series, will show "global".
         """
         return self._lagged_feature_names
+
+    @property
+    def lagged_label_names(self) -> Optional[List[str]]:
+        """The lagged label name for the model's estimators.
+
+        The naming convention is: ``"{name}_target_ocl{i}"``, where:
+
+            - ``{name}`` the component name of the (first) series
+            - ``{i}`` is the position in output_chunk_length (label lag)
+        """
+        return self._lagged_label_names
 
     def __str__(self):
         return self.model.__str__()

@@ -773,7 +773,7 @@ def create_lagged_component_names(
 
         if variate_type == "target" and lags:
             label_feature_names = [
-                f"{name}_target_lag{lag}"
+                f"{name}_target_ocl{lag}"
                 for lag in range(output_chunk_length)
                 for name in components
             ]
