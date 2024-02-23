@@ -466,7 +466,7 @@ class RegressionModel(GlobalForecastingModel):
         """For model relying on MultiOutputRegressor, return the estimator forecasting the `horizon`th step
         of the `target_dim`th components.
 
-        Estimators are grouped by output_chunk_length, then by component.
+        Estimators are grouped by output_chunk_length position, then by component.
 
         Parameters
         ----------
