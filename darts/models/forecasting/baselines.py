@@ -336,12 +336,12 @@ class NaiveEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates
-                    if model.supports_past_covariates
-                    else None,
-                    future_covariates=future_covariates
-                    if model.supports_future_covariates
-                    else None,
+                    past_covariates=(
+                        past_covariates if model.supports_past_covariates else None
+                    ),
+                    future_covariates=(
+                        future_covariates if model.supports_future_covariates else None
+                    ),
                 )
 
         return self
@@ -364,9 +364,11 @@ class NaiveEnsembleModel(EnsembleModel):
 
         if isinstance(predictions, Sequence):
             return [
-                self._target_average(p, ts)
-                if not predict_likelihood_parameters
-                else self._params_average(p, ts)
+                (
+                    self._target_average(p, ts)
+                    if not predict_likelihood_parameters
+                    else self._params_average(p, ts)
+                )
                 for p, ts in zip(predictions, series)
             ]
         else:

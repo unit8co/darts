@@ -27,7 +27,6 @@ class ExponentialSmoothing(LocalForecastingModel):
         kwargs: Optional[Dict[str, Any]] = None,
         **fit_kwargs
     ):
-
         """Exponential Smoothing
 
         This is a wrapper around
