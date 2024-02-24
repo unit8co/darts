@@ -2744,7 +2744,7 @@ class TimeSeries:
         )
         raise_if_not(
             other.freq == self.freq,
-            "Appended TimeSeries must have the same frequency as the current one",
+            "Both series must have the same frequency.",
             logger,
         )
         raise_if_not(
@@ -2875,6 +2875,8 @@ class TimeSeries:
                 times=idx,
                 fill_missing_dates=False,
                 static_covariates=self.static_covariates,
+                columns=self.columns,
+                hierarchy=self.hierarchy,
             )
         )
 
