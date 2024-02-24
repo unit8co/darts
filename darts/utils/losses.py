@@ -2,6 +2,7 @@
 PyTorch Loss Functions
 ----------------------
 """
+
 # Inspiration: https://github.com/ElementAI/N-BEATS/blob/master/common/torch/losses.py
 
 import numpy as np

@@ -11,6 +11,7 @@ The main functions are `fit()` and `predict()`. `fit()` learns the function `f()
 one or several time series. The function `predict()` applies `f()` on one or several time series in order
 to obtain forecasts for a desired number of time stamps into the future.
 """
+
 import copy
 import datetime
 import inspect
@@ -1115,15 +1116,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             freq=series_.freq * stride,
                         ),
                         np.array(last_points_values),
-                        columns=forecast_components
-                        if forecast_components is not None
-                        else series_.columns,
-                        static_covariates=series_.static_covariates
-                        if not predict_likelihood_parameters
-                        else None,
-                        hierarchy=series_.hierarchy
-                        if not predict_likelihood_parameters
-                        else None,
+                        columns=(
+                            forecast_components
+                            if forecast_components is not None
+                            else series_.columns
+                        ),
+                        static_covariates=(
+                            series_.static_covariates
+                            if not predict_likelihood_parameters
+                            else None
+                        ),
+                        hierarchy=(
+                            series_.hierarchy
+                            if not predict_likelihood_parameters
+                            else None
+                        ),
                     )
                 )
             else:
@@ -1313,9 +1320,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 backtest_list.append(errors)
             else:
                 errors = [
-                    [metric_f(target_ts, f) for metric_f in metric]
-                    if len(metric) > 1
-                    else metric[0](target_ts, f)
+                    (
+                        [metric_f(target_ts, f) for metric_f in metric]
+                        if len(metric) > 1
+                        else metric[0](target_ts, f)
+                    )
                     for f in forecasts[idx]
                 ]
 
@@ -1522,9 +1531,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
             if param_combination_dict.get("model_name", None):
                 current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
-                param_combination_dict[
-                    "model_name"
-                ] = f"{current_time}_{param_combination_dict['model_name']}"
+                param_combination_dict["model_name"] = (
+                    f"{current_time}_{param_combination_dict['model_name']}"
+                )
 
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode

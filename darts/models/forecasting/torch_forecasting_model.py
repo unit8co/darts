@@ -2098,7 +2098,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # transformers are equal if they are instances of the same class
             self_transformer = self.add_encoders.get("transformer", None)
             tfm_transformer = tfm_save.add_encoders.get("transformer", None)
-            same_transformer = type(self_transformer) == type(tfm_transformer)
+            same_transformer = type(self_transformer) is type(tfm_transformer)
 
             # encoders are equal if they have the same entries (transformer excluded)
             self_encoders = {
