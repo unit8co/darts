@@ -14,6 +14,7 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
+
 from typing import Optional
 
 from sklearn.ensemble import RandomForestRegressor

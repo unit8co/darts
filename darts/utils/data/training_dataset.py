@@ -241,9 +241,7 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -264,9 +262,7 @@ class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -287,9 +283,7 @@ class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

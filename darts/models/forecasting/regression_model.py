@@ -26,6 +26,7 @@ denoting past lags and positive values including 0 denoting future lags).
 When static covariates are present, they are appended to the lagged features. When multiple time series are passed,
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
+
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -448,9 +449,11 @@ class RegressionModel(GlobalForecastingModel):
     def min_train_series_length(self) -> int:
         return max(
             3,
-            -self.lags["target"][0] + self.output_chunk_length
-            if "target" in self.lags
-            else self.output_chunk_length,
+            (
+                -self.lags["target"][0] + self.output_chunk_length
+                if "target" in self.lags
+                else self.output_chunk_length
+            ),
         )
 
     @property
@@ -716,9 +719,11 @@ class RegressionModel(GlobalForecastingModel):
             else:
                 # reorder the components based on the input series, insert the default when necessary
                 self.component_lags[variate_type] = {
-                    comp_name: self.component_lags[variate_type][comp_name]
-                    if comp_name in self.component_lags[variate_type]
-                    else self.component_lags[variate_type]["default_lags"]
+                    comp_name: (
+                        self.component_lags[variate_type][comp_name]
+                        if comp_name in self.component_lags[variate_type]
+                        else self.component_lags[variate_type]["default_lags"]
+                    )
                     for comp_name in variate[0].components
                 }
 
@@ -1022,9 +1027,11 @@ class RegressionModel(GlobalForecastingModel):
             self._build_forecast_series(
                 points_preds=row,
                 input_series=input_tgt,
-                custom_components=self._likelihood_components_names(input_tgt)
-                if predict_likelihood_parameters
-                else None,
+                custom_components=(
+                    self._likelihood_components_names(input_tgt)
+                    if predict_likelihood_parameters
+                    else None
+                ),
                 with_static_covs=False if predict_likelihood_parameters else True,
                 with_hierarchy=False if predict_likelihood_parameters else True,
             )
