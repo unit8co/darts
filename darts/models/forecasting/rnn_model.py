@@ -111,9 +111,11 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
         model_input = (
-            torch.cat([past_target, future_covariates], dim=2)
-            if future_covariates is not None
-            else past_target,
+            (
+                torch.cat([past_target, future_covariates], dim=2)
+                if future_covariates is not None
+                else past_target
+            ),
             static_covariates,
         )
         return self(model_input)[0]
@@ -278,7 +280,6 @@ class RNNModel(DualCovariatesTorchModel):
         training_length: int = 24,
         **kwargs,
     ):
-
         """Recurrent Neural Network Model (RNNs).
 
         This class provides three variants of RNNs:

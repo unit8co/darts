@@ -60,7 +60,6 @@ class _TFTModule(PLMixedCovariatesModule):
         norm_type: Union[str, nn.Module],
         **kwargs,
     ):
-
         """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
         The implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_.
@@ -158,9 +157,11 @@ class _TFTModule(PLMixedCovariatesModule):
         # continuous variable processing
         self.prescalers_linear = {
             name: nn.Linear(
-                1
-                if name not in self.numeric_static_variables
-                else self.num_static_components,
+                (
+                    1
+                    if name not in self.numeric_static_variables
+                    else self.num_static_components
+                ),
                 self.hidden_continuous_size,
             )
             for name in self.reals

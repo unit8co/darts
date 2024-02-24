@@ -16,7 +16,6 @@ def lcm(*integers):
 
 
 class TestGetSharedTimes:
-
     """
     Tests `get_shared_times` function defined in `darts.utils.data.tabularization`.
     """

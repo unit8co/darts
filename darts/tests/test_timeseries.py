@@ -2103,7 +2103,7 @@ class TestTimeSeriesFromDataFrame:
             ts = TimeSeries.from_dataframe(df=df, time_col="Time")
 
             # check type (should convert to RangeIndex):
-            assert type(ts.time_index) == pd.RangeIndex
+            assert type(ts.time_index) is pd.RangeIndex
 
             # check values inside the index (should be sorted correctly):
             assert list(ts.time_index) == sorted(expected)

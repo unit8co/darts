@@ -125,7 +125,6 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         multiprocessing_start_method: Optional[str] = "spawn",
         random_state: int = 0,
     ):
-
         """
         This is a wrapper around
         `tbats
