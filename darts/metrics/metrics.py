@@ -46,9 +46,7 @@ def multi_ts_support(func) -> Union[float, List[float]]:
         pred_series = (
             kwargs["pred_series"]
             if "pred_series" in kwargs
-            else args[0]
-            if "actual_series" in kwargs
-            else args[1]
+            else args[0] if "actual_series" in kwargs else args[1]
         )
 
         n_jobs = kwargs.pop("n_jobs", signature(func).parameters["n_jobs"].default)
@@ -1134,7 +1132,6 @@ def rho_risk(
     n_jobs: int = 1,
     verbose: bool = False
 ) -> float:
-
     """:math:`\\rho`-risk (rho-risk or quantile risk).
 
     Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions

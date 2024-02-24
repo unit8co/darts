@@ -313,9 +313,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
             delayed(_build_forecast_series)(
                 [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                 input_series,
-                custom_columns=self.likelihood.likelihood_components_names(input_series)
-                if self.predict_likelihood_parameters
-                else None,
+                custom_columns=(
+                    self.likelihood.likelihood_components_names(input_series)
+                    if self.predict_likelihood_parameters
+                    else None
+                ),
                 with_static_covs=False if self.predict_likelihood_parameters else True,
                 with_hierarchy=False if self.predict_likelihood_parameters else True,
                 pred_start=pred_start,
@@ -577,9 +579,11 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         past_target, past_covariates, static_covariates = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
         inpt = (
-            torch.cat([past_target, past_covariates], dim=2)
-            if past_covariates is not None
-            else past_target,
+            (
+                torch.cat([past_target, past_covariates], dim=2)
+                if past_covariates is not None
+                else past_target
+            ),
             static_covariates,
         )
         return self(inpt)
@@ -659,13 +663,13 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
 
             # update past covariates to include next `roll_size` future past covariates elements
             if n_past_covs and self.input_chunk_length >= roll_size:
-                input_past[
-                    :, -roll_size:, n_targets : n_targets + n_past_covs
-                ] = future_past_covariates[:, left_past:right_past, :]
+                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
             elif n_past_covs:
-                input_past[
-                    :, :, n_targets : n_targets + n_past_covs
-                ] = future_past_covariates[:, left_past:right_past, :]
+                input_past[:, :, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
 
             # take only last part of the output sequence where needed
             out = self._produce_predict_output(x=(input_past, static_covariates))[
@@ -795,9 +799,11 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 past_target,
                 past_covariates,
                 historic_future_covariates,
-                future_covariates[:, :roll_size, :]
-                if future_covariates is not None
-                else None,
+                (
+                    future_covariates[:, :roll_size, :]
+                    if future_covariates is not None
+                    else None
+                ),
                 static_covariates,
             )
         )
@@ -842,19 +848,19 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
 
             # update past covariates to include next `roll_size` future past covariates elements
             if n_past_covs and self.input_chunk_length >= roll_size:
-                input_past[
-                    :, -roll_size:, n_targets : n_targets + n_past_covs
-                ] = future_past_covariates[:, left_past:right_past, :]
+                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
             elif n_past_covs:
-                input_past[
-                    :, :, n_targets : n_targets + n_past_covs
-                ] = future_past_covariates[:, left_past:right_past, :]
+                input_past[:, :, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
 
             # update historic future covariates to include next `roll_size` future covariates elements
             if n_future_covs and self.input_chunk_length >= roll_size:
-                input_past[
-                    :, -roll_size:, n_targets + n_past_covs :
-                ] = future_covariates[:, left_past:right_past, :]
+                input_past[:, -roll_size:, n_targets + n_past_covs :] = (
+                    future_covariates[:, left_past:right_past, :]
+                )
             elif n_future_covs:
                 input_past[:, :, n_targets + n_past_covs :] = future_covariates[
                     :, left_past:right_past, :

@@ -248,9 +248,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[
+    def __getitem__(self, idx) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -351,9 +349,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[
+    def __getitem__(self, idx) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -459,9 +455,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[
+    def __getitem__(self, idx) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

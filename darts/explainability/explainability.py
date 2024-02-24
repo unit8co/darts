@@ -3,6 +3,7 @@ Forecasting Model Explainer Base Class
 
 A `_ForecastingModelExplainer` takes a fitted forecasting model as input and generates explanations for it.
 """
+
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence, Tuple, Union
 

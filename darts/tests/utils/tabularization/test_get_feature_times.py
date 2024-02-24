@@ -215,7 +215,7 @@ class TestGetFeatureTimes:
         target = linear_timeseries(start=1, length=20, freq=1)
         past = linear_timeseries(start=2, length=25, freq=2)
         future = linear_timeseries(start=3, length=30, freq=3)
-        for (lags, lags_past, lags_future, ocl) in product(
+        for lags, lags_past, lags_future, ocl in product(
             self.target_lag_combos,
             self.lags_past_combos,
             self.lags_future_combos,
@@ -252,7 +252,7 @@ class TestGetFeatureTimes:
         target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=20, freq="1d")
         past = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=25, freq="2d")
         future = linear_timeseries(start=pd.Timestamp("1/3/2000"), length=30, freq="3d")
-        for (lags, lags_past, lags_future, ocl) in product(
+        for lags, lags_past, lags_future, ocl in product(
             self.target_lag_combos,
             self.lags_past_combos,
             self.lags_future_combos,
@@ -289,7 +289,7 @@ class TestGetFeatureTimes:
         target = linear_timeseries(start=1, length=20, freq=1)
         past = linear_timeseries(start=2, length=25, freq=2)
         future = linear_timeseries(start=3, length=30, freq=3)
-        for (lags, lags_past, lags_future) in product(
+        for lags, lags_past, lags_future in product(
             self.target_lag_combos, self.lags_past_combos, self.lags_future_combos
         ):
             feature_times = _get_feature_times(
@@ -322,7 +322,7 @@ class TestGetFeatureTimes:
         target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=20, freq="1d")
         past = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=25, freq="2d")
         future = linear_timeseries(start=pd.Timestamp("1/3/2000"), length=30, freq="3d")
-        for (lags, lags_past, lags_future) in product(
+        for lags, lags_past, lags_future in product(
             self.target_lag_combos, self.lags_past_combos, self.lags_future_combos
         ):
             feature_times = _get_feature_times(
