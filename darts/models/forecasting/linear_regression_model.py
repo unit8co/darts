@@ -5,6 +5,7 @@ Linear Regression model
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
 covariate series lags in order to obtain a forecast.
 """
+
 from typing import List, Optional, Sequence, Union
 
 import numpy as np

@@ -18,8 +18,6 @@ from darts.utils.utils import _build_tqdm_iterator
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
-pd_above_v22 = pd.__version__ >= "2.2"
-
 """
     Overall usage of this package:
     from darts.datasets import AirPassengersDataset
@@ -520,7 +518,7 @@ class ElectricityDataset(DatasetLoaderCSV):
 
         def pre_proces_fn(extracted_dir, dataset_path):
             with open(Path(extracted_dir, "LD2011_2014.txt")) as fin:
-                with open(dataset_path, "wt", newline="\n") as fout:
+                with open(dataset_path, "w", newline="\n") as fout:
                     for line in fin:
                         fout.write(line.replace(",", ".").replace(";", ","))
 
@@ -622,9 +620,11 @@ class UberTLCDataset(DatasetLoaderCSV):
                 uri="https://github.com/fivethirtyeight/uber-tlc-foil-response/raw/"
                 "63bb878b76f47f69b4527d50af57aac26dead983/"
                 "uber-trip-data/uber-raw-data-janjune-15.csv.zip",
-                hash="9ed84ebe0df4bc664748724b633b3fe6"
-                if sample_freq == "hourly"
-                else "24f9fd67e4b9e53f0214a90268cd9bee",
+                hash=(
+                    "9ed84ebe0df4bc664748724b633b3fe6"
+                    if sample_freq == "hourly"
+                    else "24f9fd67e4b9e53f0214a90268cd9bee"
+                ),
                 header_time="Pickup_date",
                 format_time="%Y-%m-%d %H:%M:%S",
                 pre_process_zipped_csv_fn=pre_proces_fn,
@@ -888,12 +888,8 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
             df.index.name = "Timestamp"
             df.to_csv(self._get_path_dataset())
 
-        # pandas v2.2.0 introduced some changes
-        hash_expected = (
-            "485d81e9902cc0ccb1f86d7e01fb37cd"
-            if pd_above_v22
-            else "a019125b7f9c1afeacb0ae60ce7455ef"
-        )
+        # pandas v2.2.0 introduced a bug that was fixed in v2.2.1; the expected hash for 2.2.0
+        # is "485d81e9902cc0ccb1f86d7e01fb37cd"
         # hash value for dataset with weather data
         super().__init__(
             metadata=DatasetLoaderMetadata(
@@ -903,7 +899,7 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
                     "ewz_stromabgabe_netzebenen_stadt_zuerich/"
                     "download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv"
                 ),
-                hash=hash_expected,
+                hash="a019125b7f9c1afeacb0ae60ce7455ef",
                 header_time="Timestamp",
                 freq="15min",
                 pre_process_csv_fn=pre_process_dataset,

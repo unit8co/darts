@@ -114,9 +114,11 @@ class Likelihood(ABC):
             device = params_out[0].device
             prior_params = tuple(
                 # use model output as "prior" for parameters not specified as prior
-                torch.tensor(prior_params[i]).to(device)
-                if prior_params[i] is not None
-                else params_out[i]
+                (
+                    torch.tensor(prior_params[i]).to(device)
+                    if prior_params[i] is not None
+                    else params_out[i]
+                )
                 for i in range(len(prior_params))
             )
             prior_distr = self._distr_from_params(prior_params)

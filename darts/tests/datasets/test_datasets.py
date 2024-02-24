@@ -52,7 +52,7 @@ if TORCH_AVAILABLE:
             for left, right in zip(lefts, rights):
                 left = left.values() if isinstance(left, TimeSeries) else left
                 right = right.values() if isinstance(right, TimeSeries) else right
-                assert type(left) == type(right)
+                assert type(left) is type(right)
                 assert (
                     isinstance(
                         left, (TimeSeries, pd.Series, pd.DataFrame, np.ndarray, list)

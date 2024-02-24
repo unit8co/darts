@@ -340,7 +340,6 @@ class TransformerModel(PastCovariatesTorchModel):
         custom_decoder: Optional[nn.Module] = None,
         **kwargs,
     ):
-
         """Transformer model
 
         Transformer is a state-of-the-art deep learning model introduced in 2017. It is an encoder-decoder

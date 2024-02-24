@@ -348,17 +348,31 @@ class TestHistoricalforecast:
                 return None
             return NLinearModel(
                 input_chunk_length=3,
-                likelihood=QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95])
-                if use_ll
-                else None,
+                likelihood=(
+                    QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95]) if use_ll else None
+                ),
                 output_chunk_length=ocl,
                 n_epochs=1,
                 random_state=42,
                 **tfm_kwargs,
             )
 
-    def test_historical_forecasts_transferrable_future_cov_local_models(self):
-        model = ARIMA()
+    @pytest.mark.parametrize(
+        "arima_args",
+        [
+            {},
+            {
+                "p": np.array([1, 2, 3, 4]),
+                "q": (2, 3),
+                "seasonal_order": ([1, 5], 1, (1, 2, 3), 6),
+                "trend": [0, 0, 2, 1],
+            },
+        ],
+    )
+    def test_historical_forecasts_transferrable_future_cov_local_models(
+        self, arima_args: dict
+    ):
+        model = ARIMA(**arima_args)
         assert model.min_train_series_length == 30
         series = tg.sine_timeseries(length=31)
         res = model.historical_forecasts(
@@ -829,9 +843,9 @@ class TestHistoricalforecast:
         model_same.fit(
             series=ts[:start],
             past_covariates=ts_covs if model_same.supports_past_covariates else None,
-            future_covariates=ts_covs
-            if model_same.supports_future_covariates
-            else None,
+            future_covariates=(
+                ts_covs if model_same.supports_future_covariates else None
+            ),
         )
         # ocl >= forecast horizon
         model_kwargs_diff = model_kwargs.copy()
@@ -841,9 +855,9 @@ class TestHistoricalforecast:
         model_diff.fit(
             series=ts[:start],
             past_covariates=ts_covs if model_diff.supports_past_covariates else None,
-            future_covariates=ts_covs
-            if model_diff.supports_future_covariates
-            else None,
+            future_covariates=(
+                ts_covs if model_diff.supports_future_covariates else None
+            ),
         )
         # no parametrization to save time on model training at the cost of test granularity
         for model in [model_same, model_diff]:
@@ -851,12 +865,12 @@ class TestHistoricalforecast:
                 for stride in [1, 2]:
                     hist_fct = model.historical_forecasts(
                         series=ts,
-                        past_covariates=ts_covs
-                        if model.supports_past_covariates
-                        else None,
-                        future_covariates=ts_covs
-                        if model.supports_future_covariates
-                        else None,
+                        past_covariates=(
+                            ts_covs if model.supports_past_covariates else None
+                        ),
+                        future_covariates=(
+                            ts_covs if model.supports_future_covariates else None
+                        ),
                         start=start,
                         retrain=False,
                         last_points_only=last_points_only,
@@ -868,12 +882,12 @@ class TestHistoricalforecast:
                     # manually packing the series in list to match expected inputs
                     opti_hist_fct = model._optimized_historical_forecasts(
                         series=[ts],
-                        past_covariates=[ts_covs]
-                        if model.supports_past_covariates
-                        else None,
-                        future_covariates=[ts_covs]
-                        if model.supports_future_covariates
-                        else None,
+                        past_covariates=(
+                            [ts_covs] if model.supports_past_covariates else None
+                        ),
+                        future_covariates=(
+                            [ts_covs] if model.supports_future_covariates else None
+                        ),
                         start=start,
                         last_points_only=last_points_only,
                         stride=stride,
@@ -1415,18 +1429,22 @@ class TestHistoricalforecast:
 
         forecasts_retrain = model.historical_forecasts(
             series=[self.ts_pass_val, self.ts_pass_val],
-            past_covariates=[
-                self.ts_past_cov_valid_same_start,
-                self.ts_past_cov_valid_same_start,
-            ]
-            if "lags_past_covariates" in kwargs
-            else None,
-            future_covariates=[
-                self.ts_past_cov_valid_same_start,
-                self.ts_past_cov_valid_same_start,
-            ]
-            if "lags_future_covariates" in kwargs
-            else None,
+            past_covariates=(
+                [
+                    self.ts_past_cov_valid_same_start,
+                    self.ts_past_cov_valid_same_start,
+                ]
+                if "lags_past_covariates" in kwargs
+                else None
+            ),
+            future_covariates=(
+                [
+                    self.ts_past_cov_valid_same_start,
+                    self.ts_past_cov_valid_same_start,
+                ]
+                if "lags_future_covariates" in kwargs
+                else None
+            ),
             last_points_only=True,
             forecast_horizon=forecast_hrz,
             stride=1,
@@ -1451,9 +1469,11 @@ class TestHistoricalforecast:
         past_lag = min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag
-            if min_future_cov_lag is not None and min_future_cov_lag < 0
-            else 0,
+            (
+                min_future_cov_lag
+                if min_future_cov_lag is not None and min_future_cov_lag < 0
+                else 0
+            ),
         )
 
         future_lag = (
@@ -1506,33 +1526,41 @@ class TestHistoricalforecast:
 
         model.fit(
             series=[self.ts_pass_val, self.ts_pass_val],
-            past_covariates=[
-                self.ts_past_cov_valid_same_start,
-                self.ts_past_cov_valid_same_start,
-            ]
-            if "lags_past_covariates" in kwargs
-            else None,
-            future_covariates=[
-                self.ts_past_cov_valid_same_start,
-                self.ts_past_cov_valid_same_start,
-            ]
-            if "lags_future_covariates" in kwargs
-            else None,
+            past_covariates=(
+                [
+                    self.ts_past_cov_valid_same_start,
+                    self.ts_past_cov_valid_same_start,
+                ]
+                if "lags_past_covariates" in kwargs
+                else None
+            ),
+            future_covariates=(
+                [
+                    self.ts_past_cov_valid_same_start,
+                    self.ts_past_cov_valid_same_start,
+                ]
+                if "lags_future_covariates" in kwargs
+                else None
+            ),
         )
         forecasts_no_retrain = model.historical_forecasts(
             series=[self.ts_pass_val, self.ts_pass_val],
-            past_covariates=[
-                self.ts_past_cov_valid_same_start,
-                self.ts_past_cov_valid_same_start,
-            ]
-            if "lags_past_covariates" in kwargs
-            else None,
-            future_covariates=[
-                self.ts_past_cov_valid_same_start,
-                self.ts_past_cov_valid_same_start,
-            ]
-            if "lags_future_covariates" in kwargs
-            else None,
+            past_covariates=(
+                [
+                    self.ts_past_cov_valid_same_start,
+                    self.ts_past_cov_valid_same_start,
+                ]
+                if "lags_past_covariates" in kwargs
+                else None
+            ),
+            future_covariates=(
+                [
+                    self.ts_past_cov_valid_same_start,
+                    self.ts_past_cov_valid_same_start,
+                ]
+                if "lags_future_covariates" in kwargs
+                else None
+            ),
             last_points_only=True,
             forecast_horizon=forecast_hrz,
             stride=1,

@@ -238,7 +238,7 @@ class TestGetFeatureTimes:
             future = linear_timeseries(
                 start=pd.Timestamp("1/3/2000"), length=30, freq="3d"
             )
-        for (lags, lags_past, lags_future, ocl) in product(
+        for lags, lags_past, lags_future, ocl in product(
             self.target_lag_combos,
             self.lags_past_combos,
             self.lags_future_combos,
@@ -298,7 +298,7 @@ class TestGetFeatureTimes:
                 start=pd.Timestamp("1/3/2000"), length=30, freq="3d"
             )
 
-        for (lags, lags_past, lags_future) in product(
+        for lags, lags_past, lags_future in product(
             self.target_lag_combos, self.lags_past_combos, self.lags_future_combos
         ):
             feature_times = _get_feature_times(

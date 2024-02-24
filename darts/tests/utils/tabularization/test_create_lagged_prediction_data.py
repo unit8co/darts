@@ -387,7 +387,7 @@ class TestCreateLaggedPredictionData:
                 freq="2d",
             )
         # Conduct test for each input parameter combo:
-        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
+        for lags, lags_past, lags_future, max_samples_per_ts in product(
             self.target_lag_combos,
             self.past_lag_combos,
             self.future_lag_combos,
@@ -490,7 +490,7 @@ class TestCreateLaggedPredictionData:
                 freq="3d",
             )
         # Conduct test for each input parameter combo:
-        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
+        for lags, lags_past, lags_future, max_samples_per_ts in product(
             self.target_lag_combos,
             self.past_lag_combos,
             self.future_lag_combos,
@@ -591,7 +591,7 @@ class TestCreateLaggedPredictionData:
                 freq="2d",
             )
         # Conduct test for each input parameter combo:
-        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
+        for lags, lags_past, lags_future, max_samples_per_ts in product(
             self.target_lag_combos,
             self.past_lag_combos,
             self.future_lag_combos,

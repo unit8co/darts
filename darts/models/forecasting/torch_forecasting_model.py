@@ -2108,7 +2108,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # transformers are equal if they are instances of the same class
             self_transformer = self.add_encoders.get("transformer", None)
             tfm_transformer = tfm_save.add_encoders.get("transformer", None)
-            same_transformer = type(self_transformer) == type(tfm_transformer)
+            same_transformer = type(self_transformer) is type(tfm_transformer)
 
             # encoders are equal if they have the same entries (transformer excluded)
             self_encoders = {
@@ -2587,9 +2587,11 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
             None,
             self.output_chunk_shift if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 + self.output_chunk_shift
-            if self.uses_future_covariates
-            else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
             self.output_chunk_shift,
         )
 
@@ -2686,9 +2688,11 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
             None,
             -self.input_chunk_length if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 + self.output_chunk_shift
-            if self.uses_future_covariates
-            else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
             self.output_chunk_shift,
         )
 
@@ -2782,9 +2786,11 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
             -self.input_chunk_length if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 + self.output_chunk_shift
-            if self.uses_future_covariates
-            else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
             self.output_chunk_shift,
         )
 
@@ -2935,8 +2941,10 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
             self.output_chunk_shift if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 + self.output_chunk_shift
-            if self.uses_future_covariates
-            else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
             self.output_chunk_shift,
         )

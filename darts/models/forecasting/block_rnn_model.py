@@ -106,7 +106,6 @@ class _BlockRNNModule(CustomBlockRNNModule):
         name: str,
         **kwargs,
     ):
-
         """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
 
         PyTorch module implementing a simple block RNN with the specified `name` layer.
@@ -197,7 +196,6 @@ class BlockRNNModel(PastCovariatesTorchModel):
         dropout: float = 0.0,
         **kwargs,
     ):
-
         """Block Recurrent Neural Network Model (RNNs).
 
         This is a neural network model that uses an RNN encoder to encode fixed-length input chunks, and

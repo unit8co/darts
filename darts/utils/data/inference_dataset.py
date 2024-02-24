@@ -240,9 +240,7 @@ class GenericInferenceDataset(InferenceDataset):
             stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
         return list_index, bound_left + stride_idx
 
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -406,9 +404,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -476,9 +472,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -575,9 +569,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[
+    def __getitem__(self, idx) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -684,9 +676,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[
+    def __getitem__(self, idx) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -797,9 +787,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[
+    def __getitem__(self, idx) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

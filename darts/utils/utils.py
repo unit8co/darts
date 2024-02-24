@@ -2,6 +2,7 @@
 Additional util functions
 -------------------------
 """
+
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
@@ -300,7 +301,7 @@ def slice_index(
         included.
     """
 
-    if type(start) != type(end):
+    if type(start) is not type(end):
         raise_log(
             ValueError(
                 "start and end values must be of the same type (either both integers or both pd.Timestamps)"

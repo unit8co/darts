@@ -52,7 +52,7 @@ if TORCH_AVAILABLE:
             large_ts = tg.constant_timeseries(length=100, value=1000)
             small_ts = tg.constant_timeseries(length=100, value=10)
 
-            for (model_cls, kwargs) in [
+            for model_cls, kwargs in [
                 (DLinearModel, {"kernel_size": 5}),
                 (DLinearModel, {"kernel_size": 6}),
                 (NLinearModel, {}),
@@ -194,26 +194,28 @@ if TORCH_AVAILABLE:
 
                 model.fit(
                     [train1, train2],
-                    past_covariates=[past_cov1, past_cov2]
-                    if past_cov1 is not None
-                    else None,
-                    val_past_covariates=[val_past_cov1, val_past_cov2]
-                    if val_past_cov1 is not None
-                    else None,
-                    future_covariates=[fut_cov1, fut_cov2]
-                    if fut_cov1 is not None
-                    else None,
+                    past_covariates=(
+                        [past_cov1, past_cov2] if past_cov1 is not None else None
+                    ),
+                    val_past_covariates=(
+                        [val_past_cov1, val_past_cov2]
+                        if val_past_cov1 is not None
+                        else None
+                    ),
+                    future_covariates=(
+                        [fut_cov1, fut_cov2] if fut_cov1 is not None else None
+                    ),
                     epochs=10,
                 )
 
                 pred1, pred2 = model.predict(
                     series=[train1, train2],
-                    future_covariates=[fut_cov1, fut_cov2]
-                    if fut_cov1 is not None
-                    else None,
-                    past_covariates=[fut_cov1, fut_cov2]
-                    if past_cov1 is not None
-                    else None,
+                    future_covariates=(
+                        [fut_cov1, fut_cov2] if fut_cov1 is not None else None
+                    ),
+                    past_covariates=(
+                        [fut_cov1, fut_cov2] if past_cov1 is not None else None
+                    ),
                     n=len(val1),
                     num_samples=500 if lkl is not None else 1,
                 )

@@ -484,9 +484,9 @@ if TORCH_AVAILABLE:
             # must provide mandatory future_covariates to TFTModel
             model.fit(
                 series=ts,
-                future_covariates=self.sine_1_ts
-                if model.supports_future_covariates
-                else None,
+                future_covariates=(
+                    self.sine_1_ts if model.supports_future_covariates else None
+                ),
             )
             pred = model.predict(OUT_LEN)
             assert pred.static_covariates.equals(ts.static_covariates)

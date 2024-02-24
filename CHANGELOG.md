@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 **Improved**
+- Improvements to `ARIMA` documentation: Specified possible `p`, `d`, `P`, `D`, `trend` advanced options that are available in statsmodels. More explanations on the behaviour of the parameters were added. [#2142](https://github.com/unit8co/darts/pull/2142) by [MarcBresson](https://github.com/MarcBresson).
 - Improvements to `TimeSeries`: [#2196](https://github.com/unit8co/darts/pull/2196) by [Dennis Bader](https://github.com/dennisbader).
   - 🚀🚀🚀 Significant performance boosts for several `TimeSeries` methods resulting increased efficiency across the entire `Darts` library. Up to 2x faster creation times for series indexed with "regular" frequencies (e.g. Daily, hourly, ...), and >100x for series indexed with "special" frequencies (e.g. "W-MON", ...). Affects:
     - All `TimeSeries` creation methods     
@@ -18,13 +19,26 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 - Improvements to `TorchForecastingModel`:
   - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `WindowTransformer` and `window_transform`:
+  - Added argument `keep_names` to indicate whether the original component names should be kept. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
 
 **Fixed**
+- Fixed a bug when calling `window_transform` on a `TimeSeries` with a hierarchy. The hierarchy is now only preseved for single transformations applied to all components, or removed otherwise. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in probabilistic `LinearRegressionModel.fit()`, where the `model` attribute was not pointing to all underlying estimators. [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
 - Raise an error in `RegressionEsembleModel` when the `regression_model` was created with `multi_models=False` (not supported). [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
-- Fixed a bug in `coefficient_of_variaton()` with `intersect=True`, where the coefficient was not computed on the intersection. [#2202](https://github.com/unit8co/darts/pull/2202) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug in `coefficient_of_variation()` with `intersect=True`, where the coefficient was not computed on the intersection. [#2202](https://github.com/unit8co/darts/pull/2202) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug in `TimeSeries.append/prepend_values()`, where the components names and the hierarchy were dropped. [#2237](https://github.com/unit8co/darts/pull/2237) by [Antoine Madrona](https://github.com/madtoinou).
+
+**Dependencies**
+- Removed upper version cap (<=v2.1.2) for PyTorch Lightning. [#2251](https://github.com/unit8co/darts/pull/2251) by [Dennis Bader](https://github.com/dennisbader).
+- Bumped dev dependencies to newest versions: [#2248](https://github.com/unit8co/darts/pull/2248) by [Dennis Bader](https://github.com/dennisbader).
+  - black[jupyter]: from 22.3.0 to 24.1.1
+  - flake8: from 4.0.1 to 7.0.0
+  - isort: from 5.11.5 to 5.13.2
+  - pyupgrade: 2.31.0 from to v3.15.0
 
 ### For developers of the library:
+- Updated pre-commit hooks to the latest version using `pre-commit autoupdate`. Change `pyupgrade` pre-commit hook argument to `--py38-plus`. [#2228](https://github.com/unit8co/darts/pull/2248)  by [MarcBresson](https://github.com/MarcBresson).
 
 ## [0.27.2](https://github.com/unit8co/darts/tree/0.27.2) (2023-01-21)
 ### For users of the library:
