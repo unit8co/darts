@@ -390,7 +390,6 @@ def stationarity_tests(
     p_value_threshold_adfuller: float = 0.05,
     p_value_threshold_kpss: float = 0.05,
 ) -> bool:
-
     """
     Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
     Dickey-Fuller statistical tests.
@@ -668,9 +667,11 @@ def plot_acf(
         axis.plot(
             (i, i),
             (0, r[i]),
-            color=("#b512b8" if m is not None and i == m else "black")
-            if default_formatting
-            else None,
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
             lw=(1 if m is not None and i == m else 0.5),
         )
 
@@ -769,9 +770,7 @@ def plot_pacf(
             color=(
                 "#b512b8"
                 if m is not None and i == m
-                else "black"
-                if default_formatting
-                else None
+                else "black" if default_formatting else None
             ),
             lw=(1 if m is not None and i == m else 0.5),
         )
@@ -887,9 +886,11 @@ def plot_ccf(
         axis.plot(
             (i, i),
             (0, ccf[i]),
-            color=("#b512b8" if m is not None and i == m else "black")
-            if default_formatting
-            else None,
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
             lw=(1 if m is not None and i == m else 0.5),
         )
 

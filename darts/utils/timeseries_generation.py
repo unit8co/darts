@@ -60,7 +60,7 @@ def generate_index(
         logger,
     )
     raise_if(
-        end is not None and start is not None and type(start) != type(end),
+        end is not None and start is not None and type(start) is not type(end),
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
         logger,
     )
@@ -311,14 +311,14 @@ def gaussian_timeseries(
         A white noise TimeSeries created as indicated above.
     """
 
-    if type(mean) == np.ndarray:
+    if type(mean) is np.ndarray:
         raise_if_not(
             mean.shape == (length,),
             "If a vector of means is provided, "
             "it requires the same length as the TimeSeries.",
             logger,
         )
-    if type(std) == np.ndarray:
+    if type(std) is np.ndarray:
         raise_if_not(
             std.shape == (length, length),
             "If a matrix of standard deviations is provided, "
