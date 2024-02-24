@@ -152,7 +152,7 @@ class TestTimeSeriesWindowTransform:
             }  # forecating_safe=True vs center=True
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        # keep_old_names and overlapping transforms
+        # keep_names and overlapping transforms
         with pytest.raises(ValueError) as err:
             window_transformations = [
                 {
@@ -169,14 +169,14 @@ class TestTimeSeriesWindowTransform:
                 },
             ]
             self.series_multi_det.window_transform(
-                transforms=window_transformations, keep_old_names=True
+                transforms=window_transformations, keep_names=True
             )
         assert str(err.value) == (
-            "Cannot keep the original components names as some transforms are overlapping "
-            "(applied to the same components). Set `keep_old_names` to `False`."
+            "Cannot keep the original component names as some transforms are overlapping "
+            "(applied to the same components). Set `keep_names` to `False`."
         )
 
-        # keep_old_names and keep_non_transformed
+        # keep_names and keep_non_transformed
         with pytest.raises(ValueError) as err:
             window_transformations = [
                 {
@@ -188,12 +188,11 @@ class TestTimeSeriesWindowTransform:
             ]
             self.series_multi_det.window_transform(
                 transforms=window_transformations,
-                keep_old_names=True,
+                keep_names=True,
                 keep_non_transformed=True,
             )
         assert str(err.value) == (
-            "`keep_old_names = True` and `keep_non_transformed = True` is not supported due to "
-            "the ambiguity."
+            "`keep_names = True` and `keep_non_transformed = True` cannot be used together."
         )
 
     def test_ts_windowtransf_output_series(self):
@@ -563,7 +562,7 @@ class TestTimeSeriesWindowTransform:
         }
 
         # keeping original components name
-        ts_tr = ts.window_transform(transforms=transforms, keep_old_names=True)
+        ts_tr = ts.window_transform(transforms=transforms, keep_names=True)
         assert ts_tr.hierarchy == ts.hierarchy == {"C": ["A"], "B": ["A"]}
 
     @pytest.mark.parametrize(
@@ -762,7 +761,7 @@ class TestWindowTransformer:
         # keeping old components
         window_transformer = WindowTransformer(
             transforms=transform,
-            keep_old_names=True,
+            keep_names=True,
         )
         ts_tr = window_transformer.transform(ts)
         assert ts_tr.hierarchy == ts.hierarchy == {"C": ["A"], "B": ["A"]}

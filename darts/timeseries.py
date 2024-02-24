@@ -3358,7 +3358,7 @@ class TimeSeries:
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
         include_current: Optional[bool] = True,
-        keep_old_names: Optional[bool] = False,
+        keep_names: Optional[bool] = False,
     ) -> Self:
         """
         Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
@@ -3462,9 +3462,9 @@ class TimeSeries:
         include_current
             ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
 
-        keep_old_names
-            Indicate if the transformed components should be renamed or not. Must be set to ``False`` if
-            `keep_non_transformed = True` or the number of transformation is greater than 1.
+        keep_names
+            Whether the transformed components should keep the original component names or. Must be set to ``False``
+            if `keep_non_transformed = True` or the number of transformation is greater than 1.
 
         Returns
         -------
@@ -3628,28 +3628,26 @@ class TimeSeries:
                 overlapping_transforms = True
             transformed_components = transformed_components.union(tr_comps)
 
-        partial_transforms = transformed_components != set(self.components)
-
-        if keep_old_names and overlapping_transforms:
+        if keep_names and overlapping_transforms:
             raise_log(
                 ValueError(
-                    "Cannot keep the original components names as some transforms are overlapping "
-                    "(applied to the same components). Set `keep_old_names` to `False`."
+                    "Cannot keep the original component names as some transforms are overlapping "
+                    "(applied to the same components). Set `keep_names` to `False`."
                 ),
                 logger,
             )
 
         # actually, this could be allowed to allow transformation "in place"?
         # keep_non_transformed can be changed to False/ignored if the transforms are not partial
-        if keep_old_names and keep_non_transformed:
+        if keep_names and keep_non_transformed:
             raise_log(
                 ValueError(
-                    "`keep_old_names = True` and `keep_non_transformed = True` is not supported due to "
-                    "the ambiguity."
+                    "`keep_names = True` and `keep_non_transformed = True` cannot be used together."
                 ),
                 logger,
             )
 
+        partial_transforms = transformed_components != set(self.components)
         new_hierarchy = None
         convert_hierarchy = False
         comp_names_map = dict()
@@ -3740,7 +3738,7 @@ class TimeSeries:
                 f"{'_'+str(min_periods) if min_periods>1 else ''}"
             )
 
-            if keep_old_names:
+            if keep_names:
                 new_columns.extend(comps_to_transform)
             else:
                 names_w_prefix = [
@@ -3811,7 +3809,7 @@ class TimeSeries:
         new_index = original_index.__class__(resulting_transformations.index)
 
         if convert_hierarchy:
-            if keep_old_names:
+            if keep_names:
                 new_hierarchy = self.hierarchy
             else:
                 new_hierarchy = {
@@ -4521,9 +4519,9 @@ class TimeSeries:
 
         time_dim = xa.dims[0]
         sorted_xa = cls._sort_index(xa, copy=False)
-        time_index: Union[
-            pd.Index, pd.RangeIndex, pd.DatetimeIndex
-        ] = sorted_xa.get_index(time_dim)
+        time_index: Union[pd.Index, pd.RangeIndex, pd.DatetimeIndex] = (
+            sorted_xa.get_index(time_dim)
+        )
 
         if isinstance(time_index, pd.DatetimeIndex):
             has_datetime_index = True
