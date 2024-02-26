@@ -605,6 +605,7 @@ def datetime_attribute_timeseries(
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
     (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.
 
+    1-indexed attributes are shifted to enforce 0-indexing across all the encodings.
 
     Parameters
     ----------
@@ -683,10 +684,6 @@ def datetime_attribute_timeseries(
         "week_of_year": 52,
     }
 
-    # ensure the one-hot encoding covers the whole range
-    # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Timestamp.html#pandas.Timestamp
-    one_indexed_freq = ["month", "day", "week", "weekofyear", "week_of_year"]
-
     if attribute not in ["week", "weekofyear", "week_of_year"]:
         values = getattr(time_index, attribute)
     else:
@@ -696,6 +693,10 @@ def datetime_attribute_timeseries(
             .index.astype("int64")
             .rename("time")
         )
+
+    # shift 1-indexed datetime attributes
+    if attribute in {"day", "week", "month", "quarter", "weekofyear", "week_of_year"}:
+        values -= 1
 
     if one_hot or cyclic:
         raise_if_not(
@@ -708,8 +709,7 @@ def datetime_attribute_timeseries(
     if one_hot:
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
-        shift = 1 if attribute in one_indexed_freq else 0
-        attribute_range = range(shift, num_values_dict[attribute] + shift)
+        attribute_range = range(num_values_dict[attribute])
         for i in attribute_range:
             if not (i in values_df.columns):
                 values_df[i] = 0

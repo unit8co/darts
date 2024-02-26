@@ -17,7 +17,7 @@ from darts.utils.timeseries_generation import (
     sine_timeseries,
 )
 
-ONE_INDEXED_FREQS = ["month", "day", "week", "weekofyear", "week_of_year"]
+ONE_INDEXED_FREQS = {"day", "week", "month", "quarter", "weekofyear", "week_of_year"}
 
 
 class TestTimeSeriesGeneration:
@@ -353,8 +353,10 @@ class TestTimeSeriesGeneration:
         vals_exp = np.array(vals_exp, dtype=ts.dtype)
         if len(vals_exp.shape) == 1:
             vals_act = ts.values()[:, 0]
+            # vals_act = ts.values()
         else:
             vals_act = ts.values()
+        print(vals_act, "----", vals_exp)
         np.testing.assert_array_almost_equal(vals_act, vals_exp)
 
     def test_datetime_attribute_timeseries_wrong_args(self):
@@ -400,17 +402,51 @@ class TestTimeSeriesGeneration:
         vals = vals[1:] + [0]
         self.helper_routine(idx, "hour", vals_exp=vals, tz="CET")
 
-        # day
-        vals = [1] * 24 + [2] * 24
+        # day, 0-indexed
+        vals = [0] * 24 + [1] * 24
         self.helper_routine(idx, "day", vals_exp=vals)
 
         # dayofweek
         vals = [5] * 24 + [6] * 24
         self.helper_routine(idx, "dayofweek", vals_exp=vals)
 
-        # month
-        vals = [1] * 48
+        # month, 0-indexed
+        vals = [0] * 48
         self.helper_routine(idx, "month", vals_exp=vals)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ("M", "month", 12, "2000-01-01"),
+            ("H", "hour", 24, "2000-01-01 00:00:00"),
+            ("D", "weekday", 7, "2000-01-03"),
+            ("s", "second", 60, "2000-01-01 00:00:00"),
+            ("W", "weekofyear", 52, "2000-01-03"),
+            ("Q", "quarter", 4, "2000-01-01"),
+        ],
+    )
+    def test_datetime_attribute_timeseries_indexing_shift(self, config):
+        """Check that the original indexing of the attribute is properly shifted to obtain 0-indexing when
+        the start timestamp of the index is the first possible value of the attribute"""
+        base_freq, attribute_freq, period, start_timestamp = config
+        idx = generate_index(
+            start=pd.Timestamp(start_timestamp), length=1, freq=base_freq
+        )
+
+        # default encoding should be 0
+        vals_exp = np.zeros((1, 1))
+        self.helper_routine(
+            idx, attribute_freq, vals_exp=vals_exp, one_hot=False, cyclic=False
+        )
+
+        # one-hot encoding must be 1 in the first column
+        vals_exp = np.zeros((1, period))
+        vals_exp[0, 0] = 1
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, one_hot=True)
+
+        # cyclic encoding must start at t=0
+        vals_exp = np.array([[np.sin(0), np.cos(0)]])
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, cyclic=True)
 
     @pytest.mark.parametrize(
         "config",
@@ -420,11 +456,12 @@ class TestTimeSeriesGeneration:
             ("D", "weekday", 7),
             ("s", "second", 60),
             ("W", "weekofyear", 52),
+            ("Q", "quarter", 4),
         ],
     )
     def test_datetime_attribute_timeseries_one_hot(self, config):
         base_freq, attribute_freq, period = config
-        # first month/year, week/year, day/week, hour/day, second/hour
+        # first quarter/year, month/year, week/year, day/week, hour/day, second/hour
         simple_start = pd.Timestamp("2000-01-03")
         idx = generate_index(start=simple_start, length=period, freq=base_freq)
         vals = np.eye(period)
@@ -451,14 +488,17 @@ class TestTimeSeriesGeneration:
         self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
 
         # shifted time index
-        shifted_start = pd.Timestamp("2000-03-02 03:00:03")
-        # 3rd month/year, day/week, hour/day, second/hour
-        shift = 3
+        shifted_start = pd.Timestamp("2000-05-06 05:00:05")
+        # 5th month/year, day/week, hour/day, second/hour
+        shift = 5
         # 9th week of year
         if attribute_freq == "weekofyear":
-            shift = 9
+            shift = 18
+        # 2nd quarter of the year
+        elif attribute_freq == "quarter":
+            shift = 2
 
-        # 1-indexed attributes, the columns are shifted by one
+        # account for 1-indexing of the attribute
         if attribute_freq in ONE_INDEXED_FREQS:
             shift -= 1
 
@@ -467,7 +507,6 @@ class TestTimeSeriesGeneration:
         # shift values
         vals = np.roll(vals, shift=-shift, axis=0)
 
-        # shifted start
         self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
 
     @pytest.mark.parametrize("config", [("h", "hour", 24), ("M", "month", 12)])
@@ -477,13 +516,8 @@ class TestTimeSeriesGeneration:
             start=pd.Timestamp("2000-01-01"), length=2 * period, freq=base_freq
         )
 
-        if attribute_freq in ONE_INDEXED_FREQS:
-            shift = 1
-        else:
-            shift = 0
-
         freq = 2 * np.pi / period
-        vals_dta = [i for i in range(shift, period + shift)] * 2
+        vals_dta = [i for i in range(period)] * 2
         vals = np.array(vals_dta)
         sin_vals = np.sin(freq * vals)[:, None]
         cos_vals = np.cos(freq * vals)[:, None]
