@@ -885,8 +885,8 @@ class TestRegressionEnsembleModels:
         ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
 
     def test_wrong_model_creation_params(self):
-        """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the forecasting
-        model predictions), it is not supported."""
+        """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the
+        forecasting model predictions), it is not supported."""
         forcasting_models = [
             self.get_deterministic_global_model(2),
             self.get_deterministic_global_model([-5, -7]),
