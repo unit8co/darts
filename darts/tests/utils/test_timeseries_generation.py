@@ -489,7 +489,7 @@ class TestTimeSeriesGeneration:
         shifted_start = pd.Timestamp("2000-05-06 05:00:05")
         # 5th month/year, day/week, hour/day, second/hour
         shift = 5
-        # 9th week of year
+        # 18th week of year
         if attribute_freq == "weekofyear":
             shift = 18
         # 2nd quarter of the year
