@@ -15,6 +15,17 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 
 logger = get_logger(__name__)
 
+ONE_INDEXED_FREQS = {
+    "day",
+    "month",
+    "quarter",
+    "dayofyear",
+    "day_of_year",
+    "week",
+    "weekofyear",
+    "week_of_year",
+}
+
 
 def generate_index(
     start: Optional[Union[pd.Timestamp, int]] = None,
@@ -695,16 +706,7 @@ def datetime_attribute_timeseries(
         )
 
     # shift 1-indexed datetime attributes
-    if attribute in {
-        "day",
-        "month",
-        "quarter",
-        "dayofyear",
-        "day_of_year",
-        "week",
-        "weekofyear",
-        "week_of_year",
-    }:
+    if attribute in ONE_INDEXED_FREQS:
         values -= 1
 
     # leap years contain an addition day on the 29th of Feburary

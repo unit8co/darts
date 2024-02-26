@@ -6,6 +6,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.utils.timeseries_generation import (
+    ONE_INDEXED_FREQS,
     autoregressive_timeseries,
     constant_timeseries,
     datetime_attribute_timeseries,
@@ -16,17 +17,6 @@ from darts.utils.timeseries_generation import (
     random_walk_timeseries,
     sine_timeseries,
 )
-
-ONE_INDEXED_FREQS = {
-    "day",
-    "month",
-    "quarter",
-    "dayofyear",
-    "day_of_year",
-    "week",
-    "weekofyear",
-    "week_of_year",
-}
 
 
 class TestTimeSeriesGeneration:
