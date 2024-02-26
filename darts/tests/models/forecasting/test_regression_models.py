@@ -1278,23 +1278,28 @@ class TestRegressionModels:
         else:
             assert isinstance(model.model, MultiOutputRegressor)
 
-    model_configs = [(XGBModel, {"tree_method":"exact"})]
+    model_configs = [(XGBModel, {"tree_method": "exact"})]
     if lgbm_available:
         model_configs += [(LightGBMModel, {})]
     if cb_available:
         model_configs += [(CatBoostModel, {})]
-    @pytest.mark.parametrize("config", itertools.product(model_configs, [1,2], [True, False]))
+
+    @pytest.mark.parametrize(
+        "config", itertools.product(model_configs, [1, 2], [True, False])
+    )
     def test_multioutput_validation(self, config):
         """Check that models not supporting multi-output are properly wrapped when ocl>1"""
         (model_cls, model_kwargs), ocl, multi_models = config
         train, val = self.sine_univariate1.split_after(0.6)
-        model = model_cls(**model_kwargs, lags=4, output_chunk_length=ocl, multi_models=multi_models)
+        model = model_cls(
+            **model_kwargs, lags=4, output_chunk_length=ocl, multi_models=multi_models
+        )
         model.fit(series=train, val_series=val)
         if model.output_chunk_length > 1 and model.multi_models:
             assert isinstance(model.model, MultiOutputRegressor)
         else:
             assert not isinstance(model.model, MultiOutputRegressor)
-        
+
     def test_get_multioutput_estimator_multi_models(self):
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
@@ -1303,18 +1308,18 @@ class TestRegressionModels:
             m.fit(ts)
 
             assert len(m.model.estimators_) == ocl * ts.width
-            
-            dummy_feats = np.array([[0,0,0]*ts.width])
+
+            dummy_feats = np.array([[0, 0, 0] * ts.width])
             for i in range(ocl):
                 for j in range(ts.width):
                     sub_model = m.get_multioutput_estimator(horizon=i, target_dim=j)
                     pred = sub_model.predict(dummy_feats)[0]
                     # sub-model is overfitted on the training series
-                    assert np.abs(ts.width*i + j + 1 - pred) < 1e-2
+                    assert np.abs(ts.width * i + j + 1 - pred) < 1e-2
 
         # univariate, one-sub model per step in output_chunk_length
         ocl = 3
-        ts = TimeSeries.from_values(np.array([0,0,0,1,2,3,4]).T)
+        ts = TimeSeries.from_values(np.array([0, 0, 0, 1, 2, 3, 4]).T)
         # estimators_[0] labels : [1, 2]
         # estimators_[1] labels : [2, 3]
         # estimators_[2] labels : [3, 4]
@@ -1323,13 +1328,7 @@ class TestRegressionModels:
         # multivariate, one sub-model per component
         ocl = 1
         ts = TimeSeries.from_values(
-            np.array(
-                [
-                    [0,0,0,1,1],
-                    [0,0,0,2,2],
-                    [0,0,0,3,3]
-                ]
-            ).T
+            np.array([[0, 0, 0, 1, 1], [0, 0, 0, 2, 2], [0, 0, 0, 3, 3]]).T
         )
         # estimators_[0] labels : [1, 1]
         # estimators_[1] labels : [2, 2]
@@ -1341,8 +1340,8 @@ class TestRegressionModels:
         ts = TimeSeries.from_values(
             np.array(
                 [
-                    [0,0,0,0,2,4],
-                    [0,0,0,0,4,4],
+                    [0, 0, 0, 0, 2, 4],
+                    [0, 0, 0, 0, 4, 4],
                 ]
             ).T
         )
@@ -1359,8 +1358,8 @@ class TestRegressionModels:
         ts = TimeSeries.from_values(
             np.array(
                 [
-                    [0,0,1,1,1],
-                    [0,0,2,2,2],
+                    [0, 0, 1, 1, 1],
+                    [0, 0, 2, 2, 2],
                 ]
             ).T
         )
@@ -1372,8 +1371,8 @@ class TestRegressionModels:
 
         # one estimator is reused for all the horizon of a given component
         assert len(m.model.estimators_) == ts.width
-        
-        dummy_feats = np.array([[0,0,0]*ts.width])
+
+        dummy_feats = np.array([[0, 0, 0] * ts.width])
         for i in range(ocl):
             for j in range(ts.width):
                 sub_model = m.get_multioutput_estimator(horizon=i, target_dim=j)

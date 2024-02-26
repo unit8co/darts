@@ -497,7 +497,9 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         # when multi_models=True, one model per horizon and target component
-        idx_estimator = self.multi_models * self.input_dim["target"] * horizon + target_dim
+        idx_estimator = (
+            self.multi_models * self.input_dim["target"] * horizon + target_dim
+        )
         return self.model.estimators_[idx_estimator]
 
     def _create_lagged_data(
@@ -582,16 +584,18 @@ class RegressionModel(GlobalForecastingModel):
         self.model.fit(training_samples, training_labels, **kwargs)
 
         # generate and store the lagged components names (for feature importance analysis)
-        self._lagged_feature_names, self._lagged_label_names = create_lagged_component_names(
-            target_series=target_series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags=self._get_lags("target"),
-            lags_past_covariates=self._get_lags("past"),
-            lags_future_covariates=self._get_lags("future"),
-            output_chunk_length=self.output_chunk_length,
-            concatenate=False,
-            use_static_covariates=self.uses_static_covariates,
+        self._lagged_feature_names, self._lagged_label_names = (
+            create_lagged_component_names(
+                target_series=target_series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                lags=self._get_lags("target"),
+                lags_past_covariates=self._get_lags("past"),
+                lags_future_covariates=self._get_lags("future"),
+                output_chunk_length=self.output_chunk_length,
+                concatenate=False,
+                use_static_covariates=self.uses_static_covariates,
+            )
         )
 
     def fit(
