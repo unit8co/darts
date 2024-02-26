@@ -287,7 +287,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return None
 
     @property
-    def output_chunk_shift(self) -> Optional[int]:
+    def output_chunk_shift(self) -> int:
         """
         Number of time steps that the output/prediction starts after the end of the input.
         """
