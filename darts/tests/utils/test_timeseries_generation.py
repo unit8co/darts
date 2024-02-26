@@ -555,3 +555,79 @@ class TestTimeSeriesGeneration:
         self.helper_routine(
             idx, attribute_freq, vals_exp=vals_exp, tz="CET", cyclic=True
         )
+
+    def test_datetime_attribute_timeseries_leap_years(self):
+        """Check that the additional day of leap years is properly handled"""
+        days_leap_year = 366
+        # 2000 is a leap year, contains 366 days
+        index = pd.date_range(
+            start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-12-31"), freq="D"
+        )
+        assert len(index) == days_leap_year
+        vals_exp = np.arange(days_leap_year)
+        self.helper_routine(index, "day_of_year", vals_exp=vals_exp)
+        # full leap year, the encoding is a diagonal matrix
+        vals_exp = np.eye(days_leap_year)
+        self.helper_routine(index, "day_of_year", vals_exp=vals_exp, one_hot=True)
+
+        # partial leap year, the encoding should still contain 366 columns
+        index_partial = index[30:72]
+        # remove the missing rows
+        vals_exp = vals_exp[30:72]
+        # mask the missing dates
+        vals_exp[:, :30] = 0
+        vals_exp[:, 73:] = 0
+        self.helper_routine(
+            index_partial, "day_of_year", vals_exp=vals_exp, one_hot=True
+        )
+
+        # index containing both a regular year and leap year, for a total of 731 days
+        index_long = pd.date_range(
+            start=pd.Timestamp("1999-01-01"), end=pd.Timestamp("2000-12-31"), freq="D"
+        )
+        assert len(index_long) == 731
+        # leap year encoding is a diagonal matrix
+        leap_year_oh = np.eye(days_leap_year)
+        # regular year drops the last day row
+        regular_year_oh = np.eye(days_leap_year)
+        regular_year_oh = regular_year_oh[:-1]
+        vals_exp = np.concatenate([regular_year_oh, leap_year_oh])
+        self.helper_routine(index_long, "day_of_year", vals_exp=vals_exp, one_hot=True)
+
+    @pytest.mark.parametrize("year", [1998, 2020])
+    def test_datetime_attribute_timeseries_special_years(self, year):
+        """Check that years with 53 weeks are is properly handled:
+        - 1998 is a regular year starting on a thursday
+        - 2020 is a leap year starting on a wednesday
+        """
+
+        def manual_weeks_encoding(index: pd.DatetimeIndex, nb_weeks: int):
+            """Generate one-hot encoding manually. Expect the index to start and finish on year's boundaries"""
+            encoding = np.zeros((len(index), nb_weeks))
+            # first week is incomplete, its length depend on the first day of the year
+            week_shift = index[0].weekday()
+            for week_index in range(nb_weeks):
+                week_start = max(7 * week_index - week_shift, 0)
+                week_end = 7 * (week_index + 1) - week_shift
+                encoding[week_start:week_end, week_index] = 1
+            return encoding
+
+        start_date = pd.Timestamp(f"{year}-01-01")
+        end_date = pd.Timestamp(f"{year}-12-31")
+
+        # the 53th week appear when created with freq="D"
+        weeks_special_year = 53
+        index = pd.date_range(start=start_date, end=end_date, freq="D")
+        assert index[-1].week == weeks_special_year
+        vals_exp = manual_weeks_encoding(index, weeks_special_year)
+        self.helper_routine(index, "week_of_year", vals_exp=vals_exp, one_hot=True)
+
+        # the 53th week is omitted from index when created with freq="W"
+        index_weeks = pd.date_range(start=start_date, end=end_date, freq="W")
+        assert len(index_weeks) == weeks_special_year - 1
+        # however, the 53th week column is still appearing in the one-hot encoding
+        vals_exp = np.eye(weeks_special_year)[: len(index_weeks)]
+        vals_exp[:, -1] = 0
+        self.helper_routine(
+            index_weeks, "week_of_year", vals_exp=vals_exp, one_hot=True
+        )

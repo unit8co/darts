@@ -695,8 +695,33 @@ def datetime_attribute_timeseries(
         )
 
     # shift 1-indexed datetime attributes
-    if attribute in {"day", "week", "month", "quarter", "weekofyear", "week_of_year"}:
+    if attribute in {
+        "day",
+        "month",
+        "quarter",
+        "dayofyear",
+        "day_of_year",
+        "week",
+        "weekofyear",
+        "week_of_year",
+    }:
         values -= 1
+
+    # leap years contain an addition day on the 29th of Feburary
+    if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
+        num_values_dict[attribute] += 1
+
+    # years contain an additional week if they are :
+    # - a regular year starting on a thursday
+    # - a leap year starting on a wednesday
+    if attribute in {"week", "weekofyear", "week_of_year"}:
+        years = time_index.year.unique()
+        add_week = any(
+            ((not first_day.is_leap_year) and first_day.day_name() == "Thursday")
+            or (first_day.is_leap_year and first_day.day_name() == "Wednesday")
+            for first_day in [pd.Timestamp(f"{year}-01-01") for year in years]
+        )
+        num_values_dict[attribute] += add_week
 
     if one_hot or cyclic:
         raise_if_not(
