@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -166,6 +168,81 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][2], covariate.values()[30:40])
             np.testing.assert_almost_equal(ds[0][3], self.cov_st2)
             assert ds[0][4] == target
+
+        @pytest.mark.parametrize(
+            "config",
+            [
+                # (dataset class, whether contains future, future batch index)
+                (PastCovariatesInferenceDataset, None),
+                (FutureCovariatesInferenceDataset, 1),
+                (DualCovariatesInferenceDataset, 2),
+                (MixedCovariatesInferenceDataset, 3),
+                (SplitCovariatesInferenceDataset, 2),
+            ],
+        )
+        def test_inference_dataset_output_chunk_shift(self, config):
+            ds_cls, future_idx = config
+            ocl = 1
+            ocs = 2
+            target = self.target1[: -(ocl + ocs)]
+
+            ds_covs = {}
+            ds_init_params = set(inspect.signature(ds_cls).parameters)
+            for cov_type in ["covariates", "past_covariates", "future_covariates"]:
+                if cov_type in ds_init_params:
+                    ds_covs[cov_type] = self.cov1
+
+            with pytest.raises(ValueError) as err:
+                _ = ds_cls(
+                    target_series=target,
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    output_chunk_shift=1,
+                    n=2,
+                    **ds_covs,
+                )
+            assert str(err.value).startswith("Cannot perform auto-regression")
+
+            # regular dataset with output shift=0 and ocl=3: the 3rd future values should be identical to the 1st future
+            # values of a dataset with output shift=2 and ocl=1
+            ds_reg = ds_cls(
+                target_series=target,
+                input_chunk_length=1,
+                output_chunk_length=3,
+                output_chunk_shift=0,
+                n=1,
+                **ds_covs,
+            )
+
+            ds_shift = ds_cls(
+                target_series=target,
+                input_chunk_length=1,
+                output_chunk_length=1,
+                output_chunk_shift=ocs,
+                n=1,
+                **ds_covs,
+            )
+
+            batch_reg, batch_shift = ds_reg[0], ds_shift[0]
+
+            # shifted prediction starts 2 steps after regular prediction
+            assert batch_reg[-1] == batch_shift[-1] - ocs * target.freq
+
+            if future_idx is not None:
+                # 3rd future values of regular ds must be identical to the 1st future values of shifted dataset
+                np.testing.assert_array_equal(
+                    batch_reg[future_idx][-1:], batch_shift[future_idx]
+                )
+                batch_reg = batch_reg[:future_idx] + batch_reg[future_idx + 1 :]
+                batch_shift = batch_shift[:future_idx] + batch_shift[future_idx + 1 :]
+
+            # without future part, the input will be identical between regular, and shifted dataset
+            assert all(
+                [
+                    np.all(el_reg == el_shift)
+                    for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
+                ]
+            )
 
         def test_future_covariates_inference_dataset(self):
             # one target series

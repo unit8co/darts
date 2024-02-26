@@ -424,6 +424,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         stride: int = 0,
         bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
+        output_chunk_length: Optional[int] = None,
         output_chunk_shift: int = 0,
         covariate_type: CovariateType = CovariateType.FUTURE,
         use_static_covariates: bool = True,
@@ -449,6 +450,9 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
+        output_chunk_length
+            Optionally, the length of the target series the model emits in output. If `None`, will use the same value
+            as `n`.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
@@ -463,7 +467,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             stride=stride,
             bounds=bounds,
             input_chunk_length=input_chunk_length,
-            output_chunk_length=n,
+            output_chunk_length=output_chunk_length or n,
             output_chunk_shift=output_chunk_shift,
             covariate_type=covariate_type,
             use_static_covariates=use_static_covariates,
@@ -561,6 +565,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             stride=stride,
             bounds=bounds,
             input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
@@ -779,6 +784,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             stride=stride,
             bounds=bounds,
             input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
