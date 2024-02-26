@@ -17,7 +17,16 @@ from darts.utils.timeseries_generation import (
     sine_timeseries,
 )
 
-ONE_INDEXED_FREQS = {"day", "week", "month", "quarter", "weekofyear", "week_of_year"}
+ONE_INDEXED_FREQS = {
+    "day",
+    "month",
+    "quarter",
+    "dayofyear",
+    "day_of_year",
+    "week",
+    "weekofyear",
+    "week_of_year",
+}
 
 
 class TestTimeSeriesGeneration:
@@ -355,6 +364,7 @@ class TestTimeSeriesGeneration:
             vals_act = ts.values()[:, 0]
         else:
             vals_act = ts.values()
+        print(vals_act.shape, "---", vals_exp.shape)
         np.testing.assert_array_almost_equal(vals_act, vals_exp)
 
     def test_datetime_attribute_timeseries_wrong_args(self):
@@ -415,18 +425,28 @@ class TestTimeSeriesGeneration:
     @pytest.mark.parametrize(
         "config",
         [
-            ("M", "month", 12, "2000-01-01"),
-            ("H", "hour", 24, "2000-01-01 00:00:00"),
-            ("D", "weekday", 7, "2000-01-03"),
-            ("s", "second", 60, "2000-01-01 00:00:00"),
-            ("W", "weekofyear", 52, "2000-01-03"),
-            ("Q", "quarter", 4, "2000-01-01"),
+            ("M", "month", 12),
+            ("H", "hour", 24),
+            ("D", "weekday", 7),
+            ("s", "second", 60),
+            ("W", "weekofyear", 52),
+            ("D", "dayofyear", 365),
+            ("Q", "quarter", 4),
         ],
     )
     def test_datetime_attribute_timeseries_indexing_shift(self, config):
         """Check that the original indexing of the attribute is properly shifted to obtain 0-indexing when
-        the start timestamp of the index is the first possible value of the attribute"""
-        base_freq, attribute_freq, period, start_timestamp = config
+        the start timestamp of the index is the first possible value of the attribute
+
+        Note: 2001 is neither leap year nor a year with 53 weeks
+        """
+        (
+            base_freq,
+            attribute_freq,
+            period,
+        ) = config
+        start_timestamp = "2001-01-01 00:00:00"
+
         idx = generate_index(
             start=pd.Timestamp(start_timestamp), length=1, freq=base_freq
         )
@@ -455,12 +475,14 @@ class TestTimeSeriesGeneration:
             ("s", "second", 60),
             ("W", "weekofyear", 52),
             ("Q", "quarter", 4),
+            ("D", "dayofyear", 365),
         ],
     )
     def test_datetime_attribute_timeseries_one_hot(self, config):
+        """Verifying that proper one hot encoding is generated (not leap year)"""
         base_freq, attribute_freq, period = config
-        # first quarter/year, month/year, week/year, day/week, hour/day, second/hour
-        simple_start = pd.Timestamp("2000-01-03")
+        # first quarter/year, month/year, week/year, day/year, day/week, hour/day, second/hour
+        simple_start = pd.Timestamp("2001-01-01 00:00:00")
         idx = generate_index(start=simple_start, length=period, freq=base_freq)
         vals = np.eye(period)
 
@@ -474,9 +496,7 @@ class TestTimeSeriesGeneration:
 
         # missing values
         cut_period = period // 3
-        idx = generate_index(
-            start=pd.Timestamp("2000-01-03"), length=cut_period, freq=base_freq
-        )
+        idx = generate_index(start=simple_start, length=cut_period, freq=base_freq)
         vals = np.eye(period)
         # removing missing rows
         vals = vals[:cut_period]
@@ -486,9 +506,12 @@ class TestTimeSeriesGeneration:
         self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
 
         # shifted time index
-        shifted_start = pd.Timestamp("2000-05-06 05:00:05")
+        shifted_start = pd.Timestamp("2001-05-05 05:00:05")
         # 5th month/year, day/week, hour/day, second/hour
         shift = 5
+        # 125th day of year
+        if attribute_freq == "dayofyear":
+            shift = 125
         # 18th week of year
         if attribute_freq == "weekofyear":
             shift = 18
