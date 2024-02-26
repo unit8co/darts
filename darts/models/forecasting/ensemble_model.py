@@ -255,12 +255,12 @@ class EnsembleModel(GlobalForecastingModel):
             model._predict_wrapper(
                 n=n,
                 series=series,
-                past_covariates=past_covariates
-                if model.supports_past_covariates
-                else None,
-                future_covariates=future_covariates
-                if model.supports_future_covariates
-                else None,
+                past_covariates=(
+                    past_covariates if model.supports_past_covariates else None
+                ),
+                future_covariates=(
+                    future_covariates if model.supports_future_covariates else None
+                ),
                 num_samples=num_samples if model._is_probabilistic else 1,
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )

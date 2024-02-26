@@ -4,6 +4,7 @@ Regression ensemble model
 
 An ensemble model which uses a regression model to compute the ensemble forecast.
 """
+
 from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -213,12 +214,12 @@ class RegressionEnsembleModel(EnsembleModel):
 
             tmp_pred = model.historical_forecasts(
                 series=series,
-                past_covariates=past_covariates
-                if model.supports_past_covariates
-                else None,
-                future_covariates=future_covariates
-                if model.supports_future_covariates
-                else None,
+                past_covariates=(
+                    past_covariates if model.supports_past_covariates else None
+                ),
+                future_covariates=(
+                    future_covariates if model.supports_future_covariates else None
+                ),
                 forecast_horizon=model.output_chunk_length,
                 stride=model.output_chunk_length,
                 num_samples=num_samples if model._is_probabilistic else 1,
@@ -374,12 +375,12 @@ class RegressionEnsembleModel(EnsembleModel):
                 # maximize covariate usage
                 model._fit_wrapper(
                     series=forecast_training,
-                    past_covariates=past_covariates
-                    if model.supports_past_covariates
-                    else None,
-                    future_covariates=future_covariates
-                    if model.supports_future_covariates
-                    else None,
+                    past_covariates=(
+                        past_covariates if model.supports_past_covariates else None
+                    ),
+                    future_covariates=(
+                        future_covariates if model.supports_future_covariates else None
+                    ),
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
@@ -416,12 +417,12 @@ class RegressionEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates
-                    if model.supports_past_covariates
-                    else None,
-                    future_covariates=future_covariates
-                    if model.supports_future_covariates
-                    else None,
+                    past_covariates=(
+                        past_covariates if model.supports_past_covariates else None
+                    ),
+                    future_covariates=(
+                        future_covariates if model.supports_future_covariates else None
+                    ),
                 )
         return self
 

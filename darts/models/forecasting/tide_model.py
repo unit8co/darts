@@ -337,9 +337,11 @@ class _TideModule(PLMixedCovariatesModule):
         # stack and temporally decode with future covariate last output steps
         temporal_decoder_input = [
             decoded,
-            x_dynamic_future_covariates[:, -self.output_chunk_length :, :]
-            if self.future_cov_dim > 0
-            else None,
+            (
+                x_dynamic_future_covariates[:, -self.output_chunk_length :, :]
+                if self.future_cov_dim > 0
+                else None
+            ),
         ]
         temporal_decoder_input = [t for t in temporal_decoder_input if t is not None]
 

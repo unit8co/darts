@@ -324,7 +324,9 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         # more than for other regression models
         return max(
             3,
-            -self.lags["target"][0] + self.output_chunk_length + 1
-            if "target" in self.lags
-            else self.output_chunk_length,
+            (
+                -self.lags["target"][0] + self.output_chunk_length + 1
+                if "target" in self.lags
+                else self.output_chunk_length
+            ),
         )

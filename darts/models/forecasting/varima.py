@@ -9,6 +9,7 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Vector_autoregression
 """
+
 from typing import Optional
 
 import numpy as np
@@ -191,27 +192,29 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
             self.model = self.model.apply(
                 series.values(copy=False),
-                exog=historic_future_covariates.values(copy=False)
-                if historic_future_covariates
-                else None,
+                exog=(
+                    historic_future_covariates.values(copy=False)
+                    if historic_future_covariates
+                    else None
+                ),
             )
 
         # forecast before restoring the training state
         if num_samples == 1:
             forecast = self.model.forecast(
                 steps=n,
-                exog=future_covariates.values(copy=False)
-                if future_covariates
-                else None,
+                exog=(
+                    future_covariates.values(copy=False) if future_covariates else None
+                ),
             )
         else:
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                exog=future_covariates.values(copy=False)
-                if future_covariates
-                else None,
+                exog=(
+                    future_covariates.values(copy=False) if future_covariates else None
+                ),
             )
 
         forecast = self._invert_transformation(forecast)
@@ -220,9 +223,11 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         if series is not None:
             self.model = self.model.apply(
                 self._orig_training_series.values(copy=False),
-                exog=self.training_historic_future_covariates.values(copy=False)
-                if self.training_historic_future_covariates
-                else None,
+                exog=(
+                    self.training_historic_future_covariates.values(copy=False)
+                    if self.training_historic_future_covariates
+                    else None
+                ),
             )
 
             self._last_values = self._training_last_values
