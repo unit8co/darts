@@ -21,6 +21,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `WindowTransformer` and `window_transform`:
   - Added argument `keep_names` to indicate whether the original component names should be kept. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
+- Other improvements:
+  - 🔴 Changed the default `start` value in `ForecastingModel.gridsearch()` from `0.5` to `None`, to make it consistent with `historical_forecasts` and other methods. [#2243](https://github.com/unit8co/darts/pull/2243) by [Thomas Kientz](https://github.com/thomktz).
 
 **Fixed**
 - Fixed a bug when calling `window_transform` on a `TimeSeries` with a hierarchy. The hierarchy is now only preseved for single transformations applied to all components, or removed otherwise. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
