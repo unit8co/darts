@@ -590,17 +590,6 @@ class TestTimeSeriesGeneration:
         - 2020 is a leap year starting on a wednesday
         """
 
-        def manual_weeks_encoding(index: pd.DatetimeIndex, nb_weeks: int):
-            """Generate one-hot encoding manually. Expect the index to start and finish on year's boundaries"""
-            encoding = np.zeros((len(index), nb_weeks))
-            # first week is incomplete, its length depend on the first day of the year
-            week_shift = index[0].weekday()
-            for week_index in range(nb_weeks):
-                week_start = max(7 * week_index - week_shift, 0)
-                week_end = 7 * (week_index + 1) - week_shift
-                encoding[week_start:week_end, week_index] = 1
-            return encoding
-
         start_date = pd.Timestamp(f"{year}-01-01")
         end_date = pd.Timestamp(f"{year}-12-31")
 
@@ -608,7 +597,13 @@ class TestTimeSeriesGeneration:
         weeks_special_year = 53
         index = pd.date_range(start=start_date, end=end_date, freq="D")
         assert index[-1].week == weeks_special_year
-        vals_exp = manual_weeks_encoding(index, weeks_special_year)
+        vals_exp = np.zeros((len(index), weeks_special_year))
+        # first week is incomplete, its length depend on the first day of the year
+        week_shift = index[0].weekday()
+        for week_index in range(weeks_special_year):
+            week_start = max(7 * week_index - week_shift, 0)
+            week_end = 7 * (week_index + 1) - week_shift
+            vals_exp[week_start:week_end, week_index] = 1
         self.helper_routine(index, "week_of_year", vals_exp=vals_exp, one_hot=True)
 
         # the 53th week is omitted from index when created with freq="W"
@@ -621,11 +616,12 @@ class TestTimeSeriesGeneration:
             index_weeks, "week_of_year", vals_exp=vals_exp, one_hot=True
         )
 
-        # extending the time index make the 53th appears in the encoding
+        # extending the time index with the days missing from the incomplete first week
         index_weeks_ext = pd.date_range(
-            start=start_date, end=end_date + pd.Timedelta(weeks=1), freq="W"
+            start=start_date, end=end_date + pd.Timedelta(days=6 - week_shift), freq="W"
         )
         assert len(index_weeks_ext) == weeks_special_year
+        # the 53th week is properly appearing in the encoding
         vals_exp = np.eye(weeks_special_year)
         assert vals_exp.shape[1] == weeks_special_year
         self.helper_routine(
