@@ -19,6 +19,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 - Improvements to `TorchForecastingModel`:
   - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `GlobalForecastingModel`:
+  - 🚀 All global models (regression and torch models) now support shifted predictions with model creation parameter `output_chunk_shift`. This will shift the output chunk for training and prediction by `output_chunk_shift` steps into the future. [#2176](https://github.com/unit8co/darts/pull/2176) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `WindowTransformer` and `window_transform`:
   - Added argument `keep_names` to indicate whether the original component names should be kept. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
 
