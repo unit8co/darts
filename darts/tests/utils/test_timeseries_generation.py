@@ -353,10 +353,8 @@ class TestTimeSeriesGeneration:
         vals_exp = np.array(vals_exp, dtype=ts.dtype)
         if len(vals_exp.shape) == 1:
             vals_act = ts.values()[:, 0]
-            # vals_act = ts.values()
         else:
             vals_act = ts.values()
-        print(vals_act, "----", vals_exp)
         np.testing.assert_array_almost_equal(vals_act, vals_exp)
 
     def test_datetime_attribute_timeseries_wrong_args(self):
