@@ -354,7 +354,6 @@ class TestTimeSeriesGeneration:
             vals_act = ts.values()[:, 0]
         else:
             vals_act = ts.values()
-        print(vals_act.shape, "---", vals_exp.shape)
         np.testing.assert_array_almost_equal(vals_act, vals_exp)
 
     def test_datetime_attribute_timeseries_wrong_args(self):
@@ -615,9 +614,20 @@ class TestTimeSeriesGeneration:
         # the 53th week is omitted from index when created with freq="W"
         index_weeks = pd.date_range(start=start_date, end=end_date, freq="W")
         assert len(index_weeks) == weeks_special_year - 1
-        # however, the 53th week column is still appearing in the one-hot encoding
-        vals_exp = np.eye(weeks_special_year)[: len(index_weeks)]
-        vals_exp[:, -1] = 0
+        # and 53th week properly excluded from the encoding
+        vals_exp = np.eye(weeks_special_year - 1)[: len(index_weeks)]
+        assert vals_exp.shape[1] == weeks_special_year - 1
         self.helper_routine(
             index_weeks, "week_of_year", vals_exp=vals_exp, one_hot=True
+        )
+
+        # extending the time index make the 53th appears in the encoding
+        index_weeks_ext = pd.date_range(
+            start=start_date, end=end_date + pd.Timedelta(weeks=1), freq="W"
+        )
+        assert len(index_weeks_ext) == weeks_special_year
+        vals_exp = np.eye(weeks_special_year)
+        assert vals_exp.shape[1] == weeks_special_year
+        self.helper_routine(
+            index_weeks_ext, "week_of_year", vals_exp=vals_exp, one_hot=True
         )

@@ -709,7 +709,7 @@ def datetime_attribute_timeseries(
     if attribute in ONE_INDEXED_FREQS:
         values -= 1
 
-    # leap years contain an addition day on the 29th of Feburary
+    # leap years insert an additional day on the 29th of Feburary
     if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
         num_values_dict[attribute] += 1
 
@@ -718,12 +718,19 @@ def datetime_attribute_timeseries(
     # - a leap year starting on a wednesday
     if attribute in {"week", "weekofyear", "week_of_year"}:
         years = time_index.year.unique()
-        add_week = any(
+        # check if year respect properties
+        additional_week_year = any(
             ((not first_day.is_leap_year) and first_day.day_name() == "Thursday")
             or (first_day.is_leap_year and first_day.day_name() == "Wednesday")
             for first_day in [pd.Timestamp(f"{year}-01-01") for year in years]
         )
-        num_values_dict[attribute] += add_week
+        # check if time index actually include the additional week
+        additional_week_in_index = time_index[-1] - time_index[0] + pd.Timedelta(
+            days=1
+        ) >= pd.Timedelta(days=365)
+
+        if additional_week_year and additional_week_in_index:
+            num_values_dict[attribute] += 1
 
     if one_hot or cyclic:
         raise_if_not(
