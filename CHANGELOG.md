@@ -28,6 +28,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Raise an error in `RegressionEsembleModel` when the `regression_model` was created with `multi_models=False` (not supported). [#2205](https://github.com/unit8co/darts/pull/2205) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in `coefficient_of_variation()` with `intersect=True`, where the coefficient was not computed on the intersection. [#2202](https://github.com/unit8co/darts/pull/2202) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in `TimeSeries.append/prepend_values()`, where the components names and the hierarchy were dropped. [#2237](https://github.com/unit8co/darts/pull/2237) by [Antoine Madrona](https://github.com/madtoinou).
+- 🔴 Fixed a bug in `datetime_attribute_timeseries()`, where 1-indexed attributes were not properly handled. Also, 0-indexing is now enforced for all the generated encodings. [#2242](https://github.com/unit8co/darts/pull/2242) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Dependencies**
 - Removed upper version cap (<=v2.1.2) for PyTorch Lightning. [#2251](https://github.com/unit8co/darts/pull/2251) by [Dennis Bader](https://github.com/dennisbader).
