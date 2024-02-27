@@ -71,7 +71,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        output_chunk_shift: int,
+        output_chunk_shift: int = 0,
         train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
@@ -497,10 +497,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # before parameters are loaded by PyTorch-Lightning
         dtype = checkpoint["model_dtype"]
         self.to_dtype(dtype)
-
-        # darts v0.28.0 introduces a new `output_chunk_shift` parameter; below allows to load older saves
-        if "output_chunk_shift" not in checkpoint:
-            checkpoint["output_chunk_shift"] = 0
 
         # restoring attributes necessary to resume from training properly
         if (

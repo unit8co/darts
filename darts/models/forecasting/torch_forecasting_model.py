@@ -2197,6 +2197,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "optimizer_kwargs",
             "lr_scheduler_cls",
             "lr_scheduler_kwargs",
+            "output_chunk_shift",
         ]
         # model_params can be missing some kwargs
         params_to_check = set(tfm_save.model_params.keys()).union(
