@@ -100,7 +100,8 @@ class _DLinearModule(PLMixedCovariatesModule):
         const_init
             Whether to initialize the weights to 1/in_len
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------

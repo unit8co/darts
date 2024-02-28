@@ -167,7 +167,8 @@ class _TransformerModule(PLPastCovariatesModule):
         custom_decoder
             A custom transformer decoder provided by the user (default=None).
         **kwargs
-            All parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            All parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------

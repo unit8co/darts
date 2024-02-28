@@ -116,7 +116,8 @@ class _TideModule(PLMixedCovariatesModule):
         dropout
             Dropout probability
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------

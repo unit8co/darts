@@ -57,7 +57,7 @@ class RegressionEnsembleModel(EnsembleModel):
             `train_forecasting_models=False`.
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
-            Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
+            Default: ``darts.models.LinearRegressionModel(fit_intercept=False)``
 
             .. note::
                 if `regression_model` is probabilistic, the `RegressionEnsembleModel` will also be probabilistic.

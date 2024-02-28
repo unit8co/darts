@@ -110,6 +110,8 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         to past, future, and static covariates in the model `forward()` method. This allows to create custom models
         naive models which can make use of the covariates. The built-in naive models will not use this information.
 
+        The naive models do not have to be trained before generating predictions.
+
         To add a new naive model:
         - subclass from `_GlobalNaiveModel` with implementation of private method `_create_model` that creates an
             object of:
@@ -249,6 +251,73 @@ class _GlobalNaiveMeanModule(_GlobalNaiveModule):
 
 
 class GlobalNaiveMean(_GlobalNaiveModel):
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        **kwargs,
+    ):
+        """Global Naive Mean Model.
+
+        The model generates forecasts as described below:
+
+        - take the mean over the last `input_chunk_length` points
+        - the forecast is the mean repeated `output_chunk_length` times
+
+        Depending on the horizon `n` used when calling `model.predict()`, the forecasts are either:
+
+        - a constant value if `n <= output_chunk_length`, or
+        - a moving average if `n > output_chunk_length`, as a result of the auto-regressive prediction.
+
+        This model corresponds is equivalent to:
+
+        - :class:`~darts.models.forecasting.baselines.NaiveMean`, when `input_chunk_length` to the length of the input
+          target series.
+        - :class:`~darts.models.forecasting.baselines.NaiveMovingAverage`, with identical `input_chunk_length`
+          and `output_chunk_length=1`.
+
+        .. note::
+            - The model can generate forecasts directly, without having to call `model.fit()` before.
+            - Even though the model accepts `past_covariates` and `future_covariates`, it does not use this
+              information for prediction.
+
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the emitted forecast and output sequence fed to the model.
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
+            Since naive models are not trained, the following parameters will have no effect:
+            `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
+            `n_epochs`, `save_checkpoints`, and some of the `pl_trainer_kwargs`.
+
+        Examples
+        --------
+        >>> from darts.datasets import IceCreamHeaterDataset
+        >>> from darts.models import GlobalNaiveMean
+        >>> series_1 = IceCreamHeaterDataset.load()
+        >>> series_2 = IceCreamHeaterDataset.load()
+        >>> model = NaiveMean()
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111],
+              [280.29861111]])
+        """
+        super().__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            use_static_covariates=False,
+            **kwargs,
+        )
+
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
     ) -> _GlobalNaiveModule:

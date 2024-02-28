@@ -64,7 +64,8 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
         """
         super().__init__(**kwargs)
 
@@ -124,7 +125,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
         name
             The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
         **kwargs
-            all parameters required for the :class:`darts.model.forecasting_models.CustomBlockRNNModule` base class.
+            all parameters required for the :class:`darts.models.forecasting.CustomBlockRNNModule` base class.
 
         Inputs
         ------

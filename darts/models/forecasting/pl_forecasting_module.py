@@ -88,13 +88,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
         When subclassing this class, please make sure to add the following methods with the given signatures:
-            - :func:`PLTorchForecastingModel.__init__()`
-            - :func:`PLTorchForecastingModel.forward()`
-            - :func:`PLTorchForecastingModel._produce_train_output()`
-            - :func:`PLTorchForecastingModel._get_batch_prediction()`
+            - :func:`PLForecastingModule.__init__()`
+            - :func:`PLForecastingModule.forward()`
+            - :func:`PLForecastingModule._produce_train_output()`
+            - :func:`PLForecastingModule._get_batch_prediction()`
 
         In subclass `MyModel`'s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where
-        ``kwargs`` are the parameters of :class:`PLTorchForecastingModel`.
+        ``kwargs`` are the parameters of :class:`PLForecastingModule`.
 
         Parameters
         ----------

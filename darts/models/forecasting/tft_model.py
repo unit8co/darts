@@ -107,7 +107,8 @@ class _TFTModule(PLMixedCovariatesModule):
         norm_type: str | nn.Module
             The type of LayerNorm variant to use.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
         """
 
         super().__init__(**kwargs)

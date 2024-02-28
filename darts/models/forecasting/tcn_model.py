@@ -169,7 +169,8 @@ class _TCNModule(PLPastCovariatesModule):
         dropout
             The dropout rate for every convolutional layer.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
