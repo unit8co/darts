@@ -2317,9 +2317,10 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     Parameters
     ----------
     train_sample
-        (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
+        (past_target, past_covariates, historic_future_covariates, future_covariates, static covariates, future_target)
     predict_sample
-        (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates, ts_target)
+        (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates,
+        static_covariates, ts_target)
     """
     # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
     ds_names = [
