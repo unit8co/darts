@@ -1379,7 +1379,6 @@ if TORCH_AVAILABLE:
                 (DualCovariatesSequentialDataset, 2),
                 (MixedCovariatesSequentialDataset, 3),
                 (SplitCovariatesSequentialDataset, 2),
-                (SplitCovariatesSequentialDataset, 2),
             ],
         )
         def test_sequential_training_dataset_output_chunk_shift(self, config):

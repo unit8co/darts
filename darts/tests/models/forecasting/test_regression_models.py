@@ -1797,7 +1797,7 @@ class TestRegressionModels:
         np.testing.assert_array_almost_equal(pred.values(), pred2.values())
         assert pred.time_index.equals(pred2.time_index)
 
-        # auto-regression not support for shifted output (tested in `test_output_shift`)
+        # auto-regression not supported for shifted output (tested in `test_output_shift`)
         if output_chunk_shift:
             return
 
@@ -2035,7 +2035,7 @@ class TestRegressionModels:
             past_covariates=past_cov,
             future_covariates=future_cov,
         )
-        # excpected shifted start is `output_chunk_shift` steps after non-shifted pred start
+        # expected shifted start is `output_chunk_shift` steps after non-shifted pred start
         for s_, pred_, pred_shift_, pred_shift_adj_ in zip(
             series, pred, pred_shift, pred_shift_adj
         ):
@@ -2124,14 +2124,6 @@ class TestRegressionModels:
             assert len(pred) == ocl_test
             assert pred.freq == series.freq
 
-        # check that shifted output chunk results with encoders are the
-        # same as using identical covariates
-        model = LinearRegressionModel(
-            **lags,
-            output_chunk_length=ocl,
-            output_chunk_shift=shift,
-        )
-
         series, past_cov, future_cov = self.helper_generate_input_series_from_lags(
             lags,
             {},
@@ -2145,14 +2137,14 @@ class TestRegressionModels:
         # model trained on encoders
         cov_support = []
         covs = {}
-        if model.supports_past_covariates:
+        if "lags_past_covariates" in lags:
             cov_support.append("past")
             covs["past_covariates"] = tg.datetime_attribute_timeseries(
                 past_cov,
                 attribute="dayofweek",
                 add_length=0,
             )
-        if model.supports_future_covariates:
+        if "lags_future_covariates" in lags:
             cov_support.append("future")
             covs["future_covariates"] = tg.datetime_attribute_timeseries(
                 future_cov,
