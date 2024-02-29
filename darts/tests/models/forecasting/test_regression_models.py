@@ -1275,8 +1275,18 @@ class TestRegressionModels:
         model.fit(series=self.sine_multivariate1)
         if supports_multioutput_natively:
             assert not isinstance(model.model, MultiOutputRegressor)
+            # single estimator is responsible for both components
+            assert (
+                model.model
+                == model.get_estimator(horizon=0, target_dim=0)
+                == model.get_estimator(horizon=0, target_dim=1)
+            )
         else:
             assert isinstance(model.model, MultiOutputRegressor)
+            # one estimator (sub-model) per component
+            assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
+                horizon=0, target_dim=1
+            )
 
     model_configs = [(XGBModel, {"tree_method": "exact"})]
     if lgbm_available:
