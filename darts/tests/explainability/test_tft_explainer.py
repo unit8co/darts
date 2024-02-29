@@ -343,15 +343,15 @@ if TORCH_AVAILABLE:
 
             enc_expected = pd.DataFrame(
                 {
-                    "linear_target": 1.6,
-                    "sine_target": 3.0,
-                    "add_relative_index_futcov": 3.0,
-                    "constant_pastcov": 4.0,
-                    "darts_enc_fc_cyc_month_sin_futcov": 6.2,
-                    "darts_enc_pc_cyc_month_sin_pastcov": 8.6,
-                    "darts_enc_pc_cyc_month_cos_pastcov": 20.0,
-                    "constant_futcov": 20.2,
-                    "darts_enc_fc_cyc_month_cos_futcov": 33.3,
+                    "linear_target": 1.7,
+                    "sine_target": 3.1,
+                    "add_relative_index_futcov": 3.6,
+                    "constant_pastcov": 3.9,
+                    "darts_enc_fc_cyc_month_sin_futcov": 5.0,
+                    "darts_enc_pc_cyc_month_sin_pastcov": 10.1,
+                    "darts_enc_pc_cyc_month_cos_pastcov": 19.9,
+                    "constant_futcov": 21.8,
+                    "darts_enc_fc_cyc_month_cos_futcov": 31.0,
                 },
                 index=[0],
             )
@@ -360,10 +360,10 @@ if TORCH_AVAILABLE:
 
             dec_expected = pd.DataFrame(
                 {
-                    "darts_enc_fc_cyc_month_cos_futcov": 4.3,
-                    "darts_enc_fc_cyc_month_sin_futcov": 17.1,
-                    "constant_futcov": 19.3,
-                    "add_relative_index_futcov": 59.3,
+                    "darts_enc_fc_cyc_month_sin_futcov": 5.3,
+                    "darts_enc_fc_cyc_month_cos_futcov": 7.4,
+                    "constant_futcov": 24.5,
+                    "add_relative_index_futcov": 62.9,
                 },
                 index=[0],
             )
@@ -385,12 +385,12 @@ if TORCH_AVAILABLE:
             # (look at the last 0 values in the array)
             att_exp_past_att = np.array(
                 [
-                    [1.1, 1.1],
-                    [0.7, 0.7],
-                    [0.6, 0.5],
-                    [0.7, 0.5],
-                    [0.8, 0.5],
-                    [0.0, 0.7],
+                    [1.0, 0.8],
+                    [0.8, 0.7],
+                    [0.6, 0.4],
+                    [0.7, 0.3],
+                    [0.9, 0.4],
+                    [0.0, 1.3],
                     [0.0, 0.0],
                 ]
             )
@@ -398,13 +398,13 @@ if TORCH_AVAILABLE:
             # see the that all values are non-0
             att_exp_full_att = np.array(
                 [
-                    [0.9, 1.0],
-                    [0.6, 0.6],
-                    [0.3, 0.4],
-                    [0.3, 0.4],
+                    [0.8, 0.8],
+                    [0.7, 0.6],
                     [0.4, 0.4],
-                    [0.6, 0.5],
-                    [0.9, 0.8],
+                    [0.3, 0.3],
+                    [0.3, 0.3],
+                    [0.7, 0.8],
+                    [0.8, 0.8],
                 ]
             )
             for full_attention, att_exp in zip(
