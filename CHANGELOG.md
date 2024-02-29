@@ -24,6 +24,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `RegressionModel`: [#2246](https://github.com/unit8co/darts/pull/2246)by [Antoine Madrona](https://github.com/madtoinou).
   - Updated the docstring of `get_multioutout_estimator()` 
   - Added attribute `lagged_label_names` to identify the forecasted step and component of each estimator
+- Other improvements:
+  - 🔴 Changed the default `start` value in `ForecastingModel.gridsearch()` from `0.5` to `None`, to make it consistent with `historical_forecasts` and other methods. [#2243](https://github.com/unit8co/darts/pull/2243) by [Thomas Kientz](https://github.com/thomktz).
 
 **Fixed**
 - Fixed a bug when calling `window_transform` on a `TimeSeries` with a hierarchy. The hierarchy is now only preseved for single transformations applied to all components, or removed otherwise. [#2207](https://github.com/unit8co/darts/pull/2207)by [Antoine Madrona](https://github.com/madtoinou).
