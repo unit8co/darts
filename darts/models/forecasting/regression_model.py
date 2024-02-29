@@ -466,17 +466,16 @@ class RegressionModel(GlobalForecastingModel):
         return self._output_chunk_length
 
     def get_multioutput_estimator(self, horizon: int, target_dim: int):
-        """For model relying on MultiOutputRegressor, return the estimator forecasting the `horizon`th step
-        of the `target_dim`th components.
+        """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
 
-        Estimators are grouped by output_chunk_length position, then by component.
+        Internally, estimators are grouped by `output_chunk_length` position, then by component.
 
         Parameters
         ----------
         horizon
-            Index of the step within the forecasted horizon
+            The index of the forecasting point within `output_chunk_length`.
         target_dim
-            Index of the target component
+            The index of the target component.
         """
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
@@ -485,14 +484,12 @@ class RegressionModel(GlobalForecastingModel):
         )
         raise_if_not(
             0 <= horizon < self.output_chunk_length,
-            f"`horizon` should be greater than 0 and strictly smaller than `output_chunk_length` "
-            f"({self.output_chunk_length}).",
+            f"`horizon` must be `>= 0` and `< output_chunk_length={self.output_chunk_length}`.",
             logger,
         )
         raise_if_not(
             0 <= target_dim < self.input_dim["target"],
-            f"`target_dim` should be greater than 0 and strictly smaller than the number of components "
-            f"in the target ({self.input_dim['target']}).",
+            f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`.",
             logger,
         )
 
