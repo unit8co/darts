@@ -1106,7 +1106,7 @@ class RegressionModel(GlobalForecastingModel):
     def lagged_label_names(self) -> Optional[List[str]]:
         """The lagged label name for the model's estimators.
 
-        The naming convention is: ``"{name}_target_ocl{i}"``, where:
+        The naming convention is: ``"{name}_target_hrz{i}"``, where:
 
             - ``{name}`` the component name of the (first) series
             - ``{i}`` is the position in output_chunk_length (label lag)
