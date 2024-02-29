@@ -188,6 +188,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         model: Union[str, Type[CustomBlockRNNModule]] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
@@ -223,6 +224,12 @@ class BlockRNNModel(PastCovariatesTorchModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"), or a subclass of
             :class:`CustomBlockRNNModule` (the class itself, not an object of the class) with a custom logic.

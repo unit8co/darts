@@ -46,6 +46,7 @@ if TORCH_AVAILABLE:
             name="RNN",
             input_chunk_length=1,
             output_chunk_length=1,
+            output_chunk_shift=0,
             input_size=1,
             hidden_dim=25,
             num_layers=1,
@@ -57,16 +58,13 @@ if TORCH_AVAILABLE:
         def test_creation(self):
             # cannot choose any string
             with pytest.raises(ValueError) as msg:
-                RNNModel(
-                    input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?"
-                )
+                RNNModel(input_chunk_length=1, model="UnknownRNN?")
             assert str(msg.value).startswith("`model` is not a valid RNN model.")
 
             # cannot create from a class instance
             with pytest.raises(ValueError) as msg:
                 _ = RNNModel(
                     input_chunk_length=1,
-                    output_chunk_length=1,
                     model=self.module_invalid,
                 )
             assert str(msg.value).startswith("`model` is not a valid RNN model.")
@@ -74,7 +72,6 @@ if TORCH_AVAILABLE:
             # can create from valid module name
             model1 = RNNModel(
                 input_chunk_length=1,
-                output_chunk_length=1,
                 model="RNN",
                 n_epochs=1,
                 random_state=42,
@@ -86,7 +83,6 @@ if TORCH_AVAILABLE:
             # can create from a custom class itself
             model2 = RNNModel(
                 input_chunk_length=1,
-                output_chunk_length=1,
                 model=ModuleValid1,
                 n_epochs=1,
                 random_state=42,
@@ -98,7 +94,6 @@ if TORCH_AVAILABLE:
 
             model3 = RNNModel(
                 input_chunk_length=1,
-                output_chunk_length=1,
                 model=ModuleValid2,
                 n_epochs=1,
                 random_state=42,
@@ -111,15 +106,12 @@ if TORCH_AVAILABLE:
 
         def test_fit(self, tmpdir_module):
             # Test basic fit()
-            model = RNNModel(
-                input_chunk_length=1, output_chunk_length=1, n_epochs=2, **tfm_kwargs
-            )
+            model = RNNModel(input_chunk_length=1, n_epochs=2, **tfm_kwargs)
             model.fit(self.series)
 
             # Test fit-save-load cycle
             model2 = RNNModel(
                 input_chunk_length=1,
-                output_chunk_length=1,
                 model="LSTM",
                 n_epochs=1,
                 model_name="unittest-model-lstm",
@@ -143,11 +135,7 @@ if TORCH_AVAILABLE:
 
             # Another random model should not
             model3 = RNNModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                model="RNN",
-                n_epochs=2,
-                **tfm_kwargs
+                input_chunk_length=1, model="RNN", n_epochs=2, **tfm_kwargs
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
@@ -163,9 +151,7 @@ if TORCH_AVAILABLE:
             assert len(pred4) == 6
 
         def helper_test_pred_length(self, pytorch_model, series):
-            model = pytorch_model(
-                input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
-            )
+            model = pytorch_model(input_chunk_length=1, n_epochs=1, **tfm_kwargs)
             model.fit(series)
             pred = model.predict(7)
             assert len(pred) == 7
