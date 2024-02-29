@@ -54,7 +54,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False)
 
@@ -63,7 +63,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_relative_index=True,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False)
             model.fit(ts_integer_index, verbose=False)
@@ -246,7 +246,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(target_multi)
             preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
@@ -258,7 +258,7 @@ if TORCH_AVAILABLE:
                 use_static_covariates=False,
                 add_relative_index=True,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(target_multi.with_static_covariates(None))
             preds = model.predict(n=2, series=target_multi)
@@ -404,7 +404,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type="RMSNorm",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model1.fit(series, epochs=1)
 
@@ -413,7 +413,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_relative_index=True,
                 norm_type=nn.LayerNorm,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(series, epochs=1)
 
@@ -423,6 +423,6 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_relative_index=True,
                     norm_type="invalid",
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model4.fit(series, epochs=1)

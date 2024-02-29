@@ -260,6 +260,7 @@ class TCNModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         kernel_size: int = 3,
         num_filters: int = 3,
         num_layers: Optional[int] = None,
@@ -287,6 +288,12 @@ class TCNModel(PastCovariatesTorchModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -533,7 +540,7 @@ class TCNModel(PastCovariatesTorchModel):
             target_series=target,
             covariates=past_covariates,
             length=self.input_chunk_length,
-            shift=self.output_chunk_length,
+            shift=self.output_chunk_length + self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )

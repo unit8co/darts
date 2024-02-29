@@ -52,7 +52,7 @@ class TestCovariatesIndexGenerator:
     )
 
     # integer index
-    # excpected covariates for inference dataset for n <= output_chunk_length
+    # expected covariates for inference dataset for n <= output_chunk_length
     cov_int_inf_short = TimeSeries.from_times_and_values(
         tg.generate_index(
             start=target_int.start_time(),
@@ -61,7 +61,7 @@ class TestCovariatesIndexGenerator:
         ),
         np.arange(n_target + n_short),
     )
-    # excpected covariates for inference dataset for n > output_chunk_length
+    # expected covariates for inference dataset for n > output_chunk_length
     cov_int_inf_long = TimeSeries.from_times_and_values(
         tg.generate_index(
             start=target_int.start_time(),

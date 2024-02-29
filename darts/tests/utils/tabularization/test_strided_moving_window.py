@@ -30,7 +30,9 @@ class TestStridedMovingWindow:
         for axis, stride, window_len in product(
             axis_combos, stride_combos, window_len_combos
         ):
-            windows = strided_moving_window(x, window_len, stride, axis)
+            windows = strided_moving_window(
+                x=x, window_len=window_len, stride=stride, axis=axis
+            )
             # Iterate over extracted windows:
             for i in range(windows.shape[axis]):
                 # All of the extract windows are found along the `axis` dimension; shift
