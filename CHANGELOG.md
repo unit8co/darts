@@ -19,6 +19,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 - Improvements to `TorchForecastingModel`:
   - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `GlobalForecastingModel`:
+  - 🚀 All global models (regression and torch models) now support shifted predictions with model creation parameter `output_chunk_shift`. This will shift the output chunk for training and prediction by `output_chunk_shift` steps into the future. [#2176](https://github.com/unit8co/darts/pull/2176) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `WindowTransformer` and `window_transform`:
   - Added argument `keep_names` to indicate whether the original component names should be kept. [#2207](https://github.com/unit8co/darts/pull/2207) by [Antoine Madrona](https://github.com/madtoinou).
 - Improvements to `RegressionModel`: [#2246](https://github.com/unit8co/darts/pull/2246) by [Antoine Madrona](https://github.com/madtoinou).
@@ -26,6 +28,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Updated the docstring of `get_multioutout_estimator()` 
   - Added attribute `lagged_label_names` to identify the forecasted step and component of each estimator
 - Other improvements:
+  - Added new helper function `darts.utils.n_steps_between()` to efficiently compute the number of time steps (periods) between two points with a given frequency. Improves efficiency for regression model tabularization by avoiding `pd.date_range()`. [#2176](https://github.com/unit8co/darts/pull/2176) by [Dennis Bader](https://github.com/dennisbader).
   - 🔴 Changed the default `start` value in `ForecastingModel.gridsearch()` from `0.5` to `None`, to make it consistent with `historical_forecasts` and other methods. [#2243](https://github.com/unit8co/darts/pull/2243) by [Thomas Kientz](https://github.com/thomktz).
 
 **Fixed**
@@ -35,6 +38,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `coefficient_of_variation()` with `intersect=True`, where the coefficient was not computed on the intersection. [#2202](https://github.com/unit8co/darts/pull/2202) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in `gridsearch()` with `use_fitted_values=True`, where the model was not propely instantiated for sanity checks. [#2222](https://github.com/unit8co/darts/pull/2222) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in `TimeSeries.append/prepend_values()`, where the components names and the hierarchy were dropped. [#2237](https://github.com/unit8co/darts/pull/2237) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug when using `RegressionModel` with `lags=None`, some `lags_*covariates`, and the covariates starting at the same time or after the first predictable time step; the lags were not extracted from the correct indices. [#2176](https://github.com/unit8co/darts/pull/2176) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug in `get_multioutput_estimator()`, where the index of the estimator was incorrectly calculated. [#2246](https://github.com/unit8co/darts/pull/2246) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Dependencies**

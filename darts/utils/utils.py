@@ -397,3 +397,74 @@ def get_single_series(
         return ts
     else:
         return ts[0]
+
+
+def n_steps_between(
+    end: Union[pd.Timestamp, int],
+    start: Union[pd.Timestamp, int],
+    freq: Union[pd.DateOffset, int, str],
+) -> int:
+    """Get the number of time steps with a given frequency `freq` between `end` and `start`.
+    Works for both integers and time stamps.
+
+    * if `end`, `start`, `freq` are all integers, we can simple divide the difference by the frequency.
+    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "M", "Y", ...),
+        we can simply divide by the frequency
+    * otherwise, we take the period difference between the two time stamps.
+
+    Parameters
+    ----------
+    end
+        The end pandas Timestamp / integer.
+    start
+        The start pandas Timestamp / integer.
+    freq
+        The frequency / step size.
+
+    Returns
+    -------
+    int
+        The number of steps/periods between `end` and `start` with a given frequency `freq`.
+
+    Examples
+    --------
+    >>> n_steps_between(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-03-01"), freq="M")
+    2
+    >>> n_steps_between(start=0, end=2, freq=1)
+    2
+    >>> n_steps_between(start=0, end=2, freq=2)
+    1
+    """
+    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    valid_int = (
+        isinstance(start, int) and isinstance(end, int) and isinstance(freq, int)
+    )
+    valid_time = (
+        isinstance(start, pd.Timestamp)
+        and isinstance(end, pd.Timestamp)
+        and isinstance(freq, pd.DateOffset)
+    )
+    if not (valid_int or valid_time):
+        raise_log(
+            ValueError(
+                "Either `start` and `end` must be pandas Timestamps and `freq` a pandas Dateoffset, "
+                "or all `start`, `end`, `freq` must be integers."
+            ),
+            logger=logger,
+        )
+    # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’)
+    if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
+        n_steps = (end - start) // freq
+    else:
+        period_alias = pd.tseries.frequencies.get_period_alias(freq.freqstr)
+        if period_alias is None:
+            raise_log(
+                ValueError(
+                    f"Cannot infer period alias for `freq={freq}`. "
+                    f"Is it a valid pandas offset/frequency alias?"
+                ),
+                logger=logger,
+            )
+        # Create a temporary DatetimeIndex to extract the actual start index.
+        n_steps = (end.to_period(period_alias) - start.to_period(period_alias)).n
+    return n_steps

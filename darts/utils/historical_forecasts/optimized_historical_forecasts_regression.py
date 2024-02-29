@@ -159,7 +159,8 @@ def _optimized_historical_forecasts_last_points_only(
                     times[0]
                     if stride == 1 and model.output_chunk_length == 1
                     else generate_index(
-                        start=hist_fct_start + (forecast_horizon - 1) * freq,
+                        start=hist_fct_start
+                        + (forecast_horizon + model.output_chunk_shift - 1) * freq,
                         length=forecast.shape[0],
                         freq=freq * stride,
                         name=series_.time_index.name,
@@ -330,7 +331,7 @@ def _optimized_historical_forecasts_all_points(
 
         # TODO: check if faster to create in the loop
         new_times = generate_index(
-            start=hist_fct_start,
+            start=hist_fct_start + model.output_chunk_shift * series_.freq,
             length=forecast_horizon * stride * forecast.shape[0],
             freq=freq,
             name=series_.time_index.name,

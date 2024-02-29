@@ -76,6 +76,7 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates: Optional[LAGS_TYPE] = None,
         lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         model=None,
         multi_models: Optional[bool] = True,
@@ -89,7 +90,8 @@ class RegressionModel(GlobalForecastingModel):
         lags
             Lagged target `series` values used to predict the next time step/s.
             If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
-            corresponds the first predicted time step of each sample.
+            corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
             If a list of integers, each value must be < 0. Uses only the specified values as lags.
             If a dictionary, the keys correspond to the `series` component names (of the first series when
             using multiple series) and the values correspond to the component lags (integer or list of integers). The
@@ -98,17 +100,21 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates
             Lagged `past_covariates` values used to predict the next time step/s.
             If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
-            where `0` corresponds to the first predicted time step of each sample.
+            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
             If a list of integers, each value must be < 0. Uses only the specified values as lags.
             If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
             using multiple series) and the values correspond to the component lags (integer or list of integers). The
             key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Lagged `future_covariates` values used to predict the next time step/s.
+            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the
+            first step in the output chunk, even when `output_chunk_shift > 0`.
             If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
-            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0`
-            corresponds the first predicted time step of each sample.
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first
+            predicted time step of each sample. If `output_chunk_shift > 0`, the position of negative lags differ from
+            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same
+            step as a target lag of `-5 + output_chunk_shift`.
             If a list of integers, uses only the specified values as lags.
             If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
             using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
@@ -121,6 +127,13 @@ class RegressionModel(GlobalForecastingModel):
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input (history of target and past covariates) and
+            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
+            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
+            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -208,6 +221,7 @@ class RegressionModel(GlobalForecastingModel):
             logger=logger,
         )
         self._output_chunk_length = output_chunk_length
+        self._output_chunk_shift = output_chunk_shift
 
         # model checks
         if self.model is None:
@@ -236,15 +250,17 @@ class RegressionModel(GlobalForecastingModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            output_chunk_shift=output_chunk_shift,
         )
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
+    @staticmethod
     def _generate_lags(
-        self,
         lags: Optional[LAGS_TYPE],
         lags_past_covariates: Optional[LAGS_TYPE],
         lags_future_covariates: Optional[FUTURE_LAGS_TYPE],
+        output_chunk_shift: int,
     ) -> Tuple[Dict[str, List[int]], Dict[str, Dict[str, List[int]]]]:
         """
         Based on the type of the argument and the nature of the covariates, perform some sanity checks before
@@ -254,6 +270,8 @@ class RegressionModel(GlobalForecastingModel):
         attributes contain only the extreme values
         If the lags are provided as integer, list, tuple or dictionary containing only the 'default_lags' keys, the lags
         values are contained in the self.lags attribute and the self.component_lags is an empty dictionary.
+
+        If `output_chunk_shift > 0`, the `lags_future_covariates` are shifted into the future.
         """
         processed_lags: Dict[str, List[int]] = dict()
         processed_component_lags: Dict[str, Dict[str, List[int]]] = dict()
@@ -372,6 +390,18 @@ class RegressionModel(GlobalForecastingModel):
                 processed_lags[lags_abbrev] = [min_lags, max_lags]
                 processed_component_lags[lags_abbrev] = tmp_components_lags
 
+            # if output chunk is shifted, shift future covariates lags with it
+            if output_chunk_shift and lags_abbrev == "future":
+                processed_lags[lags_abbrev] = [
+                    lag_ + output_chunk_shift for lag_ in processed_lags[lags_abbrev]
+                ]
+                if processed_component_lags:
+                    processed_component_lags[lags_abbrev] = {
+                        comp_: [lag_ + output_chunk_shift for lag_ in lags_]
+                        for comp_, lags_ in processed_component_lags[
+                            lags_abbrev
+                        ].items()
+                    }
         return processed_lags, processed_component_lags
 
     def _get_lags(self, lags_type: str):
@@ -405,7 +435,7 @@ class RegressionModel(GlobalForecastingModel):
             ]
         return (
             abs(min(target_lags)),
-            self.output_chunk_length,
+            self.output_chunk_length + self.output_chunk_shift,
             lags_past_covariates is not None,
             lags_future_covariates is not None,
             lags_past_covariates,
@@ -422,9 +452,10 @@ class RegressionModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         min_target_lag = self.lags["target"][0] if "target" in self.lags else None
-        max_target_lag = self.output_chunk_length - 1
+        max_target_lag = self.output_chunk_length - 1 + self.output_chunk_shift
         min_past_cov_lag = self.lags["past"][0] if "past" in self.lags else None
         max_past_cov_lag = self.lags["past"][-1] if "past" in self.lags else None
         min_future_cov_lag = self.lags["future"][0] if "future" in self.lags else None
@@ -436,6 +467,7 @@ class RegressionModel(GlobalForecastingModel):
             max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
+            self.output_chunk_shift,
         )
 
     @property
@@ -454,7 +486,8 @@ class RegressionModel(GlobalForecastingModel):
                 -self.lags["target"][0] + self.output_chunk_length
                 if "target" in self.lags
                 else self.output_chunk_length
-            ),
+            )
+            + self.output_chunk_shift,
         )
 
     @property
@@ -464,6 +497,10 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def output_chunk_length(self) -> int:
         return self._output_chunk_length
+      
+    @property
+    def output_chunk_shift(self) -> int:
+        return self._output_chunk_shift
 
     def get_multioutput_estimator(self, horizon: int, target_dim: int):
         """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
@@ -537,6 +574,7 @@ class RegressionModel(GlobalForecastingModel):
         ) = create_lagged_training_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             lags=self._get_lags("target"),
@@ -931,14 +969,19 @@ class RegressionModel(GlobalForecastingModel):
 
                 # check for sufficient covariate data
                 if not (cov.start_time() <= start_ts and cov.end_time() >= end_ts):
+                    index_text = (
+                        " "
+                        if called_with_single_series
+                        else f" at list/sequence index {idx} "
+                    )
                     raise_log(
                         ValueError(
-                            f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently "
-                            f"long. Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                            f"The `{cov_type}_covariates`{index_text}are not long enough. "
+                            f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
                             f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
-                            f"`output_chunk_length={self.output_chunk_length}`, the {cov_type}_covariate has to range "
-                            f"from {start_ts} until {end_ts} (inclusive), but it ranges only from {cov.start_time()} "
-                            f"until {cov.end_time()}."
+                            f"`output_chunk_length={self.output_chunk_length}`, the `{cov_type}_covariates` have to "
+                            f"range from {start_ts} until {end_ts} (inclusive), but they only range from "
+                            f"{cov.start_time()} until {cov.end_time()}."
                         ),
                         logger=logger,
                     )
@@ -1086,6 +1129,8 @@ class RegressionModel(GlobalForecastingModel):
                 ),
                 with_static_covs=False if predict_likelihood_parameters else True,
                 with_hierarchy=False if predict_likelihood_parameters else True,
+                pred_start=input_tgt.end_time()
+                + (1 + self.output_chunk_shift) * input_tgt.freq,
             )
             for idx_ts, (row, input_tgt) in enumerate(zip(predictions, series))
         ]
@@ -1551,6 +1596,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         model=None,
         multi_models: Optional[bool] = True,
@@ -1565,17 +1611,38 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         Parameters
         ----------
         lags
-            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise, a list of integers with lags is required (each lag must be < 0).
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
-            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
-            with lags < 0 is required.
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
-            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
-            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
-            of integers with lags is required.
+            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the
+            first step in the output chunk, even when `output_chunk_shift > 0`.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first
+            predicted time step of each sample. If `output_chunk_shift > 0`, the position of negative lags differ from
+            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same
+            step as a target lag of `-5 + output_chunk_shift`.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
@@ -1583,6 +1650,13 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input (history of target and past covariates) and
+            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
+            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
+            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -1634,6 +1708,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             model=model,
             multi_models=multi_models,
