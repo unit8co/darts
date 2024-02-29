@@ -64,7 +64,7 @@ if TORCH_AVAILABLE:
                     n_epochs=10,
                     random_state=42,
                     **kwargs,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -75,7 +75,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
@@ -118,7 +118,7 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=True,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model_not_shared = model_cls(
                     input_chunk_length=5,
@@ -127,7 +127,7 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=False,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model_shared.fit(ts)
                 model_not_shared.fit(ts)
@@ -189,7 +189,7 @@ if TORCH_AVAILABLE:
                     const_init=True,
                     likelihood=lkl,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
 
                 model.fit(
@@ -316,7 +316,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=True,
                     n_epochs=1,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(series)
                 with pytest.raises(ValueError):
@@ -328,7 +328,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(series)
                 preds = model.predict(n=2, series=series.with_static_covariates(None))
@@ -340,7 +340,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(series.with_static_covariates(None))
                 preds = model.predict(n=2, series=series)

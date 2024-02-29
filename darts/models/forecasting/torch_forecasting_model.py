@@ -1528,7 +1528,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Class property defining the minimum required length for the training series;
         overriding the default value of 3 of ForecastingModel
         """
-        return self.input_chunk_length + self.output_chunk_length
+        return (
+            self.input_chunk_length + self.output_chunk_length + self.output_chunk_shift
+        )
 
     @staticmethod
     def _batch_collate_fn(batch: List[Tuple]) -> Tuple:
@@ -2009,6 +2011,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def output_chunk_shift(self) -> int:
+        return (
+            self.model.output_chunk_shift
+            if self.model_created
+            else self.pl_module_params["output_chunk_shift"]
+        )
+
+    @property
     def _is_probabilistic(self) -> bool:
         return (
             self.model._is_probabilistic
@@ -2187,6 +2197,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "optimizer_kwargs",
             "lr_scheduler_cls",
             "lr_scheduler_kwargs",
+            "output_chunk_shift",
         ]
         # model_params can be missing some kwargs
         params_to_check = set(tfm_save.model_params.keys()).union(
@@ -2390,6 +2401,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=past_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2416,6 +2428,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2445,7 +2458,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = False
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2462,14 +2475,16 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
-            self.output_chunk_length - 1,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
             None,
             None,
+            self.output_chunk_shift,
         )
 
 
@@ -2493,6 +2508,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2518,6 +2534,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             stride=stride,
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2547,7 +2564,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2564,14 +2581,20 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
-            self.output_chunk_length - 1,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
-            0 if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 if self.uses_future_covariates else None,
+            self.output_chunk_shift if self.uses_future_covariates else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
+            self.output_chunk_shift,
         )
 
 
@@ -2590,6 +2613,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2611,6 +2635,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2640,7 +2665,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2657,14 +2682,20 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
-            self.output_chunk_length - 1,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
             -self.input_chunk_length if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 if self.uses_future_covariates else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
+            self.output_chunk_shift,
         )
 
 
@@ -2682,6 +2713,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2704,6 +2736,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2730,7 +2763,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2747,14 +2780,20 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
-            self.output_chunk_length - 1,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
             -self.input_chunk_length if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 if self.uses_future_covariates else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
+            self.output_chunk_shift,
         )
 
     def predict(
@@ -2828,6 +2867,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )
@@ -2850,6 +2890,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             bounds=bounds,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             use_static_covariates=self.uses_static_covariates,
         )
 
@@ -2877,7 +2918,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_future_covariates = True
         return (
             input_chunk_length,
-            output_chunk_length,
+            output_chunk_length + self.output_chunk_shift,
             takes_past_covariates,
             takes_future_covariates,
             None,
@@ -2894,12 +2935,18 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         return (
             -self.input_chunk_length,
-            self.output_chunk_length - 1,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
-            0 if self.uses_future_covariates else None,
-            self.output_chunk_length - 1 if self.uses_future_covariates else None,
+            self.output_chunk_shift if self.uses_future_covariates else None,
+            (
+                self.output_chunk_length - 1 + self.output_chunk_shift
+                if self.uses_future_covariates
+                else None
+            ),
+            self.output_chunk_shift,
         )

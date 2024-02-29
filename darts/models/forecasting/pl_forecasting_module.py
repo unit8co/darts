@@ -71,6 +71,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
@@ -156,6 +157,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.input_chunk_length = input_chunk_length
         # output_chunk_length is a property
         self._output_chunk_length = output_chunk_length
+        self.output_chunk_shift = output_chunk_shift
 
         # define the loss function
         self.criterion = loss_fn
@@ -246,7 +248,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         batch
             output of Darts' :class:`InferenceDataset` - tuple of ``(past_target, past_covariates,
-            historic_future_covariates, future_covariates, future_past_covariates, input_timeseries)``
+            historic_future_covariates, future_covariates, future_past_covariates, input time series,
+            prediction start time step)``
         batch_idx
             the batch index of the current batch
         dataloader_idx
