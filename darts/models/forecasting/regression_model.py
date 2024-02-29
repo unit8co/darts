@@ -497,7 +497,7 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def output_chunk_length(self) -> int:
         return self._output_chunk_length
-      
+
     @property
     def output_chunk_shift(self) -> int:
         return self._output_chunk_shift
