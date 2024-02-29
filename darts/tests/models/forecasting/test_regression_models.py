@@ -1310,29 +1310,31 @@ class TestRegressionModels:
             assert len(m.model.estimators_) == ocl * ts.width
 
             dummy_feats = np.array([[0, 0, 0] * ts.width])
+            estimator_counter = 0
             for i in range(ocl):
                 for j in range(ts.width):
                     sub_model = m.get_multioutput_estimator(horizon=i, target_dim=j)
                     pred = sub_model.predict(dummy_feats)[0]
                     # sub-model is overfitted on the training series
-                    assert np.abs(ts.width * i + j + 1 - pred) < 1e-2
+                    assert np.abs(estimator_counter - pred) < 1e-2
+                    estimator_counter += 1
 
         # univariate, one-sub model per step in output_chunk_length
         ocl = 3
-        ts = TimeSeries.from_values(np.array([0, 0, 0, 1, 2, 3, 4]).T)
-        # estimators_[0] labels : [1, 2]
-        # estimators_[1] labels : [2, 3]
-        # estimators_[2] labels : [3, 4]
+        ts = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 2]).T)
+        # estimators_[0] labels : [0]
+        # estimators_[1] labels : [1]
+        # estimators_[2] labels : [2]
         helper_check_overfitted_estimators(ts, ocl)
 
         # multivariate, one sub-model per component
         ocl = 1
         ts = TimeSeries.from_values(
-            np.array([[0, 0, 0, 1, 1], [0, 0, 0, 2, 2], [0, 0, 0, 3, 3]]).T
+            np.array([[0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 0, 2]]).T
         )
-        # estimators_[0] labels : [1, 1]
-        # estimators_[1] labels : [2, 2]
-        # estimators_[2] labels : [3, 3]
+        # estimators_[0] labels : [0]
+        # estimators_[1] labels : [1]
+        # estimators_[2] labels : [2]
         helper_check_overfitted_estimators(ts, ocl)
 
         # multivariate, one sub-model per position, per component
@@ -1340,15 +1342,15 @@ class TestRegressionModels:
         ts = TimeSeries.from_values(
             np.array(
                 [
-                    [0, 0, 0, 0, 2, 4],
-                    [0, 0, 0, 0, 4, 4],
+                    [0, 0, 0, 0, 2],
+                    [0, 0, 0, 1, 3],
                 ]
             ).T
         )
-        # estimators_[0] labels : [0, 2]
-        # estimators_[1] labels : [0, 4]
-        # estimators_[2] labels : [2, 4]
-        # estimators_[3] labels : [4, 4]
+        # estimators_[0] labels : [0]
+        # estimators_[1] labels : [1]
+        # estimators_[2] labels : [2]
+        # estimators_[3] labels : [3]
         helper_check_overfitted_estimators(ts, ocl)
 
     def test_get_multioutput_estimator_single_model(self):
@@ -1358,13 +1360,13 @@ class TestRegressionModels:
         ts = TimeSeries.from_values(
             np.array(
                 [
-                    [0, 0, 1, 1, 1],
-                    [0, 0, 2, 2, 2],
+                    [0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 2],
                 ]
             ).T
         )
-        # estimators_[0] labels : [1, 1]
-        # estimators_[1] labels : [2, 2]
+        # estimators_[0] labels : [1]
+        # estimators_[1] labels : [2]
 
         m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=False)
         m.fit(ts)
