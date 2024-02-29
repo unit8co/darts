@@ -499,6 +499,29 @@ class RegressionModel(GlobalForecastingModel):
         )
         return self.model.estimators_[idx_estimator]
 
+    def get_estimator(self, horizon: int, target_dim: int):
+        """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
+
+        The model is returned directly if it supports multi-output natively.
+
+        Parameters
+        ----------
+        horizon
+            The index of the forecasting point within `output_chunk_length`.
+        target_dim
+            The index of the target component.
+        """
+
+        if isinstance(self.model, MultiOutputRegressor):
+            return self.get_multioutput_estimator(
+                horizon=horizon, target_dim=target_dim
+            )
+        else:
+            logger.info(
+                "Model supports multi-output; a single estimator forecasts all the horizons and components."
+            )
+            return self.model
+
     def _create_lagged_data(
         self,
         target_series: Sequence[TimeSeries],
