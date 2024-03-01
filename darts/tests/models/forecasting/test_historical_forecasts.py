@@ -954,6 +954,7 @@ class TestHistoricalforecast:
         ),
     )
     def test_optimized_historical_forecasts_regression_with_encoders(self, config):
+        np.random.seed(0)
         use_covs, last_points_only, overlap_end, stride, horizon, multi_models = config
         lags = 3
         ocl = 5

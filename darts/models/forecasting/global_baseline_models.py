@@ -24,6 +24,8 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
+from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
+from darts.utils.data.training_dataset import MixedCovariatesTrainingDataset
 
 MixedCovariatesTrainTensorType = Tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
@@ -212,6 +214,24 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     def _requires_training(self) -> bool:
         # naive models do not have to be trained.
         return False
+
+    def _build_train_dataset(
+        self,
+        target: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]],
+        future_covariates: Optional[Sequence[TimeSeries]],
+        max_samples_per_ts: Optional[int],
+    ) -> MixedCovariatesTrainingDataset:
+        return MixedCovariatesSequentialDataset(
+            target_series=target,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=0,
+            output_chunk_shift=self.output_chunk_shift,
+            max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self.uses_static_covariates,
+        )
 
 
 class _NoCovariatesMixin:
@@ -403,7 +423,7 @@ class _GlobalNaiveSeasonalModule(_GlobalNaiveModule):
         return _repeat_along_output_chunk(season, self.output_chunk_length)
 
 
-class GlobalNaiveSeasonal(_GlobalNaiveModel, _NoCovariatesMixin):
+class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -514,7 +534,7 @@ class _GlobalNaiveDrift(_GlobalNaiveModule):
         return slope * x + y_0
 
 
-class GlobalNaiveDrift(_GlobalNaiveModel, _NoCovariatesMixin):
+class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
     def __init__(
         self,
         input_chunk_length: int,

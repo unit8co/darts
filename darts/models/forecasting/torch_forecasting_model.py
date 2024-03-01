@@ -792,22 +792,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        if past_covariates is not None:
-            self._uses_past_covariates = True
-        if future_covariates is not None:
-            self._uses_future_covariates = True
+        self._verify_past_future_covariates(
+            past_covariates=past_covariates, future_covariates=future_covariates
+        )
         if (
             get_single_series(series).static_covariates is not None
             and self.supports_static_covariates
             and self.considers_static_covariates
         ):
+            self._verify_static_covariates(get_single_series(series).static_covariates)
             self._uses_static_covariates = True
 
-        self._verify_past_future_covariates(
-            past_covariates=past_covariates, future_covariates=future_covariates
-        )
-        self._verify_static_covariates(series[0].static_covariates)
+        if past_covariates is not None:
+            self._uses_past_covariates = True
+        if future_covariates is not None:
+            self._uses_future_covariates = True
 
         # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
@@ -824,7 +823,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
             )
-            self._verify_static_covariates(val_series[0].static_covariates)
+            if self.uses_static_covariates:
+                self._verify_static_covariates(
+                    get_single_series(val_series).static_covariates
+                )
 
             match = (
                 series[0].width == val_series[0].width
@@ -883,6 +885,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ),
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
+
         series_input = (series, past_covariates, future_covariates)
         fit_from_ds_params = (
             train_dataset,
@@ -1356,7 +1359,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
+        if self.uses_static_covariates:
+            self._verify_static_covariates(get_single_series(series).static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         # when covariates are loaded from model, they already contain the encodings: this is not a problem as the

@@ -161,12 +161,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self
             Fitted model.
         """
-        raise_if_not(
-            len(series) >= self.min_train_series_length,
-            "Train series only contains {} elements but {} model requires at least {} entries".format(
-                len(series), str(self), self.min_train_series_length
-            ),
-        )
+        if not isinstance(series, TimeSeries):
+            raise_log(
+                ValueError("Train `series` must be a single `TimeSeries`."),
+                logger=logger,
+            )
+        if not len(series) >= self.min_train_series_length:
+            raise_log(
+                ValueError(
+                    "Train series only contains {} elements but {} model requires at least {} entries".format(
+                        len(series), str(self), self.min_train_series_length
+                    )
+                ),
+                logger=logger,
+            )
         self.training_series = series
         self._fit_called = True
 
@@ -2056,7 +2064,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Verify that all static covariates are numeric.
         """
-        if static_covariates is not None and self.uses_static_covariates:
+        if static_covariates is not None:
             numeric_mask = static_covariates.columns.isin(
                 static_covariates.select_dtypes(include=np.number)
             )

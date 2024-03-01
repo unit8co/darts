@@ -642,8 +642,6 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
-
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_fit_encodings(
@@ -661,6 +659,7 @@ class RegressionModel(GlobalForecastingModel):
             and self.supports_static_covariates
             and self.considers_static_covariates
         ):
+            self._verify_static_covariates(get_single_series(series).static_covariates)
             self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
@@ -842,7 +841,8 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
+        if self.uses_static_covariates:
+            self._verify_static_covariates(series[0].static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
