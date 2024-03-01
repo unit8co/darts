@@ -2,7 +2,7 @@
 Global Baseline Models (Naive)
 ------------------------------
 
-A collection of simple benchmark models working with univariate, mutlivariate, single, and multiple series.
+A collection of simple benchmark models working with univariate, multivariate, single, and multiple series.
 """
 
 from abc import ABC, abstractmethod
@@ -461,9 +461,11 @@ class _GlobalNaiveDrift(_GlobalNaiveModule):
             self.output_chunk_length,
         )
 
-        x = torch.arange(1, self.output_chunk_length + 1, device=self.device).view(
-            1, self.output_chunk_length, 1, 1
-        )
+        x = torch.arange(
+            start=self.output_chunk_shift + 1,
+            end=self.output_chunk_length + self.output_chunk_shift + 1,
+            device=self.device,
+        ).view(1, self.output_chunk_length, 1, 1)
 
         y_0 = y_target[:, -1, :].view(-1, 1, y_target.shape[-1], 1)
         return slope * x + y_0
