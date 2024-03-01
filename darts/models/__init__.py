@@ -19,8 +19,8 @@ from darts.models.forecasting.baselines import (
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.global_baseline_models import (
+    GlobalNaiveAggregate,
     GlobalNaiveDrift,
-    GlobalNaiveMean,
     GlobalNaiveSeasonal,
 )
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster

@@ -8,9 +8,9 @@ Baseline Models (`LocalForecastingModel <https://unit8co.github.io/darts/usergui
     - :class:`~darts.models.forecasting.baselines.NaiveDrift`
     - :class:`~darts.models.forecasting.baselines.NaiveMovingAverage`
 Global Baseline Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
-    - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveMean`
-    - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal`
+    - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate`
     - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveDrift`
+    - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal`
 Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`_)
     - :class:`~darts.models.forecasting.arima.ARIMA`
     - :class:`~darts.models.forecasting.varima.VARIMA`

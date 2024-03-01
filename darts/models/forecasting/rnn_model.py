@@ -294,7 +294,7 @@ class RNNModel(DualCovariatesTorchModel):
         RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:
 
         - previous target value, which will be set to the last known target value for the first prediction,
-          and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),
+          and for all other predictions it will be set to the previous prediction (in an autoregressive fashion),
         - the previous hidden state,
         - the covariates at time `t` for forecasting the target at time `t` (if the model was trained with covariates),
 

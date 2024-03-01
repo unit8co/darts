@@ -30,6 +30,9 @@ try:
     from darts.models import (
         BlockRNNModel,
         DLinearModel,
+        GlobalNaiveAggregate,
+        GlobalNaiveDrift,
+        GlobalNaiveSeasonal,
         NBEATSModel,
         NHiTSModel,
         NLinearModel,
@@ -63,6 +66,9 @@ try:
         (TFTModel, {"add_relative_index": 2, **kwargs}),
         (TiDEModel, kwargs),
         (TransformerModel, kwargs),
+        (GlobalNaiveSeasonal, kwargs),
+        (GlobalNaiveAggregate, kwargs),
+        (GlobalNaiveDrift, kwargs),
     ]
 
     TORCH_AVAILABLE = True
@@ -1500,6 +1506,9 @@ if TORCH_AVAILABLE:
                     (TransformerModel, {}),
                     (TCNModel, {}),
                     (BlockRNNModel, {}),
+                    (GlobalNaiveSeasonal, {}),
+                    (GlobalNaiveAggregate, {}),
+                    (GlobalNaiveDrift, {}),
                 ],
                 [3, 7, 10],
             ),

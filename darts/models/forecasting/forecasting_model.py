@@ -145,7 +145,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # by default models do not use encoders
         self.add_encoders = kwargs["add_encoders"]
-        self.encoders: Optional[SequentialEncoder] = None
+        self.encoders = self.initialize_encoders(default=True)
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> "ForecastingModel":
@@ -1688,9 +1688,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return residuals_list if len(residuals_list) > 1 else residuals_list[0]
 
-    def initialize_encoders(self) -> SequentialEncoder:
+    def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
         ``add_encoders`` used at model creation"""
+        if default:
+            return SequentialEncoder(add_encoders={})
+
         (
             input_chunk_length,
             output_chunk_length,

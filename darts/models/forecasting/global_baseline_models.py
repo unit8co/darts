@@ -3,17 +3,19 @@ Global Baseline Models (Naive)
 ------------------------------
 
 A collection of simple benchmark models working with univariate, multivariate, single, and multiple series.
+
+- :class:`GlobalNaiveAggregate`
+- :class:`GlobalNaiveDrift`
+- :class:`GlobalNaiveSeasonal`
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
-import pytorch_lightning as pl
 import torch
 
 from darts import TimeSeries
-from darts.logging import get_logger
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLMixedCovariatesModule,
     io_processor,
@@ -22,8 +24,6 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
-from darts.utils.data.inference_dataset import InferenceDataset
-from darts.utils.utils import seq2series
 
 MixedCovariatesTrainTensorType = Tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
@@ -33,17 +33,17 @@ MixedCovariatesTrainTensorType = Tuple[
 logger = get_logger(__name__)
 
 
-def _extract_targets(batch: Tuple[torch.Tensor], n_target_components: int):
+def _extract_targets(batch: Tuple[torch.Tensor], n_targets: int):
     """Extracts and returns the target components from an input batch
 
     Parameters
     ----------
     batch
         The input batch tuple for the forward method. Has elements `(x_past, x_future, x_static)`.
-    n_target_components
+    n_targets
         The number of target components to extract.
     """
-    return batch[0][:, :, :n_target_components]
+    return batch[0][:, :, :n_targets]
 
 
 def _repeat_along_output_chunk(x: torch.Tensor, ocl: int) -> torch.Tensor:
@@ -62,16 +62,13 @@ def _repeat_along_output_chunk(x: torch.Tensor, ocl: int) -> torch.Tensor:
 
 
 class _GlobalNaiveModule(PLMixedCovariatesModule, ABC):
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Pytorch module for implementing naive models.
 
         Implement your own naive module by subclassing from `_GlobalNaiveModule`, and implement the
         logic for prediction in the private `_forward` method.
         """
-        super().__init__(**kwargs)
-
-        # will be set at inference time
-        self.n_target_components = 0
+        super().__init__(*args, **kwargs)
 
     @io_processor
     def forward(
@@ -118,6 +115,10 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             object of:
         - subclass from `_GlobalNaiveModule` with implemention of private method `_forward`
 
+        .. note::
+            - Model checkpointing with `save_checkpoints=True`, and checkpoint loading with `load_from_checkpoint()`
+              and `load_weights_from_checkpoint()` are not supported for global naive models.
+
         Parameters
         ----------
         input_chunk_length
@@ -129,7 +130,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
-            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -139,7 +140,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
-            `n_epochs`, `save_checkpoints`, and some of the `pl_trainer_kwargs`.
+            `n_epochs`, `save_checkpoints`, and some of `pl_trainer_kwargs`.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -147,11 +148,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
         self._considers_static_covariates = use_static_covariates
-
-        # naive models do not have to be trained
-        self.model = self._create_model(tuple())
-        self._module_name = self.model.__class__.__name__
-        self._fit_called = True
 
     def fit(
         self,
@@ -165,10 +161,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         This method is only implemented for naive baseline models to provide a unified fit/predict API with other
         forecasting models.
 
-        The models are not really trained on the input, but they store the training `series` in case only a single
-        `TimeSeries` was passed. This allows to call `predict()` without having to pass the single `series`.
-
-        All baseline models compute the forecasts for each series directly when calling `predict()`.
+        The model is not really trained on the input, but `fit()` is used to setup the model based on the input series.
+        Also, it stores the training `series` in case only a single `TimeSeries` was passed. This allows to call
+        `predict()` without having to pass the single `series`.
 
         Parameters
         ----------
@@ -186,43 +181,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         self
             Fitted model.
         """
-        GlobalForecastingModel.fit(
-            self,
-            series=seq2series(series),
-            past_covariates=seq2series(past_covariates),
-            future_covariates=seq2series(future_covariates),
-        )
-        return self
-
-    def predict_from_dataset(
-        self,
-        n: int,
-        input_series_dataset: InferenceDataset,
-        trainer: Optional[pl.Trainer] = None,
-        batch_size: Optional[int] = None,
-        verbose: Optional[bool] = None,
-        n_jobs: int = 1,
-        roll_size: Optional[int] = None,
-        num_samples: int = 1,
-        num_loader_workers: int = 0,
-        mc_dropout: bool = False,
-        predict_likelihood_parameters: bool = False,
-    ) -> Sequence[TimeSeries]:
-        # we retrieve the number of target components
-        self.model.n_target_components = input_series_dataset[0][0].shape[1]
-        return super().predict_from_dataset(
-            n=n,
-            input_series_dataset=input_series_dataset,
-            trainer=trainer,
-            batch_size=batch_size,
-            verbose=verbose,
-            n_jobs=n_jobs,
-            roll_size=roll_size,
-            num_samples=num_samples,
-            num_loader_workers=num_loader_workers,
-            mc_dropout=mc_dropout,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-        )
+        return super().fit(series, past_covariates, future_covariates, *args, **kwargs)
 
     @abstractmethod
     def _create_model(
@@ -243,51 +202,77 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
 
     @property
     def supports_static_covariates(self) -> bool:
-        return False
+        return True
 
     @property
     def supports_multivariate(self) -> bool:
         return True
 
+    @property
+    def _requires_training(self) -> bool:
+        # naive models do not have to be trained.
+        return False
 
-class _GlobalNaiveMeanModule(_GlobalNaiveModule):
+
+class _NoCovariatesMixin:
+    @property
+    def supports_static_covariates(self) -> bool:
+        return False
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return False
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return False
+
+
+class _GlobalNaiveAggregateModule(_GlobalNaiveModule):
+    def __init__(
+        self, agg_fn: Callable[[torch.Tensor, int], torch.Tensor], *args, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.agg_fn = agg_fn
+
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = _extract_targets(x_in, self.n_target_components)
-        mean = torch.mean(y_target, dim=1)
-        return _repeat_along_output_chunk(mean, self.output_chunk_length)
+        y_target = _extract_targets(x_in, self.n_targets)
+        aggregate = self.agg_fn(y_target, dim=1)
+        return _repeat_along_output_chunk(aggregate, self.output_chunk_length)
 
 
-class GlobalNaiveMean(_GlobalNaiveModel):
+class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
     def __init__(
         self,
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        agg_fn: Union[str, Callable[[torch.Tensor, int], torch.Tensor]] = "mean",
         **kwargs,
     ):
-        """Global Naive Mean Model.
+        """Global Naive Aggregate Model.
 
         The model generates forecasts for each `series` as described below:
 
-        - take the mean from each target component over the last `input_chunk_length` points
-        - the forecast is the mean from each target component repeated `output_chunk_length` times
+        - take an aggregate (computed with `agg_fn`, default: mean) from each target component over the last
+          `input_chunk_length` points
+        - the forecast is the component aggregate repeated `output_chunk_length` times
 
         Depending on the horizon `n` used when calling `model.predict()`, the forecasts are either:
 
-        - a constant value if `n <= output_chunk_length`, or
-        - a moving average if `n > output_chunk_length`, as a result of the auto-regressive prediction.
+        - a constant aggregate value (default: mean) if `n <= output_chunk_length`, or
+        - a moving aggregate if `n > output_chunk_length`, as a result of the autoregressive prediction.
 
         This model is equivalent to:
 
         - :class:`~darts.models.forecasting.baselines.NaiveMean`, when `input_chunk_length` is equal to the length of
-          the input target `series`.
+          the input target `series`, and `agg_fn='mean'`.
         - :class:`~darts.models.forecasting.baselines.NaiveMovingAverage`, with identical `input_chunk_length`
-          and `output_chunk_length=1`.
+          and `output_chunk_length=1`, and `agg_fn='mean'`.
 
         .. note::
-            - The model can generate forecasts directly, without having to call `model.fit()` before.
-            - Even though the model accepts `past_covariates` and `future_covariates`, it does not use this
-              information for prediction.
+            - Model checkpointing with `save_checkpoints=True`, and checkpoint loading with `load_from_checkpoint()`
+              and `load_weights_from_checkpoint()` are not supported for global naive models.
 
         Parameters
         ----------
@@ -300,18 +285,31 @@ class GlobalNaiveMean(_GlobalNaiveModel):
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
-            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
+        agg_fn
+            The aggregation function to use. If a string, must be the name of `torch` function that can be imported
+            directly from `torch` (e.g. `"mean"` for `torch.mean`, `"sum"` for `torch.sum`).
+            The function must have the signature below. If a `Callable`, it must also have the signature below.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def agg_fn(x: torch.Tensor, dim: int, *args, **kwargs) -> torch.Tensor:
+                    # x has shape `(batch size, input_chunk_length, n targets)`, `dim` is always `1`.
+                    # function must return a tensor of shape `(batch size, n targets)`
+                    return torch.mean(x, dim=dim)
+            ..
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
-            `n_epochs`, `save_checkpoints`, and some of the `pl_trainer_kwargs`.
+            `n_epochs`, `save_checkpoints`, and some of `pl_trainer_kwargs`.
 
         Examples
         --------
         >>> from darts.datasets import IceCreamHeaterDataset
-        >>> from darts.models import GlobalNaiveMean
+        >>> from darts.models import GlobalNaiveAggregate
         >>> # create list of multivariate series
         >>> series_1 = IceCreamHeaterDataset().load()
         >>> series_2 = series_1 + 100.
@@ -319,24 +317,33 @@ class GlobalNaiveMean(_GlobalNaiveModel):
         >>> # predict 3 months, take mean over last 60 months
         >>> horizon, icl = 3, 60
         >>> # naive mean over last 60 months (with `output_chunk_length = horizon`)
-        >>> model = GlobalNaiveMean(input_chunk_length=icl, output_chunk_length=horizon)
+        >>> model = GlobalNaiveAggregate(input_chunk_length=icl, output_chunk_length=horizon)
         >>> # predict after end of each multivariate series
-        >>> pred = model.predict(n=horizon, series=series)
+        >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
         [array([[29.666668, 50.983337],
                [29.666668, 50.983337],
                [29.666668, 50.983337]]), array([[129.66667, 150.98334],
                [129.66667, 150.98334],
                [129.66667, 150.98334]])]
-        >>> # naive moving average (with `output_chunk_length < horizon`)
-        >>> model = GlobalNaiveMean(input_chunk_length=icl, output_chunk_length=1)
-        >>> pred = model.predict(n=horizon, series=series)
+        >>> # naive moving mean (with `output_chunk_length < horizon`)
+        >>> model = GlobalNaiveAggregate(input_chunk_length=icl, output_chunk_length=1, agg_fn="mean")
+        >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
         [array([[29.666668, 50.983337],
                [29.894447, 50.88306 ],
                [30.109352, 50.98111 ]]), array([[129.66667, 150.98334],
                [129.89445, 150.88307],
                [130.10936, 150.98111]])]
+        >>> # naive moving sum (with `output_chunk_length < horizon`)
+        >>> model = GlobalNaiveAggregate(input_chunk_length=icl, output_chunk_length=1, agg_fn="sum")
+        >>> pred = model.fit(series).predict(n=horizon, series=series)
+        >>> [p.values() for p in pred]
+        [array([[ 1780.,  3059.],
+               [ 3544.,  6061.],
+               [ 7071., 12077.]]), array([[ 7780.,  9059.],
+               [15444., 17961.],
+               [30771., 35777.]])]
         """
         super().__init__(
             input_chunk_length=input_chunk_length,
@@ -345,21 +352,58 @@ class GlobalNaiveMean(_GlobalNaiveModel):
             use_static_covariates=False,
             **kwargs,
         )
+        if isinstance(agg_fn, str):
+            agg_fn = getattr(torch, agg_fn, None)
+            if agg_fn is None:
+                raise_log(
+                    ValueError(
+                        "When `agg_fn` is a string, must be the name of a PyTorch function that "
+                        "can be imported directly from `torch`. E.g., `'mean'` for `torch.mean`"
+                    ),
+                    logger=logger,
+                )
+        if not isinstance(agg_fn, Callable):
+            raise_log(
+                ValueError("`agg_fn` must be a string or callable."),
+                logger=logger,
+            )
+
+        # check that `agg_fn` returns the expected output
+        batch_size, n_targets = 5, 3
+        x = torch.ones((batch_size, 4, n_targets))
+        try:
+            agg = agg_fn(x, dim=1)
+            assert isinstance(
+                agg, torch.Tensor
+            ), "`agg_fn` output must be a torch Tensor."
+            assert agg.shape == (
+                batch_size,
+                n_targets,
+            ), "Unexpected `agg_fn` output shape."
+        except Exception as err:
+            raise_log(
+                ValueError(
+                    f"`agg_fn` test raised the following error: ({err}) Read the parameter "
+                    f"description to properly define the aggregation function."
+                ),
+                logger=logger,
+            )
+        self.agg_fn = agg_fn
 
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
     ) -> _GlobalNaiveModule:
-        return _GlobalNaiveMeanModule(**self.pl_module_params)
+        return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
 
 
 class _GlobalNaiveSeasonalModule(_GlobalNaiveModule):
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = _extract_targets(x_in, self.n_target_components)
+        y_target = _extract_targets(x_in, self.n_targets)
         season = y_target[:, 0, :]
         return _repeat_along_output_chunk(season, self.output_chunk_length)
 
 
-class GlobalNaiveSeasonal(_GlobalNaiveModel):
+class GlobalNaiveSeasonal(_GlobalNaiveModel, _NoCovariatesMixin):
     def __init__(
         self,
         input_chunk_length: int,
@@ -373,12 +417,12 @@ class GlobalNaiveSeasonal(_GlobalNaiveModel):
 
         - take the value from each target component at the `input_chunk_length`th point before the end of the
           target `series`.
-        - the forecast is the value from each target component repeated `output_chunk_length` times
+        - the forecast is the component value repeated `output_chunk_length` times.
 
         Depending on the horizon `n` used when calling `model.predict()`, the forecasts are either:
 
         - a constant value if `n <= output_chunk_length`, or
-        - a moving (seasonal) value if `n > output_chunk_length`, as a result of the auto-regressive prediction.
+        - a moving (seasonal) value if `n > output_chunk_length`, as a result of the autoregressive prediction.
 
         This model is equivalent to:
 
@@ -386,9 +430,8 @@ class GlobalNaiveSeasonal(_GlobalNaiveModel):
           of  the input target `series` and `output_chunk_length=1`.
 
         .. note::
-            - The model can generate forecasts directly, without having to call `model.fit()` before.
-            - Even though the model accepts `past_covariates` and `future_covariates`, it does not use this
-              information for prediction.
+            - Model checkpointing with `save_checkpoints=True`, and checkpoint loading with `load_from_checkpoint()`
+              and `load_weights_from_checkpoint()` are not supported for global naive models.
 
         Parameters
         ----------
@@ -401,13 +444,13 @@ class GlobalNaiveSeasonal(_GlobalNaiveModel):
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
-            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
-            `n_epochs`, `save_checkpoints`, and some of the `pl_trainer_kwargs`.
+            `n_epochs`, `save_checkpoints`, and some of `pl_trainer_kwargs`.
 
         Examples
         --------
@@ -422,7 +465,7 @@ class GlobalNaiveSeasonal(_GlobalNaiveModel):
         >>> # repeated seasonal value (with `output_chunk_length = horizon`)
         >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=horizon)
         >>> # predict after end of each multivariate series
-        >>> pred = model.predict(n=horizon, series=series)
+        >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
         [array([[ 21., 100.],
                [ 21., 100.],
@@ -431,7 +474,7 @@ class GlobalNaiveSeasonal(_GlobalNaiveModel):
                [121., 200.]])]
         >>> # moving seasonal value (with `output_chunk_length < horizon`)
         >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=1)
-        >>> pred = model.predict(n=horizon, series=series)
+        >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
         [array([[ 21., 100.],
                [ 21.,  68.],
@@ -455,7 +498,7 @@ class GlobalNaiveSeasonal(_GlobalNaiveModel):
 
 class _GlobalNaiveDrift(_GlobalNaiveModule):
     def _forward(self, x_in) -> torch.Tensor:
-        y_target = _extract_targets(x_in, self.n_target_components)
+        y_target = _extract_targets(x_in, self.n_targets)
         slope = _repeat_along_output_chunk(
             (y_target[:, -1, :] - y_target[:, 0, :]) / self.input_chunk_length,
             self.output_chunk_length,
@@ -471,7 +514,7 @@ class _GlobalNaiveDrift(_GlobalNaiveModule):
         return slope * x + y_0
 
 
-class GlobalNaiveDrift(_GlobalNaiveModel):
+class GlobalNaiveDrift(_GlobalNaiveModel, _NoCovariatesMixin):
     def __init__(
         self,
         input_chunk_length: int,
@@ -485,13 +528,14 @@ class GlobalNaiveDrift(_GlobalNaiveModel):
 
         - take the slope `m` from each target component between the `input_chunk_length`th and last point before the
           end of the `series`.
-        - the forecast is `m * x + c` where x is are the values `range(1 + output_chunk_shift, 1 + output_chunk_length
-          + output_chunk_shift)`, and `c` are the last values from each target component.
+        - the forecast is component `m * x + c` where x is are the values
+          `range(1 + output_chunk_shift, 1 + output_chunk_length + output_chunk_shift)`, and `c` are the last values
+          from each target component.
 
         Depending on the horizon `n` used when calling `model.predict()`, the forecasts are either:
 
         - a linear drift if `n <= output_chunk_length`, or
-        - a moving drift if `n > output_chunk_length`, as a result of the auto-regressive prediction.
+        - a moving drift if `n > output_chunk_length`, as a result of the autoregressive prediction.
 
         This model is equivalent to:
 
@@ -499,9 +543,8 @@ class GlobalNaiveDrift(_GlobalNaiveModel):
           of  the input target `series` and `output_chunk_length=n`.
 
         .. note::
-            - The model can generate forecasts directly, without having to call `model.fit()` before.
-            - Even though the model accepts `past_covariates` and `future_covariates`, it does not use this
-              information for prediction.
+            - Model checkpointing with `save_checkpoints=True`, and checkpoint loading with `load_from_checkpoint()`
+              and `load_weights_from_checkpoint()` are not supported for global naive models.
 
         Parameters
         ----------
@@ -514,13 +557,13 @@ class GlobalNaiveDrift(_GlobalNaiveModel):
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
-            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
             Since naive models are not trained, the following parameters will have no effect:
             `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
-            `n_epochs`, `save_checkpoints`, and some of the `pl_trainer_kwargs`.
+            `n_epochs`, `save_checkpoints`, and some of `pl_trainer_kwargs`.
 
         Examples
         --------
@@ -535,7 +578,7 @@ class GlobalNaiveDrift(_GlobalNaiveModel):
         >>> # linear drift (with `output_chunk_length = horizon`)
         >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=horizon)
         >>> # predict after end of each multivariate series
-        >>> pred = model.predict(n=horizon, series=series)
+        >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
         [array([[24.133333, 74.28333 ],
                [24.266666, 74.566666],
@@ -544,7 +587,7 @@ class GlobalNaiveDrift(_GlobalNaiveModel):
                [124.4    , 174.85   ]])]
         >>> # moving drift (with `output_chunk_length < horizon`)
         >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=1)
-        >>> pred = model.predict(n=horizon, series=series)
+        >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
         [array([[24.133333, 74.28333 ],
                [24.252222, 74.771385],
