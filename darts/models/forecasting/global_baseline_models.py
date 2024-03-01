@@ -103,6 +103,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -123,6 +124,12 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             The length of the input sequence fed to the model.
         output_chunk_length
             The length of the emitted forecast and output sequence fed to the model.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -255,24 +262,25 @@ class GlobalNaiveMean(_GlobalNaiveModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         **kwargs,
     ):
         """Global Naive Mean Model.
 
-        The model generates forecasts as described below:
+        The model generates forecasts for each `series` as described below:
 
-        - take the mean over the last `input_chunk_length` points
-        - the forecast is the mean repeated `output_chunk_length` times
+        - take the mean from each target component over the last `input_chunk_length` points
+        - the forecast is the mean from each target component repeated `output_chunk_length` times
 
         Depending on the horizon `n` used when calling `model.predict()`, the forecasts are either:
 
         - a constant value if `n <= output_chunk_length`, or
         - a moving average if `n > output_chunk_length`, as a result of the auto-regressive prediction.
 
-        This model corresponds is equivalent to:
+        This model is equivalent to:
 
-        - :class:`~darts.models.forecasting.baselines.NaiveMean`, when `input_chunk_length` to the length of the input
-          target series.
+        - :class:`~darts.models.forecasting.baselines.NaiveMean`, when `input_chunk_length` is equal to the length of
+          the input target `series`.
         - :class:`~darts.models.forecasting.baselines.NaiveMovingAverage`, with identical `input_chunk_length`
           and `output_chunk_length=1`.
 
@@ -287,6 +295,12 @@ class GlobalNaiveMean(_GlobalNaiveModel):
             The length of the input sequence fed to the model.
         output_chunk_length
             The length of the emitted forecast and output sequence fed to the model.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -298,22 +312,36 @@ class GlobalNaiveMean(_GlobalNaiveModel):
         --------
         >>> from darts.datasets import IceCreamHeaterDataset
         >>> from darts.models import GlobalNaiveMean
-        >>> series_1 = IceCreamHeaterDataset.load()
-        >>> series_2 = IceCreamHeaterDataset.load()
-        >>> model = NaiveMean()
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[280.29861111],
-              [280.29861111],
-              [280.29861111],
-              [280.29861111],
-              [280.29861111],
-              [280.29861111]])
+        >>> # create list of multivariate series
+        >>> series_1 = IceCreamHeaterDataset().load()
+        >>> series_2 = series_1 + 100.
+        >>> series = [series_1, series_2]
+        >>> # predict 3 months, take mean over last 60 months
+        >>> horizon, icl = 3, 60
+        >>> # naive mean over last 60 months (with `output_chunk_length = horizon`)
+        >>> model = GlobalNaiveMean(input_chunk_length=icl, output_chunk_length=horizon)
+        >>> # predict after end of each multivariate series
+        >>> pred = model.predict(n=horizon, series=series)
+        >>> [p.values() for p in pred]
+        [array([[29.666668, 50.983337],
+               [29.666668, 50.983337],
+               [29.666668, 50.983337]]), array([[129.66667, 150.98334],
+               [129.66667, 150.98334],
+               [129.66667, 150.98334]])]
+        >>> # naive moving average (with `output_chunk_length < horizon`)
+        >>> model = GlobalNaiveMean(input_chunk_length=icl, output_chunk_length=1)
+        >>> pred = model.predict(n=horizon, series=series)
+        >>> [p.values() for p in pred]
+        [array([[29.666668, 50.983337],
+               [29.894447, 50.88306 ],
+               [30.109352, 50.98111 ]]), array([[129.66667, 150.98334],
+               [129.89445, 150.88307],
+               [130.10936, 150.98111]])]
         """
         super().__init__(
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             use_static_covariates=False,
             **kwargs,
         )
@@ -332,6 +360,93 @@ class _GlobalNaiveSeasonalModule(_GlobalNaiveModule):
 
 
 class GlobalNaiveSeasonal(_GlobalNaiveModel):
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        output_chunk_shift: int = 0,
+        **kwargs,
+    ):
+        """Global Naive Seasonal Model.
+
+        The model generates forecasts for each `series` as described below:
+
+        - take the value from each target component at the `input_chunk_length`th point before the end of the
+          target `series`.
+        - the forecast is the value from each target component repeated `output_chunk_length` times
+
+        Depending on the horizon `n` used when calling `model.predict()`, the forecasts are either:
+
+        - a constant value if `n <= output_chunk_length`, or
+        - a moving (seasonal) value if `n > output_chunk_length`, as a result of the auto-regressive prediction.
+
+        This model is equivalent to:
+
+        - :class:`~darts.models.forecasting.baselines.NaiveSeasonal`, when `input_chunk_length` is equal to the length
+          of  the input target `series` and `output_chunk_length=1`.
+
+        .. note::
+            - The model can generate forecasts directly, without having to call `model.fit()` before.
+            - Even though the model accepts `past_covariates` and `future_covariates`, it does not use this
+              information for prediction.
+
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the emitted forecast and output sequence fed to the model.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
+            Since naive models are not trained, the following parameters will have no effect:
+            `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
+            `n_epochs`, `save_checkpoints`, and some of the `pl_trainer_kwargs`.
+
+        Examples
+        --------
+        >>> from darts.datasets import IceCreamHeaterDataset
+        >>> from darts.models import GlobalNaiveSeasonal
+        >>> # create list of multivariate series
+        >>> series_1 = IceCreamHeaterDataset().load()
+        >>> series_2 = series_1 + 100.
+        >>> series = [series_1, series_2]
+        >>> # predict 3 months, use value from 12 months ago
+        >>> horizon, icl = 3, 12
+        >>> # repeated seasonal value (with `output_chunk_length = horizon`)
+        >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=horizon)
+        >>> # predict after end of each multivariate series
+        >>> pred = model.predict(n=horizon, series=series)
+        >>> [p.values() for p in pred]
+        [array([[ 21., 100.],
+               [ 21., 100.],
+               [ 21., 100.]]), array([[121., 200.],
+               [121., 200.],
+               [121., 200.]])]
+        >>> # moving seasonal value (with `output_chunk_length < horizon`)
+        >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=1)
+        >>> pred = model.predict(n=horizon, series=series)
+        >>> [p.values() for p in pred]
+        [array([[ 21., 100.],
+               [ 21.,  68.],
+               [ 24.,  51.]]), array([[121., 200.],
+               [121., 168.],
+               [124., 151.]])]
+        """
+        super().__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            use_static_covariates=False,
+            **kwargs,
+        )
+
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
     ) -> _GlobalNaiveModule:
@@ -355,6 +470,94 @@ class _GlobalNaiveDrift(_GlobalNaiveModule):
 
 
 class GlobalNaiveDrift(_GlobalNaiveModel):
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        output_chunk_shift: int = 0,
+        **kwargs,
+    ):
+        """Global Naive Mean Model.
+
+        The model generates forecasts for each `series` as described below:
+
+        - take the slope `m` from each target component between the `input_chunk_length`th and last point before the
+          end of the `series`.
+        - the forecast is `m * x + c` where x is are the values `range(1 + output_chunk_shift, 1 + output_chunk_length
+          + output_chunk_shift)`, and `c` are the last values from each target component.
+
+        Depending on the horizon `n` used when calling `model.predict()`, the forecasts are either:
+
+        - a linear drift if `n <= output_chunk_length`, or
+        - a moving drift if `n > output_chunk_length`, as a result of the auto-regressive prediction.
+
+        This model is equivalent to:
+
+        - :class:`~darts.models.forecasting.baselines.NaiveDrift`, when `input_chunk_length` is equal to the length
+          of  the input target `series` and `output_chunk_length=n`.
+
+        .. note::
+            - The model can generate forecasts directly, without having to call `model.fit()` before.
+            - Even though the model accepts `past_covariates` and `future_covariates`, it does not use this
+              information for prediction.
+
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the emitted forecast and output sequence fed to the model.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
+            Since naive models are not trained, the following parameters will have no effect:
+            `loss_fn`, `likelihood`, `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, `lr_scheduler_kwargs`,
+            `n_epochs`, `save_checkpoints`, and some of the `pl_trainer_kwargs`.
+
+        Examples
+        --------
+        >>> from darts.datasets import IceCreamHeaterDataset
+        >>> from darts.models import GlobalNaiveSeasonal
+        >>> # create list of multivariate series
+        >>> series_1 = IceCreamHeaterDataset().load()
+        >>> series_2 = series_1 + 100.
+        >>> series = [series_1, series_2]
+        >>> # predict 3 months, use drift over the last 60 months
+        >>> horizon, icl = 3, 60
+        >>> # linear drift (with `output_chunk_length = horizon`)
+        >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=horizon)
+        >>> # predict after end of each multivariate series
+        >>> pred = model.predict(n=horizon, series=series)
+        >>> [p.values() for p in pred]
+        [array([[24.133333, 74.28333 ],
+               [24.266666, 74.566666],
+               [24.4     , 74.85    ]]), array([[124.13333, 174.28334],
+               [124.26667, 174.56667],
+               [124.4    , 174.85   ]])]
+        >>> # moving drift (with `output_chunk_length < horizon`)
+        >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=1)
+        >>> pred = model.predict(n=horizon, series=series)
+        >>> [p.values() for p in pred]
+        [array([[24.133333, 74.28333 ],
+               [24.252222, 74.771385],
+               [24.33976 , 75.43424 ]]), array([[124.13333, 174.28334],
+               [124.25222, 174.7714 ],
+               [124.33976, 175.43425]])]
+        """
+        super().__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            use_static_covariates=False,
+            **kwargs,
+        )
+
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
     ) -> _GlobalNaiveModule:
