@@ -520,7 +520,7 @@ class _GlobalNaiveDrift(_GlobalNaiveModule):
     def _forward(self, x_in) -> torch.Tensor:
         y_target = _extract_targets(x_in, self.n_targets)
         slope = _repeat_along_output_chunk(
-            (y_target[:, -1, :] - y_target[:, 0, :]) / self.input_chunk_length,
+            (y_target[:, -1, :] - y_target[:, 0, :]) / (self.input_chunk_length - 1),
             self.output_chunk_length,
         )
 
@@ -542,13 +542,13 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
         output_chunk_shift: int = 0,
         **kwargs,
     ):
-        """Global Naive Mean Model.
+        """Global Naive Drift Model.
 
         The model generates forecasts for each `series` as described below:
 
         - take the slope `m` from each target component between the `input_chunk_length`th and last point before the
           end of the `series`.
-        - the forecast is component `m * x + c` where x is are the values
+        - the forecast is `m * x + c` per component where `x` are the values
           `range(1 + output_chunk_shift, 1 + output_chunk_length + output_chunk_shift)`, and `c` are the last values
           from each target component.
 
@@ -588,7 +588,7 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
         Examples
         --------
         >>> from darts.datasets import IceCreamHeaterDataset
-        >>> from darts.models import GlobalNaiveSeasonal
+        >>> from darts.models import GlobalNaiveDrift
         >>> # create list of multivariate series
         >>> series_1 = IceCreamHeaterDataset().load()
         >>> series_2 = series_1 + 100.
@@ -596,24 +596,24 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
         >>> # predict 3 months, use drift over the last 60 months
         >>> horizon, icl = 3, 60
         >>> # linear drift (with `output_chunk_length = horizon`)
-        >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=horizon)
+        >>> model = GlobalNaiveDrift(input_chunk_length=icl, output_chunk_length=horizon)
         >>> # predict after end of each multivariate series
         >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
-        [array([[24.133333, 74.28333 ],
-               [24.266666, 74.566666],
-               [24.4     , 74.85    ]]), array([[124.13333, 174.28334],
-               [124.26667, 174.56667],
-               [124.4    , 174.85   ]])]
+        [array([[24.135593, 74.28814 ],
+               [24.271187, 74.57627 ],
+               [24.40678 , 74.86441 ]]), array([[124.13559, 174.28813],
+               [124.27119, 174.57628],
+               [124.40678, 174.86441]])]
         >>> # moving drift (with `output_chunk_length < horizon`)
-        >>> model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=1)
+        >>> model = GlobalNaiveDrift(input_chunk_length=icl, output_chunk_length=1)
         >>> pred = model.fit(series).predict(n=horizon, series=series)
         >>> [p.values() for p in pred]
-        [array([[24.133333, 74.28333 ],
-               [24.252222, 74.771385],
-               [24.33976 , 75.43424 ]]), array([[124.13333, 174.28334],
-               [124.25222, 174.7714 ],
-               [124.33976, 175.43425]])]
+        [array([[24.135593, 74.28814 ],
+               [24.256536, 74.784546],
+               [24.34563 , 75.45886 ]]), array([[124.13559, 174.28813],
+               [124.25653, 174.78455],
+               [124.34563, 175.45886]])]
         """
         super().__init__(
             input_chunk_length=input_chunk_length,
