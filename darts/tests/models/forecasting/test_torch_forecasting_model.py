@@ -325,7 +325,7 @@ if TORCH_AVAILABLE:
             }
             encoders_past_other_transformer = {
                 "datetime_attribute": {"past": ["day"]},
-                "transformer": BoxCox(),
+                "transformer": BoxCox(lmbda=-0.7),
             }
             encoders_2_past = {
                 "datetime_attribute": {"past": ["hour", "day"]},
