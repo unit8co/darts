@@ -39,6 +39,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `gridsearch()` with `use_fitted_values=True`, where the model was not propely instantiated for sanity checks. [#2222](https://github.com/unit8co/darts/pull/2222) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in `TimeSeries.append/prepend_values()`, where the components names and the hierarchy were dropped. [#2237](https://github.com/unit8co/darts/pull/2237) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug when using `RegressionModel` with `lags=None`, some `lags_*covariates`, and the covariates starting at the same time or after the first predictable time step; the lags were not extracted from the correct indices. [#2176](https://github.com/unit8co/darts/pull/2176) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Fixed a bug in `datetime_attribute_timeseries()`, where 1-indexed attributes were not properly handled. Also, 0-indexing is now enforced for all the generated encodings. [#2242](https://github.com/unit8co/darts/pull/2242) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug in `get_multioutput_estimator()`, where the index of the estimator was incorrectly calculated. [#2246](https://github.com/unit8co/darts/pull/2246) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Dependencies**
