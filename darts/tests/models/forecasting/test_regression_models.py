@@ -1270,57 +1270,127 @@ class TestRegressionModels:
         ],
     )
     def test_multioutput_wrapper(self, config):
+        """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor is not happening"""
         model, supports_multioutput_natively = config
         model.fit(series=self.sine_multivariate1)
         if supports_multioutput_natively:
             assert not isinstance(model.model, MultiOutputRegressor)
+            # single estimator is responsible for both components
+            assert (
+                model.model
+                == model.get_estimator(horizon=0, target_dim=0)
+                == model.get_estimator(horizon=0, target_dim=1)
+            )
         else:
             assert isinstance(model.model, MultiOutputRegressor)
+            # one estimator (sub-model) per component
+            assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
+                horizon=0, target_dim=1
+            )
 
-    def test_multioutput_validation(self):
+    model_configs = [(XGBModel, {"tree_method": "exact"})]
+    if lgbm_available:
+        model_configs += [(LightGBMModel, {})]
+    if cb_available:
+        model_configs += [(CatBoostModel, {})]
 
-        lags = 4
-
-        models = [
-            XGBModel(
-                lags=lags, output_chunk_length=1, multi_models=True, tree_method="exact"
-            ),
-            XGBModel(
-                lags=lags,
-                output_chunk_length=1,
-                multi_models=False,
-                tree_method="exact",
-            ),
-            XGBModel(
-                lags=lags, output_chunk_length=2, multi_models=True, tree_method="exact"
-            ),
-            XGBModel(
-                lags=lags,
-                output_chunk_length=2,
-                multi_models=False,
-                tree_method="exact",
-            ),
-        ]
-        if lgbm_available:
-            models += [
-                LightGBMModel(lags=lags, output_chunk_length=1, multi_models=True),
-                LightGBMModel(lags=lags, output_chunk_length=1, multi_models=False),
-                LightGBMModel(lags=lags, output_chunk_length=2, multi_models=True),
-                LightGBMModel(lags=lags, output_chunk_length=2, multi_models=False),
-            ]
-        if cb_available:
-            models += [
-                CatBoostModel(lags=lags, output_chunk_length=1, multi_models=True),
-                CatBoostModel(lags=lags, output_chunk_length=1, multi_models=False),
-                CatBoostModel(lags=lags, output_chunk_length=2, multi_models=True),
-                CatBoostModel(lags=lags, output_chunk_length=2, multi_models=False),
-            ]
+    @pytest.mark.parametrize(
+        "config", itertools.product(model_configs, [1, 2], [True, False])
+    )
+    def test_multioutput_validation(self, config):
+        """Check that models not supporting multi-output are properly wrapped when ocl>1"""
+        (model_cls, model_kwargs), ocl, multi_models = config
         train, val = self.sine_univariate1.split_after(0.6)
+        model = model_cls(
+            **model_kwargs, lags=4, output_chunk_length=ocl, multi_models=multi_models
+        )
+        model.fit(series=train, val_series=val)
+        if model.output_chunk_length > 1 and model.multi_models:
+            assert isinstance(model.model, MultiOutputRegressor)
+        else:
+            assert not isinstance(model.model, MultiOutputRegressor)
 
-        for model in models:
-            model.fit(series=train, val_series=val)
-            if model.output_chunk_length > 1 and model.multi_models:
-                assert isinstance(model.model, MultiOutputRegressor)
+    def test_get_multioutput_estimator_multi_models(self):
+        """Craft training data so that estimator_[i].predict(X) == i + 1"""
+
+        def helper_check_overfitted_estimators(ts: TimeSeries, ocl: int):
+            m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=True)
+            m.fit(ts)
+
+            assert len(m.model.estimators_) == ocl * ts.width
+
+            dummy_feats = np.array([[0, 0, 0] * ts.width])
+            estimator_counter = 0
+            for i in range(ocl):
+                for j in range(ts.width):
+                    sub_model = m.get_multioutput_estimator(horizon=i, target_dim=j)
+                    pred = sub_model.predict(dummy_feats)[0]
+                    # sub-model is overfitted on the training series
+                    assert np.abs(estimator_counter - pred) < 1e-2
+                    estimator_counter += 1
+
+        # univariate, one-sub model per step in output_chunk_length
+        ocl = 3
+        ts = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 2]).T)
+        # estimators_[0] labels : [0]
+        # estimators_[1] labels : [1]
+        # estimators_[2] labels : [2]
+        helper_check_overfitted_estimators(ts, ocl)
+
+        # multivariate, one sub-model per component
+        ocl = 1
+        ts = TimeSeries.from_values(
+            np.array([[0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 0, 2]]).T
+        )
+        # estimators_[0] labels : [0]
+        # estimators_[1] labels : [1]
+        # estimators_[2] labels : [2]
+        helper_check_overfitted_estimators(ts, ocl)
+
+        # multivariate, one sub-model per position, per component
+        ocl = 2
+        ts = TimeSeries.from_values(
+            np.array(
+                [
+                    [0, 0, 0, 0, 2],
+                    [0, 0, 0, 1, 3],
+                ]
+            ).T
+        )
+        # estimators_[0] labels : [0]
+        # estimators_[1] labels : [1]
+        # estimators_[2] labels : [2]
+        # estimators_[3] labels : [3]
+        helper_check_overfitted_estimators(ts, ocl)
+
+    def test_get_multioutput_estimator_single_model(self):
+        """Check estimator getter when multi_models=False"""
+        # multivariate, one sub-model per component
+        ocl = 2
+        ts = TimeSeries.from_values(
+            np.array(
+                [
+                    [0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 2],
+                ]
+            ).T
+        )
+        # estimators_[0] labels : [1]
+        # estimators_[1] labels : [2]
+
+        m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=False)
+        m.fit(ts)
+
+        # one estimator is reused for all the horizon of a given component
+        assert len(m.model.estimators_) == ts.width
+
+        dummy_feats = np.array([[0, 0, 0] * ts.width])
+        for i in range(ocl):
+            for j in range(ts.width):
+                sub_model = m.get_multioutput_estimator(horizon=i, target_dim=j)
+                pred = sub_model.predict(dummy_feats)[0]
+                # sub-model forecast only depend on the target_dim
+                assert np.abs(j + 1 - pred) < 1e-2
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_regression_model(self, mode):

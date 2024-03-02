@@ -728,7 +728,7 @@ def create_lagged_component_names(
     Note : will only use the component names of the first series from `target_series`, `past_covariates`,
     `future_covariates`, and static_covariates.
 
-    The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
+    The naming convention for target, past and future covariates lags is: ``"{name}_{type}_lag{i}"``, where:
 
         - ``{name}`` the component name of the (first) series
         - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
@@ -739,6 +739,11 @@ def create_lagged_component_names(
         - ``{name}`` the static covariate name of the (first) series
         - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
             covariate acts globally on a multivariate target series, will show "global".
+
+    The naming convention for labels is: ``"{name}_target_hrz{i}"``, where:
+
+        - ``{name}`` the component name of the (first) series
+        - ``{i}`` is the step in the forecast horizon
 
     Returns
     -------
@@ -783,7 +788,7 @@ def create_lagged_component_names(
 
         if variate_type == "target" and lags:
             label_feature_names = [
-                f"{name}_target_lag{lag}"
+                f"{name}_target_hrz{lag}"
                 for lag in range(output_chunk_length)
                 for name in components
             ]
