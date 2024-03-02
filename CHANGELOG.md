@@ -24,7 +24,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `WindowTransformer` and `window_transform`:
   - Added argument `keep_names` to indicate whether the original component names should be kept. [#2207](https://github.com/unit8co/darts/pull/2207) by [Antoine Madrona](https://github.com/madtoinou).
 - Improvements to `RegressionModel`: [#2246](https://github.com/unit8co/darts/pull/2246) by [Antoine Madrona](https://github.com/madtoinou).
-  - Added a `get_estimator()` method to access underlying estimator
+  - Added a `get_estimator()` method to access the underlying estimator
   - Updated the docstring of `get_multioutout_estimator()` 
   - Added attribute `lagged_label_names` to identify the forecasted step and component of each estimator
 - Other improvements:
