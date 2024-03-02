@@ -212,6 +212,7 @@ class RegressionModel(GlobalForecastingModel):
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
         self._lagged_feature_names: Optional[List[str]] = None
+        self._lagged_label_names: Optional[List[str]] = None
 
         # check and set output_chunk_length
         raise_if_not(
@@ -501,13 +502,62 @@ class RegressionModel(GlobalForecastingModel):
     def output_chunk_shift(self) -> int:
         return self._output_chunk_shift
 
-    def get_multioutput_estimator(self, horizon, target_dim):
+    def get_multioutput_estimator(self, horizon: int, target_dim: int):
+        """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
+
+        Internally, estimators are grouped by `output_chunk_length` position, then by component.
+
+        Parameters
+        ----------
+        horizon
+            The index of the forecasting point within `output_chunk_length`.
+        target_dim
+            The index of the target component.
+        """
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
             "The sklearn model is not a MultiOutputRegressor object.",
+            logger,
+        )
+        raise_if_not(
+            0 <= horizon < self.output_chunk_length,
+            f"`horizon` must be `>= 0` and `< output_chunk_length={self.output_chunk_length}`.",
+            logger,
+        )
+        raise_if_not(
+            0 <= target_dim < self.input_dim["target"],
+            f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`.",
+            logger,
         )
 
-        return self.model.estimators_[horizon + target_dim]
+        # when multi_models=True, one model per horizon and target component
+        idx_estimator = (
+            self.multi_models * self.input_dim["target"] * horizon + target_dim
+        )
+        return self.model.estimators_[idx_estimator]
+
+    def get_estimator(self, horizon: int, target_dim: int):
+        """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
+
+        The model is returned directly if it supports multi-output natively.
+
+        Parameters
+        ----------
+        horizon
+            The index of the forecasting point within `output_chunk_length`.
+        target_dim
+            The index of the target component.
+        """
+
+        if isinstance(self.model, MultiOutputRegressor):
+            return self.get_multioutput_estimator(
+                horizon=horizon, target_dim=target_dim
+            )
+        else:
+            logger.info(
+                "Model supports multi-output; a single estimator forecasts all the horizons and components."
+            )
+            return self.model
 
     def _create_lagged_data(
         self,
@@ -592,16 +642,18 @@ class RegressionModel(GlobalForecastingModel):
         self.model.fit(training_samples, training_labels, **kwargs)
 
         # generate and store the lagged components names (for feature importance analysis)
-        self._lagged_feature_names, _ = create_lagged_component_names(
-            target_series=target_series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags=self._get_lags("target"),
-            lags_past_covariates=self._get_lags("past"),
-            lags_future_covariates=self._get_lags("future"),
-            output_chunk_length=self.output_chunk_length,
-            concatenate=False,
-            use_static_covariates=self.uses_static_covariates,
+        self._lagged_feature_names, self._lagged_label_names = (
+            create_lagged_component_names(
+                target_series=target_series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                lags=self._get_lags("target"),
+                lags_past_covariates=self._get_lags("past"),
+                lags_future_covariates=self._get_lags("future"),
+                output_chunk_length=self.output_chunk_length,
+                concatenate=False,
+                use_static_covariates=self.uses_static_covariates,
+            )
         )
 
     def fit(
@@ -1114,6 +1166,17 @@ class RegressionModel(GlobalForecastingModel):
                 covariate acts globally on a multivariate target series, will show "global".
         """
         return self._lagged_feature_names
+
+    @property
+    def lagged_label_names(self) -> Optional[List[str]]:
+        """The lagged label name for the model's estimators.
+
+        The naming convention is: ``"{name}_target_hrz{i}"``, where:
+
+            - ``{name}`` the component name of the (first) series
+            - ``{i}`` is the position in output_chunk_length (label lag)
+        """
+        return self._lagged_label_names
 
     def __str__(self):
         return self.model.__str__()
