@@ -314,14 +314,5 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         return self.likelihood is not None
 
     @property
-    def min_train_series_length(self) -> int:
-        # LightGBM requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
-        # for other regression models
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length + 1
-                if "target" in self.lags
-                else self.output_chunk_length
-            ),
-        )
+    def min_train_samples(self) -> int:
+        return 2
