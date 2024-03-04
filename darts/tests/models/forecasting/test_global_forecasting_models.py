@@ -23,6 +23,9 @@ try:
     from darts.models import (
         BlockRNNModel,
         DLinearModel,
+        GlobalNaiveAggregate,
+        GlobalNaiveDrift,
+        GlobalNaiveSeasonal,
         NBEATSModel,
         NLinearModel,
         RNNModel,
@@ -58,7 +61,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            180.0,
+            110.0,
         ),
         (
             RNNModel,
@@ -69,7 +72,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            180.0,
+            150.0,
         ),
         (
             RNNModel,
@@ -88,7 +91,7 @@ if TORCH_AVAILABLE:
                 "batch_size": 32,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            240.0,
+            60.0,
         ),
         (
             TransformerModel,
@@ -102,7 +105,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            180.0,
+            60.0,
         ),
         (
             NBEATSModel,
@@ -114,7 +117,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            180.0,
+            140.0,
         ),
         (
             TFTModel,
@@ -126,7 +129,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            100.0,
+            70.0,
         ),
         (
             NLinearModel,
@@ -134,7 +137,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            100,
+            50.0,
         ),
         (
             DLinearModel,
@@ -142,7 +145,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            100,
+            55.0,
         ),
         (
             TiDEModel,
@@ -150,7 +153,28 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
-            100,
+            40.0,
+        ),
+        (
+            GlobalNaiveAggregate,
+            {
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            22,
+        ),
+        (
+            GlobalNaiveDrift,
+            {
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            17,
+        ),
+        (
+            GlobalNaiveSeasonal,
+            {
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            39,
         ),
     ]
 
@@ -240,6 +264,11 @@ if TORCH_AVAILABLE:
                     output_chunk_length=3,
                     n_epochs=10,
                     batch_size=32,
+                    **tfm_kwargs,
+                ),
+                GlobalNaiveSeasonal(
+                    input_chunk_length=4,
+                    output_chunk_length=3,
                     **tfm_kwargs,
                 ),
             ],
@@ -340,37 +369,72 @@ if TORCH_AVAILABLE:
             )
 
             # Here we rely on the fact that all non-Dual models currently are Past models
-            if isinstance(model, DualCovariatesTorchModel):
+            if model.supports_future_covariates:
                 cov_name = "future_covariates"
                 is_past = False
-            else:
+            elif model.supports_past_covariates:
                 cov_name = "past_covariates"
                 is_past = True
+            else:
+                cov_name = None
+                is_past = None
 
-            cov_kwargs = {
-                cov_name: [self.time_covariates_train, self.time_covariates_train]
-            }
+            covariates = [self.time_covariates_train, self.time_covariates_train]
+            if cov_name is not None:
+                cov_kwargs = {cov_name: covariates}
+                cov_kwargs_train = {cov_name: self.time_covariates_train}
+                cov_kwargs_notrain = {cov_name: self.time_covariates}
+            else:
+                cov_kwargs = {}
+                cov_kwargs_train = {}
+                cov_kwargs_notrain = {}
+
             model.fit(series=[self.ts_pass_train, self.ts_pass_train_1], **cov_kwargs)
+
+            if cov_name is None:
+                with pytest.raises(ValueError):
+                    model.untrained_model().fit(
+                        series=[self.ts_pass_train, self.ts_pass_train_1],
+                        past_covariates=covariates,
+                    )
+                with pytest.raises(ValueError):
+                    model.untrained_model().fit(
+                        series=[self.ts_pass_train, self.ts_pass_train_1],
+                        future_covariates=covariates,
+                    )
             with pytest.raises(ValueError):
                 # when model is fit from >1 series, one must provide a series in argument
                 model.predict(n=1)
 
-            with pytest.raises(ValueError):
-                # when model is fit using multiple covariates, covariates are required at prediction time
-                model.predict(n=1, series=self.ts_pass_train)
+            if cov_name is not None:
+                with pytest.raises(ValueError):
+                    # when model is fit using multiple covariates, covariates are required at prediction time
+                    model.predict(n=1, series=self.ts_pass_train)
 
-            cov_kwargs_train = {cov_name: self.time_covariates_train}
-            cov_kwargs_notrain = {cov_name: self.time_covariates}
-            with pytest.raises(ValueError):
-                # when model is fit using covariates, n cannot be greater than output_chunk_length...
-                # (for short covariates)
-                # past covariates model can predict up until output_chunk_length
-                # with train future covariates we cannot predict at all after end of series
-                model.predict(
-                    n=13 if is_past else 1,
-                    series=self.ts_pass_train,
-                    **cov_kwargs_train,
-                )
+                with pytest.raises(ValueError):
+                    # when model is fit using covariates, n cannot be greater than output_chunk_length...
+                    # (for short covariates)
+                    # past covariates model can predict up until output_chunk_length
+                    # with train future covariates we cannot predict at all after end of series
+                    model.predict(
+                        n=13 if is_past else 1,
+                        series=self.ts_pass_train,
+                        **cov_kwargs_train,
+                    )
+            else:
+                # model does not support covariates
+                with pytest.raises(ValueError):
+                    model.predict(
+                        n=1,
+                        series=self.ts_pass_train,
+                        past_covariates=self.time_covariates,
+                    )
+                with pytest.raises(ValueError):
+                    model.predict(
+                        n=1,
+                        series=self.ts_pass_train,
+                        future_covariates=self.time_covariates,
+                    )
 
             # ... unless future covariates are provided
             _ = model.predict(n=13, series=self.ts_pass_train, **cov_kwargs_notrain)
@@ -562,12 +626,14 @@ if TORCH_AVAILABLE:
                 ),
             ), "unit test not yet defined for the given {X}CovariatesTorchModel."
 
-            if isinstance(model, PastCovariatesTorchModel):
+            if model.supports_past_covariates and model.supports_future_covariates:
+                past_covs, future_covs = None, self.covariates
+            elif model.supports_past_covariates:
                 past_covs, future_covs = self.covariates, None
-            elif isinstance(model, DualCovariatesTorchModel):
+            elif model.supports_future_covariates:
                 past_covs, future_covs = None, self.covariates
             else:
-                past_covs, future_covs = self.covariates, self.covariates
+                past_covs, future_covs = None, None
 
             model.fit(
                 self.target_past,
@@ -621,6 +687,8 @@ if TORCH_AVAILABLE:
             model = model_cls(
                 input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
             )
+            if not model._requires_training:
+                return
             multiple_ts = [self.ts_pass_train] * 10
             model.fit(multiple_ts)
 
@@ -673,20 +741,21 @@ if TORCH_AVAILABLE:
             model.fit_from_dataset(train_dataset, epochs=epochs)
             init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
-        def test_predit_after_fit_from_dataset(self):
-            model_cls, kwargs, _ = models_cls_kwargs_errs[0]
+        @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+        def test_predit_after_fit_from_dataset(self, config):
+            model_cls, kwargs, _ = config
             model = model_cls(
                 input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
             )
 
-            multiple_ts = [self.ts_pass_train] * 10
+            multiple_ts = [self.ts_pass_train] * 2
             train_dataset = model._build_train_dataset(
                 multiple_ts,
                 past_covariates=None,
                 future_covariates=None,
                 max_samples_per_ts=None,
             )
-            model.fit_from_dataset(train_dataset, epochs=3)
+            model.fit_from_dataset(train_dataset, epochs=1)
 
             # test predict() works after fit_from_dataset()
             model.predict(n=1, series=multiple_ts[0])

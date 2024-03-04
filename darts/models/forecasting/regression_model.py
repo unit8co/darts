@@ -123,7 +123,7 @@ class RegressionModel(GlobalForecastingModel):
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
-            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
@@ -132,7 +132,7 @@ class RegressionModel(GlobalForecastingModel):
             input chunk end). This will create a gap between the input (history of target and past covariates) and
             output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
             step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
-            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
             (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
@@ -694,8 +694,6 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
-
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_fit_encodings(
@@ -713,6 +711,7 @@ class RegressionModel(GlobalForecastingModel):
             and self.supports_static_covariates
             and self.considers_static_covariates
         ):
+            self._verify_static_covariates(get_single_series(series).static_covariates)
             self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
@@ -894,7 +893,8 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
+        if self.uses_static_covariates:
+            self._verify_static_covariates(series[0].static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
@@ -1646,7 +1646,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
-            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
@@ -1655,7 +1655,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             input chunk end). This will create a gap between the input (history of target and past covariates) and
             output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
             step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
-            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
             (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.

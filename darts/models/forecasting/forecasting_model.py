@@ -145,7 +145,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # by default models do not use encoders
         self.add_encoders = kwargs["add_encoders"]
-        self.encoders: Optional[SequentialEncoder] = None
+        self.encoders = self.initialize_encoders(default=True)
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> "ForecastingModel":
@@ -161,12 +161,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self
             Fitted model.
         """
-        raise_if_not(
-            len(series) >= self.min_train_series_length,
-            "Train series only contains {} elements but {} model requires at least {} entries".format(
-                len(series), str(self), self.min_train_series_length
-            ),
-        )
+        if not isinstance(series, TimeSeries):
+            raise_log(
+                ValueError("Train `series` must be a single `TimeSeries`."),
+                logger=logger,
+            )
+        if not len(series) >= self.min_train_series_length:
+            raise_log(
+                ValueError(
+                    "Train series only contains {} elements but {} model requires at least {} entries".format(
+                        len(series), str(self), self.min_train_series_length
+                    )
+                ),
+                logger=logger,
+            )
         self.training_series = series
         self._fit_called = True
 
@@ -1688,9 +1696,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return residuals_list if len(residuals_list) > 1 else residuals_list[0]
 
-    def initialize_encoders(self) -> SequentialEncoder:
+    def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
         ``add_encoders`` used at model creation"""
+        if default:
+            return SequentialEncoder(add_encoders={})
+
         (
             input_chunk_length,
             output_chunk_length,
@@ -2053,7 +2064,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Verify that all static covariates are numeric.
         """
-        if static_covariates is not None and self.uses_static_covariates:
+        if static_covariates is not None:
             numeric_mask = static_covariates.columns.isin(
                 static_covariates.select_dtypes(include=np.number)
             )
