@@ -493,10 +493,10 @@ class RegressionModel(GlobalForecastingModel):
 
         required_length = 0 if min_target_lag is None else -min_target_lag
         required_length += (
-            +max_target_lag  # predicted target
+            +max_target_lag  # predicted target (including gap between lags and target)
             + self.min_train_samples  # account for lags shift/sliding window
         )
-        return max(3, required_length)
+        return required_length
 
     @property
     def min_train_samples(self) -> int:

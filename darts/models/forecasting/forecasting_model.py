@@ -447,17 +447,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             _,
             min_future_cov_lag,
             max_future_cov_lag,
-            output_chunk_shift,
+            _,
         ) = self.extreme_lags
 
         if min_future_cov_lag is None or max_future_cov_lag is None:
             return 0
 
         return (
-            self.min_train_series_length
+            self.min_train_series_length  # includes output_chunk_shift when supported
             - min(0, min_future_cov_lag)
             + max_future_cov_lag
-            + output_chunk_shift
         )
 
     @property
