@@ -185,6 +185,39 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         """
         return super().fit(series, past_covariates, future_covariates, *args, **kwargs)
 
+    @staticmethod
+    def load_from_checkpoint(
+        model_name: str,
+        work_dir: str = None,
+        file_name: str = None,
+        best: bool = True,
+        **kwargs,
+    ) -> "TorchForecastingModel":
+        raise_log(
+            NotImplementedError(
+                "GlobalNaiveModels do not support loading from checkpoint since they are never trained."
+            ),
+            logger=logger,
+        )
+
+    def load_weights_from_checkpoint(
+        self,
+        model_name: str = None,
+        work_dir: str = None,
+        file_name: str = None,
+        best: bool = True,
+        strict: bool = True,
+        load_encoders: bool = True,
+        skip_checks: bool = False,
+        **kwargs,
+    ):
+        raise_log(
+            NotImplementedError(
+                "GlobalNaiveModels do not support weights loading since they do not have any weights/parameters."
+            ),
+            logger=logger,
+        )
+
     @abstractmethod
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
@@ -195,6 +228,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         # naive models do not have to be trained, predict sample does not
         # have to match the training sample
         pass
+
+    def min_train_series_length(self) -> int:
+        return self.input_chunk_length
 
     def supports_likelihood_parameter_prediction(self) -> bool:
         return False
@@ -403,7 +439,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
         except Exception as err:
             raise_log(
                 ValueError(
-                    f"`agg_fn` test raised the following error: ({err}) Read the parameter "
+                    f"`agg_fn` sanity check raised the following error: ({err}) Read the parameter "
                     f"description to properly define the aggregation function."
                 ),
                 logger=logger,

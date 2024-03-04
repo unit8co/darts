@@ -101,26 +101,32 @@ class TestBaselineModels:
 
         model = model_cls(**model_kwargs)
 
-        # calling fit before predict
+        # calling predict before fit
         with pytest.raises(ValueError):
             model.predict(n=10)
 
         # calling fit with covariates
         if isinstance(model, GlobalForecastingModel):
             err_type = ValueError
+            err_msg_content = "The model does not support"
         else:  # for local models, covariates are not part of signature
             err_type = TypeError
-        with pytest.raises(err_type):
+            err_msg_content = "got an unexpected keyword argument"
+        with pytest.raises(err_type) as err:
             model.fit(series=series, past_covariates=series)
-        with pytest.raises(err_type):
+        assert err_msg_content in str(err.value)
+        with pytest.raises(err_type) as err:
             model.fit(series=series, future_covariates=series)
+        assert err_msg_content in str(err.value)
 
         model.fit(series=series)
         # calling predict with covariates
-        with pytest.raises(err_type):
+        with pytest.raises(err_type) as err:
             model.predict(n=10, past_covariates=series)
-        with pytest.raises(err_type):
+        assert err_msg_content in str(err.value)
+        with pytest.raises(err_type) as err:
             model.predict(n=10, future_covariates=series)
+        assert err_msg_content in str(err.value)
 
         # single series predict works with all models
         preds = model.predict(n=10)
@@ -132,11 +138,13 @@ class TestBaselineModels:
 
         if isinstance(model, LocalForecastingModel):
             # no series at prediction time
-            with pytest.raises(err_type):
+            with pytest.raises(err_type) as err:
                 _ = model.predict(n=10, series=series)
+            assert err_msg_content in str(err.value)
             # no multiple series prediction
-            with pytest.raises(err_type):
+            with pytest.raises(err_type) as err:
                 _ = model.predict(n=10, series=[series, series])
+            assert err_msg_content in str(err.value)
         else:
             preds = model.predict(n=10, series=series)
             assert isinstance(preds, TimeSeries)
@@ -153,8 +161,9 @@ class TestBaselineModels:
 
         # multiple series training only with global baselines
         if isinstance(model, LocalForecastingModel):
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError) as err:
                 model.fit(series=[series, series])
+            assert "Train `series` must be a single `TimeSeries`." == str(err.value)
         else:
             model.fit(series=[series, series])
 
@@ -173,7 +182,7 @@ class TestBaselineModels:
         if not TORCH_AVAILABLE:
             return
 
-        # identical global naive seasonal
+        # equivalent global naive seasonal
         global_model = GlobalNaiveSeasonal(
             input_chunk_length=icl, output_chunk_length=1, **tfm_kwargs
         )
@@ -341,6 +350,7 @@ class TestBaselineModels:
             preds_multi[1].values(copy=False), vals_exp + 100.0
         )
 
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "agg_fn_config",
         [
@@ -374,9 +384,6 @@ class TestBaselineModels:
             vals_exp.append(y)
         vals_exp = np.concatenate(vals_exp)
 
-        if not TORCH_AVAILABLE:
-            return
-
         # identical global naive moving average
         global_model = GlobalNaiveAggregate(
             input_chunk_length=icl, output_chunk_length=1, agg_fn=agg_fn, **tfm_kwargs
@@ -392,6 +399,7 @@ class TestBaselineModels:
             preds_multi[1].values(copy=False), vals_exp + 100.0
         )
 
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "agg_fn_config",
         [
