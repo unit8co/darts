@@ -19,7 +19,7 @@ from darts.timeseries import TimeSeries
 from darts.utils.timeseries_generation import (
     constant_timeseries,
     exponential_timeseries,
-    linear_timeseries,
+    non_zero_linear_timeseries,
 )
 from darts.utils.utils import get_single_series, series2seq
 
@@ -336,13 +336,13 @@ def create_lagged_data(
                     1, start=times_i[0], end=times_i[-1], freq=times_i.freq
                 ).values()
             elif sample_weight == "linear_decay":
-                weights = linear_timeseries(
+                weights = non_zero_linear_timeseries(
                     start=times_i[0], end=times_i[-1], freq=times_i.freq
                 ).values()
             elif sample_weight == "exponential_decay":
                 weights = exponential_timeseries(
                     start=times_i[0], end=times_i[-1], freq=times_i.freq
-                ).values()
+                ).values()[::-1]
             elif isinstance(sample_weight, TimeSeries):
                 weights = sample_weight.values()
             else:

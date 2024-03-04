@@ -516,6 +516,62 @@ def autoregressive_timeseries(
     )
 
 
+def non_zero_linear_timeseries(
+    start_value: float = 0,
+    end_value: float = 1,
+    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: Union[str, int] = None,
+    column_name: Optional[str] = "linear",
+    dtype: np.dtype = np.float64,
+) -> TimeSeries:
+    """
+    Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
+    it takes on the value `end_value` at the last entry of the TimeSeries. This means that
+    the difference between two adjacent entries will be equal to
+    (`end_value` - `start_value`) / (`length` - 1).
+
+    Parameters
+    ----------
+    start_value
+        The value of the first entry in the TimeSeries.
+    end_value
+        The value of the last entry in the TimeSeries.
+    start
+        The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
+    length
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
+    freq
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
+    column_name
+        Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+
+    Returns
+    -------
+    TimeSeries
+        A linear TimeSeries created as indicated above.
+    """
+
+    index = generate_index(start=start, end=end, freq=freq, length=length)
+    values = np.linspace(start_value, end_value, len(index) + 1, dtype=dtype)[1:]
+    return TimeSeries.from_times_and_values(
+        index, values, freq=freq, columns=pd.Index([column_name])
+    )
+
+
 def _extend_time_index_until(
     time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
     until: Optional[Union[int, str, pd.Timestamp]],

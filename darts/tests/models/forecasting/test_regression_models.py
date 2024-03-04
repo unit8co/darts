@@ -1487,7 +1487,7 @@ class TestRegressionModels:
             ),
         ],
     )
-    def test_correct_generated_weights(self, config):
+    def test_correct_generated_weights_equal(self, config):
         model, training_size = config
         train_y = self.sine_univariate1[:training_size]
         _, _, weights = model._create_lagged_data(
@@ -1502,6 +1502,64 @@ class TestRegressionModels:
 
         assert len(weights) == weights_size
         assert (weights == [1] * weights_size).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (RegressionModel(lags=4), 10),
+            (RegressionModel(lags=8, model=LinearRegression()), 20),
+            (RegressionModel(lags=16, model=RandomForestRegressor()), 50),
+            (
+                RegressionModel(lags=2, model=HistGradientBoostingRegressor()),
+                100,
+            ),
+        ],
+    )
+    def test_correct_generated_weights_linear(self, config):
+        model, training_size = config
+        weights_size = training_size - len(model.lags["target"])
+
+        expected_weights = np.linspace(0, 1, weights_size + 1)[1:]
+
+        train_y = self.sine_univariate1[:training_size]
+        _, _, weights = model._create_lagged_data(
+            target_series=train_y,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
+            sample_weight="linear_decay",
+        )
+
+        assert len(weights) == weights_size
+        assert (weights == expected_weights).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (RegressionModel(lags=4), 10, 10),
+            (RegressionModel(lags=8, model=LinearRegression()), 20, 10),
+            (RegressionModel(lags=16, model=RandomForestRegressor()), 50, 10),
+            (RegressionModel(lags=2, model=HistGradientBoostingRegressor()), 100, 10),
+        ],
+    )
+    def test_correct_generated_weights_exponential(self, config):
+        model, training_size, decay_rate = config
+        weights_size = training_size - len(model.lags["target"])
+
+        time_steps = np.linspace(0, 1, weights_size)
+        expected_weights = np.exp(-decay_rate * (1 - time_steps))
+
+        train_y = self.sine_univariate1[:training_size]
+        _, _, weights = model._create_lagged_data(
+            target_series=train_y,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
+            sample_weight="exponential_decay",
+        )
+
+        assert len(weights) == weights_size
+        np.testing.assert_array_almost_equal(weights, expected_weights)
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
