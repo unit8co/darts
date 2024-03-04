@@ -199,18 +199,22 @@ def _get_values_or_raise(
 
     raise_if_not(isinstance(intersect, bool), "The intersect parameter must be a bool")
 
-    series_a_common = series_a.slice_intersect(series_b) if intersect else series_a
-    series_b_common = series_b.slice_intersect(series_a) if intersect else series_b
+    if series_a.has_same_time_as(series_b):
+        series_a_common = series_a
+        series_b_common = series_b
+    else:
+        series_a_common = series_a.slice_intersect(series_b) if intersect else series_a
+        series_b_common = series_b.slice_intersect(series_a) if intersect else series_b
 
-    raise_if_not(
-        series_a_common.has_same_time_as(series_b_common),
-        "The two time series (or their intersection) "
-        "must have the same time index."
-        "\nFirst series: {}\nSecond series: {}".format(
-            series_a.time_index, series_b.time_index
-        ),
-        logger,
-    )
+        raise_if_not(
+            series_a_common.has_same_time_as(series_b_common),
+            "The two time series (or their intersection) "
+            "must have the same time index."
+            "\nFirst series: {}\nSecond series: {}".format(
+                series_a.time_index, series_b.time_index
+            ),
+            logger,
+        )
 
     series_a_det = _get_values(series_a_common, stochastic_quantile=stochastic_quantile)
     series_b_det = _get_values(series_b_common, stochastic_quantile=stochastic_quantile)

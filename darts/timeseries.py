@@ -2716,7 +2716,12 @@ class TimeSeries:
         """
         if len(other) != len(self):
             return False
-        return (other.time_index == self.time_index).all()
+        if other.freq != self.freq:
+            return False
+        if other.start_time() != self.start_time():
+            return False
+        else:
+            return True
 
     def append(self, other: Self) -> Self:
         """
