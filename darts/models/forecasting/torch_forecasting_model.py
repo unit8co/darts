@@ -635,10 +635,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 supported_covs.append("`future_covariates`")
             if self.supports_static_covariates:
                 supported_covs.append("`static_covariates`")
+            if supported_covs:
+                add_txt = f"It only supports {', '.join(supported_covs)}."
+            else:
+                add_txt = "It does not support any covariates."
+
             raise_log(
                 ValueError(
-                    f"The model does not support {', '.join(invalid_covs)}. "
-                    f"It only supports {', '.join(supported_covs)}. "
+                    f"The model does not support {', '.join(invalid_covs)}. " + add_txt
                 ),
                 logger=logger,
             )
@@ -1359,6 +1363,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        self._verify_past_future_covariates(
+            past_covariates=past_covariates, future_covariates=future_covariates
+        )
         if self.uses_static_covariates:
             self._verify_static_covariates(get_single_series(series).static_covariates)
 
