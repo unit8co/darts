@@ -583,4 +583,9 @@ class RNNModel(DualCovariatesTorchModel):
 
     @property
     def min_train_series_length(self) -> int:
-        return self.training_length + 1
+        """Override ForecastingModel implementation to account for trainin_length parameter.
+
+        Taking the max to remain consistent with the length required at predict time, since
+        `training_length` can take any value.
+        """
+        return max(self.training_length + 1, self.input_chunk_length + 1)
