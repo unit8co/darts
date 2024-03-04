@@ -9,6 +9,30 @@ from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import Mapper, WindowTransformer
 
 
+def helper_generate_ts_hierarchy(length: int):
+    values = np.stack(
+        [
+            np.ones(
+                length,
+            )
+            * 5,
+            np.ones(
+                length,
+            )
+            * 3,
+            np.ones(
+                length,
+            )
+            * 2,
+        ],
+        axis=1,
+    )
+    hierarchy = {"B": "A", "C": "A"}
+    return TimeSeries.from_values(
+        values=values, columns=["A", "B", "C"], hierarchy=hierarchy
+    )
+
+
 class TestTimeSeriesWindowTransform:
 
     times = pd.date_range("20130101", "20130110")
@@ -127,6 +151,49 @@ class TestTimeSeriesWindowTransform:
                 "center": "True",
             }  # forecating_safe=True vs center=True
             self.series_univ_det.window_transform(transforms=window_transformations)
+
+        # keep_names and overlapping transforms
+        with pytest.raises(ValueError) as err:
+            window_transformations = [
+                {
+                    "function": "mean",
+                    "mode": "rolling",
+                    "window": 3,
+                    "components": self.series_multi_det.components[:1],
+                },
+                {
+                    "function": "median",
+                    "mode": "rolling",
+                    "window": 3,
+                    "components": self.series_multi_det.components,
+                },
+            ]
+            self.series_multi_det.window_transform(
+                transforms=window_transformations, keep_names=True
+            )
+        assert str(err.value) == (
+            "Cannot keep the original component names as some transforms are overlapping "
+            "(applied to the same components). Set `keep_names` to `False`."
+        )
+
+        # keep_names and keep_non_transformed
+        with pytest.raises(ValueError) as err:
+            window_transformations = [
+                {
+                    "function": "mean",
+                    "mode": "rolling",
+                    "window": 3,
+                    "components": self.series_multi_det.components[:1],
+                },
+            ]
+            self.series_multi_det.window_transform(
+                transforms=window_transformations,
+                keep_names=True,
+                keep_non_transformed=True,
+            )
+        assert str(err.value) == (
+            "`keep_names = True` and `keep_non_transformed = True` cannot be used together."
+        )
 
     def test_ts_windowtransf_output_series(self):
         # univariate deterministic input
@@ -462,6 +529,98 @@ class TestTimeSeriesWindowTransform:
         )
         assert transformed_ts == expected_transformed_series
 
+    @pytest.mark.parametrize(
+        "transforms",
+        [
+            {
+                "function": "median",
+                "mode": "rolling",
+                "window": 3,
+            },
+            {
+                "function": "mean",
+                "mode": "expanding",
+                "window": 2,
+                "components": ["A", "B", "C"],
+            },
+        ],
+    )
+    def test_ts_windowtransf_hierarchy(self, transforms):
+        """Checking that supported transforms behave as expected:
+        - implicitely applied to all components
+        - passing explicitely all components
+        """
+        ts = helper_generate_ts_hierarchy(10)
+
+        # renaming components based on transform parameters
+        ts_tr = ts.window_transform(transforms=transforms)
+        tr_prefix = (
+            f"{transforms['mode']}_{transforms['function']}_{transforms['window']}_"
+        )
+        assert ts_tr.hierarchy == {
+            tr_prefix + comp: [tr_prefix + "A"] for comp in ["B", "C"]
+        }
+
+        # keeping original components name
+        ts_tr = ts.window_transform(transforms=transforms, keep_names=True)
+        assert ts_tr.hierarchy == ts.hierarchy == {"C": ["A"], "B": ["A"]}
+
+    @pytest.mark.parametrize(
+        "transforms",
+        [
+            {"function": "median", "mode": "rolling", "window": 3, "components": ["B"]},
+            [
+                {
+                    "function": "mean",
+                    "mode": "expanding",
+                    "window": 2,
+                },
+                {
+                    "function": "median",
+                    "mode": "rolling",
+                    "window": 3,
+                },
+            ],
+            [
+                {
+                    "function": "median",
+                    "mode": "rolling",
+                    "window": 3,
+                    "components": ["B", "C"],
+                },
+                {
+                    "function": "sum",
+                    "mode": "rolling",
+                    "window": 5,
+                    "components": ["A", "C"],
+                },
+            ],
+        ],
+    )
+    def test_ts_windowtransf_drop_hierarchy(self, transforms):
+        """Checking that hierarchy is correctly removed when
+        - transform is not applied to all the components
+        - several transforms applied to all the components
+        - two transforms with overlapping components
+        """
+        ts = helper_generate_ts_hierarchy(10)
+        ts_tr = ts.window_transform(transforms=transforms)
+        assert ts_tr.hierarchy is None
+
+    def test_ts_windowtransf_hierarchy_wrong_args(self):
+        ts = helper_generate_ts_hierarchy(10)
+
+        # hierarchy + keep_non_transformed = ambiguity for hierarchy
+        with pytest.raises(ValueError):
+            ts.window_transform(
+                transforms={
+                    "function": "sum",
+                    "mode": "rolling",
+                    "window": 3,
+                },
+                keep_non_transformed=True,
+            )
+
 
 class TestWindowTransformer:
 
@@ -579,3 +738,30 @@ class TestWindowTransformer:
         transformed_series = pipeline.fit_transform(series_1)
 
         assert transformed_series == expected_transformed_series
+
+    def test_transformer_hierarchy(self):
+        ts = helper_generate_ts_hierarchy(10)
+        transform = {
+            "function": "median",
+            "mode": "rolling",
+            "window": 3,
+        }
+
+        # renaming components
+        window_transformer = WindowTransformer(
+            transforms=[transform],
+        )
+        ts_tr = window_transformer.transform(ts)
+        tr_prefix = (
+            f"{transform['mode']}_{transform['function']}_{transform['window']}_"
+        )
+        assert ts_tr.hierarchy == {
+            tr_prefix + comp: [tr_prefix + "A"] for comp in ["B", "C"]
+        }
+        # keeping old components
+        window_transformer = WindowTransformer(
+            transforms=transform,
+            keep_names=True,
+        )
+        ts_tr = window_transformer.transform(ts)
+        assert ts_tr.hierarchy == ts.hierarchy == {"C": ["A"], "B": ["A"]}

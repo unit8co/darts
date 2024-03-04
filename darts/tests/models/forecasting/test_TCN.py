@@ -37,7 +37,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 num_layers=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(large_ts[:98])
             pred = model.predict(n=2).values()[0]
@@ -48,7 +48,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 num_layers=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
@@ -69,7 +69,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=10,
                 n_epochs=300,
                 random_state=0,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(train)
             pred = model.predict(n=10)
@@ -97,7 +97,7 @@ if TORCH_AVAILABLE:
                             dilation_base=dilation_base,
                             weight_norm=False,
                             n_epochs=1,
-                            **tfm_kwargs
+                            **tfm_kwargs,
                         )
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module
@@ -145,7 +145,7 @@ if TORCH_AVAILABLE:
                             weight_norm=False,
                             num_layers=model.model.num_layers - 1,
                             n_epochs=1,
-                            **tfm_kwargs
+                            **tfm_kwargs,
                         )
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module

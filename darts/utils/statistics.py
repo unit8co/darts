@@ -10,8 +10,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import argrelmax
 from scipy.stats import norm
+from statsmodels.compat.python import lzip
 from statsmodels.tsa.seasonal import MSTL, STL, seasonal_decompose
-from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
+from statsmodels.tsa.stattools import (
+    acf,
+    adfuller,
+    ccovf,
+    grangercausalitytests,
+    kpss,
+    pacf,
+)
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -382,7 +390,6 @@ def stationarity_tests(
     p_value_threshold_adfuller: float = 0.05,
     p_value_threshold_kpss: float = 0.05,
 ) -> bool:
-
     """
     Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
     Dickey-Fuller statistical tests.
@@ -599,8 +606,8 @@ def plot_acf(
     default_formatting: bool = True,
 ) -> None:
     """
-    Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    Uses :func:`statsmodels.tsa.stattools.acf` [1]_
+    Plots the Autocorrelation Function (ACF) of `ts`, highlighting it at lag `m`, with corresponding significance
+    interval. Uses :func:`statsmodels.tsa.stattools.acf` [1]_
 
     Parameters
     ----------
@@ -660,9 +667,11 @@ def plot_acf(
         axis.plot(
             (i, i),
             (0, r[i]),
-            color=("#b512b8" if m is not None and i == m else "black")
-            if default_formatting
-            else None,
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
             lw=(1 if m is not None and i == m else 0.5),
         )
 
@@ -695,8 +704,8 @@ def plot_pacf(
     default_formatting: bool = True,
 ) -> None:
     """
-    Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    Uses :func:`statsmodels.tsa.stattools.pacf` [1]_
+    Plots the Partial Autocorrelation Function (PACF) of `ts`, highlighting it at lag `m`, with corresponding
+    significance interval. Uses :func:`statsmodels.tsa.stattools.pacf` [1]_
 
     Parameters
     ----------
@@ -761,9 +770,7 @@ def plot_pacf(
             color=(
                 "#b512b8"
                 if m is not None and i == m
-                else "black"
-                if default_formatting
-                else None
+                else "black" if default_formatting else None
             ),
             lw=(1 if m is not None and i == m else 0.5),
         )
@@ -771,6 +778,126 @@ def plot_pacf(
     # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
+    extra_arguments = {}
+    if default_formatting:
+        extra_arguments["color"] = "#003DFD"
+
+    axis.fill_between(
+        np.arange(1, max_lag + 1),
+        upp_band,
+        [-x for x in upp_band],
+        alpha=0.25 if default_formatting else None,
+        **extra_arguments,
+    )
+    axis.plot((0, max_lag + 1), (0, 0), color="black" if default_formatting else None)
+
+
+def plot_ccf(
+    ts: TimeSeries,
+    ts_other: TimeSeries,
+    m: Optional[int] = None,
+    max_lag: int = 24,
+    alpha: float = 0.05,
+    bartlett_confint: bool = True,
+    fig_size: Tuple[int, int] = (10, 5),
+    axis: Optional[plt.axis] = None,
+    default_formatting: bool = True,
+) -> None:
+    """
+    Plots the Cross Correlation Function (CCF) between `ts` and `ts_other`, highlighting it at lag `m`, with
+    corresponding significance interval. Uses :func:`statsmodels.tsa.stattools.ccf` [1]_
+
+    This can be used to find the cross correlation between the target and different covariates lags.
+    If `ts_other` is identical `ts`, it corresponds to `plot_acf()`.
+
+    Parameters
+    ----------
+    ts
+        The TimeSeries whose CCF with `ts_other` should be plotted.
+    ts_other
+        The TimeSeries which to compare against `ts` in the CCF. E.g. check the cross correlation of different
+        covariate lags with the target.
+    m
+        Optionally, a time lag to highlight on the plot.
+    max_lag
+        The maximal lag order to consider.
+    alpha
+        The confidence interval to display.
+    bartlett_confint
+        The boolean value indicating whether the confidence interval should be
+        calculated using Bartlett's formula.
+    fig_size
+        The size of the figure to be displayed.
+    axis
+        Optionally, an axis object to plot the CCF on.
+    default_formatting
+        Whether to use the darts default scheme.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.ccf.html
+    """
+
+    ts._assert_univariate()
+    ts_other._assert_univariate()
+    raise_if(
+        max_lag is None or not (1 <= max_lag < len(ts)),
+        "max_lag must be greater than or equal to 1 and less than len(ts).",
+    )
+    raise_if(
+        m is not None and not (0 <= m <= max_lag),
+        "m must be greater than or equal to 0 and less than or equal to max_lag.",
+    )
+    raise_if(
+        alpha is None or not (0 < alpha < 1),
+        "alpha must be greater than 0 and less than 1.",
+    )
+    ts_other = ts_other.slice_intersect(ts)
+    if len(ts_other) != len(ts):
+        raise_log(
+            ValueError("`ts_other` must contain at least the full time index of `ts`."),
+            logger=logger,
+        )
+
+    x = ts.values()
+    y = ts_other.values()
+    cvf = ccovf(x=x, y=y, adjusted=True, demean=True, fft=False)
+
+    ccf = cvf / (np.std(x) * np.std(y))
+    ccf = ccf[: max_lag + 1]
+
+    n_obs = len(x)
+    if bartlett_confint:
+        varccf = np.ones_like(ccf) / n_obs
+        varccf[0] = 0
+        varccf[1] = 1.0 / n_obs
+        varccf[2:] *= 1 + 2 * np.cumsum(ccf[1:-1] ** 2)
+    else:
+        varccf = 1.0 / n_obs
+
+    interval = norm.ppf(1.0 - alpha / 2.0) * np.sqrt(varccf)
+    confint = np.array(lzip(ccf - interval, ccf + interval))
+
+    if axis is None:
+        plt.figure(figsize=fig_size)
+        axis = plt
+
+    for i in range(len(ccf)):
+        axis.plot(
+            (i, i),
+            (0, ccf[i]),
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
+            lw=(1 if m is not None and i == m else 0.5),
+        )
+
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
+    upp_band = [confint[lag][1] - ccf[lag] for lag in range(1, max_lag + 1)]
+
+    # Setting color t0 None overrides custom settings
     extra_arguments = {}
     if default_formatting:
         extra_arguments["color"] = "#003DFD"

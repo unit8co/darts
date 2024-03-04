@@ -52,7 +52,7 @@ if TORCH_AVAILABLE:
                     num_blocks=1,
                     layer_widths=20,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -66,7 +66,7 @@ if TORCH_AVAILABLE:
                     num_blocks=1,
                     layer_widths=20,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
@@ -88,7 +88,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=20,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
 
                 model.fit(series_multivariate)
@@ -109,7 +109,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=4,
                     n_epochs=5,
                     random_state=42,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(series_multivariate, past_covariates=series_covariates)
 
@@ -197,7 +197,7 @@ if TORCH_AVAILABLE:
                     layer_widths=20,
                     random_state=42,
                     activation="LeakyReLU",
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(ts)
 
@@ -211,6 +211,6 @@ if TORCH_AVAILABLE:
                         layer_widths=20,
                         random_state=42,
                         activation="invalid",
-                        **tfm_kwargs
+                        **tfm_kwargs,
                     )
                     model.fit(ts)

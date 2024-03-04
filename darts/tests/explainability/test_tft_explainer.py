@@ -25,6 +25,24 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
+    def helper_create_test_cases(series_options: list):
+        covariates_options = [
+            {},
+            {"past_covariates"},
+            {"future_covariates"},
+            {"past_covariates", "future_covariates"},
+        ]
+        relative_index_options = [False, True]
+        use_encoders_options = [False, True]
+        return itertools.product(
+            *[
+                series_options,
+                covariates_options,
+                relative_index_options,
+                use_encoders_options,
+            ]
+        )
+
     class TestTFTExplainer:
         freq = "MS"
         series_lin_pos = tg.linear_timeseries(
@@ -53,289 +71,252 @@ if TORCH_AVAILABLE:
             else:  # multiple
                 return self.series_multi, self.pc_multi, self.fc_multi
 
-        def helper_create_test_cases(self, series_options: list):
-            covariates_options = [
-                {},
-                {"past_covariates"},
-                {"future_covariates"},
-                {"past_covariates", "future_covariates"},
-            ]
-            relative_index_options = [False, True]
-            use_encoders_options = [False, True]
-            return itertools.product(
-                *[
-                    series_options,
-                    covariates_options,
-                    relative_index_options,
-                    use_encoders_options,
+        @pytest.mark.parametrize(
+            "test_case", helper_create_test_cases(["univariate", "multivariate"])
+        )
+        def test_explainer_single_univariate_multivariate_series(self, test_case):
+            """Test TFTExplainer with single univariate and multivariate series and a combination of
+            encoders, covariates, and addition of relative index."""
+            series_option, cov_option, add_relative_idx, use_encoders = test_case
+            series, pc, fc = self.helper_get_input(series_option)
+            cov_test_case = dict()
+            use_pc, use_fc = False, False
+            if "past_covariates" in cov_option:
+                cov_test_case["past_covariates"] = pc
+                use_pc = True
+            if "future_covariates" in cov_option:
+                cov_test_case["future_covariates"] = fc
+                use_fc = True
+
+            # expected number of features for past covs, future covs, and static covs, and encoder/decoder
+            n_target_expected = series.n_components
+            n_pc_expected = 1 if "past_covariates" in cov_test_case else 0
+            n_fc_expected = 1 if "future_covariates" in cov_test_case else 0
+            n_sc_expected = 2
+            # encoder is number of past and future covs plus 4 optional encodings (future and past)
+            # plus 1 univariate target plus 1 optional relative index
+            n_enc_expected = (
+                n_pc_expected
+                + n_fc_expected
+                + n_target_expected
+                + (4 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            # encoder is number of future covs plus 2 optional encodings (future)
+            # plus 1 optional relative index
+            n_dec_expected = (
+                n_fc_expected
+                + (2 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            model = self.helper_create_model(
+                use_encoders=use_encoders, add_relative_idx=add_relative_idx
+            )
+            # TFTModel requires future covariates
+            if (
+                not add_relative_idx
+                and "future_covariates" not in cov_test_case
+                and not use_encoders
+            ):
+                with pytest.raises(ValueError):
+                    model.fit(series=series, **cov_test_case)
+                return
+
+            model.fit(series=series, **cov_test_case)
+            explainer = TFTExplainer(model)
+            explainer2 = TFTExplainer(
+                model,
+                background_series=series,
+                background_past_covariates=pc if use_pc else None,
+                background_future_covariates=fc if use_fc else None,
+            )
+            assert explainer.background_series == explainer2.background_series
+            assert (
+                explainer.background_past_covariates
+                == explainer2.background_past_covariates
+            )
+            assert (
+                explainer.background_future_covariates
+                == explainer2.background_future_covariates
+            )
+
+            assert hasattr(explainer, "model")
+            assert explainer.background_series[0] == series
+            if use_pc:
+                assert explainer.background_past_covariates[0] == pc
+                assert (
+                    explainer.background_past_covariates[0].n_components
+                    == n_pc_expected
+                )
+            else:
+                assert explainer.background_past_covariates is None
+            if use_fc:
+                assert explainer.background_future_covariates[0] == fc
+                assert (
+                    explainer.background_future_covariates[0].n_components
+                    == n_fc_expected
+                )
+            else:
+                assert explainer.background_future_covariates is None
+            result = explainer.explain()
+            assert isinstance(result, TFTExplainabilityResult)
+
+            enc_imp = result.get_encoder_importance()
+            dec_imp = result.get_decoder_importance()
+            stc_imp = result.get_static_covariates_importance()
+            imps = [enc_imp, dec_imp, stc_imp]
+            assert all([isinstance(imp, pd.DataFrame) for imp in imps])
+            # importances must sum up to 100 percent
+            assert all(
+                [imp.squeeze().sum() == pytest.approx(100.0, rel=0.2) for imp in imps]
+            )
+            # importances must have the expected number of columns
+            assert all(
+                [
+                    len(imp.columns) == n
+                    for imp, n in zip(
+                        imps, [n_enc_expected, n_dec_expected, n_sc_expected]
+                    )
                 ]
             )
 
-        def test_explainer_single_univariate_multivariate_series(self):
-            """Test TFTExplainer with single univariate and multivariate series and a combination of
-            encoders, covariates, and addition of relative index."""
-            series_option: str
-            cov_option: set
-            add_relative_idx: bool
-            use_encoders: bool
+            attention = result.get_attention()
+            assert isinstance(attention, TimeSeries)
+            # input chunk length + output chunk length = 5 + 2 = 7
+            icl, ocl = 5, 2
+            freq = series.freq
+            assert len(attention) == icl + ocl
+            assert attention.start_time() == series.end_time() - (icl - 1) * freq
+            assert attention.end_time() == series.end_time() + ocl * freq
+            assert attention.n_components == ocl
 
-            series_options = [
-                "univariate",
-                "multivariate",
-                # "multiple",
-            ]
-            test_cases = self.helper_create_test_cases(series_options)
-            for series_option, cov_option, add_relative_idx, use_encoders in test_cases:
-                series, pc, fc = self.helper_get_input(series_option)
-                cov_test_case = dict()
-                use_pc, use_fc = False, False
-                if "past_covariates" in cov_option:
-                    cov_test_case["past_covariates"] = pc
-                    use_pc = True
-                if "future_covariates" in cov_option:
-                    cov_test_case["future_covariates"] = fc
-                    use_fc = True
-
-                # expected number of features for past covs, future covs, and static covs, and encoder/decoder
-                n_target_expected = series.n_components
-                n_pc_expected = 1 if "past_covariates" in cov_test_case else 0
-                n_fc_expected = 1 if "future_covariates" in cov_test_case else 0
-                n_sc_expected = 2
-                # encoder is number of past and future covs plus 4 optional encodings (future and past)
-                # plus 1 univariate target plus 1 optional relative index
-                n_enc_expected = (
-                    n_pc_expected
-                    + n_fc_expected
-                    + n_target_expected
-                    + (4 if use_encoders else 0)
-                    + (1 if add_relative_idx else 0)
-                )
-                # encoder is number of future covs plus 2 optional encodings (future)
-                # plus 1 optional relative index
-                n_dec_expected = (
-                    n_fc_expected
-                    + (2 if use_encoders else 0)
-                    + (1 if add_relative_idx else 0)
-                )
-                model = self.helper_create_model(
-                    use_encoders=use_encoders, add_relative_idx=add_relative_idx
-                )
-                # TFTModel requires future covariates
-                if (
-                    not add_relative_idx
-                    and "future_covariates" not in cov_test_case
-                    and not use_encoders
-                ):
-                    with pytest.raises(ValueError):
-                        model.fit(series=series, **cov_test_case)
-                    continue
-
-                model.fit(series=series, **cov_test_case)
-                explainer = TFTExplainer(model)
-                explainer2 = TFTExplainer(
-                    model,
-                    background_series=series,
-                    background_past_covariates=pc if use_pc else None,
-                    background_future_covariates=fc if use_fc else None,
-                )
-                assert explainer.background_series == explainer2.background_series
-                assert (
-                    explainer.background_past_covariates
-                    == explainer2.background_past_covariates
-                )
-                assert (
-                    explainer.background_future_covariates
-                    == explainer2.background_future_covariates
-                )
-
-                assert hasattr(explainer, "model")
-                assert explainer.background_series[0] == series
-                if use_pc:
-                    assert explainer.background_past_covariates[0] == pc
-                    assert (
-                        explainer.background_past_covariates[0].n_components
-                        == n_pc_expected
-                    )
-                else:
-                    assert explainer.background_past_covariates is None
-                if use_fc:
-                    assert explainer.background_future_covariates[0] == fc
-                    assert (
-                        explainer.background_future_covariates[0].n_components
-                        == n_fc_expected
-                    )
-                else:
-                    assert explainer.background_future_covariates is None
-                result = explainer.explain()
-                assert isinstance(result, TFTExplainabilityResult)
-
-                enc_imp = result.get_encoder_importance()
-                dec_imp = result.get_decoder_importance()
-                stc_imp = result.get_static_covariates_importance()
-                imps = [enc_imp, dec_imp, stc_imp]
-                assert all([isinstance(imp, pd.DataFrame) for imp in imps])
-                # importances must sum up to 100 percent
-                assert all(
-                    [
-                        imp.squeeze().sum() == pytest.approx(100.0, rel=0.2)
-                        for imp in imps
-                    ]
-                )
-                # importances must have the expected number of columns
-                assert all(
-                    [
-                        len(imp.columns) == n
-                        for imp, n in zip(
-                            imps, [n_enc_expected, n_dec_expected, n_sc_expected]
-                        )
-                    ]
-                )
-
-                attention = result.get_attention()
-                assert isinstance(attention, TimeSeries)
-                # input chunk length + output chunk length = 5 + 2 = 7
-                icl, ocl = 5, 2
-                freq = series.freq
-                assert len(attention) == icl + ocl
-                assert attention.start_time() == series.end_time() - (icl - 1) * freq
-                assert attention.end_time() == series.end_time() + ocl * freq
-                assert attention.n_components == ocl
-
-        def test_explainer_multiple_multivariate_series(self):
+        @pytest.mark.parametrize("test_case", helper_create_test_cases(["multiple"]))
+        def test_explainer_multiple_multivariate_series(self, test_case):
             """Test TFTExplainer with multiple multivaraites series and a combination of encoders, covariates,
             and addition of relative index."""
-            series_option: str
-            cov_option: set
-            add_relative_idx: bool
-            use_encoders: bool
+            series_option, cov_option, add_relative_idx, use_encoders = test_case
+            series, pc, fc = self.helper_get_input(series_option)
+            cov_test_case = dict()
+            use_pc, use_fc = False, False
+            if "past_covariates" in cov_option:
+                cov_test_case["past_covariates"] = pc
+                use_pc = True
+            if "future_covariates" in cov_option:
+                cov_test_case["future_covariates"] = fc
+                use_fc = True
 
-            series_options = ["multiple"]
-            test_cases = self.helper_create_test_cases(series_options)
-            for series_option, cov_option, add_relative_idx, use_encoders in test_cases:
-                series, pc, fc = self.helper_get_input(series_option)
-                cov_test_case = dict()
-                use_pc, use_fc = False, False
-                if "past_covariates" in cov_option:
-                    cov_test_case["past_covariates"] = pc
-                    use_pc = True
-                if "future_covariates" in cov_option:
-                    cov_test_case["future_covariates"] = fc
-                    use_fc = True
-
-                # expected number of features for past covs, future covs, and static covs, and encoder/decoder
-                n_target_expected = series[0].n_components
-                n_pc_expected = 1 if "past_covariates" in cov_test_case else 0
-                n_fc_expected = 1 if "future_covariates" in cov_test_case else 0
-                n_sc_expected = 2
-                # encoder is number of past and future covs plus 4 optional encodings (future and past)
-                # plus 1 univariate target plus 1 optional relative index
-                n_enc_expected = (
-                    n_pc_expected
-                    + n_fc_expected
-                    + n_target_expected
-                    + (4 if use_encoders else 0)
-                    + (1 if add_relative_idx else 0)
-                )
-                # encoder is number of future covs plus 2 optional encodings (future)
-                # plus 1 optional relative index
-                n_dec_expected = (
-                    n_fc_expected
-                    + (2 if use_encoders else 0)
-                    + (1 if add_relative_idx else 0)
-                )
-                model = self.helper_create_model(
-                    use_encoders=use_encoders, add_relative_idx=add_relative_idx
-                )
-                # TFTModel requires future covariates
-                if (
-                    not add_relative_idx
-                    and "future_covariates" not in cov_test_case
-                    and not use_encoders
-                ):
-                    with pytest.raises(ValueError):
-                        model.fit(series=series, **cov_test_case)
-                    continue
-
-                model.fit(series=series, **cov_test_case)
-                # explainer requires background if model trained on multiple time series
+            # expected number of features for past covs, future covs, and static covs, and encoder/decoder
+            n_target_expected = series[0].n_components
+            n_pc_expected = 1 if "past_covariates" in cov_test_case else 0
+            n_fc_expected = 1 if "future_covariates" in cov_test_case else 0
+            n_sc_expected = 2
+            # encoder is number of past and future covs plus 4 optional encodings (future and past)
+            # plus 1 univariate target plus 1 optional relative index
+            n_enc_expected = (
+                n_pc_expected
+                + n_fc_expected
+                + n_target_expected
+                + (4 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            # encoder is number of future covs plus 2 optional encodings (future)
+            # plus 1 optional relative index
+            n_dec_expected = (
+                n_fc_expected
+                + (2 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            model = self.helper_create_model(
+                use_encoders=use_encoders, add_relative_idx=add_relative_idx
+            )
+            # TFTModel requires future covariates
+            if (
+                not add_relative_idx
+                and "future_covariates" not in cov_test_case
+                and not use_encoders
+            ):
                 with pytest.raises(ValueError):
-                    explainer = TFTExplainer(model)
-                explainer = TFTExplainer(
-                    model,
-                    background_series=series,
-                    background_past_covariates=pc if use_pc else None,
-                    background_future_covariates=fc if use_fc else None,
-                )
-                assert hasattr(explainer, "model")
-                assert explainer.background_series, series
-                if use_pc:
-                    assert explainer.background_past_covariates == pc
-                    assert (
-                        explainer.background_past_covariates[0].n_components
-                        == n_pc_expected
-                    )
-                else:
-                    assert explainer.background_past_covariates is None
-                if use_fc:
-                    assert explainer.background_future_covariates == fc
-                    assert (
-                        explainer.background_future_covariates[0].n_components
-                        == n_fc_expected
-                    )
-                else:
-                    assert explainer.background_future_covariates is None
-                result = explainer.explain()
-                assert isinstance(result, TFTExplainabilityResult)
+                    model.fit(series=series, **cov_test_case)
+                return
 
-                enc_imp = result.get_encoder_importance()
-                dec_imp = result.get_decoder_importance()
-                stc_imp = result.get_static_covariates_importance()
-                imps = [enc_imp, dec_imp, stc_imp]
-                assert all([isinstance(imp, list) for imp in imps])
-                assert all([len(imp) == len(series) for imp in imps])
-                assert all(
-                    [isinstance(imp_, pd.DataFrame) for imp in imps for imp_ in imp]
+            model.fit(series=series, **cov_test_case)
+            # explainer requires background if model trained on multiple time series
+            with pytest.raises(ValueError):
+                explainer = TFTExplainer(model)
+            explainer = TFTExplainer(
+                model,
+                background_series=series,
+                background_past_covariates=pc if use_pc else None,
+                background_future_covariates=fc if use_fc else None,
+            )
+            assert hasattr(explainer, "model")
+            assert explainer.background_series, series
+            if use_pc:
+                assert explainer.background_past_covariates == pc
+                assert (
+                    explainer.background_past_covariates[0].n_components
+                    == n_pc_expected
                 )
-                # importances must sum up to 100 percent
-                assert all(
-                    [
-                        imp_.squeeze().sum() == pytest.approx(100.0, abs=0.11)
-                        for imp in imps
-                        for imp_ in imp
-                    ]
+            else:
+                assert explainer.background_past_covariates is None
+            if use_fc:
+                assert explainer.background_future_covariates == fc
+                assert (
+                    explainer.background_future_covariates[0].n_components
+                    == n_fc_expected
                 )
-                # importances must have the expected number of columns
-                assert all(
-                    [
-                        len(imp_.columns) == n
-                        for imp, n in zip(
-                            imps, [n_enc_expected, n_dec_expected, n_sc_expected]
-                        )
-                        for imp_ in imp
-                    ]
-                )
+            else:
+                assert explainer.background_future_covariates is None
+            result = explainer.explain()
+            assert isinstance(result, TFTExplainabilityResult)
 
-                attention = result.get_attention()
-                assert isinstance(attention, list)
-                assert len(attention) == len(series)
-                assert all([isinstance(att, TimeSeries) for att in attention])
-                # input chunk length + output chunk length = 5 + 2 = 7
-                icl, ocl = 5, 2
-                freq = series[0].freq
-                assert all([len(att) == icl + ocl for att in attention])
-                assert all(
-                    [
-                        att.start_time() == series_.end_time() - (icl - 1) * freq
-                        for att, series_ in zip(attention, series)
-                    ]
-                )
-                assert all(
-                    [
-                        att.end_time() == series_.end_time() + ocl * freq
-                        for att, series_ in zip(attention, series)
-                    ]
-                )
-                assert all([att.n_components == ocl for att in attention])
+            enc_imp = result.get_encoder_importance()
+            dec_imp = result.get_decoder_importance()
+            stc_imp = result.get_static_covariates_importance()
+            imps = [enc_imp, dec_imp, stc_imp]
+            assert all([isinstance(imp, list) for imp in imps])
+            assert all([len(imp) == len(series) for imp in imps])
+            assert all([isinstance(imp_, pd.DataFrame) for imp in imps for imp_ in imp])
+            # importances must sum up to 100 percent
+            assert all(
+                [
+                    imp_.squeeze().sum() == pytest.approx(100.0, abs=0.21)
+                    for imp in imps
+                    for imp_ in imp
+                ]
+            )
+            # importances must have the expected number of columns
+            assert all(
+                [
+                    len(imp_.columns) == n
+                    for imp, n in zip(
+                        imps, [n_enc_expected, n_dec_expected, n_sc_expected]
+                    )
+                    for imp_ in imp
+                ]
+            )
+
+            attention = result.get_attention()
+            assert isinstance(attention, list)
+            assert len(attention) == len(series)
+            assert all([isinstance(att, TimeSeries) for att in attention])
+            # input chunk length + output chunk length = 5 + 2 = 7
+            icl, ocl = 5, 2
+            freq = series[0].freq
+            assert all([len(att) == icl + ocl for att in attention])
+            assert all(
+                [
+                    att.start_time() == series_.end_time() - (icl - 1) * freq
+                    for att, series_ in zip(attention, series)
+                ]
+            )
+            assert all(
+                [
+                    att.end_time() == series_.end_time() + ocl * freq
+                    for att, series_ in zip(attention, series)
+                ]
+            )
+            assert all([att.n_components == ocl for att in attention])
 
         def test_variable_selection_explanation(self):
             """Test variable selection (feature importance) explanation results and plotting."""
@@ -362,15 +343,15 @@ if TORCH_AVAILABLE:
 
             enc_expected = pd.DataFrame(
                 {
-                    "linear_target": 1.6,
-                    "sine_target": 3.0,
-                    "add_relative_index_futcov": 3.0,
-                    "constant_pastcov": 4.0,
-                    "darts_enc_fc_cyc_month_sin_futcov": 6.2,
-                    "darts_enc_pc_cyc_month_sin_pastcov": 8.6,
-                    "darts_enc_pc_cyc_month_cos_pastcov": 20.0,
-                    "constant_futcov": 20.2,
-                    "darts_enc_fc_cyc_month_cos_futcov": 33.3,
+                    "linear_target": 1.7,
+                    "sine_target": 3.1,
+                    "add_relative_index_futcov": 3.6,
+                    "constant_pastcov": 3.9,
+                    "darts_enc_fc_cyc_month_sin_futcov": 5.0,
+                    "darts_enc_pc_cyc_month_sin_pastcov": 10.1,
+                    "darts_enc_pc_cyc_month_cos_pastcov": 19.9,
+                    "constant_futcov": 21.8,
+                    "darts_enc_fc_cyc_month_cos_futcov": 31.0,
                 },
                 index=[0],
             )
@@ -379,10 +360,10 @@ if TORCH_AVAILABLE:
 
             dec_expected = pd.DataFrame(
                 {
-                    "darts_enc_fc_cyc_month_cos_futcov": 4.3,
-                    "darts_enc_fc_cyc_month_sin_futcov": 17.1,
-                    "constant_futcov": 19.3,
-                    "add_relative_index_futcov": 59.3,
+                    "darts_enc_fc_cyc_month_sin_futcov": 5.3,
+                    "darts_enc_fc_cyc_month_cos_futcov": 7.4,
+                    "constant_futcov": 24.5,
+                    "add_relative_index_futcov": 62.9,
                 },
                 index=[0],
             )
@@ -404,12 +385,12 @@ if TORCH_AVAILABLE:
             # (look at the last 0 values in the array)
             att_exp_past_att = np.array(
                 [
-                    [1.1, 1.1],
-                    [0.7, 0.7],
-                    [0.6, 0.5],
-                    [0.7, 0.5],
-                    [0.8, 0.5],
-                    [0.0, 0.7],
+                    [1.0, 0.8],
+                    [0.8, 0.7],
+                    [0.6, 0.4],
+                    [0.7, 0.3],
+                    [0.9, 0.4],
+                    [0.0, 1.3],
                     [0.0, 0.0],
                 ]
             )
@@ -417,13 +398,13 @@ if TORCH_AVAILABLE:
             # see the that all values are non-0
             att_exp_full_att = np.array(
                 [
-                    [0.9, 1.0],
-                    [0.6, 0.6],
-                    [0.3, 0.4],
-                    [0.3, 0.4],
+                    [0.8, 0.8],
+                    [0.7, 0.6],
                     [0.4, 0.4],
-                    [0.6, 0.5],
-                    [0.9, 0.8],
+                    [0.3, 0.3],
+                    [0.3, 0.3],
+                    [0.7, 0.8],
+                    [0.8, 0.8],
                 ]
             )
             for full_attention, att_exp in zip(

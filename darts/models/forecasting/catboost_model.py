@@ -26,6 +26,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: str = None,
         quantiles: List = None,
@@ -39,17 +40,38 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         Parameters
         ----------
         lags
-            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
-            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
-            with lags < 0 is required.
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
-            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
-            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
-            of integers with lags is required.
+            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the
+            first step in the output chunk, even when `output_chunk_shift > 0`.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first
+            predicted time step of each sample. If `output_chunk_shift > 0`, the position of negative lags differ from
+            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same
+            step as a target lag of `-5 + output_chunk_shift`.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
@@ -57,6 +79,13 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input (history of target and past covariates) and
+            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
+            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
+            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -170,6 +199,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
@@ -305,7 +335,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         # for other regression models
         return max(
             3,
-            -self.lags["target"][0] + self.output_chunk_length + 1
-            if "target" in self.lags
-            else self.output_chunk_length,
+            (
+                -self.lags["target"][0] + self.output_chunk_length + 1
+                if "target" in self.lags
+                else self.output_chunk_length
+            ),
         )

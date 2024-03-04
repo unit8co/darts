@@ -101,15 +101,21 @@ def _optimized_historical_forecasts_last_points_only(
             )
 
         X, times = create_lagged_prediction_data(
-            target_series=None
-            if model._get_lags("target") is None
-            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
-            past_covariates=None
-            if past_covariates_ is None
-            else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
-            future_covariates=None
-            if future_covariates_ is None
-            else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
+            target_series=(
+                None
+                if model._get_lags("target") is None
+                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
+            ),
+            past_covariates=(
+                None
+                if past_covariates_ is None
+                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
+            ),
+            future_covariates=(
+                None
+                if future_covariates_ is None
+                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+            ),
             lags=model._get_lags("target"),
             lags_past_covariates=model._get_lags("past"),
             lags_future_covariates=model._get_lags("future"),
@@ -149,13 +155,16 @@ def _optimized_historical_forecasts_last_points_only(
 
         forecasts_list.append(
             TimeSeries.from_times_and_values(
-                times=times[0]
-                if stride == 1 and model.output_chunk_length == 1
-                else generate_index(
-                    start=hist_fct_start + (forecast_horizon - 1) * freq,
-                    length=forecast.shape[0],
-                    freq=freq * stride,
-                    name=series_.time_index.name,
+                times=(
+                    times[0]
+                    if stride == 1 and model.output_chunk_length == 1
+                    else generate_index(
+                        start=hist_fct_start
+                        + (forecast_horizon + model.output_chunk_shift - 1) * freq,
+                        length=forecast.shape[0],
+                        freq=freq * stride,
+                        name=series_.time_index.name,
+                    )
                 ),
                 values=forecast,
                 columns=forecast_components,
@@ -248,15 +257,21 @@ def _optimized_historical_forecasts_all_points(
                 )
 
         X, _ = create_lagged_prediction_data(
-            target_series=None
-            if model._get_lags("target") is None
-            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
-            past_covariates=None
-            if past_covariates_ is None
-            else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
-            future_covariates=None
-            if future_covariates_ is None
-            else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
+            target_series=(
+                None
+                if model._get_lags("target") is None
+                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
+            ),
+            past_covariates=(
+                None
+                if past_covariates_ is None
+                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
+            ),
+            future_covariates=(
+                None
+                if future_covariates_ is None
+                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+            ),
             lags=model._get_lags("target"),
             lags_past_covariates=model._get_lags("past"),
             lags_future_covariates=model._get_lags("future"),
@@ -316,7 +331,7 @@ def _optimized_historical_forecasts_all_points(
 
         # TODO: check if faster to create in the loop
         new_times = generate_index(
-            start=hist_fct_start,
+            start=hist_fct_start + model.output_chunk_shift * series_.freq,
             length=forecast_horizon * stride * forecast.shape[0],
             freq=freq,
             name=series_.time_index.name,

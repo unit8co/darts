@@ -1,7 +1,7 @@
-black[jupyter]==22.3.0
-flake8==4.0.1
-isort==5.11.5
+black[jupyter]==24.1.1
+flake8==7.0.0
+isort==5.13.2
 pre-commit
 pytest-cov
-pyupgrade==2.31.0
+pyupgrade==v3.15.0
 testfixtures

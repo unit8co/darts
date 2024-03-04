@@ -95,27 +95,27 @@ Under the hood, Darts has 5 types of `{X}CovariatesModel` classes implemented to
 
 | Class                   | past covariates | future past covariates | future covariates | historic future covariates |
 |-------------------------|:---------------:|:----------------------:|:-----------------:|:--------------------------:|
-| `PastCovariatesModel`   | ✅              | ✅                     |                  |                           |
-| `FutureCovariatesModel` |                |                       | ✅                |                           |
-| `DualCovariatesModel`   |                |                       | ✅                | ✅                         |
-| `MixedCovariatesModel`  | ✅              | ✅                     | ✅                | ✅                         |
-| `SplitCovariatesModel`  | ✅              | ✅                     | ✅                |                           |
+| `PastCovariatesModel`   |        ✅        |           ✅            |                   |                            |
+| `FutureCovariatesModel` |                 |                        |         ✅         |                            |
+| `DualCovariatesModel`   |                 |                        |         ✅         |             ✅              |
+| `SplitCovariatesModel`  |        ✅        |           ✅            |         ✅         |                            |
+| `MixedCovariatesModel`  |        ✅        |           ✅            |         ✅         |             ✅              |
 
 **Table 1: Darts' "{X}CovariatesModels" covariate support**
 
 Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate class names are abbreviated by the `X`-part):
 
-| TFM                | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
+| TFM                | `Past` | `Future` | `Dual` | `Split` | `Mixed` |
 |--------------------|:------:|:--------:|:------:|:-------:|:-------:|
-| `RNNModel`         |       |         | ✅     |        |        |
-| `BlockRNNModel`    | ✅     |         |       |        |        |
-| `NBEATSModel`      | ✅     |         |       |        |        |
-| `TCNModel`         | ✅     |         |       |        |        |
-| `TransformerModel` | ✅     |         |       |        |        |
-| `TFTModel`         |       |         |       | ✅      |        |
-| `NLinearModel`     |       |         |       | ✅      |        |
-| `DLinearModel`     |       |         |       | ✅      |        |
-| `TiDEModel`        |       |         |       | ✅      |        |
+| `RNNModel`         |        |          |   ✅    |         |         |
+| `BlockRNNModel`    |   ✅    |          |        |         |         |
+| `NBEATSModel`      |   ✅    |          |        |         |         |
+| `TCNModel`         |   ✅    |          |        |         |         |
+| `TransformerModel` |   ✅    |          |        |         |         |
+| `TFTModel`         |        |          |        |         |    ✅    |
+| `NLinearModel`     |        |          |        |         |    ✅    |
+| `DLinearModel`     |        |          |        |         |    ✅    |
+| `TiDEModel`        |        |          |        |         |    ✅    |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
