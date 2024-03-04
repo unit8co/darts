@@ -1331,9 +1331,8 @@ class TestRegressionModels:
 
         lags_tg = model.lags.get("target", [0])
         # past target features + target + additional lags + oc_shift - 1 (count first sample only once)
-        expected_target_length = max(
-            3,
-            model.output_chunk_length - lags_tg[0] + model.min_train_samples + ocs - 1,
+        expected_target_length = (
+            model.output_chunk_length - lags_tg[0] + model.min_train_samples + ocs - 1
         )
         assert model.min_train_series_length == expected_target_length
 
