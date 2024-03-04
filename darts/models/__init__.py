@@ -18,11 +18,6 @@ from darts.models.forecasting.baselines import (
 )
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
-from darts.models.forecasting.global_baseline_models import (
-    GlobalNaiveAggregate,
-    GlobalNaiveDrift,
-    GlobalNaiveSeasonal,
-)
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.random_forest import RandomForest
@@ -36,6 +31,11 @@ from darts.models.utils import NotImportedModule
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
     from darts.models.forecasting.dlinear import DLinearModel
+    from darts.models.forecasting.global_baseline_models import (
+        GlobalNaiveAggregate,
+        GlobalNaiveDrift,
+        GlobalNaiveSeasonal,
+    )
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.nhits import NHiTSModel
     from darts.models.forecasting.nlinear import NLinearModel
