@@ -507,7 +507,7 @@ if TORCH_AVAILABLE:
             target = self.target1[: -(ocl + ocs)]
 
             ds_covs = {}
-            ds_init_params = set(inspect.signature(ds_cls).parameters)
+            ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
             for cov_type in ["covariates", "past_covariates", "future_covariates"]:
                 if cov_type in ds_init_params:
                     ds_covs[cov_type] = self.cov1
@@ -1388,7 +1388,7 @@ if TORCH_AVAILABLE:
             target = self.target1[: -(ocl + ocs)]
 
             ds_covs = {}
-            ds_init_params = set(inspect.signature(ds_cls).parameters)
+            ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
             for cov_type in ["covariates", "past_covariates", "future_covariates"]:
                 if cov_type in ds_init_params:
                     ds_covs[cov_type] = self.cov1
