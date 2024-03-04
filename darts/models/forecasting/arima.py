@@ -235,7 +235,3 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     @property
     def _is_probabilistic(self) -> bool:
         return True
-
-    @property
-    def min_train_series_length(self) -> int:
-        return 30

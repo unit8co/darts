@@ -118,10 +118,6 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         return self._build_forecast_series(forecast)
 
     @property
-    def min_train_series_length(self) -> int:
-        return 10
-
-    @property
     def _supports_range_index(self) -> bool:
         raise_if(
             self.trend and self.trend != "c",
