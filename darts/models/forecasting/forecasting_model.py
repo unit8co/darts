@@ -11,6 +11,7 @@ The main functions are `fit()` and `predict()`. `fit()` learns the function `f()
 one or several time series. The function `predict()` applies `f()` on one or several time series in order
 to obtain forecasts for a desired number of time stamps into the future.
 """
+
 import copy
 import datetime
 import inspect
@@ -144,7 +145,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # by default models do not use encoders
         self.add_encoders = kwargs["add_encoders"]
-        self.encoders: Optional[SequentialEncoder] = None
+        self.encoders = self.initialize_encoders(default=True)
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> "ForecastingModel":
@@ -160,12 +161,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self
             Fitted model.
         """
-        raise_if_not(
-            len(series) >= self.min_train_series_length,
-            "Train series only contains {} elements but {} model requires at least {} entries".format(
-                len(series), str(self), self.min_train_series_length
-            ),
-        )
+        if not isinstance(series, TimeSeries):
+            raise_log(
+                ValueError("Train `series` must be a single `TimeSeries`."),
+                logger=logger,
+            )
+        if not len(series) >= self.min_train_series_length:
+            raise_log(
+                ValueError(
+                    "Train series only contains {} elements but {} model requires at least {} entries".format(
+                        len(series), str(self), self.min_train_series_length
+                    )
+                ),
+                logger=logger,
+            )
         self.training_series = series
         self._fit_called = True
 
@@ -285,6 +294,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         return None
 
+    @property
+    def output_chunk_shift(self) -> int:
+        """
+        Number of time steps that the output/prediction starts after the end of the input.
+        """
+        return 0
+
     @abstractmethod
     def predict(
         self,
@@ -320,6 +336,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     "the model must have been fit on a single training series."
                 ),
                 logger,
+            )
+
+        if self.output_chunk_shift and n > self.output_chunk_length:
+            raise_log(
+                ValueError(
+                    "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
+                    "shifted output chunk `(output_chunk_shift > 0)`."
+                ),
+                logger=logger,
             )
 
         if not self._is_probabilistic and num_samples > 1:
@@ -412,12 +437,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         """
-        A 6-tuple containing in order:
+        A 7-tuple containing in order:
         (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
-        lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
-        index.
+        lag, max future covariate lag, output shift). If 0 is the index of the first prediction, then all lags are
+        relative to this index.
 
         See examples below.
 
@@ -434,28 +460,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Notes
         -----
         maximum target lag (second value) cannot be `None` and is always larger than or equal to 0.
+
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 1, None, None, None, None)
+        (-3, 1, None, None, None, None, 0)
+        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2, output_chunk_shift=2)
+        >>> model.fit(train_series)
+        >>> model.extreme_lags
+        (-3, 1, None, None, None, None, 2)
         >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 6, -4, -1,  None, None)
+        (-5, 6, -4, -1,  None, None, 0)
         >>> model = LinearRegressionModel(lags=[3, 5], lags_future_covariates = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 6, None, None, 4, 6)
+        (-5, 6, None, None, 4, 6, 0)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 6, None, None, None, None)
+        (-10, 6, None, None, None, None, 0)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 6, None, None, 4, 6)
+        (-10, 6, None, None, 4, 6, 0)
         """
         pass
 
@@ -471,52 +502,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
+            output_chunk_shift,
         ) = self.extreme_lags
 
         return max(
             max_target_lag + 1,
             max_future_cov_lag + 1 if max_future_cov_lag else 0,
         ) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
-        )
-
-    @property
-    def _predict_sample_time_index_length(self) -> int:
-        """
-        Required time_index length for one `predict` function call, for any model.
-        """
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = self.extreme_lags
-
-        return (max_future_cov_lag + 1 if max_future_cov_lag else 0) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
-        )
-
-    @property
-    def _predict_sample_time_index_past_length(self) -> int:
-        """
-        Required time_index length in the past for one `predict` function call, for any model.
-        """
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = self.extreme_lags
-
-        return -min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
@@ -696,6 +688,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+            shifted by `output_chunk_shift` points into the future.
             Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
             (default behavior with ``None``) and start at the first trainable/predictable point.
@@ -1115,15 +1109,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             freq=series_.freq * stride,
                         ),
                         np.array(last_points_values),
-                        columns=forecast_components
-                        if forecast_components is not None
-                        else series_.columns,
-                        static_covariates=series_.static_covariates
-                        if not predict_likelihood_parameters
-                        else None,
-                        hierarchy=series_.hierarchy
-                        if not predict_likelihood_parameters
-                        else None,
+                        columns=(
+                            forecast_components
+                            if forecast_components is not None
+                            else series_.columns
+                        ),
+                        static_covariates=(
+                            series_.static_covariates
+                            if not predict_likelihood_parameters
+                            else None
+                        ),
+                        hierarchy=(
+                            series_.hierarchy
+                            if not predict_likelihood_parameters
+                            else None
+                        ),
                     )
                 )
             else:
@@ -1313,9 +1313,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 backtest_list.append(errors)
             else:
                 errors = [
-                    [metric_f(target_ts, f) for metric_f in metric]
-                    if len(metric) > 1
-                    else metric[0](target_ts, f)
+                    (
+                        [metric_f(target_ts, f) for metric_f in metric]
+                        if len(metric) > 1
+                        else metric[0](target_ts, f)
+                    )
                     for f in forecasts[idx]
                 ]
 
@@ -1335,7 +1337,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: Optional[int] = None,
         stride: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         last_points_only: bool = False,
         show_warnings: bool = True,
@@ -1483,10 +1485,30 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        if not isinstance(parameters, dict):
+            raise_log(
+                ValueError(
+                    f"`parameters` should be a dictionary, received a: {type(parameters)}."
+                )
+            )
+
+        if not all(
+            isinstance(params, (list, np.ndarray)) for params in parameters.values()
+        ):
+            raise_log(
+                ValueError(
+                    "Every value in the `parameters` dictionary should be a list or a np.ndarray."
+                ),
+                logger,
+            )
+
         if use_fitted_values:
             raise_if_not(
-                hasattr(model_class(), "fitted_values"),
-                "The model must have a fitted_values attribute to compare with the train TimeSeries",
+                hasattr(
+                    model_class(**{k: v[0] for k, v in parameters.items()}),
+                    "fitted_values",
+                ),
+                "The model must have a fitted_values attribute to compare with the train TimeSeries (local models)",
                 logger,
             )
 
@@ -1522,9 +1544,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
             if param_combination_dict.get("model_name", None):
                 current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
-                param_combination_dict[
-                    "model_name"
-                ] = f"{current_time}_{param_combination_dict['model_name']}"
+                param_combination_dict["model_name"] = (
+                    f"{current_time}_{param_combination_dict['model_name']}"
+                )
 
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
@@ -1674,9 +1696,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return residuals_list if len(residuals_list) > 1 else residuals_list[0]
 
-    def initialize_encoders(self) -> SequentialEncoder:
+    def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
         ``add_encoders`` used at model creation"""
+        if default:
+            return SequentialEncoder(add_encoders={})
+
         (
             input_chunk_length,
             output_chunk_length,
@@ -2039,7 +2064,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Verify that all static covariates are numeric.
         """
-        if static_covariates is not None and self.uses_static_covariates:
+        if static_covariates is not None:
             numeric_mask = static_covariates.columns.isin(
                 static_covariates.select_dtypes(include=np.number)
             )
@@ -2120,12 +2145,13 @@ class LocalForecastingModel(ForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
-        return -self.min_train_series_length, -1, None, None, None, None
+        return -self.min_train_series_length, -1, None, None, None, None, 0
 
     @property
     def supports_transferrable_series_prediction(self) -> bool:
@@ -2596,12 +2622,13 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
-        return -self.min_train_series_length, -1, None, None, 0, 0
+        return -self.min_train_series_length, -1, None, None, 0, 0, 0
 
 
 class TransferableFutureCovariatesLocalForecastingModel(

@@ -45,7 +45,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
 
             model.fit(large_ts[:98])
@@ -57,7 +57,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
 
             model2.fit(small_ts[:98])
@@ -94,7 +94,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
                 use_reversible_instance_norm=False,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -103,7 +103,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
                 use_reversible_instance_norm=True,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -114,7 +114,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -122,7 +122,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -135,7 +135,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     temporal_width_past=temporal_widths[0],
                     temporal_width_future=temporal_widths[1],
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
 
         @pytest.mark.parametrize(
@@ -160,7 +160,7 @@ if TORCH_AVAILABLE:
                 temporal_width_past=temporal_widths[0],
                 temporal_width_future=temporal_widths[1],
                 add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
             assert model.model.temporal_width_past == temporal_widths[0]
@@ -173,7 +173,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"past": "hour"}},
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -188,7 +188,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
                     use_reversible_instance_norm=enable_rin,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(
                     ts_time_index,
@@ -203,7 +203,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
                     use_reversible_instance_norm=enable_rin,
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model.fit(
                     ts_time_index,
@@ -260,7 +260,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 use_static_covariates=False,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(target_multi)
             preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
@@ -271,7 +271,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 use_static_covariates=False,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model.fit(target_multi.with_static_covariates(None))
             preds = model.predict(n=2, series=target_multi)

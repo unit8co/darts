@@ -110,6 +110,7 @@ class TestEnsembleModels:
             None,
             None,
             None,
+            0,
         )  # test if default is okay
 
         model1 = LinearRegressionModel(
@@ -122,7 +123,7 @@ class TestEnsembleModels:
         ensemble = NaiveEnsembleModel(
             [model1, model2]
         )  # test if infers extreme lags is okay
-        expected = (-5, 0, -6, -1, 6, 9)
+        expected = (-5, 0, -6, -1, 6, 9, 0)
         assert expected == ensemble.extreme_lags
 
     def test_input_models_local_models(self):
@@ -151,7 +152,7 @@ class TestEnsembleModels:
     def test_call_backtest_naive_ensemble_local_models(self):
         ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
         ensemble.fit(self.series1)
-        assert ensemble.extreme_lags == (-10, -1, None, None, None, None)
+        assert ensemble.extreme_lags == (-10, -1, None, None, None, None, 0)
         ensemble.backtest(self.series1)
 
     def test_predict_univariate_ensemble_local_models(self):

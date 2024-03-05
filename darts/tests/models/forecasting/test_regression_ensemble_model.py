@@ -551,7 +551,15 @@ class TestRegressionEnsembleModels:
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
         # -10 comes from the maximum minimum train series length of all models
-        assert ensemble.extreme_lags == (-10 - regr_train_n, -1, None, None, None, None)
+        assert ensemble.extreme_lags == (
+            -10 - regr_train_n,
+            -1,
+            None,
+            None,
+            None,
+            None,
+            0,
+        )
         ensemble.backtest(self.sine_series)
 
     def test_extreme_lags(self):
@@ -566,7 +574,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0)
+        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0)
 
         # mix of all the lags
         model3 = RandomForest(
@@ -578,7 +586,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5)
+        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0)
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]
@@ -885,8 +893,8 @@ class TestRegressionEnsembleModels:
         ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
 
     def test_wrong_model_creation_params(self):
-        """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the forecasting
-        model predictions), it is not supported."""
+        """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the
+        forecasting model predictions), it is not supported."""
         forcasting_models = [
             self.get_deterministic_global_model(2),
             self.get_deterministic_global_model([-5, -7]),

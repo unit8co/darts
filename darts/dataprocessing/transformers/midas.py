@@ -2,6 +2,7 @@
 Mixed-data sampling (MIDAS) Transformer
 ---------------------------------------
 """
+
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 import numpy as np

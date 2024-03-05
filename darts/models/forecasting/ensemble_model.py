@@ -255,12 +255,12 @@ class EnsembleModel(GlobalForecastingModel):
             model._predict_wrapper(
                 n=n,
                 series=series,
-                past_covariates=past_covariates
-                if model.supports_past_covariates
-                else None,
-                future_covariates=future_covariates
-                if model.supports_future_covariates
-                else None,
+                past_covariates=(
+                    past_covariates if model.supports_past_covariates else None
+                ),
+                future_covariates=(
+                    future_covariates if model.supports_future_covariates else None
+                ),
                 num_samples=num_samples if model._is_probabilistic else 1,
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
@@ -397,6 +397,7 @@ class EnsembleModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
             max_lag = None
@@ -408,7 +409,7 @@ class EnsembleModel(GlobalForecastingModel):
                     max_lag = aggregator(max_lag, curr_lag)
             return max_lag
 
-        lag_aggregators = (min, max, min, max, min, max)
+        lag_aggregators = (min, max, min, max, min, max, max)
         return tuple(
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         )

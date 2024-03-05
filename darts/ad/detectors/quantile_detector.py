@@ -69,9 +69,7 @@ class QuantileDetector(FittableDetector):
             return (
                 q.tolist()
                 if isinstance(q, np.ndarray)
-                else [q]
-                if not isinstance(q, Sequence)
-                else q
+                else [q] if not isinstance(q, Sequence) else q
             )
 
         low = _prep_quantile(low_quantile)

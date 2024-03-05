@@ -2,6 +2,7 @@
 Static Covariates Transformer
 ------
 """
+
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
