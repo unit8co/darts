@@ -56,14 +56,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 - Removed upper version cap (<=v2.1.2) for PyTorch Lightning. [#2251](https://github.com/unit8co/darts/pull/2251) by [Dennis Bader](https://github.com/dennisbader).
+
+### For developers of the library:
+- Updated pre-commit hooks to the latest version using `pre-commit autoupdate`. Change `pyupgrade` pre-commit hook argument to `--py38-plus`. [#2228](https://github.com/unit8co/darts/pull/2228)  by [MarcBresson](https://github.com/MarcBresson).
 - Bumped dev dependencies to newest versions: [#2248](https://github.com/unit8co/darts/pull/2248) by [Dennis Bader](https://github.com/dennisbader).
   - black[jupyter]: from 22.3.0 to 24.1.1
   - flake8: from 4.0.1 to 7.0.0
   - isort: from 5.11.5 to 5.13.2
   - pyupgrade: 2.31.0 from to v3.15.0
-
-### For developers of the library:
-- Updated pre-commit hooks to the latest version using `pre-commit autoupdate`. Change `pyupgrade` pre-commit hook argument to `--py38-plus`. [#2228](https://github.com/unit8co/darts/pull/2228)  by [MarcBresson](https://github.com/MarcBresson).
 
 ## [0.27.2](https://github.com/unit8co/darts/tree/0.27.2) (2024-01-21)
 ### For users of the library:
