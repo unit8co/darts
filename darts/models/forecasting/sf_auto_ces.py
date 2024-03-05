@@ -84,7 +84,3 @@ class StatsForecastAutoCES(LocalForecastingModel):
     @property
     def _supports_range_index(self) -> bool:
         return True
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return False
