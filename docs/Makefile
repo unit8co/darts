@@ -59,6 +59,7 @@ html:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 build-all-docs: clean copy-examples copy-quickstart generate-readme generate-userguide generate-api html
+build-api: clean generate-api html
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

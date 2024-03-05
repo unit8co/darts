@@ -841,7 +841,8 @@ def _process_historical_forecast_input(
     if future_covariates is None and model.future_covariate_series is not None:
         future_covariates = [model.future_covariate_series] * len(series)
 
-    model._verify_static_covariates(series[0].static_covariates)
+    if model.uses_static_covariates:
+        model._verify_static_covariates(series[0].static_covariates)
 
     if model.encoders.encoding_available:
         past_covariates, future_covariates = model.generate_fit_predict_encodings(

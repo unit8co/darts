@@ -89,13 +89,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
         When subclassing this class, please make sure to add the following methods with the given signatures:
-            - :func:`PLTorchForecastingModel.__init__()`
-            - :func:`PLTorchForecastingModel.forward()`
-            - :func:`PLTorchForecastingModel._produce_train_output()`
-            - :func:`PLTorchForecastingModel._get_batch_prediction()`
+            - :func:`PLForecastingModule.__init__()`
+            - :func:`PLForecastingModule.forward()`
+            - :func:`PLForecastingModule._produce_train_output()`
+            - :func:`PLForecastingModule._get_batch_prediction()`
 
         In subclass `MyModel`'s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where
-        ``kwargs`` are the parameters of :class:`PLTorchForecastingModel`.
+        ``kwargs`` are the parameters of :class:`PLForecastingModule`.
 
         Parameters
         ----------
@@ -106,7 +106,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
