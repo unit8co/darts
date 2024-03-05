@@ -230,7 +230,8 @@
 <span class="sd">        dropout</span>
 <span class="sd">            The fraction of neurons that are dropped in all-but-last RNN layers.</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
+<span class="sd">            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`</span>
+<span class="sd">            base class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># RNNModule doesn&#39;t really need input and output_chunk_length for PLModule</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -279,9 +280,11 @@
         <span class="c1"># For the RNN we concatenate the past_target with the future_covariates</span>
         <span class="c1"># (they have the same length because we enforce a Shift dataset for RNNs)</span>
         <span class="n">model_input</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="n">past_target</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="n">past_target</span>
+            <span class="p">),</span>
             <span class="n">static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="n">model_input</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
@@ -383,7 +386,7 @@
 <span class="sd">        name</span>
 <span class="sd">            The name of the specific PyTorch RNN module (&quot;RNN&quot;, &quot;GRU&quot; or &quot;LSTM&quot;).</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            all parameters required for the :class:`darts.model.forecasting_models.CustomRNNModule` base class.</span>
+<span class="sd">            all parameters required for the :class:`darts.models.forecasting.CustomRNNModule` base class.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -446,7 +449,6 @@
         <span class="n">training_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Recurrent Neural Network Model (RNNs).</span>
 
 <span class="sd">        This class provides three variants of RNNs:</span>
@@ -460,7 +462,7 @@
 <span class="sd">        RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:</span>
 
 <span class="sd">        - previous target value, which will be set to the last known target value for the first prediction,</span>
-<span class="sd">          and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),</span>
+<span class="sd">          and for all other predictions it will be set to the previous prediction (in an autoregressive fashion),</span>
 <span class="sd">        - the previous hidden state,</span>
 <span class="sd">        - the covariates at time `t` for forecasting the target at time `t` (if the model was trained with covariates),</span>
 
@@ -655,7 +657,12 @@
         <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
         <span class="k">for</span> <span class="n">kwarg</span><span class="p">,</span> <span class="n">default_value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="p">[</span><span class="s2">&quot;output_chunk_length&quot;</span><span class="p">,</span> <span class="s2">&quot;use_reversible_instance_norm&quot;</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;output_chunk_length&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;use_reversible_instance_norm&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;output_chunk_shift&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="n">model_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kwarg</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>

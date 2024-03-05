@@ -585,6 +585,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
        Kalman Filter Forecaster
       </a>
@@ -843,6 +848,12 @@
 <li><p><a class="reference internal" href="darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage" title="darts.models.forecasting.baselines.NaiveMovingAverage"><code class="xref py py-class docutils literal notranslate"><span class="pre">NaiveMovingAverage</span></code></a></p></li>
 </ul>
 </dd>
+<dt>Global Baseline Models (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</dt><dd><ul class="simple">
+<li><p><a class="reference internal" href="darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate"><code class="xref py py-class docutils literal notranslate"><span class="pre">GlobalNaiveAggregate</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift"><code class="xref py py-class docutils literal notranslate"><span class="pre">GlobalNaiveDrift</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal"><code class="xref py py-class docutils literal notranslate"><span class="pre">GlobalNaiveSeasonal</span></code></a></p></li>
+</ul>
+</dd>
 <dt>Statistical Models (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms">LocalForecastingModel</a>)</dt><dd><ul class="simple">
 <li><p><a class="reference internal" href="darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA" title="darts.models.forecasting.arima.ARIMA"><code class="xref py py-class docutils literal notranslate"><span class="pre">ARIMA</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA" title="darts.models.forecasting.varima.VARIMA"><code class="xref py py-class docutils literal notranslate"><span class="pre">VARIMA</span></code></a></p></li>
@@ -857,7 +868,7 @@
 <li><p><a class="reference internal" href="darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta" title="darts.models.forecasting.theta.FourTheta"><code class="xref py py-class docutils literal notranslate"><span class="pre">FourTheta</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta" title="darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatsForecastAutoTheta</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet" title="darts.models.forecasting.prophet_model.Prophet"><code class="xref py py-class docutils literal notranslate"><span class="pre">Prophet</span></code></a></p></li>
-<li><p><a class="reference internal" href="darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT" title="darts.models.forecasting.fft.FFT"><code class="xref py py-class docutils literal notranslate"><span class="pre">FFT</span> <span class="pre">(Fast</span> <span class="pre">Fourier</span> <span class="pre">Transform)</span></code></a></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">FFT</span></code></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster" title="darts.models.forecasting.kalman_forecaster.KalmanForecaster"><code class="xref py py-class docutils literal notranslate"><span class="pre">KalmanForecaster</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston" title="darts.models.forecasting.croston.Croston"><code class="xref py py-class docutils literal notranslate"><span class="pre">Croston</span></code></a></p></li>
 </ul>
@@ -885,8 +896,8 @@
 </ul>
 </dd>
 <dt>Ensemble Models (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</dt><dd><ul class="simple">
-<li><p><a class="reference internal" href="darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel" title="darts.models.forecasting.baselines.NaiveEnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code></a></p></li>
-<li><p><a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel" title="darts.models.forecasting.baselines.NaiveEnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.baselines.NaiveEnsembleModel</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel" title="darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel</span></code></a></p></li>
 </ul>
 </dd>
 </dl>
@@ -901,6 +912,7 @@
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.dlinear.html">D-Linear</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">Exponential Smoothing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.fft.html">Fast Fourier Transform</a></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">Global Baseline Models (Naive)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">Kalman Filter Forecaster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.lgbm.html">LightGBM Model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression model</a></li>

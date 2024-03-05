@@ -224,6 +224,7 @@
         <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FUTURE_LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -239,7 +240,8 @@
 <span class="sd">        lags</span>
 <span class="sd">            Lagged target `series` values used to predict the next time step/s.</span>
 <span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`</span>
-<span class="sd">            corresponds the first predicted time step of each sample.</span>
+<span class="sd">            corresponds the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
 <span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
 <span class="sd">            If a dictionary, the keys correspond to the `series` component names (of the first series when</span>
 <span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
@@ -248,17 +250,21 @@
 <span class="sd">        lags_past_covariates</span>
 <span class="sd">            Lagged `past_covariates` values used to predict the next time step/s.</span>
 <span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,</span>
-<span class="sd">            where `0` corresponds to the first predicted time step of each sample.</span>
+<span class="sd">            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
 <span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
 <span class="sd">            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when</span>
 <span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
 <span class="sd">            key &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
 <span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
 <span class="sd">        lags_future_covariates</span>
-<span class="sd">            Lagged `future_covariates` values used to predict the next time step/s.</span>
+<span class="sd">            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the</span>
+<span class="sd">            first step in the output chunk, even when `output_chunk_shift &gt; 0`.</span>
 <span class="sd">            If a tuple of `(past, future)`, both values must be &gt; 0. Uses the last `n=past` past lags and `n=future`</span>
-<span class="sd">            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0`</span>
-<span class="sd">            corresponds the first predicted time step of each sample.</span>
+<span class="sd">            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first</span>
+<span class="sd">            predicted time step of each sample. If `output_chunk_shift &gt; 0`, the position of negative lags differ from</span>
+<span class="sd">            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same</span>
+<span class="sd">            step as a target lag of `-5 + output_chunk_shift`.</span>
 <span class="sd">            If a list of integers, uses only the specified values as lags.</span>
 <span class="sd">            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when</span>
 <span class="sd">            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key</span>
@@ -267,10 +273,17 @@
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
 <span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
-<span class="sd">            one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
 <span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
 <span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
 <span class="sd">            support).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input (history of target and past covariates) and</span>
+<span class="sd">            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first</span>
+<span class="sd">            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the</span>
+<span class="sd">            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions</span>
+<span class="sd">            (`n &gt; output_chunk_length`).</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -372,6 +385,7 @@
             <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
             <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
             <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">model</span><span class="o">=</span><span class="n">xgb</span><span class="o">.</span><span class="n">XGBRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">),</span>
@@ -492,9 +506,11 @@
         <span class="c1"># more than for other regression models</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
             <span class="mi">3</span><span class="p">,</span>
-            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
-            <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+            <span class="p">),</span>
         <span class="p">)</span></div>
 </pre></div>
 

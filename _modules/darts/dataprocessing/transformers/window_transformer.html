@@ -188,6 +188,7 @@
         <span class="n">forecasting_safe</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">keep_non_transformed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">include_current</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">keep_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;WindowTransformer&quot;</span><span class="p">,</span>
         <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -291,10 +292,14 @@
 
 <span class="sd">        keep_non_transformed</span>
 <span class="sd">            ``False`` to return the transformed components only, ``True`` to return all original components along</span>
-<span class="sd">            the transformed ones. Default is ``False``.</span>
+<span class="sd">            the transformed ones. Default is ``False``. If the series has a hierarchy, must be set to ``False``.</span>
 
 <span class="sd">        include_current</span>
 <span class="sd">            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.</span>
+
+<span class="sd">        keep_names</span>
+<span class="sd">            Whether the transformed components should keep the original component names or. Must be set to ``False``</span>
+<span class="sd">            if `keep_non_transformed = True` or the number of transformation is greater than 1.</span>
 
 <span class="sd">        name</span>
 <span class="sd">            A specific name for the transformer.</span>
@@ -315,6 +320,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">treat_na</span> <span class="o">=</span> <span class="n">treat_na</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_safe</span> <span class="o">=</span> <span class="n">forecasting_safe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">include_current</span> <span class="o">=</span> <span class="n">include_current</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keep_names</span> <span class="o">=</span> <span class="n">keep_names</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
 <div class="viewcode-block" id="WindowTransformer.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.window_transformer.html#darts.dataprocessing.transformers.window_transformer.WindowTransformer.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>

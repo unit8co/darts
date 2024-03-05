@@ -224,7 +224,8 @@
 <span class="sd">            Whether to apply the &quot;normalization&quot; described in the paper.</span>
 
 <span class="sd">        **kwargs</span>
-<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
+<span class="sd">            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`</span>
+<span class="sd">            base class.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -350,6 +351,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">shared_weights</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">const_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -371,10 +373,16 @@
 <span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
 <span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
 <span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
-<span class="sd">            using either a one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            using either a one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
 <span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
 <span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
 <span class="sd">            model&#39;s covariate support).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input and output. If the model supports</span>
+<span class="sd">            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start</span>
+<span class="sd">            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model</span>
+<span class="sd">            cannot generate autoregressive predictions (`n &gt; output_chunk_length`).</span>
 <span class="sd">        shared_weights</span>
 <span class="sd">            Whether to use shared weights for all components of multivariate series.</span>
 

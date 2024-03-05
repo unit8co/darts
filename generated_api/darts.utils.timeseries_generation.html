@@ -585,6 +585,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
        Kalman Filter Forecaster
       </a>
@@ -910,6 +915,7 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 <span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">datetime_attribute_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_columns=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#datetime_attribute_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a new TimeSeries with index <cite>time_index</cite> and one or more dimensions containing
 (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.</p>
+<p>1-indexed attributes are shifted to enforce 0-indexing across all the encodings.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

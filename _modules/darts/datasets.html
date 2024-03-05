@@ -186,8 +186,6 @@
 
 <span class="kn">from</span> <span class="nn">.dataset_loaders</span> <span class="kn">import</span> <span class="n">DatasetLoaderCSV</span><span class="p">,</span> <span class="n">DatasetLoaderMetadata</span>
 
-<span class="n">pd_above_v22</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&gt;=</span> <span class="s2">&quot;2.2&quot;</span>
-
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Overall usage of this package:</span>
 <span class="sd">    from darts.datasets import AirPassengersDataset</span>
@@ -688,7 +686,7 @@
 
         <span class="k">def</span> <span class="nf">pre_proces_fn</span><span class="p">(</span><span class="n">extracted_dir</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">):</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">extracted_dir</span><span class="p">,</span> <span class="s2">&quot;LD2011_2014.txt&quot;</span><span class="p">))</span> <span class="k">as</span> <span class="n">fin</span><span class="p">:</span>
-                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">&quot;wt&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fin</span><span class="p">:</span>
                         <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="p">))</span>
 
@@ -790,9 +788,11 @@
                 <span class="n">uri</span><span class="o">=</span><span class="s2">&quot;https://github.com/fivethirtyeight/uber-tlc-foil-response/raw/&quot;</span>
                 <span class="s2">&quot;63bb878b76f47f69b4527d50af57aac26dead983/&quot;</span>
                 <span class="s2">&quot;uber-trip-data/uber-raw-data-janjune-15.csv.zip&quot;</span><span class="p">,</span>
-                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;9ed84ebe0df4bc664748724b633b3fe6&quot;</span>
-                <span class="k">if</span> <span class="n">sample_freq</span> <span class="o">==</span> <span class="s2">&quot;hourly&quot;</span>
-                <span class="k">else</span> <span class="s2">&quot;24f9fd67e4b9e53f0214a90268cd9bee&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">&quot;9ed84ebe0df4bc664748724b633b3fe6&quot;</span>
+                    <span class="k">if</span> <span class="n">sample_freq</span> <span class="o">==</span> <span class="s2">&quot;hourly&quot;</span>
+                    <span class="k">else</span> <span class="s2">&quot;24f9fd67e4b9e53f0214a90268cd9bee&quot;</span>
+                <span class="p">),</span>
                 <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Pickup_date&quot;</span><span class="p">,</span>
                 <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
                 <span class="n">pre_process_zipped_csv_fn</span><span class="o">=</span><span class="n">pre_proces_fn</span><span class="p">,</span>
@@ -1056,12 +1056,8 @@
             <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Timestamp&quot;</span>
             <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">())</span>
 
-        <span class="c1"># pandas v2.2.0 introduced some changes</span>
-        <span class="n">hash_expected</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;485d81e9902cc0ccb1f86d7e01fb37cd&quot;</span>
-            <span class="k">if</span> <span class="n">pd_above_v22</span>
-            <span class="k">else</span> <span class="s2">&quot;a019125b7f9c1afeacb0ae60ce7455ef&quot;</span>
-        <span class="p">)</span>
+        <span class="c1"># pandas v2.2.0 introduced a bug that was fixed in v2.2.1; the expected hash for 2.2.0</span>
+        <span class="c1"># is &quot;485d81e9902cc0ccb1f86d7e01fb37cd&quot;</span>
         <span class="c1"># hash value for dataset with weather data</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
@@ -1071,7 +1067,7 @@
                     <span class="s2">&quot;ewz_stromabgabe_netzebenen_stadt_zuerich/&quot;</span>
                     <span class="s2">&quot;download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv&quot;</span>
                 <span class="p">),</span>
-                <span class="nb">hash</span><span class="o">=</span><span class="n">hash_expected</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;a019125b7f9c1afeacb0ae60ce7455ef&quot;</span><span class="p">,</span>
                 <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Timestamp&quot;</span><span class="p">,</span>
                 <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;15min&quot;</span><span class="p">,</span>
                 <span class="n">pre_process_csv_fn</span><span class="o">=</span><span class="n">pre_process_dataset</span><span class="p">,</span>

@@ -175,7 +175,7 @@
 
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -195,7 +195,7 @@
 <span class="c1"># care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).</span>
 
 
-<div class="viewcode-block" id="multi_ts_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multi_ts_support">[docs]</a><span class="k">def</span> <span class="nf">multi_ts_support</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<div class="viewcode-block" id="multi_ts_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multi_ts_support">[docs]</a><span class="k">def</span> <span class="nf">multi_ts_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This decorator further adapts the metrics that took as input two univariate/multivariate ``TimeSeries`` instances,</span>
 <span class="sd">    adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric</span>
@@ -214,9 +214,7 @@
         <span class="n">pred_series</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;pred_series&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="s2">&quot;pred_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
-            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
-            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="p">)</span>
 
         <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">,</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
@@ -275,7 +273,7 @@
     <span class="k">return</span> <span class="n">wrapper_multi_ts_support</span></div>
 
 
-<div class="viewcode-block" id="multivariate_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multivariate_support">[docs]</a><span class="k">def</span> <span class="nf">multivariate_support</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<div class="viewcode-block" id="multivariate_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multivariate_support">[docs]</a><span class="k">def</span> <span class="nf">multivariate_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This decorator transforms a metric function that takes as input two univariate TimeSeries instances</span>
 <span class="sd">    into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate</span>
@@ -447,7 +445,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Mean Absolute Error (MAE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -504,7 +502,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Mean Squared Error (MSE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -561,7 +559,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Root Mean Squared Error (RMSE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mse</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">))</span></div>
@@ -616,7 +614,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Root Mean Squared Log Error (RMSLE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -678,15 +676,15 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Coefficient of Variation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="p">(</span>
-        <span class="mi">100</span>
-        <span class="o">*</span> <span class="n">rmse</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-        <span class="o">/</span> <span class="n">actual_series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="p">)</span></div>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="c1"># not calling rmse as y_true and y_pred are np.ndarray</span>
+    <span class="k">return</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span> <span class="o">/</span> <span class="n">y_true</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="mape"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mape">[docs]</a><span class="nd">@multi_ts_support</span>
@@ -745,7 +743,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Mean Absolute Percentage Error (MAPE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -818,7 +816,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The symmetric Mean Absolute Percentage Error (sMAPE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -893,7 +891,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Mean Absolute Scaled Error (MASE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1075,7 +1073,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Overall Percentage Error (OPE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1145,7 +1143,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Mean Absolute Ranged Relative Error (MARRE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1210,7 +1208,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The Coefficient of Determination :math:`R^2`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
@@ -1302,7 +1300,6 @@
     <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;:math:`\\rho`-risk (rho-risk or quantile risk).</span>
 
 <span class="sd">    Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions</span>
@@ -1353,7 +1350,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The rho-risk metric</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1431,7 +1428,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    float</span>
+<span class="sd">    Union[float, List[float]]</span>
 <span class="sd">        The quantile loss metric</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 

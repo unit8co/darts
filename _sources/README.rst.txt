@@ -435,9 +435,33 @@ on bringing more models and features.
    * - `Croston <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston>`_ method
      - 
      - 🟩 🟥
-     - 🟥 🟥 🟥
+     - 🟥 🟩 🟥
      - 🟥 🟥
      - 🟥
+   * - **Global Baseline Models**\ :raw-html-m2r:`<br/>`\ (\ `GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_\ )
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - `GlobalNaiveAggregate <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate>`_
+     - 
+     - 🟩 🟩
+     - 🟥 🟥 🟥
+     - 🟥 🟥
+     - 🟩
+   * - `GlobalNaiveDrift <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift>`_
+     - 
+     - 🟩 🟩
+     - 🟥 🟥 🟥
+     - 🟥 🟥
+     - 🟩
+   * - `GlobalNaiveSeasonal <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal>`_
+     - 
+     - 🟩 🟩
+     - 🟥 🟥 🟥
+     - 🟥 🟥
+     - 🟩
    * - **Regression Models**\ :raw-html-m2r:`<br/>`\ (\ `GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_\ )
      - 
      - 

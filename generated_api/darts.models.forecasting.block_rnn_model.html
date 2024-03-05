@@ -587,6 +587,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
        Kalman Filter Forecaster
       </a>
@@ -839,7 +844,7 @@
 <h1>Block Recurrent Neural Networks<a class="headerlink" href="#block-recurrent-neural-networks" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.block_rnn_model.</span></span><span class="sig-name descname"><span class="pre">BlockRNNModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RNN'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rnn_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_fc_sizes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/block_rnn_model.html#BlockRNNModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.block_rnn_model.</span></span><span class="sig-name descname"><span class="pre">BlockRNNModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RNN'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rnn_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_fc_sizes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/block_rnn_model.html#BlockRNNModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code></p>
 <p>Block Recurrent Neural Network Model (RNNs).</p>
 <p>This is a neural network model that uses an RNN encoder to encode fixed-length input chunks, and
@@ -859,10 +864,15 @@ series, and past and/or future covariates (if the model supports it).</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
 from future covariates to use as a model input (if the model supports future covariates). It is not the same
 as forecast horizon <cite>n</cite> used in <cite>predict()</cite>, which is the desired number of prediction points generated
-using either a one-shot- or auto-regressive forecast. Setting <cite>n &lt;= output_chunk_length</cite> prevents
+using either a one-shot- or autoregressive forecast. Setting <cite>n &lt;= output_chunk_length</cite> prevents
 auto-regression. This is useful when the covariates don’t extend far enough into the future, or to prohibit
 the model from using future values of past and / or future covariates for prediction (depending on the
 model’s covariate support).</p></li>
+<li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+input chunk end). This will create a gap between the input and output. If the model supports
+<cite>future_covariates</cite>, the future values are extracted from the shifted output chunk. Predictions will start
+<cite>output_chunk_shift</cite> steps after the end of the target <cite>series</cite>. If <cite>output_chunk_shift</cite> is set, the model
+cannot generate autoregressive predictions (<cite>n &gt; output_chunk_length</cite>).</p></li>
 <li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Type</span></code>[<a class="reference internal" href="#darts.models.forecasting.block_rnn_model.CustomBlockRNNModule" title="darts.models.forecasting.block_rnn_model.CustomBlockRNNModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">CustomBlockRNNModule</span></code></a>]]) – Either a string specifying the RNN module type (“RNN”, “LSTM” or “GRU”), or a subclass of
 <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.CustomBlockRNNModule" title="darts.models.forecasting.block_rnn_model.CustomBlockRNNModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">CustomBlockRNNModule</span></code></a> (the class itself, not an object of the class) with a custom logic.</p></li>
 <li><p><strong>hidden_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size for feature maps for each hidden RNN layer (<span class="math notranslate nohighlight">\(h_n\)</span>).
@@ -1025,7 +1035,7 @@ that can be used to improve the forecasts quality compared to this simple usage 
 <td><p>Whether the model considers static covariates, if there are any.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.extreme_lags" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
-<td><p>A 6-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag).</p></td>
+<td><p>A 7-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.first_prediction_index" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.first_prediction_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_prediction_index</span></code></a></p></td>
 <td><p>Returns the index of the first predicted within the output of self.model.</p></td>
@@ -1039,31 +1049,34 @@ that can be used to improve the forecasts quality compared to this simple usage 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_length" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_shift" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_multivariate" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_multivariate" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_past_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_past_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_static_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_static_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_transferrable_series_prediction" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_transferrable_series_prediction" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_future_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_future_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_past_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_past_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_static_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_static_covariates" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -1122,7 +1135,7 @@ that can be used to improve the forecasts quality compared to this simple usage 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.historical_forecasts" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.initialize_encoders" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.initialize_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_encoders</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.initialize_encoders" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.initialize_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_encoders</span></code></a>([default])</p></td>
 <td><p>instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> used at model creation</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.load" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path, **kwargs)</p></td>
@@ -1285,11 +1298,11 @@ provided series and each sample.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.extreme_lags">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.extreme_lags" title="Permalink to this definition">¶</a></dt>
-<dd><p>A 6-tuple containing in order:
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.extreme_lags" title="Permalink to this definition">¶</a></dt>
+<dd><p>A 7-tuple containing in order:
 (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
-lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
-index.</p>
+lag, max future covariate lag, output shift). If 0 is the index of the first prediction, then all lags are
+relative to this index.</p>
 <p>See examples below.</p>
 <dl class="simple">
 <dt>If the model wasn’t fitted with:</dt><dd><ul class="simple">
@@ -1307,28 +1320,32 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-3, 1, None, None, None, None)</span>
+<span class="go">(-3, 1, None, None, None, None, 0)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">output_chunk_shift</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
+<span class="go">(-3, 1, None, None, None, None, 2)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">],</span> <span class="n">lags_past_covariates</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-5, 6, -4, -1,  None, None)</span>
+<span class="go">(-5, 6, -4, -1,  None, None, 0)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">lags_future_covariates</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-5, 6, None, None, 4, 6)</span>
+<span class="go">(-5, 6, None, None, 4, 6, 0)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-10, 6, None, None, None, None)</span>
+<span class="go">(-10, 6, None, None, None, None, 0)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-10, 6, None, None, 4, 6)</span>
+<span class="go">(-10, 6, None, None, 4, 6, 0)</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1521,7 +1538,7 @@ encoded covariates.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.gridsearch">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.gridsearch" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the best hyper-parameters among a given set using a grid search.</p>
 <p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -1563,7 +1580,7 @@ respective hyperparameter.</p></li>
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – Optionally, a future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>forecast_horizon</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The integer value of the forecasting horizon. Activates expanding window mode.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Only used in expanding window mode. The number of time steps between two consecutive predictions.</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – <p>Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.
+<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.
 This parameter supports: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>, and <code class="docutils literal notranslate"><span class="pre">None</span></code>.
 If a <code class="docutils literal notranslate"><span class="pre">float</span></code>, it is the proportion of the time series that should lie before the first prediction point.
 If an <code class="docutils literal notranslate"><span class="pre">int</span></code>, it is either the index position of the first prediction point for <cite>series</cite> with a
@@ -1670,7 +1687,9 @@ predictable point is earlier than the first trainable point.</p></li>
 or <cite>retrain</cite> is a Callable and the first trainable point is earlier than the first predictable point.</p></li>
 <li><p>the first trainable point (given <cite>train_length</cite>) otherwise</p></li>
 </ul>
-<p>Note: Raises a ValueError if <cite>start</cite> yields a time outside the time index of <cite>series</cite>.
+<p>Note: If the model uses a shifted output (<cite>output_chunk_shift &gt; 0</cite>), then the first predicted point is also
+shifted by <cite>output_chunk_shift</cite> points into the future.
+Note: Raises a ValueError if <cite>start</cite> yields a time outside the time index of <cite>series</cite>.
 Note: If <cite>start</cite> is outside the possible historical forecasting times, will ignore the parameter
 (default behavior with <code class="docutils literal notranslate"><span class="pre">None</span></code>) and start at the first trainable/predictable point.</p>
 </p></li>
@@ -1734,7 +1753,7 @@ and the inner lists contain the different historical forecasts.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.initialize_encoders">
-<span class="sig-name descname"><span class="pre">initialize_encoders</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.initialize_encoders" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">initialize_encoders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.initialize_encoders" title="Permalink to this definition">¶</a></dt>
 <dd><p>instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
 <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> used at model creation</p>
 <dl class="field-list simple">
@@ -2000,6 +2019,17 @@ overriding the default value of 3 of ForecastingModel</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_length">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time steps predicted at once by the model, not defined for statistical models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_shift">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_shift</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.output_chunk_shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of time steps that the output/prediction starts after the end of the input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
@@ -2338,7 +2368,8 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 <li><p><strong>num_layers_out_fc</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>]) – A list containing the dimensions of the hidden layers of the fully connected NN.
 This network connects the last hidden layer of the PyTorch RNN module to the output.</p></li>
 <li><p><strong>dropout</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The fraction of neurons that are dropped in all-but-last RNN layers.</p></li>
-<li><p><strong>**kwargs</strong> – all parameters required for <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.model.forecasting_models.PLForecastingModule</span></code> base class.</p></li>
+<li><p><strong>**kwargs</strong> – all parameters required for <a class="reference internal" href="darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>
+base class.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2385,6 +2416,9 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></p></td>
 <td><p>Number of time steps predicted at once by the model.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">strict_loading</span></code></p></td>
+<td><p>Determines how Lightning loads this model using <cite>.load_state_dict(..., strict=model.strict_loading)</cite>.</p></td>
+</tr>
 </tbody>
 </table>
 <table class="table">
@@ -2418,13 +2452,13 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_module</span></code>(name, module)</p></td>
-<td><p>Adds a child module to the current module.</p></td>
+<td><p>Add a child module to the current module.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">all_gather</span></code>(data[, group, sync_grads])</p></td>
 <td><p>Gather tensors or collections of tensors from multiple processes.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply</span></code>(fn)</p></td>
-<td><p>Applies <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p></td>
+<td><p>Apply <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">backward</span></code>(loss, *args, **kwargs)</p></td>
 <td><p>Called to perform backward on the loss returned in <code class="xref py py-meth docutils literal notranslate"><span class="pre">training_step()</span></code>.</p></td>
@@ -2433,10 +2467,10 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">bfloat16</span></code> datatype.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">buffers</span></code>([recurse])</p></td>
-<td><p>Returns an iterator over module buffers.</p></td>
+<td><p>Return an iterator over module buffers.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code>()</p></td>
-<td><p>Returns an iterator over immediate children modules.</p></td>
+<td><p>Return an iterator over immediate children modules.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip_gradients</span></code>(optimizer[, ...])</p></td>
 <td><p>Handles gradient clipping internally.</p></td>
@@ -2472,10 +2506,10 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.double()</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code>()</p></td>
-<td><p>Sets the module in evaluation mode.</p></td>
+<td><p>Set the module in evaluation mode.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code>()</p></td>
-<td><p>Set the extra representation of the module</p></td>
+<td><p>Set the extra representation of the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>()</p></td>
 <td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.float()</span></code>.</p></td>
@@ -2487,28 +2521,28 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Freeze all params for inference.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code>(target)</p></td>
-<td><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code>()</p></td>
-<td><p>Returns any extra state to include in the module's state_dict.</p></td>
+<td><p>Return any extra state to include in the module's state_dict.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code>(target)</p></td>
-<td><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code>(target)</p></td>
-<td><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code>()</p></td>
 <td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.nn.Module.half()</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the IPU.</p></td>
+<td><p>Move all model parameters and buffers to the IPU.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code>([map_location, ...])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code>(checkpoint_path[, ...])</p></td>
 <td><p>Primary way of loading a model from a checkpoint.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code>(state_dict[, strict, assign])</p></td>
-<td><p>Copies parameters and buffers from <code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code> into this module and its descendants.</p></td>
+<td><p>Copy parameters and buffers from <code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code> into this module and its descendants.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log</span></code>(name, value[, prog_bar, logger, ...])</p></td>
 <td><p>Log a key, value pair.</p></td>
@@ -2526,19 +2560,19 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Call this directly from your <code class="xref py py-meth docutils literal notranslate"><span class="pre">training_step()</span></code> when doing optimizations manually.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code>()</p></td>
-<td><p>Returns an iterator over all modules in the network.</p></td>
+<td><p>Return an iterator over all modules in the network.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code>([prefix, recurse, ...])</p></td>
-<td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
+<td><p>Return an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code>()</p></td>
-<td><p>Returns an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
+<td><p>Return an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code>([memo, prefix, remove_duplicate])</p></td>
-<td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
+<td><p>Return an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code>([prefix, recurse, ...])</p></td>
-<td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
+<td><p>Return an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_after_backward</span></code>()</p></td>
 <td><p>Called after <code class="docutils literal notranslate"><span class="pre">loss.backward()</span></code> and before optimizers are stepped.</p></td>
@@ -2583,7 +2617,7 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Called at the beginning of predicting.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_model_eval</span></code>()</p></td>
-<td><p>Sets the model to eval during the predict loop.</p></td>
+<td><p>Called when the predict loop starts.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_predict_start</span></code>()</p></td>
 <td><p>Called at the beginning of predicting.</p></td>
@@ -2607,10 +2641,10 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Called in the test loop at the very beginning of the epoch.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_model_eval</span></code>()</p></td>
-<td><p>Sets the model to eval during the test loop.</p></td>
+<td><p>Called when the test loop starts.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_model_train</span></code>()</p></td>
-<td><p>Sets the model to train during the test loop.</p></td>
+<td><p>Called when the test loop ends.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_test_start</span></code>()</p></td>
 <td><p>Called at the beginning of testing.</p></td>
@@ -2649,10 +2683,10 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Called in the validation loop at the very beginning of the epoch.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_model_eval</span></code>()</p></td>
-<td><p>Sets the model to eval during the val loop.</p></td>
+<td><p>Called when the validation loop starts.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_model_train</span></code>()</p></td>
-<td><p>Sets the model to train during the val loop.</p></td>
+<td><p>Called when the validation loop ends.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_validation_model_zero_grad</span></code>()</p></td>
 <td><p>Called by the training loop to release gradients before entering the validation loop.</p></td>
@@ -2670,7 +2704,7 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Returns the optimizer(s) that are being used during training.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code>([recurse])</p></td>
-<td><p>Returns an iterator over module parameters.</p></td>
+<td><p>Return an iterator over module parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_dataloader</span></code>()</p></td>
 <td><p>An iterable or collection of iterables specifying prediction samples.</p></td>
@@ -2685,34 +2719,34 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Prints only from process 0.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code>(hook)</p></td>
-<td><p>Registers a backward hook on the module.</p></td>
+<td><p>Register a backward hook on the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code>(name, tensor[, persistent])</p></td>
-<td><p>Adds a buffer to the module.</p></td>
+<td><p>Add a buffer to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code>(hook, *[, prepend, ...])</p></td>
-<td><p>Registers a forward hook on the module.</p></td>
+<td><p>Register a forward hook on the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code>(hook, *[, ...])</p></td>
-<td><p>Registers a forward pre-hook on the module.</p></td>
+<td><p>Register a forward pre-hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code>(hook[, prepend])</p></td>
-<td><p>Registers a backward hook on the module.</p></td>
+<td><p>Register a backward hook on the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code>(hook[, prepend])</p></td>
-<td><p>Registers a backward pre-hook on the module.</p></td>
+<td><p>Register a backward pre-hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code>(hook)</p></td>
-<td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
+<td><p>Register a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code>(name, module)</p></td>
 <td><p>Alias for <code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code>(name, param)</p></td>
-<td><p>Adds a parameter to the module.</p></td>
+<td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code>(hook)</p></td>
-<td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -2721,7 +2755,7 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Save arguments to <code class="docutils literal notranslate"><span class="pre">hparams</span></code> attribute.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code>(state)</p></td>
-<td><p>This function is called from <code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code> to handle any extra state found within the <cite>state_dict</cite>.</p></td>
+<td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_predict_parameters</span></code>(n, num_samples, ...)</p></td>
 <td><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p></td>
@@ -2730,10 +2764,10 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Called at the beginning of fit (train + validate), validate, test, or predict.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code>()</p></td>
-<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code>(*args[, destination, prefix, ...])</p></td>
-<td><p>Returns a dictionary containing references to the whole state of the module.</p></td>
+<td><p>Return a dictionary containing references to the whole state of the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">teardown</span></code>(stage)</p></td>
 <td><p>Called at the end of fit (train + validate), validate, test, or predict.</p></td>
@@ -2751,7 +2785,7 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Cast module precision (float32 by default) to another precision.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code>(*, device[, recurse])</p></td>
-<td><p>Moves the parameters and buffers to the specified device without copying storage.</p></td>
+<td><p>Move the parameters and buffers to the specified device without copying storage.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_onnx</span></code>(file_path[, input_sample])</p></td>
 <td><p>Saves the model in ONNX format.</p></td>
@@ -2763,7 +2797,7 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>Makes sure only the gradients of the current optimizer's parameters are calculated in the training step to prevent dangling gradients in multiple-optimizer setup.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code>([mode])</p></td>
-<td><p>Sets the module in training mode.</p></td>
+<td><p>Set the module in training mode.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_dataloader</span></code>()</p></td>
 <td><p>An iterable or collection of iterables specifying training samples.</p></td>
@@ -2790,10 +2824,10 @@ This network connects the last hidden layer of the PyTorch RNN module to the out
 <td><p>performs the validation step</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the XPU.</p></td>
+<td><p>Move all model parameters and buffers to the XPU.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code>([set_to_none])</p></td>
-<td><p>Resets gradients of all model parameters.</p></td>
+<td><p>Reset gradients of all model parameters.</p></td>
 </tr>
 </tbody>
 </table>

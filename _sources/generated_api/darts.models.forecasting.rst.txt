@@ -18,6 +18,7 @@
         darts.models.forecasting.exponential_smoothing
         darts.models.forecasting.fft
         darts.models.forecasting.forecasting_model
+        darts.models.forecasting.global_baseline_models
         darts.models.forecasting.kalman_forecaster
         darts.models.forecasting.lgbm
         darts.models.forecasting.linear_regression_model

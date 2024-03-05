@@ -180,8 +180,9 @@
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LocalResponseNorm&#39;</span><span class="p">,</span> <span class="s1">&#39;CrossMapLRN2d&#39;</span><span class="p">,</span> <span class="s1">&#39;LayerNorm&#39;</span><span class="p">,</span> <span class="s1">&#39;GroupNorm&#39;</span><span class="p">]</span>
 
 <span class="k">class</span> <span class="nc">LocalResponseNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies local response normalization over an input signal composed</span>
-<span class="sd">    of several input planes, where channels occupy the second dimension.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies local response normalization over an input signal.</span>
+
+<span class="sd">    The input signal is composed of several input planes, where channels occupy the second dimension.</span>
 <span class="sd">    Applies normalization across channels.</span>
 
 <span class="sd">    .. math::</span>
@@ -207,6 +208,7 @@
 <span class="sd">        &gt;&gt;&gt; output_4d = lrn(signal_4d)</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">,</span> <span class="s1">&#39;beta&#39;</span><span class="p">,</span> <span class="s1">&#39;k&#39;</span><span class="p">]</span>
     <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span>
@@ -253,7 +255,9 @@
 
 
 <span class="k">class</span> <span class="nc">LayerNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Layer Normalization over a mini-batch of inputs as described in</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Layer Normalization over a mini-batch of inputs.</span>
+
+<span class="sd">    This layer implements the operation as described in</span>
 <span class="sd">    the paper `Layer Normalization &lt;https://arxiv.org/abs/1607.06450&gt;`__</span>
 
 <span class="sd">    .. math::</span>
@@ -327,6 +331,7 @@
 <span class="sd">        :scale: 50 %</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;normalized_shape&#39;</span><span class="p">,</span> <span class="s1">&#39;eps&#39;</span><span class="p">,</span> <span class="s1">&#39;elementwise_affine&#39;</span><span class="p">]</span>
     <span class="n">normalized_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
     <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span>
@@ -370,7 +375,9 @@
 
 
 <span class="k">class</span> <span class="nc">GroupNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Group Normalization over a mini-batch of inputs as described in</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Group Normalization over a mini-batch of inputs.</span>
+
+<span class="sd">    This layer implements the operation as described in</span>
 <span class="sd">    the paper `Group Normalization &lt;https://arxiv.org/abs/1803.08494&gt;`__</span>
 
 <span class="sd">    .. math::</span>
@@ -412,6 +419,7 @@
 <span class="sd">        &gt;&gt;&gt; # Activating the module</span>
 <span class="sd">        &gt;&gt;&gt; output = m(input)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;num_groups&#39;</span><span class="p">,</span> <span class="s1">&#39;num_channels&#39;</span><span class="p">,</span> <span class="s1">&#39;eps&#39;</span><span class="p">,</span> <span class="s1">&#39;affine&#39;</span><span class="p">]</span>
     <span class="n">num_groups</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">num_channels</span><span class="p">:</span> <span class="nb">int</span>

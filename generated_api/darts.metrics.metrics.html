@@ -587,6 +587,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
        Kalman Filter Forecaster
       </a>
@@ -873,7 +878,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The Coefficient of Variation</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -945,7 +950,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The Mean Absolute Error (MAE)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -988,7 +993,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-odd"><p>The Mean Absolute Percentage Error (MAPE)</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
+<dd class="field-even"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1030,7 +1035,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-odd"><p>The Mean Absolute Ranged Relative Error (MARRE)</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
+<dd class="field-even"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1075,7 +1080,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-odd"><p>The Mean Absolute Scaled Error (MASE)</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
+<dd class="field-even"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1112,7 +1117,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The Mean Squared Error (MSE)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1126,6 +1131,11 @@ for <code class="docutils literal notranslate"><span class="pre">TimeSeries</spa
 pairwise metrics using a <cite>inter_reduction</cite> subroutine passed as argument to the metric function.</p>
 <p>If a ‘Sequence[TimeSeries]’ is passed as input, this decorator provides also parallelisation of the metric
 evaluation regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (if the <cite>n_jobs</cite> parameter is not set 1).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -1135,6 +1145,11 @@ evaluation regarding different <code class="docutils literal notranslate"><span 
 into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
 metrics for components with the same indices, and returns a float value that is computed as a function of all the
 univariate metrics using a <cite>reduction</cite> subroutine passed as argument to the metric function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -1174,7 +1189,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-odd"><p>The Overall Percentage Error (OPE)</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
+<dd class="field-even"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1211,7 +1226,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The quantile loss metric</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1249,7 +1264,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span></p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1297,7 +1312,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The rho-risk metric</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1334,7 +1349,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The Root Mean Squared Error (RMSE)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1372,7 +1387,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-even"><p>The Root Mean Squared Log Error (RMSLE)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
+<dd class="field-odd"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1418,7 +1433,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dd class="field-odd"><p>The symmetric Mean Absolute Percentage Error (sMAPE)</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
+<dd class="field-even"><p>Union[float, List[float]]</p>
 </dd>
 </dl>
 </dd></dl>

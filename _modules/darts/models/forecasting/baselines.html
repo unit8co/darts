@@ -170,7 +170,7 @@
 <span class="sd">Baseline Models</span>
 <span class="sd">---------------</span>
 
-<span class="sd">A collection of simple benchmark models for univariate series.</span>
+<span class="sd">A collection of simple benchmark models for single uni- and multivariate series.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
@@ -361,7 +361,7 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Naive Moving Average Model</span>
 
-<span class="sd">        This model forecasts using an auto-regressive moving average (ARMA).</span>
+<span class="sd">        This model forecasts using an autoregressive moving average (ARMA).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -504,12 +504,12 @@
             <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
-                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
-                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
-                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
-                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">past_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span></div>
@@ -532,9 +532,11 @@
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
             <span class="k">return</span> <span class="p">[</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_target_average</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">predict_likelihood_parameters</span>
-                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_average</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+                <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_target_average</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">predict_likelihood_parameters</span>
+                    <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_average</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+                <span class="p">)</span>
                 <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
             <span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>

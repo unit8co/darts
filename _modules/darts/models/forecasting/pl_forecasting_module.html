@@ -239,6 +239,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">train_sample_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">loss_fn</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">loss</span><span class="o">.</span><span class="n">_Loss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">(),</span>
         <span class="n">torch_metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
@@ -256,13 +257,13 @@
 
 <span class="sd">        This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.</span>
 <span class="sd">        When subclassing this class, please make sure to add the following methods with the given signatures:</span>
-<span class="sd">            - :func:`PLTorchForecastingModel.__init__()`</span>
-<span class="sd">            - :func:`PLTorchForecastingModel.forward()`</span>
-<span class="sd">            - :func:`PLTorchForecastingModel._produce_train_output()`</span>
-<span class="sd">            - :func:`PLTorchForecastingModel._get_batch_prediction()`</span>
+<span class="sd">            - :func:`PLForecastingModule.__init__()`</span>
+<span class="sd">            - :func:`PLForecastingModule.forward()`</span>
+<span class="sd">            - :func:`PLForecastingModule._produce_train_output()`</span>
+<span class="sd">            - :func:`PLForecastingModule._get_batch_prediction()`</span>
 
 <span class="sd">        In subclass `MyModel`&#39;s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where</span>
-<span class="sd">        ``kwargs`` are the parameters of :class:`PLTorchForecastingModel`.</span>
+<span class="sd">        ``kwargs`` are the parameters of :class:`PLForecastingModule`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -273,7 +274,7 @@
 <span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
 <span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
 <span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
-<span class="sd">            using either a one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            using either a one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
 <span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
 <span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
 <span class="sd">            model&#39;s covariate support).</span>
@@ -324,6 +325,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="c1"># output_chunk_length is a property</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span> <span class="o">=</span> <span class="n">output_chunk_shift</span>
 
         <span class="c1"># define the loss function</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span> <span class="o">=</span> <span class="n">loss_fn</span>
@@ -414,7 +416,8 @@
 
 <span class="sd">        batch</span>
 <span class="sd">            output of Darts&#39; :class:`InferenceDataset` - tuple of ``(past_target, past_covariates,</span>
-<span class="sd">            historic_future_covariates, future_covariates, future_past_covariates, input_timeseries)``</span>
+<span class="sd">            historic_future_covariates, future_covariates, future_past_covariates, input time series,</span>
+<span class="sd">            prediction start time step)``</span>
 <span class="sd">        batch_idx</span>
 <span class="sd">            the batch index of the current batch</span>
 <span class="sd">        dataloader_idx</span>
@@ -481,9 +484,11 @@
             <span class="n">delayed</span><span class="p">(</span><span class="n">_build_forecast_series</span><span class="p">)(</span>
                 <span class="p">[</span><span class="n">batch_prediction</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">batch_prediction</span> <span class="ow">in</span> <span class="n">batch_predictions</span><span class="p">],</span>
                 <span class="n">input_series</span><span class="p">,</span>
-                <span class="n">custom_columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">likelihood_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">custom_columns</span><span class="o">=</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">likelihood_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span>
+                    <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
                 <span class="n">with_static_covs</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="n">with_hierarchy</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="n">pred_start</span><span class="o">=</span><span class="n">pred_start</span><span class="p">,</span>
@@ -570,16 +575,25 @@
             <span class="n">lr_sched_kws</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
             <span class="n">lr_sched_kws</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">optimizer</span>
 
-            <span class="c1"># ReduceLROnPlateau requires a metric to &quot;monitor&quot; which must be set separately, most others do not</span>
-            <span class="n">lr_monitor</span> <span class="o">=</span> <span class="n">lr_sched_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="c1"># lr scheduler can be configured with lightning; defaults below</span>
+            <span class="n">lr_config_params</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;monitor&quot;</span><span class="p">:</span> <span class="s2">&quot;val_loss&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;interval&quot;</span><span class="p">:</span> <span class="s2">&quot;epoch&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;strict&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="c1"># update config with user params</span>
+            <span class="n">lr_config_params</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">lr_sched_kws</span> <span class="k">else</span> <span class="n">lr_sched_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">lr_config_params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
 
             <span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">_create_from_cls_and_kwargs</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_cls</span><span class="p">,</span> <span class="n">lr_sched_kws</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="p">{</span>
-                <span class="s2">&quot;scheduler&quot;</span><span class="p">:</span> <span class="n">lr_scheduler</span><span class="p">,</span>
-                <span class="s2">&quot;monitor&quot;</span><span class="p">:</span> <span class="n">lr_monitor</span> <span class="k">if</span> <span class="n">lr_monitor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;val_loss&quot;</span><span class="p">,</span>
-            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="nb">dict</span><span class="p">({</span><span class="s2">&quot;scheduler&quot;</span><span class="p">:</span> <span class="n">lr_scheduler</span><span class="p">},</span> <span class="o">**</span><span class="n">lr_config_params</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">optimizer</span></div>
 
@@ -736,9 +750,11 @@
         <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">input_batch</span>
         <span class="c1"># Currently all our PastCovariates models require past target and covariates concatenated</span>
         <span class="n">inpt</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="n">past_target</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="n">past_target</span>
+            <span class="p">),</span>
             <span class="n">static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="n">inpt</span><span class="p">)</span>
@@ -818,13 +834,13 @@
 
             <span class="c1"># update past covariates to include next `roll_size` future past covariates elements</span>
             <span class="k">if</span> <span class="n">n_past_covs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">&gt;=</span> <span class="n">roll_size</span><span class="p">:</span>
-                <span class="n">input_past</span><span class="p">[</span>
-                    <span class="p">:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
             <span class="k">elif</span> <span class="n">n_past_covs</span><span class="p">:</span>
-                <span class="n">input_past</span><span class="p">[</span>
-                    <span class="p">:,</span> <span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
 
             <span class="c1"># take only last part of the output sequence where needed</span>
             <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">input_past</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">))[</span>
@@ -954,9 +970,11 @@
                 <span class="n">past_target</span><span class="p">,</span>
                 <span class="n">past_covariates</span><span class="p">,</span>
                 <span class="n">historic_future_covariates</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
-                <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">(</span>
+                    <span class="n">future_covariates</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
                 <span class="n">static_covariates</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span>
@@ -1001,19 +1019,19 @@
 
             <span class="c1"># update past covariates to include next `roll_size` future past covariates elements</span>
             <span class="k">if</span> <span class="n">n_past_covs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">&gt;=</span> <span class="n">roll_size</span><span class="p">:</span>
-                <span class="n">input_past</span><span class="p">[</span>
-                    <span class="p">:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
             <span class="k">elif</span> <span class="n">n_past_covs</span><span class="p">:</span>
-                <span class="n">input_past</span><span class="p">[</span>
-                    <span class="p">:,</span> <span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">n_targets</span> <span class="p">:</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
 
             <span class="c1"># update historic future covariates to include next `roll_size` future covariates elements</span>
             <span class="k">if</span> <span class="n">n_future_covs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">&gt;=</span> <span class="n">roll_size</span><span class="p">:</span>
-                <span class="n">input_past</span><span class="p">[</span>
-                    <span class="p">:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span> <span class="p">:</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
             <span class="k">elif</span> <span class="n">n_future_covs</span><span class="p">:</span>
                 <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="p">[</span>
                     <span class="p">:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:</span>

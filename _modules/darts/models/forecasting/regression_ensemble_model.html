@@ -172,6 +172,7 @@
 
 <span class="sd">An ensemble model which uses a regression model to compute the ensemble forecast.</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
@@ -224,7 +225,7 @@
 <span class="sd">            `train_forecasting_models=False`.</span>
 <span class="sd">        regression_model</span>
 <span class="sd">            Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)</span>
-<span class="sd">            Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``</span>
+<span class="sd">            Default: ``darts.models.LinearRegressionModel(fit_intercept=False)``</span>
 
 <span class="sd">            .. note::</span>
 <span class="sd">                if `regression_model` is probabilistic, the `RegressionEnsembleModel` will also be probabilistic.</span>
@@ -291,6 +292,11 @@
                 <span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regression_model</span><span class="p">,</span> <span class="n">RegressionModel</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="n">regression_model</span><span class="o">.</span><span class="n">multi_models</span><span class="p">,</span>
+                <span class="s2">&quot;Cannot use `regression_model` that was created with `multi_models = False`.&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">regression_model</span> <span class="o">=</span> <span class="n">regression_model</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># scikit-learn like model</span>
@@ -376,12 +382,12 @@
 
             <span class="n">tmp_pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">past_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
                 <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
                 <span class="n">stride</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
                 <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">_is_probabilistic</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
@@ -481,7 +487,7 @@
             <span class="c1"># when it&#39;s not clearly defined, extreme_lags returns</span>
             <span class="c1"># min_train_serie_length for the LocalForecastingModels</span>
             <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
-                <span class="n">min_target_lag</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
+                <span class="n">min_target_lag</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
                 <span class="k">if</span> <span class="n">min_target_lag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">all_shifts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">min_target_lag</span><span class="p">)</span>
 
@@ -537,12 +543,12 @@
                 <span class="c1"># maximize covariate usage</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">forecast_training</span><span class="p">,</span>
-                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
-                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
-                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
-                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
-                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">past_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
 
         <span class="c1"># we can call direct prediction in any case. Even if we overwrite with historical</span>
@@ -579,12 +585,12 @@
             <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
-                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
-                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
-                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
-                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">past_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
@@ -621,6 +627,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="nb">int</span><span class="p">,</span>
     <span class="p">]:</span>
         <span class="n">extreme_lags_</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">extreme_lags</span>
         <span class="c1"># shift min_target_lag in the past to account for the regression model training set</span>

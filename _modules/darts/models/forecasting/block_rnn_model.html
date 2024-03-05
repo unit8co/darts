@@ -232,7 +232,8 @@
 <span class="sd">        dropout</span>
 <span class="sd">            The fraction of neurons that are dropped in all-but-last RNN layers.</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
+<span class="sd">            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`</span>
+<span class="sd">            base class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -274,7 +275,6 @@
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;PyTorch module implementing a block RNN to be used in `BlockRNNModel`.</span>
 
 <span class="sd">        PyTorch module implementing a simple block RNN with the specified `name` layer.</span>
@@ -293,7 +293,7 @@
 <span class="sd">        name</span>
 <span class="sd">            The name of the specific PyTorch RNN module (&quot;RNN&quot;, &quot;GRU&quot; or &quot;LSTM&quot;).</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            all parameters required for the :class:`darts.model.forecasting_models.CustomBlockRNNModule` base class.</span>
+<span class="sd">            all parameters required for the :class:`darts.models.forecasting.CustomBlockRNNModule` base class.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -357,6 +357,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">CustomBlockRNNModule</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
         <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
         <span class="n">n_rnn_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -364,7 +365,6 @@
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Block Recurrent Neural Network Model (RNNs).</span>
 
 <span class="sd">        This is a neural network model that uses an RNN encoder to encode fixed-length input chunks, and</span>
@@ -389,10 +389,16 @@
 <span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
 <span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
 <span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
-<span class="sd">            using either a one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            using either a one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
 <span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
 <span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
 <span class="sd">            model&#39;s covariate support).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input and output. If the model supports</span>
+<span class="sd">            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start</span>
+<span class="sd">            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model</span>
+<span class="sd">            cannot generate autoregressive predictions (`n &gt; output_chunk_length`).</span>
 <span class="sd">        model</span>
 <span class="sd">            Either a string specifying the RNN module type (&quot;RNN&quot;, &quot;LSTM&quot; or &quot;GRU&quot;), or a subclass of</span>
 <span class="sd">            :class:`CustomBlockRNNModule` (the class itself, not an object of the class) with a custom logic.</span>

@@ -423,12 +423,12 @@
             <span class="n">model</span><span class="o">.</span><span class="n">_predict_wrapper</span><span class="p">(</span>
                 <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">past_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
                 <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">_is_probabilistic</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
             <span class="p">)</span>
@@ -565,6 +565,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="nb">int</span><span class="p">,</span>
     <span class="p">]:</span>
         <span class="k">def</span> <span class="nf">find_max_lag_or_none</span><span class="p">(</span><span class="n">lag_id</span><span class="p">,</span> <span class="n">aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
             <span class="n">max_lag</span> <span class="o">=</span> <span class="kc">None</span>
@@ -576,7 +577,7 @@
                     <span class="n">max_lag</span> <span class="o">=</span> <span class="n">aggregator</span><span class="p">(</span><span class="n">max_lag</span><span class="p">,</span> <span class="n">curr_lag</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">max_lag</span>
 
-        <span class="n">lag_aggregators</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">)</span>
+        <span class="n">lag_aggregators</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">max</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
             <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">agg</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">agg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lag_aggregators</span><span class="p">)</span>
         <span class="p">)</span>

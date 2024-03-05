@@ -178,7 +178,12 @@
 <span class="sd">.. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeAlias</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">TypeAlias</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">statsmodels</span> <span class="kn">import</span> <span class="n">__version_tuple__</span> <span class="k">as</span> <span class="n">statsmodels_version</span>
@@ -196,14 +201,22 @@
 <span class="n">statsmodels_above_0135</span> <span class="o">=</span> <span class="n">statsmodels_version</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 
 
+<span class="n">IntOrIntSequence</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+
+
 <div class="viewcode-block" id="ARIMA"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA">[docs]</a><span class="k">class</span> <span class="nc">ARIMA</span><span class="p">(</span><span class="n">TransferableFutureCovariatesLocalForecastingModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">p</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="n">p</span><span class="p">:</span> <span class="n">IntOrIntSequence</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">d</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">q</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">seasonal_order</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-        <span class="n">trend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">q</span><span class="p">:</span> <span class="n">IntOrIntSequence</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">seasonal_order</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">IntOrIntSequence</span><span class="p">,</span> <span class="n">IntOrIntSequence</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">trend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;ct&quot;</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
@@ -213,20 +226,29 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        p : int</span>
+<span class="sd">        p : int | Sequence[int]</span>
 <span class="sd">            Order (number of time lags) of the autoregressive model (AR).</span>
+<span class="sd">            If a sequence of integers, specifies the exact lags to include.</span>
 <span class="sd">        d : int</span>
 <span class="sd">            The order of differentiation; i.e., the number of times the data</span>
 <span class="sd">            have had past values subtracted (I).</span>
-<span class="sd">        q : int</span>
+<span class="sd">        q : int | Sequence[int]</span>
 <span class="sd">            The size of the moving average window (MA).</span>
-<span class="sd">        seasonal_order: Tuple[int, int, int, int]</span>
-<span class="sd">            The (P,D,Q,s) order of the seasonal component for the AR parameters,</span>
-<span class="sd">            differences, MA parameters and periodicity.</span>
-<span class="sd">        trend: str</span>
-<span class="sd">            Parameter controlling the deterministic trend. &#39;n&#39; indicates no trend,</span>
-<span class="sd">            &#39;c&#39; a constant term, &#39;t&#39; linear trend in time, and &#39;ct&#39; includes both.</span>
-<span class="sd">            Default is &#39;c&#39; for models without integration, and no trend for models with integration.</span>
+<span class="sd">            If a sequence of integers, specifies the exact lags to include in the window.</span>
+<span class="sd">        seasonal_order: Tuple[int | Sequence[int], int, int | Sequence[int], int]</span>
+<span class="sd">            The (P,D,Q,s) order of the seasonal component for the AR parameters (P),</span>
+<span class="sd">            differences (D), MA parameters (Q) and periodicity (s). D and s are always integers,</span>
+<span class="sd">            while P and Q may either be integers or sequence of positive integers</span>
+<span class="sd">            specifying exactly which lag orders are included.</span>
+<span class="sd">        trend: Literal[&#39;n&#39;, &#39;c&#39;, &#39;t&#39;, &#39;ct&#39;] | list[int], optional</span>
+<span class="sd">            Parameter controlling the deterministic trend. Either a string or list of integers.</span>
+<span class="sd">            If a string, can be &#39;n&#39; for no trend, &#39;c&#39; for a constant term, &#39;t&#39; for a linear trend in time,</span>
+<span class="sd">            and &#39;ct&#39; for a constant term and linear trend.</span>
+<span class="sd">            If a list of integers, defines a polynomial according to `numpy.poly1d` [1]_. E.g., `[1,1,0,1]` would</span>
+<span class="sd">            translate to :math:`a + bt + ct^3`.</span>
+<span class="sd">            Trend term of lower order than `d + D` cannot be as they would be eliminated due to the differencing</span>
+<span class="sd">            operation.</span>
+<span class="sd">            Default is &#39;c&#39; for models without integration, and &#39;n&#39; for models with integration.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -271,6 +293,10 @@
 <span class="sd">               [481.07892911],</span>
 <span class="sd">               [502.11286509],</span>
 <span class="sd">               [555.50153984]])</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] https://numpy.org/doc/stable/reference/generated/numpy.poly1d.html</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">q</span>
@@ -335,17 +361,19 @@
         <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
                 <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                <span class="n">exog</span><span class="o">=</span><span class="n">historic_future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">historic_future_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">exog</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">historic_future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">historic_future_covariates</span>
+                    <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span>
                 <span class="n">steps</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-                <span class="n">exog</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">future_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">exog</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
@@ -354,18 +382,20 @@
                 <span class="n">initial_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">predicted</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span>
                 <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_state</span><span class="p">,</span>
                 <span class="n">anchor</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">,</span>
-                <span class="n">exog</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">future_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">exog</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
             <span class="p">)</span>
 
         <span class="c1"># restoring statsmodels results object state</span>
         <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_orig_training_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                <span class="n">exog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_historic_future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_historic_future_covariates</span>
-                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">exog</span><span class="o">=</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">training_historic_future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_historic_future_covariates</span>
+                    <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>

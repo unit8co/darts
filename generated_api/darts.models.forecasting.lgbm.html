@@ -585,6 +585,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
        Kalman Filter Forecaster
       </a>
@@ -841,7 +846,7 @@
 <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">https://github.com/unit8co/darts/blob/master/INSTALL.md</a></p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.lgbm.</span></span><span class="sig-name descname"><span class="pre">LightGBMModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/lgbm.html#LightGBMModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.lgbm.</span></span><span class="sig-name descname"><span class="pre">LightGBMModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/lgbm.html#LightGBMModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates" title="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModelWithCategoricalCovariates</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_LikelihoodMixin</span></code></p>
 <p>LGBM Model</p>
 <dl class="field-list simple">
@@ -849,7 +854,8 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>lags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Lagged target <cite>series</cite> values used to predict the next time step/s.
 If an integer, must be &gt; 0. Uses the last <cite>n=lags</cite> past lags; e.g. <cite>(-1, -2, …, -lags)</cite>, where <cite>0</cite>
-corresponds the first predicted time step of each sample.
+corresponds the first predicted time step of each sample. If <cite>output_chunk_shift &gt; 0</cite>, then
+lag <cite>-1</cite> translates to <cite>-1 - output_chunk_shift</cite> steps before the first prediction step.
 If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.
 If a dictionary, the keys correspond to the <cite>series</cite> component names (of the first series when
 using multiple series) and the values correspond to the component lags (integer or list of integers). The
@@ -857,16 +863,20 @@ key ‘default_lags’ can be used to provide default lags for un-specified comp
 components are missing and the ‘default_lags’ key is not provided.</p></li>
 <li><p><strong>lags_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Lagged <cite>past_covariates</cite> values used to predict the next time step/s.
 If an integer, must be &gt; 0. Uses the last <cite>n=lags_past_covariates</cite> past lags; e.g. <cite>(-1, -2, …, -lags)</cite>,
-where <cite>0</cite> corresponds to the first predicted time step of each sample.
+where <cite>0</cite> corresponds to the first predicted time step of each sample. If <cite>output_chunk_shift &gt; 0</cite>, then
+lag <cite>-1</cite> translates to <cite>-1 - output_chunk_shift</cite> steps before the first prediction step.
 If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.
 If a dictionary, the keys correspond to the <cite>past_covariates</cite> component names (of the first series when
 using multiple series) and the values correspond to the component lags (integer or list of integers). The
 key ‘default_lags’ can be used to provide default lags for un-specified components. Raises and error if some
 components are missing and the ‘default_lags’ key is not provided.</p></li>
-<li><p><strong>lags_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Lagged <cite>future_covariates</cite> values used to predict the next time step/s.
+<li><p><strong>lags_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Lagged <cite>future_covariates</cite> values used to predict the next time step/s. The lags are always relative to the
+first step in the output chunk, even when <cite>output_chunk_shift &gt; 0</cite>.
 If a tuple of <cite>(past, future)</cite>, both values must be &gt; 0. Uses the last <cite>n=past</cite> past lags and <cite>n=future</cite>
-future lags; e.g. <cite>(-past, -(past - 1), …, -1, 0, 1, …. future - 1)</cite>, where <cite>0</cite>
-corresponds the first predicted time step of each sample.
+future lags; e.g. <cite>(-past, -(past - 1), …, -1, 0, 1, …. future - 1)</cite>, where <cite>0</cite> corresponds the first
+predicted time step of each sample. If <cite>output_chunk_shift &gt; 0</cite>, the position of negative lags differ from
+those of <cite>lags</cite> and <cite>lags_past_covariates</cite>. In this case a future lag <cite>-5</cite> would point at the same
+step as a target lag of <cite>-5 + output_chunk_shift</cite>.
 If a list of integers, uses only the specified values as lags.
 If a dictionary, the keys correspond to the <cite>future_covariates</cite> component names (of the first series when
 using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
@@ -874,10 +884,16 @@ using multiple series) and the values correspond to the component lags (tuple or
 components are missing and the ‘default_lags’ key is not provided.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
 horizon <cite>n</cite> used in <cite>predict()</cite>, which is the desired number of prediction points generated using a
-one-shot- or auto-regressive forecast. Setting <cite>n &lt;= output_chunk_length</cite> prevents auto-regression. This is
+one-shot- or autoregressive forecast. Setting <cite>n &lt;= output_chunk_length</cite> prevents auto-regression. This is
 useful when the covariates don’t extend far enough into the future, or to prohibit the model from using
 future values of past and / or future covariates for prediction (depending on the model’s covariate
 support).</p></li>
+<li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+input chunk end). This will create a gap between the input (history of target and past covariates) and
+output. If the model supports <cite>future_covariates</cite>, the <cite>lags_future_covariates</cite> are relative to the first
+step in the shifted output chunk. Predictions will start <cite>output_chunk_shift</cite> steps after the end of the
+target <cite>series</cite>. If <cite>output_chunk_shift</cite> is set, the model cannot generate autoregressive predictions
+(<cite>n &gt; output_chunk_length</cite>).</p></li>
 <li><p><strong>add_encoders</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]) – <p>A large number of past and future covariates can be automatically generated with <cite>add_encoders</cite>.
 This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
 will be used as index encoders. Additionally, a transformer such as Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">Scaler</span></code> can be added to
@@ -964,19 +980,25 @@ treated as categorical are integer-encoded.</p></li>
 <td><p>Whether the model considers static covariates, if there are any.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.extreme_lags" title="darts.models.forecasting.lgbm.LightGBMModel.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
-<td><p>A 6-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag).</p></td>
+<td><p>A 7-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.lagged_feature_names" title="darts.models.forecasting.lgbm.LightGBMModel.lagged_feature_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lagged_feature_names</span></code></a></p></td>
 <td><p>The lagged feature names the model has been trained on.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.min_train_samples" title="darts.models.forecasting.lgbm.LightGBMModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.lagged_label_names" title="darts.models.forecasting.lgbm.LightGBMModel.lagged_label_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lagged_label_names</span></code></a></p></td>
+<td><p>The lagged label name for the model's estimators.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.min_train_samples" title="darts.models.forecasting.lgbm.LightGBMModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.num_parameters" title="darts.models.forecasting.lgbm.LightGBMModel.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.num_parameters" title="darts.models.forecasting.lgbm.LightGBMModel.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
 <td><p>Mimic function of Likelihood class</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.output_chunk_length" title="darts.models.forecasting.lgbm.LightGBMModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.output_chunk_length" title="darts.models.forecasting.lgbm.LightGBMModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.output_chunk_shift" title="darts.models.forecasting.lgbm.LightGBMModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.supports_future_covariates" title="darts.models.forecasting.lgbm.LightGBMModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
@@ -1043,6 +1065,12 @@ treated as categorical are integer-encoded.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.generate_predict_encodings" title="darts.models.forecasting.lgbm.LightGBMModel.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.get_estimator" title="darts.models.forecasting.lgbm.LightGBMModel.get_estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_estimator</span></code></a>(horizon, target_dim)</p></td>
+<td><p>Returns the estimator that forecasts the <a href="#id1"><span class="problematic" id="id2">`</span></a>horizon`th step of the <a href="#id3"><span class="problematic" id="id4">`</span></a>target_dim`th target component.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.get_multioutput_estimator" title="darts.models.forecasting.lgbm.LightGBMModel.get_multioutput_estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_multioutput_estimator</span></code></a>(horizon, target_dim)</p></td>
+<td><p>Returns the estimator that forecasts the <a href="#id5"><span class="problematic" id="id6">`</span></a>horizon`th step of the <a href="#id7"><span class="problematic" id="id8">`</span></a>target_dim`th target component.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.gridsearch" title="darts.models.forecasting.lgbm.LightGBMModel.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
@@ -1060,17 +1088,6 @@ treated as categorical are integer-encoded.</p></li>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel.save" title="darts.models.forecasting.lgbm.LightGBMModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
-</tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col style="width: 74%" />
-<col style="width: 26%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><strong>get_multioutput_estimator</strong></p></td>
-<td></td>
 </tr>
 </tbody>
 </table>
@@ -1196,11 +1213,11 @@ provided series and each sample.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.extreme_lags">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.extreme_lags" title="Permalink to this definition">¶</a></dt>
-<dd><p>A 6-tuple containing in order:
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.extreme_lags" title="Permalink to this definition">¶</a></dt>
+<dd><p>A 7-tuple containing in order:
 (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
-lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
-index.</p>
+lag, max future covariate lag, output shift). If 0 is the index of the first prediction, then all lags are
+relative to this index.</p>
 <p>See examples below.</p>
 <dl class="simple">
 <dt>If the model wasn’t fitted with:</dt><dd><ul class="simple">
@@ -1218,28 +1235,32 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-3, 1, None, None, None, None)</span>
+<span class="go">(-3, 1, None, None, None, None, 0)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">output_chunk_shift</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
+<span class="go">(-3, 1, None, None, None, None, 2)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">],</span> <span class="n">lags_past_covariates</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-5, 6, -4, -1,  None, None)</span>
+<span class="go">(-5, 6, -4, -1,  None, None, 0)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">lags_future_covariates</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-5, 6, None, None, 4, 6)</span>
+<span class="go">(-5, 6, None, None, 4, 6, 0)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-10, 6, None, None, None, None)</span>
+<span class="go">(-10, 6, None, None, None, None, 0)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
-<span class="go">(-10, 6, None, None, 4, 6)</span>
+<span class="go">(-10, 6, None, None, 4, 6, 0)</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1264,7 +1285,7 @@ creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p>
 </dd>
-<dt><a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs</dt><dd><p>Additional kwargs passed to <cite>lightgbm.LGBRegressor.fit()</cite></p>
+<dt><a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs</dt><dd><p>Additional kwargs passed to <cite>lightgbm.LGBRegressor.fit()</cite></p>
 </dd>
 </dl>
 </p></li>
@@ -1355,13 +1376,38 @@ encoded covariates.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.get_estimator">
+<span class="sig-name descname"><span class="pre">get_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.get_estimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the estimator that forecasts the <a href="#id11"><span class="problematic" id="id12">`</span></a>horizon`th step of the <a href="#id13"><span class="problematic" id="id14">`</span></a>target_dim`th target component.</p>
+<p>The model is returned directly if it supports multi-output natively.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the forecasting point within <cite>output_chunk_length</cite>.</p></li>
+<li><p><strong>target_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the target component.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.get_multioutput_estimator">
 <span class="sig-name descname"><span class="pre">get_multioutput_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.get_multioutput_estimator" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns the estimator that forecasts the <a href="#id15"><span class="problematic" id="id16">`</span></a>horizon`th step of the <a href="#id17"><span class="problematic" id="id18">`</span></a>target_dim`th target component.</p>
+<p>Internally, estimators are grouped by <cite>output_chunk_length</cite> position, then by component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the forecasting point within <cite>output_chunk_length</cite>.</p></li>
+<li><p><strong>target_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the target component.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.gridsearch">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.gridsearch" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the best hyper-parameters among a given set using a grid search.</p>
 <p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -1403,7 +1449,7 @@ respective hyperparameter.</p></li>
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – Optionally, a future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>forecast_horizon</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The integer value of the forecasting horizon. Activates expanding window mode.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Only used in expanding window mode. The number of time steps between two consecutive predictions.</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – <p>Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.
+<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.
 This parameter supports: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>, and <code class="docutils literal notranslate"><span class="pre">None</span></code>.
 If a <code class="docutils literal notranslate"><span class="pre">float</span></code>, it is the proportion of the time series that should lie before the first prediction point.
 If an <code class="docutils literal notranslate"><span class="pre">int</span></code>, it is either the index position of the first prediction point for <cite>series</cite> with a
@@ -1510,7 +1556,9 @@ predictable point is earlier than the first trainable point.</p></li>
 or <cite>retrain</cite> is a Callable and the first trainable point is earlier than the first predictable point.</p></li>
 <li><p>the first trainable point (given <cite>train_length</cite>) otherwise</p></li>
 </ul>
-<p>Note: Raises a ValueError if <cite>start</cite> yields a time outside the time index of <cite>series</cite>.
+<p>Note: If the model uses a shifted output (<cite>output_chunk_shift &gt; 0</cite>), then the first predicted point is also
+shifted by <cite>output_chunk_shift</cite> points into the future.
+Note: Raises a ValueError if <cite>start</cite> yields a time outside the time index of <cite>series</cite>.
 Note: If <cite>start</cite> is outside the possible historical forecasting times, will ignore the parameter
 (default behavior with <code class="docutils literal notranslate"><span class="pre">None</span></code>) and start at the first trainable/predictable point.</p>
 </p></li>
@@ -1602,6 +1650,24 @@ and the inner lists contain the different historical forecasts.</p>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.lagged_label_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lagged_label_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.lagged_label_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>The lagged label name for the model’s estimators.</p>
+<p>The naming convention is: <code class="docutils literal notranslate"><span class="pre">&quot;{name}_target_hrz{i}&quot;</span></code>, where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{name}</span></code> the component name of the (first) series</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{i}</span></code> is the position in output_chunk_length (label lag)</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.load">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.load" title="Permalink to this definition">¶</a></dt>
@@ -1652,6 +1718,17 @@ and the inner lists contain the different historical forecasts.</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.output_chunk_length">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.output_chunk_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time steps predicted at once by the model, not defined for statistical models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.lgbm.LightGBMModel.output_chunk_shift">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_shift</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.lgbm.LightGBMModel.output_chunk_shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of time steps that the output/prediction starts after the end of the input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>

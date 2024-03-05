@@ -144,7 +144,7 @@ LFMs are models that can be trained on a single target series only. In Darts mos
 Global Forecasting Models (GFMs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-GFMs are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models, RegressionModels, as well EnsembleModels (depending on their ensemble model and / or the forecasting models they ensemble). Global models can all be trained on multiple ``target`` (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data.
+GFMs are models that can be trained on multiple target (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data. In Darts, these are the global (naive) baseline models, regression models, PyTorch (Lightning)-based models (neural networks), as well ensemble models (depending on their ensemble model and / or the forecasting models they ensemble).
 
 ----
 
@@ -223,15 +223,19 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
      - 
      - 
      - 
-   * - Regression Models (b)
+   * - Global Naive Baselines (b)
+     - 
+     - 
+     - 
+   * - Regression Models (c)
      - ✅
      - ✅
      - ✅
-   * - `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ (c)
+   * - `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ (d)
      - 
      - ✅
      - 
-   * - `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ (d)
+   * - `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ (e)
      - ✅
      - 
      - 
@@ -267,7 +271,7 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
      - ✅
      - ✅
      - ✅
-   * - Ensemble Models (e)
+   * - Ensemble Models (f)
      - ✅
      - ✅
      - ✅
@@ -275,15 +279,17 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
 
 **Table 1: Darts' forecasting models and their covariate support**
 
-(a) Naive Baselines including `NaiveMean <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean>`_\ , `NaiveSeasonal <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal>`_\ , `NaiveDrift <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift>`_\ , and `NaiveMovingAverage <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage>`_.
+(a) Naive Baselines including `NaiveDrift <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift>`_\ , `NaiveMean <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean>`_\ , `NaiveMovingAverage <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage>`_\ , and `NaiveSeasonal <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal>`_.
 
-(b) Regression Models including `RegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#regression-model>`_\ , `LinearRegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel>`_\ , `RandomForest <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest>`_\ , `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel>`_\ , `XGBModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel>`_\ , and `CatBoostModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel>`_. RegressionModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to do predictions.
+(b) Global Naive Baselines including `GlobalNaiveAggregate <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate>`_\ , `GlobalNaiveDrift <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift>`_\ , and `GlobalNaiveSeasonal <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal>`_.
 
-(c) `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ including ``LSTM`` and ``GRU``\ ; equivalent to DeepAR in its probabilistic version
+(c) Regression Models including `RegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#regression-model>`_\ , `LinearRegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel>`_\ , `RandomForest <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest>`_\ , `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel>`_\ , `XGBModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel>`_\ , and `CatBoostModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel>`_. RegressionModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to do predictions.
 
-(d) `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ including ``LSTM`` and ``GRU``
+(d) `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ including ``LSTM`` and ``GRU``\ ; equivalent to DeepAR in its probabilistic version
 
-(e) Ensemble Model including `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_\ , and `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_. The covariate support is given by the covariate support of the ensembled forecasting models.
+(e) `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ including ``LSTM`` and ``GRU``
+
+(f) Ensemble Model including `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_\ , and `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_. The covariate support is given by the covariate support of the ensembled forecasting models.
 
 ----
 

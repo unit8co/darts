@@ -585,6 +585,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
        Kalman Filter Forecaster
       </a>
@@ -892,142 +897,142 @@ $$x Phi(x)$$ where $Phi(x) = P(X le x), X sim mathcal{N}(0,1)$
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.add_module" title="darts.models.components.feed_forward.FeedForward.add_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_module</span></code></a>(name, module)</p></td>
-<td><p>Adds a child module to the current module.</p></td>
+<td><p>Add a child module to the current module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.apply" title="darts.models.components.feed_forward.FeedForward.apply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply</span></code></a>(fn)</p></td>
-<td><p>Applies <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p></td>
+<td><p>Apply <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.bfloat16" title="darts.models.components.feed_forward.FeedForward.bfloat16"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bfloat16</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">bfloat16</span></code> datatype.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.buffers" title="darts.models.components.feed_forward.FeedForward.buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">buffers</span></code></a>([recurse])</p></td>
-<td><p>Returns an iterator over module buffers.</p></td>
+<td><p>Return an iterator over module buffers.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.children" title="darts.models.components.feed_forward.FeedForward.children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code></a>()</p></td>
-<td><p>Returns an iterator over immediate children modules.</p></td>
+<td><p>Return an iterator over immediate children modules.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.compile" title="darts.models.components.feed_forward.FeedForward.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Compile this Module's forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.cpu" title="darts.models.components.feed_forward.FeedForward.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
-<td><p>Moves all model parameters and buffers to the CPU.</p></td>
+<td><p>Move all model parameters and buffers to the CPU.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.cuda" title="darts.models.components.feed_forward.FeedForward.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the GPU.</p></td>
+<td><p>Move all model parameters and buffers to the GPU.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.double" title="darts.models.components.feed_forward.FeedForward.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">double</span></code> datatype.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.eval" title="darts.models.components.feed_forward.FeedForward.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
-<td><p>Sets the module in evaluation mode.</p></td>
+<td><p>Set the module in evaluation mode.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.extra_repr" title="darts.models.components.feed_forward.FeedForward.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
-<td><p>Set the extra representation of the module</p></td>
+<td><p>Set the extra representation of the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.float" title="darts.models.components.feed_forward.FeedForward.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">float</span></code> datatype.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.forward" title="darts.models.components.feed_forward.FeedForward.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
-<td><p>Defines the computation performed at every call.</p></td>
+<td><p>Define the computation performed at every call.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_buffer" title="darts.models.components.feed_forward.FeedForward.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
-<td><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_extra_state" title="darts.models.components.feed_forward.FeedForward.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
-<td><p>Returns any extra state to include in the module's state_dict.</p></td>
+<td><p>Return any extra state to include in the module's state_dict.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_parameter" title="darts.models.components.feed_forward.FeedForward.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
-<td><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_submodule" title="darts.models.components.feed_forward.FeedForward.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
-<td><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.half" title="darts.models.components.feed_forward.FeedForward.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">half</span></code> datatype.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.ipu" title="darts.models.components.feed_forward.FeedForward.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the IPU.</p></td>
+<td><p>Move all model parameters and buffers to the IPU.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.load_state_dict" title="darts.models.components.feed_forward.FeedForward.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict, assign])</p></td>
-<td><p>Copies parameters and buffers from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p></td>
+<td><p>Copy parameters and buffers from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.modules" title="darts.models.components.feed_forward.FeedForward.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
-<td><p>Returns an iterator over all modules in the network.</p></td>
+<td><p>Return an iterator over all modules in the network.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_buffers" title="darts.models.components.feed_forward.FeedForward.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
-<td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
+<td><p>Return an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_children" title="darts.models.components.feed_forward.FeedForward.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
-<td><p>Returns an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
+<td><p>Return an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_modules" title="darts.models.components.feed_forward.FeedForward.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
-<td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
+<td><p>Return an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_parameters" title="darts.models.components.feed_forward.FeedForward.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
-<td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
+<td><p>Return an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.parameters" title="darts.models.components.feed_forward.FeedForward.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
-<td><p>Returns an iterator over module parameters.</p></td>
+<td><p>Return an iterator over module parameters.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_backward_hook" title="darts.models.components.feed_forward.FeedForward.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
-<td><p>Registers a backward hook on the module.</p></td>
+<td><p>Register a backward hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_buffer" title="darts.models.components.feed_forward.FeedForward.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
-<td><p>Adds a buffer to the module.</p></td>
+<td><p>Add a buffer to the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_forward_hook" title="darts.models.components.feed_forward.FeedForward.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
-<td><p>Registers a forward hook on the module.</p></td>
+<td><p>Register a forward hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_forward_pre_hook" title="darts.models.components.feed_forward.FeedForward.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
-<td><p>Registers a forward pre-hook on the module.</p></td>
+<td><p>Register a forward pre-hook on the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_full_backward_hook" title="darts.models.components.feed_forward.FeedForward.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
-<td><p>Registers a backward hook on the module.</p></td>
+<td><p>Register a backward hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_full_backward_pre_hook" title="darts.models.components.feed_forward.FeedForward.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
-<td><p>Registers a backward pre-hook on the module.</p></td>
+<td><p>Register a backward pre-hook on the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_load_state_dict_post_hook" title="darts.models.components.feed_forward.FeedForward.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
-<td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
+<td><p>Register a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_module" title="darts.models.components.feed_forward.FeedForward.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.add_module" title="darts.models.components.feed_forward.FeedForward.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_parameter" title="darts.models.components.feed_forward.FeedForward.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
-<td><p>Adds a parameter to the module.</p></td>
+<td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_state_dict_pre_hook" title="darts.models.components.feed_forward.FeedForward.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.requires_grad_" title="darts.models.components.feed_forward.FeedForward.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.set_extra_state" title="darts.models.components.feed_forward.FeedForward.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
-<td><p>This function is called from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.load_state_dict" title="darts.models.components.feed_forward.FeedForward.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> to handle any extra state found within the <cite>state_dict</cite>.</p></td>
+<td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.share_memory" title="darts.models.components.feed_forward.FeedForward.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
-<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
-<td><p>Returns a dictionary containing references to the whole state of the module.</p></td>
+<td><p>Return a dictionary containing references to the whole state of the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.to" title="darts.models.components.feed_forward.FeedForward.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
-<td><p>Moves and/or casts the parameters and buffers.</p></td>
+<td><p>Move and/or cast the parameters and buffers.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.to_empty" title="darts.models.components.feed_forward.FeedForward.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device[, recurse])</p></td>
-<td><p>Moves the parameters and buffers to the specified device without copying storage.</p></td>
+<td><p>Move the parameters and buffers to the specified device without copying storage.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.train" title="darts.models.components.feed_forward.FeedForward.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
-<td><p>Sets the module in training mode.</p></td>
+<td><p>Set the module in training mode.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.type" title="darts.models.components.feed_forward.FeedForward.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
 <td><p>Casts all parameters and buffers to <code class="xref py py-attr docutils literal notranslate"><span class="pre">dst_type</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.xpu" title="darts.models.components.feed_forward.FeedForward.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the XPU.</p></td>
+<td><p>Move all model parameters and buffers to the XPU.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.zero_grad" title="darts.models.components.feed_forward.FeedForward.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
-<td><p>Resets gradients of all model parameters.</p></td>
+<td><p>Reset gradients of all model parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1063,142 +1068,142 @@ $$x Phi(x)$$ where $Phi(x) = P(X le x), X sim mathcal{N}(0,1)$
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.add_module" title="darts.models.components.feed_forward.FeedForward.add_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_module</span></code></a>(name, module)</p></td>
-<td><p>Adds a child module to the current module.</p></td>
+<td><p>Add a child module to the current module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.apply" title="darts.models.components.feed_forward.FeedForward.apply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply</span></code></a>(fn)</p></td>
-<td><p>Applies <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p></td>
+<td><p>Apply <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.bfloat16" title="darts.models.components.feed_forward.FeedForward.bfloat16"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bfloat16</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">bfloat16</span></code> datatype.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.buffers" title="darts.models.components.feed_forward.FeedForward.buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">buffers</span></code></a>([recurse])</p></td>
-<td><p>Returns an iterator over module buffers.</p></td>
+<td><p>Return an iterator over module buffers.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.children" title="darts.models.components.feed_forward.FeedForward.children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code></a>()</p></td>
-<td><p>Returns an iterator over immediate children modules.</p></td>
+<td><p>Return an iterator over immediate children modules.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.compile" title="darts.models.components.feed_forward.FeedForward.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Compile this Module's forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.cpu" title="darts.models.components.feed_forward.FeedForward.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
-<td><p>Moves all model parameters and buffers to the CPU.</p></td>
+<td><p>Move all model parameters and buffers to the CPU.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.cuda" title="darts.models.components.feed_forward.FeedForward.cuda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cuda</span></code></a>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the GPU.</p></td>
+<td><p>Move all model parameters and buffers to the GPU.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.double" title="darts.models.components.feed_forward.FeedForward.double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">double</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">double</span></code> datatype.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.eval" title="darts.models.components.feed_forward.FeedForward.eval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval</span></code></a>()</p></td>
-<td><p>Sets the module in evaluation mode.</p></td>
+<td><p>Set the module in evaluation mode.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.extra_repr" title="darts.models.components.feed_forward.FeedForward.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
-<td><p>Set the extra representation of the module</p></td>
+<td><p>Set the extra representation of the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.float" title="darts.models.components.feed_forward.FeedForward.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">float</span></code> datatype.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.forward" title="darts.models.components.feed_forward.FeedForward.forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forward</span></code></a>(x)</p></td>
-<td><p>Defines the computation performed at every call.</p></td>
+<td><p>Define the computation performed at every call.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_buffer" title="darts.models.components.feed_forward.FeedForward.get_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buffer</span></code></a>(target)</p></td>
-<td><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_extra_state" title="darts.models.components.feed_forward.FeedForward.get_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_extra_state</span></code></a>()</p></td>
-<td><p>Returns any extra state to include in the module's state_dict.</p></td>
+<td><p>Return any extra state to include in the module's state_dict.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_parameter" title="darts.models.components.feed_forward.FeedForward.get_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parameter</span></code></a>(target)</p></td>
-<td><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_submodule" title="darts.models.components.feed_forward.FeedForward.get_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_submodule</span></code></a>(target)</p></td>
-<td><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throws an error.</p></td>
+<td><p>Return the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.half" title="darts.models.components.feed_forward.FeedForward.half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">half</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">half</span></code> datatype.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.ipu" title="darts.models.components.feed_forward.FeedForward.ipu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ipu</span></code></a>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the IPU.</p></td>
+<td><p>Move all model parameters and buffers to the IPU.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.load_state_dict" title="darts.models.components.feed_forward.FeedForward.load_state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>(state_dict[, strict, assign])</p></td>
-<td><p>Copies parameters and buffers from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p></td>
+<td><p>Copy parameters and buffers from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.modules" title="darts.models.components.feed_forward.FeedForward.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
-<td><p>Returns an iterator over all modules in the network.</p></td>
+<td><p>Return an iterator over all modules in the network.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_buffers" title="darts.models.components.feed_forward.FeedForward.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
-<td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
+<td><p>Return an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_children" title="darts.models.components.feed_forward.FeedForward.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
-<td><p>Returns an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
+<td><p>Return an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_modules" title="darts.models.components.feed_forward.FeedForward.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
-<td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
+<td><p>Return an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.named_parameters" title="darts.models.components.feed_forward.FeedForward.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
-<td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
+<td><p>Return an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.parameters" title="darts.models.components.feed_forward.FeedForward.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
-<td><p>Returns an iterator over module parameters.</p></td>
+<td><p>Return an iterator over module parameters.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_backward_hook" title="darts.models.components.feed_forward.FeedForward.register_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_backward_hook</span></code></a>(hook)</p></td>
-<td><p>Registers a backward hook on the module.</p></td>
+<td><p>Register a backward hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_buffer" title="darts.models.components.feed_forward.FeedForward.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
-<td><p>Adds a buffer to the module.</p></td>
+<td><p>Add a buffer to the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_forward_hook" title="darts.models.components.feed_forward.FeedForward.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
-<td><p>Registers a forward hook on the module.</p></td>
+<td><p>Register a forward hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_forward_pre_hook" title="darts.models.components.feed_forward.FeedForward.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
-<td><p>Registers a forward pre-hook on the module.</p></td>
+<td><p>Register a forward pre-hook on the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_full_backward_hook" title="darts.models.components.feed_forward.FeedForward.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
-<td><p>Registers a backward hook on the module.</p></td>
+<td><p>Register a backward hook on the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_full_backward_pre_hook" title="darts.models.components.feed_forward.FeedForward.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
-<td><p>Registers a backward pre-hook on the module.</p></td>
+<td><p>Register a backward pre-hook on the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_load_state_dict_post_hook" title="darts.models.components.feed_forward.FeedForward.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
-<td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
+<td><p>Register a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_module" title="darts.models.components.feed_forward.FeedForward.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.add_module" title="darts.models.components.feed_forward.FeedForward.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_parameter" title="darts.models.components.feed_forward.FeedForward.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
-<td><p>Adds a parameter to the module.</p></td>
+<td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.register_state_dict_pre_hook" title="darts.models.components.feed_forward.FeedForward.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.requires_grad_" title="darts.models.components.feed_forward.FeedForward.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.set_extra_state" title="darts.models.components.feed_forward.FeedForward.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
-<td><p>This function is called from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.load_state_dict" title="darts.models.components.feed_forward.FeedForward.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> to handle any extra state found within the <cite>state_dict</cite>.</p></td>
+<td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.share_memory" title="darts.models.components.feed_forward.FeedForward.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
-<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p></td>
+<td><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_dict</span></code></a>(*args[, destination, prefix, ...])</p></td>
-<td><p>Returns a dictionary containing references to the whole state of the module.</p></td>
+<td><p>Return a dictionary containing references to the whole state of the module.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.to" title="darts.models.components.feed_forward.FeedForward.to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to</span></code></a>(*args, **kwargs)</p></td>
-<td><p>Moves and/or casts the parameters and buffers.</p></td>
+<td><p>Move and/or cast the parameters and buffers.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.to_empty" title="darts.models.components.feed_forward.FeedForward.to_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_empty</span></code></a>(*, device[, recurse])</p></td>
-<td><p>Moves the parameters and buffers to the specified device without copying storage.</p></td>
+<td><p>Move the parameters and buffers to the specified device without copying storage.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.train" title="darts.models.components.feed_forward.FeedForward.train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train</span></code></a>([mode])</p></td>
-<td><p>Sets the module in training mode.</p></td>
+<td><p>Set the module in training mode.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.type" title="darts.models.components.feed_forward.FeedForward.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a>(dst_type)</p></td>
 <td><p>Casts all parameters and buffers to <code class="xref py py-attr docutils literal notranslate"><span class="pre">dst_type</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.xpu" title="darts.models.components.feed_forward.FeedForward.xpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xpu</span></code></a>([device])</p></td>
-<td><p>Moves all model parameters and buffers to the XPU.</p></td>
+<td><p>Move all model parameters and buffers to the XPU.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.zero_grad" title="darts.models.components.feed_forward.FeedForward.zero_grad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_grad</span></code></a>([set_to_none])</p></td>
-<td><p>Resets gradients of all model parameters.</p></td>
+<td><p>Reset gradients of all model parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1222,7 +1227,7 @@ $$x Phi(x)$$ where $Phi(x) = P(X le x), X sim mathcal{N}(0,1)$
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.add_module">
 <span class="sig-name descname"><span class="pre">add_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.add_module" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a child module to the current module.</p>
+<dd><p>Add a child module to the current module.</p>
 <p>The module can be accessed as an attribute using the given name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1241,8 +1246,8 @@ accessed from this module using the given name</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.apply">
 <span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.apply" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>)
-as well as self. Typical use includes initializing the parameters of a model
+<dd><p>Apply <code class="docutils literal notranslate"><span class="pre">fn</span></code> recursively to every submodule (as returned by <code class="docutils literal notranslate"><span class="pre">.children()</span></code>) as well as self.</p>
+<p>Typical use includes initializing the parameters of a model
 (see also <span class="xref std std-ref">nn-init-doc</span>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1301,7 +1306,7 @@ as well as self. Typical use includes initializing the parameters of a model
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.buffers">
 <span class="sig-name descname"><span class="pre">buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.buffers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over module buffers.</p>
+<dd><p>Return an iterator over module buffers.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>recurse</strong> (<em>bool</em>) – if True, then yields buffers of this module
@@ -1335,7 +1340,7 @@ are direct members of this module.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.children">
 <span class="sig-name descname"><span class="pre">children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.children" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over immediate children modules.</p>
+<dd><p>Return an iterator over immediate children modules.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Yields</dt>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
@@ -1358,7 +1363,7 @@ to <code class="xref py py-func docutils literal notranslate"><span class="pre">
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.cpu">
 <span class="sig-name descname"><span class="pre">cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.cpu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Moves all model parameters and buffers to the CPU.</p>
+<dd><p>Move all model parameters and buffers to the CPU.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This method modifies the module in-place.</p>
@@ -1376,7 +1381,7 @@ to <code class="xref py py-func docutils literal notranslate"><span class="pre">
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.cuda">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.cuda" title="Permalink to this definition">¶</a></dt>
-<dd><p>Moves all model parameters and buffers to the GPU.</p>
+<dd><p>Move all model parameters and buffers to the GPU.</p>
 <p>This also makes associated parameters and buffers different objects. So
 it should be called before constructing optimizer if the module will
 live on GPU while being optimized.</p>
@@ -1424,7 +1429,7 @@ copied to that device</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.eval" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the module in evaluation mode.</p>
+<dd><p>Set the module in evaluation mode.</p>
 <p>This has any effect only on certain modules. See documentations of
 particular modules for details of their behaviors in training/evaluation
 mode, if they are affected, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BatchNorm</span></code>,
@@ -1445,7 +1450,7 @@ etc.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.extra_repr">
 <span class="sig-name descname"><span class="pre">extra_repr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.extra_repr" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the extra representation of the module</p>
+<dd><p>Set the extra representation of the module.</p>
 <p>To print customized extra information, you should re-implement
 this method in your own modules. Both single-line and multi-line
 strings are acceptable.</p>
@@ -1477,7 +1482,7 @@ strings are acceptable.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.forward">
 <span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/components/feed_forward.html#FeedForward.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.forward" title="Permalink to this definition">¶</a></dt>
-<dd><p>Defines the computation performed at every call.</p>
+<dd><p>Define the computation performed at every call.</p>
 <p>Should be overridden by all subclasses.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1491,8 +1496,7 @@ registered hooks while the latter silently ignores them.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.get_buffer">
 <span class="sig-name descname"><span class="pre">get_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.get_buffer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists,
-otherwise throws an error.</p>
+<dd><p>Return the buffer given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
 <p>See the docstring for <code class="docutils literal notranslate"><span class="pre">get_submodule</span></code> for a more detailed
 explanation of this method’s functionality as well as how to
 correctly specify <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
@@ -1519,8 +1523,8 @@ buffer</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.get_extra_state">
 <span class="sig-name descname"><span class="pre">get_extra_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.get_extra_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns any extra state to include in the module’s state_dict.
-Implement this and a corresponding <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.set_extra_state" title="darts.models.components.feed_forward.FeedForward.set_extra_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_extra_state()</span></code></a> for your module
+<dd><p>Return any extra state to include in the module’s state_dict.</p>
+<p>Implement this and a corresponding <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.set_extra_state" title="darts.models.components.feed_forward.FeedForward.set_extra_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_extra_state()</span></code></a> for your module
 if you need to store extra state. This function is called when building the
 module’s <cite>state_dict()</cite>.</p>
 <p>Note that extra state should be picklable to ensure working serialization
@@ -1540,8 +1544,7 @@ their serialized pickled form changes.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.get_parameter">
 <span class="sig-name descname"><span class="pre">get_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.get_parameter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists,
-otherwise throws an error.</p>
+<dd><p>Return the parameter given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
 <p>See the docstring for <code class="docutils literal notranslate"><span class="pre">get_submodule</span></code> for a more detailed
 explanation of this method’s functionality as well as how to
 correctly specify <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
@@ -1568,8 +1571,7 @@ path or resolves to something that is not an
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.get_submodule">
 <span class="sig-name descname"><span class="pre">get_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.get_submodule" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists,
-otherwise throws an error.</p>
+<dd><p>Return the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
@@ -1636,7 +1638,7 @@ path or resolves to something that is not an
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.ipu">
 <span class="sig-name descname"><span class="pre">ipu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.ipu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Moves all model parameters and buffers to the IPU.</p>
+<dd><p>Move all model parameters and buffers to the IPU.</p>
 <p>This also makes associated parameters and buffers different objects. So
 it should be called before constructing optimizer if the module will
 live on IPU while being optimized.</p>
@@ -1661,8 +1663,8 @@ copied to that device</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.load_state_dict">
 <span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.load_state_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Copies parameters and buffers from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into
-this module and its descendants. If <code class="xref py py-attr docutils literal notranslate"><span class="pre">strict</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then
+<dd><p>Copy parameters and buffers from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> into this module and its descendants.</p>
+<p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">strict</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then
 the keys of <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> must exactly match the keys returned
 by this module’s <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function.</p>
 <div class="admonition warning">
@@ -1709,7 +1711,7 @@ exists in <a class="reference internal" href="#darts.models.components.feed_forw
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.modules">
 <span class="sig-name descname"><span class="pre">modules</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.modules" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over all modules in the network.</p>
+<dd><p>Return an iterator over all modules in the network.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Yields</dt>
 <dd class="field-odd"><p><em>Module</em> – a module in the network</p>
@@ -1743,8 +1745,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.named_buffers">
 <span class="sig-name descname"><span class="pre">named_buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.named_buffers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over module buffers, yielding both the
-name of the buffer as well as the buffer itself.</p>
+<dd><p>Return an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1776,8 +1777,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.named_children">
 <span class="sig-name descname"><span class="pre">named_children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.named_children" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over immediate children modules, yielding both
-the name of the module as well as the module itself.</p>
+<dd><p>Return an iterator over immediate children modules, yielding both the name of the module as well as the module itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Yields</dt>
 <dd class="field-odd"><p><em>(str, Module)</em> – Tuple containing a name and child module</p>
@@ -1800,8 +1800,7 @@ the name of the module as well as the module itself.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.named_modules">
 <span class="sig-name descname"><span class="pre">named_modules</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.named_modules" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over all modules in the network, yielding
-both the name of the module as well as the module itself.</p>
+<dd><p>Return an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1838,8 +1837,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.named_parameters">
 <span class="sig-name descname"><span class="pre">named_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.named_parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over module parameters, yielding both the
-name of the parameter as well as the parameter itself.</p>
+<dd><p>Return an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1872,7 +1870,7 @@ parameters in the result. Defaults to True.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.parameters">
 <span class="sig-name descname"><span class="pre">parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an iterator over module parameters.</p>
+<dd><p>Return an iterator over module parameters.</p>
 <p>This is typically passed to an optimizer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1902,7 +1900,7 @@ are direct members of this module.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_backward_hook">
 <span class="sig-name descname"><span class="pre">register_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_backward_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registers a backward hook on the module.</p>
+<dd><p>Register a backward hook on the module.</p>
 <p>This function is deprecated in favor of <code class="xref py py-meth docutils literal notranslate"><span class="pre">register_full_backward_hook()</span></code> and
 the behavior of this function will change in future versions.</p>
 <dl class="field-list simple">
@@ -1919,7 +1917,7 @@ the behavior of this function will change in future versions.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_buffer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a buffer to the module.</p>
+<dd><p>Add a buffer to the module.</p>
 <p>This is typically used to register a buffer that should not to be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
@@ -1957,7 +1955,7 @@ the buffer is <strong>not</strong> included in the module’s <a class="referenc
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_forward_hook">
 <span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">always_call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_forward_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registers a forward hook on the module.</p>
+<dd><p>Register a forward hook on the module.</p>
 <p>The hook will be called every time after <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.forward" title="darts.models.components.feed_forward.FeedForward.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> or not specified, the input contains only
 the positional arguments given to the module. Keyword arguments won’t be
@@ -2008,7 +2006,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_forward_pre_hook">
 <span class="sig-name descname"><span class="pre">register_forward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_forward_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registers a forward pre-hook on the module.</p>
+<dd><p>Register a forward pre-hook on the module.</p>
 <p>The hook will be called every time before <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.forward" title="darts.models.components.feed_forward.FeedForward.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is invoked.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is false or not specified, the input contains only
 the positional arguments given to the module. Keyword arguments won’t be
@@ -2058,7 +2056,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registers a backward hook on the module.</p>
+<dd><p>Register a backward hook on the module.</p>
 <p>The hook will be called every time the gradients with respect to a module
 are computed, i.e. the hook will execute if and only if the gradients with
 respect to module outputs are computed. The hook should have the following
@@ -2109,7 +2107,7 @@ all hooks registered by this method.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_full_backward_pre_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_full_backward_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registers a backward pre-hook on the module.</p>
+<dd><p>Register a backward pre-hook on the module.</p>
 <p>The hook will be called every time the gradients for the module are computed.
 The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tensor</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span>
@@ -2155,8 +2153,7 @@ all hooks registered by this method.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_load_state_dict_post_hook">
 <span class="sig-name descname"><span class="pre">register_load_state_dict_post_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_load_state_dict_post_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registers a post hook to be run after module’s <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code>
-is called.</p>
+<dd><p>Register a post hook to be run after module’s <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p>
 <dl class="simple">
 <dt>It should have the following signature::</dt><dd><p>hook(module, incompatible_keys) -&gt; None</p>
 </dd>
@@ -2197,7 +2194,7 @@ clearing out both missing and unexpected keys will avoid an error.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_parameter">
 <span class="sig-name descname"><span class="pre">register_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_parameter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a parameter to the module.</p>
+<dd><p>Add a parameter to the module.</p>
 <p>The parameter can be accessed as an attribute using given name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2219,7 +2216,8 @@ module’s <a class="reference internal" href="#darts.models.components.feed_for
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
 call is made.</p>
@@ -2228,8 +2226,7 @@ call is made.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.requires_grad_">
 <span class="sig-name descname"><span class="pre">requires_grad_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">requires_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.requires_grad_" title="Permalink to this definition">¶</a></dt>
-<dd><p>Change if autograd should record operations on parameters in this
-module.</p>
+<dd><p>Change if autograd should record operations on parameters in this module.</p>
 <p>This method sets the parameters’ <code class="xref py py-attr docutils literal notranslate"><span class="pre">requires_grad</span></code> attributes
 in-place.</p>
 <p>This method is helpful for freezing part of the module for finetuning
@@ -2253,7 +2250,8 @@ parameters in this module. Default: <code class="docutils literal notranslate"><
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.set_extra_state">
 <span class="sig-name descname"><span class="pre">set_extra_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.set_extra_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function is called from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.load_state_dict" title="darts.models.components.feed_forward.FeedForward.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> to handle any extra state
+<dd><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p>
+<p>This function is called from <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.load_state_dict" title="darts.models.components.feed_forward.FeedForward.load_state_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_state_dict()</span></code></a> to handle any extra state
 found within the <cite>state_dict</cite>. Implement this function and a corresponding
 <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.get_extra_state" title="darts.models.components.feed_forward.FeedForward.get_extra_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_extra_state()</span></code></a> for your module if you need to store extra state within its
 <cite>state_dict</cite>.</p>
@@ -2267,7 +2265,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.share_memory">
 <span class="sig-name descname"><span class="pre">share_memory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.share_memory" title="Permalink to this definition">¶</a></dt>
-<dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code></p>
+<dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>~T</p>
@@ -2278,7 +2276,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.state_dict">
 <span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a dictionary containing references to the whole state of the module.</p>
+<dd><p>Return a dictionary containing references to the whole state of the module.</p>
 <p>Both parameters and persistent buffers (e.g. running averages) are
 included. Keys are corresponding parameter and buffer names.
 Parameters and buffers set to <code class="docutils literal notranslate"><span class="pre">None</span></code> are not included.</p>
@@ -2332,7 +2330,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.to">
 <span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.to" title="Permalink to this definition">¶</a></dt>
-<dd><p>Moves and/or casts the parameters and buffers.</p>
+<dd><p>Move and/or cast the parameters and buffers.</p>
 <p>This can be called as</p>
 <dl class="py function">
 <dt class="sig sig-object py">
@@ -2433,7 +2431,7 @@ only argument)</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.to_empty">
 <span class="sig-name descname"><span class="pre">to_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.to_empty" title="Permalink to this definition">¶</a></dt>
-<dd><p>Moves the parameters and buffers to the specified device without copying storage.</p>
+<dd><p>Move the parameters and buffers to the specified device without copying storage.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -2455,7 +2453,7 @@ be recursively moved to the specified device.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.train">
 <span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.train" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the module in training mode.</p>
+<dd><p>Set the module in training mode.</p>
 <p>This has any effect only on certain modules. See documentations of
 particular modules for details of their behaviors in training/evaluation
 mode, if they are affected, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BatchNorm</span></code>,
@@ -2503,7 +2501,7 @@ mode (<code class="docutils literal notranslate"><span class="pre">False</span><
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.xpu">
 <span class="sig-name descname"><span class="pre">xpu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.xpu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Moves all model parameters and buffers to the XPU.</p>
+<dd><p>Move all model parameters and buffers to the XPU.</p>
 <p>This also makes associated parameters and buffers different objects. So
 it should be called before constructing optimizer if the module will
 live on XPU while being optimized.</p>
@@ -2528,8 +2526,8 @@ copied to that device</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.zero_grad">
 <span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.zero_grad" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resets gradients of all model parameters. See similar function
-under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
+<dd><p>Reset gradients of all model parameters.</p>
+<p>See similar function under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>set_to_none</strong> (<em>bool</em>) – instead of setting to zero, set the grads to None.

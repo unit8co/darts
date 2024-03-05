@@ -284,7 +284,8 @@
 <span class="sd">        dropout</span>
 <span class="sd">            Dropout probability</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
+<span class="sd">            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`</span>
+<span class="sd">            base class.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -505,9 +506,11 @@
         <span class="c1"># stack and temporally decode with future covariate last output steps</span>
         <span class="n">temporal_decoder_input</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">decoded</span><span class="p">,</span>
-            <span class="n">x_dynamic_future_covariates</span><span class="p">[:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="p">:,</span> <span class="p">:]</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span>
-            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="n">x_dynamic_future_covariates</span><span class="p">[:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
         <span class="p">]</span>
         <span class="n">temporal_decoder_input</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">temporal_decoder_input</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
 
@@ -533,6 +536,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">num_encoder_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">num_decoder_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">decoder_output_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
@@ -569,10 +573,16 @@
 <span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values</span>
 <span class="sd">            from future covariates to use as a model input (if the model supports future covariates). It is not the same</span>
 <span class="sd">            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated</span>
-<span class="sd">            using either a one-shot- or auto-regressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
+<span class="sd">            using either a one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents</span>
 <span class="sd">            auto-regression. This is useful when the covariates don&#39;t extend far enough into the future, or to prohibit</span>
 <span class="sd">            the model from using future values of past and / or future covariates for prediction (depending on the</span>
 <span class="sd">            model&#39;s covariate support).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input and output. If the model supports</span>
+<span class="sd">            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start</span>
+<span class="sd">            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model</span>
+<span class="sd">            cannot generate autoregressive predictions (`n &gt; output_chunk_length`).</span>
 <span class="sd">        num_encoder_layers</span>
 <span class="sd">            The number of residual blocks in the encoder.</span>
 <span class="sd">        num_decoder_layers</span>

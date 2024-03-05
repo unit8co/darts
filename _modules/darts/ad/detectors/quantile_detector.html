@@ -237,9 +237,7 @@
             <span class="k">return</span> <span class="p">(</span>
                 <span class="n">q</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
-                <span class="k">else</span> <span class="p">[</span><span class="n">q</span><span class="p">]</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span>
-                <span class="k">else</span> <span class="n">q</span>
+                <span class="k">else</span> <span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">q</span>
             <span class="p">)</span>
 
         <span class="n">low</span> <span class="o">=</span> <span class="n">_prep_quantile</span><span class="p">(</span><span class="n">low_quantile</span><span class="p">)</span>

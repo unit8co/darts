@@ -252,9 +252,11 @@
                     <span class="n">y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span>
                     <span class="n">sample_weight</span><span class="p">,</span>
                     <span class="c1"># eval set may be a list (for XGBRegressor), in which case we have to keep it as a list</span>
-                    <span class="n">eval_set</span><span class="o">=</span><span class="p">[(</span><span class="n">eval_set</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">eval_set</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][:,</span> <span class="n">i</span><span class="p">])]</span>
-                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eval_set</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
-                    <span class="k">else</span> <span class="p">(</span><span class="n">eval_set</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">eval_set</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span> <span class="n">i</span><span class="p">]),</span>
+                    <span class="n">eval_set</span><span class="o">=</span><span class="p">(</span>
+                        <span class="p">[(</span><span class="n">eval_set</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">eval_set</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][:,</span> <span class="n">i</span><span class="p">])]</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eval_set</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="p">(</span><span class="n">eval_set</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">eval_set</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span> <span class="n">i</span><span class="p">])</span>
+                    <span class="p">),</span>
                     <span class="o">**</span><span class="n">fit_params_validated</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>

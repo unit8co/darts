@@ -330,10 +330,11 @@
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">_routing_enabled</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">partial_fit_params</span><span class="p">[</span><span class="s2">&quot;sample_weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_weight</span>
             <span class="n">routed_params</span> <span class="o">=</span> <span class="n">process_routing</span><span class="p">(</span>
                 <span class="bp">self</span><span class="p">,</span>
                 <span class="s2">&quot;partial_fit&quot;</span><span class="p">,</span>
-                <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">partial_fit_params</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -416,10 +417,11 @@
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">_routing_enabled</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fit_params</span><span class="p">[</span><span class="s2">&quot;sample_weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_weight</span>
             <span class="n">routed_params</span> <span class="o">=</span> <span class="n">process_routing</span><span class="p">(</span>
                 <span class="bp">self</span><span class="p">,</span>
                 <span class="s2">&quot;fit&quot;</span><span class="p">,</span>
-                <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">fit_params</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>

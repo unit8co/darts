@@ -183,6 +183,17 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<span class="n">ONE_INDEXED_FREQS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;day&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;month&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;quarter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dayofyear&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;day_of_year&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;week&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;week_of_year&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
 
 <div class="viewcode-block" id="generate_index"><a class="viewcode-back" href="../../../generated_api/darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.generate_index">[docs]</a><span class="k">def</span> <span class="nf">generate_index</span><span class="p">(</span>
     <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -228,7 +239,7 @@
         <span class="n">logger</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">raise_if</span><span class="p">(</span>
-        <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">),</span>
+        <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">),</span>
         <span class="s2">&quot;index generation with `start` and `end` requires equal object types of `start` and `end`&quot;</span><span class="p">,</span>
         <span class="n">logger</span><span class="p">,</span>
     <span class="p">)</span>
@@ -479,14 +490,14 @@
 <span class="sd">        A white noise TimeSeries created as indicated above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">mean</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">length</span><span class="p">,),</span>
             <span class="s2">&quot;If a vector of means is provided, &quot;</span>
             <span class="s2">&quot;it requires the same length as the TimeSeries.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">std</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">std</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">std</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="n">length</span><span class="p">),</span>
             <span class="s2">&quot;If a matrix of standard deviations is provided, &quot;</span>
@@ -773,6 +784,7 @@
 <span class="sd">    Returns a new TimeSeries with index `time_index` and one or more dimensions containing</span>
 <span class="sd">    (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.</span>
 
+<span class="sd">    1-indexed attributes are shifted to enforce 0-indexing across all the encodings.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -861,6 +873,33 @@
             <span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
         <span class="p">)</span>
 
+    <span class="c1"># shift 1-indexed datetime attributes</span>
+    <span class="k">if</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="n">ONE_INDEXED_FREQS</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">-=</span> <span class="mi">1</span>
+
+    <span class="c1"># leap years insert an additional day on the 29th of Feburary</span>
+    <span class="k">if</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;dayofyear&quot;</span><span class="p">,</span> <span class="s2">&quot;day_of_year&quot;</span><span class="p">}</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">time_index</span><span class="o">.</span><span class="n">is_leap_year</span><span class="p">):</span>
+        <span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># years contain an additional week if they are :</span>
+    <span class="c1"># - a regular year starting on a thursday</span>
+    <span class="c1"># - a leap year starting on a wednesday</span>
+    <span class="k">if</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span> <span class="s2">&quot;week_of_year&quot;</span><span class="p">}:</span>
+        <span class="n">years</span> <span class="o">=</span> <span class="n">time_index</span><span class="o">.</span><span class="n">year</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="c1"># check if year respect properties</span>
+        <span class="n">additional_week_year</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="p">((</span><span class="ow">not</span> <span class="n">first_day</span><span class="o">.</span><span class="n">is_leap_year</span><span class="p">)</span> <span class="ow">and</span> <span class="n">first_day</span><span class="o">.</span><span class="n">day_name</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Thursday&quot;</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">(</span><span class="n">first_day</span><span class="o">.</span><span class="n">is_leap_year</span> <span class="ow">and</span> <span class="n">first_day</span><span class="o">.</span><span class="n">day_name</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Wednesday&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">first_day</span> <span class="ow">in</span> <span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">-01-01&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">years</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="c1"># check if time index actually include the additional week</span>
+        <span class="n">additional_week_in_index</span> <span class="o">=</span> <span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span>
+            <span class="n">days</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span> <span class="o">&gt;=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">additional_week_year</span> <span class="ow">and</span> <span class="n">additional_week_in_index</span><span class="p">:</span>
+            <span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
     <span class="k">if</span> <span class="n">one_hot</span> <span class="ow">or</span> <span class="n">cyclic</span><span class="p">:</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">attribute</span> <span class="ow">in</span> <span class="n">num_values_dict</span><span class="p">,</span>
@@ -872,10 +911,11 @@
     <span class="k">if</span> <span class="n">one_hot</span><span class="p">:</span>
         <span class="n">values_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
         <span class="c1"># fill missing columns (in case not all values appear in time_index)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">attribute_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">attribute_range</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">i</span> <span class="ow">in</span> <span class="n">values_df</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
                 <span class="n">values_df</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">values_df</span> <span class="o">=</span> <span class="n">values_df</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">values_df</span> <span class="o">=</span> <span class="n">values_df</span><span class="p">[</span><span class="n">attribute_range</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">with_columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">with_columns</span> <span class="o">=</span> <span class="p">[</span>
