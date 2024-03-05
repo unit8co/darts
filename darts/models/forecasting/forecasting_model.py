@@ -250,7 +250,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Whether the model supports prediction for any input `series`.
         """
-        pass
 
     @property
     def uses_past_covariates(self) -> bool:
@@ -488,7 +487,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         >>> model.extreme_lags
         (-10, 6, None, None, 4, 6, 0)
         """
-        pass
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -1870,7 +1868,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates,
         lags_past_covariates, lags_future_covariates).
         """
-        pass
 
     @classmethod
     def _sample_params(model_class, params, n_random_samples):
@@ -2481,7 +2478,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
-        pass
 
     def predict(
         self,
@@ -2575,7 +2571,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """Forecasts values for a certain number of time steps after the end of the series.
         DualCovariatesModels must implement the predict logic in this method.
         """
-        pass
 
     @property
     def _model_encoder_settings(
@@ -2778,7 +2773,6 @@ class TransferableFutureCovariatesLocalForecastingModel(
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
         """
-        pass
 
     @property
     def supports_transferrable_series_prediction(self) -> bool:
