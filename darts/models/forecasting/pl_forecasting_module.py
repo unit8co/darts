@@ -468,7 +468,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             module.mc_dropout_enabled = active
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
     def _produce_predict_output(self, x: Tuple) -> torch.Tensor:

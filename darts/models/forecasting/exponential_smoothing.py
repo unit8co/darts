@@ -159,7 +159,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         return False
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     @property

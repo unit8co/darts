@@ -192,9 +192,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return True
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         """
-        Checks if the forecasting model supports probabilistic predictions.
+        Checks if the forecasting model with this configuration supports probabilistic predictions.
+
         By default, returns False. Needs to be overwritten by models that do support
         probabilistic predictions.
         """
@@ -204,7 +205,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """
         Checks if the forecasting model supports historical forecasts without retraining
-        the model. By default, returns False. Needs to be overwritten by models that do
+        the model.
+
+        By default, returns False. Needs to be overwritten by models that do
         support historical forecasts without retraining.
         """
         return False
@@ -346,7 +349,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger=logger,
             )
 
-        if not self._is_probabilistic and num_samples > 1:
+        if not self.supports_probabilistic_prediction and num_samples > 1:
             raise_log(
                 ValueError(
                     "`num_samples > 1` is only supported for probabilistic models."

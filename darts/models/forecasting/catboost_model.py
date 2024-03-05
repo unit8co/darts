@@ -326,7 +326,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             return None
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
 
     @property
