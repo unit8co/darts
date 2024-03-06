@@ -403,6 +403,61 @@ class TestCreateLaggedTrainingData:
     #   Generated Test Cases
     #
 
+    target_with_no_cov = create_multivariate_linear_timeseries(
+        n_components=1,
+        components_names=["no_static"],
+        start_value=0,
+        end_value=10,
+        start=2,
+        length=10,
+        freq=2,
+    )
+    n_comp = 2
+    target_with_static_cov = create_multivariate_linear_timeseries(
+        n_components=n_comp,
+        components_names=["static_0", "static_1"],
+        start_value=0,
+        end_value=10,
+        start=2,
+        length=10,
+        freq=2,
+    )
+    target_with_static_cov = target_with_static_cov.with_static_covariates(
+        pd.DataFrame({"dummy": [1]})  # leads to "global" static cov component name
+    )
+    target_with_static_cov2 = target_with_static_cov.with_static_covariates(
+        pd.DataFrame(
+            {"dummy": [i for i in range(n_comp)]}
+        )  # leads to sharing target component names
+    )
+    target_with_static_cov3 = target_with_static_cov.with_static_covariates(
+        pd.DataFrame(
+            {
+                "dummy": [i for i in range(n_comp)],
+                "dummy1": [i for i in range(n_comp)],
+            }
+        )  # leads to sharing target component names
+    )
+
+    past = create_multivariate_linear_timeseries(
+        n_components=3,
+        components_names=["past_0", "past_1", "past_2"],
+        start_value=10,
+        end_value=20,
+        start=2,
+        length=10,
+        freq=2,
+    )
+    future = create_multivariate_linear_timeseries(
+        n_components=4,
+        components_names=["future_0", "future_1", "future_2", "future_3"],
+        start_value=20,
+        end_value=30,
+        start=2,
+        length=10,
+        freq=2,
+    )
+
     # Input parameter combinations used to generate test cases:
     output_chunk_length_combos = (1, 3)
     output_chunk_shift_combos = (0, 1)
@@ -1709,295 +1764,269 @@ class TestCreateLaggedTrainingData:
                 )
                 assert len(w) == 0
 
-    def test_create_lagged_component_names(self):
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # target no static covariate
+            (
+                target_with_no_cov,
+                None,
+                None,
+                [-2, -1],
+                None,
+                None,
+                False,
+                ["no_static_target_lag-2", "no_static_target_lag-1"],
+            ),
+            # target with static covariate (but don't use them in feature names)
+            (
+                target_with_static_cov,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                False,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                ],
+            ),
+            # target with static covariate (acting on global target components)
+            (
+                target_with_static_cov,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_global_components",
+                ],
+            ),
+            # target with static covariate (component specific)
+            (
+                target_with_static_cov2,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_static_0",
+                    "dummy_statcov_target_static_1",
+                ],
+            ),
+            # target with static covariate (component specific & multivariate)
+            (
+                target_with_static_cov3,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_static_0",
+                    "dummy_statcov_target_static_1",
+                    "dummy1_statcov_target_static_0",
+                    "dummy1_statcov_target_static_1",
+                ],
+            ),
+            # target + past
+            (
+                target_with_no_cov,
+                past,
+                None,
+                [-4, -3],
+                [-1],
+                None,
+                False,
+                [
+                    "no_static_target_lag-4",
+                    "no_static_target_lag-3",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                ],
+            ),
+            # target + future
+            (
+                target_with_no_cov,
+                None,
+                future,
+                [-2, -1],
+                None,
+                [3],
+                False,
+                [
+                    "no_static_target_lag-2",
+                    "no_static_target_lag-1",
+                    "future_0_futcov_lag3",
+                    "future_1_futcov_lag3",
+                    "future_2_futcov_lag3",
+                    "future_3_futcov_lag3",
+                ],
+            ),
+            # past + future
+            (
+                target_with_no_cov,
+                past,
+                future,
+                None,
+                [-1],
+                [2],
+                False,
+                [
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+            # target with static (not used) + past + future
+            (
+                target_with_static_cov,
+                past,
+                future,
+                [-2, -1],
+                [-1],
+                [2],
+                False,
+                [
+                    "static_0_target_lag-2",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+            # multiple series with same components names, including past/future covariates
+            (
+                [target_with_static_cov, target_with_static_cov],
+                [past, past],
+                [future, future],
+                [-3],
+                [-1],
+                [2],
+                False,
+                [
+                    "static_0_target_lag-3",
+                    "static_1_target_lag-3",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+            # multiple series with different components will use the first series as reference
+            (
+                [
+                    target_with_static_cov,
+                    target_with_no_cov.stack(target_with_no_cov),
+                ],
+                [past, past],
+                [future, past.stack(target_with_no_cov)],
+                [-2, -1],
+                [-1],
+                [2],
+                False,
+                [
+                    "static_0_target_lag-2",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+        ],
+    )
+    def test_create_lagged_component_names(self, config):
         """
         Tests that `create_lagged_component_names` produces the expected features name depending
         on the lags, output_chunk_length and covariates.
+
+        When lags are component-specific, they are identical across all the components.
         """
-        target_with_no_cov = self.create_multivariate_linear_timeseries(
-            n_components=1,
-            components_names=["no_static"],
-            start_value=0,
-            end_value=10,
-            start=2,
-            length=10,
-            freq=2,
-        )
-        n_comp = 2
-        target_with_static_cov = self.create_multivariate_linear_timeseries(
-            n_components=n_comp,
-            components_names=["static_0", "static_1"],
-            start_value=0,
-            end_value=10,
-            start=2,
-            length=10,
-            freq=2,
-        )
-        target_with_static_cov = target_with_static_cov.with_static_covariates(
-            pd.DataFrame({"dummy": [1]})  # leads to "global" static cov component name
-        )
-        target_with_static_cov2 = target_with_static_cov.with_static_covariates(
-            pd.DataFrame(
-                {"dummy": [i for i in range(n_comp)]}
-            )  # leads to sharing target component names
-        )
-        target_with_static_cov3 = target_with_static_cov.with_static_covariates(
-            pd.DataFrame(
-                {
-                    "dummy": [i for i in range(n_comp)],
-                    "dummy1": [i for i in range(n_comp)],
-                }
-            )  # leads to sharing target component names
-        )
 
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3,
-            components_names=["past_0", "past_1", "past_2"],
-            start_value=10,
-            end_value=20,
-            start=2,
-            length=10,
-            freq=2,
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4,
-            components_names=["future_0", "future_1", "future_2", "future_3"],
-            start_value=20,
-            end_value=30,
-            start=2,
-            length=10,
-            freq=2,
-        )
-
-        # target no static covariate
-        expected_lagged_features = ["no_static_target_lag-2", "no_static_target_lag-1"]
+        (
+            ts_tg,
+            ts_pc,
+            ts_fc,
+            lags_tg,
+            lags_pc,
+            lags_fc,
+            use_static_cov,
+            expected_lagged_features,
+        ) = config
+        # lags as list
         created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-2, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
+            target_series=ts_tg,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_tg,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
             concatenate=False,
-            use_static_covariates=False,
+            use_static_covariates=use_static_cov,
+        )
+
+        # converts lags to dictionary format
+        lags_as_dict = dict()
+        for ts, lags, name in zip(
+            [ts_tg, ts_pc, ts_fc],
+            [lags_tg, lags_pc, lags_fc],
+            ["target", "past", "future"],
+        ):
+            single_ts = ts[0] if isinstance(ts, list) else ts
+            if single_ts is None or lags is None:
+                lags_as_dict[name] = None
+            else:
+                lags_as_dict[name] = {c_name: lags for c_name in single_ts.components}
+
+        created_lagged_features_dict_lags, _ = create_lagged_component_names(
+            target_series=ts_tg,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_as_dict["target"],
+            lags_past_covariates=lags_as_dict["past"],
+            lags_future_covariates=lags_as_dict["future"],
+            concatenate=False,
+            use_static_covariates=use_static_cov,
         )
         assert expected_lagged_features == created_lagged_features
-
-        # target with static covariate (but don't use them in feature names)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static covariate (acting on global target components)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "dummy_statcov_target_global_components",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=True,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static covariate (component specific)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "dummy_statcov_target_static_0",
-            "dummy_statcov_target_static_1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov2,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=True,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static covariate (component specific & multivariate)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "dummy_statcov_target_static_0",
-            "dummy_statcov_target_static_1",
-            "dummy1_statcov_target_static_0",
-            "dummy1_statcov_target_static_1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov3,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=True,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target + past
-        expected_lagged_features = [
-            "no_static_target_lag-4",
-            "no_static_target_lag-3",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=past,
-            future_covariates=None,
-            lags=[-4, -3],
-            lags_past_covariates=[-1],
-            lags_future_covariates=None,
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target + future
-        expected_lagged_features = [
-            "no_static_target_lag-2",
-            "no_static_target_lag-1",
-            "future_0_futcov_lag3",
-            "future_1_futcov_lag3",
-            "future_2_futcov_lag3",
-            "future_3_futcov_lag3",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=None,
-            future_covariates=future,
-            lags=[-2, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=[3],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # past + future
-        expected_lagged_features = [
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=past,
-            future_covariates=future,
-            lags=None,
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static + past + future
-        expected_lagged_features = [
-            "static_0_target_lag-2",
-            "static_1_target_lag-2",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov,
-            past_covariates=past,
-            future_covariates=future,
-            lags=[-2, -1],
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # multiple series with same components, including past/future covariates
-        expected_lagged_features = [
-            "static_0_target_lag-3",
-            "static_1_target_lag-3",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=[target_with_static_cov, target_with_static_cov],
-            past_covariates=[past, past],
-            future_covariates=[future, future],
-            lags=[-3],
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # multiple series with different components will use the first series as reference
-        expected_lagged_features = [
-            "static_0_target_lag-2",
-            "static_1_target_lag-2",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=[
-                target_with_static_cov,
-                target_with_no_cov.stack(target_with_no_cov),
-            ],
-            past_covariates=[past, past],
-            future_covariates=[future, past.stack(target_with_no_cov)],
-            lags=[-2, -1],
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
+        assert expected_lagged_features == created_lagged_features_dict_lags
