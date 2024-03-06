@@ -714,9 +714,9 @@ def create_lagged_component_names(
     For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),
     each `lagged_*` has the following structure (grouped by lags):
         comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
-    For `*_lags={'comp0':[-2, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
-    specific lags), each `lagged_*` has the following structure (grouped by components):
-        comp0_*_lag-2 | comp0_*_lag-1 | comp1_*_lag_-5 | comp1_*_lag-3
+    For `*_lags={'comp0':[-3, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
+    specific lags), each `lagged_*` has the following structure (sorted by lags, then by components):
+        comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
 
     and for static covariates (2 static covariates acting on 2 target components):
         cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
@@ -775,9 +775,20 @@ def create_lagged_component_names(
 
         components = get_single_series(variate).components.tolist()
         if isinstance(variate_lags, dict):
+            if "default_lags" in variate_lags:
+                raise_log(
+                    ValueError(
+                        "All the lags must be explitely defined, 'default_lags' is not allowed in the lags dictionary."
+                    ),
+                    logger,
+                )
+
             # combine all the lags and sort them in ascending order across all the components
             comp_lags_reordered = np.concatenate(
-                [np.array(c_lags, dtype=int) for c_lags in variate_lags.values()]
+                [
+                    np.array(variate_lags[comp_name], dtype=int)
+                    for comp_name in components
+                ]
             ).argsort()
             tmp_lagged_feats_names = []
             for name in components:
