@@ -2477,6 +2477,29 @@ class TimeSeries:
         time_index = self.time_index.intersection(other.time_index)
         return self[time_index]
 
+    def slice_intersect_values(self, other: Self, copy: bool = False) -> Self:
+        """
+        Return a ``TimeSeries`` slice of this series, where the time index has been intersected with the one
+        of the `other` series.
+
+        This method is in general *not* symmetric.
+
+        Parameters
+        ----------
+        other
+            the other time series
+
+        Returns
+        -------
+        TimeSeries
+            a new series, containing the values of this series, over the time-span common to both time series.
+        """
+        if other.has_same_time_as(self):
+            return self.all_values(copy=copy)
+
+        time_index = self.time_index.intersection(other.time_index)
+        return self[time_index]
+
     def strip(self, how: str = "all") -> Self:
         """
         Return a ``TimeSeries`` slice of this deterministic time series, where NaN-containing entries at the beginning
