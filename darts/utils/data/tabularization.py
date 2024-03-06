@@ -279,6 +279,15 @@ def create_lagged_data(
         len(seq_ts_lens) > 1,
         "Must specify the same number of `TimeSeries` for each series input.",
     )
+    raise_if(
+        not use_moving_windows
+        and any(
+            isinstance(lags_, dict)
+            for lags_ in [lags, lags_past_covariates, lags_future_covariates]
+        ),
+        "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary. "
+        f"Received: {[lags, lags_past_covariates, lags_future_covariates]}.",
+    )
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
     X, y, times = [], [], []
@@ -857,6 +866,8 @@ def _create_lagged_data_by_moving_window(
     and `t + output_chunk_length - 1` from the target series. In both cases, the extracted
     windows can then be reshaped into the correct shape. This approach can only be used if
     we *can* assume that the specified series are all of the same frequency.
+
+    Assume that all the lags are sorted in ascending order.
     """
     feature_times, min_lags, max_lags = _get_feature_times(
         target_series,
@@ -963,11 +974,12 @@ def _create_lagged_data_by_moving_window(
             # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
             if isinstance(lags_i, list):
                 lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
-                # Feats are already grouped by lags
+                # Feats are already grouped by lags and ordered
                 reordered_feats = (
                     np.arange(len(lags_i) * series_i.width) + lagged_feats_shift
                 )
             else:
+                # Assume keys are in the same order as the series components
                 all_comp_lags = [
                     np.array(c_lags, dtype=int) for c_lags in lags_i.values()
                 ]
@@ -975,7 +987,7 @@ def _create_lagged_data_by_moving_window(
                 lags_to_extract = [
                     comp_lags + min_lag_i - 1 for comp_lags in all_comp_lags
                 ]
-                # Sort the lags across the components to reorder feats
+                # Sort the lags across the components in ascending order
                 reordered_feats = (
                     np.concatenate(all_comp_lags).argsort() + lagged_feats_shift
                 )
