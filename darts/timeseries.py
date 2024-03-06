@@ -21,7 +21,7 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Have a monotonically increasing time index, without holes (without missing dates)
     - Contain numeric types only
     - Have distinct components/columns names
-    - Have a well defined frequency (`date offset aliases
+    - Have a well-defined frequency (`date offset aliases
       <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
       for ``DateTimeIndex``, or step size for ``RangeIndex``)
     - Have static covariates consistent with their components, or no static covariates
@@ -49,6 +49,8 @@ import pandas as pd
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
+
+from darts.utils.utils import n_steps_between
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
 
@@ -267,7 +269,7 @@ class TimeSeries:
                     ),
                     logger,
                 )
-            # pre-compute grouping informations
+            # pre-compute grouping information
             components_set = set(self.components)
             children = set(hierarchy.keys())
 
@@ -2474,6 +2476,14 @@ class TimeSeries:
         TimeSeries
             a new series, containing the values of this series, over the time-span common to both time series.
         """
+        if other.has_same_time_as(self):
+            return self.__class__(self._xa)
+
+        if other.freq == self.freq:
+            _ = n_steps_between(self.start_time(), other.start_time(), freq=self.freq)
+            _ = n_steps_between(self.end_time(), other.end_time(), freq=self.freq)
+            _ = 1
+
         time_index = self.time_index.intersection(other.time_index)
         return self[time_index]
 
@@ -5423,7 +5433,7 @@ def concatenate(
                 "of the first series.",
             )
 
-            from darts.utils.timeseries_generation import generate_index
+            from darts.utils.utils import generate_index
 
             tindex = generate_index(
                 start=series[0].start_time(),

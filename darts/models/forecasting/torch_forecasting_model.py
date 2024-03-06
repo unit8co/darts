@@ -89,7 +89,7 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
 )
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
-from darts.utils.utils import get_single_series, seq2series, series2seq
+from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 
 # Check whether we are running pytorch-lightning >= 2.0.0 or not:
 tokens = pl.__version__.split(".")

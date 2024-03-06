@@ -54,12 +54,8 @@ from darts.utils.historical_forecasts import (
     _process_historical_forecast_input,
 )
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import (
-    _check_quantiles,
-    get_single_series,
-    seq2series,
-    series2seq,
-)
+from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
 

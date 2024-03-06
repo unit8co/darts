@@ -13,7 +13,7 @@ from typing import List, Optional, Sequence, Union
 import numpy as np
 import xgboost as xgb
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -21,7 +21,6 @@ from darts.models.forecasting.regression_model import (
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
-from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
 

@@ -13,7 +13,7 @@ from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 

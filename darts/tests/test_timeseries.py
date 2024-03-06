@@ -9,11 +9,8 @@ import xarray as xr
 from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
-from darts.utils.timeseries_generation import (
-    constant_timeseries,
-    generate_index,
-    linear_timeseries,
-)
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
+from darts.utils.utils import generate_index
 
 
 class TestTimeSeries:

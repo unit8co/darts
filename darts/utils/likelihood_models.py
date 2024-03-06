@@ -57,9 +57,12 @@ from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
 from darts import TimeSeries
+from darts.logging import get_logger, raise_if_not
 
 # TODO: Table on README listing distribution, possible priors and wiki article
-from darts.utils.utils import _check_quantiles, raise_if_not
+from darts.utils.utils import _check_quantiles
+
+logger = get_logger(__name__)
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 

@@ -29,6 +29,7 @@ from darts.models import (
 )
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -2324,7 +2325,7 @@ class TestRegressionModels:
         # past and future covariates longer than target
         n_comp = 2
         covs = TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=pd.Timestamp("1999-01-01"),
                 end=pd.Timestamp("2002-12-01"),
                 freq="MS",

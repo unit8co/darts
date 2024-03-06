@@ -14,8 +14,8 @@ from numpy.typing import ArrayLike
 
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.timeseries_generation import generate_index
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import series2seq
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 

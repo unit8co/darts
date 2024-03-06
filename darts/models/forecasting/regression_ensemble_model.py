@@ -13,7 +13,7 @@ from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries, concatenate
-from darts.utils.utils import seq2series, series2seq
+from darts.utils.ts_utils import seq2series, series2seq
 
 logger = get_logger(__name__)
 

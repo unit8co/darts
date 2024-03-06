@@ -49,9 +49,9 @@ from darts.utils.historical_forecasts.utils import (
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
-    generate_index,
 )
-from darts.utils.utils import get_single_series, series2seq
+from darts.utils.ts_utils import get_single_series, series2seq
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
