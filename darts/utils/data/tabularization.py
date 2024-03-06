@@ -775,10 +775,20 @@ def create_lagged_component_names(
 
         components = get_single_series(variate).components.tolist()
         if isinstance(variate_lags, dict):
+            # combine all the lags and sort them in ascending order across all the components
+            comp_lags_reordered = np.concatenate(
+                [np.array(c_lags, dtype=int) for c_lags in variate_lags.values()]
+            ).argsort()
+            tmp_lagged_feats_names = []
             for name in components:
-                lagged_feature_names += [
+                tmp_lagged_feats_names += [
                     f"{name}_{variate_type}_lag{lag}" for lag in variate_lags[name]
                 ]
+
+            # adding feats names reordered across components
+            lagged_feature_names += [
+                tmp_lagged_feats_names[idx] for idx in comp_lags_reordered
+            ]
         else:
             lagged_feature_names += [
                 f"{name}_{variate_type}_lag{lag}"
@@ -877,6 +887,8 @@ def _create_lagged_data_by_moving_window(
     start_time = times[0]
     # Construct features array X:
     X = []
+    lagged_feats_order = []
+    lagged_feats_shift = 0
     start_time_idx = None
     target_start_time_idx = None
     for i, (series_i, lags_i, min_lag_i, max_lag_i) in enumerate(
@@ -940,18 +952,36 @@ def _create_lagged_data_by_moving_window(
             # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
             if isinstance(lags_i, list):
                 lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
+                # Feats are already grouped by lags
+                reordered_feats = (
+                    np.arange(len(lags_i) * series_i.width) + lagged_feats_shift
+                )
             else:
+                all_comp_lags = [
+                    np.array(c_lags, dtype=int) for c_lags in lags_i.values()
+                ]
                 # Lags are grouped by component, extracted from the same window
                 lags_to_extract = [
-                    np.array(comp_lags, dtype=int) + min_lag_i - 1
-                    for comp_lags in lags_i.values()
+                    comp_lags + min_lag_i - 1 for comp_lags in all_comp_lags
                 ]
+                # Sort the lags across the components to reorder feats
+                reordered_feats = (
+                    np.concatenate(all_comp_lags).argsort() + lagged_feats_shift
+                )
+
             lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
+
+            # Reordering must account for the previous features (order: target, past, future)
+            lagged_feats_shift += len(reordered_feats)
+            lagged_feats_order.append(reordered_feats)
         # Cache `start_time_idx` for label creation:
         if is_target_series:
             target_start_time_idx = start_time_idx
-    X = np.concatenate(X, axis=1)
+
+    # Concatenate all the lagged features and order them by lags
+    lagged_feats_order = np.concatenate(lagged_feats_order)
+    X = np.concatenate(X, axis=1)[:, lagged_feats_order]
     # Construct labels array `y`:
     if is_training:
         # All values between times `t` and `t + output_chunk_length` used as labels:
