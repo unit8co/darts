@@ -990,8 +990,9 @@ def _create_lagged_data_by_moving_window(
         if is_target_series:
             target_start_time_idx = start_time_idx
 
-    # Concatenate all the lagged features and order them by lags
+    # Concatenate the reordering index across target, past and future covariates
     lagged_feats_order = np.concatenate(lagged_feats_order)
+    # Concatenate all the lagged features and order them by lags
     X = np.concatenate(X, axis=1)[:, lagged_feats_order]
     # Construct labels array `y`:
     if is_training:
