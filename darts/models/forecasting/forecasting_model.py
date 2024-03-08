@@ -21,7 +21,7 @@ import pickle
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
-from itertools import product, zip_longest
+from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -35,7 +35,6 @@ import pandas as pd
 
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
-from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
@@ -637,7 +636,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = True,
-        scaler: Optional[Scaler] = None,
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
@@ -739,9 +737,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to retain only the last point of each historical forecast.
             If set to True, the method returns a single ``TimeSeries`` containing the successive point forecasts.
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
-        scaler
-            Optionally, the scaler trained on the same `series` is used to perform an inverse transform
-            on the generated forecasts.
         verbose
             Whether to print progress.
         show_warnings
@@ -1140,11 +1135,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
             else:
                 forecasts_list.append(forecasts)
-
-        if forecasts_list and scaler:
-            forecasts_list = self._inverse_transform_forecasts_list(
-                forecasts_list, scaler
-            )
 
         return forecasts_list if len(series) > 1 else forecasts_list[0]
 
@@ -2115,52 +2105,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."
         )
         return []
-
-    @staticmethod
-    def _inverse_transform_forecasts_list(
-        forecasts_list_transformed: Union[List[TimeSeries], List[List[TimeSeries]]],
-        scaler: Scaler,
-    ) -> Union[List[TimeSeries], List[List[TimeSeries]]]:
-        """Applies inverse transform on the list (of lists) of forecasts,
-        using the scaler trained previously on the same set of series.
-
-        Parameters
-        ----------
-        forecasts_list_transformed
-            The list (of lists) of forecasts.
-        scaler
-            The scaler trained on the same set of series that was used to generate forecasts.
-
-        Returns
-        -------
-        Union[List[TimeSeries], List[List[TimeSeries]]]
-            A list (of lists) of inversely transformed forecasts.
-
-        """
-        if isinstance(forecasts_list_transformed[0], TimeSeries):
-            return scaler.inverse_transform(forecasts_list_transformed)
-
-        else:
-            fill_value = TimeSeries.from_values(np.empty(1))
-
-            forecasts_list_transformed_filled = list(
-                zip_longest(*forecasts_list_transformed, fillvalue=fill_value)
-            )
-            forecasts_list_inversely_transformed = [
-                scaler.inverse_transform(f) for f in forecasts_list_transformed_filled
-            ]
-
-            forecasts_list_inversely_transformed = zip(
-                *forecasts_list_inversely_transformed
-            )
-            forecasts_list_inversely_transformed = [
-                list(preds_it[: len(preds_t)])
-                for preds_it, preds_t in zip(
-                    forecasts_list_inversely_transformed, forecasts_list_transformed
-                )
-            ]
-
-            return forecasts_list_inversely_transformed
 
 
 class LocalForecastingModel(ForecastingModel, ABC):

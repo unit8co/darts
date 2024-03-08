@@ -4,6 +4,7 @@ Invertible Data Transformer Base Class
 """
 
 from abc import abstractmethod
+from itertools import zip_longest
 from typing import Any, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
@@ -346,3 +347,45 @@ class InvertibleDataTransformer(BaseDataTransformer):
         return (
             transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
         )
+
+    def inverse_transform_list(
+        self, series_transformed: Union[List[TimeSeries], List[List[TimeSeries]]]
+    ) -> Union[List[TimeSeries], List[List[TimeSeries]]]:
+        """Applies inverse transform on the list (of lists) of series,
+        using the trained in advance transformer on the same set of series.
+
+        Accepts output from the historical forecasting.
+
+        Allows for missing series in the end of the list,
+        e.g. if the scaler was trained on the list [A, B, C],
+        then this function can inversely transform the list [AX, BX],
+        where AX - series transformed by the scaler trained on series A.
+
+        Parameters
+        ----------
+        series_transformed
+            The list (of lists) of transformed series.
+
+        Returns
+        -------
+        Union[List[TimeSeries], List[List[TimeSeries]]]
+            A list (of lists) of inversely transformed series.
+        """
+        if isinstance(series_transformed[0], TimeSeries):
+            series_transformed = [series_transformed]
+
+        fill_value = TimeSeries.from_values(np.empty(1))
+        list_transformed_filled = list(
+            zip_longest(*series_transformed, fillvalue=fill_value)
+        )
+
+        list_inversely_transformed = [
+            self.inverse_transform(f) for f in list_transformed_filled
+        ]
+        list_inversely_transformed = zip(*list_inversely_transformed)
+        list_inversely_transformed = [
+            list(preds_it[: len(preds_t)])
+            for preds_it, preds_t in zip(list_inversely_transformed, series_transformed)
+        ]
+
+        return list_inversely_transformed
