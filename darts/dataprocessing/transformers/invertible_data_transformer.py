@@ -354,12 +354,18 @@ class InvertibleDataTransformer(BaseDataTransformer):
         """Applies inverse transform on the list (of lists) of series,
         using the trained in advance transformer on the same set of series.
 
-        Accepts output from the historical forecasting.
+        Assuming that the scaler was trained on series [A, B, C], this function accepts
+        input in the following form:
 
-        Allows for missing series in the end of the list,
-        e.g. if the scaler was trained on the list [A, B, C],
-        then this function can inversely transform the list [AX, BX],
-        where AX - series transformed by the scaler trained on series A.
+        * [A1, B1, C1] - list of series,
+        * [[A1, A2, A3], [B1, B2], [C1, C2, C3]] - list of lists of series,
+
+        where AX - the timeseries transformed according to the parameters obtained with the training on series A.
+
+        Allows for different lengths of the lists.
+        Allows for missing series the list.
+
+        Can be used to inversely transform output from the historical forecast.
 
         Parameters
         ----------
@@ -372,20 +378,22 @@ class InvertibleDataTransformer(BaseDataTransformer):
             A list (of lists) of inversely transformed series.
         """
         if isinstance(series_transformed[0], TimeSeries):
-            series_transformed = [series_transformed]
+            series_transformed = [[s] for s in series_transformed]
 
         fill_value = TimeSeries.from_values(np.empty(1))
-        list_transformed_filled = list(
+        series_transformed_filled = list(
             zip_longest(*series_transformed, fillvalue=fill_value)
         )
 
-        list_inversely_transformed = [
-            self.inverse_transform(f) for f in list_transformed_filled
+        series_inversely_transformed = [
+            self.inverse_transform(f) for f in series_transformed_filled
         ]
-        list_inversely_transformed = zip(*list_inversely_transformed)
-        list_inversely_transformed = [
+        series_inversely_transformed = zip(*series_inversely_transformed)
+        series_inversely_transformed = [
             list(preds_it[: len(preds_t)])
-            for preds_it, preds_t in zip(list_inversely_transformed, series_transformed)
+            for preds_it, preds_t in zip(
+                series_inversely_transformed, series_transformed
+            )
         ]
 
-        return list_inversely_transformed
+        return series_inversely_transformed
