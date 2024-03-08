@@ -357,13 +357,12 @@ class InvertibleDataTransformer(BaseDataTransformer):
         Assuming that the scaler was trained on series [A, B, C], this function accepts
         input in the following form:
 
-        * [A1, B1, C1] - list of series,
-        * [[A1, A2, A3], [B1, B2], [C1, C2, C3]] - list of lists of series,
+        - [A1, B1, C1] - list of series,
+        - [[A1, A2, A3], [B1, B2], [C1, C2, C3]] - list of lists of series,
 
         where AX - the timeseries transformed according to the parameters obtained with the training on series A.
 
-        Allows for different lengths of the lists.
-        Allows for missing series the list.
+        Supports lists of varying lengths and missing elements within the list/s.
 
         Can be used to inversely transform output from the historical forecast.
 
