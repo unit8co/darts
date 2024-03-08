@@ -740,7 +740,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If set to True, the method returns a single ``TimeSeries`` containing the successive point forecasts.
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         scaler
-            Optionally, the scaler trained on the same `series`, performs inverse transform on the generated forecasts.
+            Optionally, the scaler trained on the same `series` is used to perform an inverse transform
+            on the generated forecasts.
         verbose
             Whether to print progress.
         show_warnings
@@ -1140,7 +1141,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 forecasts_list.append(forecasts)
 
-        if scaler:
+        if forecasts_list and scaler:
             forecasts_list = self._inverse_transform_forecasts_list(
                 forecasts_list, scaler
             )
@@ -2120,8 +2121,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecasts_list_transformed: Union[List[TimeSeries], List[List[TimeSeries]]],
         scaler: Scaler,
     ) -> Union[List[TimeSeries], List[List[TimeSeries]]]:
-        """Applies inverse transform on the list (of lists) of forecasts.
-        Uses the scaler trained previously on the same set of series.
+        """Applies inverse transform on the list (of lists) of forecasts,
+        using the scaler trained previously on the same set of series.
 
         Parameters
         ----------
@@ -2136,23 +2137,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A list (of lists) of inversely transformed forecasts.
 
         """
-
-        if not forecasts_list_transformed:
-            return forecasts_list_transformed
-
         if isinstance(forecasts_list_transformed[0], TimeSeries):
-            forecasts_list_inversely_transformed = scaler.inverse_transform(
-                forecasts_list_transformed
-            )
+            return scaler.inverse_transform(forecasts_list_transformed)
+
         else:
             fill_value = TimeSeries.from_values(np.empty(1))
 
-            forecasts_list_inversely_transformed = list(
+            forecasts_list_transformed_filled = list(
                 zip_longest(*forecasts_list_transformed, fillvalue=fill_value)
             )
             forecasts_list_inversely_transformed = [
-                scaler.inverse_transform(f)
-                for f in forecasts_list_inversely_transformed
+                scaler.inverse_transform(f) for f in forecasts_list_transformed_filled
             ]
 
             forecasts_list_inversely_transformed = zip(
@@ -2164,7 +2159,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     forecasts_list_inversely_transformed, forecasts_list_transformed
                 )
             ]
-        return forecasts_list_inversely_transformed
+
+            return forecasts_list_inversely_transformed
 
 
 class LocalForecastingModel(ForecastingModel, ABC):
