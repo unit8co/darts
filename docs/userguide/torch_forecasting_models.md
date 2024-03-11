@@ -565,7 +565,14 @@ mlflow.pytorch.get_default_conda_env()
 # Save pip requirements
 mlflow.pytorch.get_default_pip_requirements()
 
+# Set tracking uri
+mlflow.set_tracking_uri("sqlite:///mlruns.db")
+
+# Save Darts model
+mlflow.log_artifact("NBeatsModel.pickle")
+
 # Registering model
+model_name = "NBEATS"
 model_uri = f"runs:/{run.info.run_id}/darts-NBEATS"
 mlflow.register_model(model_uri=model_uri, name=model_name)
 ```
