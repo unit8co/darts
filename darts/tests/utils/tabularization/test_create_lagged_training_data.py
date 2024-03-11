@@ -17,6 +17,25 @@ from darts.utils.data.tabularization import (
 from darts.utils.timeseries_generation import linear_timeseries
 
 
+def helper_create_multivariate_linear_timeseries(
+    n_components: int, components_names: Sequence[str] = None, **kwargs
+) -> TimeSeries:
+    """
+    Helper function that creates a `linear_timeseries` with a specified number of
+    components. To help distinguish each component from one another, `i` is added on
+    to each value of the `i`th component. Any additional keyword arguments are passed
+    to `linear_timeseries` (`start_value`, `end_value`, `start`, `end`, `length`, etc).
+    """
+    timeseries = []
+    if components_names is None or len(components_names) < n_components:
+        components_names = [f"lin_ts_{i}" for i in range(n_components)]
+    for i in range(n_components):
+        # Values of each component is 1 larger than the last:
+        timeseries_i = linear_timeseries(column_name=components_names[i], **kwargs) + i
+        timeseries.append(timeseries_i)
+    return darts_concatenate(timeseries, axis=1)
+
+
 class TestCreateLaggedTrainingData:
     """
     Tests the `create_lagged_training_data` function defined in `darts.utils.data.tabularization`. There are broadly
@@ -39,27 +58,6 @@ class TestCreateLaggedTrainingData:
     #
     #   Helper Functions for Generated Test Cases
     #
-
-    @staticmethod
-    def create_multivariate_linear_timeseries(
-        n_components: int, components_names: Sequence[str] = None, **kwargs
-    ) -> TimeSeries:
-        """
-        Helper function that creates a `linear_timeseries` with a specified number of
-        components. To help distinguish each component from one another, `i` is added on
-        to each value of the `i`th component. Any additional keyword arguments are passed
-        to `linear_timeseries` (`start_value`, `end_value`, `start`, `end`, `length`, etc).
-        """
-        timeseries = []
-        if components_names is None or len(components_names) < n_components:
-            components_names = [f"lin_ts_{i}" for i in range(n_components)]
-        for i in range(n_components):
-            # Values of each component is 1 larger than the last:
-            timeseries_i = (
-                linear_timeseries(column_name=components_names[i], **kwargs) + i
-            )
-            timeseries.append(timeseries_i)
-        return darts_concatenate(timeseries, axis=1)
 
     @staticmethod
     def get_feature_times(
@@ -419,7 +417,7 @@ class TestCreateLaggedTrainingData:
     #   Generated Test Cases
     #
 
-    target_with_no_cov = create_multivariate_linear_timeseries(
+    target_with_no_cov = helper_create_multivariate_linear_timeseries(
         n_components=1,
         components_names=["no_static"],
         start_value=0,
@@ -429,7 +427,7 @@ class TestCreateLaggedTrainingData:
         freq=2,
     )
     n_comp = 2
-    target_with_static_cov = create_multivariate_linear_timeseries(
+    target_with_static_cov = helper_create_multivariate_linear_timeseries(
         n_components=n_comp,
         components_names=["static_0", "static_1"],
         start_value=0,
@@ -455,7 +453,7 @@ class TestCreateLaggedTrainingData:
         )  # leads to sharing target component names
     )
 
-    past = create_multivariate_linear_timeseries(
+    past = helper_create_multivariate_linear_timeseries(
         n_components=3,
         components_names=["past_0", "past_1", "past_2"],
         start_value=10,
@@ -464,7 +462,7 @@ class TestCreateLaggedTrainingData:
         length=10,
         freq=2,
     )
-    future = create_multivariate_linear_timeseries(
+    future = helper_create_multivariate_linear_timeseries(
         n_components=4,
         components_names=["future_0", "future_1", "future_2", "future_3"],
         start_value=20,
@@ -508,7 +506,7 @@ class TestCreateLaggedTrainingData:
         # different start times, different lengths, and different values, but
         # they're all of the same frequency:
         if series_type == "integer":
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -516,7 +514,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts,
                 freq=2,
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -524,7 +522,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts + 1,
                 freq=2,
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -533,7 +531,7 @@ class TestCreateLaggedTrainingData:
                 freq=2,
             )
         else:
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -541,7 +539,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts,
                 freq="2d",
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -549,7 +547,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts + 1,
                 freq="2d",
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -682,17 +680,17 @@ class TestCreateLaggedTrainingData:
         # different start times, different lengths, different values, and different
         # frequencies:
         if series_type == "integer":
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
             )
         else:
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -700,7 +698,7 @@ class TestCreateLaggedTrainingData:
                 length=20,
                 freq="d",
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -708,7 +706,7 @@ class TestCreateLaggedTrainingData:
                 length=10,
                 freq="2d",
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -808,17 +806,17 @@ class TestCreateLaggedTrainingData:
         # different start times, different lengths, different values, and of
         # different frequencies:
         if series_type == "integer":
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
             )
         else:
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -826,7 +824,7 @@ class TestCreateLaggedTrainingData:
                 end=pd.Timestamp("1/18/2000"),
                 freq="2d",
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -834,7 +832,7 @@ class TestCreateLaggedTrainingData:
                 end=pd.Timestamp("1/20/2000"),
                 freq="2d",
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -1605,7 +1603,7 @@ class TestCreateLaggedTrainingData:
             start_fc = pd.Timestamp("2000-01-17")
 
         # length = max lag - min lag + 1 = -1 + 4 + 1 = 4
-        target = self.create_multivariate_linear_timeseries(
+        target = helper_create_multivariate_linear_timeseries(
             n_components=2,
             components_names=["target_0", "target_1"],
             length=4 + output_chunk_shift + output_chunk_length,
@@ -1613,7 +1611,7 @@ class TestCreateLaggedTrainingData:
         )
         # length = max lag - min lag + 1 = -3 + 3 + 1 = 1
         past = (
-            self.create_multivariate_linear_timeseries(
+            helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 components_names=["past_0", "past_1"],
                 length=1,
@@ -1623,7 +1621,7 @@ class TestCreateLaggedTrainingData:
         )
         # length = max lag - min lag + 1 = 1 + 2 + 1 = 4
         future = (
-            self.create_multivariate_linear_timeseries(
+            helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 components_names=["future_0", "future_1"],
                 length=4 + output_chunk_shift + output_chunk_length,
