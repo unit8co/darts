@@ -559,6 +559,12 @@ with mlflow.start_run(nested=True) as run:
     # predit
     forecast = model.predict(len(val))
 
+# Save conda environment used to run the model
+mlflow.pytorch.get_default_conda_env()
+
+# Save pip requirements
+mlflow.pytorch.get_default_pip_requirements()
+
 # Registering model
 model_uri = f"runs:/{run.info.run_id}/darts-NBEATS"
 mlflow.register_model(model_uri=model_uri, name=model_name)
