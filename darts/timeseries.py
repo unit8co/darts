@@ -2478,8 +2478,12 @@ class TimeSeries:
         """
         if other.has_same_time_as(self):
             return self.__class__(self._xa)
-        start, end = self._slice_intersect_bounds(other)
-        return self[start:end]
+        if other.freq == self.freq:
+            start, end = self._slice_intersect_bounds(other)
+            return self[start:end]
+        else:
+            time_index = self.time_index.intersection(other.time_index)
+            return self[time_index]
 
     def slice_intersect_values(self, other: Self, copy: bool = False) -> Self:
         """
@@ -2501,10 +2505,14 @@ class TimeSeries:
         np.ndarray
             The values of this series, over the time-span common to both time series.
         """
+        vals = self.all_values(copy=copy)
         if other.has_same_time_as(self):
-            return self.all_values(copy=copy)
-        start, end = self._slice_intersect_bounds(other)
-        return self.all_values(copy=copy)[start:end]
+            return vals
+        if other.freq == self.freq:
+            start, end = self._slice_intersect_bounds(other)
+            return vals[start:end]
+        else:
+            return vals[self.time_index.isin(other.time_index)]
 
     def _slice_intersect_bounds(self, other: Self) -> Tuple[int, int]:
         shift_start = n_steps_between(
@@ -5128,11 +5136,16 @@ class TimeSeries:
             return self.__class__(xa_)
         elif isinstance(key, pd.RangeIndex):
             _check_range()
-            xa_ = self._xa.sel({self._time_dim: key})
+            idx_ = key
+            if not len(key) and self.freq != key.step:
+                # keep original step size in case of empty range index
+                idx_ = pd.RangeIndex(step=self.freq)
+
+            xa_ = self._xa.sel({self._time_dim: idx_})
 
             # sel() gives us an Int64Index. We have to set the RangeIndex.
             # see: https://github.com/pydata/xarray/issues/6256
-            xa_ = xa_.assign_coords({self.time_dim: key})
+            xa_ = xa_.assign_coords({self.time_dim: idx_})
 
             return self.__class__(xa_)
 
