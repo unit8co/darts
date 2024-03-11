@@ -548,6 +548,101 @@ class TestTimeSeries:
         assert self.series3 * 0.2e20 == seriesD
 
     @staticmethod
+    def helper_test_intersect(
+        test_case, freq, is_mixed_freq: bool, is_univariate: bool
+    ):
+        start = pd.Timestamp("20130101") if isinstance(freq, str) else 0
+        freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+
+        # handle identical and mixed frequency setup
+        if not is_mixed_freq:
+            freq_other = freq
+            n_steps = 11
+        elif "2" not in str(freq):  # 1 or "1D"
+            freq_other = freq * 2
+            n_steps = 21
+        else:  # 2 or "2D"
+            freq_other = freq / 2
+            n_steps = 11
+        freq_other = int(freq_other) if isinstance(freq_other, float) else freq_other
+        # if freq_other has a higher freq, we expect the slice to have the higher freq
+        freq_expected = freq if freq > freq_other else freq_other
+        idx = generate_index(start=start, freq=freq, length=n_steps)
+        end = idx[-1]
+
+        n_cols = 1 if is_univariate else 2
+        series = TimeSeries.from_times_and_values(
+            values=np.random.randn(n_steps, n_cols), times=idx
+        )
+
+        def check_intersect(other, start_, end_, freq_):
+            s_int = series.slice_intersect(other)
+            assert s_int.components.equals(series.components)
+            assert s_int.freq == freq_
+
+            if start_ is None:  # empty slice
+                assert len(s_int) == 0
+                return
+
+            assert s_int.start_time() == start_
+            assert s_int.end_time() == end_
+
+            s_int_vals = series.slice_intersect_values(other, copy=False)
+            np.testing.assert_array_equal(s_int.all_values(), s_int_vals)
+            # check that first and last values are as expected
+            start_ = series.get_index_at_point(start_)
+            end_ = series.get_index_at_point(end_)
+            np.testing.assert_array_equal(
+                series[start_].all_values(), s_int_vals[0:1, :, :]
+            )
+            np.testing.assert_array_equal(
+                series[end_].all_values(), s_int_vals[-1:, :, :]
+            )
+
+        # slice with exact range
+        startA = start
+        endA = end
+        idxA = generate_index(startA, endA, freq=freq_other)
+        seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
+        check_intersect(seriesA, startA, endA, freq_expected)
+
+        # entire slice within the range
+        startA = start + freq
+        endA = startA + 6 * freq_other
+        idxA = generate_index(startA, endA, freq=freq_other)
+        seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
+        check_intersect(seriesA, startA, endA, freq_expected)
+
+        # start outside of range
+        startC = start - 4 * freq
+        endC = start + 4 * freq_other
+        idxC = generate_index(startC, endC, freq=freq_other)
+        seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
+        check_intersect(seriesC, start, endC, freq_expected)
+
+        # end outside of range
+        startC = start + 4 * freq
+        endC = end + 4 * freq_other
+        idxC = generate_index(startC, endC, freq=freq_other)
+        seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
+        check_intersect(seriesC, startC, end, freq_expected)
+
+        # small intersect
+        startE = start + (n_steps - 1) * freq
+        endE = startE + 2 * freq_other
+        idxE = generate_index(startE, endE, freq=freq_other)
+        seriesE = TimeSeries.from_series(pd.Series(range(len(idxE)), index=idxE))
+        check_intersect(seriesE, startE, end, freq_expected)
+
+        # No intersect
+        startG = end + 3 * freq
+        endG = startG + 6 * freq_other
+        idxG = generate_index(startG, endG, freq=freq_other)
+        seriesG = TimeSeries.from_series(pd.Series(range(len(idxG)), index=idxG))
+        # for empty slices, we expect the original freq
+        check_intersect(seriesG, None, None, freq)
+
+    @staticmethod
     def helper_test_shift(test_case, test_series: TimeSeries):
         seriesA = test_case.series1.shift(0)
         assert seriesA == test_case.series1
@@ -680,86 +775,6 @@ class TestTimeSeries:
         mixed frequencies."""
         freq, mixed_freq = config
         self.helper_test_intersect(self, freq, mixed_freq, is_univariate=True)
-
-    @staticmethod
-    def helper_test_intersect(
-        test_case, freq, is_mixed_freq: bool, is_univariate: bool
-    ):
-        start = pd.Timestamp("20130101") if isinstance(freq, str) else 0
-        freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
-
-        # handle identical and mixed frequency setup
-        if not is_mixed_freq:
-            freq_other = freq
-            n_steps = 11
-        elif "2" not in str(freq):  # 1 or "1D"
-            freq_other = freq * 2
-            n_steps = 21
-        else:  # 2 or "2D"
-            freq_other = freq / 2
-            n_steps = 11
-        freq_other = int(freq_other) if isinstance(freq_other, float) else freq_other
-        # if freq_other has a higher freq, we expect the slice to have the higher freq
-        freq_expected = freq if freq > freq_other else freq_other
-        idx = generate_index(start=start, freq=freq, length=n_steps)
-        end = idx[-1]
-
-        n_cols = 1 if is_univariate else 2
-        series = TimeSeries.from_times_and_values(
-            values=np.random.randn(n_steps, n_cols), times=idx
-        )
-
-        def check_intersect(s_int, start_, end_, freq_):
-            if start_ is not None:
-                assert s_int.start_time() == start_
-                assert s_int.end_time() == end_
-            else:
-                assert len(s_int) == 0
-            assert s_int.components.equals(series.components)
-            assert s_int.freq == freq_
-
-        # slice with exact range
-        startA = start
-        endA = end
-        idxA = generate_index(startA, endA, freq=freq_other)
-        seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
-        check_intersect(series.slice_intersect(seriesA), startA, endA, freq_expected)
-
-        # entire slice within the range
-        startA = start + freq
-        endA = startA + 6 * freq_other
-        idxA = generate_index(startA, endA, freq=freq_other)
-        seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
-        check_intersect(series.slice_intersect(seriesA), startA, endA, freq_expected)
-
-        # start outside of range
-        startC = start - 4 * freq
-        endC = start + 4 * freq_other
-        idxC = generate_index(startC, endC, freq=freq_other)
-        seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
-        check_intersect(series.slice_intersect(seriesC), start, endC, freq_expected)
-
-        # end outside of range
-        startC = start + 4 * freq
-        endC = end + 4 * freq_other
-        idxC = generate_index(startC, endC, freq=freq_other)
-        seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
-        check_intersect(series.slice_intersect(seriesC), startC, end, freq_expected)
-
-        # small intersect
-        startE = start + (n_steps - 1) * freq
-        endE = startE + 2 * freq_other
-        idxE = generate_index(startE, endE, freq=freq_other)
-        seriesE = TimeSeries.from_series(pd.Series(range(len(idxE)), index=idxE))
-        check_intersect(series.slice_intersect(seriesE), startE, end, freq_expected)
-
-        # No intersect
-        startG = end + 3 * freq
-        endG = startG + 6 * freq_other
-        idxG = generate_index(startG, endG, freq=freq_other)
-        seriesG = TimeSeries.from_series(pd.Series(range(len(idxG)), index=idxG))
-        # for empty slices, we expect the original freq
-        check_intersect(series.slice_intersect(seriesG), None, None, freq)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)
