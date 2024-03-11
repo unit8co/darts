@@ -229,12 +229,15 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         # have to match the training sample
         pass
 
+    @property
     def min_train_series_length(self) -> int:
         return self.input_chunk_length
 
+    @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         return False
 
+    @property
     def _is_probabilistic(self) -> bool:
         return False
 
