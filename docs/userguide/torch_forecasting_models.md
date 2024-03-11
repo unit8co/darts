@@ -568,7 +568,7 @@ mlflow.pytorch.get_default_pip_requirements()
 # Set tracking uri
 mlflow.set_tracking_uri("sqlite:///mlruns.db")
 
-# Save Darts model
+# Save Darts model (this need to be added via new cell)
 mlflow.log_artifact("NBeatsModel.pickle")
 
 # Registering model
