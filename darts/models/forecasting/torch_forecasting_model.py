@@ -616,12 +616,36 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         pass
 
-    @abstractmethod
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
         Verify that any non-None covariates comply with the model type.
         """
-        pass
+        invalid_covs = []
+        if past_covariates is not None and not self.supports_past_covariates:
+            invalid_covs.append("`past_covariates`")
+        if future_covariates is not None and not self.supports_future_covariates:
+            invalid_covs.append("`future_covariates`")
+        if self.uses_static_covariates and not self.supports_static_covariates:
+            invalid_covs.append("`static_covariates`")
+        if invalid_covs:
+            supported_covs = []
+            if self.supports_past_covariates:
+                supported_covs.append("`past_covariates`")
+            if self.supports_future_covariates:
+                supported_covs.append("`future_covariates`")
+            if self.supports_static_covariates:
+                supported_covs.append("`static_covariates`")
+            if supported_covs:
+                add_txt = f"It only supports {', '.join(supported_covs)}."
+            else:
+                add_txt = "It does not support any covariates."
+
+            raise_log(
+                ValueError(
+                    f"The model does not support {', '.join(invalid_covs)}. " + add_txt
+                ),
+                logger=logger,
+            )
 
     @random_method
     def fit(
@@ -772,22 +796,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        if past_covariates is not None:
-            self._uses_past_covariates = True
-        if future_covariates is not None:
-            self._uses_future_covariates = True
+        self._verify_past_future_covariates(
+            past_covariates=past_covariates, future_covariates=future_covariates
+        )
         if (
             get_single_series(series).static_covariates is not None
             and self.supports_static_covariates
             and self.considers_static_covariates
         ):
+            self._verify_static_covariates(get_single_series(series).static_covariates)
             self._uses_static_covariates = True
 
-        self._verify_past_future_covariates(
-            past_covariates=past_covariates, future_covariates=future_covariates
-        )
-        self._verify_static_covariates(series[0].static_covariates)
+        if past_covariates is not None:
+            self._uses_past_covariates = True
+        if future_covariates is not None:
+            self._uses_future_covariates = True
 
         # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
@@ -804,7 +827,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
             )
-            self._verify_static_covariates(val_series[0].static_covariates)
+            if self.uses_static_covariates:
+                self._verify_static_covariates(
+                    get_single_series(val_series).static_covariates
+                )
 
             match = (
                 series[0].width == val_series[0].width
@@ -863,6 +889,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ),
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
+
         series_input = (series, past_covariates, future_covariates)
         fit_from_ds_params = (
             train_dataset,
@@ -1070,12 +1097,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
 
-        trainer.fit(
-            model,
-            train_dataloaders=train_loader,
-            val_dataloaders=val_loader,
-            ckpt_path=ckpt_path,
-        )
+        if self._requires_training:
+            trainer.fit(
+                model,
+                train_dataloaders=train_loader,
+                val_dataloaders=val_loader,
+                ckpt_path=ckpt_path,
+            )
         self.model = model
         self.trainer = trainer
 
@@ -1335,7 +1363,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
+        self._verify_past_future_covariates(
+            past_covariates=past_covariates, future_covariates=future_covariates
+        )
+        if self.uses_static_covariates:
+            self._verify_static_covariates(get_single_series(series).static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
@@ -2026,6 +2058,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else True  # all torch models can be probabilistic (via Dropout)
         )
 
+    @property
+    def _requires_training(self) -> bool:
+        """Whether the model should be trained when calling a `fit*` method."""
+        return True
+
     def _check_optimizable_historical_forecasts(
         self,
         forecast_horizon: int,
@@ -2328,9 +2365,10 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     Parameters
     ----------
     train_sample
-        (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
+        (past_target, past_covariates, historic_future_covariates, future_covariates, static covariates, future_target)
     predict_sample
-        (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates, ts_target)
+        (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates,
+        static_covariates, ts_target)
     """
     # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
     ds_names = [
@@ -2390,11 +2428,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> PastCovariatesTrainingDataset:
-        raise_if_not(
-            future_covariates is None,
-            "Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
-        )
-
         return PastCovariatesSequentialDataset(
             target_series=target,
             covariates=past_covariates,
@@ -2414,11 +2447,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         stride: int = 0,
         bounds: Optional[np.ndarray] = None,
     ) -> PastCovariatesInferenceDataset:
-        raise_if_not(
-            future_covariates is None,
-            "Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
-        )
-
         return PastCovariatesInferenceDataset(
             target_series=target,
             covariates=past_covariates,
@@ -2439,13 +2467,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_predict_sample(self, predict_sample: Tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
-
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        raise_if_not(
-            future_covariates is None,
-            "Some future_covariates have been provided to a PastCovariates model. These models "
-            "support only past_covariates.",
-        )
 
     @property
     def _model_encoder_settings(
@@ -2497,11 +2518,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> FutureCovariatesTrainingDataset:
-        raise_if_not(
-            past_covariates is None,
-            "Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).",
-        )
-
         return FutureCovariatesSequentialDataset(
             target_series=target,
             covariates=future_covariates,
@@ -2521,11 +2537,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         stride: int = 0,
         bounds: Optional[np.ndarray] = None,
     ) -> FutureCovariatesInferenceDataset:
-        raise_if_not(
-            past_covariates is None,
-            "Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).",
-        )
-
         return FutureCovariatesInferenceDataset(
             target_series=target,
             covariates=future_covariates,
@@ -2545,13 +2556,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_predict_sample(self, predict_sample: Tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
-
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        raise_if_not(
-            past_covariates is None,
-            "Some past_covariates have been provided to a PastCovariates model. These models "
-            "support only future_covariates.",
-        )
 
     @property
     def _model_encoder_settings(
@@ -2647,13 +2651,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_predict_sample(self, predict_sample: Tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        raise_if_not(
-            past_covariates is None,
-            "Some past_covariates have been provided to a DualCovariates Torch model. These models "
-            "support only future_covariates.",
-        )
-
     @property
     def _model_encoder_settings(
         self,
@@ -2747,10 +2744,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_predict_sample(self, predict_sample: Tuple):
         _mixed_compare_sample(self.train_sample, predict_sample)
-
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        # both covariates are supported; do nothing
-        pass
 
     @property
     def _model_encoder_settings(
@@ -2898,10 +2891,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, SplitCovariatesInferenceDataset)
-
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        # both covariates are supported; do nothing
-        pass
 
     def _verify_predict_sample(self, predict_sample: Tuple):
         # TODO: we have to check both past and future covariates

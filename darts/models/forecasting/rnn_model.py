@@ -62,7 +62,8 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
         """
         # RNNModule doesn't really need input and output_chunk_length for PLModule
         super().__init__(**kwargs)
@@ -217,7 +218,7 @@ class _RNNModule(CustomRNNModule):
         name
             The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
         **kwargs
-            all parameters required for the :class:`darts.model.forecasting_models.CustomRNNModule` base class.
+            all parameters required for the :class:`darts.models.forecasting.CustomRNNModule` base class.
 
         Inputs
         ------
@@ -293,7 +294,7 @@ class RNNModel(DualCovariatesTorchModel):
         RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:
 
         - previous target value, which will be set to the last known target value for the first prediction,
-          and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),
+          and for all other predictions it will be set to the previous prediction (in an autoregressive fashion),
         - the previous hidden state,
         - the covariates at time `t` for forecasting the target at time `t` (if the model was trained with covariates),
 

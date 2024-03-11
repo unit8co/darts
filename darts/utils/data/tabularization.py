@@ -67,8 +67,8 @@ def create_lagged_data(
 
     The `X` array is constructed from the lagged values of up to three separate timeseries:
         1. The `target_series`, which contains the values we're trying to predict. A regression model that
-        uses previous values of the target its predicting is referred to as *auto-regressive*; please refer to
-        [1]_ for further details about auto-regressive timeseries models.
+        uses previous values of the target its predicting is referred to as *autoregressive*; please refer to
+        [1]_ for further details about autoregressive timeseries models.
         2. The past covariates series, which contains values that are *not* known into the future. Unlike
         the target series, however, past covariates are *not* to be predicted by the regression model.
         3. The future covariates (AKA 'exogenous' covariates) series, which contains values that are known
@@ -149,8 +149,8 @@ def create_lagged_data(
         Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
         use as inputs. Can be specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
     lags
-        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
-        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
+        Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
+        autoregressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
         `lags = [-3, -1]` will extract `target_series` values which are 3 time steps and 1 time step away from
         the current value). If the lags are provided as a dictionary, the lags values are specific to each
         component in the target series.
@@ -381,8 +381,8 @@ def create_lagged_training_data(
         Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
         use as inputs.
     lags
-        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
-        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
+        Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
+        autoregressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
         `lags = [-3, -1]` will extract `target_series` values which are 3 time steps and 1 time step away from
         the current value). If the lags are provided as a dictionary, the lags values are specific to each
         component in the target series.
@@ -515,8 +515,8 @@ def create_lagged_prediction_data(
         Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
         use as inputs.
     lags
-        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
-        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
+        Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
+        autoregressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
         `lags = [-3, -1]` will extract `target_series` values which are 3 time steps and 1 time step away from
         the current value). If the lags are provided as a dictionary, the lags values are specific to each
         component in the target series.
@@ -1259,8 +1259,8 @@ def _get_feature_times(
         Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
         use as inputs.
     lags
-        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
-        auto-regressive features will *not* be added to `X`.
+        Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
+        autoregressive features will *not* be added to `X`.
     lags_past_covariates
         Optionally, the lags of `past_covariates` to be used as features.
     lags_future_covariates
@@ -1310,7 +1310,7 @@ def _get_feature_times(
     UserWarning
         If a `lags_*` input is specified without the accompanying time series or vice versa. The only expection to this
         is when `lags` isn't specified alongside `target_series` when `is_training = True`, since one may wish to fit
-        a regression model without using auto-regressive features.
+        a regression model without using autoregressive features.
 
     """
     raise_if(

@@ -31,6 +31,11 @@ from darts.models.utils import NotImportedModule
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
     from darts.models.forecasting.dlinear import DLinearModel
+    from darts.models.forecasting.global_baseline_models import (
+        GlobalNaiveAggregate,
+        GlobalNaiveDrift,
+        GlobalNaiveSeasonal,
+    )
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.nhits import NHiTSModel
     from darts.models.forecasting.nlinear import NLinearModel
