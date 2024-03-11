@@ -14,7 +14,7 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.dataprocessing import dtw
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.statistics import check_seasonality
 
@@ -52,8 +52,10 @@ def multi_ts_support(func) -> Union[float, List[float]]:
         n_jobs = kwargs.pop("n_jobs", signature(func).parameters["n_jobs"].default)
         verbose = kwargs.pop("verbose", signature(func).parameters["verbose"].default)
 
-        raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
-        raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
+        if not isinstance(n_jobs, int):
+            raise_log(ValueError("n_jobs must be an integer"), logger=logger)
+        if not isinstance(verbose, bool):
+            raise_log(ValueError("verbose must be a bool"), logger=logger)
 
         actual_series = (
             [actual_series]
@@ -64,11 +66,11 @@ def multi_ts_support(func) -> Union[float, List[float]]:
             [pred_series] if not isinstance(pred_series, Sequence) else pred_series
         )
 
-        raise_if_not(
-            len(actual_series) == len(pred_series),
-            "The two TimeSeries sequences must have the same length.",
-            logger,
-        )
+        if not len(actual_series) == len(pred_series):
+            raise_log(
+                ValueError("The two TimeSeries sequences must have the same length."),
+                logger=logger,
+            )
 
         num_series_in_args = int("actual_series" not in kwargs) + int(
             "pred_series" not in kwargs
@@ -119,11 +121,11 @@ def multivariate_support(func) -> Union[float, List[float]]:
         actual_series = args[0]
         pred_series = args[1]
 
-        raise_if_not(
-            actual_series.width == pred_series.width,
-            "The two TimeSeries instances must have the same width.",
-            logger,
-        )
+        if not actual_series.width == pred_series.width:
+            raise_log(
+                ValueError("The two TimeSeries instances must have the same width."),
+                logger=logger,
+            )
 
         value_list = []
         for i in range(actual_series.width):
@@ -144,21 +146,21 @@ def multivariate_support(func) -> Union[float, List[float]]:
 
 
 def _get_values(
-    series: np.ndarray, stochastic_quantile: Optional[float] = 0.5
+    vals: np.ndarray, stochastic_quantile: Optional[float] = 0.5
 ) -> np.ndarray:
     """
-    Returns the numpy values of a time series.
-    For stochastic series, return either all sample values with (stochastic_quantile=None) or the quantile sample value
-    with (stochastic_quantile {>=0,<=1})
+    Returns a deterministic or probabilistic numpy array from the values of a time series.
+    For stochastic input values, return either all sample values with (stochastic_quantile=None) or the quantile sample
+    value with (stochastic_quantile {>=0,<=1})
     """
-    if series.shape[2] == 1:  # deterministic
-        series_values = series[:, 0, 0]
+    if vals.shape[2] == 1:  # deterministic
+        out = vals[:, 0, 0]
     else:  # stochastic
         if stochastic_quantile is None:
-            series_values = series
+            out = vals
         else:
-            series_values = np.quantile(series, stochastic_quantile, axis=2)[:, 0]
-    return series_values
+            out = np.quantile(vals, stochastic_quantile, axis=2)[:, 0]
+    return out
 
 
 def _get_values_or_raise(
@@ -189,23 +191,24 @@ def _get_values_or_raise(
         in either of the two input series.
     """
 
-    raise_if_not(
-        series_a.width == series_b.width,
-        "The two time series must have the same number of components",
-        logger,
-    )
+    if not series_a.width == series_b.width:
+        raise_log(
+            ValueError("The two time series must have the same number of components"),
+            logger=logger,
+        )
 
-    raise_if_not(isinstance(intersect, bool), "The intersect parameter must be a bool")
+    if not isinstance(intersect, bool):
+        raise_log(ValueError("The intersect parameter must be a bool"), logger=logger)
 
     make_copy = True
     if series_a.has_same_time_as(series_b) or not intersect:
-        series_a_common = series_a.all_values(copy=make_copy)
-        series_b_common = series_b.all_values(copy=make_copy)
+        vals_a_common = series_a.all_values(copy=make_copy)
+        vals_b_common = series_b.all_values(copy=make_copy)
     else:
-        series_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
-        series_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
+        vals_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
+        vals_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
 
-    if not len(series_a_common) == len(series_b_common):
+    if not len(vals_a_common) == len(vals_b_common):
         raise_log(
             ValueError(
                 "The two time series (or their intersection) "
@@ -214,22 +217,20 @@ def _get_values_or_raise(
             logger=logger,
         )
 
-    series_a_det = _get_values(series_a_common, stochastic_quantile=stochastic_quantile)
-    series_b_det = _get_values(series_b_common, stochastic_quantile=stochastic_quantile)
+    vals_a_det = _get_values(vals_a_common, stochastic_quantile=stochastic_quantile)
+    vals_b_det = _get_values(vals_b_common, stochastic_quantile=stochastic_quantile)
 
     if not remove_nan_union:
-        return series_a_det, series_b_det
+        return vals_a_det, vals_b_det
 
-    b_is_deterministic = bool(len(series_b_det.shape) == 1)
+    b_is_deterministic = bool(len(vals_b_det.shape) == 1)
     if b_is_deterministic:
-        isnan_mask = np.logical_or(np.isnan(series_a_det), np.isnan(series_b_det))
+        isnan_mask = np.logical_or(np.isnan(vals_a_det), np.isnan(vals_b_det))
     else:
         isnan_mask = np.logical_or(
-            np.isnan(series_a_det), np.isnan(series_b_det).any(axis=2).flatten()
+            np.isnan(vals_a_det), np.isnan(vals_b_det).any(axis=2).flatten()
         )
-    return np.delete(series_a_det, isnan_mask), np.delete(
-        series_b_det, isnan_mask, axis=0
-    )
+    return np.delete(vals_a_det, isnan_mask), np.delete(vals_b_det, isnan_mask, axis=0)
 
 
 @multi_ts_support
@@ -584,11 +585,13 @@ def mape(
     y_true, y_hat = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-    raise_if_not(
-        (y_true != 0).all(),
-        "The actual series must be strictly positive to compute the MAPE.",
-        logger,
-    )
+    if not (y_true != 0).all():
+        raise_log(
+            ValueError(
+                "The actual series must be strictly positive to compute the MAPE."
+            ),
+            logger=logger,
+        )
     return 100.0 * np.mean(np.abs((y_true - y_hat) / y_true))
 
 
@@ -657,11 +660,13 @@ def smape(
     y_true, y_hat = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-    raise_if_not(
-        np.logical_or(y_true != 0, y_hat != 0).all(),
-        "The actual series must be strictly positive to compute the sMAPE.",
-        logger,
-    )
+    if not np.logical_or(y_true != 0, y_hat != 0).all():
+        raise_log(
+            ValueError(
+                "The actual series must be strictly positive to compute the sMAPE."
+            ),
+            logger=logger,
+        )
     return 200.0 * np.mean(np.abs(y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat)))
 
 
@@ -738,21 +743,25 @@ def mase(
         reduction: Callable[[np.ndarray], float],
     ):
 
-        raise_if_not(
-            actual_series.width == pred_series.width,
-            "The two TimeSeries instances must have the same width.",
-            logger,
-        )
-        raise_if_not(
-            actual_series.width == insample.width,
-            "The insample TimeSeries must have the same width as the other series.",
-            logger,
-        )
-        raise_if_not(
-            insample.end_time() + insample.freq == pred_series.start_time(),
-            "The pred_series must be the forecast of the insample series",
-            logger,
-        )
+        if not actual_series.width == pred_series.width:
+            raise_log(
+                ValueError("The two TimeSeries instances must have the same width."),
+                logger=logger,
+            )
+        if not actual_series.width == insample.width:
+            raise_log(
+                ValueError(
+                    "The insample TimeSeries must have the same width as the other series."
+                ),
+                logger=logger,
+            )
+        if not insample.end_time() + insample.freq == pred_series.start_time():
+            raise_log(
+                ValueError(
+                    "The pred_series must be the forecast of the insample series"
+                ),
+                logger=logger,
+            )
 
         insample_ = (
             insample.quantile_timeseries(quantile=0.5)
@@ -782,23 +791,21 @@ def mase(
             x_t = insample_.univariate_component(i).values()
             errors = np.abs(y_true - y_hat)
             scale = np.mean(np.abs(x_t[m:] - x_t[:-m]))
-            raise_if_not(
-                not np.isclose(scale, 0),
-                "cannot use MASE with periodical signals",
-                logger,
-            )
+            if np.isclose(scale, 0):
+                raise_log(
+                    ValueError("cannot use MASE with periodical signals"), logger=logger
+                )
             value_list.append(np.mean(errors / scale))
 
         return reduction(value_list)
 
     if isinstance(actual_series, TimeSeries):
-        raise_if_not(
-            isinstance(pred_series, TimeSeries),
-            "Expecting pred_series to be TimeSeries",
-        )
-        raise_if_not(
-            isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries"
-        )
+        if not isinstance(pred_series, TimeSeries):
+            raise_log(
+                ValueError("Expecting pred_series to be TimeSeries"), logger=logger
+            )
+        if not isinstance(insample, TimeSeries):
+            raise_log(ValueError("Expecting insample to be TimeSeries"), logger=logger)
         return _multivariate_mase(
             actual_series=actual_series,
             pred_series=pred_series,
@@ -811,25 +818,29 @@ def mase(
     elif isinstance(actual_series, Sequence) and isinstance(
         actual_series[0], TimeSeries
     ):
-
-        raise_if_not(
-            isinstance(pred_series, Sequence)
-            and isinstance(pred_series[0], TimeSeries),
-            "Expecting pred_series to be a Sequence[TimeSeries]",
-        )
-        raise_if_not(
-            isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
-            "Expecting insample to be a Sequence[TimeSeries]",
-        )
-        raise_if_not(
-            len(pred_series) == len(actual_series)
-            and len(pred_series) == len(insample),
-            "The TimeSeries sequences must have the same length.",
-            logger,
-        )
-
-        raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
-        raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
+        if not (
+            isinstance(pred_series, Sequence) and isinstance(pred_series[0], TimeSeries)
+        ):
+            raise_log(
+                ValueError("Expecting pred_series to be a Sequence[TimeSeries]"),
+                logger=logger,
+            )
+        if not (isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries)):
+            raise_log(
+                ValueError("Expecting insample to be a Sequence[TimeSeries]"),
+                logger=logger,
+            )
+        if not (
+            len(pred_series) == len(actual_series) and len(pred_series) == len(insample)
+        ):
+            raise_log(
+                ValueError("The TimeSeries sequences must have the same length."),
+                logger=logger,
+            )
+        if not isinstance(n_jobs, int):
+            raise_log(ValueError("n_jobs must be an integer"), logger=logger)
+        if not isinstance(verbose, bool):
+            raise_log(ValueError("verbose must be a bool"), logger=logger)
 
         iterator = _build_tqdm_iterator(
             iterable=zip(actual_series, pred_series, insample),
@@ -915,11 +926,13 @@ def ope(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
-    raise_if_not(
-        y_true_sum > 0,
-        "The series of actual value cannot sum to zero when computing OPE.",
-        logger,
-    )
+    if not y_true_sum > 0:
+        raise_log(
+            ValueError(
+                "The series of actual value cannot sum to zero when computing OPE."
+            ),
+            logger=logger,
+        )
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.0
 
 
@@ -984,12 +997,14 @@ def marre(
     y_true, y_hat = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-    raise_if_not(
-        y_true.max() > y_true.min(),
-        "The difference between the max and min values must be strictly"
-        "positive to compute the MARRE.",
-        logger,
-    )
+    if not y_true.max() > y_true.min():
+        raise_log(
+            ValueError(
+                "The difference between the max and min values must "
+                "be strictly positive to compute the MARRE."
+            ),
+            logger=logger,
+        )
     true_range = y_true.max() - y_true.min()
     return 100.0 * np.mean(np.abs((y_true - y_hat) / true_range))
 
@@ -1187,11 +1202,13 @@ def rho_risk(
     Union[float, List[float]]
         The rho-risk metric
     """
-
-    raise_if_not(
-        pred_series.is_stochastic,
-        "rho (quantile) loss should only be computed for stochastic predicted TimeSeries.",
-    )
+    if not pred_series.is_stochastic:
+        raise_log(
+            ValueError(
+                "rho (quantile) loss should only be computed for stochastic predicted TimeSeries."
+            ),
+            logger=logger,
+        )
 
     z_true, z_hat = _get_values_or_raise(
         actual_series,
@@ -1265,11 +1282,14 @@ def quantile_loss(
     Union[float, List[float]]
         The quantile loss metric
     """
-
-    raise_if_not(
-        pred_series.is_stochastic,
-        "quantile (pinball) loss should only be computed for stochastic predicted TimeSeries.",
-    )
+    if not pred_series.is_stochastic:
+        raise_log(
+            ValueError(
+                "quantile (pinball) loss should only be computed for "
+                "stochastic predicted TimeSeries."
+            ),
+            logger=logger,
+        )
 
     y, y_hat = _get_values_or_raise(
         actual_series,
