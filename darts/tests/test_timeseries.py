@@ -679,12 +679,17 @@ class TestTimeSeries:
         """Tests slice intersection between two series with datetime or range index with identical and
         mixed frequencies."""
         freq, mixed_freq = config
+        self.helper_test_intersect(self, freq, mixed_freq, is_univariate=True)
 
+    @staticmethod
+    def helper_test_intersect(
+        test_case, freq, is_mixed_freq: bool, is_univariate: bool
+    ):
         start = pd.Timestamp("20130101") if isinstance(freq, str) else 0
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
 
         # handle identical and mixed frequency setup
-        if not mixed_freq:
+        if not is_mixed_freq:
             freq_other = freq
             n_steps = 11
         elif "2" not in str(freq):  # 1 or "1D"
@@ -699,8 +704,10 @@ class TestTimeSeries:
         idx = generate_index(start=start, freq=freq, length=n_steps)
         end = idx[-1]
 
-        pd_series = pd.Series(range(n_steps), index=idx)
-        series = TimeSeries.from_series(pd_series)
+        n_cols = 1 if is_univariate else 2
+        series = TimeSeries.from_times_and_values(
+            values=np.random.randn(n_steps, n_cols), times=idx
+        )
 
         def check_intersect(s_int, start_, end_, freq_):
             if start_ is not None:

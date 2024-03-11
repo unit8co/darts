@@ -50,7 +50,7 @@ import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
-from darts.utils.utils import n_steps_between
+from darts.utils.utils import generate_index, n_steps_between
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
 
@@ -5450,8 +5450,6 @@ def concatenate(
                 "this behavior and concatenate the series by extending the time axis "
                 "of the first series.",
             )
-
-            from darts.utils.utils import generate_index
 
             tindex = generate_index(
                 start=series[0].start_time(),
