@@ -144,22 +144,20 @@ def multivariate_support(func) -> Union[float, List[float]]:
 
 
 def _get_values(
-    series: TimeSeries, stochastic_quantile: Optional[float] = 0.5
+    series: np.ndarray, stochastic_quantile: Optional[float] = 0.5
 ) -> np.ndarray:
     """
     Returns the numpy values of a time series.
     For stochastic series, return either all sample values with (stochastic_quantile=None) or the quantile sample value
     with (stochastic_quantile {>=0,<=1})
     """
-    if series.is_deterministic:
-        series_values = series.univariate_values()
+    if series.shape[2] == 1:  # deterministic
+        series_values = series[:, 0, 0]
     else:  # stochastic
         if stochastic_quantile is None:
-            series_values = series.all_values(copy=False)
+            series_values = series
         else:
-            series_values = series.quantile_timeseries(
-                quantile=stochastic_quantile
-            ).univariate_values()
+            series_values = np.quantile(series, stochastic_quantile, axis=2)[:, 0]
     return series_values
 
 
@@ -199,21 +197,21 @@ def _get_values_or_raise(
 
     raise_if_not(isinstance(intersect, bool), "The intersect parameter must be a bool")
 
-    if series_a.has_same_time_as(series_b):
-        series_a_common = series_a
-        series_b_common = series_b
+    make_copy = True
+    if series_a.has_same_time_as(series_b) or not intersect:
+        series_a_common = series_a.all_values(copy=make_copy)
+        series_b_common = series_b.all_values(copy=make_copy)
     else:
-        series_a_common = series_a.slice_intersect(series_b) if intersect else series_a
-        series_b_common = series_b.slice_intersect(series_a) if intersect else series_b
+        series_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
+        series_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
 
-        raise_if_not(
-            series_a_common.has_same_time_as(series_b_common),
-            "The two time series (or their intersection) "
-            "must have the same time index."
-            "\nFirst series: {}\nSecond series: {}".format(
-                series_a.time_index, series_b.time_index
+    if not len(series_a_common) == len(series_b_common):
+        raise_log(
+            ValueError(
+                "The two time series (or their intersection) "
+                "must have the same time index."
             ),
-            logger,
+            logger=logger,
         )
 
     series_a_det = _get_values(series_a_common, stochastic_quantile=stochastic_quantile)

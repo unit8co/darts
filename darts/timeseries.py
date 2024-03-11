@@ -2478,18 +2478,12 @@ class TimeSeries:
         """
         if other.has_same_time_as(self):
             return self.__class__(self._xa)
-
-        if other.freq == self.freq:
-            _ = n_steps_between(self.start_time(), other.start_time(), freq=self.freq)
-            _ = n_steps_between(self.end_time(), other.end_time(), freq=self.freq)
-            _ = 1
-
-        time_index = self.time_index.intersection(other.time_index)
-        return self[time_index]
+        start, end = self._slice_intersect_bounds(other)
+        return self[start:end]
 
     def slice_intersect_values(self, other: Self, copy: bool = False) -> Self:
         """
-        Return a ``TimeSeries`` slice of this series, where the time index has been intersected with the one
+        Return the sliced values of this series, where the time index has been intersected with the one
         of the `other` series.
 
         This method is in general *not* symmetric.
@@ -2497,18 +2491,29 @@ class TimeSeries:
         Parameters
         ----------
         other
-            the other time series
+            The other time series
+        copy
+            Whether to return a copy of the values, otherwise returns a view.
+            Leave it to True unless you know what you are doing.
 
         Returns
         -------
-        TimeSeries
-            a new series, containing the values of this series, over the time-span common to both time series.
+        np.ndarray
+            The values of this series, over the time-span common to both time series.
         """
         if other.has_same_time_as(self):
             return self.all_values(copy=copy)
+        start, end = self._slice_intersect_bounds(other)
+        return self.all_values(copy=copy)[start:end]
 
-        time_index = self.time_index.intersection(other.time_index)
-        return self[time_index]
+    def _slice_intersect_bounds(self, other: Self) -> Tuple[int, int]:
+        shift_start = n_steps_between(
+            other.start_time(), self.start_time(), freq=self.freq
+        )
+        shift_end = n_steps_between(other.end_time(), self.end_time(), freq=self.freq)
+        shift_start = shift_start if shift_start >= 0 else 0
+        shift_end = shift_end if shift_end < 0 else None
+        return shift_start, shift_end
 
     def strip(self, how: str = "all") -> Self:
         """
