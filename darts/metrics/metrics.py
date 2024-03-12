@@ -7,7 +7,7 @@ Some metrics to compare time series.
 
 from functools import wraps
 from inspect import signature
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -19,7 +19,7 @@ from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.statistics import check_seasonality
 
 logger = get_logger(__name__)
-
+TIME_AX = 0
 
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
 
 
-def multi_ts_support(func) -> Union[float, List[float]]:
+def multi_ts_support(func) -> Callable[..., Union[float, np.ndarray]]:
     """
     This decorator further adapts the metrics that took as input two univariate/multivariate ``TimeSeries`` instances,
     adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric
@@ -96,50 +96,12 @@ def multi_ts_support(func) -> Union[float, List[float]]:
         # return a single value instead of a np.array of len 1
         vals = vals[0] if len(vals) == 1 else np.array(vals)
 
-        if "series_reduction" in kwargs:
+        if kwargs.get("series_reduction") is not None:
             return kwargs["series_reduction"](vals)
         else:
-            return signature(func).parameters["series_reduction"].default(vals)
+            return vals
 
     return wrapper_multi_ts_support
-
-
-def multivariate_support_old(func) -> Union[float, List[float]]:
-    """
-    This decorator transforms a metric function that takes as input two univariate TimeSeries instances
-    into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
-    metrics for components with the same indices, and returns a float value that is computed as a function of all the
-    univariate metrics using a `component_reduction` subroutine passed as argument to the metric function.
-    """
-
-    @wraps(func)
-    def wrapper_multivariate_support(*args, **kwargs):
-        # we can avoid checks about args and kwargs since the input is adjusted by the previous decorator
-        actual_series = args[0]
-        pred_series = args[1]
-
-        if not actual_series.width == pred_series.width:
-            raise_log(
-                ValueError("The two TimeSeries instances must have the same width."),
-                logger=logger,
-            )
-
-        value_list = []
-        for i in range(actual_series.width):
-            value_list.append(
-                func(
-                    actual_series.univariate_component(i),
-                    pred_series.univariate_component(i),
-                    *args[2:],
-                    **kwargs
-                )
-            )  # [2:] since we already know the first two arguments are the series
-        if "component_reduction" in kwargs:
-            return kwargs["component_reduction"](value_list)
-        else:
-            return signature(func).parameters["component_reduction"].default(value_list)
-
-    return wrapper_multivariate_support
 
 
 def multivariate_support(func) -> Callable[..., Union[float, np.ndarray]]:
@@ -199,7 +161,7 @@ def _get_values_or_raise(
     intersect: bool,
     stochastic_quantile: Optional[float] = 0.5,
     remove_nan_union: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """Returns the processed numpy values of two time series. Processing can be customized with arguments
     `intersect, stochastic_quantile, remove_nan_union`.
 
@@ -251,16 +213,22 @@ def _get_values_or_raise(
     vals_b_det = _get_values(vals_b_common, stochastic_quantile=stochastic_quantile)
 
     if not remove_nan_union:
-        return vals_a_det, vals_b_det, None
+        return vals_a_det, vals_b_det
 
     b_is_deterministic = bool(len(vals_b_det.shape) == 2)
     if b_is_deterministic:
         isnan_mask = np.logical_or(np.isnan(vals_a_det), np.isnan(vals_b_det))
+        isnan_mask_pred = isnan_mask
     else:
         isnan_mask = np.logical_or(
-            np.isnan(vals_a_det), np.isnan(vals_b_det).any(axis=3).flatten()
+            np.isnan(vals_a_det), np.isnan(vals_b_det).any(axis=2)
         )
-    return vals_a_det, vals_b_det, isnan_mask
+        isnan_mask_pred = np.repeat(
+            np.expand_dims(isnan_mask, axis=-1), vals_b_det.shape[2], axis=2
+        )
+    return np.where(isnan_mask, np.nan, vals_a_det), np.where(
+        isnan_mask_pred, np.nan, vals_b_det
+    )
 
 
 @multi_ts_support
@@ -310,14 +278,14 @@ def mae(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Mean Absolute Error (MAE)
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
+    y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=False
     )
-    return np.nanmean(np.abs(y_true - y_pred), axis=0)
+    return np.nanmean(np.abs(y_true - y_pred), axis=TIME_AX)
 
 
 @multi_ts_support
@@ -367,14 +335,14 @@ def mse(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Mean Squared Error (MSE)
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+    y_true, y_pred = _get_values_or_raise(
+        actual_series, pred_series, intersect, remove_nan_union=False
     )
-    return np.mean((y_true - y_pred) ** 2)
+    return np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX)
 
 
 @multi_ts_support
@@ -424,10 +392,18 @@ def rmse(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Root Mean Squared Error (RMSE)
     """
-    return np.sqrt(mse(actual_series, pred_series, intersect))
+    return np.sqrt(
+        mse(
+            actual_series,
+            pred_series,
+            intersect,
+            component_reduction=None,
+            series_reduction=None,
+        )
+    )
 
 
 @multi_ts_support
@@ -479,15 +455,15 @@ def rmsle(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Root Mean Squared Log Error (RMSLE)
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+    y_true, y_pred = _get_values_or_raise(
+        actual_series, pred_series, intersect, remove_nan_union=False
     )
     y_true, y_pred = np.log(y_true + 1), np.log(y_pred + 1)
-    return np.sqrt(np.mean((y_true - y_pred) ** 2))
+    return np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX))
 
 
 @multi_ts_support
@@ -541,15 +517,19 @@ def coefficient_of_variation(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Coefficient of Variation
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
+    y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
     # not calling rmse as y_true and y_pred are np.ndarray
-    return 100 * np.sqrt(np.mean((y_true - y_pred) ** 2)) / y_true.mean()
+    return (
+        100
+        * np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX))
+        / np.nanmean(y_true, axis=TIME_AX)
+    )
 
 
 @multi_ts_support
@@ -608,12 +588,12 @@ def mape(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Mean Absolute Percentage Error (MAPE)
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
+    y_true, y_pred = _get_values_or_raise(
+        actual_series, pred_series, intersect, remove_nan_union=False
     )
     if not (y_true != 0).all():
         raise_log(
@@ -622,7 +602,7 @@ def mape(
             ),
             logger=logger,
         )
-    return 100.0 * np.mean(np.abs((y_true - y_pred) / y_true))
+    return 100.0 * np.nanmean(np.abs((y_true - y_pred) / y_true), axis=TIME_AX)
 
 
 @multi_ts_support
@@ -683,11 +663,11 @@ def smape(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The symmetric Mean Absolute Percentage Error (sMAPE)
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
+    y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
     if not np.logical_or(y_true != 0, y_pred != 0).all():
@@ -697,7 +677,9 @@ def smape(
             ),
             logger=logger,
         )
-    return 200.0 * np.mean(np.abs(y_true - y_pred) / (np.abs(y_true) + np.abs(y_pred)))
+    return 200.0 * np.nanmean(
+        np.abs(y_true - y_pred) / (np.abs(y_true) + np.abs(y_pred)), axis=TIME_AX
+    )
 
 
 # mase cannot leverage multivariate and multi_ts with the decorator since also the `insample` is a Sequence[TimeSeries]
@@ -760,7 +742,7 @@ def mase(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Mean Absolute Scaled Error (MASE)
     """
 
@@ -811,7 +793,7 @@ def mase(
                     )
                     m = 1
 
-            y_true, y_pred, isnan_mask = _get_values_or_raise(
+            y_true, y_pred = _get_values_or_raise(
                 actual_series.univariate_component(i),
                 pred_series.univariate_component(i),
                 intersect,
@@ -952,15 +934,17 @@ def ope(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Overall Percentage Error (OPE)
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
+    y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-    y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
-    if not y_true_sum > 0:
+    y_true_sum, y_pred_sum = np.nansum(y_true, axis=TIME_AX), np.nansum(
+        y_pred, axis=TIME_AX
+    )
+    if not (y_true_sum > 0).all():
         raise_log(
             ValueError(
                 "The series of actual value cannot sum to zero when computing OPE."
@@ -1024,14 +1008,15 @@ def marre(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Mean Absolute Ranged Relative Error (MARRE)
     """
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
+    y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-    if not y_true.max() > y_true.min():
+    y_max, y_min = np.nanmax(y_true, axis=TIME_AX), np.nanmin(y_true, axis=TIME_AX)
+    if not (y_max > y_min).all():
         raise_log(
             ValueError(
                 "The difference between the max and min values must "
@@ -1039,8 +1024,8 @@ def marre(
             ),
             logger=logger,
         )
-    true_range = y_true.max() - y_true.min()
-    return 100.0 * np.mean(np.abs((y_true - y_pred) / true_range))
+    true_range = y_max - y_min
+    return 100.0 * np.nanmean(np.abs((y_true - y_pred) / true_range), axis=TIME_AX)
 
 
 @multi_ts_support
@@ -1091,15 +1076,15 @@ def r2_score(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The Coefficient of Determination :math:`R^2`
     """
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
+    y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-    ss_errors = np.sum((y_true - y_pred) ** 2)
-    y_hat = y_true.mean()
-    ss_tot = np.sum((y_true - y_hat) ** 2)
+    ss_errors = np.nansum((y_true - y_pred) ** 2, axis=TIME_AX)
+    y_hat = np.nanmean(y_true, axis=TIME_AX)
+    ss_tot = np.nansum((y_true - y_hat) ** 2, axis=TIME_AX)
     return 1 - ss_errors / ss_tot
 
 
@@ -1182,7 +1167,7 @@ def rho_risk(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> float:
+) -> Union[float, np.ndarray]:
     """:math:`\\rho`-risk (rho-risk or quantile risk).
 
     Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions
@@ -1233,7 +1218,7 @@ def rho_risk(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The rho-risk metric
     """
     if not pred_series.is_stochastic:
@@ -1244,7 +1229,7 @@ def rho_risk(
             logger=logger,
         )
 
-    z_true, z_hat, isnan_mask = _get_values_or_raise(
+    z_true, z_hat = _get_values_or_raise(
         actual_series,
         pred_series,
         intersect,
@@ -1252,8 +1237,8 @@ def rho_risk(
         remove_nan_union=True,
     )
 
-    z_true = z_true.sum(axis=0)
-    z_hat = z_hat.sum(axis=0)  # aggregate all individual sample realizations
+    z_true = z_true.sum(axis=TIME_AX)
+    z_hat = z_hat.sum(axis=TIME_AX)  # aggregate all individual sample realizations
 
     z_hat_rho = np.quantile(z_hat, q=rho)  # get the quantile from aggregated samples
 
@@ -1277,7 +1262,7 @@ def quantile_loss(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> float:
+) -> Union[float, np.ndarray]:
     """
     Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T`
     and a time series of stochastic predictions (containing N samples) :math:`y'` of shape :math:`T  x N`
@@ -1313,7 +1298,7 @@ def quantile_loss(
 
     Returns
     -------
-    Union[float, List[float]]
+    Union[float, np.ndarray]
         The quantile loss metric
     """
     if not pred_series.is_stochastic:
@@ -1325,7 +1310,7 @@ def quantile_loss(
             logger=logger,
         )
 
-    y_true, y_pred, isnan_mask = _get_values_or_raise(
+    y_true, y_pred = _get_values_or_raise(
         actual_series,
         pred_series,
         intersect,
@@ -1335,10 +1320,6 @@ def quantile_loss(
 
     ts_length, _, sample_size = y_pred.shape
     y_true = y_true.reshape(ts_length, -1, 1).repeat(sample_size, axis=2)
-    y_pred = y_pred.reshape(
-        ts_length, -1, sample_size
-    )  # make sure y_true shape == y_pred shape
-
     errors = y_true - y_pred
     losses = np.maximum((tau - 1) * errors, tau * errors)
-    return losses.mean()
+    return np.nanmean(losses, axis=TIME_AX).flatten()

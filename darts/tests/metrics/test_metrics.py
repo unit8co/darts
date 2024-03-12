@@ -1,9 +1,58 @@
 import numpy as np
 import pandas as pd
 import pytest
+import sklearn.metrics
 
 from darts import TimeSeries
 from darts.metrics import metrics
+
+
+def sklearn_mape(*args, **kwargs):
+    return sklearn.metrics.mean_absolute_percentage_error(*args, **kwargs) * 100.0
+
+
+def metric_smape(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return (
+        100.0
+        / len(y_true)
+        * np.sum(2 * np.abs(y_pred - y_true) / (np.abs(y_true) + np.abs(y_pred)))
+    )
+
+
+def metric_ope(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return 100.0 * np.abs((np.sum(y_true) - np.sum(y_pred)) / np.sum(y_true))
+
+
+def metric_cov(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return (
+        100.0
+        * sklearn.metrics.mean_squared_error(y_true, y_pred, squared=False)
+        / np.mean(y_true)
+    )
+
+
+def metric_marre(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return (
+        100.0
+        / len(y_true)
+        * np.sum(np.abs((y_true - y_pred) / (np.max(y_true) - np.min(y_true))))
+    )
+
+
+def metric_rmsle(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return np.sqrt(
+        1 / len(y_true) * np.sum((np.log(y_true + 1) - np.log(y_pred + 1)) ** 2)
+    )
 
 
 class TestMetrics:
@@ -194,7 +243,7 @@ class TestMetrics:
             for s in nan_s11:
                 s._xa.values[-1, :, :] = np.nan
             nan_metric = metric([s + 1 for s in nan_s11], s22)
-            assert non_nan_metric == nan_metric
+            np.testing.assert_array_equal(non_nan_metric, nan_metric)
 
     def test_r2(self):
         from sklearn.metrics import r2_score
@@ -283,7 +332,6 @@ class TestMetrics:
         self.helper_test_nan(metrics.smape)
 
     def test_mase(self):
-
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
         for s1, s2 in test_cases:
@@ -523,10 +571,7 @@ class TestMetrics:
         with pytest.raises(TypeError):
             metrics.r2_score(series00, series11, False, np.mean)
 
-    def test_multiple_ts(self):
-
-        dim = 2
-
+    def test_multiple_ts_rmse(self):
         # simple test
         multi_ts_1 = [self.series1 + 1, self.series1 + 1]
         multi_ts_2 = [self.series1 + 2, self.series1 + 1]
@@ -540,51 +585,59 @@ class TestMetrics:
             == 0.5
         )
 
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.r2_score, "min"),
+            (metrics.rmse, "max"),
+            (metrics.mape, "max"),
+            (metrics.smape, "max"),
+            (metrics.mae, "max"),
+            (metrics.coefficient_of_variation, "max"),
+            (metrics.ope, "max"),
+            (metrics.marre, "max"),
+            (metrics.mse, "max"),
+            (metrics.rmsle, "max"),
+        ],
+    )
+    def test_multiple_ts(self, config):
         # checking univariate, multivariate and multi-ts gives same metrics with same values
+        metric, series_reduction = config
+        series_reduction = getattr(np, series_reduction)
+
+        dim = 2
         series11 = self.series1.stack(self.series1) + 1
         series22 = self.series2.stack(self.series2)
         multi_1 = [series11] * dim
         multi_2 = [series22] * dim
 
-        test_metric = [
-            metrics.r2_score,
-            metrics.rmse,
-            metrics.mape,
-            metrics.smape,
-            metrics.mae,
-            metrics.coefficient_of_variation,
-            metrics.ope,
-            metrics.marre,
-            metrics.mse,
-            metrics.rmsle,
-        ]
-
-        for metric in test_metric:
-            assert metric(self.series1 + 1, self.series2) == metric(series11, series22)
-            np.testing.assert_array_almost_equal(
-                np.array([metric(series11, series22)] * 2),
-                np.array(metric(multi_1, multi_2)),
-            )
+        np.testing.assert_array_almost_equal(
+            metric(self.series1 + 1, self.series2), metric(series11, series22)
+        )
+        np.testing.assert_array_almost_equal(
+            np.array([metric(series11, series22)] * 2),
+            np.array(metric(multi_1, multi_2)),
+        )
 
         # trying different functions
         shifted_1 = self.series1 + 1
         shifted_2 = self.series1 + 2
         shifted_3 = self.series1 + 3
 
-        assert metrics.rmse(
+        assert metric(
             [shifted_1, shifted_1],
             [shifted_2, shifted_3],
             component_reduction=np.mean,
-            series_reduction=np.max,
-        ) == metrics.rmse(shifted_1, shifted_3)
+            series_reduction=series_reduction,
+        ) == metric(shifted_1, shifted_3)
 
         # checking if the result is the same with different n_jobs and verbose True
-        assert metrics.rmse(
+        assert metric(
             [shifted_1, shifted_1],
             [shifted_2, shifted_3],
             component_reduction=np.mean,
             series_reduction=np.max,
-        ) == metrics.rmse(
+        ) == metric(
             [shifted_1, shifted_1],
             [shifted_2, shifted_3],
             component_reduction=np.mean,
@@ -592,3 +645,30 @@ class TestMetrics:
             n_jobs=-1,
             verbose=True,
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.mae, sklearn.metrics.mean_absolute_error, {}),
+            (metrics.mse, sklearn.metrics.mean_squared_error, {}),
+            (metrics.rmse, sklearn.metrics.mean_squared_error, {"squared": False}),
+            (metrics.rmsle, metric_rmsle, {}),
+            (metrics.coefficient_of_variation, metric_cov, {}),
+            (metrics.mape, sklearn_mape, {}),
+            (metrics.smape, metric_smape, {}),
+            (metrics.ope, metric_ope, {}),
+            (metrics.marre, metric_marre, {}),
+            (metrics.r2_score, sklearn.metrics.r2_score, {}),
+        ],
+    )
+    def test_metrics(self, config):
+        metric, metric_ref, ref_kwargs = config
+        y_true = self.series1.stack(self.series1) + 1
+        y_pred = y_true + 1
+
+        y_true = [y_true] * 2
+        y_pred = [y_pred] * 2
+
+        score = metric(y_true, y_pred)
+        score_ref = metric_ref(y_true[0].values(), y_pred[0].values(), **ref_kwargs)
+        np.testing.assert_array_almost_equal(score, np.array(score_ref))
