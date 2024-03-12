@@ -323,12 +323,10 @@ def _get_historical_forecastable_time_index(
     for which historical forecasts can be made, given the model's properties, the training series
     and the covariates.
         - If ``None`` is returned, there is no point where a forecast can be made.
-
-        - If ``is_training=False``, it returns the time_index subset of predictable timestamps.
-
-        - If ``is_training=True``, it returns the time_index subset of trainable timestamps. A trainable
-        timestamp is a timestamp that has a training sample of length at least ``self.training_sample_length``
-            preceding it.
+        - If ``is_training=False``, it returns the time_index subset of predictable timestamps
+        (can be used as first step of a forecast; noted `t_0`).
+        - If ``is_training=True``, it returns the time_index subset of trainable timestamps. A timestamp is
+        considered trainable if the point is predictable after fitting the model on the stamps preceeding it.
 
     Additionally, it accounts for auto-regression (forecast_horizon > model.output_chunk_length , and overlap_end.
         - In case of auto-regression, we have to step back the last possible predictable/trainable time step if the
@@ -336,6 +334,8 @@ def _get_historical_forecastable_time_index(
         - In case overlap_end=False, the latest possible predictable/trainable time step is shifted back if a
           prediction starting from that point would go beyond the end of `series`.
 
+    Note: the returned steps are valid "forecast start" but don't necessarily correspond to the effective time index
+    of the generated forecast, notably because of the `output_chunk_shift` parameter.
 
     Parameters
     ----------
@@ -416,28 +416,35 @@ def _get_historical_forecastable_time_index(
 
     # longest possible time index for target
     if is_training:
-        start = (
-            series.start_time()
-            + (max_target_lag - output_chunk_shift - min_target_lag + 1) * series.freq
-        )
+        # shift forward by the minimum length requirements of the model
+        # shift back by output_chunk_shift so that `start` correspond to the first valid t0,
+        # not the first position that is going to be effectively forecasted.
+        shift_tg_start = model.min_train_series_length - output_chunk_shift
     else:
-        start = series.start_time() - min_target_lag * series.freq
+        # enough target length for the first forecasted positions
+        shift_tg_start = -min_target_lag
+    start = series.start_time() + shift_tg_start * series.freq
+    # since the lags are negative or None, the timestamp after the end of the index can also be forecasted
     end = series.end_time() + 1 * series.freq
 
     intersect_ = (start, end)
 
-    # longest possible time index for past covariates
+    # possible timesteps based on past covariates index and associated lags
     if (min_past_cov_lag is not None) and (past_covariates is not None):
         if is_training:
-            start_pc = (
-                past_covariates.start_time()
-                + (max_target_lag - output_chunk_shift - min_past_cov_lag + 1)
-                * past_covariates.freq
+            # max_target_lag - output_chunk_shift + 1 = output_chunk_length
+            shift_pc_start = (
+                max_target_lag
+                - output_chunk_shift
+                + 1
+                - min_past_cov_lag
+                + model.min_train_samples
+                - 1
             )
         else:
-            start_pc = (
-                past_covariates.start_time() - min_past_cov_lag * past_covariates.freq
-            )
+            # need enough past covariates for the first forecasted position
+            shift_pc_start = -min_past_cov_lag
+        start_pc = past_covariates.start_time() + shift_pc_start * past_covariates.freq
 
         shift_pc_end = max_past_cov_lag
         if is_autoregression:
@@ -450,19 +457,23 @@ def _get_historical_forecastable_time_index(
             min([intersect_[1], end_pc]),
         )
 
-    # longest possible time index for future covariates
+    # possible timesteps based on future covariates index and associated lags
     if (min_future_cov_lag is not None) and (future_covariates is not None):
         if is_training:
-            start_fc = (
-                future_covariates.start_time()
-                + (max_target_lag - output_chunk_shift - min_future_cov_lag + 1)
-                * future_covariates.freq
+            # max_target_lag - output_chunk_shift + 1 = output_chunk_length
+            shift_fc_start = (
+                max_target_lag
+                - output_chunk_shift
+                + 1
+                - min_future_cov_lag
+                + model.min_train_samples
+                - 1
             )
         else:
-            start_fc = (
-                future_covariates.start_time()
-                - min_future_cov_lag * future_covariates.freq
-            )
+            shift_fc_start = -min_future_cov_lag
+        start_fc = (
+            future_covariates.start_time() + shift_fc_start * future_covariates.freq
+        )
 
         shift_fc_end = max_future_cov_lag
         if is_autoregression:
@@ -490,9 +501,9 @@ def _get_historical_forecastable_time_index(
     if intersect_[1] < intersect_[0]:
         return None
 
-    # if RegressionModel is not multi_models, it looks further in the past
+    # if RegressionModel is not multi_models, it looks further in the past for the first forecast
     is_multi_models = getattr(model, "multi_models", None)
-    if is_multi_models is not None and not is_multi_models:
+    if (not is_training) and is_multi_models is not None and (not is_multi_models):
         intersect_ = (
             intersect_[0] + (model.output_chunk_length - 1) * series.freq,
             intersect_[1],
@@ -515,10 +526,7 @@ def _adjust_historical_forecasts_time_index(
     start_format: Literal["position", "value"],
     show_warnings: bool,
 ) -> TimeIndex:
-    """
-    Shrink the beginning and end of the historical forecasts time index based on the values of `start`,
-    `forecast_horizon` and `overlap_end`.
-    """
+    """Shrink the beginning of the historical forecasts time index based on the value of `start`."""
     # when applicable, shift the start of the forecastable index based on `start`
     if start is not None:
         if start_format == "value":
@@ -650,18 +658,16 @@ def _reconciliate_historical_time_indices(
     if retrain or (not model._fit_called):
         if train_length and train_length <= len(series):
             train_length_ = train_length
-            # we have to start later for larger `train_length`
-            step_ahead = max(train_length - model._training_sample_time_index_length, 0)
+            # shift the start when `train_length > model.min_train_series_length`
+            step_ahead = max(train_length - model.min_train_series_length, 0)
             if step_ahead:
                 historical_forecasts_time_index = (
                     historical_forecasts_time_index[0] + step_ahead * series.freq,
                     historical_forecasts_time_index[-1],
                 )
-
-        # if not we start training right away; some models (sklearn) require more than 1
-        # training samples, so we start after the first trainable point.
-        else:
-            if train_length and train_length > len(series) and show_warnings:
+        # if train_length is too long compared to the series, fallback to the default behavior (minimum requirements)
+        elif train_length and train_length > len(series):
+            if show_warnings:
                 logger.warning(
                     f"`train_length` is larger than the length of series at index: {series_idx}. "
                     f"Ignoring `train_length` and using default behavior where all available time steps up "
@@ -670,12 +676,6 @@ def _reconciliate_historical_time_indices(
                 )
 
             train_length_ = None
-            if model.min_train_samples > 1:
-                historical_forecasts_time_index = (
-                    historical_forecasts_time_index[0]
-                    + (model.min_train_samples - 1) * series.freq,
-                    historical_forecasts_time_index[1],
-                )
 
     return historical_forecasts_time_index, train_length_
 
@@ -712,7 +712,7 @@ def _get_historical_forecast_boundaries(
         overlap_end,
     )
 
-    # adjust boundaries based on start, forecast_horizon and overlap_end
+    # adjust boundaries based on start and forecast_horizon
     historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
         series=series,
         series_idx=series_idx,
