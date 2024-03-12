@@ -192,9 +192,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return True
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         """
-        Checks if the forecasting model supports probabilistic predictions.
+        Checks if the forecasting model with this configuration supports probabilistic predictions.
+
         By default, returns False. Needs to be overwritten by models that do support
         probabilistic predictions.
         """
@@ -204,7 +205,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """
         Checks if the forecasting model supports historical forecasts without retraining
-        the model. By default, returns False. Needs to be overwritten by models that do
+        the model.
+
+        By default, returns False. Needs to be overwritten by models that do
         support historical forecasts without retraining.
         """
         return False
@@ -250,7 +253,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Whether the model supports prediction for any input `series`.
         """
-        pass
 
     @property
     def uses_past_covariates(self) -> bool:
@@ -347,7 +349,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger=logger,
             )
 
-        if not self._is_probabilistic and num_samples > 1:
+        if not self.supports_probabilistic_prediction and num_samples > 1:
             raise_log(
                 ValueError(
                     "`num_samples > 1` is only supported for probabilistic models."
@@ -488,7 +490,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         >>> model.extreme_lags
         (-10, 6, None, None, 4, 6, 0)
         """
-        pass
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -1870,7 +1871,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates,
         lags_past_covariates, lags_future_covariates).
         """
-        pass
 
     @classmethod
     def _sample_params(model_class, params, n_random_samples):
@@ -2481,7 +2481,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
-        pass
 
     def predict(
         self,
@@ -2575,7 +2574,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """Forecasts values for a certain number of time steps after the end of the series.
         DualCovariatesModels must implement the predict logic in this method.
         """
-        pass
 
     @property
     def _model_encoder_settings(
@@ -2778,7 +2776,6 @@ class TransferableFutureCovariatesLocalForecastingModel(
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
         """
-        pass
 
     @property
     def supports_transferrable_series_prediction(self) -> bool:

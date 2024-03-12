@@ -447,7 +447,7 @@ if TORCH_AVAILABLE:
             )
 
             # when model is fit using 1 training and 1 covariate series, time series args are optional
-            if model._is_probabilistic:
+            if model.supports_probabilistic_prediction:
                 return
             model = model_cls(
                 input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
@@ -661,7 +661,7 @@ if TORCH_AVAILABLE:
             model.fit(multiple_ts)
 
             # safe random state for two successive identical predictions
-            if model._is_probabilistic:
+            if model.supports_probabilistic_prediction:
                 random_state = deepcopy(model._random_instance)
             else:
                 random_state = None

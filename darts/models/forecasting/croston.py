@@ -164,7 +164,3 @@ class Croston(FutureCovariatesLocalForecastingModel):
     @property
     def _supports_range_index(self) -> bool:
         return True
-
-    @property
-    def _is_probabilistic(self) -> bool:
-        return False
