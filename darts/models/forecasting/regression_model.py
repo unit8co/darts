@@ -1032,24 +1032,16 @@ class RegressionModel(GlobalForecastingModel):
                     )
                 # component-wise lags
                 if "target" in self.component_lags:
-                    tmp_X = [
-                        series_matrix[
-                            :,
-                            [lag - (shift + last_step_shift) for lag in comp_lags],
-                            comp_i,
-                        ]
-                        for comp_i, (comp, comp_lags) in enumerate(
-                            self.component_lags["target"].items()
-                        )
-                    ]
-                    # values are grouped by component
-                    np_X.append(
-                        np.concatenate(tmp_X, axis=1).reshape(
-                            len(series) * num_samples, -1
-                        )
+                    tmp_X = self._extract_component_lags_autoregression(
+                        cov_type="target",
+                        values_matrix=series_matrix,
+                        shift=shift,
+                        last_step_shift=last_step_shift,
+                        t_pred=t_pred,
                     )
+                    np_X.append(tmp_X.reshape(len(series) * num_samples, -1))
+                # shared lags
                 else:
-                    # values are grouped by lags
                     np_X.append(
                         series_matrix[
                             :,
@@ -1064,21 +1056,15 @@ class RegressionModel(GlobalForecastingModel):
                 if cov_type in covariate_matrices:
                     # component-wise lags
                     if cov_type in self.component_lags:
-                        tmp_X = [
-                            covariate_matrices[cov_type][
-                                :,
-                                np.array(comp_lags) - self.lags[cov_type][0] + t_pred,
-                                comp_i,
-                            ]
-                            for comp_i, (comp, comp_lags) in enumerate(
-                                self.component_lags[cov_type].items()
-                            )
-                        ]
-                        np_X.append(
-                            np.concatenate(tmp_X, axis=1).reshape(
-                                len(series) * num_samples, -1
-                            )
+                        tmp_X = self._extract_component_lags_autoregression(
+                            cov_type=cov_type,
+                            values_matrix=covariate_matrices[cov_type],
+                            shift=shift,
+                            last_step_shift=last_step_shift,
+                            t_pred=t_pred,
                         )
+                        np_X.append(tmp_X.reshape(len(series) * num_samples, -1))
+                    # shared lags
                     else:
                         np_X.append(
                             covariate_matrices[cov_type][
@@ -1148,6 +1134,44 @@ class RegressionModel(GlobalForecastingModel):
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.pred_dim, -1)
+
+    def _extract_component_lags_autoregression(
+        self,
+        cov_type: str,
+        values_matrix: np.ndarray,
+        shift: int,
+        last_step_shift: int,
+        t_pred: int,
+    ) -> np.ndarray:
+        """Extract, concatenate and reorder component-wise lags to obtain a features order
+        identical to tabularization.
+        """
+        # prepare index to reorder features by lags across components
+        comp_lags_reordered = np.concatenate(
+            [
+                np.array(comp_lags, dtype=int)
+                for comp_lags in self.component_lags[cov_type].values()
+            ]
+        ).argsort()
+
+        # convert relative lags to absolute
+        if cov_type == "target":
+            lags_shift = -shift - last_step_shift
+        else:
+            lags_shift = -self.lags[cov_type][0] + t_pred
+
+        # extract features
+        tmp_X = [
+            values_matrix[
+                :,
+                np.array(comp_lags) + lags_shift,
+                comp_i,
+            ]
+            for comp_i, comp_lags in enumerate(self.component_lags[cov_type].values())
+        ]
+
+        # concatenate on features dimension and reorder
+        return np.concatenate(tmp_X, axis=1)[:, comp_lags_reordered]
 
     @property
     def lagged_feature_names(self) -> Optional[List[str]]:
