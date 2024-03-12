@@ -87,8 +87,9 @@ class TestHistoricalForecastUtils:
                         else 0
                     ),
                 )  # length required to extract the most extreme lag in the past
-                + model.min_train_samples
-                - 1  # length required to extract the additional(s) training sample(s)
+                + (
+                    model.min_train_samples - 1
+                )  # length required to extract the additional(s) training sample(s)
             )
             * self.ts_tg.freq
         )
@@ -130,7 +131,7 @@ class TestHistoricalForecastUtils:
         # so that the last forecasted timestep is aligned with the end of the target series
         last_forecast_shift = (
             forecast_horizon + model.output_chunk_shift - 1
-        )  # - 1 before end boundary is inclusive
+        )  # - 1 because end boundary is inclusive
         if end_index + last_forecast_shift * self.ts_tg.freq > self.ts_tg.end_time():
             end_index = self.ts_tg.end_time() - last_forecast_shift * self.ts_tg.freq
         index = _get_historical_forecast_train_index(
