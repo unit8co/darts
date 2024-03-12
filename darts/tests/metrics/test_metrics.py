@@ -129,8 +129,10 @@ class TestMetrics:
             assert (
                 round(
                     abs(
-                        metric(s1, s2, **kwargs, reduction=(lambda x: x[0]))
-                        - metric(s11, s22, **kwargs, reduction=(lambda x: x[0]))
+                        metric(s1, s2, **kwargs, component_reduction=(lambda x: x[0]))
+                        - metric(
+                            s11, s22, **kwargs, component_reduction=(lambda x: x[0])
+                        )
                     ),
                     7,
                 )
@@ -154,14 +156,18 @@ class TestMetrics:
                 round(
                     abs(
                         metric(
-                            s1, s2, **kwargs, reduction=np.mean, inter_reduction=np.max
+                            s1,
+                            s2,
+                            **kwargs,
+                            component_reduction=np.mean,
+                            series_reduction=np.max
                         )
                         - metric(
                             s11,
                             s22,
                             **kwargs,
-                            reduction=np.mean,
-                            inter_reduction=np.max
+                            component_reduction=np.mean,
+                            series_reduction=np.max
                         )
                     ),
                     7,
@@ -243,7 +249,7 @@ class TestMetrics:
                     - metrics.mse(
                         self.series12,
                         self.series21,
-                        reduction=(lambda x: np.sqrt(np.mean(x))),
+                        component_reduction=(lambda x: np.sqrt(np.mean(x))),
                     )
                 ),
                 7,
@@ -290,7 +296,7 @@ class TestMetrics:
                             s1.stack(s1),
                             s2.stack(s2),
                             insample.stack(insample),
-                            reduction=(lambda x: x[0]),
+                            component_reduction=(lambda x: x[0]),
                         )
                         - metrics.mase(s1, s2, insample)
                     ),
@@ -306,8 +312,8 @@ class TestMetrics:
                             actual_series=[s1] * 2,
                             pred_series=[s2] * 2,
                             insample=[insample] * 2,
-                            reduction=(lambda x: x[0]),
-                            inter_reduction=(lambda x: x[0]),
+                            component_reduction=(lambda x: x[0]),
+                            series_reduction=(lambda x: x[0]),
                         )
                         - metrics.mase(s1, s2, insample)
                     ),
@@ -323,15 +329,15 @@ class TestMetrics:
                             [s1] * 5,
                             pred_series=[s2] * 5,
                             insample=[insample] * 5,
-                            reduction=(lambda x: x[0]),
-                            inter_reduction=(lambda x: x[0]),
+                            component_reduction=(lambda x: x[0]),
+                            series_reduction=(lambda x: x[0]),
                         )
                         - metrics.mase(
                             [s1] * 5,
                             [s2] * 5,
                             insample=[insample] * 5,
-                            reduction=(lambda x: x[0]),
-                            inter_reduction=(lambda x: x[0]),
+                            component_reduction=(lambda x: x[0]),
+                            series_reduction=(lambda x: x[0]),
                             n_jobs=-1,
                             verbose=True,
                         )
@@ -355,7 +361,7 @@ class TestMetrics:
                         [self.series2] * 2,
                         [self.series_train_not_periodic] * 2,
                         m=None,
-                        inter_reduction=np.mean,
+                        series_reduction=np.mean,
                     )
                 ),
                 7,
@@ -475,24 +481,41 @@ class TestMetrics:
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
         series11 = self.series1.stack(self.series1)
-        assert metrics.r2_score(series11, series00, True, reduction=np.mean) == 0
-        assert metrics.r2_score(series11, series00, reduction=np.mean) == 0
-        assert metrics.r2_score(series11, pred_series=series00, reduction=np.mean) == 0
         assert (
-            metrics.r2_score(series00, actual_series=series11, reduction=np.mean) == 0
+            metrics.r2_score(series11, series00, True, component_reduction=np.mean) == 0
         )
+        assert metrics.r2_score(series11, series00, component_reduction=np.mean) == 0
         assert (
             metrics.r2_score(
-                True, reduction=np.mean, pred_series=series00, actual_series=series11
+                series11, pred_series=series00, component_reduction=np.mean
             )
             == 0
         )
         assert (
-            metrics.r2_score(series00, True, reduction=np.mean, actual_series=series11)
+            metrics.r2_score(
+                series00, actual_series=series11, component_reduction=np.mean
+            )
             == 0
         )
         assert (
-            metrics.r2_score(series11, True, reduction=np.mean, pred_series=series00)
+            metrics.r2_score(
+                True,
+                component_reduction=np.mean,
+                pred_series=series00,
+                actual_series=series11,
+            )
+            == 0
+        )
+        assert (
+            metrics.r2_score(
+                series00, True, component_reduction=np.mean, actual_series=series11
+            )
+            == 0
+        )
+        assert (
+            metrics.r2_score(
+                series11, True, component_reduction=np.mean, pred_series=series00
+            )
             == 0
         )
 
@@ -509,7 +532,10 @@ class TestMetrics:
         multi_ts_2 = [self.series1 + 2, self.series1 + 1]
         assert (
             metrics.rmse(
-                multi_ts_1, multi_ts_2, reduction=np.mean, inter_reduction=np.mean
+                multi_ts_1,
+                multi_ts_2,
+                component_reduction=np.mean,
+                series_reduction=np.mean,
             )
             == 0.5
         )
@@ -548,21 +574,21 @@ class TestMetrics:
         assert metrics.rmse(
             [shifted_1, shifted_1],
             [shifted_2, shifted_3],
-            reduction=np.mean,
-            inter_reduction=np.max,
+            component_reduction=np.mean,
+            series_reduction=np.max,
         ) == metrics.rmse(shifted_1, shifted_3)
 
         # checking if the result is the same with different n_jobs and verbose True
         assert metrics.rmse(
             [shifted_1, shifted_1],
             [shifted_2, shifted_3],
-            reduction=np.mean,
-            inter_reduction=np.max,
+            component_reduction=np.mean,
+            series_reduction=np.max,
         ) == metrics.rmse(
             [shifted_1, shifted_1],
             [shifted_2, shifted_3],
-            reduction=np.mean,
-            inter_reduction=np.max,
+            component_reduction=np.mean,
+            series_reduction=np.max,
             n_jobs=-1,
             verbose=True,
         )

@@ -1511,12 +1511,12 @@ class TestRegressionModels:
         error_past_only = rmse(
             [target_test_1, target_test_2],
             prediction_past_only,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
         error_both = rmse(
             [target_test_1, target_test_2],
             prediction_past_and_future,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
 
         assert error_past_only > error_both
@@ -1541,7 +1541,7 @@ class TestRegressionModels:
         error_both_multi_ts = rmse(
             [target_test_1, target_test_2],
             prediction_past_and_future_multi_ts,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
 
         assert error_both > error_both_multi_ts
