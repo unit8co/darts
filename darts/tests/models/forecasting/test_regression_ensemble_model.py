@@ -610,7 +610,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert ensemble_allproba._models_are_probabilistic
-        assert ensemble_allproba._is_probabilistic
+        assert ensemble_allproba.supports_probabilistic_prediction
         ensemble_allproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_allproba.predict(5, num_samples=10)
@@ -627,7 +627,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_mixproba._models_are_probabilistic
-        assert ensemble_mixproba._is_probabilistic
+        assert ensemble_mixproba.supports_probabilistic_prediction
         ensemble_mixproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_mixproba.predict(5, num_samples=10)
@@ -647,7 +647,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_mixproba2._models_are_probabilistic
-        assert ensemble_mixproba2._is_probabilistic
+        assert ensemble_mixproba2.supports_probabilistic_prediction
         ensemble_mixproba2.fit(self.ts_random_walk[:100])
         pred = ensemble_mixproba2.predict(5, num_samples=10)
         assert pred.n_samples == 10
@@ -663,7 +663,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_proba_reg._models_are_probabilistic
-        assert ensemble_proba_reg._is_probabilistic
+        assert ensemble_proba_reg.supports_probabilistic_prediction
         ensemble_proba_reg.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_proba_reg.predict(5, num_samples=10)
@@ -680,7 +680,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert ensemble_dete_reg._models_are_probabilistic
-        assert not ensemble_dete_reg._is_probabilistic
+        assert not ensemble_dete_reg.supports_probabilistic_prediction
         ensemble_dete_reg.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_dete_reg.predict(5, num_samples=1)
@@ -699,7 +699,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_alldete._models_are_probabilistic
-        assert not ensemble_alldete._is_probabilistic
+        assert not ensemble_alldete.supports_probabilistic_prediction
         ensemble_alldete.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_alldete.predict(5, num_samples=1)
