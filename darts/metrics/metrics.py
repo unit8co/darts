@@ -1236,17 +1236,18 @@ def rho_risk(
         stochastic_quantile=None,
         remove_nan_union=True,
     )
+    z_true = np.nansum(z_true, axis=TIME_AX)
+    z_hat = np.nansum(
+        z_hat, axis=TIME_AX
+    )  # aggregate all individual sample realizations
+    z_hat_rho = np.quantile(
+        z_hat, q=rho, axis=1
+    )  # get the quantile from aggregated samples
 
-    z_true = z_true.sum(axis=TIME_AX)
-    z_hat = z_hat.sum(axis=TIME_AX)  # aggregate all individual sample realizations
-
-    z_hat_rho = np.quantile(z_hat, q=rho)  # get the quantile from aggregated samples
-
-    pred_above = np.where(z_hat_rho >= z_true, 1, 0)
-    pred_below = np.where(z_hat_rho < z_true, 1, 0)
-
-    rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
-    return rho_loss / z_true
+    # quantile loss
+    errors = z_true - z_hat_rho
+    losses = 2 * np.maximum((rho - 1) * errors, rho * errors)
+    return losses / z_true
 
 
 # Quantile Loss (Pinball Loss)
@@ -1314,12 +1315,9 @@ def quantile_loss(
         actual_series,
         pred_series,
         intersect,
-        stochastic_quantile=None,
+        stochastic_quantile=tau,
         remove_nan_union=True,
     )
-
-    ts_length, _, sample_size = y_pred.shape
-    y_true = y_true.reshape(ts_length, -1, 1).repeat(sample_size, axis=2)
     errors = y_true - y_pred
     losses = np.maximum((tau - 1) * errors, tau * errors)
-    return np.nanmean(losses, axis=TIME_AX).flatten()
+    return np.nanmean(losses, axis=TIME_AX)

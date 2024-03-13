@@ -672,3 +672,35 @@ class TestMetrics:
         score = metric(y_true, y_pred)
         score_ref = metric_ref(y_true[0].values(), y_pred[0].values(), **ref_kwargs)
         np.testing.assert_array_almost_equal(score, np.array(score_ref))
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (
+                metrics.quantile_loss,
+                [(0.15, 0.15), (0.015, 0.015), (0.15, 0.15)],
+                "tau",
+            ),
+            (metrics.rho_risk, [(0.30, 0.025), (0.030, 0.0025), (0.30, 0.025)], "rho"),
+        ],
+    )
+    def test_metrics_quantile(self, config):
+        metric, scores_exp, q_param = config
+        np.random.seed(0)
+        x = np.random.normal(loc=0.0, scale=1.0, size=10000)
+        y = np.array(
+            [
+                [0.0, 10.0],
+                [1.0, 11.0],
+                [2.0, 12.0],
+            ]
+        ).reshape(3, 2, 1)
+
+        y_true = [TimeSeries.from_values(y)] * 2
+        y_pred = [TimeSeries.from_values(y + x)] * 2
+
+        for quantile, score_exp in zip([0.1, 0.5, 0.9], scores_exp):
+            scores = metric(
+                y_true, y_pred, **{q_param: quantile}, component_reduction=None
+            )
+            assert (scores < np.array(score_exp).reshape(1, -1)).all()
