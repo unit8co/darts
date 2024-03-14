@@ -386,7 +386,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return False
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     def _stochastic_samples(self, predict_df, n_samples) -> np.ndarray:

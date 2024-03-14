@@ -119,7 +119,9 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if(
             train_num_samples is not None
             and train_num_samples > 1
-            and all([not m._is_probabilistic for m in forecasting_models]),
+            and all(
+                [not m.supports_probabilistic_prediction for m in forecasting_models]
+            ),
             "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
             "contains only deterministic `forecasting_models`.",
             logger,
@@ -261,7 +263,9 @@ class EnsembleModel(GlobalForecastingModel):
                 future_covariates=(
                     future_covariates if model.supports_future_covariates else None
                 ),
-                num_samples=num_samples if model._is_probabilistic else 1,
+                num_samples=(
+                    num_samples if model.supports_probabilistic_prediction else 1
+                ),
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for model in self.forecasting_models
@@ -432,7 +436,12 @@ class EnsembleModel(GlobalForecastingModel):
 
     @property
     def _models_are_probabilistic(self) -> bool:
-        return all([model._is_probabilistic for model in self.forecasting_models])
+        return all(
+            [
+                model.supports_probabilistic_prediction
+                for model in self.forecasting_models
+            ]
+        )
 
     @property
     def _models_same_likelihood(self) -> bool:
@@ -480,7 +489,7 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self._models_are_probabilistic
 
     @property

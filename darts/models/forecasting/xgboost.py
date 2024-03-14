@@ -327,7 +327,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
 
     @property

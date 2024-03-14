@@ -222,7 +222,9 @@ class RegressionEnsembleModel(EnsembleModel):
                 ),
                 forecast_horizon=model.output_chunk_length,
                 stride=model.output_chunk_length,
-                num_samples=num_samples if model._is_probabilistic else 1,
+                num_samples=(
+                    num_samples if model.supports_probabilistic_prediction else 1
+                ),
                 start=-start_hist_forecasts,
                 start_format="position",
                 retrain=False,
@@ -486,9 +488,9 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model._is_probabilistic
+        return self.regression_model.supports_probabilistic_prediction

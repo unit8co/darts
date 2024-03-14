@@ -235,7 +235,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     def supports_likelihood_parameter_prediction(self) -> bool:
         return False
 
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return False
 
     @property

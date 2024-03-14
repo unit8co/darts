@@ -2051,9 +2051,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return (
-            self.model._is_probabilistic
+            self.model.supports_probabilistic_prediction
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )

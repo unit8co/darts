@@ -162,7 +162,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        if model._is_probabilistic:
+        if model.supports_probabilistic_prediction:
             logger.warning(
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )
