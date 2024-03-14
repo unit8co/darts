@@ -9,8 +9,19 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 **Improved**
+- Improvements to Metrics: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+  - 🚀 Optimized Darts Metrics (except `mase`), which run >20 times faster than before for univariate series, and >>20 times for multivariate series. This boosts direct metric computations as well as backtesting!
+  - 🔴 renamed metric parameter `reduction` to `series_reduction`
+  - 🔴 renamed metric parameter `inter_reduction` to `component_reduction`
+- Improvements to `TimeSeries`: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+  - performance boost for methods: `slice_intersect()`, `has_same_time_as()`
+  - new method `slice_intersect_values()`, which returns the sliced values of a series, where the time index has been intersected with another series.
+- 🔴 Moved utils functions to clearly separate Darts-specific from non-Darts-specific logic: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+  - moved function `generate_index()` from `darts.utils.timeseries_generation` to `darts.utils.utils`
+  - moved functions `retain_period_common_to_all()`, `series2seq()`, `seq2series()`, `get_single_series()` from `darts.utils.utils` to `darts.utils.ts_utils`.
 
 **Fixed**
+- fixed a bug in `quantile_loss`, where the loss was computed on all samples rather than only on the predicted quantiles. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
