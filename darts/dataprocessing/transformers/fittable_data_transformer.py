@@ -315,7 +315,7 @@ class FittableDataTransformer(BaseDataTransformer):
         ).transform(series, *args, component_mask=component_mask, **kwargs)
 
     def _get_params(
-        self, n_timeseries: int, calling_fit: bool = False
+        self, n_timeseries: int, calling_fit: bool = False, n_times: int = 1
     ) -> Generator[Mapping[str, Any], None, None]:
         """
         Overrides `_get_params` of `BaseDataTransformer`. Creates generator of dictionaries containing
@@ -331,22 +331,26 @@ class FittableDataTransformer(BaseDataTransformer):
         fitted_params = self._get_fitted_params(n_timeseries, calling_fit)
 
         def params_generator(
-            n_jobs, fixed_params, fitted_params, parallel_params, global_fit
+            n_jobs, fixed_params, fitted_params, parallel_params, global_fit, n_times
         ):
             fixed_params_copy = fixed_params.copy()
-            for i in range(n_jobs):
-                for key in parallel_params:
-                    fixed_params_copy[key] = fixed_params[key][i]
-                params = {}
-                if fixed_params_copy:
-                    params["fixed"] = fixed_params_copy
-                if fitted_params:
-                    params["fitted"] = (
-                        fitted_params[0] if global_fit else fitted_params[i]
-                    )
-                if not params:
-                    params = None
-                yield params
+
+            count = 0
+            while count < n_times:
+                for i in range(n_jobs):
+                    for key in parallel_params:
+                        fixed_params_copy[key] = fixed_params[key][i]
+                    params = {}
+                    if fixed_params_copy:
+                        params["fixed"] = fixed_params_copy
+                    if fitted_params:
+                        params["fitted"] = (
+                            fitted_params[0] if global_fit else fitted_params[i]
+                        )
+                    if not params:
+                        params = None
+                    yield params
+                count += 1
 
         n_jobs = n_timeseries if not (calling_fit and self._global_fit) else 1
 
@@ -356,6 +360,7 @@ class FittableDataTransformer(BaseDataTransformer):
             fitted_params,
             self._parallel_params,
             self._global_fit,
+            n_times,
         )
 
     def _get_fitted_params(self, n_timeseries: int, calling_fit: bool) -> Sequence[Any]:

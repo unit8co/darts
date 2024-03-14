@@ -246,11 +246,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
     def inverse_transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries], List[List[TimeSeries]]],
         *args,
         component_mask: Optional[np.array] = None,
         **kwargs,
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         """Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.
 
         In case a sequence is passed as input data, this function takes care of parallelising the
@@ -309,6 +309,9 @@ class InvertibleDataTransformer(BaseDataTransformer):
         if isinstance(series, TimeSeries):
             input_series = [series]
             data = [series]
+        elif self._is_instance_of_list_of_lists_of_series(series):
+            input_series = self._fill_and_flatten_list_of_lists_of_timeseries(series)
+            data = self._fill_and_flatten_list_of_lists_of_timeseries(series)
         else:
             input_series = series
             data = series
@@ -321,8 +324,15 @@ class InvertibleDataTransformer(BaseDataTransformer):
         else:
             kwargs["component_mask"] = component_mask
 
+        if self._is_instance_of_list_of_lists_of_series(series):
+            iterable = zip(
+                data, self._get_params(n_timeseries=len(series), n_times=len(data))
+            )
+        else:
+            iterable = zip(data, self._get_params(n_timeseries=len(data)))
+
         input_iterator = _build_tqdm_iterator(
-            zip(data, self._get_params(n_timeseries=len(data))),
+            iterable,
             verbose=self._verbose,
             desc=desc,
             total=len(data),
@@ -344,55 +354,45 @@ class InvertibleDataTransformer(BaseDataTransformer):
                 )
             transformed_data = unmasked
 
-        return (
-            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
-        )
+        if isinstance(series, TimeSeries):
+            return transformed_data[0]
+        elif self._is_instance_of_list_of_lists_of_series(series):
+            return self._zip_and_crop_list_of_timeseries(transformed_data, series)
+        else:
+            return transformed_data
 
-    def inverse_transform_list(
-        self, series_transformed: Union[List[TimeSeries], List[List[TimeSeries]]]
-    ) -> Union[List[TimeSeries], List[List[TimeSeries]]]:
-        """Applies inverse transform on the list (of lists) of series,
-        using the trained in advance transformer on the same set of series.
+    @staticmethod
+    def _is_instance_of_list_of_lists_of_series(series: Any) -> bool:
+        if not isinstance(series, List):
+            return False
 
-        Assuming that the scaler was trained on series [A, B, C], this function accepts
-        input in the following form:
+        for sublist in series:
+            if not isinstance(sublist, list):
+                return False
+            for item in sublist:
+                if not isinstance(item, TimeSeries):
+                    return False
+        return True
 
-        - [A1, B1, C1] - list of series,
-        - [[A1, A2, A3], [B1, B2], [C1, C2, C3]] - list of lists of series,
-
-        where AX - the timeseries transformed according to the parameters obtained with the training on series A.
-
-        Supports lists of varying lengths and missing elements within the list/s.
-
-        Can be used to inversely transform output from the historical forecast.
-
-        Parameters
-        ----------
-        series_transformed
-            The list (of lists) of transformed series.
-
-        Returns
-        -------
-        Union[List[TimeSeries], List[List[TimeSeries]]]
-            A list (of lists) of inversely transformed series.
-        """
-        if isinstance(series_transformed[0], TimeSeries):
-            series_transformed = [[s] for s in series_transformed]
-
+    @staticmethod
+    def _fill_and_flatten_list_of_lists_of_timeseries(series: List[List[TimeSeries]]):
         fill_value = TimeSeries.from_values(np.empty(1))
-        series_transformed_filled = list(
-            zip_longest(*series_transformed, fillvalue=fill_value)
-        )
+        series_filled = list(zip_longest(*series, fillvalue=fill_value))
+        series_flat = [item for sublist in series_filled for item in sublist]
+        return series_flat
 
-        series_inversely_transformed = [
-            self.inverse_transform(f) for f in series_transformed_filled
+    @staticmethod
+    def _zip_and_crop_list_of_timeseries(
+        data_inversely_transformed: List[TimeSeries], series: List[List[TimeSeries]]
+    ) -> List[List[TimeSeries]]:
+        length = len(data_inversely_transformed) // len(series)
+        data_inversely_transformed = [
+            data_inversely_transformed[i : i + length]
+            for i in range(0, len(data_inversely_transformed), length)
         ]
-        series_inversely_transformed = zip(*series_inversely_transformed)
-        series_inversely_transformed = [
+        data_inversely_transformed = zip(*data_inversely_transformed)
+        data_inversely_transformed = [
             list(preds_it[: len(preds_t)])
-            for preds_it, preds_t in zip(
-                series_inversely_transformed, series_transformed
-            )
+            for preds_it, preds_t in zip(data_inversely_transformed, series)
         ]
-
-        return series_inversely_transformed
+        return data_inversely_transformed
