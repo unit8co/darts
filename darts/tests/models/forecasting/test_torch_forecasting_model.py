@@ -1,3 +1,4 @@
+import itertools
 import os
 from typing import Any, Dict, Optional
 from unittest.mock import patch
@@ -6,13 +7,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.tests.conftest import tfm_kwargs
-from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -29,6 +30,9 @@ try:
     from darts.models import (
         BlockRNNModel,
         DLinearModel,
+        GlobalNaiveAggregate,
+        GlobalNaiveDrift,
+        GlobalNaiveSeasonal,
         NBEATSModel,
         NHiTSModel,
         NLinearModel,
@@ -62,6 +66,9 @@ try:
         (TFTModel, {"add_relative_index": 2, **kwargs}),
         (TiDEModel, kwargs),
         (TransformerModel, kwargs),
+        (GlobalNaiveSeasonal, kwargs),
+        (GlobalNaiveAggregate, kwargs),
+        (GlobalNaiveDrift, kwargs),
     ]
 
     TORCH_AVAILABLE = True
@@ -318,7 +325,7 @@ if TORCH_AVAILABLE:
             }
             encoders_past_other_transformer = {
                 "datetime_attribute": {"past": ["day"]},
-                "transformer": BoxCox(),
+                "transformer": BoxCox(lmbda=-0.7),
             }
             encoders_2_past = {
                 "datetime_attribute": {"past": ["hour", "day"]},
@@ -1382,9 +1389,9 @@ if TORCH_AVAILABLE:
             assert scores["worst"] > scores["suggested"]
 
         def test_encoders(self, tmpdir_fn):
-            series = linear_timeseries(length=10)
-            pc = linear_timeseries(length=12)
-            fc = linear_timeseries(length=13)
+            series = tg.linear_timeseries(length=10)
+            pc = tg.linear_timeseries(length=12)
+            fc = tg.linear_timeseries(length=13)
             # 1 == output_chunk_length, 3 > output_chunk_length
             ns = [1, 3]
 
@@ -1479,6 +1486,153 @@ if TORCH_AVAILABLE:
                 == self.multivariate_series.n_components
             )
 
+        @pytest.mark.parametrize(
+            "config",
+            itertools.product(
+                [
+                    (
+                        TFTModel,
+                        {
+                            "add_relative_index": True,
+                            "likelihood": None,
+                            "loss_fn": torch.nn.MSELoss(),
+                        },
+                    ),
+                    (TiDEModel, {}),
+                    (NLinearModel, {}),
+                    (DLinearModel, {}),
+                    (NBEATSModel, {}),
+                    (NHiTSModel, {}),
+                    (TransformerModel, {}),
+                    (TCNModel, {}),
+                    (BlockRNNModel, {}),
+                    (GlobalNaiveSeasonal, {}),
+                    (GlobalNaiveAggregate, {}),
+                    (GlobalNaiveDrift, {}),
+                ],
+                [3, 7, 10],
+            ),
+        )
+        def test_output_shift(self, config):
+            """Tests shifted output for shift smaller than, equal to, and larger than output_chunk_length.
+            RNNModel does not support shift output chunk.
+            """
+            np.random.seed(0)
+            (model_cls, add_params), shift = config
+            icl = 8
+            ocl = 7
+            series = tg.gaussian_timeseries(
+                length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+            )
+
+            model = self.helper_create_torch_model(
+                model_cls, icl, ocl, shift, **add_params
+            )
+            model.fit(series)
+
+            # no auto-regression with shifted output
+            with pytest.raises(ValueError) as err:
+                _ = model.predict(n=ocl + 1)
+            assert str(err.value).startswith("Cannot perform auto-regression")
+
+            # pred starts with a shift
+            for ocl_test in [ocl - 1, ocl]:
+                pred = model.predict(n=ocl_test)
+                assert (
+                    pred.start_time() == series.end_time() + (shift + 1) * series.freq
+                )
+                assert len(pred) == ocl_test
+                assert pred.freq == series.freq
+
+            # check that shifted output chunk results with encoders are the
+            # same as using identical covariates
+
+            # model trained on encoders
+            cov_support = []
+            covs = {}
+            if model.supports_past_covariates:
+                cov_support.append("past")
+                covs["past_covariates"] = tg.datetime_attribute_timeseries(
+                    series,
+                    attribute="dayofweek",
+                    add_length=0,
+                )
+            if model.supports_future_covariates:
+                cov_support.append("future")
+                covs["future_covariates"] = tg.datetime_attribute_timeseries(
+                    series,
+                    attribute="dayofweek",
+                    add_length=ocl + shift,
+                )
+
+            if not cov_support:
+                return
+
+            add_encoders = {
+                "datetime_attribute": {cov: ["dayofweek"] for cov in cov_support}
+            }
+            model_enc_shift = self.helper_create_torch_model(
+                model_cls, icl, ocl, shift, add_encoders=add_encoders, **add_params
+            )
+            model_enc_shift.fit(series)
+
+            # model trained with identical covariates
+            model_fc_shift = self.helper_create_torch_model(
+                model_cls, icl, ocl, shift, **add_params
+            )
+
+            model_fc_shift.fit(series, **covs)
+
+            pred_enc = model_enc_shift.predict(n=ocl)
+            pred_fc = model_fc_shift.predict(n=ocl)
+            assert pred_enc == pred_fc
+
+            # check that historical forecasts works properly
+            hist_fc_start = -(ocl + shift)
+            pred_last_hist_fc = model_fc_shift.predict(
+                n=ocl, series=series[:hist_fc_start]
+            )
+            # non-optimized hist fc
+            hist_fc = model_fc_shift.historical_forecasts(
+                series=series,
+                start=hist_fc_start,
+                start_format="position",
+                retrain=False,
+                forecast_horizon=ocl,
+                last_points_only=False,
+                enable_optimization=False,
+                **covs,
+            )
+            assert len(hist_fc) == 1
+            assert hist_fc[0] == pred_last_hist_fc
+            # optimized hist fc, due to batch predictions, slight deviations in values
+            hist_fc_opt = model_fc_shift.historical_forecasts(
+                series=series,
+                start=hist_fc_start,
+                start_format="position",
+                retrain=False,
+                forecast_horizon=ocl,
+                last_points_only=False,
+                enable_optimization=True,
+                **covs,
+            )
+            assert len(hist_fc_opt) == 1
+            assert hist_fc_opt[0].time_index.equals(pred_last_hist_fc.time_index)
+            np.testing.assert_array_almost_equal(
+                hist_fc_opt[0].values(copy=False), pred_last_hist_fc.values(copy=False)
+            )
+
+            # covs too short
+            for cov_name in cov_support:
+                with pytest.raises(ValueError) as err:
+                    add_covs = {
+                        cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
+                    }
+                    _ = model_fc_shift.predict(n=ocl, **add_covs)
+                assert f"provided {cov_name} covariates at dataset index" in str(
+                    err.value
+                )
+
         def helper_equality_encoders(
             self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
         ):
@@ -1528,10 +1682,12 @@ if TORCH_AVAILABLE:
             add_encoders: Optional[Dict] = None,
             save_checkpoints: bool = False,
             likelihood: Optional[Likelihood] = None,
+            output_chunk_length: int = 1,
+            **kwargs,
         ):
             return DLinearModel(
                 input_chunk_length=4,
-                output_chunk_length=1,
+                output_chunk_length=output_chunk_length,
                 model_name=model_name,
                 add_encoders=add_encoders,
                 work_dir=work_dir,
@@ -1541,4 +1697,17 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 likelihood=likelihood,
                 **tfm_kwargs,
+                **kwargs,
             )
+
+        def helper_create_torch_model(self, model_cls, icl, ocl, shift, **kwargs):
+            params = {
+                "input_chunk_length": icl,
+                "output_chunk_length": ocl,
+                "output_chunk_shift": shift,
+                "n_epochs": 1,
+                "random_state": 42,
+            }
+            params.update(tfm_kwargs)
+            params.update(kwargs)
+            return model_cls(**params)

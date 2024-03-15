@@ -38,6 +38,7 @@ if TORCH_AVAILABLE:
             input_size=1,
             input_chunk_length=1,
             output_chunk_length=1,
+            output_chunk_shift=0,
             train_sample_shape=((1, 1),),
             output_size=1,
             nr_params=1,
@@ -63,7 +64,7 @@ if TORCH_AVAILABLE:
                 work_dir=tmpdir_module,
                 save_checkpoints=True,
                 force_reset=True,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
@@ -119,7 +120,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     activation="invalid",
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model1.fit(self.series, epochs=1)
 
@@ -128,7 +129,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 activation="gelu",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series, epochs=1)
             assert isinstance(
@@ -143,7 +144,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 activation="SwiGLU",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model3.fit(self.series, epochs=1)
             assert isinstance(
@@ -168,7 +169,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 norm_type="RMSNorm",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             y1 = model1.fit(self.series, epochs=1)
 
@@ -176,7 +177,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 norm_type=nn.LayerNorm,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             y2 = model2.fit(self.series, epochs=1)
 
@@ -185,7 +186,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 activation="gelu",
                 norm_type="RMSNorm",
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             y3 = model3.fit(self.series, epochs=1)
 
@@ -199,6 +200,6 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     norm_type="invalid",
-                    **tfm_kwargs
+                    **tfm_kwargs,
                 )
                 model4.fit(self.series, epochs=1)

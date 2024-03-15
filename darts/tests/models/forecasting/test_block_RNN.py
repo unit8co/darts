@@ -51,6 +51,7 @@ if TORCH_AVAILABLE:
             input_size=1,
             input_chunk_length=1,
             output_chunk_length=1,
+            output_chunk_shift=0,
             hidden_dim=25,
             target_size=1,
             nr_params=1,
@@ -83,7 +84,7 @@ if TORCH_AVAILABLE:
                 model="RNN",
                 n_epochs=1,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model1.fit(self.series)
             preds1 = model1.predict(n=3)
@@ -95,7 +96,7 @@ if TORCH_AVAILABLE:
                 model=ModuleValid1,
                 n_epochs=1,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series)
             preds2 = model2.predict(n=3)
@@ -107,7 +108,7 @@ if TORCH_AVAILABLE:
                 model=ModuleValid2,
                 n_epochs=1,
                 random_state=42,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model3.fit(self.series)
             preds3 = model2.predict(n=3)
@@ -131,7 +132,7 @@ if TORCH_AVAILABLE:
                 work_dir=tmpdir_module,
                 save_checkpoints=True,
                 force_reset=True,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
@@ -152,7 +153,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 model="RNN",
                 n_epochs=2,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             model3.fit(self.series)
             pred3 = model3.predict(n=6)

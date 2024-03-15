@@ -57,7 +57,7 @@ class RegressionEnsembleModel(EnsembleModel):
             `train_forecasting_models=False`.
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
-            Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
+            Default: ``darts.models.LinearRegressionModel(fit_intercept=False)``
 
             .. note::
                 if `regression_model` is probabilistic, the `RegressionEnsembleModel` will also be probabilistic.
@@ -222,7 +222,9 @@ class RegressionEnsembleModel(EnsembleModel):
                 ),
                 forecast_horizon=model.output_chunk_length,
                 stride=model.output_chunk_length,
-                num_samples=num_samples if model._is_probabilistic else 1,
+                num_samples=(
+                    num_samples if model.supports_probabilistic_prediction else 1
+                ),
                 start=-start_hist_forecasts,
                 start_format="position",
                 retrain=False,
@@ -319,7 +321,7 @@ class RegressionEnsembleModel(EnsembleModel):
             # when it's not clearly defined, extreme_lags returns
             # min_train_serie_length for the LocalForecastingModels
             for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _ = model.extreme_lags
+                min_target_lag, _, _, _, _, _, _ = model.extreme_lags
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 
@@ -459,6 +461,7 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
         Optional[int],
         Optional[int],
+        int,
     ]:
         extreme_lags_ = super().extreme_lags
         # shift min_target_lag in the past to account for the regression model training set
@@ -485,9 +488,9 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model._is_probabilistic
+        return self.regression_model.supports_probabilistic_prediction

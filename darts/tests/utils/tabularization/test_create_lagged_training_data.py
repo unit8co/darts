@@ -1,3 +1,4 @@
+import itertools
 import warnings
 from itertools import product
 from typing import Optional, Sequence
@@ -70,9 +71,10 @@ class TestCreateLaggedTrainingData:
         lags_future: Optional[Sequence[int]],
         output_chunk_length: Optional[int],
         max_samples_per_ts: Optional[int],
+        output_chunk_shift: int,
     ):
         """
-        Helper function that returns the times shared by all of the specified series that can be used
+        Helper function that returns the times shared by all specified series that can be used
         to create features and labels. This is performed by using the helper functions
         `get_feature_times_target`, `get_feature_times_past`, and `get_feature_times_future` (all
         defined below) to extract the feature times from the target series, past covariates, and future
@@ -85,7 +87,7 @@ class TestCreateLaggedTrainingData:
         """
         # Get feature times for `target_series`:
         times = TestCreateLaggedTrainingData.get_feature_times_target(
-            target, lags, output_chunk_length
+            target, lags, output_chunk_length, output_chunk_shift
         )
         # Intersect `times` with `past_covariates` feature times if past covariates to be added to `X`:
         if lags_past is not None:
@@ -109,16 +111,17 @@ class TestCreateLaggedTrainingData:
         target_series: TimeSeries,
         lags: Optional[Sequence[int]],
         output_chunk_length: int,
+        output_chunk_shift: int,
     ) -> pd.Index:
         """
-        Helper function called by `get_feature_times` that extracts all of the times within a
+        Helper function called by `get_feature_times` that extracts all times within a
         `target_series` that can be used to create a feature and label. More specifically,
         we can create features and labels for times within `target_series` that have *both*:
             1. At least `max_lag = -min(lags)` values preceeding them, since these preceeding
             values are required to construct a feature vector for that time. Since the first `max_lag`
             times do not fulfill this condition, they are exluded *if* values from `target_series` are
             to be added to `X`.
-            2. At least `(output_chunk_length - 1)` values after them, because the all of the times from
+            2. At least `(output_chunk_length - 1)` values after them, because the all times from
             time `t` to time `t + output_chunk_length - 1` will be used as labels. Since the last
             `(output_chunk_length - 1)` times do not fulfil this condition, they are excluded.
         """
@@ -128,6 +131,8 @@ class TestCreateLaggedTrainingData:
             times = times[max_lag:]
         if output_chunk_length > 1:
             times = times[: -output_chunk_length + 1]
+        if output_chunk_shift:
+            times = times[:-output_chunk_shift]
         return times
 
     @staticmethod
@@ -136,7 +141,7 @@ class TestCreateLaggedTrainingData:
         past_covariates_lags: Sequence[int],
     ) -> pd.Index:
         """
-        Helper function called by `get_feature_times` that extracts all of the times within
+        Helper function called by `get_feature_times` that extracts all times within
         `past_covariates` that can be used to create features. More specifically, we can create
         features for times within `past_covariates` that have at least `max_lag = -min(past_covariates_lags)`
         values preceeding them, since these preceeding values are required to construct a feature vector for
@@ -169,7 +174,7 @@ class TestCreateLaggedTrainingData:
         future_covariates_lags: Sequence[int],
     ) -> pd.Index:
         """
-        Helper function called by `get_feature_times` that extracts all of the times within
+        Helper function called by `get_feature_times` that extracts all times within
         `future_covariates` that can be used to create features.
 
         Unlike the lag values for `target_series` and `past_covariates`, the values in
@@ -253,7 +258,7 @@ class TestCreateLaggedTrainingData:
         """
         Helper function that creates the lagged features 'block' of a specific
         `series` (i.e. either `target_series`, `past_covariates`, or `future_covariates`);
-        the feature matrix `X` is formed by concatenating the blocks of all of the specified
+        the feature matrix `X` is formed by concatenating the blocks of all specified
         series along the components axis. If `lags` is `None`, then `None` will be returned in
         lieu of an array. Please refer to the `create_lagged_features` docstring for further
         details about the structure of the `X` feature matrix.
@@ -261,7 +266,7 @@ class TestCreateLaggedTrainingData:
         The returned `X_block` is constructed by looping over each time in `feature_times`,
         finding the index position of that time in the series, and then for each lag value in
         `lags`, offset this index position by a particular lag value; this offset index is then
-        used to extract all of the components at a single lagged time.
+        used to extract all components at a single lagged time.
 
         Unlike the implementation found in `darts.utils.data.tabularization`, this function doesn't
         use any 'vectorisation' tricks, which makes it slower to run, but more easily interpretable.
@@ -272,7 +277,7 @@ class TestCreateLaggedTrainingData:
         before searching for the index of each time in the series. Even though the integer indices of the
         'extended times' won't be contained within the original `series`, offsetting these found indices
         by the requested lag value should 'bring us back' to a time within the original, unextended `series`.
-        However, if we've prepended times to `series.time_index`, we have to note that all of the indices will
+        However, if we've prepended times to `series.time_index`, we have to note that all indices will
         be 'bumped up' by the number of values we've prepended, even after offsetting by a lag value. For example,
         if we extended `series.time_index` by prepending two values to the start, the integer index of the first
         actual value in `series` will occur at an index of `2` instead of `0`. To 'undo' this, we must subtract off
@@ -346,6 +351,7 @@ class TestCreateLaggedTrainingData:
         feature_times: pd.Index,
         output_chunk_length: int,
         multi_models: bool,
+        output_chunk_shift: int,
     ) -> np.ndarray:
         """
         Helper function that constructs the labels array `y` from the target series.
@@ -372,13 +378,13 @@ class TestCreateLaggedTrainingData:
                 f"Unexpected label time at {time}, but `series` ends at {target.end_time()}.",
             )
             time_idx = np.searchsorted(target.time_index, time)
-            # If `multi_models = True`, want to predict all of the values from time `t` to
+            # If `multi_models = True`, want to predict all values from time `t` to
             # time `t + output_chunk_lenth - 1`; if `multi_models = False`, only want to
             # predict time `t + output_chunk_length - 1`:
             timesteps_ahead = (
-                range(output_chunk_length)
+                range(output_chunk_shift, output_chunk_length + output_chunk_shift)
                 if multi_models
-                else (output_chunk_length - 1,)
+                else (output_chunk_length + output_chunk_shift - 1,)
             )
             y_row = []
             for i in timesteps_ahead:
@@ -399,37 +405,86 @@ class TestCreateLaggedTrainingData:
 
     # Input parameter combinations used to generate test cases:
     output_chunk_length_combos = (1, 3)
+    output_chunk_shift_combos = (0, 1)
     multi_models_combos = (False, True)
     max_samples_per_ts_combos = (1, 2, None)
     target_lag_combos = past_lag_combos = (None, [-1, -3], [-3, -1])
     future_lag_combos = (*target_lag_combos, [0], [2, 1], [-1, 1], [0, 2])
 
-    def test_lagged_training_data_equal_freq_range_index(self):
+    # minimum series length
+    min_n_ts = 8 + max(output_chunk_shift_combos)
+
+    @pytest.mark.parametrize(
+        "series_type",
+        ["datetime", "integer"],
+    )
+    def test_lagged_training_data_equal_freq(self, series_type: str):
         """
         Tests that `create_lagged_training_data` produces `X`, `y`, and `times`
         outputs that are consistent with those generated by using the helper
         functions `get_feature_times`, `construct_X_block`, and `construct_labels`.
-        Consistency is checked over all of the combinations of parameter values
+        Consistency is checked over all combinations of parameter values
         specified by `self.target_lag_combos`, `self.covariates_lag_combos`,
         `self.output_chunk_length_combos`, `self.multi_models_combos`, and
         `self.max_samples_per_ts_combos`.
 
-        This particular test uses timeseries with range time indices of equal
-        frequencies. Since all of the timeseries are of the same frequency,
-        the implementation of the 'moving window' method is being tested here.
+        This particular test uses timeseries with equal frequencies. Since all timeseries
+        are of the same frequency, the implementation of the 'moving window' method is
+        being tested here.
         """
         # Define datetime index timeseries - each has different number of components,
         # different start times, different lengths, and different values, but
         # they're all of the same frequency:
-        target = self.create_multivariate_linear_timeseries(
-            n_components=2, start_value=0, end_value=10, start=2, length=8, freq=2
-        )
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3, start_value=10, end_value=20, start=4, length=9, freq=2
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4, start_value=20, end_value=30, start=6, length=10, freq=2
-        )
+        if series_type == "integer":
+            target = self.create_multivariate_linear_timeseries(
+                n_components=2,
+                start_value=0,
+                end_value=10,
+                start=2,
+                length=self.min_n_ts,
+                freq=2,
+            )
+            past = self.create_multivariate_linear_timeseries(
+                n_components=3,
+                start_value=10,
+                end_value=20,
+                start=4,
+                length=self.min_n_ts + 1,
+                freq=2,
+            )
+            future = self.create_multivariate_linear_timeseries(
+                n_components=4,
+                start_value=20,
+                end_value=30,
+                start=6,
+                length=self.min_n_ts + 2,
+                freq=2,
+            )
+        else:
+            target = self.create_multivariate_linear_timeseries(
+                n_components=2,
+                start_value=0,
+                end_value=10,
+                start=pd.Timestamp("1/2/2000"),
+                length=self.min_n_ts,
+                freq="2d",
+            )
+            past = self.create_multivariate_linear_timeseries(
+                n_components=3,
+                start_value=10,
+                end_value=20,
+                start=pd.Timestamp("1/4/2000"),
+                length=self.min_n_ts + 1,
+                freq="2d",
+            )
+            future = self.create_multivariate_linear_timeseries(
+                n_components=4,
+                start_value=20,
+                end_value=30,
+                start=pd.Timestamp("1/6/2000"),
+                length=self.min_n_ts + 1,
+                freq="2d",
+            )
         # Conduct test for each input parameter combo:
         for (
             lags,
@@ -438,6 +493,7 @@ class TestCreateLaggedTrainingData:
             output_chunk_length,
             multi_models,
             max_samples_per_ts,
+            output_chunk_shift,
         ) in product(
             self.target_lag_combos,
             self.past_lag_combos,
@@ -445,6 +501,7 @@ class TestCreateLaggedTrainingData:
             self.output_chunk_length_combos,
             self.multi_models_combos,
             self.max_samples_per_ts_combos,
+            self.output_chunk_shift_combos,
         ):
             all_lags = (lags, lags_past, lags_future)
             # Skip test where all lags are `None` - can't assemble features and
@@ -464,6 +521,7 @@ class TestCreateLaggedTrainingData:
                 multi_models=multi_models,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
+                output_chunk_shift=output_chunk_shift,
             )
             feats_times = self.get_feature_times(
                 target,
@@ -474,6 +532,7 @@ class TestCreateLaggedTrainingData:
                 lags_future,
                 output_chunk_length,
                 max_samples_per_ts,
+                output_chunk_shift,
             )
             # Construct `X` by constructing each block, then concatenate these
             # blocks together along component axis:
@@ -484,7 +543,11 @@ class TestCreateLaggedTrainingData:
             to_concat = [X for X in all_X if X is not None]
             expected_X = np.concatenate(to_concat, axis=1)
             expected_y = self.create_y(
-                target, feats_times, output_chunk_length, multi_models
+                target,
+                feats_times,
+                output_chunk_length,
+                multi_models,
+                output_chunk_shift,
             )
             # Number of observations should match number of feature times:
             assert X.shape[0] == len(feats_times)
@@ -496,139 +559,62 @@ class TestCreateLaggedTrainingData:
             assert np.allclose(expected_y, y[:, :, 0])
             assert feats_times.equals(times[0])
 
-    def test_lagged_training_data_equal_freq_datetime_index(self):
+    @pytest.mark.parametrize(
+        "series_type",
+        ["datetime", "integer"],
+    )
+    def test_lagged_training_data_unequal_freq(self, series_type):
         """
         Tests that `create_lagged_training_data` produces `X`, `y`, and `times`
         outputs that are consistent with those generated by using the helper
         functions `get_feature_times`, `construct_X_block`, and `construct_labels`.
-        Consistency is checked over all of the combinations of parameter values
+        Consistency is checked over all combinations of parameter values
         specified by `self.target_lag_combos`, `self.covariates_lag_combos`,
         `self.output_chunk_length_combos`, `self.multi_models_combos`, and
         `self.max_samples_per_ts_combos`.
 
-        This particular test uses timeseries with datetime time indices of equal
-        frequencies. Since all of the timeseries are of the same frequency,
-        the implementation of the 'moving window' method is being tested here.
-        """
-        # Define datetime index timeseries - each has different number of components,
-        # different start times, different lengths, and different values, but
-        # they're all of the same frequency:
-        target = self.create_multivariate_linear_timeseries(
-            n_components=2,
-            start_value=0,
-            end_value=10,
-            start=pd.Timestamp("1/2/2000"),
-            length=8,
-            freq="2d",
-        )
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3,
-            start_value=10,
-            end_value=20,
-            start=pd.Timestamp("1/4/2000"),
-            length=9,
-            freq="2d",
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4,
-            start_value=20,
-            end_value=30,
-            start=pd.Timestamp("1/6/2000"),
-            length=10,
-            freq="2d",
-        )
-        # Conduct test for each input parameter combo:
-        for (
-            lags,
-            lags_past,
-            lags_future,
-            output_chunk_length,
-            multi_models,
-            max_samples_per_ts,
-        ) in product(
-            self.target_lag_combos,
-            self.past_lag_combos,
-            self.future_lag_combos,
-            self.output_chunk_length_combos,
-            self.multi_models_combos,
-            self.max_samples_per_ts_combos,
-        ):
-            all_lags = (lags, lags_past, lags_future)
-            # Skip test where all lags are `None` - can't assemble features and
-            # labels for this single combo of input params:
-            lags_is_none = [x is None for x in all_lags]
-            if all(lags_is_none):
-                continue
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=True,
-            )
-            feats_times = self.get_feature_times(
-                target,
-                past,
-                future,
-                lags,
-                lags_past,
-                lags_future,
-                output_chunk_length,
-                max_samples_per_ts,
-            )
-            # Construct `X` by constructing each block, then concatenate these
-            # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags)
-            X_past = self.construct_X_block(past, feats_times, lags_past)
-            X_future = self.construct_X_block(future, feats_times, lags_future)
-            all_X = (X_target, X_past, X_future)
-            to_concat = [x for x in all_X if x is not None]
-            expected_X = np.concatenate(to_concat, axis=1)
-            expected_y = self.create_y(
-                target, feats_times, output_chunk_length, multi_models
-            )
-            # Number of observations should match number of feature times:
-            assert X.shape[0] == len(feats_times)
-            assert y.shape[0] == len(feats_times)
-            assert X.shape[0] == len(times[0])
-            assert y.shape[0] == len(times[0])
-            # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
-            assert feats_times.equals(times[0])
-
-    def test_lagged_training_data_unequal_freq_range_index(self):
-        """
-        Tests that `create_lagged_training_data` produces `X`, `y`, and `times`
-        outputs that are consistent with those generated by using the helper
-        functions `get_feature_times`, `construct_X_block`, and `construct_labels`.
-        Consistency is checked over all of the combinations of parameter values
-        specified by `self.target_lag_combos`, `self.covariates_lag_combos`,
-        `self.output_chunk_length_combos`, `self.multi_models_combos`, and
-        `self.max_samples_per_ts_combos`.
-
-        This particular test uses timeseries with range time indices of unequal
-        frequencies. Since all of the timeseries are *not* of the same frequency,
-        the implementation of the 'time intersection' method is being tested here.
+        This particular test uses timeseries of unequal frequencies. Since all timeseries
+        are *not* of the same frequency, the implementation of the 'time intersection' method
+        is being tested here.
         """
         # Define range index timeseries - each has different number of components,
         # different start times, different lengths, different values, and different
         # frequencies:
-        target = self.create_multivariate_linear_timeseries(
-            n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
-        )
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
-        )
+        if series_type == "integer":
+            target = self.create_multivariate_linear_timeseries(
+                n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
+            )
+            past = self.create_multivariate_linear_timeseries(
+                n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
+            )
+            future = self.create_multivariate_linear_timeseries(
+                n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
+            )
+        else:
+            target = self.create_multivariate_linear_timeseries(
+                n_components=2,
+                start_value=0,
+                end_value=10,
+                start=pd.Timestamp("1/1/2000"),
+                length=20,
+                freq="d",
+            )
+            past = self.create_multivariate_linear_timeseries(
+                n_components=3,
+                start_value=10,
+                end_value=20,
+                start=pd.Timestamp("1/2/2000"),
+                length=10,
+                freq="2d",
+            )
+            future = self.create_multivariate_linear_timeseries(
+                n_components=4,
+                start_value=20,
+                end_value=30,
+                start=pd.Timestamp("1/3/2000"),
+                length=7,
+                freq="3d",
+            )
         # Conduct test for each input parameter combo:
         for (
             lags,
@@ -637,6 +623,7 @@ class TestCreateLaggedTrainingData:
             output_chunk_length,
             multi_models,
             max_samples_per_ts,
+            output_chunk_shift,
         ) in product(
             self.target_lag_combos,
             self.past_lag_combos,
@@ -644,6 +631,7 @@ class TestCreateLaggedTrainingData:
             self.output_chunk_length_combos,
             self.multi_models_combos,
             self.max_samples_per_ts_combos,
+            self.output_chunk_shift_combos,
         ):
             all_lags = (lags, lags_past, lags_future)
             # Skip test where all lags are `None` - can't assemble features and
@@ -663,6 +651,7 @@ class TestCreateLaggedTrainingData:
                 multi_models=multi_models,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=False,
+                output_chunk_shift=output_chunk_shift,
             )
             feats_times = self.get_feature_times(
                 target,
@@ -673,6 +662,7 @@ class TestCreateLaggedTrainingData:
                 lags_future,
                 output_chunk_length,
                 max_samples_per_ts,
+                output_chunk_shift,
             )
             # Construct `X` by constructing each block, then concatenate these
             # blocks together along component axis:
@@ -683,7 +673,11 @@ class TestCreateLaggedTrainingData:
             to_concat = [x for x in all_X if x is not None]
             expected_X = np.concatenate(to_concat, axis=1)
             expected_y = self.create_y(
-                target, feats_times, output_chunk_length, multi_models
+                target,
+                feats_times,
+                output_chunk_length,
+                multi_models,
+                output_chunk_shift,
             )
             # Number of observations should match number of feature times:
             assert X.shape[0] == len(feats_times)
@@ -695,138 +689,59 @@ class TestCreateLaggedTrainingData:
             assert np.allclose(expected_y, y[:, :, 0])
             assert feats_times.equals(times[0])
 
-    def test_lagged_training_data_unequal_freq_datetime_index(self):
-        """
-        Tests that `create_lagged_training_data` produces `X`, `y`, and `times`
-        outputs that are consistent with those generated by using the helper
-        functions `get_feature_times`, `construct_X_block`, and `construct_labels`.
-        Consistency is checked over all of the combinations of parameter values
-        specified by `self.target_lag_combos`, `self.covariates_lag_combos`,
-        `self.output_chunk_length_combos`, `self.multi_models_combos`, and
-        `self.max_samples_per_ts_combos`.
-
-        This particular test uses timeseries with datetime time indices of unequal
-        frequencies. Since all of the timeseries are *not* of the same frequency,
-        the implementation of the 'time intersection' method is being tested here.
-        """
-        # Define datetime index timeseries - each has different number of components,
-        # different start times, different lengths, different values, and different
-        # frequencies:
-        target = self.create_multivariate_linear_timeseries(
-            n_components=2,
-            start_value=0,
-            end_value=10,
-            start=pd.Timestamp("1/1/2000"),
-            length=20,
-            freq="d",
-        )
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3,
-            start_value=10,
-            end_value=20,
-            start=pd.Timestamp("1/2/2000"),
-            length=10,
-            freq="2d",
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4,
-            start_value=20,
-            end_value=30,
-            start=pd.Timestamp("1/3/2000"),
-            length=7,
-            freq="3d",
-        )
-        # Conduct test for each input parameter combo:
-        for (
-            lags,
-            lags_past,
-            lags_future,
-            output_chunk_length,
-            multi_models,
-            max_samples_per_ts,
-        ) in product(
-            self.target_lag_combos,
-            self.past_lag_combos,
-            self.future_lag_combos,
-            self.output_chunk_length_combos,
-            self.multi_models_combos,
-            self.max_samples_per_ts_combos,
-        ):
-            all_lags = (lags, lags_past, lags_future)
-            # Skip test where all lags are `None` - can't assemble features and
-            # labels for this single combo of input params:
-            lags_is_none = [x is None for x in all_lags]
-            if all(lags_is_none):
-                continue
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=False,
-            )
-            feats_times = self.get_feature_times(
-                target,
-                past,
-                future,
-                lags,
-                lags_past,
-                lags_future,
-                output_chunk_length,
-                max_samples_per_ts,
-            )
-            # Construct `X` by constructing each block, then concatenate these
-            # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags)
-            X_past = self.construct_X_block(past, feats_times, lags_past)
-            X_future = self.construct_X_block(future, feats_times, lags_future)
-            all_X = (X_target, X_past, X_future)
-            to_concat = [x for x in all_X if x is not None]
-            expected_X = np.concatenate(to_concat, axis=1)
-            expected_y = self.create_y(
-                target, feats_times, output_chunk_length, multi_models
-            )
-            # Number of observations should match number of feature times:
-            assert X.shape[0] == len(feats_times)
-            assert y.shape[0] == len(feats_times)
-            assert X.shape[0] == len(times[0])
-            assert y.shape[0] == len(times[0])
-            # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
-            assert feats_times.equals(times[0])
-
-    def test_lagged_training_data_method_consistency_range_index(self):
+    @pytest.mark.parametrize(
+        "series_type",
+        ["datetime", "integer"],
+    )
+    def test_lagged_training_data_method_consistency(self, series_type):
         """
         Tests that `create_lagged_training_data` produces the same result
         when `use_moving_windows = False` and when `use_moving_windows = True`
-        for all of the parameter combinations used in the 'generated' test cases.
+        for all parameter combinations used in the 'generated' test cases.
 
         Obviously, if both the 'Moving Window Method' and the 'Time Intersection'
         are both wrong in the same way, this test won't reveal any bugs. With this
         being said, if this test fails, something is definitely wrong in either
         one or both of the implemented methods.
-
-        This particular test uses range index timeseries.
         """
         # Define datetime index timeseries - each has different number of components,
         # different start times, different lengths, different values, and of
         # different frequencies:
-        target = self.create_multivariate_linear_timeseries(
-            n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
-        )
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
-        )
+        if series_type == "integer":
+            target = self.create_multivariate_linear_timeseries(
+                n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
+            )
+            past = self.create_multivariate_linear_timeseries(
+                n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
+            )
+            future = self.create_multivariate_linear_timeseries(
+                n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
+            )
+        else:
+            target = self.create_multivariate_linear_timeseries(
+                n_components=2,
+                start_value=0,
+                end_value=10,
+                start=pd.Timestamp("1/2/2000"),
+                end=pd.Timestamp("1/18/2000"),
+                freq="2d",
+            )
+            past = self.create_multivariate_linear_timeseries(
+                n_components=3,
+                start_value=10,
+                end_value=20,
+                start=pd.Timestamp("1/4/2000"),
+                end=pd.Timestamp("1/20/2000"),
+                freq="2d",
+            )
+            future = self.create_multivariate_linear_timeseries(
+                n_components=4,
+                start_value=20,
+                end_value=30,
+                start=pd.Timestamp("1/6/2000"),
+                end=pd.Timestamp("1/22/2000"),
+                freq="2d",
+            )
         # Conduct test for each input parameter combo:
         for (
             lags,
@@ -835,6 +750,7 @@ class TestCreateLaggedTrainingData:
             output_chunk_length,
             multi_models,
             max_samples_per_ts,
+            output_chunk_shift,
         ) in product(
             self.target_lag_combos,
             self.past_lag_combos,
@@ -842,6 +758,7 @@ class TestCreateLaggedTrainingData:
             self.output_chunk_length_combos,
             self.multi_models_combos,
             self.max_samples_per_ts_combos,
+            self.output_chunk_shift_combos,
         ):
             all_lags = (lags, lags_past, lags_future)
             # Skip test where all lags are `None` - can't assemble features
@@ -862,6 +779,7 @@ class TestCreateLaggedTrainingData:
                 max_samples_per_ts=max_samples_per_ts,
                 multi_models=multi_models,
                 use_moving_windows=True,
+                output_chunk_shift=output_chunk_shift,
             )
             # Using time intersection method:
             X_ti, y_ti, times_ti, _ = create_lagged_training_data(
@@ -876,100 +794,7 @@ class TestCreateLaggedTrainingData:
                 max_samples_per_ts=max_samples_per_ts,
                 multi_models=multi_models,
                 use_moving_windows=False,
-            )
-            assert np.allclose(X_mw, X_ti)
-            assert np.allclose(y_mw, y_ti)
-            assert times_mw[0].equals(times_ti[0])
-
-    def test_lagged_training_data_method_consistency_datetime_index(self):
-        """
-        Tests that `create_lagged_training_data` produces the same result
-        when `use_moving_windows = False` and when `use_moving_windows = True`
-        for all of the parameter combinations used in the 'generated' test cases.
-
-        Obviously, if both the 'Moving Window Method' and the 'Time Intersection'
-        are both wrong in the same way, this test won't reveal any bugs. With this
-        being said, if this test fails, something is definitely wrong in either
-        one or both of the implemented methods.
-
-        This particular test uses datetime index timeseries.
-        """
-        # Define datetime index timeseries - each has different number of components,
-        # different start times, different lengths, different values, and of
-        # different frequencies:
-        target = self.create_multivariate_linear_timeseries(
-            n_components=2,
-            start_value=0,
-            end_value=10,
-            start=pd.Timestamp("1/2/2000"),
-            end=pd.Timestamp("1/16/2000"),
-            freq="2d",
-        )
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3,
-            start_value=10,
-            end_value=20,
-            start=pd.Timestamp("1/4/2000"),
-            end=pd.Timestamp("1/18/2000"),
-            freq="2d",
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4,
-            start_value=20,
-            end_value=30,
-            start=pd.Timestamp("1/6/2000"),
-            end=pd.Timestamp("1/20/2000"),
-            freq="2d",
-        )
-        # Conduct test for each input parameter combo:
-        for (
-            lags,
-            lags_past,
-            lags_future,
-            output_chunk_length,
-            multi_models,
-            max_samples_per_ts,
-        ) in product(
-            self.target_lag_combos,
-            self.past_lag_combos,
-            self.future_lag_combos,
-            self.output_chunk_length_combos,
-            self.multi_models_combos,
-            self.max_samples_per_ts_combos,
-        ):
-            all_lags = (lags, lags_past, lags_future)
-            # Skip test where all lags are `None` - can't assemble features
-            # for this single combo of input params:
-            lags_is_none = [x is None for x in all_lags]
-            if all(lags_is_none):
-                continue
-            # Using moving window method:
-            X_mw, y_mw, times_mw, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                max_samples_per_ts=max_samples_per_ts,
-                multi_models=multi_models,
-                use_moving_windows=True,
-            )
-            # Using time intersection method:
-            X_ti, y_ti, times_ti, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                max_samples_per_ts=max_samples_per_ts,
-                multi_models=multi_models,
-                use_moving_windows=False,
+                output_chunk_shift=output_chunk_shift,
             )
             assert np.allclose(X_mw, X_ti)
             assert np.allclose(y_mw, y_ti)
@@ -979,125 +804,136 @@ class TestCreateLaggedTrainingData:
     #   Specified Cases Tests
     #
 
-    def test_lagged_training_data_single_lag_single_component_same_series_range_idx(
-        self,
-    ):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3],
+            [False, True],
+            ["datetime", "integer"],
+        ),
+    )
+    def test_lagged_training_data_single_lag_single_component_same_series(self, config):
         """
         Tests that `create_lagged_training_data` correctly produces `X`, `y` and `times`
         when all the `series` inputs are identical, all the `lags` inputs consist
         of a single value, and `output_chunk_length` is `1`. In this situation, the
         expected `X` values can be found by concatenating three different slices of the
         same time series, and the expected  `y` can be formed by taking a single slice
-        from the `target`. This particular test uses a time series with a range index.
+        from the `target`.
         """
-        series = linear_timeseries(start=0, length=15)
+        output_chunk_shift, use_moving_windows, series_type = config
+        if series_type == "integer":
+            series = linear_timeseries(start=0, length=15)
+        else:
+            series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=15)
+
         lags = [-1]
         output_chunk_length = 1
         past_lags = [-3]
         future_lags = [2]
         # Can't create features for first 3 times (because `past_lags`) and last
         # two times (because `future_lags`):
-        expected_times = series.time_index[3:-2]
-        expected_y = series.all_values(copy=False)[3:-2, :, 0]
+        # also up until output_chunk_shift>=2, the future_lags are the reason for pushing back the end time
+        # of expected X; after that the output shift pushes back additionally.
+        step_back = max(0, output_chunk_shift - 2)
+        expected_times_x = series.time_index[3 : -2 - step_back]
+        expected_times_y = expected_times_x + output_chunk_shift * series.freq
+        expected_y = series.all_values(copy=False)[
+            3 + output_chunk_shift : 3 + output_chunk_shift + len(expected_times_y),
+            :,
+            0,
+        ]
         # Offset `3:-2` by `-1` lag:
-        expected_X_target = series.all_values(copy=False)[2:-3, :, 0]
+        expected_X_target = series.all_values(copy=False)[
+            2 : 2 + len(expected_times_x), :, 0
+        ]
         # Offset `3:-2` by `-3` lag -> gives `0:-5`:
-        expected_X_past = series.all_values(copy=False)[:-5, :, 0]
+        expected_X_past = series.all_values(copy=False)[: len(expected_times_x), :, 0]
         # Offset `3:-2` by `+2` lag -> gives `5:None`:
-        expected_X_future = series.all_values(copy=False)[5:, :, 0]
+        expected_X_future = series.all_values(copy=False)[
+            5 : 5 + len(expected_times_x), :, 0
+        ]
         expected_X = np.concatenate(
             [expected_X_target, expected_X_past, expected_X_future], axis=1
         )
-        for use_moving_windows in (False, True):
-            X, y, times, _ = create_lagged_training_data(
-                target_series=series,
-                output_chunk_length=output_chunk_length,
-                past_covariates=series,
-                future_covariates=series,
-                lags=lags,
-                lags_past_covariates=past_lags,
-                lags_future_covariates=future_lags,
-                uses_static_covariates=False,
-                use_moving_windows=use_moving_windows,
-            )
-            # Number of observations should match number of feature times:
-            assert X.shape[0] == len(expected_times)
-            assert X.shape[0] == len(times[0])
-            assert y.shape[0] == len(expected_times)
-            assert y.shape[0] == len(times[0])
-            # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
-            assert expected_times.equals(times[0])
-
-    def test_lagged_training_data_single_lag_single_component_same_series_datetime_idx(
-        self,
-    ):
-        """
-        Tests that `create_lagged_training_data` correctly produces `X`, `y` and `times`
-        when all the `series` inputs are identical, all the `lags` inputs consist
-        of a single value, and `output_chunk_length` is `1`. In this situation, the
-        expected `X` values can be found by concatenating three different slices of the
-        same time series, and the expected  `y` can be formed by taking a single slice
-        from the `target`. This particular test uses a time series with a datetime index.
-        """
-        series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=15)
-        lags = [-1]
-        output_chunk_length = 1
-        past_lags = [-3]
-        future_lags = [2]
-        # Can't create features for first 3 times (because `past_lags`) and last
-        # two times (because `future_lags`):
-        expected_times = series.time_index[3:-2]
-        expected_y = series.all_values(copy=False)[3:-2, :, 0]
-        # Offset `3:-2` by `-1` lag:
-        expected_X_target = series.all_values(copy=False)[2:-3, :, 0]
-        # Offset `3:-2` by `-3` lag -> gives `0:-5`:
-        expected_X_past = series.all_values(copy=False)[:-5, :, 0]
-        # Offset `3:-2` by `+2` lag -> gives `5:None`:
-        expected_X_future = series.all_values(copy=False)[5:, :, 0]
-        expected_X = np.concatenate(
-            [expected_X_target, expected_X_past, expected_X_future], axis=1
+        X, y, times, _ = create_lagged_training_data(
+            target_series=series,
+            output_chunk_length=output_chunk_length,
+            past_covariates=series,
+            future_covariates=series,
+            lags=lags,
+            lags_past_covariates=past_lags,
+            lags_future_covariates=future_lags,
+            uses_static_covariates=False,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
         )
-        for use_moving_windows in (False, True):
-            X, y, times, _ = create_lagged_training_data(
-                target_series=series,
-                output_chunk_length=output_chunk_length,
-                past_covariates=series,
-                future_covariates=series,
-                lags=lags,
-                lags_past_covariates=past_lags,
-                lags_future_covariates=future_lags,
-                uses_static_covariates=False,
-                use_moving_windows=use_moving_windows,
-            )
-            # Number of observations should match number of feature times:
-            assert X.shape[0] == len(expected_times)
-            assert X.shape[0] == len(times[0])
-            assert y.shape[0] == len(expected_times)
-            assert y.shape[0] == len(times[0])
-            # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
-            assert expected_times.equals(times[0])
+        # Number of observations should match number of feature times:
+        assert X.shape[0] == len(expected_times_x)
+        assert X.shape[0] == len(times[0])
+        assert y.shape[0] == len(expected_times_y)
+        assert y.shape[0] == len(times[0])
+        # Check that outputs match:
+        assert np.allclose(expected_X, X[:, :, 0])
+        assert np.allclose(expected_y, y[:, :, 0])
+        assert expected_times_x.equals(times[0])
 
-    def test_lagged_training_data_extend_past_and_future_covariates_range_idx(self):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3],
+            [False, True],
+            list(itertools.product(["datetime"], ["d", "2d", "ms", "y"]))
+            + list(itertools.product(["integer"], [1, 2])),
+        ),
+    )
+    def test_lagged_training_data_extend_past_and_future_covariates(self, config):
         """
         Tests that `create_lagged_training_data` correctly handles case where features
         and labels can be created for a time that is *not* contained in `past_covariates`
-        and/or `future_covariates`. This particular test checks this behaviour by using
-        range index timeseries.
+        and/or `future_covariates`.
 
         More specifically, we define the series and lags such that a training example can
         be generated for time `target.end_time()`, even though this time isn't contained in
         neither `past` nor `future`.
         """
+        output_chunk_shift, use_moving_windows, (series_type, freq) = config
+        if series_type == "integer":
+            target = linear_timeseries(
+                start=0, length=10, start_value=1, end_value=2, freq=freq
+            )
+            past = linear_timeseries(
+                start=0, length=8, start_value=2, end_value=3, freq=freq
+            )
+            future = linear_timeseries(
+                start=0, length=6, start_value=3, end_value=4, freq=freq
+            )
+        else:
+            target = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                start_value=1,
+                end_value=2,
+                length=11,
+                freq=freq,
+            )
+            past = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                start_value=2,
+                end_value=3,
+                length=9,
+                freq=freq,
+            )
+            future = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                start_value=3,
+                end_value=4,
+                length=7,
+                freq=freq,
+            )
+
         # Can create feature for time `t = 10`, but this time isn't in `past` or `future`:
-        target = linear_timeseries(start=0, end=10, start_value=1, end_value=2)
         lags = [-1]
-        past = linear_timeseries(start=0, end=8, start_value=2, end_value=3)
         lags_past = [-2]
-        future = linear_timeseries(start=0, end=6, start_value=3, end_value=4)
         lags_future = [-4]
         # Only want to check very last generated observation:
         max_samples_per_ts = 1
@@ -1106,246 +942,310 @@ class TestCreateLaggedTrainingData:
         # `past` and `future`:
         expected_X = np.concatenate(
             [
-                target.all_values(copy=False)[-2, :, 0],
-                past.all_values(copy=False)[-1, :, 0],
-                future.all_values(copy=False)[-1, :, 0],
+                target.all_values(copy=False)[-2 - output_chunk_shift, :, 0],
+                past.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
+                future.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
             ]
         ).reshape(1, -1)
         # Label is very last value of `target`:
         expected_y = target.all_values(copy=False)[-1, :, 0]
         # Check correctness for both 'moving window' method
         # and 'time intersection' method:
-        for use_moving_windows in (False, True):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length=1,
-                past_covariates=past,
-                future_covariates=future,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=use_moving_windows,
-            )
-            assert times[0][0] == target.end_time()
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
-
-    @pytest.mark.parametrize("freq", ["D", "MS", "Y"])
-    def test_lagged_training_data_extend_past_and_future_covariates_datetime_idx(
-        self, freq
-    ):
-        """
-        Tests that `create_lagged_training_data` correctly handles case where features
-        and labels can be created for a time that is *not* contained in `past_covariates`
-        and/or `future_covariates`. This particular test checks this behaviour by using
-        datetime index timeseries and three different frequencies: daily, month start and
-        year end.
-
-        More specifically, we define the series and lags such that a training example can
-        be generated for time `target.end_time()`, even though this time isn't contained in
-        neither `past` nor `future`.
-        """
-        # Can create feature for time `t = '1/1/2000'+11*freq`, but this time isn't in `past` or `future`:
-        target = linear_timeseries(
-            start=pd.Timestamp("1/1/2000"),
-            start_value=1,
-            end_value=2,
-            length=11,
-            freq=freq,
+        X, y, times, _ = create_lagged_training_data(
+            target,
+            output_chunk_length=1,
+            past_covariates=past,
+            future_covariates=future,
+            lags=lags,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+            uses_static_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
         )
-        lags = [-1]
-        past = linear_timeseries(
-            start=pd.Timestamp("1/1/2000"),
-            start_value=2,
-            end_value=3,
-            length=9,
-            freq=freq,
-        )
-        lags_past = [-2]
-        future = linear_timeseries(
-            start=pd.Timestamp("1/1/2000"),
-            start_value=3,
-            end_value=4,
-            length=7,
-            freq=freq,
-        )
-        lags_future = [-4]
-        # Only want to check very last generated observation:
-        max_samples_per_ts = 1
-        # Expect `X` to be constructed from second-to-last value of `target` (i.e.
-        # the value immediately prior to the label), and the very last values of
-        # `past` and `future`:
-        expected_X = np.concatenate(
-            [
-                target.all_values(copy=False)[-2, :, 0],
-                past.all_values(copy=False)[-1, :, 0],
-                future.all_values(copy=False)[-1, :, 0],
-            ]
-        ).reshape(1, -1)
-        # Label is very last value of `target`:
-        expected_y = target.all_values(copy=False)[-1, :, 0]
-        # Check correctness for both 'moving window' method
-        # and 'time intersection' method:
-        for use_moving_windows in (False, True):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length=1,
-                past_covariates=past,
-                future_covariates=future,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=use_moving_windows,
-            )
-            assert times[0][0] == target.end_time()
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
+        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+        assert np.allclose(expected_X, X[:, :, 0])
+        assert np.allclose(expected_y, y[:, :, 0])
 
-    def test_lagged_training_data_single_point_range_idx(self):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
+        ),
+    )
+    def test_lagged_training_data_single_point(self, config):
         """
         Tests that `create_lagged_training_data` correctly handles case
-        where only one possible training point can be generated.  This
-        particular test checks this behaviour by using range index timeseries.
+        where only one possible training point can be generated.
         """
+        output_chunk_shift, use_moving_windows, series_type, multi_models = config
         # Can only create feature using first value of series (i.e. `0`)
         # and can only create label using last value of series (i.e. `1`)
-        target = linear_timeseries(start=0, length=2, start_value=0, end_value=1)
+        if series_type == "integer":
+            target = linear_timeseries(
+                start=0, length=2 + output_chunk_shift, start_value=0, end_value=1
+            )
+        else:
+            target = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                length=2 + output_chunk_shift,
+                start_value=0,
+                end_value=1,
+            )
+
         output_chunk_length = 1
         lags = [-1]
         expected_X = np.zeros((1, 1, 1))
         expected_y = np.ones((1, 1, 1))
         # Test correctness for 'moving window' and for 'time intersection' methods, as well
         # as for different `multi_models` values:
-        for use_moving_windows, multi_models in product([False, True], [False, True]):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                lags=lags,
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-            )
-            assert np.allclose(expected_X, X)
-            assert np.allclose(expected_y, y)
-            # Should only have one sample, generated for `t = target.end_time()`:
-            assert len(times[0]) == 1
-            assert times[0][0] == target.end_time()
-
-    def test_lagged_training_data_single_point_datetime_idx(self):
-        """
-        Tests that `create_lagged_training_data` correctly handles case
-        where only one possible training point can be generated. This
-        particular test checks this behaviour by using datetime index timeseries.
-        """
-        # Can only create feature using first value of series (i.e. `0`)
-        # and can only create label using last value of series (i.e. `1`)
-        target = linear_timeseries(
-            start=pd.Timestamp("1/1/2000"), length=2, start_value=0, end_value=1
+        X, y, times, _ = create_lagged_training_data(
+            target,
+            output_chunk_length,
+            lags=lags,
+            uses_static_covariates=False,
+            multi_models=multi_models,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
         )
-        output_chunk_length = 1
-        lags = [-1]
-        expected_X = np.zeros((1, 1, 1))
-        expected_y = np.ones((1, 1, 1))
-        # Test correctness for 'moving window' and for 'time intersection' methods, as well
-        # as for different `multi_models` values:
-        for use_moving_windows, multi_models in product([False, True], [False, True]):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                lags=lags,
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-            )
-            assert np.allclose(expected_X, X)
-            assert np.allclose(expected_y, y)
-            # Should only have one sample, generated for `t = target.end_time()`:
-            assert len(times[0]) == 1
-            assert times[0][0] == target.end_time()
+        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_y, y)
+        # Should only have one sample, generated for `t = target.end_time()`:
+        assert len(times[0]) == 1
+        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
 
-    def test_lagged_training_data_zero_lags_range_idx(self):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
+        ),
+    )
+    def test_lagged_training_data_zero_lags(self, config):
         """
         Tests that `create_lagged_training_data` correctly handles case when
         `0` is included in `lags_future_covariates` (i.e. when we're using the values
         `future_covariates` at time `t` to predict the value of `target_series` at
-        that same time point). This particular test checks this behaviour by using
-        range index timeseries.
+        that same time point).
         """
         # Define `future` so that only value occurs at the same time as
         # the only possible label that can be extracted from `target_series`; the
         # only possible feature that can be created using these series utilises
         # the value of `future` at the same time as the label (i.e. a lag
         # of `0` away from the only feature time):
-        target = linear_timeseries(start=0, length=2, start_value=0, end_value=1)
-        future = linear_timeseries(
-            start=target.end_time(), length=1, start_value=1, end_value=2
-        )
+        output_chunk_shift, use_moving_windows, series_type, multi_models = config
+
+        if series_type == "integer":
+            target = linear_timeseries(
+                start=0, length=2 + output_chunk_shift, start_value=0, end_value=1
+            )
+            future = linear_timeseries(
+                start=target.end_time() - output_chunk_shift * target.freq,
+                length=1,
+                start_value=1,
+                end_value=2,
+            )
+        else:
+            target = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                length=2 + output_chunk_shift,
+                start_value=0,
+                end_value=1,
+            )
+            future = linear_timeseries(
+                start=target.end_time() - output_chunk_shift * target.freq,
+                length=1,
+                start_value=1,
+                end_value=2,
+            )
+
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
         expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
         expected_y = np.ones((1, 1, 1))
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        for use_moving_windows, multi_models in product([False, True], [False, True]):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length=1,
-                future_covariates=future,
-                lags=[-1],
-                lags_future_covariates=[0],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-            )
-            assert np.allclose(expected_X, X)
-            assert np.allclose(expected_y, y)
-            assert len(times[0]) == 1
-            assert times[0][0] == target.end_time()
+        X, y, times, _ = create_lagged_training_data(
+            target,
+            output_chunk_length=1,
+            future_covariates=future,
+            lags=[-1],
+            lags_future_covariates=[0],
+            uses_static_covariates=False,
+            multi_models=multi_models,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
+        )
+        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_y, y)
+        assert len(times[0]) == 1
+        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
 
-    def test_lagged_training_data_zero_lags_datetime_idx(self):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3],
+            [False, True],
+            ["datetime", "integer"],
+            [False, True],
+            [-1, 0, 1],
+            [-2, 0, 2],
+        ),
+    )
+    def test_lagged_training_data_no_target_lags_future_covariates(self, config):
         """
-        Tests that `create_lagged_training_data` correctly handles case when
-        `0` is included in `lags_future_covariates` (i.e. when we're using the values
-        `future_covariates` at time `t` to predict the value of `target_series` at
-        that same time point). This particular test checks this behaviour by using
-        datetime index timeseries.
+        Tests that `create_lagged_training_data` correctly handles case without target lags and different
+        future covariates lags.
+        This test should always result in one training sample.
+        Additionally, we test that:
+        - future starts before the target but extends far enough to create one training sample
+        - future shares same time as target
+        - future starts after target but target extends far enough to create one training sample.
         """
-        # Define `future` so that only value occurs at the same time as
-        # the only possible label that can be extracted from `target_series`; the
-        # only possible feature that can be created using these series utilises
-        # the value of `future` at the same time as the label (i.e. a lag
-        # of `0` away from the only feature time):
-        target = linear_timeseries(
-            start=pd.Timestamp("1/1/2000"), length=2, start_value=0, end_value=1
-        )
-        future = linear_timeseries(
-            start=target.end_time(), length=1, start_value=1, end_value=2
-        )
+        (
+            output_chunk_shift,
+            use_moving_windows,
+            series_type,
+            multi_models,
+            cov_start_shift,
+            cov_lag,
+        ) = config
+
+        # adapt covariate start, length, and target length so that only 1 sample can be extracted
+        target_length = 1 + output_chunk_shift + max(cov_start_shift, 0)
+        cov_length = 1 - min(cov_start_shift, 0)
+        if series_type == "integer":
+            cov_start = 0 + cov_start_shift + cov_lag
+            target = linear_timeseries(
+                start=0, length=target_length, start_value=0, end_value=1
+            )
+            future = linear_timeseries(
+                start=cov_start, length=cov_length, start_value=2, end_value=3
+            )
+        else:
+            freq = pd.tseries.frequencies.to_offset("d")
+            cov_start = pd.Timestamp("1/1/2000") + (cov_start_shift + cov_lag) * freq
+            target = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                length=target_length,
+                start_value=0,
+                end_value=1,
+                freq=freq,
+            )
+            future = linear_timeseries(
+                start=cov_start,
+                length=cov_length,
+                start_value=2,
+                end_value=3,
+                freq=freq,
+            )
+
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
-        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
-        expected_y = np.ones((1, 1, 1))
+        expected_X = future[-1].all_values(copy=False)
+        expected_y = target[-1].all_values(copy=False)
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        for use_moving_windows, multi_models in product([False, True], [False, True]):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length=1,
-                future_covariates=future,
-                lags=[-1],
-                lags_future_covariates=[0],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-            )
-            assert np.allclose(expected_X, X)
-            assert np.allclose(expected_y, y)
-            assert len(times[0]) == 1
-            assert times[0][0] == target.end_time()
+        X, y, times, _ = create_lagged_training_data(
+            target,
+            output_chunk_length=1,
+            future_covariates=future,
+            lags=None,
+            lags_future_covariates=[cov_lag],
+            uses_static_covariates=False,
+            multi_models=multi_models,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
+        )
+        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_y, y)
+        assert len(times[0]) == 1
+        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
 
-    def test_lagged_training_data_positive_lags_range_idx(self):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3],
+            [False, True],
+            ["datetime", "integer"],
+            [False, True],
+            [-1, 0],
+            [-2, -1],
+        ),
+    )
+    def test_lagged_training_data_no_target_lags_past_covariates(self, config):
+        """
+        Tests that `create_lagged_training_data` correctly handles case without target lags and different
+        past covariates lags.
+        This test should always result in one training sample.
+        Additionally, we test that:
+        - past starts before the target but extends far enough to create one training sample
+        - past shares same time as target
+        """
+        (
+            output_chunk_shift,
+            use_moving_windows,
+            series_type,
+            multi_models,
+            cov_start_shift,
+            cov_lag,
+        ) = config
+
+        # adapt covariate start, length, and target length so that only 1 sample can be extracted
+        target_length = 1 + output_chunk_shift + max(cov_start_shift, 0)
+        cov_length = 1 - min(cov_start_shift, 0)
+        if series_type == "integer":
+            cov_start = 0 + cov_start_shift + cov_lag
+            target = linear_timeseries(
+                start=0, length=target_length, start_value=0, end_value=1
+            )
+            past = linear_timeseries(
+                start=cov_start, length=cov_length, start_value=2, end_value=3
+            )
+        else:
+            freq = pd.tseries.frequencies.to_offset("d")
+            cov_start = pd.Timestamp("1/1/2000") + (cov_start_shift + cov_lag) * freq
+            target = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                length=target_length,
+                start_value=0,
+                end_value=1,
+                freq=freq,
+            )
+            past = linear_timeseries(
+                start=cov_start,
+                length=cov_length,
+                start_value=2,
+                end_value=3,
+                freq=freq,
+            )
+
+        # X comprises of first value of `target` (i.e. 0) and only value in `future`:
+        expected_X = past[-1].all_values(copy=False)
+        expected_y = target[-1].all_values(copy=False)
+        # Check correctness for 'moving windows' and 'time intersection' methods, as
+        # well as for different `multi_models` values:
+        X, y, times, _ = create_lagged_training_data(
+            target,
+            output_chunk_length=1,
+            past_covariates=past,
+            lags=None,
+            lags_past_covariates=[cov_lag],
+            uses_static_covariates=False,
+            multi_models=multi_models,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
+        )
+        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_y, y)
+        assert len(times[0]) == 1
+        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
+        ),
+    )
+    def test_lagged_training_data_positive_lags(self, config):
         """
         Tests that `create_lagged_training_data` correctly handles case when
         `0` is included in `lags_future_covariates` (i.e. when we're using the values
@@ -1358,70 +1258,51 @@ class TestCreateLaggedTrainingData:
         # only possible feature that can be created using these series utilises
         # the value of `future` one timestep after the time of the label (i.e. a lag
         # of `1` away from the only feature time):
-        target = linear_timeseries(start=0, length=2, start_value=0, end_value=1)
-        future = linear_timeseries(
-            start=target.end_time() + target.freq, length=1, start_value=1, end_value=2
-        )
-        # X comprises of first value of `target` (i.e. 0) and only value in `future`:
-        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
-        expected_y = np.ones((1, 1, 1))
-        # Check correctness for 'moving windows' and 'time intersection' methods, as
-        # well as for different `multi_models` values:
-        for use_moving_windows, multi_models in product([False, True], [False, True]):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length=1,
-                future_covariates=future,
-                lags=[-1],
-                lags_future_covariates=[1],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-            )
-            assert np.allclose(expected_X, X)
-            assert np.allclose(expected_y, y)
-            assert len(times[0]) == 1
-            assert times[0][0] == target.end_time()
+        output_chunk_shift, use_moving_windows, series_type, multi_models = config
 
-    def test_lagged_training_data_positive_lags_datetime_idx(self):
-        """
-        Tests that `create_lagged_training_data` correctly handles case when
-        `0` is included in `lags_future_covariates` (i.e. when we're using the values
-        `future_covariates` at time `t` to predict the value of `target_series` at
-        that same time point). This particular test checks this behaviour by using
-        datetime index timeseries.
-        """
-        # Define `past` and `future` so their only value occurs at the same time as
-        # the only possible label that can be extracted from `target_series`; the
-        # only possible feature that can be created using these series utilises
-        # the values of `past` and `future` at the same time as the label (i.e. a lag
-        # of `0` away from the only feature time):
-        target = linear_timeseries(
-            start=pd.Timestamp("1/1/2000"), length=2, start_value=0, end_value=1
-        )
-        future = linear_timeseries(
-            start=target.end_time() + target.freq, length=1, start_value=1, end_value=2
-        )
+        if series_type == "integer":
+            target = linear_timeseries(
+                start=0, length=2 + output_chunk_shift, start_value=0, end_value=1
+            )
+            future = linear_timeseries(
+                start=target.end_time() - (output_chunk_shift - 1) * target.freq,
+                length=1,
+                start_value=1,
+                end_value=2,
+            )
+        else:
+            target = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"),
+                length=2 + output_chunk_shift,
+                start_value=0,
+                end_value=1,
+            )
+            future = linear_timeseries(
+                start=target.end_time() - (output_chunk_shift - 1) * target.freq,
+                length=1,
+                start_value=1,
+                end_value=2,
+            )
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
         expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
         expected_y = np.ones((1, 1, 1))
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        for use_moving_windows, multi_models in product([False, True], [False, True]):
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length=1,
-                future_covariates=future,
-                lags=[-1],
-                lags_future_covariates=[1],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-            )
-            assert np.allclose(expected_X, X)
-            assert np.allclose(expected_y, y)
-            assert len(times[0]) == 1
-            assert times[0][0] == target.end_time()
+        X, y, times, _ = create_lagged_training_data(
+            target,
+            output_chunk_length=1,
+            future_covariates=future,
+            lags=[-1],
+            lags_future_covariates=[1],
+            uses_static_covariates=False,
+            multi_models=multi_models,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
+        )
+        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_y, y)
+        assert len(times[0]) == 1
+        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
 
     def test_lagged_training_data_sequence_inputs(self):
         """
@@ -1457,6 +1338,7 @@ class TestCreateLaggedTrainingData:
             lags_past_covariates=lags_past,
             lags_future_covariates=lags_future,
             uses_static_covariates=False,
+            output_chunk_shift=0,
         )
         assert np.allclose(X, expected_X)
         assert np.allclose(y, expected_y)
@@ -1474,6 +1356,7 @@ class TestCreateLaggedTrainingData:
             lags_future_covariates=lags_future,
             uses_static_covariates=False,
             concatenate=False,
+            output_chunk_shift=0,
         )
         assert len(X) == 2
         assert len(y) == 2
@@ -1513,6 +1396,7 @@ class TestCreateLaggedTrainingData:
             lags_past_covariates=lags_past,
             lags_future_covariates=lags_future,
             uses_static_covariates=False,
+            output_chunk_shift=0,
         )
         assert np.allclose(X, expected_X)
         assert np.allclose(y, expected_y)
@@ -1539,6 +1423,7 @@ class TestCreateLaggedTrainingData:
                     lags_past_covariates=lags,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert (
                 "Specified series do not share any common times for which features can be created."
@@ -1567,6 +1452,7 @@ class TestCreateLaggedTrainingData:
                         lags_past_covariates=lags,
                         uses_static_covariates=False,
                         use_moving_windows=use_moving_windows,
+                        output_chunk_shift=0,
                     )
             assert "Must specify at least one series-lags pair." == str(err.value)
             # Warnings will be thrown indicating that `past_covariates`
@@ -1583,6 +1469,7 @@ class TestCreateLaggedTrainingData:
                         past_covariates=series_2,
                         uses_static_covariates=False,
                         use_moving_windows=use_moving_windows,
+                        output_chunk_shift=0,
                     )
             assert "Must specify at least one series-lags pair." == str(err.value)
 
@@ -1603,6 +1490,7 @@ class TestCreateLaggedTrainingData:
                     lags=lags,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert "`output_chunk_length` must be a positive `int`." == str(err.value)
             with pytest.raises(ValueError) as err:
@@ -1612,6 +1500,7 @@ class TestCreateLaggedTrainingData:
                     lags=lags,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert "`output_chunk_length` must be a positive `int`." == str(err.value)
 
@@ -1629,6 +1518,7 @@ class TestCreateLaggedTrainingData:
                     output_chunk_length=1,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert (
                 "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
@@ -1656,11 +1546,12 @@ class TestCreateLaggedTrainingData:
                     lags=[-20, -10],
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert (
                 "`target_series` must have at least "
-                "`-min(lags) + output_chunk_length` = 25 "
-                "timesteps; instead, it only has 2."
+                "`-min(lags) + output_chunk_length + output_chunk_shift` = 25 "
+                "time steps; instead, it only has 2."
             ) == str(err.value)
             # `lags_past_covariates` too large test:
             with pytest.raises(ValueError) as err:
@@ -1671,11 +1562,12 @@ class TestCreateLaggedTrainingData:
                     lags_past_covariates=[-5, -3],
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert (
                 "`past_covariates` must have at least "
                 "`-min(lags_past_covariates) + max(lags_past_covariates) + 1` = 3 "
-                "timesteps; instead, it only has 2."
+                "time steps; instead, it only has 2."
             ) == str(err.value)
 
     def test_lagged_training_data_invalid_lag_values_error(self):
@@ -1700,6 +1592,7 @@ class TestCreateLaggedTrainingData:
                     lags=[0],
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert (
                 "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
@@ -1713,6 +1606,7 @@ class TestCreateLaggedTrainingData:
                     lags_past_covariates=[0],
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
             assert (
                 "`lags_past_covariates` must be a `Sequence` or `Dict` containing only `int` values less than 0."
@@ -1725,6 +1619,7 @@ class TestCreateLaggedTrainingData:
                 lags_future_covariates=[-1, 0, 1],
                 uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
+                output_chunk_shift=0,
             )
 
     def test_lagged_training_data_unspecified_lag_or_series_warning(self):
@@ -1751,6 +1646,7 @@ class TestCreateLaggedTrainingData:
                     future_covariates=series,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
                 assert len(w) == 1
                 assert issubclass(w[0].category, UserWarning)
@@ -1767,6 +1663,7 @@ class TestCreateLaggedTrainingData:
                     lags_future_covariates=lags,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
                 assert len(w) == 1
                 assert issubclass(w[0].category, UserWarning)
@@ -1785,6 +1682,7 @@ class TestCreateLaggedTrainingData:
                     lags_future_covariates=lags,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
                 assert len(w) == 2
                 assert issubclass(w[0].category, UserWarning)
@@ -1807,6 +1705,7 @@ class TestCreateLaggedTrainingData:
                     lags_past_covariates=lags,
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
                 )
                 assert len(w) == 0
 

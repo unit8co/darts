@@ -71,6 +71,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
@@ -88,13 +89,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
         When subclassing this class, please make sure to add the following methods with the given signatures:
-            - :func:`PLTorchForecastingModel.__init__()`
-            - :func:`PLTorchForecastingModel.forward()`
-            - :func:`PLTorchForecastingModel._produce_train_output()`
-            - :func:`PLTorchForecastingModel._get_batch_prediction()`
+            - :func:`PLForecastingModule.__init__()`
+            - :func:`PLForecastingModule.forward()`
+            - :func:`PLForecastingModule._produce_train_output()`
+            - :func:`PLForecastingModule._get_batch_prediction()`
 
         In subclass `MyModel`'s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where
-        ``kwargs`` are the parameters of :class:`PLTorchForecastingModel`.
+        ``kwargs`` are the parameters of :class:`PLForecastingModule`.
 
         Parameters
         ----------
@@ -105,7 +106,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
@@ -156,6 +157,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.input_chunk_length = input_chunk_length
         # output_chunk_length is a property
         self._output_chunk_length = output_chunk_length
+        self.output_chunk_shift = output_chunk_shift
 
         # define the loss function
         self.criterion = loss_fn
@@ -246,7 +248,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         batch
             output of Darts' :class:`InferenceDataset` - tuple of ``(past_target, past_covariates,
-            historic_future_covariates, future_covariates, future_past_covariates, input_timeseries)``
+            historic_future_covariates, future_covariates, future_past_covariates, input time series,
+            prediction start time step)``
         batch_idx
             the batch index of the current batch
         dataloader_idx
@@ -465,7 +468,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             module.mc_dropout_enabled = active
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
     def _produce_predict_output(self, x: Tuple) -> torch.Tensor:

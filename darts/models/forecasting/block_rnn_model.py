@@ -64,7 +64,8 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
         """
         super().__init__(**kwargs)
 
@@ -124,7 +125,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
         name
             The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
         **kwargs
-            all parameters required for the :class:`darts.model.forecasting_models.CustomBlockRNNModule` base class.
+            all parameters required for the :class:`darts.models.forecasting.CustomBlockRNNModule` base class.
 
         Inputs
         ------
@@ -188,6 +189,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         model: Union[str, Type[CustomBlockRNNModule]] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
@@ -219,10 +221,16 @@ class BlockRNNModel(PastCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"), or a subclass of
             :class:`CustomBlockRNNModule` (the class itself, not an object of the class) with a custom logic.
