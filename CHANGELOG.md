@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Renamed the private `_is_probabilistic` property to a public `supports_probabilistic_prediction`. [#2269](https://github.com/unit8co/darts/pull/2269) by [Felix Divo](https://github.com/felixdivo).
 
 **Fixed**
+- Fixed type hint warning "Unexpected argument" when calling `historical_forecasts()` caused by the `_with_sanity_checks` decorator. The type hinting is now properly configured to expect any input arguments and return the output type of the method for which the sanity checks are performed for. [#2286](https://github.com/unit8co/darts/pull/2286) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
