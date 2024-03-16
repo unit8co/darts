@@ -9,7 +9,7 @@ from typing import Any, List, Mapping, Optional, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 from .base_data_transformer import BaseDataTransformer
@@ -245,7 +245,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
     def inverse_transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries], List[List[TimeSeries]]],
+        series: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
         *args,
         component_mask: Optional[np.array] = None,
         **kwargs,
@@ -302,11 +302,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
         `component_masks` will be passed as a keyword argument `ts_inverse_transform`; the user can then manually
         specify how the `component_mask` should be applied to each series.
         """
-        if hasattr(self, "_fit_called"):
-            raise_if_not(
-                self._fit_called,
-                "fit() must have been called before inverse_transform()",
-                logger,
+        if hasattr(self, "_fit_called") and not self._fit_called:
+            raise_log(
+                ValueError("fit() must have been called before inverse_transform()"),
+                logger=logger,
             )
 
         desc = f"Inverse ({self._name})"
@@ -319,23 +318,19 @@ class InvertibleDataTransformer(BaseDataTransformer):
             data = [series]
             transformer_selector = [0]
             called_with_single_series = True
-        elif isinstance(series[0], TimeSeries):
+        elif isinstance(series[0], TimeSeries):  # Sequence[TimeSeries]
             input_series = series
             data = series
             transformer_selector = range(len(series))
             called_with_sequence_series = True
-        elif isinstance(series[0], list):
+        else:  # Sequence[Sequence[TimeSeries]]
             input_series = []
             data = []
             transformer_selector = []
             for idx, series_list in enumerate(series):
-                for series_ in series_list:
-                    input_series.append(series_)
-                    data.append(series_)
+                input_series.extend(series_list)
+                data.extend(series_list)
                 transformer_selector += [idx] * len(series_list)
-
-        else:
-            raise_log(ValueError("bl"))
 
         if self._mask_components:
             data = [
