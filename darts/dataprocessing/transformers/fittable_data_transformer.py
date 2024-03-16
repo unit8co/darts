@@ -4,12 +4,12 @@ Fittable Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Any, Generator, List, Mapping, Optional, Sequence, Union
+from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 from .base_data_transformer import BaseDataTransformer
@@ -256,8 +256,10 @@ class FittableDataTransformer(BaseDataTransformer):
 
         if isinstance(series, TimeSeries):
             data = [series]
+            transformer_selector = [0]
         else:
             data = series
+            transformer_selector = range(len(series))
 
         if self._mask_components:
             data = [
@@ -267,7 +269,9 @@ class FittableDataTransformer(BaseDataTransformer):
         else:
             kwargs["component_mask"] = component_mask
 
-        params_iterator = self._get_params(n_timeseries=len(data), calling_fit=True)
+        params_iterator = self._get_params(
+            transformer_selector=transformer_selector, calling_fit=True
+        )
         fit_iterator = (
             zip(data, params_iterator)
             if not self._global_fit
@@ -315,7 +319,7 @@ class FittableDataTransformer(BaseDataTransformer):
         ).transform(series, *args, component_mask=component_mask, **kwargs)
 
     def _get_params(
-        self, n_timeseries: int, calling_fit: bool = False
+        self, transformer_selector: Iterable, calling_fit: bool = False
     ) -> Generator[Mapping[str, Any], None, None]:
         """
         Overrides `_get_params` of `BaseDataTransformer`. Creates generator of dictionaries containing
@@ -327,14 +331,18 @@ class FittableDataTransformer(BaseDataTransformer):
         `transform` and `inverse_transform`.
         """
         # Call `_check_fixed_params` of `BaseDataTransformer`:
-        self._check_fixed_params(n_timeseries)
-        fitted_params = self._get_fitted_params(n_timeseries, calling_fit)
+        self._check_fixed_params(transformer_selector)
+        fitted_params = self._get_fitted_params(transformer_selector, calling_fit)
 
         def params_generator(
-            n_jobs, fixed_params, fitted_params, parallel_params, global_fit
+            transformer_selector_,
+            fixed_params,
+            fitted_params,
+            parallel_params,
+            global_fit,
         ):
             fixed_params_copy = fixed_params.copy()
-            for i in range(n_jobs):
+            for i in transformer_selector_:
                 for key in parallel_params:
                     fixed_params_copy[key] = fixed_params[key][i]
                 params = {}
@@ -348,37 +356,53 @@ class FittableDataTransformer(BaseDataTransformer):
                     params = None
                 yield params
 
-        n_jobs = n_timeseries if not (calling_fit and self._global_fit) else 1
+        transformer_selector_ = (
+            transformer_selector if not (calling_fit and self._global_fit) else [0]
+        )
 
         return params_generator(
-            n_jobs,
+            transformer_selector_,
             self._fixed_params,
             fitted_params,
             self._parallel_params,
             self._global_fit,
         )
 
-    def _get_fitted_params(self, n_timeseries: int, calling_fit: bool) -> Sequence[Any]:
+    def _get_fitted_params(
+        self, transformer_selector: Iterable, calling_fit: bool
+    ) -> Sequence[Any]:
         """
         Returns `self._fitted_params` if `calling_fit = False`, otherwise returns an empty
         tuple. If `calling_fit = False`, also checks that `self._fitted_params`, which is a
-        sequence of values, contains exactly `n_timeseries` values; if not, a `ValueError` is thrown.
+        sequence of values, contains exactly `transformer_selector` values; if not, a `ValueError` is thrown.
         """
         if not calling_fit:
-            raise_if_not(
-                self._fit_called,
-                ("Must call `fit` before calling `transform`/`inverse_transform`."),
-            )
+            if not self._fit_called:
+                raise_log(
+                    ValueError(
+                        "Must call `fit` before calling `transform`/`inverse_transform`."
+                    ),
+                    logger=logger,
+                )
             fitted_params = self._fitted_params
         else:
             fitted_params = tuple()
         if not self._global_fit and fitted_params:
-            raise_if(
-                n_timeseries > len(fitted_params),
-                (
-                    f"{n_timeseries} TimeSeries were provided "
-                    f"but only {len(fitted_params)} TimeSeries "
-                    f"were specified upon training {self.name}."
-                ),
-            )
+            n_timeseries_ = max(transformer_selector) + 1
+            if n_timeseries_ > len(fitted_params):
+                raise_log(
+                    ValueError(
+                        f"{n_timeseries_} TimeSeries were provided "
+                        f"but only {len(fitted_params)} TimeSeries "
+                        f"were specified upon training {self.name}."
+                    ),
+                    logger=logger,
+                )
+            elif n_timeseries_ < len(fitted_params):
+                logger.warning(
+                    f"Only {n_timeseries_} TimeSeries (lists) were provided "
+                    f"which is lower than the number of series (n={len(fitted_params)}) "
+                    f"used to fit {self.name}. This can result in a mismatch between the "
+                    f"series and the underlying transformers."
+                )
         return fitted_params
