@@ -4,13 +4,13 @@ Data Transformer Base Class
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Generator, List, Mapping, Optional, Sequence, Union
+from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
 import xarray as xr
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
@@ -168,7 +168,8 @@ class BaseDataTransformer(ABC):
         value
             New verbosity status
         """
-        raise_if_not(isinstance(value, bool), "Verbosity status must be a boolean.")
+        if not isinstance(value, bool):
+            raise_log(ValueError("Verbosity status must be a boolean."), logger=logger)
 
         self._verbose = value
 
@@ -180,8 +181,8 @@ class BaseDataTransformer(ABC):
         value
             New n_jobs value.  Set to `-1` for using all the available cores.
         """
-
-        raise_if_not(isinstance(value, int), "n_jobs must be an integer")
+        if not isinstance(value, int):
+            raise_log(ValueError("n_jobs must be an integer"), logger=logger)
         self._n_jobs = value
 
     @staticmethod
@@ -314,9 +315,11 @@ class BaseDataTransformer(ABC):
         if isinstance(series, TimeSeries):
             input_series = [series]
             data = [series]
+            transformer_selector = [0]
         else:
             input_series = series
             data = series
+            transformer_selector = range(len(series))
 
         if self._mask_components:
             data = [
@@ -327,7 +330,7 @@ class BaseDataTransformer(ABC):
             kwargs["component_mask"] = component_mask
 
         input_iterator = _build_tqdm_iterator(
-            zip(data, self._get_params(n_timeseries=len(data))),
+            zip(data, self._get_params(transformer_selector=transformer_selector)),
             verbose=self._verbose,
             desc=desc,
             total=len(data),
@@ -350,7 +353,7 @@ class BaseDataTransformer(ABC):
         )
 
     def _get_params(
-        self, n_timeseries: int
+        self, transformer_selector: Iterable
     ) -> Generator[Mapping[str, Any], None, None]:
         """
         Creates generator of dictionaries containing fixed parameter values
@@ -359,11 +362,11 @@ class BaseDataTransformer(ABC):
         parallel jobs. Called by `transform` and `inverse_transform`,
         if `Transformer` does *not* inherit from `FittableTransformer`.
         """
-        self._check_fixed_params(n_timeseries)
+        self._check_fixed_params(transformer_selector)
 
-        def params_generator(n_timeseries, fixed_params, parallel_params):
+        def params_generator(transformer_selector, fixed_params, parallel_params):
             fixed_params_copy = fixed_params.copy()
-            for i in range(n_timeseries):
+            for i in transformer_selector:
                 for key in parallel_params:
                     fixed_params_copy[key] = fixed_params[key][i]
                 if fixed_params_copy:
@@ -373,21 +376,35 @@ class BaseDataTransformer(ABC):
                 yield params
             return None
 
-        return params_generator(n_timeseries, self._fixed_params, self._parallel_params)
+        return params_generator(
+            transformer_selector, self._fixed_params, self._parallel_params
+        )
 
-    def _check_fixed_params(self, n_timeseries: int) -> None:
+    def _check_fixed_params(self, transformer_selector: Iterable) -> None:
         """
         Raises `ValueError` if `self._parallel_params` specifies a `key` in
         `self._fixed_params` that should be distributed, but
-        `len(self._fixed_params[key])` does not equal `n_timeseries`.
+        `len(self._fixed_params[key])` does not equal to the number of time series
+        (the maximum value + 1 from `transformer_selector`).
         """
         for key in self._parallel_params:
-            raise_if(
-                n_timeseries > len(self._fixed_params[key]),
-                f"{n_timeseries} TimeSeries were provided "
-                f"but only {len(self._fixed_params[key])} {key} values "
-                f"were specified upon initialising {self.name}.",
-            )
+            n_timeseries_ = max(transformer_selector) + 1
+            if n_timeseries_ > len(self._fixed_params[key]):
+                raise_log(
+                    ValueError(
+                        f"{n_timeseries_} TimeSeries were provided "
+                        f"but only {len(self._fixed_params[key])} {key} values "
+                        f"were specified upon initialising {self.name}."
+                    ),
+                    logger=logger,
+                )
+            elif n_timeseries_ < len(self._fixed_params[key]):
+                logger.warning(
+                    f"Only {n_timeseries_} TimeSeries were provided "
+                    f"which is lower than the number of {key} values "
+                    f"(n={len(self._fixed_params[key])}) that were specified "
+                    f"upon initialising {self.name}."
+                )
         return None
 
     @staticmethod
@@ -418,16 +435,22 @@ class BaseDataTransformer(ABC):
         if component_mask is None:
             masked = series.copy() if return_ts else series.all_values()
         else:
-            raise_if_not(
-                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
-                f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}.",
-                logger,
-            )
-            raise_if_not(
-                series.width == len(component_mask),
-                "mismatch between number of components in `series` and length of `component_mask`",
-                logger,
-            )
+            if not (
+                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
+            ):
+                raise_log(
+                    ValueError(
+                        f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}."
+                    ),
+                    logger=logger,
+                )
+            if not series.width == len(component_mask):
+                raise_log(
+                    ValueError(
+                        "mismatch between number of components in `series` and length of `component_mask`"
+                    ),
+                    logger=logger,
+                )
             masked = series.all_values(copy=False)[:, component_mask, :]
             if return_ts:
                 # Remove masked components from coords:
@@ -469,16 +492,22 @@ class BaseDataTransformer(ABC):
         if component_mask is None:
             unmasked = vals
         else:
-            raise_if_not(
-                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
-                "If `component_mask` is given, must be a boolean np.ndarray`",
-                logger,
-            )
-            raise_if_not(
-                series.width == len(component_mask),
-                "mismatch between number of components in `series` and length of `component_mask`",
-                logger,
-            )
+            if not (
+                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
+            ):
+                raise_log(
+                    ValueError(
+                        "If `component_mask` is given, must be a boolean np.ndarray`"
+                    ),
+                    logger=logger,
+                )
+            if not series.width == len(component_mask):
+                raise_log(
+                    ValueError(
+                        "mismatch between number of components in `series` and length of `component_mask`"
+                    ),
+                    logger=logger,
+                )
             unmasked = series.all_values()
             if isinstance(vals, TimeSeries):
                 unmasked[:, component_mask, :] = vals.all_values()
@@ -560,10 +589,13 @@ class BaseDataTransformer(ABC):
         if series is not None:
             n_samples = series.n_samples
         else:
-            raise_if(
-                all(x is None for x in [n_timesteps, n_samples]),
-                "Must specify either `n_timesteps`, `n_samples`, or `series`.",
-            )
+            if all(x is None for x in [n_timesteps, n_samples]):
+                raise_log(
+                    ValueError(
+                        "Must specify either `n_timesteps`, `n_samples`, or `series`."
+                    ),
+                    logger=logger,
+                )
         n_components = vals.shape[-1]
         if n_timesteps is not None:
             reshaped_vals = vals.reshape(n_timesteps, -1, n_components)
