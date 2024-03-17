@@ -36,6 +36,7 @@ import pandas as pd
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.metrics.metrics import METRIC_TYPE
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
@@ -1147,11 +1148,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
-        metric: Union[
-            Callable[[TimeSeries, TimeSeries], float],
-            List[Callable[[TimeSeries, TimeSeries], float]],
-        ] = metrics.mape,
-        reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
+        metric: Union[METRIC_TYPE, List[METRIC_TYPE]] = metrics.mape,
+        reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
         fit_kwargs: Optional[Dict[str, Any]] = None,
@@ -1257,7 +1255,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             error value.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            When providing several metric functions, the function will receive the argument `axis = 0` to obtain single
+            When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
@@ -1305,28 +1303,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if not isinstance(metric, list):
             metric = [metric]
 
+        if last_points_only:
+            # we have on forecast per series
+            errors = [metric_f(series, forecasts) for metric_f in metric]
+            return errors if len(metric) > 1 else errors[0]
+
+        # we have multiple forecasts per series
         backtest_list = []
         for idx, target_ts in enumerate(series):
-            if last_points_only:
-                errors = [metric_f(target_ts, forecasts[idx]) for metric_f in metric]
-                if len(errors) == 1:
-                    errors = errors[0]
-                backtest_list.append(errors)
-            else:
-                errors = [
-                    (
-                        [metric_f(target_ts, f) for metric_f in metric]
-                        if len(metric) > 1
-                        else metric[0](target_ts, f)
-                    )
-                    for f in forecasts[idx]
-                ]
+            fc_list = forecasts[idx]
+            errors = [
+                metric_f([target_ts] * len(fc_list), fc_list) for metric_f in metric
+            ]
+            if reduction is not None:
+                errors = reduction(np.array(errors), axis=1)
 
-                if reduction is None:
-                    backtest_list.append(errors)
-                else:
-                    backtest_list.append(reduction(np.array(errors), axis=0))
-
+            backtest_list.append(errors if len(metric) > 1 else errors[0])
         return backtest_list if len(backtest_list) > 1 else backtest_list[0]
 
     @classmethod
