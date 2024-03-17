@@ -16,8 +16,8 @@ For deterministic forecasts (point predictions with `num_samples == 1`):
     - :func:`CV <darts.metrics.metrics.coefficient_of_variation>`: Coefficient of Variation
 
 For probabilistic forecasts (storchastic predictions with `num_samples >> 1`):
-    - :func:`Rho risk <darts.metrics.metrics.rho_risk>`: Rho/quantile-Risk
     - :func:`Quantile Loss <darts.metrics.metrics.quantile_loss>`: Quantile Loss
+    - :func:`Rho risk <darts.metrics.metrics.rho_risk>`: Rho/quantile-Risk
 
 For Dynamic Time Warping (DTW):
     - :func:`DTW <darts.metrics.metrics.dtw_metric>`: Dynamic Time Warping Metric

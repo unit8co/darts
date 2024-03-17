@@ -283,13 +283,14 @@ def mae(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Mean Absolute Error (MAE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -345,13 +346,14 @@ def mse(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Mean Squared Error (MSE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -407,13 +409,14 @@ def rmse(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Root Mean Squared Error (RMSE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
     return np.sqrt(
         mse(
@@ -475,13 +478,14 @@ def rmsle(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Root Mean Squared Log Error (RMSLE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -542,13 +546,14 @@ def coefficient_of_variation(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Coefficient of Variation:
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -618,13 +623,14 @@ def mape(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Mean Absolute Percentage Error (MAPE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -698,13 +704,14 @@ def smape(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The symmetric Mean Absolute Percentage Error (sMAPE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -782,13 +789,14 @@ def mase(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Mean Absolute Scaled Error (MASE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     def _multivariate_mase(
@@ -979,13 +987,14 @@ def ope(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Overall Percentage Error (OPE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -1058,13 +1067,14 @@ def marre(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Mean Absolute Ranged Relative Error (MARRE):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -1131,13 +1141,14 @@ def r2_score(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The Coefficient of Determination :math:`R^2`:
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
     y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
@@ -1201,13 +1212,14 @@ def dtw_metric(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        Result of calling metric(warped_series1, warped_series2):
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
 
     alignment = dtw.dtw(actual_series, pred_series, **kwargs)
@@ -1283,13 +1295,14 @@ def rho_risk(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The rho-risk metric:
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
     if not pred_series.is_stochastic:
         raise_log(
@@ -1369,13 +1382,14 @@ def quantile_loss(
 
     Returns
     -------
-    Union[float, List[float], np.ndarray, List[np.ndarray]]
-        The quantile loss metric:
-
-        - float: for single time series, either univariate or multivariate with `component_reduction`.
-        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
-        - np.ndarray: for single multivariate time series without `component_reduction`
-        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
     if not pred_series.is_stochastic:
         raise_log(
