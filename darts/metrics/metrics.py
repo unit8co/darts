@@ -7,7 +7,7 @@ Some metrics to compare time series.
 
 from functools import wraps
 from inspect import signature
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -25,13 +25,14 @@ TIME_AX = 0
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
 # don't "unpack" parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
+METRIC_OUTPUT_TYPE = Union[float, List[float], np.ndarray, List[np.ndarray]]
 METRIC_TYPE = Callable[
     [Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]],
-    Union[float, np.ndarray],
+    METRIC_OUTPUT_TYPE,
 ]
 
 
-def multi_ts_support(func) -> Callable[..., Union[float, np.ndarray]]:
+def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
     This decorator further adapts the metrics that took as input two univariate/multivariate ``TimeSeries`` instances,
     adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric
@@ -98,7 +99,7 @@ def multi_ts_support(func) -> Callable[..., Union[float, np.ndarray]]:
         # in case the reduction is not reducing the metrics sequence to a single value, e.g., if returning the
         # np.ndarray of values with the identity function, we must handle the single TS case, where we should
         # return a single value instead of a np.array of len 1
-        vals = vals[0] if len(vals) == 1 else np.array(vals)
+        vals = vals[0] if len(vals) == 1 else vals
 
         if kwargs.get("series_reduction") is not None:
             return kwargs["series_reduction"](vals)
@@ -108,7 +109,7 @@ def multi_ts_support(func) -> Callable[..., Union[float, np.ndarray]]:
     return wrapper_multi_ts_support
 
 
-def multivariate_support(func) -> Callable[..., Union[float, np.ndarray]]:
+def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
     This decorator transforms a metric function that takes as input two univariate TimeSeries instances
     into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
@@ -117,7 +118,7 @@ def multivariate_support(func) -> Callable[..., Union[float, np.ndarray]]:
     """
 
     @wraps(func)
-    def wrapper_multivariate_support(*args, **kwargs) -> Union[float, np.ndarray]:
+    def wrapper_multivariate_support(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
         # we can avoid checks about args and kwargs since the input is adjusted by the previous decorator
         actual_series = args[0]
         pred_series = args[1]
@@ -246,7 +247,7 @@ def mae(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Error (MAE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -282,8 +283,13 @@ def mae(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Mean Absolute Error (MAE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Mean Absolute Error (MAE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -303,7 +309,7 @@ def mse(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Error (MSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -339,8 +345,13 @@ def mse(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Mean Squared Error (MSE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Mean Squared Error (MSE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -360,7 +371,7 @@ def rmse(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Error (RMSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -396,8 +407,13 @@ def rmse(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Root Mean Squared Error (RMSE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Root Mean Squared Error (RMSE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
     return np.sqrt(
         mse(
@@ -421,7 +437,7 @@ def rmsle(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Log Error (RMSLE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -459,8 +475,13 @@ def rmsle(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Root Mean Squared Log Error (RMSLE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Root Mean Squared Log Error (RMSLE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -481,7 +502,7 @@ def coefficient_of_variation(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Variation (percentage).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
@@ -492,7 +513,7 @@ def coefficient_of_variation(
     where :math:`\\text{RMSE}()` denotes the root mean squared error, and
     :math:`\\bar{y_t}` is the average of :math:`y_t`.
 
-    Currently this only supports deterministic series (made of one sample).
+    Currently, this only supports deterministic series (made of one sample).
 
     Parameters
     ----------
@@ -521,8 +542,13 @@ def coefficient_of_variation(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Coefficient of Variation
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Coefficient of Variation:
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -547,7 +573,7 @@ def mape(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Percentage Error (MAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -592,8 +618,13 @@ def mape(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Mean Absolute Percentage Error (MAPE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Mean Absolute Percentage Error (MAPE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -620,7 +651,7 @@ def smape(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """symmetric Mean Absolute Percentage Error (sMAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -667,8 +698,13 @@ def smape(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The symmetric Mean Absolute Percentage Error (sMAPE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The symmetric Mean Absolute Percentage Error (sMAPE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -698,7 +734,7 @@ def mase(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Scaled Error (MASE).
 
     See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
@@ -746,8 +782,13 @@ def mase(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Mean Absolute Scaled Error (MASE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Mean Absolute Scaled Error (MASE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     def _multivariate_mase(
@@ -895,7 +936,7 @@ def ope(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Overall Percentage Error (OPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -938,8 +979,13 @@ def ope(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Overall Percentage Error (OPE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Overall Percentage Error (OPE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -969,7 +1015,7 @@ def marre(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Ranged Relative Error (MARRE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -1012,8 +1058,13 @@ def marre(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Mean Absolute Ranged Relative Error (MARRE)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Mean Absolute Ranged Relative Error (MARRE):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -1043,7 +1094,7 @@ def r2_score(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Determination :math:`R^2`.
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
@@ -1080,8 +1131,13 @@ def r2_score(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The Coefficient of Determination :math:`R^2`
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The Coefficient of Determination :math:`R^2`:
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
     y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
@@ -1102,7 +1158,7 @@ def dtw_metric(
             Union[TimeSeries, Sequence[TimeSeries]],
             Union[TimeSeries, Sequence[TimeSeries]],
         ],
-        Union[float, np.ndarray],
+        METRIC_OUTPUT_TYPE,
     ] = mae,
     *,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
@@ -1110,14 +1166,14 @@ def dtw_metric(
     n_jobs: int = 1,
     verbose: bool = False,
     **kwargs
-) -> float:
+) -> METRIC_OUTPUT_TYPE:
     """
     Applies Dynamic Time Warping to actual_series and pred_series before passing it into the metric.
     Enables comparison between series of different lengths, phases and time indices.
 
     Defaults to using mae as a metric.
 
-    See darts.dataprocessing.dtw.dtw for more supported parameters.
+    See `darts.dataprocessing.dtw.dtw` for more supported parameters.
 
     Parameters
     ----------
@@ -1145,8 +1201,13 @@ def dtw_metric(
 
     Returns
     -------
-    float
-        Result of calling metric(warped_series1, warped_series2)
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        Result of calling metric(warped_series1, warped_series2):
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
 
     alignment = dtw.dtw(actual_series, pred_series, **kwargs)
@@ -1171,7 +1232,7 @@ def rho_risk(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """:math:`\\rho`-risk (rho-risk or quantile risk).
 
     Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions
@@ -1222,8 +1283,13 @@ def rho_risk(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The rho-risk metric
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The rho-risk metric:
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
     if not pred_series.is_stochastic:
         raise_log(
@@ -1267,7 +1333,7 @@ def quantile_loss(
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False
-) -> Union[float, np.ndarray]:
+) -> METRIC_OUTPUT_TYPE:
     """
     Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T`
     and a time series of stochastic predictions (containing N samples) :math:`y'` of shape :math:`T  x N`
@@ -1303,8 +1369,13 @@ def quantile_loss(
 
     Returns
     -------
-    Union[float, np.ndarray]
-        The quantile loss metric
+    Union[float, List[float], np.ndarray, List[np.ndarray]]
+        The quantile loss metric:
+
+        - float: for single time series, either univariate or multivariate with `component_reduction`.
+        - List[float]: for multiple series, all either univariate or multivariate with `component_reduction`.
+        - np.ndarray: for single multivariate time series without `component_reduction`
+        - List[np.ndarray]: for multiple multivariate series without `component_reduction`.
     """
     if not pred_series.is_stochastic:
         raise_log(
