@@ -9,10 +9,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 **Improved**
-- Improvements to Metrics: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
-  - 🚀 Optimized Darts Metrics (except `mase`), which run >20 times faster than before for univariate series, and >>20 times for multivariate series. This boosts direct metric computations as well as backtesting!
+- 🚀🚀 Improvements to Metrics through major refactor: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+  - Optimized all metrics, which now run >20 times faster than before for univariate series, and >>20 times for multivariate series. This boosts direct metric computations as well as backtesting!
+  - added new metrics  `rmsse()`, and `msse()`: The (Root) Mean Squared Scaled Error.
   - 🔴 renamed metric parameter `reduction` to `series_reduction`
   - 🔴 renamed metric parameter `inter_reduction` to `component_reduction`
+  - 🔴 scaled metrics do not allow seasonality inference anymore with `m=None`.
+  - 🔴 custom metrics using decorators `multi_ts_support` and `multivariate_support` must now act on multivariate series (possibly containing missing values) instead of univariate series. 
 - Improvements to `TimeSeries`: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
   - performance boost for methods: `slice_intersect()`, `has_same_time_as()`
   - new method `slice_intersect_values()`, which returns the sliced values of a series, where the time index has been intersected with another series.

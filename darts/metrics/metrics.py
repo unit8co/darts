@@ -301,7 +301,7 @@ def _get_error_scale(insample: TimeSeries, m: int):
     _, x_t = _get_values_or_raise(
         insample, insample, intersect=False, remove_nan_union=False
     )
-    scale = np.nanmean(np.abs(x_t[m:] - x_t[:-m]), axis=0)
+    scale = np.nanmean(np.abs(x_t[m:] - x_t[:-m]), axis=TIME_AX)
     if np.isclose(scale, 0.0).any():
         raise_log(ValueError("cannot use MASE with periodical signals"), logger=logger)
     return scale
