@@ -331,7 +331,8 @@ class TestMetrics:
         self.helper_test_multiple_ts_duplication_equality(metrics.smape)
         self.helper_test_nan(metrics.smape)
 
-    def test_mase(self):
+    @pytest.mark.parametrize("metric", [metrics.mase, metrics.msse, metrics.rmsse])
+    def test_mase(self, metric):
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
         for s1, s2 in test_cases:
@@ -340,13 +341,13 @@ class TestMetrics:
             assert (
                 round(
                     abs(
-                        metrics.mase(
+                        metric(
                             s1.stack(s1),
                             s2.stack(s2),
                             insample.stack(insample),
                             component_reduction=(lambda x: x[0]),
                         )
-                        - metrics.mase(s1, s2, insample)
+                        - metric(s1, s2, insample)
                     ),
                     7,
                 )
@@ -356,14 +357,14 @@ class TestMetrics:
             assert (
                 round(
                     abs(
-                        metrics.mase(
+                        metric(
                             actual_series=[s1] * 2,
                             pred_series=[s2] * 2,
                             insample=[insample] * 2,
                             component_reduction=(lambda x: x[0]),
                             series_reduction=(lambda x: x[0]),
                         )
-                        - metrics.mase(s1, s2, insample)
+                        - metric(s1, s2, insample)
                     ),
                     7,
                 )
@@ -373,14 +374,14 @@ class TestMetrics:
             assert (
                 round(
                     abs(
-                        metrics.mase(
+                        metric(
                             [s1] * 5,
                             pred_series=[s2] * 5,
                             insample=[insample] * 5,
                             component_reduction=(lambda x: x[0]),
                             series_reduction=(lambda x: x[0]),
                         )
-                        - metrics.mase(
+                        - metric(
                             [s1] * 5,
                             [s2] * 5,
                             insample=[insample] * 5,
@@ -394,44 +395,23 @@ class TestMetrics:
                 )
                 == 0
             )
-        # checking with m=None
-        assert (
-            round(
-                abs(
-                    metrics.mase(
-                        self.series2,
-                        self.series2,
-                        self.series_train_not_periodic,
-                        m=None,
-                    )
-                    - metrics.mase(
-                        [self.series2] * 2,
-                        [self.series2] * 2,
-                        [self.series_train_not_periodic] * 2,
-                        m=None,
-                        series_reduction=np.mean,
-                    )
-                ),
-                7,
-            )
-            == 0
-        )
 
+        # fails with type `n` different from `int`
+        with pytest.raises(ValueError) as err:
+            metric(self.series2, self.series2, self.series_train_not_periodic, m=None)
+        assert str(err.value).startswith("Seasonality `m` must be of type `int`")
         # fails because of wrong indexes (series1/2 indexes should be the continuation of series3)
         with pytest.raises(ValueError):
-            metrics.mase(self.series1, self.series2, self.series3, 1)
+            metric(self.series1, self.series2, self.series3, 1)
         # multi-ts, second series is not a TimeSeries
         with pytest.raises(ValueError):
-            metrics.mase([self.series1] * 2, self.series2, [insample] * 2)
+            metric([self.series1] * 2, self.series2, [insample] * 2)
         # multi-ts, insample series is not a TimeSeries
         with pytest.raises(ValueError):
-            metrics.mase([self.series1] * 2, [self.series2] * 2, insample)
+            metric([self.series1] * 2, [self.series2] * 2, insample)
         # multi-ts one array has different length
         with pytest.raises(ValueError):
-            metrics.mase([self.series1] * 2, [self.series2] * 2, [insample] * 3)
-        # not supported input
-        with pytest.raises(ValueError):
-            metrics.mase(1, 2, 3)
+            metric([self.series1] * 2, [self.series2] * 2, [insample] * 3)
 
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)

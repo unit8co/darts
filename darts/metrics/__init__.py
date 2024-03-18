@@ -6,6 +6,9 @@ For deterministic forecasts (point predictions with `num_samples == 1`):
     - :func:`MAE <darts.metrics.metrics.mae>`: Mean Absolute Error
     - :func:`MSE <darts.metrics.metrics.mse>`: Mean Squared Error
     - :func:`RMSE <darts.metrics.metrics.rmse>`: Root Mean Squared Error
+    - :func:`MASE <darts.metrics.metrics.mase>`: Mean Absolute Scaled Error
+    - :func:`MSSE <darts.metrics.metrics.msse>`: Mean Squared Scaled Error
+    - :func:`RMSSE <darts.metrics.metrics.rmsse>`: Root Mean Squared Scaled Error
     - :func:`RMSLE <darts.metrics.metrics.rmsle>`: Root Mean Squared Log Error
     - :func:`MAPE <darts.metrics.metrics.mape>`: Mean Absolute Percentage Error
     - :func:`sMAPE <darts.metrics.metrics.smape>`: symmetric Mean Absolute Percentage Error
