@@ -635,9 +635,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         enable_optimization: bool = True,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> Union[
-        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-    ]:
+    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         """Compute the historical forecasts that would have been obtained by this model on
         (potentially multiple) `series`.
 
@@ -750,14 +748,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Returns
         -------
-        TimeSeries or List[TimeSeries] or List[List[TimeSeries]]
-            If `last_points_only` is set to True and a single series is provided in input, a single ``TimeSeries``
-            is returned, which contains the historical forecast at the desired horizon.
+        TimeSeries
+            A single historical forecast for a single `series` and `last_points_only=True`: it contains only the
+            predictions at step `forecast_horizon` from all historical forecasts.
+        List[TimeSeries]
+            A list of historical forecasts for:
 
-            A ``List[TimeSeries]`` is returned if either `series` is a ``Sequence`` of ``TimeSeries``,
-            or if `last_points_only` is set to False. A list of lists is returned if both conditions are met.
-            In this last case, the outer list is over the series provided in the input sequence,
-            and the inner lists contain the different historical forecasts.
+            - multiple `series` and `last_points_only=True`: for each series, it contains only the predictions at step
+                `forecast_horizon` from all historical forecasts.
+            - a single `series` and `last_points_only=False`: for each historical forecast, it contains the entire
+                horizon `forecast_horizon`.
+        List[List[TimeSeries]]
+            A list of lists of historical forecasts for multiple `series` and `last_points_only=False`. For each
+            series, and historical forecast, it contains the entire horizon `forecast_horizon`. The outer list
+            is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
+            each series.
         """
         model: ForecastingModel = self
         # only GlobalForecastingModels support historical forecasting without retraining the model
@@ -1154,12 +1159,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
+    ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
 
         If `historical_forecasts` are provided, the metric (given by the `metric` function) is evaluated directly on
-        the forecast and the actual values. Otherwise, it repeatedly builds a training set: either expanding from the
+        the forecast and the actual values. The same `series` must be passed that was used to generate the historical
+        forecasts. Otherwise, it repeatedly builds a training set: either expanding from the
         beginning  of `series` or moving with a fixed length `train_length`. It trains the current model on the
         training set, emits a forecast of length equal to `forecast_horizon`, and then moves the end of the training
         set forward by `stride` time steps. The metric is then evaluated on the forecast and the actual values.
@@ -1185,8 +1191,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             supports future covariates.
         historical_forecasts
             Optionally, the (or a sequence of) historical forecasts time series to be evaluated. Corresponds to
-            the output of :meth:`historical_forecasts() <ForecastingModel.historical_forecasts>`. If provided, will
-            skip historical forecasting and ignore all parameters except `series`, `metric`, and `reduction`.
+            the output of :meth:`historical_forecasts() <darts.models.forecasting.forecasting_model.ForecastingModel.
+            historical_forecasts>`. The same `series` and `last_points_only` values must be passed that were used to
+            generate the historical forecasts. If provided, will skip historical forecasting and ignore all parameters
+            except `series`, `last_points_only`, `metric`, and `reduction`.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Use values `>1` only for probabilistic
             models.
@@ -1270,9 +1278,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Returns
         -------
-        float or List[float] or List[List[float]]
-            The (sequence of) error score on a series, or list of list containing error scores for each
-            provided series and each sample.
+        float
+            Backtest metric for a single `series`, a single `metric`, and `historical_forecasts` generated with either
+            `last_points_only=True` or `last_points_only=False` and additionally using a backtest `reduction`.
+        np.ndarray
+            Backtest metrics for a single `series`, and multiple `metric` functions and/or `historical_forecasts`
+            generated with `last_points_only=False`. The output has shape (n forecasts, n metrics) without `reduction`,
+            and (n metrics,) otherwise.
+        List[float]
+            Same as for return type `float` but for multiple `series`. The returned metric list has length
+            `len(series)` with the `float` metric for each input `series`.
+        List[np.ndarray]
+            Same as for return type `np.ndarray` but for multiple `series`. The returned metric list has length
+            `len(series)` with the `np.ndarray` metrics for each input `series`.
         """
         if historical_forecasts is None:
             forecasts = self.historical_forecasts(
@@ -1300,25 +1318,81 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if len(series) == 1:
             forecasts = [forecasts]
 
+        if len(series) != len(forecasts):
+            raise_log(
+                ValueError(
+                    f"Mismatch between number of `series` (n={len(series)}) and number of series-specific "
+                    f"`historical_forecasts` (n={len(forecasts)})."
+                ),
+                logger=logger,
+            )
+        if last_points_only and not isinstance(forecasts[0], TimeSeries):
+            raise_log(
+                ValueError(
+                    "Unexpected `forecasts` type for `last_points_only=True`. Must either be a single "
+                    "`TimeSeries` for `series` with type `TimeSeries`, or a `Sequence[TimeSeries]` "
+                    "for `series` with type `Sequence[TimeSeries]`."
+                ),
+                logger=logger,
+            )
+        if not last_points_only and isinstance(forecasts[0], TimeSeries):
+            raise_log(
+                ValueError(
+                    "Unexpected `forecasts` type for `last_points_only=False`. Must either be a "
+                    "`Sequence[TimeSeries]` for `series` with type `TimeSeries`, or a "
+                    "`Sequence[Sequence[TimeSeries]]` for `series` with type `Sequence[TimeSeries]`."
+                ),
+                logger=logger,
+            )
+
         if not isinstance(metric, list):
             metric = [metric]
 
         if last_points_only:
-            # we have on forecast per series
+            # we have one forecast per series
             errors = [metric_f(series, forecasts) for metric_f in metric]
-            return errors if len(metric) > 1 else errors[0]
+            if len(metric) == 1:
+                return errors[0]
 
-        # we have multiple forecasts per series
+            return [err for err in np.array(errors).T] if len(metric) > 1 else errors[0]
+
+        # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
+        # flatten historical forecasts, get matching target series index, remember cumulative target lengths
+        # for later reshaping back to original
+        series_idx = []
+        cum_len = [0]
+        forecasts_list = []
+        for idx, fc_list in enumerate(forecasts):
+            series_idx += [idx] * len(fc_list)
+            cum_len.append(cum_len[-1] + len(fc_list))
+            forecasts_list.extend(fc_list)
+
+        class SeriesGenerator(Sequence):
+            """Yields the target `series` corresponding the historical forecast at index `i`.
+            Allows lazy loading of target `series` in case it is a Sequence.
+            """
+
+            def __len__(self):
+                return len(forecasts_list)
+
+            def __getitem__(self, index) -> TimeSeries:
+                return series[series_idx[index]]
+
+        series_gen = SeriesGenerator()
+        errors = np.array([metric_f(series_gen, forecasts_list) for metric_f in metric])
+
+        if len(errors.shape) == 1:
+            errors = np.expand_dims(errors, 0)
+
+        # extract metrics per series, and optionally reduce
         backtest_list = []
-        for idx, target_ts in enumerate(series):
-            fc_list = forecasts[idx]
-            errors = [
-                metric_f([target_ts] * len(fc_list), fc_list) for metric_f in metric
-            ]
-            if reduction is not None:
-                errors = reduction(np.array(errors), axis=1)
+        for i in range(len(cum_len) - 1):
+            errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
 
-            backtest_list.append(errors if len(metric) > 1 else errors[0])
+            if reduction is not None:
+                errors_series = reduction(np.array(errors_series), axis=1)
+
+            backtest_list.append(errors_series if len(metric) > 1 else errors_series[0])
         return backtest_list if len(backtest_list) > 1 else backtest_list[0]
 
     @classmethod
