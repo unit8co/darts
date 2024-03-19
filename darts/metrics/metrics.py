@@ -18,6 +18,7 @@ from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
 TIME_AX = 0
+COMP_AX = 1
 
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
@@ -84,6 +85,9 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         )
         input_series = (actual_series, pred_series)
 
+        kwargs.pop("actual_series", 0)
+        kwargs.pop("pred_series", 0)
+
         # handle `insample` parameter for scaled metrics
         if "insample" in params:
             insample = kwargs.get("insample")
@@ -103,10 +107,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 )
             input_series += (insample,)
             num_series_in_args += int("insample" not in kwargs)
-
-        kwargs.pop("actual_series", 0)
-        kwargs.pop("pred_series", 0)
-        kwargs.pop("insample", 0)
+            kwargs.pop("insample", 0)
 
         iterator = _build_tqdm_iterator(
             iterable=zip(*input_series),
@@ -114,6 +115,10 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             total=len(actual_series),
         )
 
+        # `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape
+        # `(n time steps, n components)`;
+        # - n times step is `1` if `time_reduction` is other than `None`
+        # - n components: is 1 if `component_reduction` is other than `None`
         vals = _parallel_apply(
             iterator=iterator,
             fn=func,
@@ -121,15 +126,23 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             fn_args=args[num_series_in_args:],
             fn_kwargs=kwargs,
         )
-        # in case the reduction is not reducing the metrics sequence to a single value, e.g., if returning the
-        # np.ndarray of values with the identity function, we must handle the single TS case, where we should
-        # return a single value instead of a np.array of len 1
-        vals = vals[0] if len(vals) == 1 else vals
 
+        # we flatten metrics along time axis if n time steps == 1,
+        # and/or along component axis if n components == 1
+        vals = [
+            val[
+                slice(None) if val.shape[TIME_AX] != 1 else 0,
+                slice(None) if val.shape[COMP_AX] != 1 else 0,
+            ]
+            for val in vals
+        ]
+
+        # reduce metrics along series axis
         if kwargs.get("series_reduction") is not None:
-            return kwargs["series_reduction"](vals)
-        else:
-            return vals
+            vals = kwargs["series_reduction"](vals, axis=0)
+
+        # flatten along series axis if n series == 1
+        return vals if isinstance(vals, float) or len(vals) > 1 else vals[0]
 
     return wrapper_multi_ts_support
 
@@ -183,14 +196,35 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             num_series_in_args += 1
 
         vals = func(*input_series, *args[num_series_in_args:], **kwargs)
+        if not 1 <= len(vals.shape) <= 2:
+            raise_log(
+                ValueError(
+                    "Metric output must 1 dimension for aggregated metrics (e.g. MAE, ...), or 2 dimension for "
+                    "time dependent metrics (e.g. residuals)"
+                ),
+                logger=logger,
+            )
+        elif len(vals.shape) == 1:
+            vals = np.expand_dims(vals, TIME_AX)
+
         if "component_reduction" in kwargs:
-            return (
-                kwargs["component_reduction"](vals)
+            vals = (
+                kwargs["component_reduction"](vals, axis=COMP_AX)
                 if kwargs["component_reduction"] is not None
                 else vals
             )
         else:
-            return params["component_reduction"].default(vals)
+            vals = params["component_reduction"].default(vals, axis=COMP_AX)
+
+        # reshape to (time dim, component dim)
+        if len(vals.shape) == 0:
+            expand_axis = (0, 1)
+        elif len(vals.shape) == 1:
+            expand_axis = 1
+        else:
+            expand_axis = None
+
+        return vals if not expand_axis else np.expand_dims(vals, axis=expand_axis)
 
     return wrapper_multivariate_support
 
@@ -289,6 +323,16 @@ def _get_values_or_raise(
     )
 
 
+def _get_wrapped_metric(
+    func: Callable[..., METRIC_OUTPUT_TYPE]
+) -> Callable[..., METRIC_OUTPUT_TYPE]:
+    """Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and
+    `multivariate_support`. It significantly decreases process time compared to calling `func` directly.
+    Only use this to compute a pre-defined metric within the scope of another metric.
+    """
+    return func.__wrapped__.__wrapped__
+
+
 def _get_error_scale(insample: TimeSeries, m: int):
     """Computes the error scale based on a naive seasonal forecasts on `insample` values with seasonality `m`."""
     if not isinstance(m, int):
@@ -372,6 +416,87 @@ def mae(
 
 @multi_ts_support
 @multivariate_support
+def mase(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    m: Optional[int] = 1,
+    intersect: bool = True,
+    *,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Absolute Scaled Error (MASE).
+
+    See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
+    for details about the MASE and how it is computed.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    insample
+        The training series used to forecast `pred_series` . This series serves to compute the scale of the error
+        obtained by a naive forecaster on the training data.
+    m
+        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
+        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
+        MASE. The scale is computed as:
+
+        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
+        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
+        will return a metric per component.
+    series_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
+        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
+        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Raises
+    ------
+    ValueError
+        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        time step before the start of the corresponding forecast in `pred_series`.
+
+    Returns
+    -------
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+    """
+    error_scale = _get_error_scale(insample, m=m)
+    errors = _get_wrapped_metric(mae)(
+        actual_series,
+        pred_series,
+        intersect,
+    )
+    return errors / error_scale
+
+
+@multi_ts_support
+@multivariate_support
 def mse(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -435,6 +560,88 @@ def mse(
 
 @multi_ts_support
 @multivariate_support
+def msse(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    m: Optional[int] = 1,
+    intersect: bool = True,
+    *,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Squared Scaled Error (MSSE).
+
+    See `Mean Squared Scaled Error (MSSE)
+    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_ for details about the MSSE and
+    how it is computed.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    insample
+        The training series used to forecast `pred_series` . This series serves to compute the scale of the error
+        obtained by a naive forecaster on the training data.
+    m
+        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
+        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
+        MASE. The scale is computed as:
+
+        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
+        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
+        will return a metric per component.
+    series_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
+        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
+        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Raises
+    ------
+    ValueError
+        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        time step before the start of the corresponding forecast in `pred_series`.
+
+    Returns
+    -------
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+    """
+    error_scale = _get_error_scale(insample, m=m)
+    errors = _get_wrapped_metric(mse)(
+        actual_series,
+        pred_series,
+        intersect,
+    )
+    return errors / error_scale
+
+
+@multi_ts_support
+@multivariate_support
 def rmse(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -490,14 +697,94 @@ def rmse(
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
     return np.sqrt(
-        mse(
+        _get_wrapped_metric(mse)(
             actual_series,
             pred_series,
             intersect,
-            component_reduction=None,
-            series_reduction=None,
         )
     )
+
+
+@multi_ts_support
+@multivariate_support
+def rmsse(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    insample: Union[TimeSeries, Sequence[TimeSeries]],
+    m: Optional[int] = 1,
+    intersect: bool = True,
+    *,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Root Mean Squared Scaled Error (RMSSE).
+
+    See `Root Mean Squared Scaled Error (RMSSE)
+    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_ for details about the RMSSE and
+    how it is computed.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    insample
+        The training series used to forecast `pred_series` . This series serves to compute the scale of the error
+        obtained by a naive forecaster on the training data.
+    m
+        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
+        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
+        MASE. The scale is computed as:
+
+        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
+        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
+        will return a metric per component.
+    series_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
+        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
+        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Raises
+    ------
+    ValueError
+        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        time step before the start of the corresponding forecast in `pred_series`.
+
+    Returns
+    -------
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+    """
+    error_scale = _get_error_scale(insample, m=m)
+    errors = _get_wrapped_metric(rmse)(
+        actual_series,
+        pred_series,
+        intersect,
+    )
+    return errors / error_scale
 
 
 @multi_ts_support
@@ -802,254 +1089,6 @@ def smape(
 
 @multi_ts_support
 @multivariate_support
-def mase(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
-    intersect: bool = True,
-    *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
-    n_jobs: int = 1,
-    verbose: bool = False,
-) -> METRIC_OUTPUT_TYPE:
-    """Mean Absolute Scaled Error (MASE).
-
-    See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
-    for details about the MASE and how it is computed.
-
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
-
-    Parameters
-    ----------
-    actual_series
-        The (sequence of) actual series.
-    pred_series
-        The (sequence of) predicted series.
-    insample
-        The training series used to forecast `pred_series` . This series serves to compute the scale of the error
-        obtained by a naive forecaster on the training data.
-    m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
-    intersect
-        For time series that are overlapping in time without having the same time index, setting `True`
-        will consider the values only over their common time interval (intersection in time).
-    component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
-    series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
-    n_jobs
-        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
-        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
-        (sequential). Setting the parameter to `-1` means using all the available processors.
-    verbose
-        Optionally, whether to print operations progress
-
-    Raises
-    ------
-    ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` )
-
-    Returns
-    -------
-    float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
-    np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
-    List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
-    """
-    error_scale = _get_error_scale(insample, m=m)
-    errors = mae(
-        actual_series,
-        pred_series,
-        intersect,
-        component_reduction=None,
-        series_reduction=None,
-    )
-    return errors / error_scale
-
-
-@multi_ts_support
-@multivariate_support
-def rmsse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
-    intersect: bool = True,
-    *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
-    n_jobs: int = 1,
-    verbose: bool = False,
-) -> METRIC_OUTPUT_TYPE:
-    """Root Mean Squared Scaled Error (RMSSE).
-
-    See `Root Mean Squared Scaled Error (RMSSE)
-    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_ for details about the RMSSE and
-    how it is computed.
-
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
-
-    Parameters
-    ----------
-    actual_series
-        The (sequence of) actual series.
-    pred_series
-        The (sequence of) predicted series.
-    insample
-        The training series used to forecast `pred_series` . This series serves to compute the scale of the error
-        obtained by a naive forecaster on the training data.
-    m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
-    intersect
-        For time series that are overlapping in time without having the same time index, setting `True`
-        will consider the values only over their common time interval (intersection in time).
-    component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
-    series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
-    n_jobs
-        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
-        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
-        (sequential). Setting the parameter to `-1` means using all the available processors.
-    verbose
-        Optionally, whether to print operations progress
-
-    Raises
-    ------
-    ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` )
-
-    Returns
-    -------
-    float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
-    np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
-    List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
-    """
-    error_scale = _get_error_scale(insample, m=m)
-    errors = rmse(
-        actual_series,
-        pred_series,
-        intersect,
-        component_reduction=None,
-        series_reduction=None,
-    )
-    return errors / error_scale
-
-
-@multi_ts_support
-@multivariate_support
-def msse(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
-    intersect: bool = True,
-    *,
-    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
-    n_jobs: int = 1,
-    verbose: bool = False,
-) -> METRIC_OUTPUT_TYPE:
-    """Mean Squared Scaled Error (MSSE).
-
-    See `Mean Squared Scaled Error (MSSE)
-    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_ for details about the MSSE and
-    how it is computed.
-
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
-
-    Parameters
-    ----------
-    actual_series
-        The (sequence of) actual series.
-    pred_series
-        The (sequence of) predicted series.
-    insample
-        The training series used to forecast `pred_series` . This series serves to compute the scale of the error
-        obtained by a naive forecaster on the training data.
-    m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
-    intersect
-        For time series that are overlapping in time without having the same time index, setting `True`
-        will consider the values only over their common time interval (intersection in time).
-    component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
-    series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
-    n_jobs
-        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
-        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
-        (sequential). Setting the parameter to `-1` means using all the available processors.
-    verbose
-        Optionally, whether to print operations progress
-
-    Raises
-    ------
-    ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` )
-
-    Returns
-    -------
-    float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
-    np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
-    List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
-    """
-    error_scale = _get_error_scale(insample, m=m)
-    errors = mse(
-        actual_series,
-        pred_series,
-        intersect,
-        component_reduction=None,
-        series_reduction=None,
-    )
-    return errors / error_scale
-
-
-@multi_ts_support
-@multivariate_support
 def ope(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -1276,6 +1315,7 @@ def r2_score(
 
 # Dynamic Time Warping
 @multi_ts_support
+@multivariate_support
 def dtw_metric(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -1338,12 +1378,11 @@ def dtw_metric(
     """
 
     alignment = dtw.dtw(actual_series, pred_series, **kwargs)
-    if metric == mae and "distance" not in kwargs:
-        return alignment.mean_distance()
-
     warped_actual_series, warped_pred_series = alignment.warped()
-
-    return metric(warped_actual_series, warped_pred_series)
+    return _get_wrapped_metric(metric)(
+        warped_actual_series,
+        warped_pred_series,
+    )
 
 
 # rho-risk (quantile risk)
@@ -1525,3 +1564,75 @@ def quantile_loss(
     errors = y_true - y_pred
     losses = np.maximum((tau - 1) * errors, tau * errors)
     return np.nanmean(losses, axis=TIME_AX)
+
+
+@multi_ts_support
+@multivariate_support
+def residuals(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    time_reduction: Optional[Callable[..., np.ndarray]] = np.nanmean,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Absolute Error (MAE).
+
+    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{(|y^1_t - y^2_t|)}.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    time_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and a parameter named `axis` and returning a
+        ``np.ndarray``. This function is used to aggregate the metrics over the time axis. The function must have a
+        parameter `axis` which receives vale `0` corresponding to an aggregation over the time axis. If `None`, will
+        return a metric per time step.
+    component_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
+        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
+        will return a metric per component.
+    series_reduction
+        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
+        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
+        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
+    List[float]
+        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+    np.ndarray
+        A single array of metric scores for single multivariate time series without `component_reduction`
+    List[np.ndarray]
+        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+    """
+
+    y_true, y_pred = _get_values_or_raise(
+        actual_series, pred_series, intersect, remove_nan_union=False
+    )
+    errors = y_true - y_pred
+    if time_reduction is not None:
+        errors = time_reduction(errors, axis=TIME_AX)
+    return errors

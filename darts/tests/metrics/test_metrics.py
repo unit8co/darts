@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +11,12 @@ from darts.metrics import metrics
 
 def sklearn_mape(*args, **kwargs):
     return sklearn.metrics.mean_absolute_percentage_error(*args, **kwargs) * 100.0
+
+
+def metric_residuals(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return np.mean(y_true - y_pred)
 
 
 def metric_smape(y_true, y_pred, **kwargs):
@@ -120,16 +128,228 @@ class TestMetrics:
                 self.series1 - self.series1.pd_series().mean(),
             )
 
-    def test_same(self):
-        assert metrics.mape(self.series1 + 1, self.series1 + 1) == 0
-        assert metrics.smape(self.series1 + 1, self.series1 + 1) == 0
-        assert (
-            metrics.mase(self.series1 + 1, self.series1 + 1, self.series_train, 1) == 0
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.mae, False),
+            (metrics.mase, False),
+            (metrics.mse, False),
+            (metrics.msse, False),
+            (metrics.rmse, False),
+            (metrics.rmsse, False),
+            (metrics.rmsle, False),
+            (metrics.mape, False),
+            (metrics.smape, False),
+            (metrics.ope, False),
+            (metrics.marre, False),
+            (metrics.r2_score, False),
+            (metrics.coefficient_of_variation, False),
+            (metrics.rho_risk, True),
+            (metrics.quantile_loss, True),
+            (metrics.residuals, False),
+            (metrics.dtw_metric, False),
+        ],
+    )
+    def test_output_type(self, config):
+        """Test output types and shapes for single multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        metric, is_probabilistic = config
+        params = inspect.signature(metric).parameters
+
+        # y true
+        y_t_mv = self.series12 + 1
+        y_t_uv = y_t_mv.univariate_component(0)
+        y_t_multi_mv = [y_t_mv] * 2
+        y_t_multi_uv = [y_t_uv] * 2
+
+        # y pred
+        y_p_mv = (
+            self.series12
+            if not is_probabilistic
+            else self.series12_stochastic.stack(self.series12_stochastic)
+        ) + 1
+        y_p_uv = y_p_mv.univariate_component(0)
+        y_p_multi_mv = [y_p_mv] * 2
+        y_p_multi_uv = [y_p_uv] * 2
+
+        # insample
+        kwargs_uv, kwargs_mv, kwargs_multi_uv, kwargs_multi_mv = {}, {}, {}, {}
+        if "insample" in params:
+            insample = self.series_train.stack(self.series_train) + 1
+            kwargs_uv["insample"] = insample.univariate_component(0)
+            kwargs_mv["insample"] = insample
+            kwargs_multi_uv["insample"] = [kwargs_uv["insample"]] * 2
+            kwargs_multi_mv["insample"] = [kwargs_mv["insample"]] * 2
+
+        # single univariate series
+        res = metric(
+            y_t_uv, y_p_uv, **kwargs_uv, series_reduction=None, component_reduction=None
         )
-        assert metrics.marre(self.series1 + 1, self.series1 + 1) == 0
-        assert metrics.r2_score(self.series1 + 1, self.series1 + 1) == 1
-        assert metrics.ope(self.series1 + 1, self.series1 + 1) == 0
-        assert metrics.rho_risk(self.series1 + 1, self.series11_stochastic + 1) == 0
+        assert isinstance(res, float)
+        res = metric(
+            y_t_uv,
+            y_p_uv,
+            **kwargs_uv,
+            series_reduction=np.mean,
+            component_reduction=None
+        )
+        assert isinstance(res, float)
+        res = metric(
+            y_t_uv,
+            y_p_uv,
+            **kwargs_uv,
+            series_reduction=None,
+            component_reduction=np.mean
+        )
+        assert isinstance(res, float)
+
+        # single multivariate series with component reduction
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=None,
+            component_reduction=np.mean
+        )
+        assert isinstance(res, float)
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=np.mean,
+            component_reduction=np.mean
+        )
+        assert isinstance(res, float)
+
+        # single multivariate series without component reduction
+        res = metric(
+            y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None
+        )
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=np.mean,
+            component_reduction=None
+        )
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
+
+        # multiple univariate series without series reduction
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=None,
+            component_reduction=None
+        )
+        assert isinstance(res, list)
+        assert len(res) == 2
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=None,
+            component_reduction=np.mean
+        )
+        assert isinstance(res, list)
+        assert len(res) == 2
+
+        # multiple univariate series with series reduction
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=np.mean,
+            component_reduction=None
+        )
+        assert isinstance(res, float)
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=np.mean,
+            component_reduction=np.mean
+        )
+        assert isinstance(res, float)
+
+        # multiple multivariate series without series reduction
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=None,
+            component_reduction=None
+        )
+        assert isinstance(res, list)
+        assert len(res) == 2
+        assert all(isinstance(el, np.ndarray) for el in res)
+        assert all(el.shape == (2,) for el in res)
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=None,
+            component_reduction=np.mean
+        )
+        assert isinstance(res, list)
+        assert len(res) == 2
+        assert all(isinstance(el, float) for el in res)
+
+        # multiple multivariate series with series reduction
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=np.mean,
+            component_reduction=None
+        )
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=np.mean,
+            component_reduction=np.mean
+        )
+        assert isinstance(res, float)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.mae, 0, False),
+            (metrics.mase, 0, False),
+            (metrics.mse, 0, False),
+            (metrics.msse, 0, False),
+            (metrics.rmse, 0, False),
+            (metrics.rmsse, 0, False),
+            (metrics.rmsle, 0, False),
+            (metrics.mape, 0, False),
+            (metrics.smape, 0, False),
+            (metrics.ope, 0, False),
+            (metrics.marre, 0, False),
+            (metrics.r2_score, 1, False),
+            (metrics.coefficient_of_variation, 0, False),
+            (metrics.rho_risk, 0, True),
+            (metrics.quantile_loss, 0, True),
+            (metrics.residuals, 0, False),
+            (metrics.dtw_metric, 0, False),
+        ],
+    )
+    def test_same(self, config):
+        metric, score_exp, is_probabilistic = config
+        params = inspect.signature(metric).parameters
+        y_true = self.series1 + 1
+        y_pred = (
+            self.series1 + 1 if not is_probabilistic else self.series11_stochastic + 1
+        )
+        if "insample" in params:
+            assert metric(y_true, y_pred, self.series_train + 1) == score_exp
+        else:
+            assert metric(y_true, y_pred) == score_exp
 
     def helper_test_shape_equality(self, metric):
         assert (
@@ -178,9 +398,17 @@ class TestMetrics:
             assert (
                 round(
                     abs(
-                        metric(s1, s2, **kwargs, component_reduction=(lambda x: x[0]))
+                        metric(
+                            s1,
+                            s2,
+                            **kwargs,
+                            component_reduction=(lambda x, axis: x[0, 0])
+                        )
                         - metric(
-                            s11, s22, **kwargs, component_reduction=(lambda x: x[0])
+                            s11,
+                            s22,
+                            **kwargs,
+                            component_reduction=(lambda x, axis: x[0, 0])
                         )
                     ),
                     7,
@@ -298,7 +526,7 @@ class TestMetrics:
                     - metrics.mse(
                         self.series12,
                         self.series21,
-                        component_reduction=(lambda x: np.sqrt(np.mean(x))),
+                        component_reduction=(lambda x, axis: np.sqrt(np.mean(x))),
                     )
                 ),
                 7,
@@ -311,6 +539,18 @@ class TestMetrics:
         self.helper_test_multivariate_duplication_equality(metrics.rmsle)
         self.helper_test_multiple_ts_duplication_equality(metrics.rmsle)
         self.helper_test_nan(metrics.rmsle)
+
+    def test_residuals(self):
+        self.helper_test_shape_equality(metrics.residuals)
+        self.helper_test_nan(metrics.residuals)
+
+        assert metrics.residuals(self.series1, self.series1 + 1) == -1.0
+        assert metrics.residuals(self.series1, self.series1 - 1) == 1.0
+
+        # do not aggregate over time
+        res = metrics.residuals(self.series1, self.series1 + 1, time_reduction=None)
+        assert len(res) == len(self.series1)
+        assert (res == -1.0).all()
 
     def test_coefficient_of_variation(self):
         self.helper_test_multivariate_duplication_equality(
@@ -332,71 +572,44 @@ class TestMetrics:
         self.helper_test_nan(metrics.smape)
 
     @pytest.mark.parametrize("metric", [metrics.mase, metrics.msse, metrics.rmsse])
-    def test_mase(self, metric):
+    def test_scaled_errors(self, metric):
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
         for s1, s2 in test_cases:
 
             # multivariate, series as args
-            assert (
-                round(
-                    abs(
-                        metric(
-                            s1.stack(s1),
-                            s2.stack(s2),
-                            insample.stack(insample),
-                            component_reduction=(lambda x: x[0]),
-                        )
-                        - metric(s1, s2, insample)
-                    ),
-                    7,
-                )
-                == 0
-            )
-            # multi-ts, series as kwargs
-            assert (
-                round(
-                    abs(
-                        metric(
-                            actual_series=[s1] * 2,
-                            pred_series=[s2] * 2,
-                            insample=[insample] * 2,
-                            component_reduction=(lambda x: x[0]),
-                            series_reduction=(lambda x: x[0]),
-                        )
-                        - metric(s1, s2, insample)
-                    ),
-                    7,
-                )
-                == 0
-            )
-            # checking with n_jobs and verbose
-            assert (
-                round(
-                    abs(
-                        metric(
-                            [s1] * 5,
-                            pred_series=[s2] * 5,
-                            insample=[insample] * 5,
-                            component_reduction=(lambda x: x[0]),
-                            series_reduction=(lambda x: x[0]),
-                        )
-                        - metric(
-                            [s1] * 5,
-                            [s2] * 5,
-                            insample=[insample] * 5,
-                            component_reduction=(lambda x: x[0]),
-                            series_reduction=(lambda x: x[0]),
-                            n_jobs=-1,
-                            verbose=True,
-                        )
-                    ),
-                    7,
-                )
-                == 0
+            np.testing.assert_array_almost_equal(
+                metric(s1.stack(s1), s2.stack(s2), insample.stack(insample)),
+                metric(s1, s2, insample),
             )
 
-        # fails with type `n` different from `int`
+            # multi-ts, series as kwargs
+            np.testing.assert_array_almost_equal(
+                metric(
+                    actual_series=[s1] * 2,
+                    pred_series=[s2] * 2,
+                    insample=[insample] * 2,
+                ),
+                metric(s1, s2, insample),
+            )
+
+            # checking with n_jobs and verbose
+            np.testing.assert_array_almost_equal(
+                metric(
+                    [s1] * 5,
+                    pred_series=[s2] * 5,
+                    insample=[insample] * 5,
+                ),
+                metric(
+                    [s1] * 5,
+                    [s2] * 5,
+                    insample=[insample] * 5,
+                    n_jobs=-1,
+                    verbose=True,
+                ),
+            )
+
+        # fails with type `m` different from `int`
         with pytest.raises(ValueError) as err:
             metric(self.series2, self.series2, self.series_train_not_periodic, m=None)
         assert str(err.value).startswith("Seasonality `m` must be of type `int`")
@@ -639,6 +852,7 @@ class TestMetrics:
             (metrics.ope, metric_ope, {}),
             (metrics.marre, metric_marre, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}),
+            (metrics.residuals, metric_residuals, {}),
         ],
     )
     def test_metrics(self, config):
