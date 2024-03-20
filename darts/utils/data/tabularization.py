@@ -279,6 +279,15 @@ def create_lagged_data(
         len(seq_ts_lens) > 1,
         "Must specify the same number of `TimeSeries` for each series input.",
     )
+    raise_if(
+        not use_moving_windows
+        and any(
+            isinstance(lags_, dict)
+            for lags_ in [lags, lags_past_covariates, lags_future_covariates]
+        ),
+        "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary. "
+        f"Received: {[lags, lags_past_covariates, lags_future_covariates]}.",
+    )
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
     X, y, times = [], [], []
@@ -714,9 +723,9 @@ def create_lagged_component_names(
     For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),
     each `lagged_*` has the following structure (grouped by lags):
         comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
-    For `*_lags={'comp0':[-2, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
-    specific lags), each `lagged_*` has the following structure (grouped by components):
-        comp0_*_lag-2 | comp0_*_lag-1 | comp1_*_lag_-5 | comp1_*_lag-3
+    For `*_lags={'comp0':[-3, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
+    specific lags), each `lagged_*` has the following structure (sorted by lags, then by components):
+        comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
 
     and for static covariates (2 static covariates acting on 2 target components):
         cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
@@ -775,10 +784,31 @@ def create_lagged_component_names(
 
         components = get_single_series(variate).components.tolist()
         if isinstance(variate_lags, dict):
+            if "default_lags" in variate_lags:
+                raise_log(
+                    ValueError(
+                        "All the lags must be explitely defined, 'default_lags' is not allowed in the lags dictionary."
+                    ),
+                    logger,
+                )
+
+            # combine all the lags and sort them in ascending order across all the components
+            comp_lags_reordered = np.concatenate(
+                [
+                    np.array(variate_lags[comp_name], dtype=int)
+                    for comp_name in components
+                ]
+            ).argsort()
+            tmp_lagged_feats_names = []
             for name in components:
-                lagged_feature_names += [
+                tmp_lagged_feats_names += [
                     f"{name}_{variate_type}_lag{lag}" for lag in variate_lags[name]
                 ]
+
+            # adding feats names reordered across components
+            lagged_feature_names += [
+                tmp_lagged_feats_names[idx] for idx in comp_lags_reordered
+            ]
         else:
             lagged_feature_names += [
                 f"{name}_{variate_type}_lag{lag}"
@@ -836,6 +866,8 @@ def _create_lagged_data_by_moving_window(
     and `t + output_chunk_length - 1` from the target series. In both cases, the extracted
     windows can then be reshaped into the correct shape. This approach can only be used if
     we *can* assume that the specified series are all of the same frequency.
+
+    Assume that all the lags are sorted in ascending order.
     """
     feature_times, min_lags, max_lags = _get_feature_times(
         target_series,
@@ -877,6 +909,8 @@ def _create_lagged_data_by_moving_window(
     start_time = times[0]
     # Construct features array X:
     X = []
+    lagged_feats_order = []
+    lagged_feats_shift = 0
     start_time_idx = None
     target_start_time_idx = None
     for i, (series_i, lags_i, min_lag_i, max_lag_i) in enumerate(
@@ -940,18 +974,38 @@ def _create_lagged_data_by_moving_window(
             # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
             if isinstance(lags_i, list):
                 lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
+                # Feats are already grouped by lags and ordered
+                reordered_feats = (
+                    np.arange(len(lags_i) * series_i.width) + lagged_feats_shift
+                )
             else:
+                # Assume keys are in the same order as the series components
+                all_comp_lags = [
+                    np.array(c_lags, dtype=int) for c_lags in lags_i.values()
+                ]
                 # Lags are grouped by component, extracted from the same window
                 lags_to_extract = [
-                    np.array(comp_lags, dtype=int) + min_lag_i - 1
-                    for comp_lags in lags_i.values()
+                    comp_lags + min_lag_i - 1 for comp_lags in all_comp_lags
                 ]
+                # Sort the lags across the components in ascending order
+                reordered_feats = (
+                    np.concatenate(all_comp_lags).argsort() + lagged_feats_shift
+                )
+
             lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
+
+            # Reordering must account for the previous features (order: target, past, future)
+            lagged_feats_shift += len(reordered_feats)
+            lagged_feats_order.append(reordered_feats)
         # Cache `start_time_idx` for label creation:
         if is_target_series:
             target_start_time_idx = start_time_idx
-    X = np.concatenate(X, axis=1)
+
+    # Concatenate the reordering index across target, past and future covariates
+    lagged_feats_order = np.concatenate(lagged_feats_order)
+    # Concatenate all the lagged features and order them by lags
+    X = np.concatenate(X, axis=1)[:, lagged_feats_order]
     # Construct labels array `y`:
     if is_training:
         # All values between times `t` and `t + output_chunk_length` used as labels:

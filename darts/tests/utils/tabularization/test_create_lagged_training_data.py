@@ -17,6 +17,25 @@ from darts.utils.data.tabularization import (
 from darts.utils.timeseries_generation import linear_timeseries
 
 
+def helper_create_multivariate_linear_timeseries(
+    n_components: int, components_names: Sequence[str] = None, **kwargs
+) -> TimeSeries:
+    """
+    Helper function that creates a `linear_timeseries` with a specified number of
+    components. To help distinguish each component from one another, `i` is added on
+    to each value of the `i`th component. Any additional keyword arguments are passed
+    to `linear_timeseries` (`start_value`, `end_value`, `start`, `end`, `length`, etc).
+    """
+    timeseries = []
+    if components_names is None or len(components_names) < n_components:
+        components_names = [f"lin_ts_{i}" for i in range(n_components)]
+    for i in range(n_components):
+        # Values of each component is 1 larger than the last:
+        timeseries_i = linear_timeseries(column_name=components_names[i], **kwargs) + i
+        timeseries.append(timeseries_i)
+    return darts_concatenate(timeseries, axis=1)
+
+
 class TestCreateLaggedTrainingData:
     """
     Tests the `create_lagged_training_data` function defined in `darts.utils.data.tabularization`. There are broadly
@@ -39,27 +58,6 @@ class TestCreateLaggedTrainingData:
     #
     #   Helper Functions for Generated Test Cases
     #
-
-    @staticmethod
-    def create_multivariate_linear_timeseries(
-        n_components: int, components_names: Sequence[str] = None, **kwargs
-    ) -> TimeSeries:
-        """
-        Helper function that creates a `linear_timeseries` with a specified number of
-        components. To help distinguish each component from one another, `i` is added on
-        to each value of the `i`th component. Any additional keyword arguments are passed
-        to `linear_timeseries` (`start_value`, `end_value`, `start`, `end`, `length`, etc).
-        """
-        timeseries = []
-        if components_names is None or len(components_names) < n_components:
-            components_names = [f"lin_ts_{i}" for i in range(n_components)]
-        for i in range(n_components):
-            # Values of each component is 1 larger than the last:
-            timeseries_i = (
-                linear_timeseries(column_name=components_names[i], **kwargs) + i
-            )
-            timeseries.append(timeseries_i)
-        return darts_concatenate(timeseries, axis=1)
 
     @staticmethod
     def get_feature_times(
@@ -384,7 +382,7 @@ class TestCreateLaggedTrainingData:
             timesteps_ahead = (
                 range(output_chunk_shift, output_chunk_length + output_chunk_shift)
                 if multi_models
-                else (output_chunk_length + output_chunk_shift - 1,)
+                else [output_chunk_length + output_chunk_shift - 1]
             )
             y_row = []
             for i in timesteps_ahead:
@@ -399,17 +397,89 @@ class TestCreateLaggedTrainingData:
         y = np.stack(y, axis=0)
         return y
 
+    @staticmethod
+    def convert_lags_to_dict(ts_tg, ts_pc, ts_fc, lags_tg, lags_pc, lags_fc):
+        """Convert lags to the dictionary format, assuming the lags are shared across the components"""
+        lags_as_dict = dict()
+        for ts_, lags_, name_ in zip(
+            [ts_tg, ts_pc, ts_fc],
+            [lags_tg, lags_pc, lags_fc],
+            ["target", "past", "future"],
+        ):
+            single_ts = ts_[0] if isinstance(ts_, list) else ts_
+            if single_ts is None or lags_ is None:
+                lags_as_dict[name_] = None
+            else:
+                lags_as_dict[name_] = {c_name: lags_ for c_name in single_ts.components}
+        return lags_as_dict
+
     #
     #   Generated Test Cases
     #
+
+    target_with_no_cov = helper_create_multivariate_linear_timeseries(
+        n_components=1,
+        components_names=["no_static"],
+        start_value=0,
+        end_value=10,
+        start=2,
+        length=10,
+        freq=2,
+    )
+    n_comp = 2
+    target_with_static_cov = helper_create_multivariate_linear_timeseries(
+        n_components=n_comp,
+        components_names=["static_0", "static_1"],
+        start_value=0,
+        end_value=10,
+        start=2,
+        length=10,
+        freq=2,
+    )
+    target_with_static_cov = target_with_static_cov.with_static_covariates(
+        pd.DataFrame({"dummy": [1]})  # leads to "global" static cov component name
+    )
+    target_with_static_cov2 = target_with_static_cov.with_static_covariates(
+        pd.DataFrame(
+            {"dummy": [i for i in range(n_comp)]}
+        )  # leads to sharing target component names
+    )
+    target_with_static_cov3 = target_with_static_cov.with_static_covariates(
+        pd.DataFrame(
+            {
+                "dummy": [i for i in range(n_comp)],
+                "dummy1": [i for i in range(n_comp)],
+            }
+        )  # leads to sharing target component names
+    )
+
+    past = helper_create_multivariate_linear_timeseries(
+        n_components=3,
+        components_names=["past_0", "past_1", "past_2"],
+        start_value=10,
+        end_value=20,
+        start=2,
+        length=10,
+        freq=2,
+    )
+    future = helper_create_multivariate_linear_timeseries(
+        n_components=4,
+        components_names=["future_0", "future_1", "future_2", "future_3"],
+        start_value=20,
+        end_value=30,
+        start=2,
+        length=10,
+        freq=2,
+    )
 
     # Input parameter combinations used to generate test cases:
     output_chunk_length_combos = (1, 3)
     output_chunk_shift_combos = (0, 1)
     multi_models_combos = (False, True)
     max_samples_per_ts_combos = (1, 2, None)
-    target_lag_combos = past_lag_combos = (None, [-1, -3], [-3, -1])
-    future_lag_combos = (*target_lag_combos, [0], [2, 1], [-1, 1], [0, 2])
+    # lags are sorted ascending as done by the models internally
+    target_lag_combos = past_lag_combos = (None, [-3, -1], [-2, -1])
+    future_lag_combos = (*target_lag_combos, [0], [1, 2], [-1, 1], [0, 2])
 
     # minimum series length
     min_n_ts = 8 + max(output_chunk_shift_combos)
@@ -436,7 +506,7 @@ class TestCreateLaggedTrainingData:
         # different start times, different lengths, and different values, but
         # they're all of the same frequency:
         if series_type == "integer":
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -444,7 +514,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts,
                 freq=2,
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -452,7 +522,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts + 1,
                 freq=2,
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -461,7 +531,7 @@ class TestCreateLaggedTrainingData:
                 freq=2,
             )
         else:
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -469,7 +539,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts,
                 freq="2d",
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -477,7 +547,7 @@ class TestCreateLaggedTrainingData:
                 length=self.min_n_ts + 1,
                 freq="2d",
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -550,14 +620,43 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift,
             )
             # Number of observations should match number of feature times:
-            assert X.shape[0] == len(feats_times)
-            assert y.shape[0] == len(feats_times)
-            assert X.shape[0] == len(times[0])
-            assert y.shape[0] == len(times[0])
+            assert X.shape[0] == len(feats_times) == len(times[0])
+            assert y.shape[0] == len(feats_times) == len(times[0])
             # Check that outputs match:
             assert np.allclose(expected_X, X[:, :, 0])
             assert np.allclose(expected_y, y[:, :, 0])
             assert feats_times.equals(times[0])
+
+            # passing lags a dictionary
+            lags_as_dict = self.convert_lags_to_dict(
+                target,
+                past if lags_past else None,
+                future if lags_future else None,
+                lags,
+                lags_past,
+                lags_future,
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target,
+                output_chunk_length,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags_as_dict["target"],
+                lags_past_covariates=lags_as_dict["past"],
+                lags_future_covariates=lags_as_dict["future"],
+                uses_static_covariates=False,
+                multi_models=multi_models,
+                max_samples_per_ts=max_samples_per_ts,
+                use_moving_windows=True,
+                output_chunk_shift=output_chunk_shift,
+            )
+            # check length
+            assert X_dict_lags.shape[0] == len(feats_times) == len(times[0])
+            assert y_dict_lags.shape[0] == len(feats_times) == len(times[0])
+            # check values
+            assert np.allclose(expected_X, X_dict_lags[:, :, 0])
+            assert np.allclose(expected_y, y_dict_lags[:, :, 0])
+            assert feats_times.equals(times_dict_lags[0])
 
     @pytest.mark.parametrize(
         "series_type",
@@ -581,17 +680,17 @@ class TestCreateLaggedTrainingData:
         # different start times, different lengths, different values, and different
         # frequencies:
         if series_type == "integer":
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
             )
         else:
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -599,7 +698,7 @@ class TestCreateLaggedTrainingData:
                 length=20,
                 freq="d",
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -607,7 +706,7 @@ class TestCreateLaggedTrainingData:
                 length=10,
                 freq="2d",
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -680,10 +779,9 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift,
             )
             # Number of observations should match number of feature times:
-            assert X.shape[0] == len(feats_times)
-            assert y.shape[0] == len(feats_times)
-            assert X.shape[0] == len(times[0])
-            assert y.shape[0] == len(times[0])
+            assert X.shape[0] == len(feats_times) == len(times[0])
+            assert y.shape[0] == len(feats_times) == len(times[0])
+
             # Check that outputs match:
             assert np.allclose(expected_X, X[:, :, 0])
             assert np.allclose(expected_y, y[:, :, 0])
@@ -708,17 +806,17 @@ class TestCreateLaggedTrainingData:
         # different start times, different lengths, different values, and of
         # different frequencies:
         if series_type == "integer":
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2, start_value=0, end_value=10, start=2, length=20, freq=1
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3, start_value=10, end_value=20, start=4, length=10, freq=2
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
             )
         else:
-            target = self.create_multivariate_linear_timeseries(
+            target = helper_create_multivariate_linear_timeseries(
                 n_components=2,
                 start_value=0,
                 end_value=10,
@@ -726,7 +824,7 @@ class TestCreateLaggedTrainingData:
                 end=pd.Timestamp("1/18/2000"),
                 freq="2d",
             )
-            past = self.create_multivariate_linear_timeseries(
+            past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
                 start_value=10,
                 end_value=20,
@@ -734,7 +832,7 @@ class TestCreateLaggedTrainingData:
                 end=pd.Timestamp("1/20/2000"),
                 freq="2d",
             )
-            future = self.create_multivariate_linear_timeseries(
+            future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
                 start_value=20,
                 end_value=30,
@@ -869,14 +967,38 @@ class TestCreateLaggedTrainingData:
             output_chunk_shift=output_chunk_shift,
         )
         # Number of observations should match number of feature times:
-        assert X.shape[0] == len(expected_times_x)
-        assert X.shape[0] == len(times[0])
-        assert y.shape[0] == len(expected_times_y)
-        assert y.shape[0] == len(times[0])
+        assert X.shape[0] == len(expected_times_x) == len(times[0])
+        assert y.shape[0] == len(expected_times_y) == len(times[0])
+
         # Check that outputs match:
         assert np.allclose(expected_X, X[:, :, 0])
         assert np.allclose(expected_y, y[:, :, 0])
         assert expected_times_x.equals(times[0])
+
+        # passing lags a dictionary, only supported when use_moving_windows=True
+        if use_moving_windows:
+            lags_as_dict = self.convert_lags_to_dict(
+                series, series, series, lags, past_lags, future_lags
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target_series=series,
+                output_chunk_length=output_chunk_length,
+                past_covariates=series,
+                future_covariates=series,
+                lags=lags_as_dict["target"],
+                lags_past_covariates=lags_as_dict["past"],
+                lags_future_covariates=lags_as_dict["future"],
+                uses_static_covariates=False,
+                use_moving_windows=use_moving_windows,
+                output_chunk_shift=output_chunk_shift,
+            )
+            # check length
+            assert X_dict_lags.shape[0] == len(expected_times_x) == len(times[0])
+            assert y_dict_lags.shape[0] == len(expected_times_y) == len(times[0])
+            # check values
+            assert np.allclose(expected_X, X_dict_lags[:, :, 0])
+            assert np.allclose(expected_y, y_dict_lags[:, :, 0])
+            assert expected_times_x.equals(times_dict_lags[0])
 
     @pytest.mark.parametrize(
         "config",
@@ -968,6 +1090,31 @@ class TestCreateLaggedTrainingData:
         assert np.allclose(expected_X, X[:, :, 0])
         assert np.allclose(expected_y, y[:, :, 0])
 
+        # passing lags a dictionary, only supported when use_moving_windows=True
+        if use_moving_windows:
+            lags_as_dict = self.convert_lags_to_dict(
+                target, past, future, lags, lags_past, lags_future
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target_series=target,
+                output_chunk_length=1,
+                past_covariates=past,
+                future_covariates=future,
+                lags=lags_as_dict["target"],
+                lags_past_covariates=lags_as_dict["past"],
+                lags_future_covariates=lags_as_dict["future"],
+                uses_static_covariates=False,
+                use_moving_windows=use_moving_windows,
+                max_samples_per_ts=max_samples_per_ts,
+                output_chunk_shift=output_chunk_shift,
+            )
+            assert (
+                times_dict_lags[0][0]
+                == target.end_time() - output_chunk_shift * target.freq
+            )
+            assert np.allclose(expected_X, X_dict_lags[:, :, 0])
+            assert np.allclose(expected_y, y_dict_lags[:, :, 0])
+
     @pytest.mark.parametrize(
         "config",
         itertools.product(
@@ -1014,6 +1161,29 @@ class TestCreateLaggedTrainingData:
         # Should only have one sample, generated for `t = target.end_time()`:
         assert len(times[0]) == 1
         assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+
+        # passing lags a dictionary, only supported when use_moving_windows=True
+        if use_moving_windows:
+            lags_as_dict = self.convert_lags_to_dict(
+                target, None, None, lags, None, None
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target_series=target,
+                output_chunk_length=output_chunk_length,
+                lags=lags_as_dict["target"],
+                uses_static_covariates=False,
+                multi_models=multi_models,
+                use_moving_windows=use_moving_windows,
+                output_chunk_shift=output_chunk_shift,
+            )
+            assert np.allclose(expected_X, X_dict_lags)
+            assert np.allclose(expected_y, y_dict_lags)
+            # Should only have one sample, generated for `t = target.end_time()`:
+            assert len(times_dict_lags[0]) == 1
+            assert (
+                times_dict_lags[0][0]
+                == target.end_time() - output_chunk_shift * target.freq
+            )
 
     @pytest.mark.parametrize(
         "config",
@@ -1079,6 +1249,30 @@ class TestCreateLaggedTrainingData:
         assert np.allclose(expected_y, y)
         assert len(times[0]) == 1
         assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+
+        # passing lags a dictionary, only supported when use_moving_windows=True
+        if use_moving_windows:
+            lags_as_dict = self.convert_lags_to_dict(
+                target, None, future, [-1], None, [0]
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target_series=target,
+                output_chunk_length=1,
+                future_covariates=future,
+                lags=lags_as_dict["target"],
+                lags_future_covariates=lags_as_dict["future"],
+                uses_static_covariates=False,
+                multi_models=multi_models,
+                use_moving_windows=use_moving_windows,
+                output_chunk_shift=output_chunk_shift,
+            )
+            assert np.allclose(expected_X, X_dict_lags)
+            assert np.allclose(expected_y, y_dict_lags)
+            assert len(times_dict_lags[0]) == 1
+            assert (
+                times_dict_lags[0][0]
+                == target.end_time() - output_chunk_shift * target.freq
+            )
 
     @pytest.mark.parametrize(
         "config",
@@ -1160,6 +1354,30 @@ class TestCreateLaggedTrainingData:
         assert len(times[0]) == 1
         assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
 
+        # passing lags a dictionary, only supported when use_moving_windows=True
+        if use_moving_windows:
+            lags_as_dict = self.convert_lags_to_dict(
+                target, None, future, None, None, [cov_lag]
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target_series=target,
+                output_chunk_length=1,
+                future_covariates=future,
+                lags=lags_as_dict["target"],
+                lags_future_covariates=lags_as_dict["future"],
+                uses_static_covariates=False,
+                multi_models=multi_models,
+                use_moving_windows=use_moving_windows,
+                output_chunk_shift=output_chunk_shift,
+            )
+            assert np.allclose(expected_X, X_dict_lags)
+            assert np.allclose(expected_y, y_dict_lags)
+            assert len(times_dict_lags[0]) == 1
+            assert (
+                times_dict_lags[0][0]
+                == target.end_time() - output_chunk_shift * target.freq
+            )
+
     @pytest.mark.parametrize(
         "config",
         itertools.product(
@@ -1239,6 +1457,30 @@ class TestCreateLaggedTrainingData:
         assert len(times[0]) == 1
         assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
 
+        # passing lags a dictionary, only supported when use_moving_windows=True
+        if use_moving_windows:
+            lags_as_dict = self.convert_lags_to_dict(
+                target, past, None, None, [cov_lag], None
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target_series=target,
+                output_chunk_length=1,
+                past_covariates=past,
+                lags=lags_as_dict["target"],
+                lags_past_covariates=lags_as_dict["past"],
+                uses_static_covariates=False,
+                multi_models=multi_models,
+                use_moving_windows=use_moving_windows,
+                output_chunk_shift=output_chunk_shift,
+            )
+            assert np.allclose(expected_X, X_dict_lags)
+            assert np.allclose(expected_y, y_dict_lags)
+            assert len(times_dict_lags[0]) == 1
+            assert (
+                times_dict_lags[0][0]
+                == target.end_time() - output_chunk_shift * target.freq
+            )
+
     @pytest.mark.parametrize(
         "config",
         itertools.product(
@@ -1304,6 +1546,167 @@ class TestCreateLaggedTrainingData:
         assert len(times[0]) == 1
         assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
 
+        # passing lags a dictionary, only supported when use_moving_windows=True
+        if use_moving_windows:
+            lags_as_dict = self.convert_lags_to_dict(
+                target, None, future, [-1], None, [1]
+            )
+            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+                target_series=target,
+                output_chunk_length=1,
+                future_covariates=future,
+                lags=lags_as_dict["target"],
+                lags_future_covariates=lags_as_dict["future"],
+                uses_static_covariates=False,
+                multi_models=multi_models,
+                use_moving_windows=use_moving_windows,
+                output_chunk_shift=output_chunk_shift,
+            )
+
+            assert np.allclose(expected_X, X_dict_lags)
+            assert np.allclose(expected_y, y_dict_lags)
+            assert len(times_dict_lags[0]) == 1
+            assert (
+                times_dict_lags[0][0]
+                == target.end_time() - output_chunk_shift * target.freq
+            )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [0, 1, 3],
+            [1, 2],
+            [True, False],
+            ["datetime", "integer"],
+        ),
+    )
+    def test_lagged_training_data_comp_wise_lags(self, config):
+        """
+        Tests that `create_lagged_training_data` generate the expected values when the
+        lags are component-specific over multivariate series.
+
+        Note that this is supported only when use_moving_window=True.
+        """
+        output_chunk_shift, output_chunk_length, multi_models, series_type = config
+
+        lags_tg = {"target_0": [-4, -1], "target_1": [-4, -1]}
+        lags_pc = [-3]
+        lags_fc = {"future_0": [-1, 0], "future_1": [-2, 1]}
+
+        if series_type == "integer":
+            start_tg = 0
+            start_pc = start_tg + 1
+            start_fc = start_tg + 2
+        else:
+            start_tg = pd.Timestamp("2000-01-15")
+            start_pc = pd.Timestamp("2000-01-16")
+            start_fc = pd.Timestamp("2000-01-17")
+
+        # length = max lag - min lag + 1 = -1 + 4 + 1 = 4
+        target = helper_create_multivariate_linear_timeseries(
+            n_components=2,
+            components_names=["target_0", "target_1"],
+            length=4 + output_chunk_shift + output_chunk_length,
+            start=start_tg,
+        )
+        # length = max lag - min lag + 1 = -3 + 3 + 1 = 1
+        past = (
+            helper_create_multivariate_linear_timeseries(
+                n_components=2,
+                components_names=["past_0", "past_1"],
+                length=1,
+                start=start_pc,
+            )
+            + 100
+        )
+        # length = max lag - min lag + 1 = 1 + 2 + 1 = 4
+        future = (
+            helper_create_multivariate_linear_timeseries(
+                n_components=2,
+                components_names=["future_0", "future_1"],
+                length=4 + output_chunk_shift + output_chunk_length,
+                start=start_fc,
+            )
+            + 200
+        )
+
+        # extremes lags are manually computed, similarly to the model.lags attribute
+        feats_times = self.get_feature_times(
+            target,
+            past,
+            future,
+            [-4, -1],  # min, max target lag
+            [-3],  # unique past lag
+            [-2, 1],  # min, max future lag
+            output_chunk_length,
+            None,
+            output_chunk_shift,
+        )
+
+        # reorder the features to obtain target_0_lag-4, target_1_lag-4, target_0_lag-1, target_1_lag-1
+        X_target = [
+            self.construct_X_block(
+                target["target_0"], feats_times, lags_tg["target_0"][0:1]
+            ),
+            self.construct_X_block(
+                target["target_1"], feats_times, lags_tg["target_1"][0:1]
+            ),
+            self.construct_X_block(
+                target["target_0"], feats_times, lags_tg["target_0"][1:2]
+            ),
+            self.construct_X_block(
+                target["target_1"], feats_times, lags_tg["target_1"][1:2]
+            ),
+        ]
+        # single lag for all the components, can be kept as is
+        X_past = [
+            self.construct_X_block(past[name], feats_times, lags_pc)
+            for name in ["past_0", "past_1"]
+        ]
+        # reorder the features to obtain future_1_lag-2, future_0_lag-1, future_0_lag0, future_1_lag1
+        X_future = [
+            self.construct_X_block(
+                future["future_1"], feats_times, lags_fc["future_1"][0:1]
+            ),
+            self.construct_X_block(
+                future["future_0"], feats_times, lags_fc["future_0"][0:1]
+            ),
+            self.construct_X_block(
+                future["future_0"], feats_times, lags_fc["future_0"][1:2]
+            ),
+            self.construct_X_block(
+                future["future_1"], feats_times, lags_fc["future_1"][1:2]
+            ),
+        ]
+        all_X = X_target + X_past + X_future
+        # 2 feat/comp in target, 1 feat/comp in past, 2 feat/comp in future
+        expected_X = np.concatenate(all_X, axis=1).reshape(1, (2 + 1 + 2) * 2, 1)
+        expected_y = self.create_y(
+            target,
+            feats_times,
+            output_chunk_length,
+            multi_models,
+            output_chunk_shift,
+        )[..., np.newaxis]
+
+        X, y, times, _ = create_lagged_training_data(
+            target_series=target,
+            output_chunk_length=output_chunk_length,
+            past_covariates=past,
+            future_covariates=future,
+            lags=lags_tg,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
+            uses_static_covariates=False,
+            multi_models=multi_models,
+            use_moving_windows=True,
+            output_chunk_shift=output_chunk_shift,
+        )
+
+        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_y, y)
+        assert len(times[0]) == 1
+
     def test_lagged_training_data_sequence_inputs(self):
         """
         Tests that `create_lagged_training_data` correctly handles being
@@ -1313,6 +1716,9 @@ class TestCreateLaggedTrainingData:
         # Define two simple tabularization problems:
         target_1 = past_1 = future_1 = linear_timeseries(start=0, end=5)
         target_2 = past_2 = future_2 = linear_timeseries(start=6, end=11)
+        ts_tg = (target_1, target_2)
+        ts_pc = (past_1, past_2)
+        ts_fc = (future_1, future_2)
         lags = lags_past = lags_future = [-1]
         output_chunk_length = 1
         # Expected solution:
@@ -1330,10 +1736,10 @@ class TestCreateLaggedTrainingData:
         expected_times_2 = target_2.time_index[1:]
         # Check when `concatenate = True`:
         X, y, times, _ = create_lagged_training_data(
-            (target_1, target_2),
+            ts_tg,
             output_chunk_length=output_chunk_length,
-            past_covariates=(past_1, past_2),
-            future_covariates=(future_1, future_2),
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
             lags=lags,
             lags_past_covariates=lags_past,
             lags_future_covariates=lags_future,
@@ -1345,12 +1751,33 @@ class TestCreateLaggedTrainingData:
         assert len(times) == 2
         assert times[0].equals(expected_times_1)
         assert times[1].equals(expected_times_2)
+
+        lags_as_dict = self.convert_lags_to_dict(
+            list(ts_tg), list(ts_pc), list(ts_fc), lags, lags_past, lags_future
+        )
+        X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+            target_series=ts_tg,
+            output_chunk_length=1,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_as_dict["target"],
+            lags_past_covariates=lags_as_dict["past"],
+            lags_future_covariates=lags_as_dict["future"],
+            uses_static_covariates=False,
+            output_chunk_shift=0,
+        )
+        assert np.allclose(X_dict_lags, expected_X)
+        assert np.allclose(y_dict_lags, expected_y)
+        assert len(times_dict_lags) == 2
+        assert times_dict_lags[0].equals(expected_times_1)
+        assert times_dict_lags[1].equals(expected_times_2)
+
         # Check when `concatenate = False`:
         X, y, times, _ = create_lagged_training_data(
-            (target_1, target_2),
+            ts_tg,
             output_chunk_length=output_chunk_length,
-            past_covariates=(past_1, past_2),
-            future_covariates=(future_1, future_2),
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
             lags=lags,
             lags_past_covariates=lags_past,
             lags_future_covariates=lags_future,
@@ -1367,6 +1794,31 @@ class TestCreateLaggedTrainingData:
         assert len(times) == 2
         assert times[0].equals(expected_times_1)
         assert times[1].equals(expected_times_2)
+
+        lags_as_dict = self.convert_lags_to_dict(
+            list(ts_tg), list(ts_pc), list(ts_fc), lags, lags_past, lags_future
+        )
+        X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+            target_series=ts_tg,
+            output_chunk_length=1,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_as_dict["target"],
+            lags_past_covariates=lags_as_dict["past"],
+            lags_future_covariates=lags_as_dict["future"],
+            uses_static_covariates=False,
+            concatenate=False,
+            output_chunk_shift=0,
+        )
+        assert len(X_dict_lags) == 2
+        assert len(y_dict_lags) == 2
+        assert np.allclose(X_dict_lags[0], expected_X_1)
+        assert np.allclose(X_dict_lags[1], expected_X_2)
+        assert np.allclose(y_dict_lags[0], expected_y_1)
+        assert np.allclose(y_dict_lags[1], expected_y_2)
+        assert len(times_dict_lags) == 2
+        assert times_dict_lags[0].equals(expected_times_1)
+        assert times_dict_lags[1].equals(expected_times_2)
 
     def test_lagged_training_data_stochastic_series(self):
         """
@@ -1401,6 +1853,24 @@ class TestCreateLaggedTrainingData:
         assert np.allclose(X, expected_X)
         assert np.allclose(y, expected_y)
         assert times[0].equals(expected_times)
+
+        lags_as_dict = self.convert_lags_to_dict(
+            target, past, future, lags, lags_past, lags_future
+        )
+        X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
+            target_series=target,
+            output_chunk_length=output_chunk_length,
+            past_covariates=past,
+            future_covariates=future,
+            lags=lags_as_dict["target"],
+            lags_past_covariates=lags_as_dict["past"],
+            lags_future_covariates=lags_as_dict["future"],
+            uses_static_covariates=False,
+            output_chunk_shift=0,
+        )
+        assert np.allclose(X_dict_lags, expected_X)
+        assert np.allclose(y_dict_lags, expected_y)
+        assert times_dict_lags[0].equals(expected_times)
 
     def test_lagged_training_data_no_shared_times_error(self):
         """
@@ -1622,6 +2092,46 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift=0,
             )
 
+    def test_lagged_training_data_dict_lags_no_moving_window_error(self):
+        """
+        Tests that `create_lagged_training_data` throws correct error
+        when `use_moving_window` is set to `False` and lags are provided
+        as a dict for a multivariate series.
+        """
+        ts = linear_timeseries(start=1, length=20, freq=1, column_name="lin1")
+        lags = [-1]
+        lags_dict = {"lin1": [-1]}
+        # one series, one set of lags are dict
+        with pytest.raises(ValueError) as err:
+            create_lagged_training_data(
+                target_series=ts,
+                output_chunk_length=1,
+                lags=lags_dict,
+                uses_static_covariates=False,
+                use_moving_windows=False,
+                output_chunk_shift=0,
+            )
+        assert str(err.value).startswith(
+            "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary."
+        )
+        # all the series are provided, only one passed as dict
+        with pytest.raises(ValueError) as err:
+            create_lagged_training_data(
+                target_series=ts,
+                past_covariates=ts,
+                future_covariates=ts,
+                output_chunk_length=1,
+                lags=lags,
+                lags_past_covariates=lags_dict,
+                lags_future_covariates=lags,
+                uses_static_covariates=False,
+                use_moving_windows=False,
+                output_chunk_shift=0,
+            )
+        assert str(err.value).startswith(
+            "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary."
+        )
+
     def test_lagged_training_data_unspecified_lag_or_series_warning(self):
         """
         Tests that `create_lagged_training_data` throws correct
@@ -1709,295 +2219,375 @@ class TestCreateLaggedTrainingData:
                 )
                 assert len(w) == 0
 
-    def test_create_lagged_component_names(self):
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # target no static covariate
+            (
+                target_with_no_cov,
+                None,
+                None,
+                [-2, -1],
+                None,
+                None,
+                False,
+                ["no_static_target_lag-2", "no_static_target_lag-1"],
+            ),
+            # target with static covariate (but don't use them in feature names)
+            (
+                target_with_static_cov,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                False,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                ],
+            ),
+            # target with static covariate (acting on global target components)
+            (
+                target_with_static_cov,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_global_components",
+                ],
+            ),
+            # target with static covariate (component specific)
+            (
+                target_with_static_cov2,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_static_0",
+                    "dummy_statcov_target_static_1",
+                ],
+            ),
+            # target with static covariate (component specific & multivariate)
+            (
+                target_with_static_cov3,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_static_0",
+                    "dummy_statcov_target_static_1",
+                    "dummy1_statcov_target_static_0",
+                    "dummy1_statcov_target_static_1",
+                ],
+            ),
+            # target + past
+            (
+                target_with_no_cov,
+                past,
+                None,
+                [-4, -3],
+                [-1],
+                None,
+                False,
+                [
+                    "no_static_target_lag-4",
+                    "no_static_target_lag-3",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                ],
+            ),
+            # target + future
+            (
+                target_with_no_cov,
+                None,
+                future,
+                [-2, -1],
+                None,
+                [3],
+                False,
+                [
+                    "no_static_target_lag-2",
+                    "no_static_target_lag-1",
+                    "future_0_futcov_lag3",
+                    "future_1_futcov_lag3",
+                    "future_2_futcov_lag3",
+                    "future_3_futcov_lag3",
+                ],
+            ),
+            # past + future
+            (
+                target_with_no_cov,
+                past,
+                future,
+                None,
+                [-1],
+                [2],
+                False,
+                [
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+            # target with static (not used) + past + future
+            (
+                target_with_static_cov,
+                past,
+                future,
+                [-2, -1],
+                [-1],
+                [2],
+                False,
+                [
+                    "static_0_target_lag-2",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+            # multiple series with same components names, including past/future covariates
+            (
+                [target_with_static_cov, target_with_static_cov],
+                [past, past],
+                [future, future],
+                [-3],
+                [-1],
+                [2],
+                False,
+                [
+                    "static_0_target_lag-3",
+                    "static_1_target_lag-3",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+            # multiple series with different components will use the first series as reference
+            (
+                [
+                    target_with_static_cov,
+                    target_with_no_cov.stack(target_with_no_cov),
+                ],
+                [past, past],
+                [future, past.stack(target_with_no_cov)],
+                [-2, -1],
+                [-1],
+                [2],
+                False,
+                [
+                    "static_0_target_lag-2",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+        ],
+    )
+    def test_create_lagged_component_names(self, config):
         """
         Tests that `create_lagged_component_names` produces the expected features name depending
         on the lags, output_chunk_length and covariates.
+
+        When lags are component-specific, they are identical across all the components.
         """
-        target_with_no_cov = self.create_multivariate_linear_timeseries(
-            n_components=1,
-            components_names=["no_static"],
-            start_value=0,
-            end_value=10,
-            start=2,
-            length=10,
-            freq=2,
-        )
-        n_comp = 2
-        target_with_static_cov = self.create_multivariate_linear_timeseries(
-            n_components=n_comp,
-            components_names=["static_0", "static_1"],
-            start_value=0,
-            end_value=10,
-            start=2,
-            length=10,
-            freq=2,
-        )
-        target_with_static_cov = target_with_static_cov.with_static_covariates(
-            pd.DataFrame({"dummy": [1]})  # leads to "global" static cov component name
-        )
-        target_with_static_cov2 = target_with_static_cov.with_static_covariates(
-            pd.DataFrame(
-                {"dummy": [i for i in range(n_comp)]}
-            )  # leads to sharing target component names
-        )
-        target_with_static_cov3 = target_with_static_cov.with_static_covariates(
-            pd.DataFrame(
-                {
-                    "dummy": [i for i in range(n_comp)],
-                    "dummy1": [i for i in range(n_comp)],
-                }
-            )  # leads to sharing target component names
-        )
-
-        past = self.create_multivariate_linear_timeseries(
-            n_components=3,
-            components_names=["past_0", "past_1", "past_2"],
-            start_value=10,
-            end_value=20,
-            start=2,
-            length=10,
-            freq=2,
-        )
-        future = self.create_multivariate_linear_timeseries(
-            n_components=4,
-            components_names=["future_0", "future_1", "future_2", "future_3"],
-            start_value=20,
-            end_value=30,
-            start=2,
-            length=10,
-            freq=2,
-        )
-
-        # target no static covariate
-        expected_lagged_features = ["no_static_target_lag-2", "no_static_target_lag-1"]
+        (
+            ts_tg,
+            ts_pc,
+            ts_fc,
+            lags_tg,
+            lags_pc,
+            lags_fc,
+            use_static_cov,
+            expected_lagged_features,
+        ) = config
+        # lags as list
         created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-2, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
+            target_series=ts_tg,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_tg,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
             concatenate=False,
-            use_static_covariates=False,
+            use_static_covariates=use_static_cov,
+        )
+
+        # converts lags to dictionary format
+        lags_as_dict = self.convert_lags_to_dict(
+            ts_tg,
+            ts_pc,
+            ts_fc,
+            lags_tg,
+            lags_pc,
+            lags_fc,
+        )
+
+        created_lagged_features_dict_lags, _ = create_lagged_component_names(
+            target_series=ts_tg,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_as_dict["target"],
+            lags_past_covariates=lags_as_dict["past"],
+            lags_future_covariates=lags_as_dict["future"],
+            concatenate=False,
+            use_static_covariates=use_static_cov,
         )
         assert expected_lagged_features == created_lagged_features
+        assert expected_lagged_features == created_lagged_features_dict_lags
 
-        # target with static covariate (but don't use them in feature names)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static covariate (acting on global target components)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "dummy_statcov_target_global_components",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=True,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static covariate (component specific)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "dummy_statcov_target_static_0",
-            "dummy_statcov_target_static_1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov2,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=True,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static covariate (component specific & multivariate)
-        expected_lagged_features = [
-            "static_0_target_lag-4",
-            "static_1_target_lag-4",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "dummy_statcov_target_static_0",
-            "dummy_statcov_target_static_1",
-            "dummy1_statcov_target_static_0",
-            "dummy1_statcov_target_static_1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov3,
-            past_covariates=None,
-            future_covariates=None,
-            lags=[-4, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=None,
-            concatenate=False,
-            use_static_covariates=True,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target + past
-        expected_lagged_features = [
-            "no_static_target_lag-4",
-            "no_static_target_lag-3",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=past,
-            future_covariates=None,
-            lags=[-4, -3],
-            lags_past_covariates=[-1],
-            lags_future_covariates=None,
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target + future
-        expected_lagged_features = [
-            "no_static_target_lag-2",
-            "no_static_target_lag-1",
-            "future_0_futcov_lag3",
-            "future_1_futcov_lag3",
-            "future_2_futcov_lag3",
-            "future_3_futcov_lag3",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=None,
-            future_covariates=future,
-            lags=[-2, -1],
-            lags_past_covariates=None,
-            lags_future_covariates=[3],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # past + future
-        expected_lagged_features = [
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_no_cov,
-            past_covariates=past,
-            future_covariates=future,
-            lags=None,
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # target with static + past + future
-        expected_lagged_features = [
-            "static_0_target_lag-2",
-            "static_1_target_lag-2",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=target_with_static_cov,
-            past_covariates=past,
-            future_covariates=future,
-            lags=[-2, -1],
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # multiple series with same components, including past/future covariates
-        expected_lagged_features = [
-            "static_0_target_lag-3",
-            "static_1_target_lag-3",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=[target_with_static_cov, target_with_static_cov],
-            past_covariates=[past, past],
-            future_covariates=[future, future],
-            lags=[-3],
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
-            concatenate=False,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-        # multiple series with different components will use the first series as reference
-        expected_lagged_features = [
-            "static_0_target_lag-2",
-            "static_1_target_lag-2",
-            "static_0_target_lag-1",
-            "static_1_target_lag-1",
-            "past_0_pastcov_lag-1",
-            "past_1_pastcov_lag-1",
-            "past_2_pastcov_lag-1",
-            "future_0_futcov_lag2",
-            "future_1_futcov_lag2",
-            "future_2_futcov_lag2",
-            "future_3_futcov_lag2",
-        ]
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=[
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # lags have the same minimum
+            (
                 target_with_static_cov,
-                target_with_no_cov.stack(target_with_no_cov),
-            ],
-            past_covariates=[past, past],
-            future_covariates=[future, past.stack(target_with_no_cov)],
-            lags=[-2, -1],
-            lags_past_covariates=[-1],
-            lags_future_covariates=[2],
+                None,
+                None,
+                {"static_0": [-4, -2], "static_1": [-4, -3]},
+                None,
+                None,
+                False,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_1_target_lag-3",
+                    "static_0_target_lag-2",
+                ],
+            ),
+            # lags are not overlapping
+            (
+                target_with_static_cov,
+                None,
+                None,
+                {"static_0": [-4, -1], "static_1": [-3, -2]},
+                None,
+                None,
+                False,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-3",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                ],
+            ),
+            # default lags for target, overlapping lags for past covariates
+            (
+                target_with_static_cov,
+                past,
+                None,
+                {"static_0": [-3], "static_1": [-3]},
+                {"past_0": [-4, -3], "past_1": [-3, -2], "past_2": [-2]},
+                None,
+                False,
+                [
+                    "static_0_target_lag-3",
+                    "static_1_target_lag-3",
+                    "past_0_pastcov_lag-4",
+                    "past_0_pastcov_lag-3",
+                    "past_1_pastcov_lag-3",
+                    "past_1_pastcov_lag-2",
+                    "past_2_pastcov_lag-2",
+                ],
+            ),
+            # no lags for target, future covariates lags are not in the compoments order
+            (
+                target_with_static_cov,
+                None,
+                future,
+                None,
+                None,
+                {
+                    "future_3": [-2, 0, 2],
+                    "future_0": [-4, 1],
+                    "future_2": [1],
+                    "future_1": [-2, 2],
+                },
+                False,
+                [
+                    "future_0_futcov_lag-4",
+                    "future_1_futcov_lag-2",
+                    "future_3_futcov_lag-2",
+                    "future_3_futcov_lag0",
+                    "future_0_futcov_lag1",
+                    "future_2_futcov_lag1",
+                    "future_1_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+        ],
+    )
+    def test_create_lagged_component_names_different_lags(self, config):
+        """
+        Tests that `create_lagged_component_names` when lags are different across components.
+
+        The lagged features should be sorted by lags, then by components.
+        """
+        (
+            ts_tg,
+            ts_pc,
+            ts_fc,
+            lags_tg,
+            lags_pc,
+            lags_fc,
+            use_static_cov,
+            expected_lagged_features,
+        ) = config
+
+        created_lagged_features, _ = create_lagged_component_names(
+            target_series=ts_tg,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_tg,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
             concatenate=False,
+            use_static_covariates=use_static_cov,
         )
         assert expected_lagged_features == created_lagged_features

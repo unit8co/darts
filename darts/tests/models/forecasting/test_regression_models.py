@@ -1990,7 +1990,7 @@ class TestRegressionModels:
         )
 
         # n > output_chunk_length
-        model.predict(
+        pred = model.predict(
             7,
             series=series[0] if multiple_series else None,
             past_covariates=(
@@ -2004,6 +2004,11 @@ class TestRegressionModels:
                 else None
             ),
         )
+        # check that lagged features are properly extracted during auto-regression
+        if multivar_target:
+            np.testing.assert_array_almost_equal(
+                tg.sine_timeseries(length=27)[-7:].values(), pred["sine"].values()
+            )
 
     @pytest.mark.parametrize(
         "config",
