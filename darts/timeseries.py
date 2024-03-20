@@ -876,6 +876,11 @@ class TimeSeries:
             Optionally, a numeric value to fill missing values (NaNs) with.
         drop_group_cols
             Optionally, a string or list of strings with `group_cols` column(s) to exclude from the static covariates.
+        n_jobs
+            Optionally, an integer representing the number of parallel jobs to run. Behavior is the same as in the
+            `joblib.Parallel` class.
+        verbose
+            Optionally, a boolean value indicating whether to display a progress bar.
 
         Returns
         -------
