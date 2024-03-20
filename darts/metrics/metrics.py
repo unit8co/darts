@@ -15,7 +15,7 @@ import numpy as np
 from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.logging import get_logger, raise_if_not, raise_log
-from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils.parallel import _build_tqdm_iterator, _parallel_apply
 from darts.utils.statistics import check_seasonality
 
 logger = get_logger(__name__)

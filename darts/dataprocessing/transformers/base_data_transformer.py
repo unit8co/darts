@@ -11,7 +11,7 @@ import xarray as xr
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils.parallel import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
 
