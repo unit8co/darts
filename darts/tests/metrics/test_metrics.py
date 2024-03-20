@@ -111,19 +111,23 @@ class TestMetrics:
         series1.time_index, np.stack([series1.values(), series2.values()], axis=2)
     )
 
-    def test_zero(self):
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.ape,
+            metrics.sape,
+            metrics.mape,
+            metrics.smape,
+        ],
+    )
+    def test_ape_zero(self, metric):
         with pytest.raises(ValueError):
-            metrics.mape(self.series1, self.series1)
+            metric(self.series1, self.series1)
 
         with pytest.raises(ValueError):
-            metrics.smape(self.series1, self.series1)
+            metric(self.series1, self.series1)
 
-        with pytest.raises(ValueError):
-            metrics.mape(self.series12, self.series12)
-
-        with pytest.raises(ValueError):
-            metrics.smape(self.series12, self.series12)
-
+    def test_ope_zero(self):
         with pytest.raises(ValueError):
             metrics.ope(
                 self.series1 - self.series1.pd_series().mean(),
@@ -133,13 +137,26 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
+            # time dependent
+            (metrics.res, False, {"time_reduction": np.mean}),
+            (metrics.ae, False, {"time_reduction": np.mean}),
+            (metrics.se, False, {"time_reduction": np.mean}),
+            (metrics.sle, False, {"time_reduction": np.mean}),
+            (metrics.ase, False, {"time_reduction": np.mean}),
+            (metrics.sse, False, {"time_reduction": np.mean}),
+            (metrics.ape, False, {"time_reduction": np.mean}),
+            (metrics.sape, False, {"time_reduction": np.mean}),
+            (metrics.arre, False, {"time_reduction": np.mean}),
+            (metrics.ql, True, {"time_reduction": np.mean}),
+            # time aggregates
+            (metrics.mres, False, {}),
             (metrics.mae, False, {}),
-            (metrics.mase, False, {}),
             (metrics.mse, False, {}),
-            (metrics.msse, False, {}),
             (metrics.rmse, False, {}),
-            (metrics.rmsse, False, {}),
             (metrics.rmsle, False, {}),
+            (metrics.mase, False, {}),
+            (metrics.msse, False, {}),
+            (metrics.rmsse, False, {}),
             (metrics.mape, False, {}),
             (metrics.smape, False, {}),
             (metrics.ope, False, {}),
@@ -147,8 +164,7 @@ class TestMetrics:
             (metrics.r2_score, False, {}),
             (metrics.coefficient_of_variation, False, {}),
             (metrics.rho_risk, True, {}),
-            (metrics.quantile_loss, True, {}),
-            (metrics.residuals, False, {"time_reduction": np.mean}),
+            (metrics.mql, True, {}),
             (metrics.dtw_metric, False, {}),
         ],
     )
@@ -326,13 +342,26 @@ class TestMetrics:
         "config",
         itertools.product(
             [
+                # time dependent
+                (metrics.res, False),
+                (metrics.ae, False),
+                (metrics.se, False),
+                (metrics.sle, False),
+                (metrics.ase, False),
+                (metrics.sse, False),
+                (metrics.ape, False),
+                (metrics.sape, False),
+                (metrics.arre, False),
+                (metrics.ql, True),
+                # time aggregates
+                (metrics.mres, False),
                 (metrics.mae, False),
-                (metrics.mase, False),
                 (metrics.mse, False),
-                (metrics.msse, False),
                 (metrics.rmse, False),
-                (metrics.rmsse, False),
                 (metrics.rmsle, False),
+                (metrics.mase, False),
+                (metrics.msse, False),
+                (metrics.rmsse, False),
                 (metrics.mape, False),
                 (metrics.smape, False),
                 (metrics.ope, False),
@@ -340,8 +369,7 @@ class TestMetrics:
                 (metrics.r2_score, False),
                 (metrics.coefficient_of_variation, False),
                 (metrics.rho_risk, True),
-                (metrics.quantile_loss, True),
-                (metrics.residuals, False),
+                (metrics.mql, True),
                 (metrics.dtw_metric, False),
             ],
             ["time", "component", "series"],
@@ -416,13 +444,26 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
+            # time dependent
+            (metrics.res, 0, False, {"time_reduction": np.mean}),
+            (metrics.ae, 0, False, {"time_reduction": np.mean}),
+            (metrics.se, 0, False, {"time_reduction": np.mean}),
+            (metrics.sle, 0, False, {"time_reduction": np.mean}),
+            (metrics.ase, 0, False, {"time_reduction": np.mean}),
+            (metrics.sse, 0, False, {"time_reduction": np.mean}),
+            (metrics.ape, 0, False, {"time_reduction": np.mean}),
+            (metrics.sape, 0, False, {"time_reduction": np.mean}),
+            (metrics.arre, 0, False, {"time_reduction": np.mean}),
+            (metrics.ql, 0, True, {"time_reduction": np.mean}),
+            # time aggregates
+            (metrics.mres, 0, False, {}),
             (metrics.mae, 0, False, {}),
-            (metrics.mase, 0, False, {}),
             (metrics.mse, 0, False, {}),
-            (metrics.msse, 0, False, {}),
             (metrics.rmse, 0, False, {}),
-            (metrics.rmsse, 0, False, {}),
             (metrics.rmsle, 0, False, {}),
+            (metrics.mase, 0, False, {}),
+            (metrics.msse, 0, False, {}),
+            (metrics.rmsse, 0, False, {}),
             (metrics.mape, 0, False, {}),
             (metrics.smape, 0, False, {}),
             (metrics.ope, 0, False, {}),
@@ -430,8 +471,7 @@ class TestMetrics:
             (metrics.r2_score, 1, False, {}),
             (metrics.coefficient_of_variation, 0, False, {}),
             (metrics.rho_risk, 0, True, {}),
-            (metrics.quantile_loss, 0, True, {}),
-            (metrics.residuals, 0, False, {"time_reduction": np.mean}),
+            (metrics.mql, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
         ],
     )
@@ -447,132 +487,6 @@ class TestMetrics:
         else:
             assert metric(y_true, y_pred, **kwargs) == score_exp
 
-    def helper_test_shape_equality(self, metric, **kwargs):
-        assert (
-            round(
-                abs(
-                    metric(self.series12, self.series21, **kwargs)
-                    - metric(
-                        self.series1.append(self.series2b),
-                        self.series2.append(self.series1b),
-                        **kwargs,
-                    )
-                ),
-                7,
-            )
-            == 0
-        )
-
-    def get_test_cases(self, **kwargs):
-        # stochastic metrics (rho-risk) behave similar to deterministic metrics if all samples have equal values
-        if "is_stochastic" in kwargs and kwargs["is_stochastic"]:
-            test_cases = [
-                (self.series1 + 1, self.series22_stochastic),
-                (self.series1 + 1, self.series33_stochastic),
-                (self.series2, self.series33_stochastic),
-            ]
-            kwargs.pop("is_stochastic", 0)
-        else:
-            test_cases = [
-                (self.series1 + 1, self.series2),
-                (self.series1 + 1, self.series3),
-                (self.series2, self.series3),
-            ]
-        return test_cases, kwargs
-
-    def helper_test_multivariate_duplication_equality(self, metric, **kwargs):
-        test_cases, kwargs = self.get_test_cases(**kwargs)
-
-        for s1, s2 in test_cases:
-            s11 = s1.stack(s1)
-            s22 = s2.stack(s2)
-            # default intra
-            assert (
-                round(abs(metric(s1, s2, **kwargs) - metric(s11, s22, **kwargs)), 7)
-                == 0
-            )
-            # custom intra
-            assert (
-                round(
-                    abs(
-                        metric(
-                            s1,
-                            s2,
-                            **kwargs,
-                            component_reduction=(lambda x, axis: x[0, 0:1]),
-                        )
-                        - metric(
-                            s11,
-                            s22,
-                            **kwargs,
-                            component_reduction=(lambda x, axis: x[0, 0:1]),
-                        )
-                    ),
-                    7,
-                )
-                == 0
-            )
-
-    def helper_test_multiple_ts_duplication_equality(self, metric, **kwargs):
-        test_cases, kwargs = self.get_test_cases(**kwargs)
-
-        for s1, s2 in test_cases:
-            s11 = [s1.stack(s1)] * 2
-            s22 = [s2.stack(s2)] * 2
-            # default intra and inter
-            np.testing.assert_almost_equal(
-                actual=np.array([metric(s1, s2, **kwargs)] * 2),
-                desired=np.array(metric(s11, s22, **kwargs)),
-            )
-
-            # custom intra and inter
-            assert (
-                round(
-                    abs(
-                        metric(
-                            s1,
-                            s2,
-                            **kwargs,
-                            component_reduction=np.mean,
-                            series_reduction=np.max,
-                        )
-                        - metric(
-                            s11,
-                            s22,
-                            **kwargs,
-                            component_reduction=np.mean,
-                            series_reduction=np.max,
-                        )
-                    ),
-                    7,
-                )
-                == 0
-            )
-
-    def helper_test_nan(self, metric, metric_kwargs=None, **kwargs):
-        metric_kwargs = metric_kwargs or {}
-        test_cases, kwargs = self.get_test_cases(**kwargs)
-
-        for s1, s2 in test_cases:
-            # univariate
-            non_nan_metric = metric(s1[:9] + 1, s2[:9], **metric_kwargs)
-            nan_s1 = s1.copy()
-            nan_s1._xa.values[-1, :, :] = np.nan
-            nan_metric = metric(nan_s1 + 1, s2, **metric_kwargs)
-            assert non_nan_metric == nan_metric
-
-            # multivariate + multi-TS
-            s11 = [s1.stack(s1)] * 2
-            s22 = [s2.stack(s2)] * 2
-            non_nan_metric = metric(
-                [s[:9] + 1 for s in s11], [s[:9] for s in s22], **metric_kwargs
-            )
-            nan_s11 = s11.copy()
-            for s in nan_s11:
-                s._xa.values[-1, :, :] = np.nan
-            nan_metric = metric([s + 1 for s in nan_s11], s22, **metric_kwargs)
-            np.testing.assert_array_equal(non_nan_metric, nan_metric)
-
     def test_r2(self):
         from sklearn.metrics import r2_score
 
@@ -585,82 +499,110 @@ class TestMetrics:
         self.helper_test_multiple_ts_duplication_equality(metrics.r2_score)
         self.helper_test_nan(metrics.r2_score)
 
-    def test_marre(self):
-        assert (
-            round(
-                abs(
-                    metrics.marre(self.series1, self.series2)
-                    - metrics.marre(self.series1 + 100, self.series2 + 100)
-                ),
-                7,
-            )
-            == 0
-        )
-        self.helper_test_multivariate_duplication_equality(metrics.marre)
-        self.helper_test_multiple_ts_duplication_equality(metrics.marre)
-        self.helper_test_nan(metrics.marre)
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.se, False, {"time_reduction": np.nanmean}),
+            (metrics.mse, True, {}),
+        ],
+    )
+    def test_se(self, config):
+        metric, is_aggregate, kwargs = config
+        self.helper_test_shape_equality(metric, **kwargs)
+        self.helper_test_nan(metric, **kwargs)
+        self.helper_test_non_aggregate(metric, is_aggregate)
 
-    def test_season(self):
-        with pytest.raises(ValueError):
-            metrics.mase(self.series3, self.series3 * 1.3, self.series_train, 8)
-
-    def test_mse(self):
-        self.helper_test_shape_equality(metrics.mse)
-        self.helper_test_nan(metrics.mse)
-
-    def test_mae(self):
-        self.helper_test_shape_equality(metrics.mae)
-        self.helper_test_nan(metrics.mae)
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ae, False, {"time_reduction": np.nanmean}),
+            (metrics.mae, True, {}),
+        ],
+    )
+    def test_ae(self, config):
+        metric, is_aggregate, kwargs = config
+        self.helper_test_shape_equality(metric, **kwargs)
+        self.helper_test_nan(metric, **kwargs)
+        self.helper_test_non_aggregate(metric, is_aggregate)
 
     def test_rmse(self):
         self.helper_test_multivariate_duplication_equality(metrics.rmse)
         self.helper_test_multiple_ts_duplication_equality(metrics.rmse)
 
-        assert (
-            round(
-                abs(
-                    metrics.rmse(
-                        self.series1.append(self.series2b),
-                        self.series2.append(self.series1b),
-                    )
-                    - metrics.mse(
-                        self.series12,
-                        self.series21,
-                        component_reduction=(
-                            lambda x, axis: np.sqrt(np.mean(x, axis=axis))
-                        ),
-                    )
-                ),
-                7,
-            )
-            == 0
+        np.testing.assert_array_almost_equal(
+            metrics.rmse(
+                self.series1.append(self.series2b),
+                self.series2.append(self.series1b),
+            ),
+            metrics.mse(
+                self.series12,
+                self.series21,
+                component_reduction=lambda x, axis: np.sqrt(np.mean(x, axis=axis)),
+            ),
         )
         self.helper_test_nan(metrics.rmse)
 
-    def test_rmsle(self):
-        self.helper_test_multivariate_duplication_equality(metrics.rmsle)
-        self.helper_test_multiple_ts_duplication_equality(metrics.rmsle)
-        self.helper_test_nan(metrics.rmsle)
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.sle, False, {"time_reduction": np.nanmean}),
+            (metrics.rmsle, True, {}),
+        ],
+    )
+    def test_sle(self, config):
+        metric, is_aggregate, kwargs = config
+        self.helper_test_multivariate_duplication_equality(metric, **kwargs)
+        self.helper_test_multiple_ts_duplication_equality(metric, **kwargs)
+        self.helper_test_nan(metric, **kwargs)
+        self.helper_test_non_aggregate(metric, is_aggregate)
 
-    def test_residuals(self):
-        self.helper_test_shape_equality(metrics.residuals, time_reduction=np.mean)
-        self.helper_test_nan(
-            metrics.residuals, metric_kwargs={"time_reduction": np.nanmean}
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.arre, False, {"time_reduction": np.nanmean}),
+            (metrics.marre, True, {}),
+        ],
+    )
+    def test_arre(self, config):
+        metric, is_aggregate, kwargs = config
+        np.testing.assert_array_almost_equal(
+            metric(self.series1, self.series2, **kwargs),
+            metric(self.series1 + 100, self.series2 + 100, **kwargs),
         )
+        self.helper_test_multivariate_duplication_equality(metric, **kwargs)
+        self.helper_test_multiple_ts_duplication_equality(metric, **kwargs)
+        self.helper_test_nan(metric, **kwargs)
+        self.helper_test_non_aggregate(metric, is_aggregate)
 
-        assert (
-            metrics.residuals(self.series1, self.series1 + 1, time_reduction=np.mean)
-            == -1.0
-        )
-        assert (
-            metrics.residuals(self.series1, self.series1 - 1, time_reduction=np.mean)
-            == 1.0
-        )
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.ase,
+            metrics.sse,
+            metrics.mase,
+            metrics.msse,
+            metrics.rmsse,
+        ],
+    )
+    def test_season(self, metric):
+        with pytest.raises(ValueError):
+            metric(self.series3, self.series3 * 1.3, self.series_train, 8)
 
-        # do not aggregate over time
-        res = metrics.residuals(self.series1, self.series1 + 1)
-        assert len(res) == len(self.series1)
-        assert (res == -1.0).all()
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.res, False, {"time_reduction": np.nanmean}),
+            (metrics.mres, True, {}),
+        ],
+    )
+    def test_res(self, config):
+        metric, is_aggregate, kwargs = config
+        self.helper_test_shape_equality(metric, **kwargs)
+        self.helper_test_nan(metric, **kwargs)
+
+        assert metric(self.series1, self.series1 + 1, **kwargs) == -1.0
+        assert metric(self.series1, self.series1 - 1, **kwargs) == 1.0
+        self.helper_test_non_aggregate(metric, is_aggregate, val_exp=-1.0)
 
     def test_coefficient_of_variation(self):
         self.helper_test_multivariate_duplication_equality(
@@ -671,26 +613,54 @@ class TestMetrics:
         )
         self.helper_test_nan(metrics.coefficient_of_variation)
 
-    def test_mape(self):
-        self.helper_test_multivariate_duplication_equality(metrics.mape)
-        self.helper_test_multiple_ts_duplication_equality(metrics.mape)
-        self.helper_test_nan(metrics.mape)
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ape, False, {"time_reduction": np.nanmean}),
+            (metrics.mape, True, {}),
+        ],
+    )
+    def test_ape(self, config):
+        metric, is_aggregate, kwargs = config
+        self.helper_test_multivariate_duplication_equality(metric, **kwargs)
+        self.helper_test_multiple_ts_duplication_equality(metric, **kwargs)
+        self.helper_test_nan(metric, **kwargs)
+        self.helper_test_non_aggregate(metric, is_aggregate)
 
-    def test_smape(self):
-        self.helper_test_multivariate_duplication_equality(metrics.smape)
-        self.helper_test_multiple_ts_duplication_equality(metrics.smape)
-        self.helper_test_nan(metrics.smape)
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ape, False, {"time_reduction": np.nanmean}),
+            (metrics.mape, True, {}),
+        ],
+    )
+    def test_sape(self, config):
+        metric, is_aggregate, kwargs = config
+        self.helper_test_multivariate_duplication_equality(metric, **kwargs)
+        self.helper_test_multiple_ts_duplication_equality(metric, **kwargs)
+        self.helper_test_nan(metric, **kwargs)
+        self.helper_test_non_aggregate(metric, is_aggregate)
 
-    @pytest.mark.parametrize("metric", [metrics.mase, metrics.msse, metrics.rmsse])
-    def test_scaled_errors(self, metric):
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ase, False, {"time_reduction": np.nanmean}),
+            (metrics.sse, False, {"time_reduction": np.nanmean}),
+            (metrics.mase, True, {}),
+            (metrics.msse, True, {}),
+            (metrics.rmsse, True, {}),
+        ],
+    )
+    def test_scaled_errors(self, config):
+        metric, is_aggregate, kwargs = config
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
         for s1, s2 in test_cases:
 
             # multivariate, series as args
             np.testing.assert_array_almost_equal(
-                metric(s1.stack(s1), s2.stack(s2), insample.stack(insample)),
-                metric(s1, s2, insample),
+                metric(s1.stack(s1), s2.stack(s2), insample.stack(insample), **kwargs),
+                metric(s1, s2, insample, **kwargs),
             )
 
             # multi-ts, series as kwargs
@@ -699,16 +669,15 @@ class TestMetrics:
                     actual_series=[s1] * 2,
                     pred_series=[s2] * 2,
                     insample=[insample] * 2,
+                    **kwargs,
                 ),
-                metric(s1, s2, insample),
+                metric(s1, s2, insample, **kwargs),
             )
 
             # checking with n_jobs and verbose
             np.testing.assert_array_almost_equal(
                 metric(
-                    [s1] * 5,
-                    pred_series=[s2] * 5,
-                    insample=[insample] * 5,
+                    [s1] * 5, pred_series=[s2] * 5, insample=[insample] * 5, **kwargs
                 ),
                 metric(
                     [s1] * 5,
@@ -716,6 +685,7 @@ class TestMetrics:
                     insample=[insample] * 5,
                     n_jobs=-1,
                     verbose=True,
+                    **kwargs,
                 ),
             )
 
@@ -757,29 +727,11 @@ class TestMetrics:
 
         # test perfect predictions -> risk = 0
         for rho in [0.25, 0.5]:
-            assert (
-                round(
-                    abs(
-                        metrics.rho_risk(
-                            self.series1, self.series11_stochastic, rho=rho
-                        )
-                        - 0.0
-                    ),
-                    7,
-                )
-                == 0
+            np.testing.assert_array_almost_equal(
+                metrics.rho_risk(self.series1, self.series11_stochastic, rho=rho), 0.0
             )
-        assert (
-            round(
-                abs(
-                    metrics.rho_risk(
-                        self.series12_mean, self.series12_stochastic, rho=0.5
-                    )
-                    - 0.0
-                ),
-                7,
-            )
-            == 0
+        np.testing.assert_array_almost_equal(
+            metrics.rho_risk(self.series12_mean, self.series12_stochastic, rho=0.5), 0.0
         )
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
@@ -788,36 +740,39 @@ class TestMetrics:
         s12_stochastic = TimeSeries.from_times_and_values(
             s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
         )
-        assert round(abs(metrics.rho_risk(s1, s12_stochastic, rho=0.0) - 0.0), 7) == 0
-        assert round(abs(metrics.rho_risk(s2, s12_stochastic, rho=1.0) - 0.0), 7) == 0
+        np.testing.assert_array_almost_equal(
+            metrics.rho_risk(s1, s12_stochastic, rho=0.0), 0.0
+        )
+        np.testing.assert_array_almost_equal(
+            metrics.rho_risk(s2, s12_stochastic, rho=1.0), 0.0
+        )
 
-    def test_quantile_loss(self):
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (metrics.ql, False, {"time_reduction": np.nanmean}),
+            (metrics.mql, True, {}),
+        ],
+    )
+    def test_quantile_loss(self, config):
+        metric, is_aggregate, kwargs = config
         # deterministic not supported
         with pytest.raises(ValueError):
-            metrics.quantile_loss(self.series1, self.series1)
+            metric(self.series1, self.series1, **kwargs)
 
         # general univariate, multivariate and multi-ts tests
         self.helper_test_multivariate_duplication_equality(
-            metrics.quantile_loss, is_stochastic=True
+            metric, is_stochastic=True, **kwargs
         )
         self.helper_test_multiple_ts_duplication_equality(
-            metrics.quantile_loss, is_stochastic=True
+            metric, is_stochastic=True, **kwargs
         )
-        self.helper_test_nan(metrics.quantile_loss, is_stochastic=True)
+        self.helper_test_nan(metric, is_stochastic=True, **kwargs)
 
         # test perfect predictions -> risk = 0
         for tau in [0.25, 0.5]:
-            assert (
-                round(
-                    abs(
-                        metrics.quantile_loss(
-                            self.series1, self.series11_stochastic, tau=tau
-                        )
-                        - 0.0
-                    ),
-                    7,
-                )
-                == 0
+            np.testing.assert_array_almost_equal(
+                metric(self.series1, self.series11_stochastic, tau=tau, **kwargs), 0.0
             )
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
@@ -826,8 +781,12 @@ class TestMetrics:
         s12_stochastic = TimeSeries.from_times_and_values(
             s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
         )
-        assert round(metrics.quantile_loss(s1, s12_stochastic, tau=1.0), 7) == 0
-        assert round(metrics.quantile_loss(s2, s12_stochastic, tau=0.0), 7) == 0
+        np.testing.assert_array_almost_equal(
+            metric(s1, s12_stochastic, tau=1.0, **kwargs), 0.0
+        )
+        np.testing.assert_array_almost_equal(
+            metric(s2, s12_stochastic, tau=0.0, **kwargs), 0.0
+        )
 
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
@@ -891,21 +850,29 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
-            (metrics.r2_score, "min"),
-            (metrics.rmse, "max"),
-            (metrics.mape, "max"),
-            (metrics.smape, "max"),
-            (metrics.mae, "max"),
-            (metrics.coefficient_of_variation, "max"),
-            (metrics.ope, "max"),
-            (metrics.marre, "max"),
-            (metrics.mse, "max"),
-            (metrics.rmsle, "max"),
+            (metrics.res, "min", {"time_reduction": np.nanmean}),
+            (metrics.ae, "max", {"time_reduction": np.nanmean}),
+            (metrics.se, "max", {"time_reduction": np.nanmean}),
+            (metrics.sle, "max", {"time_reduction": np.nanmean}),
+            (metrics.ape, "max", {"time_reduction": np.nanmean}),
+            (metrics.sape, "max", {"time_reduction": np.nanmean}),
+            (metrics.arre, "max", {"time_reduction": np.nanmean}),
+            (metrics.mres, "min", {}),
+            (metrics.mae, "max", {}),
+            (metrics.mse, "max", {}),
+            (metrics.rmse, "max", {}),
+            (metrics.rmsle, "max", {}),
+            (metrics.mape, "max", {}),
+            (metrics.smape, "max", {}),
+            (metrics.ope, "max", {}),
+            (metrics.marre, "max", {}),
+            (metrics.r2_score, "min", {}),
+            (metrics.coefficient_of_variation, "max", {}),
         ],
     )
     def test_multiple_ts(self, config):
-        # checking univariate, multivariate and multi-ts gives same metrics with same values
-        metric, series_reduction = config
+        """Tests that univariate, multivariate and multi-ts give same metrics with same values."""
+        metric, series_reduction, kwargs = config
         series_reduction = getattr(np, series_reduction)
 
         dim = 2
@@ -915,11 +882,12 @@ class TestMetrics:
         multi_2 = [series22] * dim
 
         np.testing.assert_array_almost_equal(
-            metric(self.series1 + 1, self.series2), metric(series11, series22)
+            metric(self.series1 + 1, self.series2, **kwargs),
+            metric(series11, series22, **kwargs),
         )
         np.testing.assert_array_almost_equal(
-            np.array([metric(series11, series22)] * 2),
-            np.array(metric(multi_1, multi_2)),
+            np.array([metric(series11, series22, **kwargs)] * 2),
+            np.array(metric(multi_1, multi_2, **kwargs)),
         )
 
         # trying different functions
@@ -932,7 +900,8 @@ class TestMetrics:
             [shifted_2, shifted_3],
             component_reduction=np.mean,
             series_reduction=series_reduction,
-        ) == metric(shifted_1, shifted_3)
+            **kwargs,
+        ) == metric(shifted_1, shifted_3, **kwargs)
 
         # checking if the result is the same with different n_jobs and verbose True
         assert metric(
@@ -940,6 +909,7 @@ class TestMetrics:
             [shifted_2, shifted_3],
             component_reduction=np.mean,
             series_reduction=np.max,
+            **kwargs,
         ) == metric(
             [shifted_1, shifted_1],
             [shifted_2, shifted_3],
@@ -947,33 +917,57 @@ class TestMetrics:
             series_reduction=np.max,
             n_jobs=-1,
             verbose=True,
+            **kwargs,
         )
 
     @pytest.mark.parametrize(
         "config",
         [
-            (metrics.mae, sklearn.metrics.mean_absolute_error, {}),
-            (metrics.mse, sklearn.metrics.mean_squared_error, {}),
-            (metrics.rmse, sklearn.metrics.mean_squared_error, {"squared": False}),
-            (metrics.rmsle, metric_rmsle, {}),
-            (metrics.coefficient_of_variation, metric_cov, {}),
-            (metrics.mape, sklearn_mape, {}),
-            (metrics.smape, metric_smape, {}),
-            (metrics.ope, metric_ope, {}),
-            (metrics.marre, metric_marre, {}),
-            (metrics.r2_score, sklearn.metrics.r2_score, {}),
-            (metrics.residuals, metric_residuals, {}),
+            (metrics.res, metric_residuals, {}, {"time_reduction": np.nanmean}),
+            (
+                metrics.ae,
+                sklearn.metrics.mean_absolute_error,
+                {},
+                {"time_reduction": np.nanmean},
+            ),
+            (
+                metrics.se,
+                sklearn.metrics.mean_squared_error,
+                {},
+                {"time_reduction": np.nanmean},
+            ),
+            (
+                lambda *args: np.sqrt(metrics.sle(*args, time_reduction=np.nanmean)),
+                metric_rmsle,
+                {},
+                {},
+            ),
+            (metrics.ape, sklearn_mape, {}, {"time_reduction": np.nanmean}),
+            (metrics.sape, metric_smape, {}, {"time_reduction": np.nanmean}),
+            (metrics.arre, metric_marre, {}, {"time_reduction": np.nanmean}),
+            (metrics.mres, metric_residuals, {}, {}),
+            (metrics.mae, sklearn.metrics.mean_absolute_error, {}, {}),
+            (metrics.mse, sklearn.metrics.mean_squared_error, {}, {}),
+            (metrics.rmse, sklearn.metrics.mean_squared_error, {"squared": False}, {}),
+            (metrics.rmsle, metric_rmsle, {}, {}),
+            (metrics.mape, sklearn_mape, {}, {}),
+            (metrics.smape, metric_smape, {}, {}),
+            (metrics.ope, metric_ope, {}, {}),
+            (metrics.marre, metric_marre, {}, {}),
+            (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
+            (metrics.coefficient_of_variation, metric_cov, {}, {}),
         ],
     )
-    def test_metrics(self, config):
-        metric, metric_ref, ref_kwargs = config
+    def test_metrics_deterministic(self, config):
+        """Tests deterministic metrics against a reference metric"""
+        metric, metric_ref, ref_kwargs, kwargs = config
         y_true = self.series1.stack(self.series1) + 1
         y_pred = y_true + 1
 
         y_true = [y_true] * 2
         y_pred = [y_pred] * 2
 
-        score = metric(y_true, y_pred)
+        score = metric(y_true, y_pred, **kwargs)
         score_ref = metric_ref(y_true[0].values(), y_pred[0].values(), **ref_kwargs)
         np.testing.assert_array_almost_equal(score, np.array(score_ref))
 
@@ -981,15 +975,23 @@ class TestMetrics:
         "config",
         [
             (
-                metrics.quantile_loss,
+                metrics.ql,
                 [(0.15, 0.15), (0.015, 0.015), (0.15, 0.15)],
                 "tau",
+                {"time_reduction": np.nanmean},
             ),
-            (metrics.rho_risk, [(0.30, 0.025), (0.030, 0.0025), (0.30, 0.025)], "rho"),
+            (metrics.mql, [(0.15, 0.15), (0.015, 0.015), (0.15, 0.15)], "tau", {}),
+            (
+                metrics.rho_risk,
+                [(0.30, 0.025), (0.030, 0.0025), (0.30, 0.025)],
+                "rho",
+                {},
+            ),
         ],
     )
-    def test_metrics_quantile(self, config):
-        metric, scores_exp, q_param = config
+    def test_metrics_probabilistic(self, config):
+        """Tests probabilistic metrics against reference scores"""
+        metric, scores_exp, q_param, kwargs = config
         np.random.seed(0)
         x = np.random.normal(loc=0.0, scale=1.0, size=10000)
         y = np.array(
@@ -1005,6 +1007,127 @@ class TestMetrics:
 
         for quantile, score_exp in zip([0.1, 0.5, 0.9], scores_exp):
             scores = metric(
-                y_true, y_pred, **{q_param: quantile}, component_reduction=None
+                y_true,
+                y_pred,
+                **{q_param: quantile},
+                component_reduction=None,
+                **kwargs,
             )
             assert (scores < np.array(score_exp).reshape(1, -1)).all()
+
+    def helper_test_shape_equality(self, metric, **kwargs):
+        np.testing.assert_array_almost_equal(
+            metric(self.series12, self.series21, **kwargs),
+            metric(
+                self.series1.append(self.series2b),
+                self.series2.append(self.series1b),
+                **kwargs,
+            ),
+        )
+
+    def get_test_cases(self, **kwargs):
+        # stochastic metrics (rho-risk) behave similar to deterministic metrics if all samples have equal values
+        if "is_stochastic" in kwargs and kwargs["is_stochastic"]:
+            test_cases = [
+                (self.series1 + 1, self.series22_stochastic),
+                (self.series1 + 1, self.series33_stochastic),
+                (self.series2, self.series33_stochastic),
+            ]
+            kwargs.pop("is_stochastic", 0)
+        else:
+            test_cases = [
+                (self.series1 + 1, self.series2),
+                (self.series1 + 1, self.series3),
+                (self.series2, self.series3),
+            ]
+        return test_cases, kwargs
+
+    def helper_test_multivariate_duplication_equality(self, metric, **kwargs):
+        test_cases, kwargs = self.get_test_cases(**kwargs)
+
+        for s1, s2 in test_cases:
+            s11 = s1.stack(s1)
+            s22 = s2.stack(s2)
+            # default intra
+            np.testing.assert_array_almost_equal(
+                metric(s1, s2, **kwargs), metric(s11, s22, **kwargs)
+            )
+            # custom intra
+            np.testing.assert_array_almost_equal(
+                metric(
+                    s1,
+                    s2,
+                    **kwargs,
+                    component_reduction=(lambda x, axis: x[0, 0:1]),
+                ),
+                metric(
+                    s11,
+                    s22,
+                    **kwargs,
+                    component_reduction=(lambda x, axis: x[0, 0:1]),
+                ),
+            )
+
+    def helper_test_multiple_ts_duplication_equality(self, metric, **kwargs):
+        test_cases, kwargs = self.get_test_cases(**kwargs)
+
+        for s1, s2 in test_cases:
+            s11 = [s1.stack(s1)] * 2
+            s22 = [s2.stack(s2)] * 2
+            # default intra and inter
+            np.testing.assert_almost_equal(
+                actual=np.array([metric(s1, s2, **kwargs)] * 2),
+                desired=np.array(metric(s11, s22, **kwargs)),
+            )
+
+            # custom intra and inter
+            np.testing.assert_almost_equal(
+                metric(
+                    s1,
+                    s2,
+                    **kwargs,
+                    component_reduction=np.mean,
+                    series_reduction=np.max,
+                ),
+                metric(
+                    s11,
+                    s22,
+                    **kwargs,
+                    component_reduction=np.mean,
+                    series_reduction=np.max,
+                ),
+            )
+
+    def helper_test_nan(self, metric, **kwargs):
+        test_cases, kwargs = self.get_test_cases(**kwargs)
+
+        for s1, s2 in test_cases:
+            # univariate
+            non_nan_metric = metric(s1[:9] + 1, s2[:9], **kwargs)
+            nan_s1 = s1.copy()
+            nan_s1._xa.values[-1, :, :] = np.nan
+            nan_metric = metric(nan_s1 + 1, s2, **kwargs)
+            assert non_nan_metric == nan_metric
+
+            # multivariate + multi-TS
+            s11 = [s1.stack(s1)] * 2
+            s22 = [s2.stack(s2)] * 2
+            non_nan_metric = metric(
+                [s[:9] + 1 for s in s11], [s[:9] for s in s22], **kwargs
+            )
+            nan_s11 = s11.copy()
+            for s in nan_s11:
+                s._xa.values[-1, :, :] = np.nan
+            nan_metric = metric([s + 1 for s in nan_s11], s22, **kwargs)
+            np.testing.assert_array_equal(non_nan_metric, nan_metric)
+
+    def helper_test_non_aggregate(self, metric, is_aggregate, val_exp=None):
+        if is_aggregate:
+            return
+
+        # do not aggregate over time
+        res = metric(self.series1 + 1, self.series1 + 2)
+        assert len(res) == len(self.series1)
+
+        if val_exp is not None:
+            assert (res == -1.0).all()
