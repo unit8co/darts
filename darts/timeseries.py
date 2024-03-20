@@ -53,6 +53,7 @@ from scipy.stats import kurtosis, skew
 from darts.utils.utils import generate_index, n_steps_between
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
+from .utils.parallel import _build_tqdm_iterator, _parallel_apply
 
 try:
     from typing import Literal
@@ -748,6 +749,71 @@ class TimeSeries:
         )
 
     @classmethod
+    def _from_group_dataframe(
+        cls: Self,
+        static_cov_vals,
+        group: pd.DataFrame,
+        extract_value_cols: List[str],
+        group_cols: List[str],
+        extract_static_cov_cols: Optional[List[str]] = None,
+        drop_group_col_idx: Optional[List[int]] = None,
+        static_cols: Optional[List[str]] = None,
+        fill_missing_dates: Optional[bool] = False,
+        freq: Optional[Union[str, int]] = None,
+        fillna_value: Optional[float] = None,
+    ) -> Self:
+        static_covs = (
+            pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+            if extract_static_cov_cols
+            else None
+        )
+        split = group[extract_value_cols]
+
+        static_cov_vals = (
+            (static_cov_vals,)
+            if not isinstance(static_cov_vals, tuple)
+            else static_cov_vals
+        )
+        # optionally, exclude group columns from static covariates
+        if drop_group_col_idx:
+            if len(drop_group_col_idx) == len(group_cols):
+                static_cov_vals = tuple()
+            else:
+                static_cov_vals = tuple(
+                    val
+                    for idx, val in enumerate(static_cov_vals)
+                    if idx not in drop_group_col_idx
+                )
+
+        # check that for each group there is only one unique value per column in `static_cols`
+        if static_cols:
+            static_cols_valid = [len(group[col].unique()) == 1 for col in static_cols]
+            if not all(static_cols_valid):
+                # encountered performance issues when evaluating the error message from below in every
+                # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
+                invalid_cols = [
+                    static_col
+                    for static_col, is_valid in zip(static_cols, static_cols_valid)
+                    if not is_valid
+                ]
+                raise_if(
+                    True,
+                    f"Encountered more than one unique value in group {group} for given static columns: "
+                    f"{invalid_cols}.",
+                    logger,
+                )
+            # add the static covariates to the group values
+            static_cov_vals += tuple(group[static_cols].values[0])
+
+        return cls.from_dataframe(
+            df=split,
+            fill_missing_dates=fill_missing_dates,
+            freq=freq,
+            fillna_value=fillna_value,
+            static_covariates=static_covs,
+        )
+
+    @classmethod
     def from_group_dataframe(
         cls,
         df: pd.DataFrame,
@@ -759,6 +825,8 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         drop_group_cols: Optional[Union[List[str], str]] = None,
+        n_jobs: Optional[int] = None,
+        verbose: Optional[bool] = False,
     ) -> List[Self]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
@@ -867,72 +935,98 @@ class TimeSeries:
             df = df.drop(columns=time_col)
         df = df.sort_index()
 
-        # split df by groups, and store group values and static values (static covariates)
-        # single elements group columns must be unpacked for same groupby() behavior across different pandas versions
-        splits = []
-        for static_cov_vals, group in df.groupby(
-            group_cols[0] if len(group_cols) == 1 else group_cols
-        ):
-            static_cov_vals = (
-                (static_cov_vals,)
-                if not isinstance(static_cov_vals, tuple)
-                else static_cov_vals
-            )
-            # optionally, exclude group columns from static covariates
-            if drop_group_col_idx:
-                if len(drop_group_col_idx) == len(group_cols):
-                    static_cov_vals = tuple()
-                else:
-                    static_cov_vals = tuple(
-                        val
-                        for idx, val in enumerate(static_cov_vals)
-                        if idx not in drop_group_col_idx
-                    )
+        groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
 
-            # check that for each group there is only one unique value per column in `static_cols`
-            if static_cols:
-                static_cols_valid = [
-                    len(group[col].unique()) == 1 for col in static_cols
-                ]
-                if not all(static_cols_valid):
-                    # encountered performance issues when evaluating the error message from below in every
-                    # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
-                    invalid_cols = [
-                        static_col
-                        for static_col, is_valid in zip(static_cols, static_cols_valid)
-                        if not is_valid
-                    ]
-                    raise_if(
-                        True,
-                        f"Encountered more than one unique value in group {group} for given static columns: "
-                        f"{invalid_cols}.",
-                        logger,
-                    )
-                # add the static covariates to the group values
-                static_cov_vals += tuple(group[static_cols].values[0])
-            # store static covariate Series and group DataFrame (without static cov columns)
-            splits.append(
-                (
-                    (
-                        pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-                        if extract_static_cov_cols
-                        else None
-                    ),
-                    group[extract_value_cols],
-                )
-            )
+        iterator = _build_tqdm_iterator(
+            groups,
+            verbose=verbose,
+            total=len(groups),
+            desc="Creating TimeSeries",
+        )
 
-        # create a list with multiple TimeSeries and add static covariates
-        return [
-            cls.from_dataframe(
-                df=split,
-                fill_missing_dates=fill_missing_dates,
-                freq=freq,
-                fillna_value=fillna_value,
-                static_covariates=static_covs,
-            )
-            for static_covs, split in splits
-        ]
+        return _parallel_apply(
+            iterator,
+            cls._from_group_dataframe,
+            n_jobs,
+            fn_args=dict(),
+            fn_kwargs={
+                "extract_value_cols": extract_value_cols,
+                "group_cols": group_cols,
+                "extract_static_cov_cols": extract_static_cov_cols,
+                "drop_group_col_idx": drop_group_col_idx,
+                "static_cols": static_cols,
+                "fill_missing_dates": fill_missing_dates,
+                "freq": freq,
+                "fillna_value": fillna_value,
+            },
+        )
+
+        # # split df by groups, and store group values and static values (static covariates)
+        # # single elements group columns must be unpacked for same groupby() behavior across different pandas versions
+        # splits = []
+        # for static_cov_vals, group in df.groupby(
+        #     group_cols[0] if len(group_cols) == 1 else group_cols
+        # ):
+        #     static_cov_vals = (
+        #         (static_cov_vals,)
+        #         if not isinstance(static_cov_vals, tuple)
+        #         else static_cov_vals
+        #     )
+        #     # optionally, exclude group columns from static covariates
+        #     if drop_group_col_idx:
+        #         if len(drop_group_col_idx) == len(group_cols):
+        #             static_cov_vals = tuple()
+        #         else:
+        #             static_cov_vals = tuple(
+        #                 val
+        #                 for idx, val in enumerate(static_cov_vals)
+        #                 if idx not in drop_group_col_idx
+        #             )
+        #
+        #     # check that for each group there is only one unique value per column in `static_cols`
+        #     if static_cols:
+        #         static_cols_valid = [
+        #             len(group[col].unique()) == 1 for col in static_cols
+        #         ]
+        #         if not all(static_cols_valid):
+        #             # encountered performance issues when evaluating the error message from below in every
+        #             # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
+        #             invalid_cols = [
+        #                 static_col
+        #                 for static_col, is_valid in zip(static_cols, static_cols_valid)
+        #                 if not is_valid
+        #             ]
+        #             raise_if(
+        #                 True,
+        #                 f"Encountered more than one unique value in group {group} for given static columns: "
+        #                 f"{invalid_cols}.",
+        #                 logger,
+        #             )
+        #         # add the static covariates to the group values
+        #         static_cov_vals += tuple(group[static_cols].values[0])
+        #     # store static covariate Series and group DataFrame (without static cov columns)
+        #     splits.append(
+        #         (
+        #             (
+        #                 pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+        #                 if extract_static_cov_cols
+        #                 else None
+        #             ),
+        #             group[extract_value_cols],
+        #         )
+        #     )
+        #
+        # # create a list with multiple TimeSeries and add static covariates
+        # return [
+        #     cls.from_dataframe(
+        #         df=split,
+        #         fill_missing_dates=fill_missing_dates,
+        #         freq=freq,
+        #         fillna_value=fillna_value,
+        #         static_covariates=static_covs,
+        #     )
+        #     for static_covs, split in splits
+        # ]
 
     @classmethod
     def from_series(
