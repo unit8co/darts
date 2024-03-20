@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Renamed the private `_is_probabilistic` property to a public `supports_probabilistic_prediction`.
 - Improvements to `DataTransformer`: [#2267](https://github.com/unit8co/darts/pull/2267) by [Alicja Krzeminska-Sciga](https://github.com/alicjakrzeminska).
   - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series.
+- Improvements to `TimeSeries`: [#2292](https://github.com/unit8co/darts/pull/2292) by [Bohdan Bilonoha](https://github.com/BohdanBilonoh)
+  - `TimeSeries.from_group_dataframe()` now supports parallelized creation of `TimeSeries` from a `grouped` DataFrame. This can be enabled with the new parameter `n_jobs`. 
 
 **Fixed**
 - Fixed type hint warning "Unexpected argument" when calling `historical_forecasts()` caused by the `_with_sanity_checks` decorator. The type hinting is now properly configured to expect any input arguments and return the output type of the method for which the sanity checks are performed for. [#2286](https://github.com/unit8co/darts/pull/2286) by [Dennis Bader](https://github.com/dennisbader).
