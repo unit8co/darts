@@ -751,7 +751,7 @@ class TimeSeries:
     @classmethod
     def _from_group_dataframe(
         cls: Self,
-        static_cov_vals,
+        static_cov_vals: List[str],
         group: pd.DataFrame,
         extract_value_cols: List[str],
         group_cols: List[str],
