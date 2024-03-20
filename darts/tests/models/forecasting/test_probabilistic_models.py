@@ -147,6 +147,7 @@ if TORCH_AVAILABLE:
                 "output_chunk_length": 5,
                 "n_epochs": 20,
                 "random_state": 0,
+                "norm_type": "LayerNorm",
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
