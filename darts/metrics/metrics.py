@@ -5,6 +5,7 @@ Metrics
 Some metrics to compare time series.
 """
 
+import inspect
 from functools import wraps
 from inspect import signature
 from typing import Callable, List, Optional, Sequence, Tuple, Union
@@ -56,12 +57,35 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
         params = signature(func).parameters
         n_jobs = kwargs.pop("n_jobs", params["n_jobs"].default)
-        verbose = kwargs.pop("verbose", params["verbose"].default)
-
         if not isinstance(n_jobs, int):
             raise_log(ValueError("n_jobs must be an integer"), logger=logger)
+
+        verbose = kwargs.pop("verbose", params["verbose"].default)
         if not isinstance(verbose, bool):
             raise_log(ValueError("verbose must be a bool"), logger=logger)
+
+        # sanity check reduction functions
+        _ = _get_reduction(
+            kwargs=kwargs,
+            params=params,
+            red_name="time_reduction",
+            axis=TIME_AX,
+            sanity_check=True,
+        )
+        _ = _get_reduction(
+            kwargs=kwargs,
+            params=params,
+            red_name="component_reduction",
+            axis=COMP_AX,
+            sanity_check=True,
+        )
+        series_reduction = _get_reduction(
+            kwargs=kwargs,
+            params=params,
+            red_name="series_reduction",
+            axis=0,
+            sanity_check=True,
+        )
 
         actual_series = (
             [actual_series]
@@ -138,7 +162,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         ]
 
         # reduce metrics along series axis
-        if kwargs.get("series_reduction") is not None:
+        if series_reduction is not None:
             vals = kwargs["series_reduction"](vals, axis=0)
 
         # flatten along series axis if n series == 1
@@ -207,24 +231,26 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         elif len(vals.shape) == 1:
             vals = np.expand_dims(vals, TIME_AX)
 
-        if "component_reduction" in kwargs:
-            vals = (
-                kwargs["component_reduction"](vals, axis=COMP_AX)
-                if kwargs["component_reduction"] is not None
-                else vals
-            )
-        else:
-            vals = params["component_reduction"].default(vals, axis=COMP_AX)
+        time_reduction = _get_reduction(
+            kwargs=kwargs,
+            params=params,
+            red_name="time_reduction",
+            axis=TIME_AX,
+            sanity_check=False,
+        )
+        if time_reduction is not None:
+            vals = np.expand_dims(time_reduction(vals, axis=TIME_AX), axis=TIME_AX)
 
-        # reshape to (time dim, component dim)
-        if len(vals.shape) == 0:
-            expand_axis = (0, 1)
-        elif len(vals.shape) == 1:
-            expand_axis = 1
-        else:
-            expand_axis = None
-
-        return vals if not expand_axis else np.expand_dims(vals, axis=expand_axis)
+        component_reduction = _get_reduction(
+            kwargs=kwargs,
+            params=params,
+            red_name="component_reduction",
+            axis=COMP_AX,
+            sanity_check=False,
+        )
+        if component_reduction is not None:
+            vals = np.expand_dims(component_reduction(vals, axis=COMP_AX), axis=COMP_AX)
+        return vals
 
     return wrapper_multivariate_support
 
@@ -333,6 +359,54 @@ def _get_wrapped_metric(
     return func.__wrapped__.__wrapped__
 
 
+def _get_reduction(
+    kwargs, params, red_name, axis, sanity_check: bool = True
+) -> Optional[Callable[..., np.ndarray]]:
+    """Returns the reduction function either from user kwargs or metric default.
+    Optionally performs sanity checks for presence of `axis` parameter, and correct output type and
+    reduced shape."""
+    if red_name not in params:
+        return None
+
+    red_fn = kwargs[red_name] if red_name in kwargs else params[red_name].default
+    if not sanity_check:
+        return red_fn
+
+    if red_fn is not None:
+        red_params = inspect.signature(red_fn).parameters
+        if "axis" not in red_params:
+            raise_log(
+                ValueError(
+                    f"Invalid `{red_name}` function: Must have a parameter called `axis`."
+                ),
+                logger=logger,
+            )
+        # verify `red_fn` reduces to array with correct shape
+        shape_in = (2, 1) if axis == 0 else (1, 2)
+        out = red_fn(np.zeros(shape_in), axis=axis)
+
+        if not isinstance(out, np.ndarray):
+            raise_log(
+                ValueError(
+                    f"Invalid `{red_name}` function output type: Expected type "
+                    f"`np.ndarray`, received type=`{type(out)}`."
+                ),
+                logger=logger,
+            )
+        shape_invalid = out.shape != (1,)
+        if shape_invalid:
+            raise_log(
+                ValueError(
+                    f"Invalid `{red_name}` function output shape: The function must reduce an input "
+                    f"`np.ndarray` of shape (t, c) to a `np.ndarray` of shape `(c,)`. "
+                    f"However, the function reduced a test array of shape `{shape_in}` to "
+                    f"`{out.shape}`."
+                ),
+                logger=logger,
+            )
+    return red_fn
+
+
 def _get_error_scale(insample: TimeSeries, m: int):
     """Computes the error scale based on a naive seasonal forecasts on `insample` values with seasonality `m`."""
     if not isinstance(m, int):
@@ -381,9 +455,15 @@ def mae(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     series_reduction
         Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
         This function is used to aggregate the metrics in case the metric is evaluated on multiple series
@@ -454,14 +534,15 @@ def mase(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -525,14 +606,15 @@ def mse(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -599,14 +681,15 @@ def msse(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -670,14 +753,15 @@ def rmse(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -746,14 +830,15 @@ def rmsse(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -819,14 +904,15 @@ def rmsle(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -887,14 +973,15 @@ def coefficient_of_variation(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -959,14 +1046,15 @@ def mape(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1040,14 +1128,15 @@ def smape(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1119,14 +1208,15 @@ def ope(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1199,14 +1289,15 @@ def marre(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1278,14 +1369,15 @@ def r2_score(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1432,14 +1524,15 @@ def rho_risk(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1519,14 +1612,15 @@ def quantile_loss(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1573,7 +1667,7 @@ def residuals(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    time_reduction: Optional[Callable[..., np.ndarray]] = np.nanmean,
+    time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1597,19 +1691,20 @@ def residuals(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     time_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and a parameter named `axis` and returning a
-        ``np.ndarray``. This function is used to aggregate the metrics over the time axis. The function must have a
-        parameter `axis` which receives vale `0` corresponding to an aggregation over the time axis. If `None`, will
-        return a metric per time step.
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -1632,7 +1727,4 @@ def residuals(
     y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=False
     )
-    errors = y_true - y_pred
-    if time_reduction is not None:
-        errors = time_reduction(errors, axis=TIME_AX)
-    return errors
+    return y_true - y_pred

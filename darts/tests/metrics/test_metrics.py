@@ -1,4 +1,6 @@
+import copy
 import inspect
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -131,29 +133,29 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
-            (metrics.mae, False),
-            (metrics.mase, False),
-            (metrics.mse, False),
-            (metrics.msse, False),
-            (metrics.rmse, False),
-            (metrics.rmsse, False),
-            (metrics.rmsle, False),
-            (metrics.mape, False),
-            (metrics.smape, False),
-            (metrics.ope, False),
-            (metrics.marre, False),
-            (metrics.r2_score, False),
-            (metrics.coefficient_of_variation, False),
-            (metrics.rho_risk, True),
-            (metrics.quantile_loss, True),
-            (metrics.residuals, False),
-            (metrics.dtw_metric, False),
+            (metrics.mae, False, {}),
+            (metrics.mase, False, {}),
+            (metrics.mse, False, {}),
+            (metrics.msse, False, {}),
+            (metrics.rmse, False, {}),
+            (metrics.rmsse, False, {}),
+            (metrics.rmsle, False, {}),
+            (metrics.mape, False, {}),
+            (metrics.smape, False, {}),
+            (metrics.ope, False, {}),
+            (metrics.marre, False, {}),
+            (metrics.r2_score, False, {}),
+            (metrics.coefficient_of_variation, False, {}),
+            (metrics.rho_risk, True, {}),
+            (metrics.quantile_loss, True, {}),
+            (metrics.residuals, False, {"time_reduction": np.mean}),
+            (metrics.dtw_metric, False, {}),
         ],
     )
     def test_output_type(self, config):
         """Test output types and shapes for single multiple univariate or multivariate series, in combination
         with different component and series reduction functions."""
-        metric, is_probabilistic = config
+        metric, is_probabilistic, kwargs = config
         params = inspect.signature(metric).parameters
 
         # y true
@@ -173,7 +175,10 @@ class TestMetrics:
         y_p_multi_uv = [y_p_uv] * 2
 
         # insample
-        kwargs_uv, kwargs_mv, kwargs_multi_uv, kwargs_multi_mv = {}, {}, {}, {}
+        kwargs_uv = copy.deepcopy(kwargs)
+        kwargs_mv = copy.deepcopy(kwargs)
+        kwargs_multi_uv = copy.deepcopy(kwargs)
+        kwargs_multi_mv = copy.deepcopy(kwargs)
         if "insample" in params:
             insample = self.series_train.stack(self.series_train) + 1
             kwargs_uv["insample"] = insample.univariate_component(0)
@@ -191,7 +196,7 @@ class TestMetrics:
             y_p_uv,
             **kwargs_uv,
             series_reduction=np.mean,
-            component_reduction=None
+            component_reduction=None,
         )
         assert isinstance(res, float)
         res = metric(
@@ -199,7 +204,7 @@ class TestMetrics:
             y_p_uv,
             **kwargs_uv,
             series_reduction=None,
-            component_reduction=np.mean
+            component_reduction=np.mean,
         )
         assert isinstance(res, float)
 
@@ -209,7 +214,7 @@ class TestMetrics:
             y_p_mv,
             **kwargs_mv,
             series_reduction=None,
-            component_reduction=np.mean
+            component_reduction=np.mean,
         )
         assert isinstance(res, float)
         res = metric(
@@ -217,7 +222,7 @@ class TestMetrics:
             y_p_mv,
             **kwargs_mv,
             series_reduction=np.mean,
-            component_reduction=np.mean
+            component_reduction=np.mean,
         )
         assert isinstance(res, float)
 
@@ -232,7 +237,7 @@ class TestMetrics:
             y_p_mv,
             **kwargs_mv,
             series_reduction=np.mean,
-            component_reduction=None
+            component_reduction=None,
         )
         assert isinstance(res, np.ndarray)
         assert res.shape == (2,)
@@ -243,7 +248,7 @@ class TestMetrics:
             y_p_multi_uv,
             **kwargs_multi_uv,
             series_reduction=None,
-            component_reduction=None
+            component_reduction=None,
         )
         assert isinstance(res, list)
         assert len(res) == 2
@@ -252,7 +257,7 @@ class TestMetrics:
             y_p_multi_uv,
             **kwargs_multi_uv,
             series_reduction=None,
-            component_reduction=np.mean
+            component_reduction=np.mean,
         )
         assert isinstance(res, list)
         assert len(res) == 2
@@ -263,7 +268,7 @@ class TestMetrics:
             y_p_multi_uv,
             **kwargs_multi_uv,
             series_reduction=np.mean,
-            component_reduction=None
+            component_reduction=None,
         )
         assert isinstance(res, float)
         res = metric(
@@ -271,7 +276,7 @@ class TestMetrics:
             y_p_multi_uv,
             **kwargs_multi_uv,
             series_reduction=np.mean,
-            component_reduction=np.mean
+            component_reduction=np.mean,
         )
         assert isinstance(res, float)
 
@@ -281,7 +286,7 @@ class TestMetrics:
             y_p_multi_mv,
             **kwargs_multi_mv,
             series_reduction=None,
-            component_reduction=None
+            component_reduction=None,
         )
         assert isinstance(res, list)
         assert len(res) == 2
@@ -292,7 +297,7 @@ class TestMetrics:
             y_p_multi_mv,
             **kwargs_multi_mv,
             series_reduction=None,
-            component_reduction=np.mean
+            component_reduction=np.mean,
         )
         assert isinstance(res, list)
         assert len(res) == 2
@@ -304,7 +309,7 @@ class TestMetrics:
             y_p_multi_mv,
             **kwargs_multi_mv,
             series_reduction=np.mean,
-            component_reduction=None
+            component_reduction=None,
         )
         assert isinstance(res, np.ndarray)
         assert res.shape == (2,)
@@ -313,52 +318,144 @@ class TestMetrics:
             y_p_multi_mv,
             **kwargs_multi_mv,
             series_reduction=np.mean,
-            component_reduction=np.mean
+            component_reduction=np.mean,
         )
         assert isinstance(res, float)
 
     @pytest.mark.parametrize(
         "config",
+        itertools.product(
+            [
+                (metrics.mae, False),
+                (metrics.mase, False),
+                (metrics.mse, False),
+                (metrics.msse, False),
+                (metrics.rmse, False),
+                (metrics.rmsse, False),
+                (metrics.rmsle, False),
+                (metrics.mape, False),
+                (metrics.smape, False),
+                (metrics.ope, False),
+                (metrics.marre, False),
+                (metrics.r2_score, False),
+                (metrics.coefficient_of_variation, False),
+                (metrics.rho_risk, True),
+                (metrics.quantile_loss, True),
+                (metrics.residuals, False),
+                (metrics.dtw_metric, False),
+            ],
+            ["time", "component", "series"],
+        ),
+    )
+    def test_reduction_fn_validity(self, config):
+        """Tests reduction functions sanity checks."""
+        (metric, is_probabilistic), red_name = config
+        params = inspect.signature(metric).parameters
+        has_time_red = "time_reduction" in params
+
+        # y true
+        y_t = self.series12 + 1
+
+        # y pred
+        y_p = (
+            self.series12
+            if not is_probabilistic
+            else self.series12_stochastic.stack(self.series12_stochastic)
+        ) + 1
+
+        # insample
+        kwargs = {}
+        if "insample" in params:
+            kwargs["insample"] = self.series_train.stack(self.series_train) + 1
+
+        red_param = red_name + "_reduction"
+        if red_name == "time" and not has_time_red:
+            # time_reduction not an argument
+            with pytest.raises(TypeError):
+                _ = metric(y_t, y_p, **kwargs, **{red_param: np.nanmean})
+            return
+
+        # check that valid fn works
+        _ = metric(y_t, y_p, **kwargs, **{red_param: np.nanmean})
+
+        # no axis in fn
+        with pytest.raises(ValueError) as err:
+            _ = metric(y_t, y_p, **kwargs, **{red_param: lambda x: np.nanmean(x)})
+        assert str(err.value).endswith("Must have a parameter called `axis`.")
+        # with axis it works
+        _ = metric(
+            y_t, y_p, **kwargs, **{red_param: lambda x, axis: np.nanmean(x, axis)}
+        )
+
+        # invalid output type: list
+        with pytest.raises(ValueError) as err:
+            _ = metric(
+                y_t,
+                y_p,
+                **kwargs,
+                **{red_param: lambda x, axis: np.nanmean(x, axis).tolist()},
+            )
+        assert str(err.value).endswith(
+            "Expected type `np.ndarray`, received type=`<class 'list'>`."
+        )
+
+        # invalid output type: reduced to float
+        with pytest.raises(ValueError) as err:
+            _ = metric(y_t, y_p, **kwargs, **{red_param: lambda x, axis: x[0, 0]})
+        assert str(err.value).endswith(
+            "Expected type `np.ndarray`, received type=`<class 'numpy.float64'>`."
+        )
+
+        # invalid output shape: did not reduce correctly
+        with pytest.raises(ValueError) as err:
+            _ = metric(y_t, y_p, **kwargs, **{red_param: lambda x, axis: x[:2, :2]})
+        assert str(err.value).startswith(
+            f"Invalid `{red_param}` function output shape:"
+        )
+
+    @pytest.mark.parametrize(
+        "config",
         [
-            (metrics.mae, 0, False),
-            (metrics.mase, 0, False),
-            (metrics.mse, 0, False),
-            (metrics.msse, 0, False),
-            (metrics.rmse, 0, False),
-            (metrics.rmsse, 0, False),
-            (metrics.rmsle, 0, False),
-            (metrics.mape, 0, False),
-            (metrics.smape, 0, False),
-            (metrics.ope, 0, False),
-            (metrics.marre, 0, False),
-            (metrics.r2_score, 1, False),
-            (metrics.coefficient_of_variation, 0, False),
-            (metrics.rho_risk, 0, True),
-            (metrics.quantile_loss, 0, True),
-            (metrics.residuals, 0, False),
-            (metrics.dtw_metric, 0, False),
+            (metrics.mae, 0, False, {}),
+            (metrics.mase, 0, False, {}),
+            (metrics.mse, 0, False, {}),
+            (metrics.msse, 0, False, {}),
+            (metrics.rmse, 0, False, {}),
+            (metrics.rmsse, 0, False, {}),
+            (metrics.rmsle, 0, False, {}),
+            (metrics.mape, 0, False, {}),
+            (metrics.smape, 0, False, {}),
+            (metrics.ope, 0, False, {}),
+            (metrics.marre, 0, False, {}),
+            (metrics.r2_score, 1, False, {}),
+            (metrics.coefficient_of_variation, 0, False, {}),
+            (metrics.rho_risk, 0, True, {}),
+            (metrics.quantile_loss, 0, True, {}),
+            (metrics.residuals, 0, False, {"time_reduction": np.mean}),
+            (metrics.dtw_metric, 0, False, {}),
         ],
     )
     def test_same(self, config):
-        metric, score_exp, is_probabilistic = config
+        metric, score_exp, is_probabilistic, kwargs = config
         params = inspect.signature(metric).parameters
         y_true = self.series1 + 1
         y_pred = (
             self.series1 + 1 if not is_probabilistic else self.series11_stochastic + 1
         )
         if "insample" in params:
-            assert metric(y_true, y_pred, self.series_train + 1) == score_exp
+            assert metric(y_true, y_pred, self.series_train + 1, **kwargs) == score_exp
         else:
-            assert metric(y_true, y_pred) == score_exp
+            assert metric(y_true, y_pred, **kwargs) == score_exp
 
-    def helper_test_shape_equality(self, metric):
+    def helper_test_shape_equality(self, metric, **kwargs):
         assert (
             round(
                 abs(
-                    metric(self.series12, self.series21)
+                    metric(self.series12, self.series21, **kwargs)
                     - metric(
                         self.series1.append(self.series2b),
                         self.series2.append(self.series1b),
+                        **kwargs,
                     )
                 ),
                 7,
@@ -402,13 +499,13 @@ class TestMetrics:
                             s1,
                             s2,
                             **kwargs,
-                            component_reduction=(lambda x, axis: x[0, 0])
+                            component_reduction=(lambda x, axis: x[0, 0:1]),
                         )
                         - metric(
                             s11,
                             s22,
                             **kwargs,
-                            component_reduction=(lambda x, axis: x[0, 0])
+                            component_reduction=(lambda x, axis: x[0, 0:1]),
                         )
                     ),
                     7,
@@ -437,14 +534,14 @@ class TestMetrics:
                             s2,
                             **kwargs,
                             component_reduction=np.mean,
-                            series_reduction=np.max
+                            series_reduction=np.max,
                         )
                         - metric(
                             s11,
                             s22,
                             **kwargs,
                             component_reduction=np.mean,
-                            series_reduction=np.max
+                            series_reduction=np.max,
                         )
                     ),
                     7,
@@ -452,25 +549,28 @@ class TestMetrics:
                 == 0
             )
 
-    def helper_test_nan(self, metric, **kwargs):
+    def helper_test_nan(self, metric, metric_kwargs=None, **kwargs):
+        metric_kwargs = metric_kwargs or {}
         test_cases, kwargs = self.get_test_cases(**kwargs)
 
         for s1, s2 in test_cases:
             # univariate
-            non_nan_metric = metric(s1[:9] + 1, s2[:9])
+            non_nan_metric = metric(s1[:9] + 1, s2[:9], **metric_kwargs)
             nan_s1 = s1.copy()
             nan_s1._xa.values[-1, :, :] = np.nan
-            nan_metric = metric(nan_s1 + 1, s2)
+            nan_metric = metric(nan_s1 + 1, s2, **metric_kwargs)
             assert non_nan_metric == nan_metric
 
             # multivariate + multi-TS
             s11 = [s1.stack(s1)] * 2
             s22 = [s2.stack(s2)] * 2
-            non_nan_metric = metric([s[:9] + 1 for s in s11], [s[:9] for s in s22])
+            non_nan_metric = metric(
+                [s[:9] + 1 for s in s11], [s[:9] for s in s22], **metric_kwargs
+            )
             nan_s11 = s11.copy()
             for s in nan_s11:
                 s._xa.values[-1, :, :] = np.nan
-            nan_metric = metric([s + 1 for s in nan_s11], s22)
+            nan_metric = metric([s + 1 for s in nan_s11], s22, **metric_kwargs)
             np.testing.assert_array_equal(non_nan_metric, nan_metric)
 
     def test_r2(self):
@@ -526,7 +626,9 @@ class TestMetrics:
                     - metrics.mse(
                         self.series12,
                         self.series21,
-                        component_reduction=(lambda x, axis: np.sqrt(np.mean(x))),
+                        component_reduction=(
+                            lambda x, axis: np.sqrt(np.mean(x, axis=axis))
+                        ),
                     )
                 ),
                 7,
@@ -541,14 +643,22 @@ class TestMetrics:
         self.helper_test_nan(metrics.rmsle)
 
     def test_residuals(self):
-        self.helper_test_shape_equality(metrics.residuals)
-        self.helper_test_nan(metrics.residuals)
+        self.helper_test_shape_equality(metrics.residuals, time_reduction=np.mean)
+        self.helper_test_nan(
+            metrics.residuals, metric_kwargs={"time_reduction": np.nanmean}
+        )
 
-        assert metrics.residuals(self.series1, self.series1 + 1) == -1.0
-        assert metrics.residuals(self.series1, self.series1 - 1) == 1.0
+        assert (
+            metrics.residuals(self.series1, self.series1 + 1, time_reduction=np.mean)
+            == -1.0
+        )
+        assert (
+            metrics.residuals(self.series1, self.series1 - 1, time_reduction=np.mean)
+            == 1.0
+        )
 
         # do not aggregate over time
-        res = metrics.residuals(self.series1, self.series1 + 1, time_reduction=None)
+        res = metrics.residuals(self.series1, self.series1 + 1)
         assert len(res) == len(self.series1)
         assert (res == -1.0).all()
 
