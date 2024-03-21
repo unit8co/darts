@@ -1,6 +1,24 @@
 """
 Time-Series Mixer (TSMixer)
 -------
+The inner layers (``nn.Modules``) and the ``TimeBatchNorm2d`` were provided by a PyTorch implementation
+of TSMixer: https://github.com/ditschuk/pytorch-tsmixer
+
+The License of pytorch-tsmixer v0.2.0 from https://github.com/ditschuk/pytorch-tsmixer/blob/main/LICENSE,
+accessed Thursday, March 21st, 2024:
+'The MIT License
+
+Copyright 2023 Konstantin Ditschuneit
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the “Software”), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial
+portions of the Software.
+'
 """
 
 from __future__ import annotations
