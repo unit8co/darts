@@ -288,17 +288,17 @@ def _get_values_or_raise(
     Parameters
     ----------
     series_a
-        A univariate deterministic ``TimeSeries`` instance (the actual series).
+        A deterministic ``TimeSeries`` instance (the actual series).
     series_b
-        A univariate (deterministic or stochastic) ``TimeSeries`` instance (the predicted series).
+        A deterministic or stochastic ``TimeSeries`` instance (the predicted series).
     intersect
         A boolean for whether to only consider the time intersection between `series_a` and `series_b`
     stochastic_quantile
         Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)
         or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
     remove_nan_union
-        By setting `remove_non_union` to True, remove all indices from `series_a` and `series_b` which have a NaN value
-        in either of the two input series.
+        By setting `remove_non_union` to True, sets all values from `series_a` and `series_b` to `np.nan` at indices
+        where any of the two series contain a NaN value.
     """
 
     if not series_a.width == series_b.width:
@@ -407,7 +407,11 @@ def _get_reduction(
     return red_fn
 
 
-def _get_error_scale(insample: TimeSeries, m: int):
+def _get_error_scale(
+    insample: TimeSeries,
+    m: int,
+    metric: str,
+):
     """Computes the error scale based on a naive seasonal forecasts on `insample` values with seasonality `m`."""
     if not isinstance(m, int):
         raise_log(
@@ -419,7 +423,21 @@ def _get_error_scale(insample: TimeSeries, m: int):
     _, x_t = _get_values_or_raise(
         insample, insample, intersect=False, remove_nan_union=False
     )
-    scale = np.nanmean(np.abs(x_t[m:] - x_t[:-m]), axis=TIME_AX)
+    diff = x_t[m:] - x_t[:-m]
+    if metric == "mae":
+        scale = np.nanmean(np.abs(diff), axis=TIME_AX)
+    elif metric == "mse":
+        scale = np.nanmean(np.power(diff, 2), axis=TIME_AX)
+    elif metric == "rmse":
+        scale = np.sqrt(np.nanmean(np.power(diff, 2), axis=TIME_AX))
+    else:
+        raise_log(
+            ValueError(
+                f"unknown `metric={metric}`. Must be one of ('mae', 'mse', 'rmse')."
+            ),
+            logger=logger,
+        )
+
     if np.isclose(scale, 0.0).any():
         raise_log(ValueError("cannot use MASE with periodical signals"), logger=logger)
     return scale
@@ -440,11 +458,13 @@ def res(
 ) -> METRIC_OUTPUT_TYPE:
     """Residuals (RES).
 
-    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column and time step :math:`t` as:
 
     .. math:: y_t - \\hat{y}_t
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -509,11 +529,13 @@ def mres(
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Residuals (MRES).
 
-    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
 
-    .. math:: \\frac{1}{T}\\sum_{t=1}^T{y_t - \\hat{y}_t}
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)}
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -577,11 +599,13 @@ def ae(
 ) -> METRIC_OUTPUT_TYPE:
     """Absolute Error (AE).
 
-    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column and time step :math:`t` as:
 
     .. math:: |\\hat{y}_t - y_t|
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -651,11 +675,13 @@ def mae(
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Error (MAE).
 
-    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{|\\hat{y}_t - y_t|}
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -724,12 +750,23 @@ def ase(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Absolute Scaled Error (ASE).
+    """Absolute Scaled Error (ASE) (see [1]_ for more information on scaled forecasting errors).
 
-    See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
-    for details about the MASE and how it is computed.
+    It is the Absolute Error (AE) scaled by the Mean AE (MAE) of the naive m-seasonal forecast.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column and time step :math:`t` as:
+
+    .. math:: \\frac{AE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
+
+    where :math:`t_p` is the prediction time (one step before the first forecasted point), :math:`AE` is the Absolute
+    Error (:func:`~darts.metrics.metrics.ae`), and :math:`E_m` is the Mean AE (MAE) of the naive m-seasonal
+    forecast on the `insample` series :math:`y_{0:t_p}` (the true series ending at :math:`t_p`):
+
+    .. math:: E_m = MAE(y_{m:t_p}, y_{0:t_p - m}).
+
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -741,11 +778,9 @@ def ase(
         The training series used to forecast `pred_series` . This series serves to compute the scale of the error
         obtained by a naive forecaster on the training data.
     m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+        The seasonality to use for differencing to compute the error scale :math:`E_m` (as described in the metric
+        description). :math:`m=1` corresponds to a non-seasonal :math:`E_m` (e.g. naive repetition of the last observed
+        value), whereas :math:`m>1` corresponds to a seasonal :math:`E_m`.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
@@ -774,7 +809,7 @@ def ase(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
         time step before the start of the corresponding forecast in `pred_series`.
 
     Returns
@@ -787,8 +822,12 @@ def ase(
         A single array of metric scores for single multivariate time series without `component_reduction`
     List[np.ndarray]
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+
+    References
+    ----------
+    .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
-    error_scale = _get_error_scale(insample, m=m)
+    error_scale = _get_error_scale(insample, m=m, metric="mae")
     errors = _get_wrapped_metric(ae)(
         actual_series,
         pred_series,
@@ -811,12 +850,23 @@ def mase(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Absolute Scaled Error (MASE).
+    """Mean Absolute Scaled Error (MASE) (see [1]_ for more information on scaled forecasting errors).
 
-    See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
-    for details about the MASE and how it is computed.
+    It is the Mean Absolute Error (MAE) scaled by the MAE of the naive m-seasonal forecast.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+    .. math:: \\frac{MAE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
+
+    where :math:`t_p` is the prediction time (one step before the first forecasted point), :math:`MAE` is the Mean
+    Absolute Error (:func:`~darts.metrics.metrics.mae`), and :math:`E_m` is the MAE of the naive m-seasonal
+    forecast on the `insample` series :math:`y_{0:t_p}` (the true series ending at :math:`t_p`):
+
+    .. math:: E_m = MAE(y_{m:t_p}, y_{0:t_p - m}).
+
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -828,11 +878,9 @@ def mase(
         The training series used to forecast `pred_series` . This series serves to compute the scale of the error
         obtained by a naive forecaster on the training data.
     m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+        The seasonality to use for differencing to compute the error scale :math:`E_m` (as described in the metric
+        description). :math:`m=1` corresponds to a non-seasonal :math:`E_m` (e.g. naive repetition of the last observed
+        value), whereas :math:`m>1` corresponds to a seasonal :math:`E_m`.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
@@ -856,7 +904,7 @@ def mase(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
         time step before the start of the corresponding forecast in `pred_series`.
 
     Returns
@@ -869,6 +917,10 @@ def mase(
         A single array of metric scores for single multivariate time series without `component_reduction`
     List[np.ndarray]
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+
+    References
+    ----------
+    .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
     return np.nanmean(
         _get_wrapped_metric(ase)(
@@ -897,11 +949,13 @@ def se(
 ) -> METRIC_OUTPUT_TYPE:
     """Squared Error (SE).
 
-    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column and time step :math:`t` as:
 
-    .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y^1_t - y^2_t)^2}.
+    .. math:: (y_t - \\hat{y}_t)^2.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -966,11 +1020,13 @@ def mse(
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Squared Error (MSE).
 
-    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
 
-    .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y^1_t - y^2_t)^2}.
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1034,13 +1090,23 @@ def sse(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Squared Scaled Error (SSE).
+    """Squared Scaled Error (SSE) (see [1]_ for more information on scaled forecasting errors).
 
-    See `Mean Squared Scaled Error (MSSE)
-    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_ for details about the MSSE and
-    how it is computed.
+    It is the Squared Error (SE) scaled by the Mean SE (MSE) of the naive m-seasonal forecast.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column and time step :math:`t` as:
+
+    .. math:: \\frac{SE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
+
+    where :math:`t_p` is the prediction time (one step before the first forecasted point), :math:`SE` is the Squared
+    Error (:func:`~darts.metrics.metrics.se`), and :math:`E_m` is the Mean SE (MSE) of the naive m-seasonal
+    forecast on the `insample` series :math:`y_{0:t_p}` (the true series ending at :math:`t_p`):
+
+    .. math:: E_m = MSE(y_{m:t_p}, y_{0:t_p - m}).
+
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1052,11 +1118,9 @@ def sse(
         The training series used to forecast `pred_series` . This series serves to compute the scale of the error
         obtained by a naive forecaster on the training data.
     m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+        The seasonality to use for differencing to compute the error scale :math:`E_m` (as described in the metric
+        description). :math:`m=1` corresponds to a non-seasonal :math:`E_m` (e.g. naive repetition of the last observed
+        value), whereas :math:`m>1` corresponds to a seasonal :math:`E_m`.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
@@ -1085,7 +1149,7 @@ def sse(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
         time step before the start of the corresponding forecast in `pred_series`.
 
     Returns
@@ -1098,8 +1162,12 @@ def sse(
         A single array of metric scores for single multivariate time series without `component_reduction`
     List[np.ndarray]
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+
+    References
+    ----------
+    .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
-    error_scale = _get_error_scale(insample, m=m)
+    error_scale = _get_error_scale(insample, m=m, metric="mse")
     errors = _get_wrapped_metric(se)(
         actual_series,
         pred_series,
@@ -1122,13 +1190,23 @@ def msse(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Squared Scaled Error (MSSE).
+    """Mean Squared Scaled Error (MSSE) (see [1]_ for more information on scaled forecasting errors).
 
-    See `Mean Squared Scaled Error (MSSE)
-    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_ for details about the MSSE and
-    how it is computed.
+    It is the Mean Squared Error (MSE) scaled by the MSE of the naive m-seasonal forecast.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+    .. math:: \\frac{MSE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
+
+    where :math:`t_p` is the prediction time (one step before the first forecasted point), :math:`MSE` is the Mean
+    Squared Error (:func:`~darts.metrics.metrics.mse`), and :math:`E_m` is the MSE of the naive m-seasonal
+    forecast on the `insample` series :math:`y_{0:t_p}` (the true series ending at :math:`t_p`):
+
+    .. math:: E_m = MSE(y_{m:t_p}, y_{0:t_p - m}).
+
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1140,11 +1218,9 @@ def msse(
         The training series used to forecast `pred_series` . This series serves to compute the scale of the error
         obtained by a naive forecaster on the training data.
     m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+        The seasonality to use for differencing to compute the error scale :math:`E_m` (as described in the metric
+        description). :math:`m=1` corresponds to a non-seasonal :math:`E_m` (e.g. naive repetition of the last observed
+        value), whereas :math:`m>1` corresponds to a seasonal :math:`E_m`.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
@@ -1168,7 +1244,7 @@ def msse(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
         time step before the start of the corresponding forecast in `pred_series`.
 
     Returns
@@ -1181,6 +1257,10 @@ def msse(
         A single array of metric scores for single multivariate time series without `component_reduction`
     List[np.ndarray]
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+
+    References
+    ----------
+    .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
     return np.nanmean(
         _get_wrapped_metric(sse)(
@@ -1208,11 +1288,13 @@ def rmse(
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Error (RMSE).
 
-    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
 
-    .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{(y^1_t - y^2_t)^2}}.
+    .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}}
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1274,13 +1356,23 @@ def rmsse(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Root Mean Squared Scaled Error (RMSSE).
+    """Root Mean Squared Scaled Error (RMSSE) (see [1]_ for more information on scaled forecasting errors).
 
-    See `Root Mean Squared Scaled Error (RMSSE)
-    <https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/>`_ for details about the RMSSE and
-    how it is computed.
+    It is the Root Mean Squared Error (RMSE) scaled by the RMSE of the naive m-seasonal forecast.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+    .. math:: \\frac{RMSE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
+
+    where :math:`t_p` is the prediction time (one step before the first forecasted point), :math:`RMSE` is the Root
+    Mean Squared Error (:func:`~darts.metrics.metrics.rmse`), and :math:`E_m` is the RMSE of the naive m-seasonal
+    forecast on the `insample` series :math:`y_{0:t_p}` (the true series ending at :math:`t_p`):
+
+    .. math:: E_m = RMSE(y_{m:t_p}, y_{0:t_p - m}).
+
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1292,11 +1384,9 @@ def rmsse(
         The training series used to forecast `pred_series` . This series serves to compute the scale of the error
         obtained by a naive forecaster on the training data.
     m
-        The seasonality to use for differencing to compute the scale of the error. `m=1` corresponds to the
-        non-seasonal MASE (e.g. naive-repetition of the last observed value), whereas `m>1` corresponds to seasonal
-        MASE. The scale is computed as:
-
-        .. math:: \\frac{1}{T - m}\\sum_{t=m + 1}^T{(|y_{t} - y_{t-m}|)}.
+        The seasonality to use for differencing to compute the error scale :math:`E_m` (as described in the metric
+        description). :math:`m=1` corresponds to a non-seasonal :math:`E_m` (e.g. naive repetition of the last observed
+        value), whereas :math:`m>1` corresponds to a seasonal :math:`E_m`.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
@@ -1320,7 +1410,7 @@ def rmsse(
     Raises
     ------
     ValueError
-        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` ) or any series in `insample` does not end one
+        If the `insample` series is periodic ( :math:`y_t = y_{t-m}` ) or any series in `insample` does not end one
         time step before the start of the corresponding forecast in `pred_series`.
 
     Returns
@@ -1333,8 +1423,12 @@ def rmsse(
         A single array of metric scores for single multivariate time series without `component_reduction`
     List[np.ndarray]
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+
+    References
+    ----------
+    .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
-    error_scale = _get_error_scale(insample, m=m)
+    error_scale = _get_error_scale(insample, m=m, metric="rmse")
     errors = _get_wrapped_metric(rmse)(
         actual_series,
         pred_series,
@@ -1356,15 +1450,17 @@ def sle(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Root Mean Squared Log Error (RMSLE).
+    """Squared Log Error (SLE).
 
-    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column and time step :math:`t` as:
 
-    .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{\\left(\\log{(y^1_t + 1)} - \\log{(y^2_t + 1)}\\right)^2}},
+    .. math:: \\left(\\log{(y_t + 1)} - \\log{(\\hat{y} + 1)}\\right)^2
 
     using the natural logarithm.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1430,13 +1526,15 @@ def rmsle(
 ) -> METRIC_OUTPUT_TYPE:
     """Root Mean Squared Log Error (RMSLE).
 
-    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
 
-    .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{\\left(\\log{(y^1_t + 1)} - \\log{(y^2_t + 1)}\\right)^2}},
+    .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{\\left(\\log{(y_t + 1)} - \\log{(\\hat{y}_t + 1)}\\right)^2}}
 
     using the natural logarithm.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1500,17 +1598,18 @@ def ape(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Absolute Percentage Error (MAPE).
+    """Absolute Percentage Error (APE).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-    both of length :math:`T`, it is a percentage value computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column and time step :math:`t` with:
 
-    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}.
+    .. math:: 100 \\cdot \\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|
 
     Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
-    the Mean Absolute Scaled Error (MASE) in these cases.
+    the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`) in these cases.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1546,7 +1645,7 @@ def ape(
     Raises
     ------
     ValueError
-        If the actual series contains some zeros.
+        If `actual_series` contains some zeros.
 
     Returns
     -------
@@ -1566,7 +1665,7 @@ def ape(
     if not (y_true != 0).all():
         raise_log(
             ValueError(
-                "The actual series must be strictly positive to compute the MAPE."
+                "`actual_series` must be strictly positive to compute the MAPE."
             ),
             logger=logger,
         )
@@ -1587,15 +1686,16 @@ def mape(
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Percentage Error (MAPE).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-    both of length :math:`T`, it is a percentage value computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column with:
 
-    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}.
+    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}
 
     Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
-    the Mean Absolute Scaled Error (MASE) in these cases.
+    the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these cases.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1626,7 +1726,7 @@ def mape(
     Raises
     ------
     ValueError
-        If the actual series contains some zeros.
+        If `actual_series` contains some zeros.
 
     Returns
     -------
@@ -1663,19 +1763,19 @@ def sape(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """symmetric Mean Absolute Percentage Error (sMAPE).
+    """symmetric Absolute Percentage Error (sAPE).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-    both of length :math:`T`, it is a percentage value computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column and time step :math:`t` with:
 
     .. math::
-        200 \\cdot \\frac{1}{T}
-        \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }.
+        200 \\cdot \\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|}
 
-    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`
-     for some :math:`t`. Consider using the Mean Absolute Scaled Error (MASE) in these cases.
+    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some
+    :math:`t`. Consider using the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`)  in these cases.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1711,7 +1811,7 @@ def sape(
     Raises
     ------
     ValueError
-        If the actual series and the pred series contains some zeros at the same time index.
+        If `actual_series` and `pred_series` contain some zeros at the same time index.
 
     Returns
     -------
@@ -1731,7 +1831,7 @@ def sape(
     if not np.logical_or(y_true != 0, y_pred != 0).all():
         raise_log(
             ValueError(
-                "The actual series must be strictly positive to compute the sMAPE."
+                "`actual_series` must be strictly positive to compute the sMAPE."
             ),
             logger=logger,
         )
@@ -1752,17 +1852,19 @@ def smape(
 ) -> METRIC_OUTPUT_TYPE:
     """symmetric Mean Absolute Percentage Error (sMAPE).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-    both of length :math:`T`, it is a percentage value computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column with:
 
     .. math::
         200 \\cdot \\frac{1}{T}
-        \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }.
+        \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }
 
     Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`
-     for some :math:`t`. Consider using the Mean Absolute Scaled Error (MASE) in these cases.
+    for some :math:`t`. Consider using the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these
+    cases.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1793,7 +1895,7 @@ def smape(
     Raises
     ------
     ValueError
-        If the actual series and the pred series contains some zeros at the same time index.
+        If the `actual_series` and the `pred_series` contain some zeros at the same time index.
 
     Returns
     -------
@@ -1831,13 +1933,14 @@ def ope(
 ) -> METRIC_OUTPUT_TYPE:
     """Overall Percentage Error (OPE).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-    both of length :math:`T`, it is a percentage value computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column with:
 
     .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t}
               - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1911,15 +2014,15 @@ def arre(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Absolute Ranged Relative Error (MARRE).
+    """Absolute Ranged Relative Error (ARRE).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-    both of length :math:`T`, it is a percentage value computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column and time step :math:`t` with:
 
-    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
-              \\min_t{y_t}} \\right|}
+    .. math:: 100 \\cdot \\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -1999,13 +2102,14 @@ def marre(
 ) -> METRIC_OUTPUT_TYPE:
     """Mean Absolute Ranged Relative Error (MARRE).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-    both of length :math:`T`, it is a percentage value computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
+    percentage value per component/column with:
 
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
               \\min_t{y_t}} \\right|}
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -2071,14 +2175,19 @@ def r2_score(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Coefficient of Determination :math:`R^2`.
+    """Coefficient of Determination :math:`R^2` (see [1]_ for more details).
 
-    See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
-    for details about the :math:`R^2` score and how it is computed.
-    Please note that this metric is not symmetric, `actual_series` should correspond to the ground truth series,
-    whereas `pred_series` should correspond to the predicted series.
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    .. math:: 1 - \\frac{\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}}{\\sum_{t=1}^T{(y_t - \\bar{y})^2}},
+
+    where :math:`\\bar{y}` is the mean of :math:`y` over all time steps.
+
+    This metric is not symmetric.
+
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -2116,6 +2225,10 @@ def r2_score(
         A single array of metric scores for single multivariate time series without `component_reduction`
     List[np.ndarray]
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Coefficient_of_determination
     """
     y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
@@ -2140,15 +2253,16 @@ def coefficient_of_variation(
 ) -> METRIC_OUTPUT_TYPE:
     """Coefficient of Variation (percentage).
 
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
-    it is a percentage value, computed as
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as a percentage value with:
 
-    .. math:: 100 \\cdot \\text{RMSE}(y_t, \\hat{y}_t) / \\bar{y_t},
+    .. math:: 100 \\cdot \\text{RMSE}(y_t, \\hat{y}_t) / \\bar{y},
 
-    where :math:`\\text{RMSE}()` denotes the root mean squared error, and
-    :math:`\\bar{y_t}` is the average of :math:`y_t`.
+    where :math:`RMSE` is the Root Mean Squared Error (:func:`~darts.metrics.metrics.rmse`), and :math:`\\bar{y}` is
+    the average of :math:`y` over all time steps.
 
-    Currently, this only supports deterministic series (made of one sample).
+    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
+    for time step :math:`t`.
 
     Parameters
     ----------
@@ -2220,12 +2334,12 @@ def dtw_metric(
     **kwargs,
 ) -> METRIC_OUTPUT_TYPE:
     """
-    Applies Dynamic Time Warping to actual_series and pred_series before passing it into the metric.
+    Applies Dynamic Time Warping to `actual_series` and `pred_series` before passing it into the metric.
     Enables comparison between series of different lengths, phases and time indices.
 
-    Defaults to using mae as a metric.
+    Defaults to using :func:`~darts.metrics.metrics.mae` as a metric.
 
-    See `darts.dataprocessing.dtw.dtw` for more supported parameters.
+    See :func:`~darts.dataprocessing.dtw.dtw.dtw` for more supported parameters.
 
     Parameters
     ----------
@@ -2236,14 +2350,15 @@ def dtw_metric(
     metric
         The selected metric with signature '[[TimeSeries, TimeSeries], float]' to use. Default: `mae`.
     component_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to
-        aggregate the metrics of different components in case of multivariate ``TimeSeries`` instances. If `None`,
-        will return a metric per component. By default, returns the `nanmean` over all component metrics.
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
     series_reduction
-        Optionally, a function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
-        This function is used to aggregate the metrics in case the metric is evaluated on multiple series
-        (e.g., on a ``Sequence[TimeSeries]``). By default, returns the metric for each series.
-        Example: ``series_reduction=np.nanmean``, will return the average over all series metrics.
+        Optionally, a function to aggregate the metrics over the series axis. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. If `None`, will return a metric per series.
     n_jobs
         The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -2271,13 +2386,12 @@ def dtw_metric(
     )
 
 
-# rho-risk (quantile risk)
 @multi_ts_support
 @multivariate_support
-def rho_risk(
+def qr(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    rho: float = 0.5,
+    q: float = 0.5,
     intersect: bool = True,
     *,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
@@ -2285,26 +2399,22 @@ def rho_risk(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """:math:`\\rho`-risk (rho-risk or quantile risk).
+    """Quantile Risk (QR)
 
-    Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions
-    (containing N samples) :math:`\\hat{y}_t` of shape :math:`T \\times N`, rho-risk is a metric that quantifies the
-    accuracy of a specific quantile :math:`\\rho` from the predicted value distribution.
+    QR is a metric that quantifies the accuracy of a specific quantile :math:`q` from the predicted value
+    distribution of a stochastic/probabilistic `pred_series` containing N samples.
 
-    For a univariate stochastic predicted TimeSeries the :math:`\\rho`-risk is given by:
+    The main difference to the Quantile Loss (QL) is that QR computes the quantile and loss on the aggregate of all
+    sample values summed up along the time axis (QL computes the quantile and loss per time step).
 
-    .. math:: \\frac{ L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) } {Z},
+    For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
+    of of shape :math:`T \\times N`, it is computed per column/component as:
 
-    where :math:`L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right)` is the :math:`\\rho`-loss function:
+    .. math:: 2 \\frac{QL(Z, \\hat{Z}_q)}{Z},
 
-    .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( Z - \\hat{Z}_{\\rho} \\right)
-        \\left( \\rho I_{\\hat{Z}_{\\rho} < Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \\geq Z} \\right),
-
-    where :math:`Z = \\sum_{t=1}^{T} y_t` (1) is the aggregated target value and :math:`\\hat{Z}_{\\rho}` is the
-    :math:`\\rho`-quantile of the predicted values. For this, each sample realization :math:`i \\in N` is first
-    aggregated over the time span similar to (1) with :math:`\\hat{Z}_{i} = \\sum_{t=1}^{T} \\hat{y}_{i,t}`.
-
-    :math:`I_{cond} = 1` if cond is True else :math:`0``
+    where :math:`QL` is the Quantile Loss (:func:`~darts.metrics.metrics.ql`), :math:`Z = \\sum_{t=1}^{T} y_t` is
+    the sum of all target/actual values, :math:`\\hat{Z} = \\sum_{t=1}^{T} \\hat{y}_t` is the sum of all predicted
+    samples along the time axis, and :math:`\\hat{Z}_q` is the quantile :math:`q` of that sum.
 
     Parameters
     ----------
@@ -2312,7 +2422,7 @@ def rho_risk(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    rho
+    q
         The quantile (float [0, 1]) of interest for the risk evaluation.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
@@ -2348,7 +2458,7 @@ def rho_risk(
     if not pred_series.is_stochastic:
         raise_log(
             ValueError(
-                "rho (quantile) loss should only be computed for stochastic predicted TimeSeries."
+                "quantile risk (qr) should only be computed for stochastic predicted TimeSeries."
             ),
             logger=logger,
         )
@@ -2365,12 +2475,12 @@ def rho_risk(
         z_hat, axis=TIME_AX
     )  # aggregate all individual sample realizations
     z_hat_rho = np.quantile(
-        z_hat, q=rho, axis=1
+        z_hat, q=q, axis=1
     )  # get the quantile from aggregated samples
 
     # quantile loss
     errors = z_true - z_hat_rho
-    losses = 2 * np.maximum((rho - 1) * errors, rho * errors)
+    losses = 2 * np.maximum((q - 1) * errors, q * errors)
     return losses / z_true
 
 
@@ -2379,7 +2489,7 @@ def rho_risk(
 def ql(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    tau: float = 0.5,
+    q: float = 0.5,
     intersect: bool = True,
     *,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
@@ -2388,13 +2498,19 @@ def ql(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """
-    The Quantile Loss (QL).
+    """Quantile Loss (QL).
 
-    Also known as Pinball Loss, given a time series of actual values :math:`y` of length
-    :math:`T` and a time series of stochastic predictions (containing N samples) :math:`y'` of shape :math:`T  x N`
-    quantile loss is a metric that quantifies the accuracy of a specific quantile :math:`tau`
-    from the predicted value distribution.
+    Also known as Pinball Loss. QL is a metric that quantifies the accuracy of a specific quantile :math:`q` from the
+    predicted value distribution of a stochastic/probabilistic `pred_series` containing N samples.
+
+    QL computes the quantile of all sample values and the loss per time step.
+
+    For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
+    of of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:
+
+    .. math:: \\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q})),
+
+    where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
 
     Parameters
     ----------
@@ -2402,7 +2518,7 @@ def ql(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    tau
+    q
         The quantile (float [0, 1]) of interest for the loss.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
@@ -2443,7 +2559,7 @@ def ql(
     if not pred_series.is_stochastic:
         raise_log(
             ValueError(
-                "quantile (pinball) loss should only be computed for "
+                "quantile/pinball loss (ql) should only be computed for "
                 "stochastic predicted TimeSeries."
             ),
             logger=logger,
@@ -2453,11 +2569,11 @@ def ql(
         actual_series,
         pred_series,
         intersect,
-        stochastic_quantile=tau,
+        stochastic_quantile=q,
         remove_nan_union=True,
     )
     errors = y_true - y_pred
-    losses = np.maximum((tau - 1) * errors, tau * errors)
+    losses = np.maximum((q - 1) * errors, q * errors)
     return losses
 
 
@@ -2466,7 +2582,7 @@ def ql(
 def mql(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    tau: float = 0.5,
+    q: float = 0.5,
     intersect: bool = True,
     *,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
@@ -2474,13 +2590,20 @@ def mql(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """
-    The Mean Quantile Loss (MQL).
+    """Mean Quantile Loss (MQL).
 
-    Also known as Pinball Loss, given a time series of actual values :math:`y` of length
-    :math:`T` and a time series of stochastic predictions (containing N samples) :math:`y'` of shape :math:`T  x N`
-    quantile loss is a metric that quantifies the accuracy of a specific quantile :math:`tau`
-    from the predicted value distribution.
+    Also known as Pinball Loss. QL is a metric that quantifies the accuracy of a specific quantile :math:`q` from the
+    predicted value distribution of a stochastic/probabilistic `pred_series` containing N samples.
+
+    MQL first computes the quantile of all sample values and the loss per time step, and then takes the mean over the
+    time axis.
+
+    For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
+    of of shape :math:`T \\times N`, it is computed per column/component as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{\\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q}))},
+
+    where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
 
     Parameters
     ----------
@@ -2488,7 +2611,7 @@ def mql(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    tau
+    q
         The quantile (float [0, 1]) of interest for the loss.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
@@ -2525,7 +2648,8 @@ def mql(
         _get_wrapped_metric(ql)(
             actual_series,
             pred_series,
-            intersect,
+            q=q,
+            intersect=intersect,
         ),
         axis=TIME_AX,
     )

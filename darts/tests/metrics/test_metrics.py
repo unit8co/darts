@@ -163,7 +163,7 @@ class TestMetrics:
             (metrics.marre, False, {}),
             (metrics.r2_score, False, {}),
             (metrics.coefficient_of_variation, False, {}),
-            (metrics.rho_risk, True, {}),
+            (metrics.qr, True, {}),
             (metrics.mql, True, {}),
             (metrics.dtw_metric, False, {}),
         ],
@@ -368,7 +368,7 @@ class TestMetrics:
                 (metrics.marre, False),
                 (metrics.r2_score, False),
                 (metrics.coefficient_of_variation, False),
-                (metrics.rho_risk, True),
+                (metrics.qr, True),
                 (metrics.mql, True),
                 (metrics.dtw_metric, False),
             ],
@@ -470,7 +470,7 @@ class TestMetrics:
             (metrics.marre, 0, False, {}),
             (metrics.r2_score, 1, False, {}),
             (metrics.coefficient_of_variation, 0, False, {}),
-            (metrics.rho_risk, 0, True, {}),
+            (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
         ],
@@ -714,24 +714,24 @@ class TestMetrics:
     def test_rho_risk(self):
         # deterministic not supported
         with pytest.raises(ValueError):
-            metrics.rho_risk(self.series1, self.series1)
+            metrics.qr(self.series1, self.series1)
 
         # general univariate, multivariate and multi-ts tests
         self.helper_test_multivariate_duplication_equality(
-            metrics.rho_risk, is_stochastic=True
+            metrics.qr, is_stochastic=True
         )
         self.helper_test_multiple_ts_duplication_equality(
-            metrics.rho_risk, is_stochastic=True
+            metrics.qr, is_stochastic=True
         )
-        self.helper_test_nan(metrics.rho_risk, is_stochastic=True)
+        self.helper_test_nan(metrics.qr, is_stochastic=True)
 
         # test perfect predictions -> risk = 0
-        for rho in [0.25, 0.5]:
+        for q in [0.25, 0.5]:
             np.testing.assert_array_almost_equal(
-                metrics.rho_risk(self.series1, self.series11_stochastic, rho=rho), 0.0
+                metrics.qr(self.series1, self.series11_stochastic, q=q), 0.0
             )
         np.testing.assert_array_almost_equal(
-            metrics.rho_risk(self.series12_mean, self.series12_stochastic, rho=0.5), 0.0
+            metrics.qr(self.series12_mean, self.series12_stochastic, q=0.5), 0.0
         )
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
@@ -740,12 +740,8 @@ class TestMetrics:
         s12_stochastic = TimeSeries.from_times_and_values(
             s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
         )
-        np.testing.assert_array_almost_equal(
-            metrics.rho_risk(s1, s12_stochastic, rho=0.0), 0.0
-        )
-        np.testing.assert_array_almost_equal(
-            metrics.rho_risk(s2, s12_stochastic, rho=1.0), 0.0
-        )
+        np.testing.assert_array_almost_equal(metrics.qr(s1, s12_stochastic, q=0.0), 0.0)
+        np.testing.assert_array_almost_equal(metrics.qr(s2, s12_stochastic, q=1.0), 0.0)
 
     @pytest.mark.parametrize(
         "config",
@@ -770,9 +766,9 @@ class TestMetrics:
         self.helper_test_nan(metric, is_stochastic=True, **kwargs)
 
         # test perfect predictions -> risk = 0
-        for tau in [0.25, 0.5]:
+        for q in [0.25, 0.5]:
             np.testing.assert_array_almost_equal(
-                metric(self.series1, self.series11_stochastic, tau=tau, **kwargs), 0.0
+                metric(self.series1, self.series11_stochastic, q=q, **kwargs), 0.0
             )
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
@@ -782,10 +778,10 @@ class TestMetrics:
             s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
         )
         np.testing.assert_array_almost_equal(
-            metric(s1, s12_stochastic, tau=1.0, **kwargs), 0.0
+            metric(s1, s12_stochastic, q=1.0, **kwargs), 0.0
         )
         np.testing.assert_array_almost_equal(
-            metric(s2, s12_stochastic, tau=0.0, **kwargs), 0.0
+            metric(s2, s12_stochastic, q=0.0, **kwargs), 0.0
         )
 
     def test_metrics_arguments(self):
@@ -977,14 +973,14 @@ class TestMetrics:
             (
                 metrics.ql,
                 [(0.15, 0.15), (0.015, 0.015), (0.15, 0.15)],
-                "tau",
+                "q",
                 {"time_reduction": np.nanmean},
             ),
-            (metrics.mql, [(0.15, 0.15), (0.015, 0.015), (0.15, 0.15)], "tau", {}),
+            (metrics.mql, [(0.15, 0.15), (0.015, 0.015), (0.15, 0.15)], "q", {}),
             (
-                metrics.rho_risk,
+                metrics.qr,
                 [(0.30, 0.025), (0.030, 0.0025), (0.30, 0.025)],
-                "rho",
+                "q",
                 {},
             ),
         ],
@@ -1026,7 +1022,7 @@ class TestMetrics:
         )
 
     def get_test_cases(self, **kwargs):
-        # stochastic metrics (rho-risk) behave similar to deterministic metrics if all samples have equal values
+        # stochastic metrics (q-risk) behave similar to deterministic metrics if all samples have equal values
         if "is_stochastic" in kwargs and kwargs["is_stochastic"]:
             test_cases = [
                 (self.series1 + 1, self.series22_stochastic),
