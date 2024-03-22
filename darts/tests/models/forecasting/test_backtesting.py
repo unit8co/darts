@@ -1,3 +1,4 @@
+import itertools
 import random
 from itertools import product
 
@@ -18,6 +19,7 @@ from darts.models import (
     Theta,
 )
 from darts.tests.conftest import tfm_kwargs
+from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
@@ -101,6 +103,278 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
 
 class TestBacktesting:
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [[mape], [mape, mape]],
+        ),
+    )
+    def test_output_single_series_single_hfc(self, config):
+        """list of fc: for single series input with last_points_only=True"""
+        is_univariate, metric = config
+        is_multi_metric = len(metric) > 1
+        y = ct(value=1.0, length=10)
+        hfc = ct(value=2.0, length=10)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        model = NaiveDrift()
+
+        # no reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=None, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, float)
+            assert bt == 100.0
+
+        # with reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=np.mean, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, float)
+            assert bt == 100.0
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [[mape], [mape, mape]],
+        ),
+    )
+    def test_output_single_series_list_of_hfc(self, config):
+        """list of fc: with single `series`, and last_points_only = False"""
+        is_univariate, metric = config
+        is_multi_metric = len(metric) > 1
+        y = ct(value=1.0, length=10)
+        hfc = ct(value=2.0, length=10)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        hfc = [y, hfc]
+
+        model = NaiveDrift()
+
+        # no reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=None, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, np.ndarray) and bt.shape == (2,)
+            np.testing.assert_almost_equal(bt, np.array([0.0, 100.0]))
+
+        # with reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=np.mean, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, float)
+            assert bt == 50.0
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [[mape], [mape, mape]],
+        ),
+    )
+    def test_output_multi_series_list_of_hfc(self, config):
+        """list of fc: with list of `series`, and last_points_only = True"""
+        is_univariate, metric = config
+        is_multi_metric = len(metric) > 1
+        y = ct(value=1.0, length=10)
+        hfc = ct(value=2.0, length=10)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        hfc = [y, hfc]
+        y = [y, y]
+
+        model = NaiveDrift()
+
+        # no reduction
+        bt = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            reduction=None,
+            last_points_only=True,
+            metric=metric,
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, list) and len(bt) == 2
+            assert all(isinstance(el, np.ndarray) and el.shape == (1,) for el in bt)
+            assert bt[0] == np.array([0.0])
+            assert bt[1] == np.array([100.0])
+
+        # with reduction
+        bt = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            reduction=np.mean,
+            last_points_only=True,
+            metric=metric,
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, list) and len(bt) == 2
+            assert all(isinstance(el, float) for el in bt)
+            assert bt == [0.0, 100.0]
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [[mape], [mape, mape]],
+        ),
+    )
+    def test_output_multi_series_list_of_lists_of_single_hfc(self, config):
+        """list of lists of fc with only one fc in inner list: with list of `series`,
+        last_points_only = False and only one possible forecast per series
+        """
+        is_univariate, metric = config
+        is_multi_metric = len(metric) > 1
+        y = ct(value=1.0, length=10)
+        hfc = ct(value=2.0, length=10)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        hfc = [[y], [hfc]]
+        y = [y, y]
+
+        model = NaiveDrift()
+
+        # no reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=None, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, list) and len(bt) == 2
+            assert all(isinstance(el, np.ndarray) and el.shape == (1,) for el in bt)
+            assert bt[0] == np.array([0.0])
+            assert bt[1] == np.array([100.0])
+
+        # with reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=np.mean, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, list) and len(bt) == 2
+            assert all(isinstance(el, float) for el in bt)
+            assert bt == [0.0, 100.0]
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [[mape], [mape, mape]],
+        ),
+    )
+    def test_output_single_series_list_of_lists_of_hfc(self, config):
+        """list of lists of fc for one series with many fc in inner list:
+        with list of single `series` or single series, last_points_only = False and many possible
+        forecast for that series,
+        """
+        is_univariate, metric = config
+        is_multi_metric = len(metric) > 1
+        y = ct(value=1.0, length=10)
+        hfc = ct(value=2.0, length=10)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        hfc = [[y, hfc]]
+        y = [y]
+
+        model = NaiveDrift()
+
+        # no reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=None, metric=metric
+        )
+        # same but with single series
+        bt_single = model.backtest(
+            series=y[0], historical_forecasts=hfc, reduction=None, metric=metric
+        )
+
+        bts = bt if is_multi_metric else [bt]
+        bts_single = bt_single if is_multi_metric else [bt_single]
+        for bt, bt_single in zip(bts, bts_single):
+            assert isinstance(bt, list) and len(bt) == 1
+            assert isinstance(bt[0], np.ndarray) and bt[0].shape == (2,)
+            np.testing.assert_array_almost_equal(bt[0], np.array([0.0, 100.0]))
+            # same results when only passing single series as input
+            np.testing.assert_array_almost_equal(bt[0], bt_single)
+
+        # with reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=np.mean, metric=metric
+        )
+        bt_single = model.backtest(
+            series=y[0], historical_forecasts=hfc, reduction=np.mean, metric=metric
+        )
+
+        bts = bt if is_multi_metric else [bt]
+        bts_single = bt_single if is_multi_metric else [bt_single]
+        for bt, bt_single in zip(bts, bts_single):
+            assert isinstance(bt, list) and len(bt) == 1
+            assert isinstance(bt[0], float)
+            assert bt == [50.0]
+            # same results when only passing single series as input
+            np.testing.assert_array_almost_equal(bt[0], bt_single)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [[mape], [mape, mape]],
+        ),
+    )
+    def test_output_multi_series_list_of_lists_of_hfc(self, config):
+        """list of lists of fc with only one fc in inner list: with list of `series`,
+        last_points_only = False and only one possible forecast per series
+        """
+        is_univariate, metric = config
+        is_multi_metric = len(metric) > 1
+        y = ct(value=1.0, length=10)
+        hfc = ct(value=2.0, length=10)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        hfc = [[y, hfc], [y, hfc]]
+        y = [y, y]
+
+        model = NaiveDrift()
+
+        # no reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=None, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, list) and len(bt) == 2
+            assert all(isinstance(el, np.ndarray) and el.shape == (2,) for el in bt)
+            np.testing.assert_array_almost_equal(bt[0], bt[1])
+            np.testing.assert_array_almost_equal(bt[0], np.array([0.0, 100.0]))
+
+        # with reduction
+        bt = model.backtest(
+            series=y, historical_forecasts=hfc, reduction=np.mean, metric=metric
+        )
+        bts = bt if is_multi_metric else [bt]
+        for bt in bts:
+            assert isinstance(bt, list) and len(bt) == 2
+            assert all(isinstance(el, float) for el in bt)
+            assert bt == [50.0, 50.0]
+
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
         linear_series_int = TimeSeries.from_values(linear_series.values())

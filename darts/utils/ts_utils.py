@@ -3,7 +3,9 @@ Additional util functions
 -------------------------
 """
 
-from typing import List, Optional, Sequence, Union
+from typing import Any, List, Optional, Sequence, Union
+
+import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -50,21 +52,73 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
 
 
 def series2seq(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
-) -> Optional[Sequence[TimeSeries]]:
-    """If `ts` is a single TimeSeries, return it as a list of a single TimeSeries.
+    ts: Optional[Union[Any, Sequence[Any], Sequence[Sequence[Any]]]],
+    seq_type_out: int = 1,
+    is_numeric: bool = False,
+) -> Optional[Union[Any, Sequence[Any], Sequence[Sequence[Any]]]]:
+    """If possible, converts `ts` into the desired sequence type `seq_type_out`. Otherwise, returns the
+    original `ts`.
 
     Parameters
     ----------
     ts
-        None, a single TimeSeries, or a sequence of TimeSeries
+        None, a single TimeSeries, a sequence of TimeSeries, or a sequence of sequences of TimeSeries.
+    seq_type_out
+        The output sequence type:
 
-    Returns
-    -------
-        `ts` if `ts` is not a TimeSeries, else `[ts]`
+        - 0: `TimeSeries` (e.g. a single series)
+        - 1: sequence of `TimeSeries` (e.g. multiple series)
+        - 2: sequence of sequences of `TimeSeries` (e.g. historical forecasts output)
+    is_numeric
+        Whether to look for a numeric value as the innermost value. If `False`, looks
+        for a `TimeSeries` object.
 
+    Raises
+    ------
+    ValueError
+        If there is an invalid `seq_type_out` value.
     """
-    return [ts] if isinstance(ts, TimeSeries) else ts
+    if ts is None:
+        return ts
+
+    if not isinstance(seq_type_out, int) or not 0 <= seq_type_out <= 2:
+        raise_log(
+            ValueError(
+                f"Invalid parameter `seq_type_out={seq_type_out}`. Must be one of `(0, 1, 2)`"
+            ),
+            logger=logger,
+        )
+
+    seq_type_in = get_series_seq_type(ts, is_numeric=is_numeric)
+
+    if seq_type_out == seq_type_in:
+        return ts
+
+    # seq_type_in > seq_type_out means, we have at least a Sequence[TimeSeries]
+    n_series = 1 if seq_type_in == 0 else len(ts)
+
+    if seq_type_in == 0 and seq_type_out == 1:
+        # ts -> [ts]
+        return [ts]
+    elif seq_type_in == 0 and seq_type_out == 2:
+        # ts -> [[ts]]
+        return [[ts]]
+    elif seq_type_in == 1 and seq_type_out == 0 and n_series == 1:
+        # [ts] -> ts
+        return ts[0]
+    elif seq_type_in == 1 and seq_type_out == 2:
+        # [ts] -> [[ts]]
+        return [ts]
+    elif seq_type_in == 2 and seq_type_out == 0 and n_series == 1:
+        # [[ts]] -> ts[0][0]
+        return series2seq(ts[0], seq_type_out=seq_type_out, is_numeric=is_numeric)
+    elif seq_type_in == 2 and seq_type_out == 1 and n_series == 1:
+        # `1` and `2` are both representing time series axis
+        # [[ts]] -> [[ts]]
+        return ts
+    else:
+        # ts -> ts
+        return ts
 
 
 def seq2series(
@@ -106,3 +160,50 @@ def get_single_series(
         return ts
     else:
         return ts[0]
+
+
+def get_series_seq_type(
+    ts: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
+    is_numeric: bool = False,
+) -> int:
+    """Returns the sequence type of `ts`.
+
+    - 0: `TimeSeries` (e.g. a single series)
+    - 1: sequence of `TimeSeries` (e.g. multiple series)
+    - 2: sequence of sequences of `TimeSeries` (e.g. historical forecasts output)
+
+    Parameters
+    ----------
+    ts
+        The input series to get the sequence type from.
+    is_numeric
+        Whether to look for a numeric value as the innermost value. If `False`, looks
+        for a `TimeSeries` object.
+
+    Raises
+    ------
+    ValueError
+        If `ts` does not have one of the expected sequence types.
+    """
+
+    def is_inner_value(val) -> bool:
+        if not is_numeric:
+            return isinstance(val, TimeSeries)
+        else:
+            return np.issubdtype(type(val), np.number)
+
+    if is_inner_value(ts):
+        return 0
+    elif is_inner_value(ts[0]):
+        return 1
+    elif is_inner_value(ts[0][0]):
+        return 2
+    else:
+        ts_type = "TimeSeries" if not is_numeric else "np.number"
+        raise_log(
+            ValueError(
+                f"`ts` must be of type `{ts_type}`, `Sequence[{ts_type}]`, or "
+                f"`Sequence[Sequence[{ts_type}]]`"
+            ),
+            logger=logger,
+        )

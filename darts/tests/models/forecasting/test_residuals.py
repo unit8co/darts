@@ -38,12 +38,11 @@ class TestResiduals:
         residuals_vals = model.residuals(linear_ts, values_only=True)
         np.testing.assert_almost_equal(residuals.all_values(), residuals_vals)
 
-    def test_forecasting_residuals_inputs(self):
+    def test_forecasting_residuals_multiple_series(self):
         # test input types past and/or future covariates
 
         # dummy covariates and target TimeSeries instances
-
-        target_series, past_covariates, future_covariates = dummy_timeseries(
+        series, past_covariates, future_covariates = dummy_timeseries(
             length=10,
             n_series=1,
             comps_target=1,
@@ -52,13 +51,60 @@ class TestResiduals:
         )  # outputs Sequences[TimeSeries] and not TimeSeries
 
         model = LinearRegressionModel(
-            lags=4, lags_past_covariates=4, lags_future_covariates=(4, 1)
+            lags=1, lags_past_covariates=1, lags_future_covariates=(1, 1)
         )
         model.fit(
-            series=target_series,
+            series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
+
+        # residuals TimeSeries zero
+        res = model.residuals(
+            series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        np.testing.assert_almost_equal(res.univariate_values(), np.zeros(len(res)))
+
+        # return values only
+        res_vals = model.residuals(
+            series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            values_only=True,
+        )
+        np.testing.assert_almost_equal(res.all_values(), res_vals)
+
+        # with precomputed historical forecasts
+        hfc = model.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        res_hfc = model.residuals(series, historical_forecasts=hfc)
+        assert res == res_hfc
+
+        # with pretrained model
+        res_pretrained = model.residuals(
+            series,
+            start=model.min_train_series_length,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            retrain=False,
+            values_only=True,
+        )
+        np.testing.assert_almost_equal(res_vals, res_pretrained)
+
+        # if model is trained with covariates, should raise error when covariates are missing in residuals()
+        with pytest.raises(ValueError):
+            model.residuals(series)
+
+        with pytest.raises(ValueError):
+            model.residuals(series, past_covariates=past_covariates)
+
+        with pytest.raises(ValueError):
+            model.residuals(series, future_covariates=future_covariates)
 
     @pytest.mark.parametrize(
         "series",

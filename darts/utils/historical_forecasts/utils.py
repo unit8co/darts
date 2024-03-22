@@ -14,7 +14,7 @@ from numpy.typing import ArrayLike
 
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.ts_utils import series2seq
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -814,12 +814,17 @@ def _check_optimizable_historical_forecasts_global_models(
 
 def _process_historical_forecast_input(
     model,
-    series: Optional[Sequence[TimeSeries]],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     forecast_horizon: int = 1,
     allow_autoregression: bool = False,
-):
+) -> Union[
+    Sequence[TimeSeries],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
+    int,
+]:
     if not model._fit_called:
         raise_log(
             ValueError("Model has not been fit yet."),
@@ -834,6 +839,10 @@ def _process_historical_forecast_input(
             ),
             logger,
         )
+    series_seq_type = get_series_seq_type(series)
+    series = series2seq(series)
+    past_covariates = series2seq(past_covariates)
+    future_covariates = series2seq(future_covariates)
 
     # manage covariates, usually handled by RegressionModel.predict()
     if past_covariates is None and model.past_covariate_series is not None:
@@ -851,7 +860,7 @@ def _process_historical_forecast_input(
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-    return series, past_covariates, future_covariates
+    return series, past_covariates, future_covariates, series_seq_type
 
 
 def _process_predict_start_points_bounds(

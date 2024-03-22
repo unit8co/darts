@@ -51,7 +51,7 @@ from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
 )
-from darts.utils.ts_utils import get_single_series, series2seq
+from darts.utils.ts_utils import get_series_seq_type, get_single_series, series2seq
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -871,10 +871,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             show_warnings=show_warnings,
         )
 
-        series = series2seq(series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
-
         if (
             enable_optimization
             and model.supports_optimized_historical_forecasts
@@ -900,6 +896,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **predict_kwargs,
             )
+
+        sequence_type_in = get_series_seq_type(series)
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
         if len(series) == 1:
             # Use tqdm on the outer loop only if there's more than one series to iterate over
@@ -1136,7 +1137,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 forecasts_list.append(forecasts)
 
-        return forecasts_list if len(series) > 1 else forecasts_list[0]
+        return series2seq(forecasts_list, seq_type_out=sequence_type_in)
 
     def backtest(
         self,
@@ -1195,9 +1196,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Optionally, the (or a sequence of / a sequence of sequences of) historical forecasts time series to be
             evaluated. Corresponds to the output of :meth:`historical_forecasts()
             <darts.models.forecasting.forecasting_model.ForecastingModel.historical_forecasts>`. The same `series` and
-            `last_points_only` values must be passed that were used to generate the historical forecasts. If provided,
-            will skip historical forecasting and ignore all parameters except `series`, `last_points_only`, `metric`,
-            and `reduction`.
+            `last_points_only` values must be passed that were used to generate the historical forecasts.
+            If provided, will skip historical forecasting and ignore all parameters except `series`,
+            `last_points_only`, `metric`, and `reduction`.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Use values `>1` only for probabilistic
             models.
@@ -1268,7 +1269,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
+            When providing several metric functions, the function will receive the argument `axis = 0` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
@@ -1319,47 +1320,48 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             forecasts = historical_forecasts
 
-        if isinstance(series, TimeSeries):
-            series = series2seq(series)
-            forecasts = [forecasts]
+        # remember input series type
+        series_seq_type = get_series_seq_type(series)
+        series = series2seq(series)
+
+        seq_of_seq_type = 2
+        forecast_seq_type = get_series_seq_type(forecasts)
+        if last_points_only and forecast_seq_type == 1:
+            # we must wrap each fc in a list
+            forecasts = [[fc] for fc in forecasts]
+
+        forecasts = series2seq(forecasts, seq_type_out=seq_of_seq_type)
 
         if len(series) != len(forecasts):
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of `series` (n={len(series)}) and number of series-specific "
-                    f"`historical_forecasts` (n={len(forecasts)})."
-                ),
-                logger=logger,
+            seq_types = {
+                0: "`TimeSeries`",
+                1: "`Sequence[TimeSeries]`",
+                2: "`Sequence[Sequence[TimeSeries]]`",
+            }
+            error_msg = (
+                f"Mismatch between number of `series` (n={len(series)}) and number of series-specific "
+                f"`historical_forecasts` (n={len(forecasts)})."
+                f" For `last_points_only={last_points_only}`, and the number of `series`, expected historical "
+                f"forecasts of type "
             )
-        if last_points_only and not isinstance(forecasts[0], TimeSeries):
+            if last_points_only:
+                if len(series) > 1:
+                    error_msg += f"{seq_types[1]} with length n={len(series)}."
+                else:
+                    error_msg += f"{seq_types[0]}, or of type {seq_types[1]} with length n={len(series)}."
+            else:
+                if len(series) > 1:
+                    error_msg += f"{seq_types[2]} with length n={len(series)}."
+                else:
+                    error_msg += f"{seq_types[1]}, or of type {seq_types[2]} with length n={len(series)}."
+
             raise_log(
-                ValueError(
-                    "Unexpected `forecasts` type for `last_points_only=True`. Must either be a single "
-                    "`TimeSeries` for `series` with type `TimeSeries`, or a `Sequence[TimeSeries]` "
-                    "for `series` with type `Sequence[TimeSeries]`."
-                ),
-                logger=logger,
-            )
-        if not last_points_only and isinstance(forecasts[0], TimeSeries):
-            raise_log(
-                ValueError(
-                    "Unexpected `forecasts` type for `last_points_only=False`. Must either be a "
-                    "`Sequence[TimeSeries]` for `series` with type `TimeSeries`, or a "
-                    "`Sequence[Sequence[TimeSeries]]` for `series` with type `Sequence[TimeSeries]`."
-                ),
+                ValueError(error_msg),
                 logger=logger,
             )
 
         if not isinstance(metric, list):
             metric = [metric]
-
-        if last_points_only:
-            # we have one forecast per series
-            errors = [metric_f(series, forecasts) for metric_f in metric]
-            if len(metric) == 1:
-                return errors[0]
-
-            return [err for err in np.array(errors).T] if len(metric) > 1 else errors[0]
 
         # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
         # flatten historical forecasts, get matching target series index, remember cumulative target lengths
@@ -1384,21 +1386,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 return series[series_idx[index]]
 
         series_gen = SeriesGenerator()
-        errors = np.array([metric_f(series_gen, forecasts_list) for metric_f in metric])
 
-        if len(errors.shape) == 1:
-            errors = np.expand_dims(errors, 0)
+        # extract metrics per metric and series, and optionally reduce
+        metrics_errors = []
+        for metric_f in metric:
+            errors = np.array(metric_f(series_gen, forecasts_list))
 
-        # extract metrics per series, and optionally reduce
-        backtest_list = []
-        for i in range(len(cum_len) - 1):
-            errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
+            backtest_list = []
+            # get errors for each input `series`
+            for i in range(len(cum_len) - 1):
+                errors_series = errors[cum_len[i] : cum_len[i + 1]]
+                if reduction is not None:
+                    errors_series = reduction(errors_series, axis=0)
+                backtest_list.append(errors_series)
 
-            if reduction is not None:
-                errors_series = reduction(np.array(errors_series), axis=1)
-
-            backtest_list.append(errors_series if len(metric) > 1 else errors_series[0])
-        return backtest_list if len(backtest_list) > 1 else backtest_list[0]
+            metrics_errors.append(
+                series2seq(
+                    backtest_list,
+                    seq_type_out=series_seq_type,
+                    is_numeric=True,
+                )
+            )
+        return metrics_errors if len(metrics_errors) > 1 else metrics_errors[0]
 
     @classmethod
     def gridsearch(
@@ -2299,9 +2308,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _optimized_historical_forecasts(
         self,
-        series: Optional[Sequence[TimeSeries]],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -2312,9 +2321,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-    ) -> Union[
-        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-    ]:
+    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         logger.warning(
             "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."
         )

@@ -32,9 +32,7 @@ def _optimized_historical_forecasts_last_points_only(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[List[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
@@ -172,7 +170,7 @@ def _optimized_historical_forecasts_last_points_only(
                 hierarchy=series_.hierarchy,
             )
         )
-    return forecasts_list if len(series) > 1 else forecasts_list[0]
+    return forecasts_list
 
 
 def _optimized_historical_forecasts_all_points(
@@ -189,9 +187,7 @@ def _optimized_historical_forecasts_all_points(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[List[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = False.
 
@@ -352,4 +348,4 @@ def _optimized_historical_forecasts_all_points(
             )
 
         forecasts_list.append(forecasts_)
-    return forecasts_list if len(series) > 1 else forecasts_list[0]
+    return forecasts_list

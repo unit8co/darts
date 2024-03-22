@@ -16,6 +16,7 @@ from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils.ts_utils import get_series_seq_type, series2seq
 
 logger = get_logger(__name__)
 TIME_AX = 0
@@ -87,14 +88,9 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             sanity_check=True,
         )
 
-        actual_series = (
-            [actual_series]
-            if not isinstance(actual_series, Sequence)
-            else actual_series
-        )
-        pred_series = (
-            [pred_series] if not isinstance(pred_series, Sequence) else pred_series
-        )
+        series_seq_type = get_series_seq_type(actual_series)
+        actual_series = series2seq(actual_series)
+        pred_series = series2seq(pred_series)
 
         if len(actual_series) != len(pred_series):
             raise_log(
@@ -151,7 +147,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             fn_kwargs=kwargs,
         )
 
-        # we flatten metrics along time axis if n time steps == 1,
+        # we flatten metrics along the time axis if n time steps == 1,
         # and/or along component axis if n components == 1
         vals = [
             val[
@@ -164,9 +160,12 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         # reduce metrics along series axis
         if series_reduction is not None:
             vals = kwargs["series_reduction"](vals, axis=0)
+        else:
+            # if possible, reduce to original series sequence type
+            vals = series2seq(vals, seq_type_out=series_seq_type, is_numeric=True)
 
         # flatten along series axis if n series == 1
-        return vals if isinstance(vals, float) or len(vals) > 1 else vals[0]
+        return vals
 
     return wrapper_multi_ts_support
 

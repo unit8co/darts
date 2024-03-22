@@ -234,10 +234,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 predict_likelihood_parameters=False,
             )
             # concatenate the strided predictions of output_chunk_length values each
-            if is_single_series:
-                tmp_pred = [concatenate(tmp_pred, axis=0)]
-            else:
-                tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
+            tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
 
             # add the missing steps at beginning by taking the first values of precomputed predictions
             if missing_steps:

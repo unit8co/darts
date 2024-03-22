@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -37,9 +37,7 @@ def _optimized_historical_forecasts(
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for TorchForecastingModels
 
@@ -147,4 +145,4 @@ def _optimized_historical_forecasts(
                 hierarchy=preds[0].hierarchy,
             )
         forecasts_list.append(preds)
-    return forecasts_list if len(forecasts_list) > 1 else forecasts_list[0]
+    return forecasts_list

@@ -914,22 +914,22 @@ class TestHistoricalforecast:
 
                     # manually packing the series in list to match expected inputs
                     opti_hist_fct = model._optimized_historical_forecasts(
-                        series=[ts],
+                        series=ts,
                         past_covariates=(
-                            [ts_covs] if model.supports_past_covariates else None
+                            ts_covs if model.supports_past_covariates else None
                         ),
                         future_covariates=(
-                            [ts_covs] if model.supports_future_covariates else None
+                            ts_covs if model.supports_future_covariates else None
                         ),
                         start=start,
                         last_points_only=last_points_only,
                         stride=stride,
                         forecast_horizon=forecast_horizon,
                     )
-                    # pack the output to generalize the tests
-                    if last_points_only:
-                        hist_fct = [hist_fct]
-                        opti_hist_fct = [opti_hist_fct]
+                    # # pack the output to generalize the tests
+                    # if last_points_only:
+                    #     hist_fct = [hist_fct]
+                    #     opti_hist_fct = [opti_hist_fct]
 
                     for fct, opti_fct in zip(hist_fct, opti_hist_fct):
                         assert (fct.time_index == opti_fct.time_index).all()
@@ -1003,9 +1003,9 @@ class TestHistoricalforecast:
         )
 
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=[series_val],
-            past_covariates=[pc],
-            future_covariates=[fc],
+            series=series_val,
+            past_covariates=pc,
+            future_covariates=fc,
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,
@@ -1094,7 +1094,7 @@ class TestHistoricalforecast:
             enable_optimization=False,
         )
 
-        opti_hist_fct = model._optimized_historical_forecasts(series=[series_val])
+        opti_hist_fct = model._optimized_historical_forecasts(series=series_val)
 
         if not isinstance(hist_fct, list):
             hist_fct = [hist_fct]
@@ -1222,9 +1222,9 @@ class TestHistoricalforecast:
         )
 
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=series_val if isinstance(series_val, list) else [series_val],
-            past_covariates=pc if (isinstance(pc, list) or pc is None) else [pc],
-            future_covariates=fc if (isinstance(fc, list) or fc is None) else [fc],
+            series=series_val,
+            past_covariates=pc,
+            future_covariates=fc,
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,

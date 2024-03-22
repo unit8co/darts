@@ -193,12 +193,16 @@ class TestMetrics:
         # insample
         kwargs_uv = copy.deepcopy(kwargs)
         kwargs_mv = copy.deepcopy(kwargs)
+        kwargs_list_single_uv = copy.deepcopy(kwargs)
+        kwargs_list_single_mv = copy.deepcopy(kwargs)
         kwargs_multi_uv = copy.deepcopy(kwargs)
         kwargs_multi_mv = copy.deepcopy(kwargs)
         if "insample" in params:
             insample = self.series_train.stack(self.series_train) + 1
             kwargs_uv["insample"] = insample.univariate_component(0)
             kwargs_mv["insample"] = insample
+            kwargs_list_single_uv["insample"] = [kwargs_uv["insample"]]
+            kwargs_list_single_mv["insample"] = [kwargs_mv["insample"]]
             kwargs_multi_uv["insample"] = [kwargs_uv["insample"]] * 2
             kwargs_multi_mv["insample"] = [kwargs_mv["insample"]] * 2
 
@@ -220,6 +224,70 @@ class TestMetrics:
             y_p_uv,
             **kwargs_uv,
             series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, float)
+
+        # list with single univariate series
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=None,
+            component_reduction=None,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], float)
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, float)
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], float)
+
+        # list with single multivariate series
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=None,
+            component_reduction=None,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], np.ndarray) and res[0].shape == (2,)
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (2,)
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], float)
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=np.mean,
             component_reduction=np.mean,
         )
         assert isinstance(res, float)
