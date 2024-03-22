@@ -25,6 +25,7 @@ except ImportError:
 
 if TORCH_AVAILABLE:
 
+    @pytest.mark.skipif(TORCH_AVAIBLE is False, reason="Torch not available. TSMixerModel tests will be skipped.")
     class TestTSMixerModel:
         np.random.seed(42)
         torch.manual_seed(42)
