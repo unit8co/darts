@@ -116,6 +116,7 @@ Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate c
 | `NLinearModel`     |        |          |        |         |    ✅    |
 | `DLinearModel`     |        |          |        |         |    ✅    |
 | `TiDEModel`        |        |          |        |         |    ✅    |
+| `TSMixerModel`     |        |          |        |         |    ✅    |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
