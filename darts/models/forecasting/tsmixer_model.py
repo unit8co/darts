@@ -67,8 +67,8 @@ class TimeBatchNorm2d(nn.BatchNorm1d):
 
         Parameters
         ----------
-        normalized_shape: tuple
-            A tuple (num_time_steps, num_channels) representing the shape of the time and feature
+        normalized_shape: Tuple
+            A Tuple (num_time_steps, num_channels) representing the shape of the time and feature
             dimensions to normalize.
         """
         num_time_steps, num_channels = normalized_shape
@@ -561,7 +561,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         Parameters
         ----------
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where
+            comes as Tuple `(x_past, x_future, x_static)` where
             `x_past` is the input/past chunk and
             `x_future` is the output/future chunk.
             Input dimensions are `(batch_size, time_steps, components)`
