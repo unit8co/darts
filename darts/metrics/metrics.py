@@ -27,7 +27,7 @@ COMP_AX = 1
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
 METRIC_OUTPUT_TYPE = Union[float, List[float], np.ndarray, List[np.ndarray]]
 METRIC_TYPE = Callable[
-    [Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]],
+    ...,
     METRIC_OUTPUT_TYPE,
 ]
 
