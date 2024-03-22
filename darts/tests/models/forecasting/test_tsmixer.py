@@ -441,18 +441,20 @@ class TestTSMixerModel:
             assert len(y_hat_i) == predict_n
             assert y_hat_i.n_components == ts_i.n_components
 
-    def test_prediction_shape(self):
-        """checks whether prediction has same number of variable as input series and
-        whether prediction has correct length.
-        Test cases:
-            -   univariate
-            -   multivariate
-            -   multi-TS
-        """
-        season_length = 1
+    @pytest.mark.parametrize(
+        "season_length,selection,future_covariates_adjustment,multi_ts",
+        [
+            (1, "single", True, False),  # univariate
+            (2, "single", True, False),  # univariate and short prediction length
+            (1, "all", True, False),  # multivariate
+            (1, "multi", False, True),  # multi-TS
+        ],
+    )
+    def test_prediction_shape_parametrized(
+        self, season_length, selection, future_covariates_adjustment, multi_ts
+    ):
         n_repeat = 20
-
-        # data comes as multivariate
+        # Generate data
         (
             ts,
             ts_train,
@@ -460,6 +462,7 @@ class TestTSMixerModel:
             covariates,
         ) = self.helper_generate_multivariate_case_data(season_length, n_repeat)
 
+        # Default kwargs
         kwargs = {
             "input_chunk_length": 1,
             "output_chunk_length": 1,
@@ -467,45 +470,31 @@ class TestTSMixerModel:
             "random_state": 42,
             "add_encoders": {"cyclic": {"future": "hour"}},
         }
-        kwargs = dict(kwargs, **tfm_kwargs)
 
-        # univariate
-        first_var = ts.columns[0]
+        future_covariates = covariates if future_covariates_adjustment else None
+
+        if selection == "single":
+            first_var = ts.columns[0]
+            ts_selected = ts[first_var]
+            ts_train_selected = ts_train[first_var]
+            ts_val_selected = ts_val[first_var]
+        elif selection == "all":
+            ts_selected = ts
+            ts_train_selected = ts_train
+            ts_val_selected = ts_val
+        elif multi_ts:
+            first_var, second_var = ts.columns[0], ts.columns[-1]
+            ts_selected = [ts[first_var], ts[second_var]]
+            ts_train_selected = [ts_train[first_var], ts_train[second_var]]
+            ts_val_selected = [ts_val[first_var], ts_val[second_var]]
+
+        # Call your test helper function
         self.helper_test_prediction_shape(
             season_length,
-            ts[first_var],
-            ts_train[first_var],
-            ts_val[first_var],
-            future_covariates=covariates,
-            kwargs_tsmixer=kwargs,
-        )
-        # univariate and short prediction length
-        self.helper_test_prediction_shape(
-            2,
-            ts[first_var],
-            ts_train[first_var],
-            ts_val[first_var],
-            future_covariates=covariates,
-            kwargs_tsmixer=kwargs,
-        )
-        # multivariate
-        self.helper_test_prediction_shape(
-            season_length,
-            ts,
-            ts_train,
-            ts_val,
-            future_covariates=covariates,
-            kwargs_tsmixer=kwargs,
-        )
-        # multi-TS
-        kwargs["add_encoders"] = {"cyclic": {"future": "hour"}}
-        second_var = ts.columns[-1]
-        self.helper_test_prediction_shape(
-            season_length,
-            [ts[first_var], ts[second_var]],
-            [ts_train[first_var], ts_train[second_var]],
-            [ts_val[first_var], ts_val[second_var]],
-            future_covariates=None,
+            ts_selected,
+            ts_train_selected,
+            ts_val_selected,
+            future_covariates=future_covariates,
             kwargs_tsmixer=kwargs,
         )
 
