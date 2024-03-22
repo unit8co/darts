@@ -73,8 +73,6 @@ class TimeBatchNorm2d(nn.BatchNorm1d):
         """
         self.num_time_steps, self.num_channels = normalized_shape
         super().__init__(reduce(operator.mul, normalized_shape))
-        self.num_time_steps = num_time_steps
-        self.num_channels = num_channels
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim != 3:
