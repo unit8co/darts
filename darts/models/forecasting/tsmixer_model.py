@@ -71,7 +71,7 @@ class TimeBatchNorm2d(nn.BatchNorm1d):
             A tuple (num_time_steps, num_channels) representing the shape of the time and feature
             dimensions to normalize.
         """
-        num_time_steps, num_channels = normalized_shape
+        self.num_time_steps, self.num_channels = normalized_shape
         super().__init__(reduce(operator.mul, normalized_shape))
         self.num_time_steps = num_time_steps
         self.num_channels = num_channels
