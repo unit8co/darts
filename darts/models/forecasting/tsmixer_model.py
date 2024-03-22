@@ -26,7 +26,7 @@ from __future__ import annotations
 import operator
 from collections.abc import Callable
 from functools import reduce
-from typing import Tuple
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
@@ -204,7 +204,7 @@ class ConditionalFeatureMixing(nn.Module):
         super().__init__()
         self.static_dim = static_dim
         if self.static_dim != 0:
-            self.fr_static: nn.Linear | None = nn.Linear(static_dim, output_dim)
+            self.fr_static: Optional[nn.Linear] = nn.Linear(static_dim, output_dim)
             feature_mixing_input = input_dim + output_dim
         else:
             self.fr_static = None
@@ -221,7 +221,9 @@ class ConditionalFeatureMixing(nn.Module):
             norm_type=norm_type,
         )
 
-    def forward(self, x: torch.Tensor, x_static: torch.Tensor | None) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, x_static: Optional[torch.Tensor]
+    ) -> torch.Tensor:
         if self.fr_static is None:
             return self.fm(x)
         v = self.fr_static(x_static)
@@ -402,7 +404,9 @@ class ConditionalMixerLayer(nn.Module):
             norm_type=norm_type,
         )
 
-    def forward(self, x: torch.Tensor, x_static: torch.Tensor | None) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, x_static: Optional[torch.Tensor]
+    ) -> torch.Tensor:
         x = self.time_mixing(x)
         x = self.feature_mixing(x, x_static)
         return x
@@ -423,7 +427,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         ff_dim: int,
         nr_params: int,
         normalize_before: bool,
-        norm_type: str | nn.Module,
+        norm_type: Union[str, nn.Module],
         **kwargs,
     ) -> None:
         """
@@ -551,7 +555,8 @@ class _TSMixerModule(PLMixedCovariatesModule):
 
     @io_processor
     def forward(
-        self, x_in: tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None]
+        self,
+        x_in: tuple[torch.Tensor, Union[torch.Tensor, None], Union[torch.Tensor, None]],
     ) -> torch.Tensor:
         """TSMixer model forward pass.
         Parameters
@@ -616,7 +621,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         blocks: int = 6,
         activation: str = "ReLU",
         normalize_before: bool = False,
-        norm_type: str | nn.Module = "LayerNorm",
+        norm_type: Union[str, nn.Module] = "LayerNorm",
         use_static_covariates: bool = True,
         **kwargs,
     ) -> None:
