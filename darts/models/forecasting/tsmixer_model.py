@@ -228,8 +228,7 @@ class ConditionalFeatureMixing(nn.Module):
         if self.fr_static is None:
             return self.fm(x)
         v = self.fr_static(x_static)
-        repeat_factor = x.size(1) // v.size(1)
-        v = v.repeat(1, repeat_factor, 1)
+        v = v.repeat(1,  x.size(1) // v.size(1), 1)
         return self.fm(torch.cat([x, v], dim=-1))
 
 
