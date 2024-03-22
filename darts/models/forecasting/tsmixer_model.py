@@ -529,7 +529,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         self, blocks: int, hidden_size: int, prediction_length: int, **kwargs
     ):
         """Build the mixer blocks for the model."""
-        # in case there a no future covariates, the feature_mixing_future layer
+        # in case there are no future covariates, the feature_mixing_future layer
         # does not provide any output, so the input to the mixer layers is
         # the same as the output of the feature_mixing_hist layer
         if self.future_cov_dim <= 0:
