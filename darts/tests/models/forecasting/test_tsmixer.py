@@ -11,7 +11,7 @@ try:
 
     from darts import TimeSeries, concatenate
     from darts.dataprocessing.transformers import Scaler
-    from darts.models.forecasting.tsmixer_model import TSMixerModel
+    from darts.models.forecasting.tsmixer_model import TimeBatchNorm2d, TSMixerModel
     from darts.tests.conftest import tfm_kwargs
     from darts.utils import timeseries_generation as tg
     from darts.utils.likelihood_models import GaussianLikelihood
@@ -355,6 +355,46 @@ class TestTSMixerModel:
                 **tfm_kwargs,
             )
             model4.fit(series, epochs=1)
+
+    def test_time_batch_norm_2d(self):
+        # test init
+        normalized_shape = (10, 32)
+        layer = TimeBatchNorm2d(normalized_shape)
+
+        expected_num_features = normalized_shape[0] * normalized_shape[1]
+        assert layer.num_features == expected_num_features
+
+        # test 3d tensor
+        normalized_shape = (10, 32)
+        layer = TimeBatchNorm2d(normalized_shape)
+
+        incorrect_input = torch.randn(5, 10, 32, 32)
+
+        with pytest.raises(ValueError):
+            layer.forward(incorrect_input)
+
+    @pytest.mark.parametrize("batch_size", [1, 2, 5, 10])
+    def test_time_batch_norm_2d_different_batch_sizes(self, batch_size):
+        normalized_shape = (10, 32)
+        layer = TimeBatchNorm2d(normalized_shape)
+        input_tensor = torch.randn(batch_size, *normalized_shape)
+
+        if batch_size < 2:
+            with pytest.raises(ValueError):
+                layer.forward(input_tensor)
+        else:
+            output = layer.forward(input_tensor)
+            assert output.shape == input_tensor.shape
+
+    def test_time_batch_norm_2d_gradients(self):
+        normalized_shape = (10, 32)
+        layer = TimeBatchNorm2d(normalized_shape)
+        input_tensor = torch.randn(5, 10, 32, requires_grad=True)
+
+        output = layer.forward(input_tensor)
+        output.mean().backward()
+
+        assert input_tensor.grad is not None
 
     @staticmethod
     def helper_fit_predict(
