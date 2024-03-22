@@ -74,8 +74,7 @@ class TimeBatchNorm2d(nn.BatchNorm1d):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim != 3:
             raise ValueError(
-                f"Expected 3D input torch.Tensor, but got {x.ndim}D torch.Tensor"
-                " instead."
+                f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."
             )
 
         x = x.reshape(x.shape[0], -1, 1)
