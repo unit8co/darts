@@ -71,10 +71,8 @@ class TimeBatchNorm2d(nn.BatchNorm1d):
             A Tuple (num_time_steps, num_channels) representing the shape of the time and feature
             dimensions to normalize.
         """
-        num_time_steps, num_channels = normalized_shape
+        self.num_time_steps, self.num_channels = normalized_shape
         super().__init__(reduce(operator.mul, normalized_shape))
-        self.num_time_steps = num_time_steps
-        self.num_channels = num_channels
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim != 3:
@@ -230,8 +228,7 @@ class ConditionalFeatureMixing(nn.Module):
         if self.fr_static is None:
             return self.fm(x)
         v = self.fr_static(x_static)
-        repeat_factor = x.size(1) // v.size(1)
-        v = v.repeat(1, repeat_factor, 1)
+        v = v.repeat(1,  x.size(1) // v.size(1), 1)
         return self.fm(torch.cat([x, v], dim=-1))
 
 
@@ -532,7 +529,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         self, blocks: int, hidden_size: int, prediction_length: int, **kwargs
     ):
         """Build the mixer blocks for the model."""
-        # in case there a no future covariates, the feature_mixing_future layer
+        # in case there are no future covariates, the feature_mixing_future layer
         # does not provide any output, so the input to the mixer layers is
         # the same as the output of the feature_mixing_hist layer
         if self.future_cov_dim <= 0:
