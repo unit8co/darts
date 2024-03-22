@@ -49,11 +49,8 @@ logger = get_logger(__name__)
 
 
 def time_to_feature(x: torch.Tensor) -> torch.Tensor:
-    """Converts a time series torch.Tensor to a feature torch.Tensor."""
+    """Converts a time series Tensor to a feature Tensor."""
     return x.permute(0, 2, 1)
-
-
-feature_to_time = time_to_feature
 
 
 class TimeBatchNorm2d(nn.BatchNorm1d):
@@ -228,7 +225,7 @@ class ConditionalFeatureMixing(nn.Module):
         if self.fr_static is None:
             return self.fm(x)
         v = self.fr_static(x_static)
-        v = v.repeat(1,  x.size(1) // v.size(1), 1)
+        v = v.repeat(1, x.size(1) // v.size(1), 1)
         return self.fm(torch.cat([x, v], dim=-1))
 
 
@@ -269,9 +266,11 @@ class TimeMixing(nn.Module):
         self.fc1 = nn.Linear(sequence_length, sequence_length)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x_temp = feature_to_time(x)
+        # permute the feature dim with the time dim
+        x_temp = time_to_feature(x)
         x_temp = self.activation(self.fc1(x_temp))
         x_temp = self.dropout(x_temp)
+        # permute back the time dim with the feature dim
         x_res = time_to_feature(x_temp)
         x_temp = self.norm(x + x_res)
         return x_temp
@@ -578,8 +577,10 @@ class _TSMixerModule(PLMixedCovariatesModule):
         x_static = x_static_covariates
 
         # Feature space to time space transformations and linear transformations
-        x_hist_temp = feature_to_time(x_hist)
+        # permute the feature dim with the time dim
+        x_hist_temp = time_to_feature(x_hist)
         x_hist_temp = self.fc_hist(x_hist_temp)
+        # permute back the time dim with the feature dim
         x_hist = time_to_feature(x_hist_temp)
 
         # Conditional feature mixing for historical and future data
