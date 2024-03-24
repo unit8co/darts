@@ -112,7 +112,7 @@ class TestBacktesting:
         ),
     )
     def test_output_single_series_single_hfc(self, config):
-        """list of fc: for single series input with last_points_only=True"""
+        """single TimeSeries fc: for single series input with last_points_only=True"""
         is_univariate, metric = config
         is_multi_metric = len(metric) > 1
         y = ct(value=1.0, length=10)
