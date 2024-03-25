@@ -29,10 +29,9 @@ from functools import reduce
 from typing import Optional, Tuple, Union
 
 import torch
-import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.components import layer_norm_variants
 from darts.models.forecasting.pl_forecasting_module import (
     PLMixedCovariatesModule,
@@ -46,6 +45,19 @@ MixedCovariatesTrainTensorType = Tuple[
 ]
 
 logger = get_logger(__name__)
+
+ACTIVATIONS = [
+    "ReLU",
+    "RReLU",
+    "PReLU",
+    "ELU",
+    "Softplus",
+    "Tanh",
+    "SELU",
+    "LeakyReLU",
+    "Sigmoid",
+    "GELU",
+]
 
 
 def time_to_feature(x: torch.Tensor) -> torch.Tensor:
@@ -89,7 +101,7 @@ class FeatureMixing(nn.Module):
         sequence_length: int,
         input_dim: int,
         output_dim: int,
-        ff_dim: int,
+        ff_size: int,
         activation: Callable[[torch.Tensor], torch.Tensor],
         dropout: float,
         normalize_before: bool,
@@ -110,7 +122,7 @@ class FeatureMixing(nn.Module):
             The number of input channels to the module.
         output_dim: int
             The number of output channels from the module.
-        ff_dim: int
+        ff_size: int
             The dimension of the feed-forward network internal to the module.
         activation: Callable[[torch.Tensor], torch.Tensor]
             The activation function used within the feed-forward network.
@@ -137,8 +149,8 @@ class FeatureMixing(nn.Module):
 
         self.activation = activation
         self.dropout = MonteCarloDropout(dropout)
-        self.fc1 = nn.Linear(input_dim, ff_dim)
-        self.fc2 = nn.Linear(ff_dim, output_dim)
+        self.fc1 = nn.Linear(input_dim, ff_size)
+        self.fc2 = nn.Linear(ff_size, output_dim)
 
         self.projection = (
             nn.Linear(input_dim, output_dim)
@@ -166,7 +178,7 @@ class ConditionalFeatureMixing(nn.Module):
         input_dim: int,
         output_dim: int,
         static_dim: int,
-        ff_dim: int,
+        ff_size: int,
         activation: Callable,
         dropout: float,
         normalize_before: bool,
@@ -189,7 +201,7 @@ class ConditionalFeatureMixing(nn.Module):
             The number of output channels after feature mixing.
         static_dim: int
             The number of channels in the static feature input.
-        ff_dim: int
+        ff_size: int
             The inner dimension of the feedforward network used in feature mixing.
         activation: Callable
             The activation function used in feature mixing.
@@ -213,7 +225,7 @@ class ConditionalFeatureMixing(nn.Module):
             sequence_length=sequence_length,
             input_dim=feature_mixing_input,
             output_dim=output_dim,
-            ff_dim=ff_dim,
+            ff_size=ff_size,
             activation=activation,
             dropout=dropout,
             normalize_before=normalize_before,
@@ -284,7 +296,7 @@ class ConditionalMixerLayer(nn.Module):
         input_dim: int,
         output_dim: int,
         static_dim: int,
-        ff_dim: int,
+        ff_size: int,
         activation: Callable,
         dropout: float,
         normalize_before: bool,
@@ -307,7 +319,7 @@ class ConditionalMixerLayer(nn.Module):
             The number of output channels after feature mixing.
         static_dim: int
             The number of channels in the static feature input.
-        ff_dim: int
+        ff_size: int
             The inner dimension of the feedforward network used in feature mixing.
         activation: Callable
             The activation function used in both mixing operations.
@@ -332,7 +344,7 @@ class ConditionalMixerLayer(nn.Module):
             input_dim=input_dim,
             output_dim=output_dim,
             static_dim=static_dim,
-            ff_dim=ff_dim,
+            ff_size=ff_size,
             activation=activation,
             dropout=dropout,
             normalize_before=normalize_before,
@@ -359,7 +371,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         future_cov_dim: int,
         input_dim: int,
         output_dim: int,
-        ff_dim: int,
+        ff_size: int,
         nr_params: int,
         normalize_before: bool,
         norm_type: Union[str, nn.Module],
@@ -374,7 +386,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
             Number of input channels (features).
         output_dim: int
             Number of output channels (forecast horizon).
-        ff_dim: int
+        ff_size: int
             Dimension of the feedforward network internal to the module.
         dropout: float
             Dropout rate for regularization.
@@ -389,7 +401,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         """
         super().__init__(**kwargs)
 
-        self.ff_dim = ff_dim
+        self.ff_size = ff_size
         self.hidden_size = hidden_size
         self.normalize_before = normalize_before
 
@@ -406,10 +418,10 @@ class _TSMixerModule(PLMixedCovariatesModule):
         self.output_dim = output_dim
         self.blocks = blocks
 
-        if hasattr(F, activation.lower()):
-            self.activation_func = getattr(F, activation.lower())
-        else:
-            raise ValueError(f"Unknown activation function: {activation}")
+        raise_if_not(
+            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
+        )
+        self.activation_func = getattr(nn, activation)()
 
         if isinstance(norm_type, str):
             if norm_type == "TimeBatchNorm2d":
@@ -427,7 +439,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         self.fc_hist = nn.Linear(self.input_chunk_length, self.output_chunk_length)
 
         mixer_params = {
-            "ff_dim": self.ff_dim,
+            "ff_size": self.ff_size,
             "activation": self.activation_func,
             "dropout": self.dropout,
             "static_dim": self.static_cov_dim,
@@ -491,7 +503,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
     @io_processor
     def forward(
         self,
-        x_in: tuple[torch.Tensor, Union[torch.Tensor, None], Union[torch.Tensor, None]],
+        x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
     ) -> torch.Tensor:
         """TSMixer model forward pass.
         Parameters
@@ -551,7 +563,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         hidden_size: int = 256,
-        ff_dim: int = 64,
+        ff_size: int = 64,
         dropout: float = 0.2,
         blocks: int = 6,
         activation: str = "ReLU",
@@ -600,16 +612,17 @@ class TSMixerModel(MixedCovariatesTorchModel):
         hidden_size: int
             Hidden state size of the TSMixer.
         activation: str
-            The activation function of encoder/decoder intermediate layer (default='ReLU').
-            Supported activations: ['ReLU','RReLU', 'PReLU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid']
+            The activation function of the mixer layers (default='ReLU').
+            Supported activations: ["ReLU", "RReLU", "PReLU", "ELU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid",
+            "GELU"]
         blocks: int
             The number of mixer blocks in the model.
         dropout: float
             Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout
             at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
             prediction time).
-        ff_dim: int
-            The inner dimension of the feedforward network in the mixer layers.
+        ff_size: int
+            The inner size of the feedforward network in the mixer layers.
         normalize_before: bool
             Whether to apply layer normalization before or after mixer layer.
         loss_fn: nn.Module
@@ -791,7 +804,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
         # Model specific parameters
-        self.ff_dim = ff_dim
+        self.ff_size = ff_size
         self.dropout = dropout
         self.blocks = blocks
         self.activation = activation
@@ -852,7 +865,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             future_cov_dim=self.future_cov_dim,
             input_dim=self.input_dim,
             output_dim=self.output_dim,
-            ff_dim=self.ff_dim,
+            ff_size=self.ff_size,
             dropout=self.dropout,
             blocks=self.blocks,
             activation=self.activation,
