@@ -134,8 +134,6 @@ class TestTSMixerModel:
         )
 
         # should work with cyclic encoding for time index
-        # set categorical embedding sizes once with automatic embedding size with an `int` and once by
-        # manually setting it with `tuple(int, int)`
         model = TSMixerModel(
             input_chunk_length=3,
             output_chunk_length=4,
@@ -185,23 +183,16 @@ class TestTSMixerModel:
 
     def test_future_covariate_handling(self):
         ts_time_index = tg.sine_timeseries(length=2, freq="h")
-        model = TSMixerModel(
-            input_chunk_length=1,
-            output_chunk_length=1,
-            add_encoders={"cyclic": {"future": "hour"}},
-            use_reversible_instance_norm=False,
-            **tfm_kwargs,
-        )
-        model.fit(ts_time_index, verbose=False, epochs=1)
 
-        model = TSMixerModel(
-            input_chunk_length=1,
-            output_chunk_length=1,
-            add_encoders={"cyclic": {"future": "hour"}},
-            use_reversible_instance_norm=True,
-            **tfm_kwargs,
-        )
-        model.fit(ts_time_index, verbose=False, epochs=1)
+        for enable_rin in [True, False]:
+            model = TSMixerModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_encoders={"cyclic": {"future": "hour"}},
+                use_reversible_instance_norm=enable_rin,
+                **tfm_kwargs,
+            )
+            model.fit(ts_time_index, verbose=False, epochs=1)
 
     def test_past_covariate_handling(self):
         ts_time_index = tg.sine_timeseries(length=2, freq="h")
@@ -297,6 +288,7 @@ class TestTSMixerModel:
         target_multi = target_multi.with_static_covariates(
             pd.concat([target_multi.static_covariates] * 2, axis=1)
         )
+
         with pytest.raises(ValueError):
             model.predict(n=1, series=target_multi, verbose=False)
 
@@ -307,54 +299,77 @@ class TestTSMixerModel:
                 n=1, series=target_multi.with_static_covariates(None), verbose=False
             )
 
-    def test_layer_norm(self):
+    @pytest.mark.parametrize(
+        "norm_type, expect_exception",
+        [
+            ("RINorm", False),
+            (nn.LayerNorm, False),
+            ("TimeBatchNorm2d", False),
+            ("invalid", True),
+        ],
+    )
+    def test_layer_norms_with_parametrization(self, norm_type, expect_exception):
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(range(100), index=times)
         series = TimeSeries.from_series(pd_series)
-        series = series.with_static_covariates(
-            pd.DataFrame(
-                [[0.0, 1.0]],
-                columns=["st1", "st2"],
-            )
-        )
         base_model = TSMixerModel
 
-        model1 = base_model(
-            input_chunk_length=1,
-            output_chunk_length=1,
-            add_encoders={"cyclic": {"future": "hour", "past": ["hour", "day"]}},
-            norm_type="RINorm",
-            **tfm_kwargs,
-        )
-        model1.fit(series, epochs=1)
-
-        model2 = base_model(
-            input_chunk_length=1,
-            output_chunk_length=1,
-            add_encoders={"cyclic": {"future": "hour", "past": ["hour", "day"]}},
-            norm_type=nn.LayerNorm,
-            **tfm_kwargs,
-        )
-        model2.fit(series, epochs=1)
-
-        model3 = base_model(
-            input_chunk_length=1,
-            output_chunk_length=1,
-            add_encoders={"cyclic": {"future": "hour", "past": ["hour", "day"]}},
-            norm_type="TimeBatchNorm2d",
-            **tfm_kwargs,
-        )
-        model3.fit(series, epochs=1)
-
-        with pytest.raises(AttributeError):
-            model4 = base_model(
+        if expect_exception:
+            with pytest.raises(AttributeError):
+                model = base_model(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    norm_type=norm_type,
+                    **tfm_kwargs,
+                )
+                model.fit(series, epochs=1)
+        else:
+            model = base_model(
                 input_chunk_length=1,
                 output_chunk_length=1,
-                add_encoders={"cyclic": {"future": "hour", "past": ["hour", "day"]}},
-                norm_type="invalid",
+                norm_type=norm_type,
                 **tfm_kwargs,
             )
-            model4.fit(series, epochs=1)
+            model.fit(series, epochs=1)
+
+    @pytest.mark.parametrize(
+        "activation, expect_error",
+        [
+            ("ReLU", False),
+            ("RReLU", False),
+            ("PReLU", False),
+            ("ELU", False),
+            ("Softplus", False),
+            ("Tanh", False),
+            ("SELU", False),
+            ("LeakyReLU", False),
+            ("Sigmoid", False),
+            ("invalid", True),
+        ],
+    )
+    def test_activation_functions(self, activation, expect_error):
+        times = pd.date_range("20130101", "20130410")
+        pd_series = pd.Series(range(100), index=times)
+        series = TimeSeries.from_series(pd_series)
+        base_model = TSMixerModel
+
+        if expect_error:
+            with pytest.raises(ValueError):
+                model = base_model(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    activation=activation,
+                    **tfm_kwargs,
+                )
+                model.fit(series, epochs=1)
+        else:
+            model = base_model(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                activation=activation,
+                **tfm_kwargs,
+            )
+            model.fit(series, epochs=1)
 
     def test_time_batch_norm_2d(self):
         # test init
@@ -611,7 +626,7 @@ class TestTSMixerModel:
             "blocks": 1,
             "hidden_size": 32,
             "dropout": 0.2,
-            "ff_dim": 32,
+            "ff_size": 32,
             "batch_size": 8,
         }
         kwargs_full_coverage = dict(kwargs_full_coverage, **tfm_kwargs)
