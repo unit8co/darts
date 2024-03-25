@@ -1,8 +1,11 @@
+import itertools
+
 import numpy as np
 import pytest
 
 from darts.logging import get_logger
-from darts.models import LinearRegressionModel, NaiveSeasonal
+from darts.metrics import ape, mape, res
+from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
 from darts.tests.models.forecasting.test_regression_models import dummy_timeseries
 from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import linear_timeseries as lt
@@ -13,6 +16,314 @@ logger = get_logger(__name__)
 class TestResiduals:
 
     np.random.seed(42)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [False, True],
+            [(res, (-1.0, -2.0)), (ape, (100.0, 100.0))],
+        ),
+    )
+    def test_output_single_series_hfc_lpo_true(self, config):
+        """Tests backtest based on historical forecasts generated on a single `series` (or list of one `series`)
+        with last_points_only=True"""
+        is_univariate, series_as_list, (metric, score_exp) = config
+        n_ts = 10
+        y = ct(value=1.0, length=n_ts)
+        hfc = ct(value=2.0, length=n_ts)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        n_comps = y.n_components
+        y = y if not series_as_list else [y]
+        hfc = hfc if not series_as_list else [hfc]
+
+        # expected residuals values of shape (n time steps, n components, n samples=1)
+        score_exp = np.array([score_exp[:n_comps]] * 10).reshape(n_ts, -1, 1)
+        model = NaiveDrift()
+
+        # check that input does not work with `last_points_only=False``
+        with pytest.raises(ValueError) as err:
+            _ = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=False,
+            )
+        if series_as_list:
+            error_msg = "Expected `historical_forecasts` of type `Sequence[Sequence[TimeSeries]]`"
+        else:
+            error_msg = "Expected `historical_forecasts` of type `Sequence[TimeSeries]`"
+        assert str(err.value).startswith(error_msg)
+
+        for vals_only in [False, True]:
+            res = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=True,
+                values_only=vals_only,
+            )
+            res = res if series_as_list else [res]
+            assert isinstance(res, list) and len(res) == 1
+            res = res[0]
+            vals = res if vals_only else res.all_values()
+            np.testing.assert_array_almost_equal(vals, score_exp)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [False, True],
+            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [1, 2],
+        ),
+    )
+    def test_output_single_series_hfc_lpo_false(self, config):
+        """Tests residuals based on historical forecasts generated on a single `series` (or list of one `series`)
+        with last_points_only=False"""
+        is_univariate, series_as_list, (metric, score_exp), n_forecasts = config
+        n_ts = 10
+        y = ct(value=1.0, length=n_ts)
+        hfc = ct(value=2.0, length=n_ts)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        n_comps = y.n_components
+
+        hfc = [y, hfc]
+        hfc = hfc[:n_forecasts]
+        y = y if not series_as_list else [y]
+        hfc = hfc if not series_as_list else [hfc]
+
+        # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
+        scores_exp = []
+        for i in range(n_forecasts):
+            scores_exp.append(
+                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
+            )
+
+        model = NaiveDrift()
+
+        # check that input does not work with `last_points_only=True``
+        with pytest.raises(ValueError) as err:
+            _ = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=True,
+            )
+        if series_as_list:
+            error_msg = "Expected `historical_forecasts` of type `Sequence[TimeSeries]`"
+        else:
+            error_msg = "Expected `historical_forecasts` of type `TimeSeries`"
+        assert str(err.value).startswith(error_msg)
+
+        for vals_only in [False, True]:
+            res = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=False,
+                values_only=vals_only,
+            )
+            res = res if series_as_list else [res]
+            assert isinstance(res, list) and len(res) == 1
+            res = res[0]
+            assert isinstance(res, list) and len(res) == n_forecasts
+            for res_, score_exp_ in zip(res, scores_exp):
+                vals = res_ if vals_only else res_.all_values()
+                np.testing.assert_array_almost_equal(vals, score_exp_)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+        ),
+    )
+    def test_output_multi_series_hfc_lpo_true(self, config):
+        """Tests residuals based on historical forecasts generated on multiple `series` with last_points_only=True"""
+        is_univariate, (metric, score_exp) = config
+        n_ts = 10
+        y = ct(value=1.0, length=n_ts)
+        hfc = ct(value=2.0, length=n_ts)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        n_comps = y.n_components
+        hfc = [y, hfc]
+        y = [y, y]
+
+        # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
+        scores_exp = []
+        for i in range(len(hfc)):
+            scores_exp.append(
+                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
+            )
+
+        model = NaiveDrift()
+
+        # check that input does not work with `last_points_only=False``
+        with pytest.raises(ValueError) as err:
+            _ = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=False,
+            )
+        error_msg = (
+            "Expected `historical_forecasts` of type `Sequence[Sequence[TimeSeries]]`"
+        )
+        assert str(err.value).startswith(error_msg)
+
+        for vals_only in [False, True]:
+            res = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=True,
+                values_only=vals_only,
+            )
+            assert isinstance(res, list) and len(res) == len(y)
+            for res_, score_exp_ in zip(res, scores_exp):
+                vals = res_ if vals_only else res_.all_values()
+                np.testing.assert_array_almost_equal(vals, score_exp_)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+        ),
+    )
+    def test_output_multi_series_hfc_lpo_false(self, config):
+        """Tests residuals based on historical forecasts generated on multiple `series` with
+        last_points_only=False.
+        """
+        is_univariate, (metric, score_exp) = config
+        n_ts = 10
+        y = ct(value=1.0, length=n_ts)
+        hfc = ct(value=2.0, length=n_ts)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        n_comps = y.n_components
+        hfc = [[y], [hfc]]
+        y = [y, y]
+
+        # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
+        scores_exp = []
+        for i in range(len(hfc)):
+            scores_exp.append(
+                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
+            )
+
+        model = NaiveDrift()
+
+        # check that input does not work with `last_points_only=False``
+        with pytest.raises(ValueError) as err:
+            _ = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=True,
+            )
+        error_msg = "Expected `historical_forecasts` of type `Sequence[TimeSeries]`"
+        assert str(err.value).startswith(error_msg)
+
+        for vals_only in [False, True]:
+            res = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=False,
+                values_only=vals_only,
+            )
+            assert isinstance(res, list) and len(res) == len(y)
+            for res_list, score_exp_ in zip(res, scores_exp):
+                assert isinstance(res_list, list) and len(res_list) == 1
+                res_ = res_list[0]
+                vals = res_ if vals_only else res_.all_values()
+                np.testing.assert_array_almost_equal(vals, score_exp_)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+        ),
+    )
+    def test_output_multi_series_hfc_lpo_false_different_n_fcs(self, config):
+        """Tests residuals based on historical forecasts generated on multiple `series` with
+        last_points_only=False, and the historical forecasts have different lengths
+        """
+        is_univariate, (metric, score_exp) = config
+        n_ts = 10
+        y = ct(value=1.0, length=n_ts)
+        hfc = ct(value=2.0, length=n_ts)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+            hfc = hfc.stack(hfc + 2.0)
+        n_comps = y.n_components
+        hfc = [[y], [hfc, hfc]]
+        y = [y, y]
+
+        # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
+        scores_exp = []
+        for i in range(len(hfc)):
+            scores_exp.append(
+                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
+            )
+        # repeat following `hfc`
+        scores_exp = [[scores_exp[0]], [scores_exp[1]] * 2]
+
+        model = NaiveDrift()
+
+        # check that input does not work with `last_points_only=False``
+        with pytest.raises(ValueError) as err:
+            _ = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=True,
+            )
+        error_msg = "Expected `historical_forecasts` of type `Sequence[TimeSeries]`"
+        assert str(err.value).startswith(error_msg)
+
+        for vals_only in [False, True]:
+            res = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=False,
+                values_only=vals_only,
+            )
+            assert isinstance(res, list) and len(res) == len(y)
+            for res_list, hfc_list, score_exp_list in zip(res, hfc, scores_exp):
+                assert isinstance(res_list, list) and len(res_list) == len(hfc_list)
+                for res_, score_exp_ in zip(res_list, score_exp_list):
+                    vals = res_ if vals_only else res_.all_values()
+                    np.testing.assert_array_almost_equal(vals, score_exp_)
+
+    def test_wrong_metric(self):
+        y = ct(value=1.0, length=10)
+        hfc = ct(value=2.0, length=10)
+
+        model = NaiveDrift()
+
+        with pytest.raises(ValueError) as err:
+            _ = model.residuals(
+                series=y,
+                historical_forecasts=hfc,
+                metric=mape,
+                last_points_only=True,
+            )
+        assert str(err.value).startswith(
+            "`metric` function signature must have input parameters "
+            "`component_reduction`, and `time_reduction`"
+        )
 
     def test_forecasting_residuals_nocov_output(self):
         model = NaiveSeasonal(K=1)
@@ -65,16 +376,22 @@ class TestResiduals:
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        np.testing.assert_almost_equal(res.univariate_values(), np.zeros(len(res)))
+        assert isinstance(res, list) and len(res) == len(series) == 1
+        res_vals = res[0].all_values(copy=False)
+        np.testing.assert_almost_equal(res_vals, np.zeros((len(res[0]), 1, 1)))
 
         # return values only
-        res_vals = model.residuals(
+        res_vals_direct = model.residuals(
             series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             values_only=True,
         )
-        np.testing.assert_almost_equal(res.all_values(), res_vals)
+        assert (
+            isinstance(res_vals_direct, list)
+            and len(res_vals_direct) == len(series) == 1
+        )
+        np.testing.assert_almost_equal(res_vals_direct[0], res_vals)
 
         # with precomputed historical forecasts
         hfc = model.historical_forecasts(
@@ -94,7 +411,7 @@ class TestResiduals:
             retrain=False,
             values_only=True,
         )
-        np.testing.assert_almost_equal(res_vals, res_pretrained)
+        np.testing.assert_almost_equal(res_pretrained[0], res_vals)
 
         # if model is trained with covariates, should raise error when covariates are missing in residuals()
         with pytest.raises(ValueError):

@@ -137,7 +137,7 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
-            # time dependent
+            # time dependent but with time reduction
             (metrics.res, False, {"time_reduction": np.mean}),
             (metrics.ae, False, {"time_reduction": np.mean}),
             (metrics.se, False, {"time_reduction": np.mean}),
@@ -168,8 +168,9 @@ class TestMetrics:
             (metrics.dtw_metric, False, {}),
         ],
     )
-    def test_output_type(self, config):
-        """Test output types and shapes for single multiple univariate or multivariate series, in combination
+    def test_output_type_time_aggregated(self, config):
+        """Test output types and shapes for time aggregated metrics:
+        for single and multiple univariate or multivariate series, in combination
         with different component and series reduction functions."""
         metric, is_probabilistic, kwargs = config
         params = inspect.signature(metric).parameters
@@ -405,6 +406,290 @@ class TestMetrics:
             component_reduction=np.mean,
         )
         assert isinstance(res, float)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # time dependent
+            (metrics.res, False),
+            (metrics.ae, False),
+            (metrics.se, False),
+            (metrics.sle, False),
+            (metrics.ase, False),
+            (metrics.sse, False),
+            (metrics.ape, False),
+            (metrics.sape, False),
+            (metrics.arre, False),
+            (metrics.ql, True),
+        ],
+    )
+    def test_output_type_time_dependent(self, config):
+        """Test output types and shapes for time dependent metrics:
+        for single and multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        metric, is_probabilistic = config
+        params = inspect.signature(metric).parameters
+
+        # y true
+        y_t_mv = self.series12 + 1
+        y_t_uv = y_t_mv.univariate_component(0)
+        y_t_multi_mv = [y_t_mv] * 2
+        y_t_multi_uv = [y_t_uv] * 2
+
+        # y pred
+        y_p_mv = (
+            self.series12
+            if not is_probabilistic
+            else self.series12_stochastic.stack(self.series12_stochastic)
+        ) + 1
+        y_p_uv = y_p_mv.univariate_component(0)
+        y_p_multi_mv = [y_p_mv] * 2
+        y_p_multi_uv = [y_p_uv] * 2
+
+        # insample
+        kwargs_uv = {}
+        kwargs_mv = {}
+        kwargs_list_single_uv = {}
+        kwargs_list_single_mv = {}
+        kwargs_multi_uv = {}
+        kwargs_multi_mv = {}
+        if "insample" in params:
+            insample = self.series_train.stack(self.series_train) + 1
+            kwargs_uv["insample"] = insample.univariate_component(0)
+            kwargs_mv["insample"] = insample
+            kwargs_list_single_uv["insample"] = [kwargs_uv["insample"]]
+            kwargs_list_single_mv["insample"] = [kwargs_mv["insample"]]
+            kwargs_multi_uv["insample"] = [kwargs_uv["insample"]] * 2
+            kwargs_multi_mv["insample"] = [kwargs_mv["insample"]] * 2
+
+        # SINGLE UNIVARIATE SERIES
+        # no reduction
+        res = metric(
+            y_t_uv, y_p_uv, **kwargs_uv, series_reduction=None, component_reduction=None
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_p_uv),)
+        # series reduction
+        res = metric(
+            y_t_uv,
+            y_p_uv,
+            **kwargs_uv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_p_uv),)
+        # comp reduction
+        res = metric(
+            y_t_uv,
+            y_p_uv,
+            **kwargs_uv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_p_uv),)
+        # series and comp reduction
+        res = metric(
+            y_t_uv,
+            y_p_uv,
+            **kwargs_uv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_p_uv),)
+
+        # LIST OF SINGLE UNIVARIATE SERIES
+        # no reduction
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=None,
+            component_reduction=None,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], np.ndarray) and res[0].shape == (len(y_p_uv),)
+        # series reduction
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_p_uv),)
+        # comp reduction
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], np.ndarray) and res[0].shape == (len(y_p_uv),)
+
+        # series and comp reduction
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_p_uv),)
+
+        # SINGLE MULTIVARIATE SERIES
+        # no reduction
+        res = metric(
+            y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_t_mv), 2)
+        # series reduction
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_t_mv), 2)
+        # comp reduction
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_t_mv),)
+        # series and comp reduction
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (len(y_t_mv),)
+
+        # LIST OF SINGLE MULTIVARIATE SERIES
+        # no reduction
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=None,
+            component_reduction=None,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], np.ndarray) and res[0].shape == (10, 2)
+        # series reduction
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (10, 2)
+        # comp reduction
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, list) and len(res) == 1
+        assert isinstance(res[0], np.ndarray) and res[0].shape == (10,)
+        # series and comp reduction
+        res = metric(
+            [y_t_mv],
+            [y_p_mv],
+            **kwargs_list_single_mv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (10,)
+
+        # MULTIPLE UNIVARIATE SERIES
+        # no reduction
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=None,
+            component_reduction=None,
+        )
+        assert isinstance(res, list) and len(res) == 2
+        assert all(el.shape == (10,) for el in res)
+        # series reduction
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (10,)
+        # comp reduction
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, list) and len(res) == 2
+        assert all(el.shape == (10,) for el in res)
+        # series and comp reduction
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (10,)
+
+        # MULTIPLE MULTIVARIATE SERIES
+        # no reduction
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=None,
+            component_reduction=None,
+        )
+        assert isinstance(res, list) and len(res) == 2
+        assert all(el.shape == (10, 2) for el in res)
+        # series reduction
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (10, 2)
+        # comp reduction
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, list) and len(res) == 2
+        assert all(el.shape == (10,) for el in res)
+        # series and comp reduction
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, np.ndarray) and res.shape == (10,)
 
     @pytest.mark.parametrize(
         "config",

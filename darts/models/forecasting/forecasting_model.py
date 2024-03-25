@@ -1269,7 +1269,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            When providing several metric functions, the function will receive the argument `axis = 0` to obtain single
+            When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
@@ -1286,11 +1286,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         -------
         float
             Backtest metric for a single `series`, a single `metric`, and `historical_forecasts` generated with either
-            `last_points_only=True` or `last_points_only=False` and additionally using a backtest `reduction`.
+            `last_points_only=True` or `last_points_only=False` including a backtest `reduction`.
         np.ndarray
-            Backtest metrics for a single `series`, and multiple `metric` functions and/or `historical_forecasts`
-            generated with `last_points_only=False`. The output has shape (n forecasts, n metrics) without `reduction`,
-            and (n metrics,) otherwise.
+            Backtest metrics for a single `series`, and one of:
+
+            - a single `metric` function, `historical_forecasts` generated with `last_points_only=False` and backtest
+              `reduction=None`. The output has shape (n forecasts,).
+            - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
+              The output has shape (n metrics,) when using a backtest `reduction`, and (n metrics, n forecasts) when
+              `reduction=None`.
+            - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=True`:
+              The output has shape (n metrics,).
         List[float]
             Same as for return type `float` but for multiple `series`. The returned metric list has length
             `len(series)` with the `float` metric for each input `series`.
@@ -1298,63 +1304,80 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Same as for return type `np.ndarray` but for multiple `series`. The returned metric list has length
             `len(series)` with the `np.ndarray` metrics for each input `series`.
         """
-        if historical_forecasts is None:
-            forecasts = self.historical_forecasts(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                train_length=train_length,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                retrain=retrain,
-                overlap_end=overlap_end,
-                last_points_only=last_points_only,
-                verbose=verbose,
-                show_warnings=show_warnings,
-                fit_kwargs=fit_kwargs,
-                predict_kwargs=predict_kwargs,
-            )
-        else:
-            forecasts = historical_forecasts
+
+        historical_forecasts = historical_forecasts or self.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            retrain=retrain,
+            overlap_end=overlap_end,
+            last_points_only=last_points_only,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+        )
 
         # remember input series type
         series_seq_type = get_series_seq_type(series)
         series = series2seq(series)
 
+        seq_types = {
+            0: "`TimeSeries`",
+            1: "`Sequence[TimeSeries]`",
+            2: "`Sequence[Sequence[TimeSeries]]`",
+        }
         seq_of_seq_type = 2
-        forecast_seq_type = get_series_seq_type(forecasts)
-        if last_points_only and forecast_seq_type == 1:
-            # we must wrap each fc in a list
-            forecasts = [[fc] for fc in forecasts]
+        forecast_seq_type = get_series_seq_type(historical_forecasts)
 
-        forecasts = series2seq(forecasts, seq_type_out=seq_of_seq_type)
+        # check that `historical_forecasts` have correct type
+        expected_seq_type = None
+        if last_points_only and not series_seq_type == forecast_seq_type:
+            # lpo=True -> fc sequence type must be the same
+            expected_seq_type = series_seq_type
+        elif not last_points_only and forecast_seq_type != series_seq_type + 1:
+            # lpo=False -> fc sequence type must be one order higher
+            expected_seq_type = series_seq_type + 1
 
-        if len(series) != len(forecasts):
-            seq_types = {
-                0: "`TimeSeries`",
-                1: "`Sequence[TimeSeries]`",
-                2: "`Sequence[Sequence[TimeSeries]]`",
-            }
-            error_msg = (
-                f"Mismatch between number of `series` (n={len(series)}) and number of series-specific "
-                f"`historical_forecasts` (n={len(forecasts)})."
-                f" For `last_points_only={last_points_only}`, and the number of `series`, expected historical "
-                f"forecasts of type "
+        if expected_seq_type is not None:
+            raise_log(
+                ValueError(
+                    f"Expected `historical_forecasts` of type {seq_types[expected_seq_type]} "
+                    f"with `last_points_only={last_points_only}` and `series` of type "
+                    f"{seq_types[series_seq_type]}. However, received `historical_forecasts` of type "
+                    f"{seq_types[forecast_seq_type]}. Make sure to pass the same `last_points_only` "
+                    f"value that was used to generate the historical forecasts."
+                ),
+                logger=logger,
             )
-            if last_points_only:
-                if len(series) > 1:
-                    error_msg += f"{seq_types[1]} with length n={len(series)}."
-                else:
-                    error_msg += f"{seq_types[0]}, or of type {seq_types[1]} with length n={len(series)}."
-            else:
-                if len(series) > 1:
-                    error_msg += f"{seq_types[2]} with length n={len(series)}."
-                else:
-                    error_msg += f"{seq_types[1]}, or of type {seq_types[2]} with length n={len(series)}."
 
+        # we must wrap each fc in a list if `last_points_only=True`
+        nested = last_points_only and forecast_seq_type == 1
+        historical_forecasts = series2seq(
+            historical_forecasts, seq_type_out=seq_of_seq_type, nested=nested
+        )
+
+        # check that the number of series-specific forecasts corresponds to the
+        # number of series in `series`
+        if len(series) != len(historical_forecasts):
+            error_msg = (
+                f"Mismatch between the number of series-specific `historical_forecasts` "
+                f"(n={len(historical_forecasts)}) and the number of  `TimeSeries` in `series` "
+                f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
+            )
+            expected_seq_type = (
+                series_seq_type if last_points_only else series_seq_type + 1
+            )
+            if expected_seq_type > 0:
+                error_msg += f"`historical_forecasts` of type {seq_types[1]} with length n={len(series)}."
+            else:
+                error_msg += f"a single `historical_forecasts` of type {seq_types[0]}."
             raise_log(
                 ValueError(error_msg),
                 logger=logger,
@@ -1369,7 +1392,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series_idx = []
         cum_len = [0]
         forecasts_list = []
-        for idx, fc_list in enumerate(forecasts):
+        for idx, fc_list in enumerate(historical_forecasts):
             series_idx += [idx] * len(fc_list)
             cum_len.append(cum_len[-1] + len(fc_list))
             forecasts_list.extend(fc_list)
@@ -1385,29 +1408,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             def __getitem__(self, index) -> TimeSeries:
                 return series[series_idx[index]]
 
-        series_gen = SeriesGenerator()
-
         # extract metrics per metric and series, and optionally reduce
-        metrics_errors = []
-        for metric_f in metric:
-            errors = np.array(metric_f(series_gen, forecasts_list))
+        # errors shape `(n metrics, n total historical forecasts)`
+        series_gen = SeriesGenerator()
+        errors = np.array([metric_f(series_gen, forecasts_list) for metric_f in metric])
 
-            backtest_list = []
-            # get errors for each input `series`
-            for i in range(len(cum_len) - 1):
-                errors_series = errors[cum_len[i] : cum_len[i + 1]]
-                if reduction is not None:
-                    errors_series = reduction(errors_series, axis=0)
-                backtest_list.append(errors_series)
+        # get errors for each input `series`
+        backtest_list = []
+        for i in range(len(cum_len) - 1):
+            # errors_series with shape `(n metrics, n series specific historical forecasts)`
+            errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
 
-            metrics_errors.append(
-                series2seq(
-                    backtest_list,
-                    seq_type_out=series_seq_type,
-                    is_numeric=True,
-                )
-            )
-        return metrics_errors if len(metrics_errors) > 1 else metrics_errors[0]
+            if reduction is not None:
+                # shape `(n metrics, n forecasts)` -> `(n metrics,)`
+                errors_series = reduction(errors_series, axis=1)
+            elif last_points_only:
+                # shape `(n metrics, n forecasts = 1)` -> `(n metrics,)`
+                errors_series = errors_series[:, 0]
+
+            if len(metric) == 1:
+                # shape `(n metrics, *)` -> `(*,)`
+                errors_series = errors_series[0]
+            elif not last_points_only and reduction is None:
+                # shape `(n metrics, *)` -> `(*, n metrics)`
+                errors_series = errors_series.T
+
+            backtest_list.append(errors_series)
+        return backtest_list if series_seq_type > 0 else backtest_list[0]
 
     @classmethod
     def gridsearch(
@@ -1700,7 +1727,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        historical_forecasts: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        historical_forecasts: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+        ] = None,
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
@@ -1716,7 +1745,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         predict_kwargs: Optional[Dict[str, Any]] = None,
         values_only: bool = False,
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
-        """Compute the residuals produced by this model on a (or sequence of) univariate  time series.
+        """Compute the residuals produced by this model on a (or sequence of) `TimeSeries`.
 
         This function computes the difference (or a custom `metric`) between the actual observations from `series` and
         the fitted values obtained by training the model on `series` (or using a pre-trained model with
@@ -1733,8 +1762,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         - compute a backtest using `metric` between the historical forecasts and `series` per component/column
           and time step (see :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest` for more
           details). By default, uses the residuals :func:`~darts.metrics.metrics.res` as a `metric`.
-        - create and return `TimeSeries` with the time index from historical forecasts, and values from the
-          metrics per component and time step.
+        - create and return `TimeSeries` (or simply a np.ndarray with `values_only=True`) with the time index from
+          historical forecasts, and values from the metrics per component and time step.
 
         This method works for single or multiple univariate or multivariate series.
         It uses the median prediction (when dealing with stochastic forecasts).
@@ -1843,86 +1872,94 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             length `len(series)`.
         List[List[TimeSeries]]
             A list of lists of residual `TimeSeries` for multiple `series` with `last_points_only=False`. The outer
-            residual list has length `len(series)`. The inner residual lists come from all the possible historical
-            forecasts for each series.
+            residual list has length `len(series)`. The inner lists consist of the residuals from all possible
+            series-specific historical forecasts.
         """
-        if historical_forecasts is None:
-            forecasts = self.historical_forecasts(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                train_length=train_length,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                retrain=retrain,
-                last_points_only=last_points_only,
-                verbose=verbose,
-                show_warnings=show_warnings,
-                fit_kwargs=fit_kwargs,
-                predict_kwargs=predict_kwargs,
-                overlap_end=False,
+        # remember input series type
+        series_seq_type = get_series_seq_type(series)
+
+        # wrap metric to bypass component reduction
+        metric_params = inspect.signature(metric).parameters
+        if (
+            "component_reduction" not in metric_params
+            or "time_reduction" not in metric_params
+        ):
+            raise_log(
+                ValueError(
+                    "`metric` function signature must have input parameters `component_reduction`, "
+                    "and `time_reduction`. It must be one of Darts 'per time step' metrics, such as "
+                    "`res`, `ae`, `ape`, ..."
+                )
             )
-        else:
-            forecasts = historical_forecasts
+
+        historical_forecasts = historical_forecasts or self.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            retrain=retrain,
+            last_points_only=last_points_only,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            overlap_end=False,
+        )
 
         def residuals_fn(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
             return metric(
                 *args,
                 **kwargs,
                 component_reduction=None,
-                series_reduction=None,
             )
 
         residuals = self.backtest(
             series=series,
-            historical_forecasts=forecasts,
+            historical_forecasts=historical_forecasts,
             last_points_only=last_points_only,
             metric=residuals_fn,
             reduction=None,
         )
 
         # convert forecasts and residuals to list of lists of series/arrays
-        called_with_single_series = False
-        called_with_list_of_lists = True
-        if isinstance(forecasts, TimeSeries):
-            forecasts = [[forecasts]]
-            residuals = [[residuals]]
-            called_with_single_series = True
-            called_with_list_of_lists = False
-        elif isinstance(forecasts[0], TimeSeries):
-            forecasts = [[fc] for fc in forecasts]
+        forecast_seq_type = get_series_seq_type(historical_forecasts)
+        historical_forecasts = series2seq(
+            historical_forecasts,
+            seq_type_out=2,
+            nested=last_points_only and forecast_seq_type == 1,
+        )
+        if series_seq_type == 0:
+            residuals = [residuals]
+        if last_points_only:
             residuals = [[res] for res in residuals]
-            called_with_single_series = False
-            called_with_list_of_lists = True
 
         # process residuals
         residuals_out = []
-        for fc_list, res_list in zip(forecasts, residuals):
+        for fc_list, res_list in zip(historical_forecasts, residuals):
             res_list_out = []
             for fc, res in zip(fc_list, res_list):
                 # make sure all residuals have shape (n time steps, n components, n samples=1)
-                res_ndim = len(res.shape)
-                if res_ndim == 1:
-                    expand_dims = (1, 2)
-                elif res_ndim == 2:
-                    expand_dims = 2
-                else:
-                    expand_dims = 0
-
-                if expand_dims:
-                    res = np.expand_dims(res, expand_dims)
+                if len(res.shape) != 3:
+                    res = np.reshape(res, (len(fc), fc.n_components, 1))
                 res_list_out.append(res if values_only else fc.with_values(res))
             residuals_out.append(res_list_out)
 
-        if called_with_list_of_lists:
-            return residuals_out
-        elif not called_with_single_series:
+        # if required, reduce to `series` input type
+        if series_seq_type == 0:
+            if last_points_only:
+                return residuals_out[0][0]
+            else:
+                return residuals_out[0]
+
+        if last_points_only:
             return [res for res_list in residuals_out for res in res_list]
-        else:
-            return residuals_out[0][0]
+
+        return residuals_out
 
     def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter

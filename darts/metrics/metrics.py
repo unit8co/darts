@@ -160,9 +160,8 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         # reduce metrics along series axis
         if series_reduction is not None:
             vals = kwargs["series_reduction"](vals, axis=0)
-        else:
-            # if possible, reduce to original series sequence type
-            vals = series2seq(vals, seq_type_out=series_seq_type, is_numeric=True)
+        elif series_seq_type == 0:
+            vals = vals[0]
 
         # flatten along series axis if n series == 1
         return vals

@@ -55,6 +55,7 @@ def series2seq(
     ts: Optional[Union[Any, Sequence[Any], Sequence[Sequence[Any]]]],
     seq_type_out: int = 1,
     is_numeric: bool = False,
+    nested: bool = False,
 ) -> Optional[Union[Any, Sequence[Any], Sequence[Sequence[Any]]]]:
     """If possible, converts `ts` into the desired sequence type `seq_type_out`. Otherwise, returns the
     original `ts`.
@@ -94,7 +95,6 @@ def series2seq(
     if seq_type_out == seq_type_in:
         return ts
 
-    # seq_type_in > seq_type_out means, we have at least a Sequence[TimeSeries]
     n_series = 1 if seq_type_in == 0 else len(ts)
 
     if seq_type_in == 0 and seq_type_out == 1:
@@ -107,15 +107,27 @@ def series2seq(
         # [ts] -> ts
         return ts[0]
     elif seq_type_in == 1 and seq_type_out == 2:
-        # [ts] -> [[ts]]
-        return [ts]
+        if not nested:
+            # [ts1, ts2] -> [[ts1, ts2]]
+            return [ts]
+        else:
+            # [ts1, ts2] -> [[ts1], [ts2]]
+            return [[ts_] for ts_ in ts]
     elif seq_type_in == 2 and seq_type_out == 0 and n_series == 1:
-        # [[ts]] -> ts[0][0]
-        return series2seq(ts[0], seq_type_out=seq_type_out, is_numeric=is_numeric)
+        if not nested:
+            # [[ts]] -> [ts]
+            return ts[0]
+        else:
+            # either [[ts]] -> ts or [[ts1, ts2]] -> [ts1, ts2]
+            return series2seq(ts[0], seq_type_out=seq_type_out, is_numeric=is_numeric)
     elif seq_type_in == 2 and seq_type_out == 1 and n_series == 1:
-        # `1` and `2` are both representing time series axis
-        # [[ts]] -> [[ts]]
-        return ts
+        if not nested:
+            # [[ts1, ts2]] -> [[ts1, ts2]]
+            return ts
+        else:
+            # seq_type_in `1` and `2` are both representing time series axis
+            # [[ts1, ts2]] -> [ts1, ts2]
+            return ts[0]
     else:
         # ts -> ts
         return ts
