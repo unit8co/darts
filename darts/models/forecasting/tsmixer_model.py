@@ -66,7 +66,7 @@ def time_to_feature(x: torch.Tensor) -> torch.Tensor:
 
 
 class TimeBatchNorm2d(nn.BatchNorm1d):
-    def __init__(self, normalized_shape: tuple):
+    def __init__(self, normalized_shape: Tuple[int, int]):
         """A batch normalization layer that normalizes over the last two dimensions of a
         sequence in PyTorch, mimicking Keras behavior based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
@@ -503,7 +503,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
     @io_processor
     def forward(
         self,
-        x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
+        x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
     ) -> torch.Tensor:
         """TSMixer model forward pass.
         Parameters
