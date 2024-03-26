@@ -5,7 +5,7 @@ Metrics
 For deterministic forecasts (point predictions with `num_samples == 1`):
     - Aggregated over time:
         Absolute metrics:
-            - :func:`MRES <darts.metrics.metrics.mres>`: Mean Residuals
+            - :func:`MERR <darts.metrics.metrics.merr>`: Mean Error
             - :func:`MAE <darts.metrics.metrics.mae>`: Mean Absolute Error
             - :func:`MSE <darts.metrics.metrics.mse>`: Mean Squared Error
             - :func:`RMSE <darts.metrics.metrics.rmse>`: Root Mean Squared Error
@@ -26,7 +26,7 @@ For deterministic forecasts (point predictions with `num_samples == 1`):
 
     - Per time step:
         Absolute metrics:
-            - :func:`RES <darts.metrics.metrics.res>`: Residuals
+            - :func:`ERR <darts.metrics.metrics.err>`: Error
             - :func:`AE <darts.metrics.metrics.ae>`: Absolute Error
             - :func:`SE <darts.metrics.metrics.se>`: Squared Error
             - :func:`SLE <darts.metrics.metrics.sle>`: Squared Log Error
@@ -56,19 +56,19 @@ from .metrics import (
     ase,
     coefficient_of_variation,
     dtw_metric,
+    err,
     mae,
     mape,
     marre,
     mase,
+    merr,
     mql,
-    mres,
     mse,
     msse,
     ope,
     ql,
     qr,
     r2_score,
-    res,
     rmse,
     rmsle,
     rmsse,

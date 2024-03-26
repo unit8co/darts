@@ -443,7 +443,7 @@ def _get_error_scale(
 
 @multi_ts_support
 @multivariate_support
-def res(
+def err(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
@@ -454,7 +454,7 @@ def res(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Residuals (RES).
+    """Error (ERR).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
     component/column and time step :math:`t` as:
@@ -515,7 +515,7 @@ def res(
 
 @multi_ts_support
 @multivariate_support
-def mres(
+def merr(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
@@ -525,7 +525,7 @@ def mres(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Residuals (MRES).
+    """Mean Error (MERR).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
     component/column as:
@@ -573,7 +573,7 @@ def mres(
         A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
     """
     return np.nanmean(
-        _get_wrapped_metric(res)(
+        _get_wrapped_metric(err)(
             actual_series,
             pred_series,
             intersect,

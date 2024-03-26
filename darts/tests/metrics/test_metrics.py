@@ -138,7 +138,7 @@ class TestMetrics:
         "config",
         [
             # time dependent but with time reduction
-            (metrics.res, False, {"time_reduction": np.mean}),
+            (metrics.err, False, {"time_reduction": np.mean}),
             (metrics.ae, False, {"time_reduction": np.mean}),
             (metrics.se, False, {"time_reduction": np.mean}),
             (metrics.sle, False, {"time_reduction": np.mean}),
@@ -149,7 +149,7 @@ class TestMetrics:
             (metrics.arre, False, {"time_reduction": np.mean}),
             (metrics.ql, True, {"time_reduction": np.mean}),
             # time aggregates
-            (metrics.mres, False, {}),
+            (metrics.merr, False, {}),
             (metrics.mae, False, {}),
             (metrics.mse, False, {}),
             (metrics.rmse, False, {}),
@@ -411,7 +411,7 @@ class TestMetrics:
         "config",
         [
             # time dependent
-            (metrics.res, False),
+            (metrics.err, False),
             (metrics.ae, False),
             (metrics.se, False),
             (metrics.sle, False),
@@ -696,7 +696,7 @@ class TestMetrics:
         itertools.product(
             [
                 # time dependent
-                (metrics.res, False),
+                (metrics.err, False),
                 (metrics.ae, False),
                 (metrics.se, False),
                 (metrics.sle, False),
@@ -707,7 +707,7 @@ class TestMetrics:
                 (metrics.arre, False),
                 (metrics.ql, True),
                 # time aggregates
-                (metrics.mres, False),
+                (metrics.merr, False),
                 (metrics.mae, False),
                 (metrics.mse, False),
                 (metrics.rmse, False),
@@ -798,7 +798,7 @@ class TestMetrics:
         "config",
         [
             # time dependent
-            (metrics.res, 0, False, {"time_reduction": np.mean}),
+            (metrics.err, 0, False, {"time_reduction": np.mean}),
             (metrics.ae, 0, False, {"time_reduction": np.mean}),
             (metrics.se, 0, False, {"time_reduction": np.mean}),
             (metrics.sle, 0, False, {"time_reduction": np.mean}),
@@ -809,7 +809,7 @@ class TestMetrics:
             (metrics.arre, 0, False, {"time_reduction": np.mean}),
             (metrics.ql, 0, True, {"time_reduction": np.mean}),
             # time aggregates
-            (metrics.mres, 0, False, {}),
+            (metrics.merr, 0, False, {}),
             (metrics.mae, 0, False, {}),
             (metrics.mse, 0, False, {}),
             (metrics.rmse, 0, False, {}),
@@ -944,8 +944,8 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
-            (metrics.res, False, {"time_reduction": np.nanmean}),
-            (metrics.mres, True, {}),
+            (metrics.err, False, {"time_reduction": np.nanmean}),
+            (metrics.merr, True, {}),
         ],
     )
     def test_res(self, config):
@@ -1199,14 +1199,14 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
-            (metrics.res, "min", {"time_reduction": np.nanmean}),
+            (metrics.err, "min", {"time_reduction": np.nanmean}),
             (metrics.ae, "max", {"time_reduction": np.nanmean}),
             (metrics.se, "max", {"time_reduction": np.nanmean}),
             (metrics.sle, "max", {"time_reduction": np.nanmean}),
             (metrics.ape, "max", {"time_reduction": np.nanmean}),
             (metrics.sape, "max", {"time_reduction": np.nanmean}),
             (metrics.arre, "max", {"time_reduction": np.nanmean}),
-            (metrics.mres, "min", {}),
+            (metrics.merr, "min", {}),
             (metrics.mae, "max", {}),
             (metrics.mse, "max", {}),
             (metrics.rmse, "max", {}),
@@ -1272,7 +1272,7 @@ class TestMetrics:
     @pytest.mark.parametrize(
         "config",
         [
-            (metrics.res, metric_residuals, {}, {"time_reduction": np.nanmean}),
+            (metrics.err, metric_residuals, {}, {"time_reduction": np.nanmean}),
             (
                 metrics.ae,
                 sklearn.metrics.mean_absolute_error,
@@ -1294,7 +1294,7 @@ class TestMetrics:
             (metrics.ape, sklearn_mape, {}, {"time_reduction": np.nanmean}),
             (metrics.sape, metric_smape, {}, {"time_reduction": np.nanmean}),
             (metrics.arre, metric_marre, {}, {"time_reduction": np.nanmean}),
-            (metrics.mres, metric_residuals, {}, {}),
+            (metrics.merr, metric_residuals, {}, {}),
             (metrics.mae, sklearn.metrics.mean_absolute_error, {}, {}),
             (metrics.mse, sklearn.metrics.mean_squared_error, {}, {}),
             (metrics.rmse, sklearn.metrics.mean_squared_error, {"squared": False}, {}),

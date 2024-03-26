@@ -754,12 +754,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         List[TimeSeries]
             A list of historical forecasts for:
 
-            - multiple `series` and `last_points_only=True`: for each series, it contains only the predictions at step
-                `forecast_horizon` from all historical forecasts.
+            - a sequence (list) of `series` and `last_points_only=True`: for each series, it contains only the
+              predictions at step `forecast_horizon` from all historical forecasts.
             - a single `series` and `last_points_only=False`: for each historical forecast, it contains the entire
-                horizon `forecast_horizon`.
+              horizon `forecast_horizon`.
         List[List[TimeSeries]]
-            A list of lists of historical forecasts for multiple `series` and `last_points_only=False`. For each
+            A list of lists of historical forecasts for a sequence of `series` and `last_points_only=False`. For each
             series, and historical forecast, it contains the entire horizon `forecast_horizon`. The outer list
             is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
             each series.
@@ -1158,6 +1158,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only: bool = False,
         metric: Union[METRIC_TYPE, List[METRIC_TYPE]] = metrics.mape,
         reduction: Union[Callable[..., float], None] = np.mean,
+        n_jobs: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
         fit_kwargs: Optional[Dict[str, Any]] = None,
@@ -1273,6 +1274,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
+        n_jobs
+            The number of jobs to run the metric computation in parallel. Parallel jobs are created only when
+            `historical_forecasts` contains multiple forecasts, parallelising operations regarding different
+            ``TimeSeries``. Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available
+            processors.
         verbose
             Whether to print progress.
         show_warnings
@@ -1285,23 +1291,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Returns
         -------
         float
-            Backtest metric for a single `series`, a single `metric`, and `historical_forecasts` generated with either
-            `last_points_only=True` or `last_points_only=False` including a backtest `reduction`.
-        np.ndarray
-            Backtest metrics for a single `series`, and one of:
+            A single backtest score for single uni/multivariate series, a single `metric` function and:
 
-            - a single `metric` function, `historical_forecasts` generated with `last_points_only=False` and backtest
-              `reduction=None`. The output has shape (n forecasts,).
+            - `historical_forecasts` generated with `last_points_only=True`
+            - `historical_forecasts` generated with `last_points_only=False` and using a backtest `reduction`
+        np.ndarray
+            An numpy array of backtest scores. For single series and one of:
+
+            - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
+              and backtest `reduction=None`. The output has shape (n forecasts,).
             - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
-              The output has shape (n metrics,) when using a backtest `reduction`, and (n metrics, n forecasts) when
-              `reduction=None`.
-            - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=True`:
-              The output has shape (n metrics,).
+              The output has shape (n metrics,) when using a backtest `reduction`, and (n metrics, n forecasts)
+              when `reduction=None`
+            - multiple uni/multivariate series including `series_reduction` and at least one of
+              `component_reduction=None` or `time_reduction=None` for "per time step metrics"
         List[float]
-            Same as for return type `float` but for multiple `series`. The returned metric list has length
+            Same as for type `float` but for a sequence of series. The returned metric list has length
             `len(series)` with the `float` metric for each input `series`.
         List[np.ndarray]
-            Same as for return type `np.ndarray` but for multiple `series`. The returned metric list has length
+            Same as for type `np.ndarray` but for a sequence of series. The returned metric list has length
             `len(series)` with the `np.ndarray` metrics for each input `series`.
         """
 
@@ -1411,7 +1419,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # extract metrics per metric and series, and optionally reduce
         # errors shape `(n metrics, n total historical forecasts)`
         series_gen = SeriesGenerator()
-        errors = np.array([metric_f(series_gen, forecasts_list) for metric_f in metric])
+        errors = np.array(
+            [metric_f(series_gen, forecasts_list, n_jobs=n_jobs) for metric_f in metric]
+        )
 
         # get errors for each input `series`
         backtest_list = []
@@ -1738,7 +1748,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
         last_points_only: bool = True,
-        metric: METRIC_TYPE = metrics.res,
+        metric: METRIC_TYPE = metrics.err,
+        n_jobs: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
         fit_kwargs: Optional[Dict[str, Any]] = None,
@@ -1761,7 +1772,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
           `predict_kwargs`.
         - compute a backtest using `metric` between the historical forecasts and `series` per component/column
           and time step (see :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest` for more
-          details). By default, uses the residuals :func:`~darts.metrics.metrics.res` as a `metric`.
+          details). By default, uses the residuals :func:`~darts.metrics.metrics.err` as a `metric`.
         - create and return `TimeSeries` (or simply a np.ndarray with `values_only=True`) with the time index from
           historical forecasts, and values from the metrics per component and time step.
 
@@ -1852,6 +1863,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             identical signature as Darts' "per time step" metrics, uses decorators
             :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
             and returns a metric per time step.
+        n_jobs
+            The number of jobs to run the metric computation in parallel. Parallel jobs are created only when
+            `historical_forecasts` contains multiple forecasts, parallelising operations regarding different
+            ``TimeSeries``. Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available
+            processors.
         verbose
             Whether to print progress.
         show_warnings
@@ -1866,14 +1882,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Returns
         -------
         TimeSeries
-            Residual `TimeSeries` for a single `series` with `last_points_only=True`.
+            Residual `TimeSeries` for a single `series` and `historical_forecasts` generated with
+            `last_points_only=True`.
         List[TimeSeries]
-            A list of residual `TimeSeries` for multiple `series` with `last_points_only=True`. The residual list has
-            length `len(series)`.
+            A list of residual `TimeSeries` for a sequence (list) of `series` with `last_points_only=True`.
+            The residual list has length `len(series)`.
         List[List[TimeSeries]]
-            A list of lists of residual `TimeSeries` for multiple `series` with `last_points_only=False`. The outer
-            residual list has length `len(series)`. The inner lists consist of the residuals from all possible
-            series-specific historical forecasts.
+            A list of lists of residual `TimeSeries` for a sequence of `series` with `last_points_only=False`.
+            The outer residual list has length `len(series)`. The inner lists consist of the residuals from
+            all possible series-specific historical forecasts.
         """
         # remember input series type
         series_seq_type = get_series_seq_type(series)
@@ -1888,7 +1905,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError(
                     "`metric` function signature must have input parameters `component_reduction`, "
                     "and `time_reduction`. It must be one of Darts 'per time step' metrics, such as "
-                    "`res`, `ae`, `ape`, ..."
+                    "`err`, `ae`, `ape`, ..."
                 )
             )
 
@@ -1924,6 +1941,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
             metric=residuals_fn,
             reduction=None,
+            n_jobs=n_jobs,
         )
 
         # convert forecasts and residuals to list of lists of series/arrays

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from darts.logging import get_logger
-from darts.metrics import ape, mape, res
+from darts.metrics import ape, err, mape
 from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
 from darts.tests.models.forecasting.test_regression_models import dummy_timeseries
 from darts.utils.timeseries_generation import constant_timeseries as ct
@@ -22,7 +22,7 @@ class TestResiduals:
         itertools.product(
             [True, False],
             [False, True],
-            [(res, (-1.0, -2.0)), (ape, (100.0, 100.0))],
+            [(err, (-1.0, -2.0)), (ape, (100.0, 100.0))],
         ),
     )
     def test_output_single_series_hfc_lpo_true(self, config):
@@ -76,7 +76,7 @@ class TestResiduals:
         itertools.product(
             [True, False],
             [False, True],
-            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
             [1, 2],
         ),
     )
@@ -140,7 +140,7 @@ class TestResiduals:
         "config",
         itertools.product(
             [True, False],
-            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
         ),
     )
     def test_output_multi_series_hfc_lpo_true(self, config):
@@ -195,7 +195,7 @@ class TestResiduals:
         "config",
         itertools.product(
             [True, False],
-            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
         ),
     )
     def test_output_multi_series_hfc_lpo_false(self, config):
@@ -252,7 +252,7 @@ class TestResiduals:
         "config",
         itertools.product(
             [True, False],
-            [(res, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
         ),
     )
     def test_output_multi_series_hfc_lpo_false_different_n_fcs(self, config):
