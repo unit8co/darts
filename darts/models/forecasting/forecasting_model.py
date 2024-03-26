@@ -51,7 +51,12 @@ from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
 )
-from darts.utils.ts_utils import get_series_seq_type, get_single_series, series2seq
+from darts.utils.ts_utils import (
+    SeriesType,
+    get_series_seq_type,
+    get_single_series,
+    series2seq,
+)
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -1336,16 +1341,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series_seq_type = get_series_seq_type(series)
         series = series2seq(series)
 
-        seq_types = {
-            0: "`TimeSeries`",
-            1: "`Sequence[TimeSeries]`",
-            2: "`Sequence[Sequence[TimeSeries]]`",
-        }
-        seq_of_seq_type = 2
-        forecast_seq_type = get_series_seq_type(historical_forecasts)
-
         # check that `historical_forecasts` have correct type
         expected_seq_type = None
+        forecast_seq_type = get_series_seq_type(historical_forecasts)
         if last_points_only and not series_seq_type == forecast_seq_type:
             # lpo=True -> fc sequence type must be the same
             expected_seq_type = series_seq_type
@@ -1356,19 +1354,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if expected_seq_type is not None:
             raise_log(
                 ValueError(
-                    f"Expected `historical_forecasts` of type {seq_types[expected_seq_type]} "
+                    f"Expected `historical_forecasts` of type {expected_seq_type} "
                     f"with `last_points_only={last_points_only}` and `series` of type "
-                    f"{seq_types[series_seq_type]}. However, received `historical_forecasts` of type "
-                    f"{seq_types[forecast_seq_type]}. Make sure to pass the same `last_points_only` "
+                    f"{series_seq_type}. However, received `historical_forecasts` of type "
+                    f"{forecast_seq_type}. Make sure to pass the same `last_points_only` "
                     f"value that was used to generate the historical forecasts."
                 ),
                 logger=logger,
             )
 
         # we must wrap each fc in a list if `last_points_only=True`
-        nested = last_points_only and forecast_seq_type == 1
+        nested = last_points_only and forecast_seq_type == SeriesType.SEQ
         historical_forecasts = series2seq(
-            historical_forecasts, seq_type_out=seq_of_seq_type, nested=nested
+            historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
         )
 
         # check that the number of series-specific forecasts corresponds to the
@@ -1383,9 +1381,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 series_seq_type if last_points_only else series_seq_type + 1
             )
             if expected_seq_type > 0:
-                error_msg += f"`historical_forecasts` of type {seq_types[1]} with length n={len(series)}."
+                error_msg += f"`historical_forecasts` of type {SeriesType.SEQ} with length n={len(series)}."
             else:
-                error_msg += f"a single `historical_forecasts` of type {seq_types[0]}."
+                error_msg += (
+                    f"a single `historical_forecasts` of type {SeriesType.SINGLE}."
+                )
             raise_log(
                 ValueError(error_msg),
                 logger=logger,
@@ -1458,7 +1458,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 errors_series = errors_series.T
 
             backtest_list.append(errors_series)
-        return backtest_list if series_seq_type > 0 else backtest_list[0]
+        return (
+            backtest_list if series_seq_type > SeriesType.SINGLE else backtest_list[0]
+        )
 
     @classmethod
     def gridsearch(
@@ -1947,10 +1949,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_seq_type = get_series_seq_type(historical_forecasts)
         historical_forecasts = series2seq(
             historical_forecasts,
-            seq_type_out=2,
-            nested=last_points_only and forecast_seq_type == 1,
+            seq_type_out=SeriesType.SEQ_SEQ,
+            nested=last_points_only and forecast_seq_type == SeriesType.SEQ,
         )
-        if series_seq_type == 0:
+        if series_seq_type == SeriesType.SINGLE:
             residuals = [residuals]
         if last_points_only:
             residuals = [[res] for res in residuals]
@@ -1982,7 +1984,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             residuals_out.append(res_list_out)
 
         # if required, reduce to `series` input type
-        if series_seq_type == 0:
+        if series_seq_type == SeriesType.SINGLE:
             if last_points_only:
                 return residuals_out[0][0]
             else:
