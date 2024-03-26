@@ -36,7 +36,7 @@ import pandas as pd
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.metrics.metrics import METRIC_OUTPUT_TYPE, METRIC_TYPE
+from darts.metrics.metrics import METRIC_TYPE
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
@@ -1158,7 +1158,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only: bool = False,
         metric: Union[METRIC_TYPE, List[METRIC_TYPE]] = metrics.mape,
         reduction: Union[Callable[..., float], None] = np.mean,
-        n_jobs: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
         metric_kwargs: Optional[Dict[str, Any]] = None,
@@ -1269,23 +1268,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
             identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
-        metric_kwargs
-            Additional arguments passed to `metric()`. Will only pass
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
             When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
-        n_jobs
-            The number of jobs to run the metric computation in parallel. Parallel jobs are created only when
-            `historical_forecasts` contains multiple forecasts, parallelising operations regarding different
-            ``TimeSeries``. Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available
-            processors.
         verbose
             Whether to print progress.
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
+        metric_kwargs
+            Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
+            for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
+            each metric separately and only if they are present in the corresponding metric signature. Parameter
+            `'insample'` for scaled metrics (e.g. mase`, `rmsse`, ...) is ignored, as it is handled internally.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -1437,7 +1434,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if "insample" in metric_params:
                 kwargs["insample"] = series_gen
 
-            errors.append(metric_f(series_gen, forecasts_list, n_jobs=n_jobs, **kwargs))
+            errors.append(metric_f(series_gen, forecasts_list, **kwargs))
         errors = np.array(errors)
 
         # get errors for each input `series`
@@ -1766,9 +1763,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         retrain: Union[bool, int, Callable[..., bool]] = True,
         last_points_only: bool = True,
         metric: METRIC_TYPE = metrics.err,
-        n_jobs: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        metric_kwargs: Optional[Dict[str, Any]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
         values_only: bool = False,
@@ -1880,15 +1877,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             identical signature as Darts' "per time step" metrics, uses decorators
             :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
             and returns a metric per time step.
-        n_jobs
-            The number of jobs to run the metric computation in parallel. Parallel jobs are created only when
-            `historical_forecasts` contains multiple forecasts, parallelising operations regarding different
-            ``TimeSeries``. Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available
-            processors.
         verbose
             Whether to print progress.
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
+        metric_kwargs
+            Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
+            metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
+            reduction arguments `"series_reduction", "component_reduction", "time_reduction"`, and parameter
+            `'insample'` for scaled metrics (e.g. mase`, `rmsse`, ...), as they are handled internally.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -1909,22 +1906,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The outer residual list has length `len(series)`. The inner lists consist of the residuals from
             all possible series-specific historical forecasts.
         """
-        # remember input series type
-        series_seq_type = get_series_seq_type(series)
-
-        # wrap metric to bypass component reduction
-        metric_params = inspect.signature(metric).parameters
-        if (
-            "component_reduction" not in metric_params
-            or "time_reduction" not in metric_params
-        ):
-            raise_log(
-                ValueError(
-                    "`metric` function signature must have input parameters `component_reduction`, "
-                    "and `time_reduction`. It must be one of Darts 'per time step' metrics, such as "
-                    "`err`, `ae`, `ape`, ..."
-                )
-            )
+        # `residuals()` should return metrics per series, component and time step (no reduction)
+        metric_kwargs = copy.deepcopy(metric_kwargs) or {}
+        metric_kwargs["series_reduction"] = None
+        metric_kwargs["component_reduction"] = None
+        metric_kwargs["time_reduction"] = None
 
         historical_forecasts = historical_forecasts or self.historical_forecasts(
             series=series,
@@ -1945,21 +1931,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             overlap_end=False,
         )
 
-        def residuals_fn(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
-            return metric(
-                *args,
-                **kwargs,
-                component_reduction=None,
-            )
-
         residuals = self.backtest(
             series=series,
             historical_forecasts=historical_forecasts,
             last_points_only=last_points_only,
-            metric=residuals_fn,
+            metric=metric,
             reduction=None,
-            n_jobs=n_jobs,
+            metric_kwargs=metric_kwargs,
         )
+
+        # remember input series type
+        series_seq_type = get_series_seq_type(series)
 
         # convert forecasts and residuals to list of lists of series/arrays
         forecast_seq_type = get_series_seq_type(historical_forecasts)
@@ -1972,6 +1954,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             residuals = [residuals]
         if last_points_only:
             residuals = [[res] for res in residuals]
+
+        # sanity check residual output
+        try:
+            res, fc = residuals[0][0], historical_forecasts[0][0]
+            _ = np.reshape(res, (len(fc), fc.n_components, 1))
+        except Exception as err:
+            raise_log(
+                ValueError(
+                    f"`metric` function did not yield expected output. Make sure "
+                    f"to use one of Darts 'per time step' metrics, or a similar "
+                    f"custom metric. The following exception was raised: "
+                    f"{type(err).__name__}('{err}')"
+                ),
+                logger=logger,
+            )
 
         # process residuals
         residuals_out = []

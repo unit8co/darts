@@ -47,7 +47,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - `List[List[TimeSeries]]` A list of lists of historical forecasts for a sequence of `series` and `last_points_only=False`. For each series, and historical forecast, it contains the entire horizon `forecast_horizon`. The outer list is over the series provided in the input sequence, and the inner lists contain the historical forecasts for each series.
   - `ForecastingModel.backtest()`:
     - Metrics are now computed only once between all `series` and `historical_forecasts`, significantly speeding things up when using a large number of `series`.
-    - Added support for parallelizing the metric computation across historical forecasts with parameter `n_jobs`.  
+    - Added support for scaled metrics as `metric` (such as `ase`, `mase`, ...). No extra code required, backtest extracts the correct `insample` series for you.   
+    - Added support for passing additional metric arguments with parameter `metric_kwargs`. This allows for example parallelization of the metric computation with `n_jobs`, customize the metric reduction with `*_reduction`, specify seasonality `m` for scaled metrics, etc..  
     - 🔴 Improved backtest output consistency based on the type of input `series`, `historical_forecast`, and the applied backtest reduction:
       - `float`: A single backtest score for single uni/multivariate series, a single `metric` function and:
         - `historical_forecasts` generated with `last_points_only=True`

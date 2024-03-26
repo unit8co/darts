@@ -3,8 +3,8 @@ import itertools
 import numpy as np
 import pytest
 
+import darts.metrics as metrics
 from darts.logging import get_logger
-from darts.metrics import ape, err, mape
 from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
 from darts.tests.models.forecasting.test_regression_models import dummy_timeseries
 from darts.utils.timeseries_generation import constant_timeseries as ct
@@ -22,7 +22,7 @@ class TestResiduals:
         itertools.product(
             [True, False],
             [False, True],
-            [(err, (-1.0, -2.0)), (ape, (100.0, 100.0))],
+            [(metrics.err, (-1.0, -2.0)), (metrics.ape, (100.0, 100.0))],
         ),
     )
     def test_output_single_series_hfc_lpo_true(self, config):
@@ -76,7 +76,10 @@ class TestResiduals:
         itertools.product(
             [True, False],
             [False, True],
-            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [
+                (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
+                (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
+            ],
             [1, 2],
         ),
     )
@@ -140,7 +143,10 @@ class TestResiduals:
         "config",
         itertools.product(
             [True, False],
-            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [
+                (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
+                (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
+            ],
         ),
     )
     def test_output_multi_series_hfc_lpo_true(self, config):
@@ -195,7 +201,10 @@ class TestResiduals:
         "config",
         itertools.product(
             [True, False],
-            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [
+                (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
+                (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
+            ],
         ),
     )
     def test_output_multi_series_hfc_lpo_false(self, config):
@@ -252,7 +261,10 @@ class TestResiduals:
         "config",
         itertools.product(
             [True, False],
-            [(err, ((0.0, 0.0), (-1.0, -2.0))), (ape, ((0.0, 0.0), (100.0, 100.0)))],
+            [
+                (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
+                (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
+            ],
         ),
     )
     def test_output_multi_series_hfc_lpo_false_different_n_fcs(self, config):
@@ -317,12 +329,11 @@ class TestResiduals:
             _ = model.residuals(
                 series=y,
                 historical_forecasts=hfc,
-                metric=mape,
+                metric=metrics.mape,
                 last_points_only=True,
             )
         assert str(err.value).startswith(
-            "`metric` function signature must have input parameters "
-            "`component_reduction`, and `time_reduction`"
+            "`metric` function did not yield expected output."
         )
 
     def test_forecasting_residuals_nocov_output(self):
@@ -491,3 +502,77 @@ class TestResiduals:
 
         with pytest.raises(ValueError):
             model.residuals(series, future_covariates=future_covariates)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                metrics.ase,
+                metrics.sse,
+            ],
+            [1, 2],
+        ),
+    )
+    def test_scaled_metrics(self, config):
+        """Tests residuals for scaled metrics based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        metric, m = config
+        y = lt(length=20)
+        hfc = lt(length=10, start=y.start_time() + 10 * y.freq)
+        y = [y, y]
+        hfc = [[hfc, hfc], [hfc]]
+
+        model = NaiveDrift()
+        bts = model.residuals(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=False,
+            metric_kwargs={"m": m},
+            values_only=True,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+
+        bt_expected = metric(y[0], hfc[0][0], insample=y[0], m=m)
+        bt_expected = np.reshape(bt_expected, (len(hfc[0][0]), y[0].n_components, 1))
+        for bt_list in bts:
+            for bt in bt_list:
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+    def test_metric_kwargs(self):
+        """Tests residuals with different metric_kwargs based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        y = lt(length=20)
+        y = y.stack(y + 1.0)
+        hfc = lt(length=10, start=y.start_time() + 10 * y.freq)
+        hfc = hfc.stack(hfc + 1.0)
+        y = [y, y]
+        hfc = [[hfc, hfc], [hfc]]
+
+        model = NaiveDrift()
+        # reduction `metric_kwargs` are bypassed, n_jobs not
+        bts = model.residuals(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metrics.ae,
+            last_points_only=False,
+            metric_kwargs={
+                "component_reduction": np.median,
+                "time_reduction": np.mean,
+                "n_jobs": -1,
+            },
+            values_only=True,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        bt_expected = metrics.ae(
+            y[0],
+            hfc[0][0],
+            series_reduction=None,
+            time_reduction=None,
+            component_reduction=None,
+        )[:, :, None]
+        for bt_list in bts:
+            for bt in bt_list:
+                np.testing.assert_array_almost_equal(bt, bt_expected)

@@ -1127,7 +1127,11 @@ class TestBacktesting:
             metric=metric,
             last_points_only=False,
             reduction=None,
-            metric_kwargs={"component_reduction": np.median, "time_reduction": np.mean},
+            metric_kwargs={
+                "component_reduction": np.median,
+                "time_reduction": np.mean,
+                "n_jobs": -1,
+            },
         )
         assert isinstance(bts, list) and len(bts) == 2
 
