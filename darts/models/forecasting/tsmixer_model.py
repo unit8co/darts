@@ -136,25 +136,23 @@ class FeatureMixing(nn.Module):
         """
         super().__init__()
 
+        self.projection = (
+            nn.Linear(input_dim, output_dim)
+            if input_dim != output_dim
+            else nn.Identity()
+        )
         self.norm_before = (
             norm_type((sequence_length, input_dim))
             if normalize_before
             else nn.Identity()
         )
+        self.fc1 = nn.Linear(input_dim, ff_size)
+        self.activation = activation
+        self.dropout = MonteCarloDropout(dropout)
+        self.fc2 = nn.Linear(ff_size, output_dim)
         self.norm_after = (
             norm_type((sequence_length, output_dim))
             if not normalize_before
-            else nn.Identity()
-        )
-
-        self.activation = activation
-        self.dropout = MonteCarloDropout(dropout)
-        self.fc1 = nn.Linear(input_dim, ff_size)
-        self.fc2 = nn.Linear(ff_size, output_dim)
-
-        self.projection = (
-            nn.Linear(input_dim, output_dim)
-            if input_dim != output_dim
             else nn.Identity()
         )
 
@@ -482,23 +480,21 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # in case there are no future covariates, the feature_mixing_future layer
         # does not provide any output, so the input to the mixer layers is
         # the same as the output of the feature_mixing_hist layer
-        if self.future_cov_dim <= 0:
-            channel_input_multiplier = 1
-        else:
-            channel_input_multiplier = 2
-        channels = [channel_input_multiplier * hidden_size] + [hidden_size] * blocks
+        input_dim = 2 * hidden_size if self.future_cov_dim > 0 else hidden_size
 
-        return nn.ModuleList(
-            [
-                ConditionalMixerLayer(
-                    input_dim=in_ch,
-                    output_dim=out_ch,
-                    sequence_length=prediction_length,
-                    **kwargs,
-                )
-                for in_ch, out_ch in zip(channels[:-1], channels[1:])
-            ]
-        )
+        mixer_layers = nn.ModuleList()
+        for _ in range(blocks):
+            layer = ConditionalMixerLayer(
+                input_dim=input_dim,
+                output_dim=hidden_size,
+                sequence_length=prediction_length,
+                **kwargs,
+            )
+            mixer_layers.append(layer)
+            # After the first layer, input_dim should match the output_dim of the layers
+            input_dim = hidden_size
+
+        return mixer_layers
 
     @io_processor
     def forward(
