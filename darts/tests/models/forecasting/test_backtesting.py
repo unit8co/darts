@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import darts.metrics as metrics
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset, MonthlyMilkDataset
 from darts.logging import get_logger
-from darts.metrics import mape, r2_score
 from darts.models import (
     ARIMA,
     FFT,
@@ -63,14 +63,14 @@ def compare_best_against_random(model_class, params, series, stride=1):
         series,
         forecast_horizon=10,
         stride=stride,
-        metric=mape,
+        metric=metrics.mape,
         start=series.time_index[-21],
     )
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index[-10])
     best_model_2, _, _ = model_class.gridsearch(
-        params, train, val_series=val, metric=mape
+        params, train, val_series=val, metric=metrics.mape
     )
 
     # instantiate model with random parameters from 'params'
@@ -90,10 +90,10 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
     # perform train/val evaluation on both models
     best_model_2.fit(train)
-    best_score_2 = mape(best_model_2.predict(len(val)), series)
+    best_score_2 = metrics.mape(best_model_2.predict(len(val)), series)
     random_model = model_class(**random_param_choice)
     random_model.fit(train)
-    random_score_2 = mape(random_model.predict(len(val)), series)
+    random_score_2 = metrics.mape(random_model.predict(len(val)), series)
 
     # check whether best models are at least as good as random models
     expanding_window_ok = best_score_1 <= random_score_1
@@ -109,7 +109,7 @@ class TestBacktesting:
         itertools.product(
             [True, False],
             [False, True],
-            [[mape], [mape, mape]],
+            [[metrics.mape], [metrics.mape, metrics.mape]],
         ),
     )
     def test_output_single_series_hfc_lpo_true(self, config):
@@ -185,7 +185,7 @@ class TestBacktesting:
         itertools.product(
             [True, False],
             [False, True],
-            [[mape], [mape, mape]],
+            [[metrics.mape], [metrics.mape, metrics.mape]],
             [1, 2],
         ),
     )
@@ -269,7 +269,7 @@ class TestBacktesting:
         "config",
         itertools.product(
             [True, False],
-            [[mape], [mape, mape]],
+            [[metrics.mape], [metrics.mape, metrics.mape]],
         ),
     )
     def test_output_multi_series_hfc_lpo_true(self, config):
@@ -340,7 +340,7 @@ class TestBacktesting:
         "config",
         itertools.product(
             [True, False],
-            [[mape], [mape, mape]],
+            [[metrics.mape], [metrics.mape, metrics.mape]],
         ),
     )
     def test_output_multi_series_hfc_lpo_false(self, config):
@@ -406,7 +406,7 @@ class TestBacktesting:
         "config",
         itertools.product(
             [True, False],
-            [[mape], [mape, mape]],
+            [[metrics.mape], [metrics.mape, metrics.mape]],
         ),
     )
     def test_output_multi_series_hfc_lpo_false_different_n_fcs(self, config):
@@ -481,7 +481,7 @@ class TestBacktesting:
             linear_series,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         assert score == 1.0
 
@@ -497,7 +497,7 @@ class TestBacktesting:
             historical_forecasts=forecasts,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         assert score == precalculated_forecasts_score
 
@@ -507,7 +507,7 @@ class TestBacktesting:
             train_length=10000,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         assert score == 1.0
 
@@ -517,7 +517,7 @@ class TestBacktesting:
             train_length=10000,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=[r2_score, mape],
+            metric=[metrics.r2_score, metrics.mape],
         )
         np.testing.assert_almost_equal(score, np.array([1.0, 0.0]))
 
@@ -528,12 +528,12 @@ class TestBacktesting:
                 train_length=2,
                 start=pd.Timestamp("20000201"),
                 forecast_horizon=3,
-                metric=r2_score,
+                metric=metrics.r2_score,
             )
 
         # test that it also works for time series that are not Datetime-indexed
         score = NaiveDrift().backtest(
-            linear_series_int, start=0.7, forecast_horizon=3, metric=r2_score
+            linear_series_int, start=0.7, forecast_horizon=3, metric=metrics.r2_score
         )
         assert score == 1.0
 
@@ -719,7 +719,7 @@ class TestBacktesting:
             future_covariates=features,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
             last_points_only=True,
         )
         assert score > 0.9
@@ -733,7 +733,7 @@ class TestBacktesting:
             start=pd.Timestamp("20000201"),
             train_length=20,
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
             last_points_only=True,
         )
         assert score > 0.9
@@ -746,7 +746,7 @@ class TestBacktesting:
             future_covariates=features,
             start=30,
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         assert score > 0.9
 
@@ -757,7 +757,7 @@ class TestBacktesting:
             future_covariates=features,
             start=0.5,
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         assert score > 0.9
 
@@ -772,7 +772,7 @@ class TestBacktesting:
 
         # Using RandomForest's start default value
         score = RandomForest(lags=12, random_state=0).backtest(
-            series=target, forecast_horizon=3, start=0.5, metric=r2_score
+            series=target, forecast_horizon=3, start=0.5, metric=metrics.r2_score
         )
         assert score > 0.95
 
@@ -784,7 +784,7 @@ class TestBacktesting:
             future_covariates=features_multivariate,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         assert score > 0.94
 
@@ -797,7 +797,7 @@ class TestBacktesting:
             future_covariates=features_multivariate,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         logger.info(
             "Score for multivariate feature test with train window 35 is: ", score_35
@@ -813,7 +813,7 @@ class TestBacktesting:
             future_covariates=features_multivariate,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
         )
         logger.info(
             "Score for multivariate feature test with train window 45 is: ", score_45
@@ -829,7 +829,7 @@ class TestBacktesting:
             future_covariates=features_multivariate,
             start=pd.Timestamp("20000201"),
             forecast_horizon=3,
-            metric=r2_score,
+            metric=metrics.r2_score,
             last_points_only=True,
             stride=3,
         )
@@ -1020,7 +1020,9 @@ class TestBacktesting:
             "kernel_size": [2, 3, 4],
             "pl_trainer_kwargs": [tfm_kwargs["pl_trainer_kwargs"]],
         }
-        TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape)
+        TCNModel.gridsearch(
+            tcn_params, dummy_series, forecast_horizon=3, metric=metrics.mape
+        )
 
     @pytest.mark.parametrize(
         "model_cls,parameters",
@@ -1064,3 +1066,73 @@ class TestBacktesting:
             assert str(msg.value).startswith(
                 "Model cannot be fit/trained with `future_covariates`."
             )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                metrics.ase,
+                metrics.mase,
+            ],
+            [1, 2],
+        ),
+    )
+    def test_scaled_metrics(self, config):
+        """Tests backtest for scaled metrics based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        metric, m = config
+        y = lt(length=20)
+        hfc = lt(length=10, start=y.start_time() + 10 * y.freq)
+        y = [y, y]
+        hfc = [[hfc, hfc], [hfc]]
+
+        model = NaiveDrift()
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=False,
+            reduction=None,
+            metric_kwargs={"m": m},
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+
+        bt_expected = metric(y[0], hfc[0][0], insample=y[0], m=m)
+        for bt_list in bts:
+            for bt in bt_list:
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.mae,  # mae does not support time_reduction
+            [metrics.mae, metrics.ae],  # ae supports time_reduction
+        ],
+    )
+    def test_metric_kwargs(self, metric):
+        """Tests backtest with different metric_kwargs based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        y = lt(length=20)
+        y = y.stack(y + 1.0)
+        hfc = lt(length=10, start=y.start_time() + 10 * y.freq)
+        hfc = hfc.stack(hfc + 1.0)
+        y = [y, y]
+        hfc = [[hfc, hfc], [hfc]]
+
+        model = NaiveDrift()
+        # backtest should only pass `metric_kwargs` parameters to metrics that support them
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=False,
+            reduction=None,
+            metric_kwargs={"component_reduction": np.median, "time_reduction": np.mean},
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        bt_expected = metrics.mae(y[0], hfc[0][0], component_reduction=np.median)
+        for bt_list in bts:
+            for bt in bt_list:
+                np.testing.assert_array_almost_equal(bt, bt_expected)

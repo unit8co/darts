@@ -1161,6 +1161,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         n_jobs: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        metric_kwargs: Optional[Dict[str, Any]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
@@ -1268,6 +1269,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
             identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
+        metric_kwargs
+            Additional arguments passed to `metric()`. Will only pass
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
             When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
@@ -1419,9 +1422,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # extract metrics per metric and series, and optionally reduce
         # errors shape `(n metrics, n total historical forecasts)`
         series_gen = SeriesGenerator()
-        errors = np.array(
-            [metric_f(series_gen, forecasts_list, n_jobs=n_jobs) for metric_f in metric]
-        )
+        errors = []
+        for metric_f in metric:
+            # add user supplied metric kwargs
+            kwargs = {}
+            metric_params = inspect.signature(metric_f).parameters
+            if metric_kwargs:
+                kwargs = {
+                    k: metric_kwargs[k]
+                    for k in set(metric_kwargs).intersection(metric_params)
+                }
+
+            # scaled metrics require `insample` series
+            if "insample" in metric_params:
+                kwargs["insample"] = series_gen
+
+            errors.append(metric_f(series_gen, forecasts_list, n_jobs=n_jobs, **kwargs))
+        errors = np.array(errors)
 
         # get errors for each input `series`
         backtest_list = []

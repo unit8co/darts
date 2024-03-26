@@ -336,7 +336,7 @@ def _get_values_or_raise(
             )
             - 1
         )
-        if end > 0 or abs(end) >= len(series_b):
+        if end > 0 or abs(end) >= len(series_a):
             raise_log(
                 ValueError(
                     "The `insample` series must start before the `pred_series` and "
