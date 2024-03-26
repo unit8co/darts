@@ -762,11 +762,6 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
     ) -> Self:
-        static_covs = (
-            pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-            if extract_static_cov_cols
-            else None
-        )
         split = group[extract_value_cols]
 
         static_cov_vals = (
@@ -810,7 +805,11 @@ class TimeSeries:
             fill_missing_dates=fill_missing_dates,
             freq=freq,
             fillna_value=fillna_value,
-            static_covariates=static_covs,
+            static_covariates=(
+                pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                if extract_static_cov_cols
+                else None
+            ),
         )
 
     @classmethod
@@ -825,7 +824,7 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         drop_group_cols: Optional[Union[List[str], str]] = None,
-        n_jobs: Optional[int] = None,
+        n_jobs: Optional[int] = 1,
         verbose: Optional[bool] = False,
     ) -> List[Self]:
         """

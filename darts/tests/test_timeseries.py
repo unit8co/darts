@@ -94,6 +94,7 @@ class TestTimeSeries:
                 "value": np.float32(range(10)),
                 "group1": ["a"] * 5 + ["b"] * 5,
                 "group2": ["c"] * 5 + ["d"] * 5,
+                "static": np.float32([1] * 5 + [2] * 5),
             },
             index=pd.Series(
                 pd.date_range("20130101", "20130105").append(
@@ -108,6 +109,7 @@ class TestTimeSeries:
             df=pd_df,
             group_cols=["group1", "group2"],
             value_cols="value",
+            static_cols="static",
             n_jobs=-1,
         )
 
