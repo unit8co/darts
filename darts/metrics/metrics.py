@@ -15,7 +15,7 @@ import numpy as np
 from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.logging import get_logger, raise_log
-from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils import _build_tqdm_iterator, _parallel_apply, n_steps_between
 from darts.utils.ts_utils import get_series_seq_type, series2seq
 
 logger = get_logger(__name__)
@@ -206,14 +206,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     ),
                     logger=logger,
                 )
-
-            if not insample.end_time() + insample.freq == pred_series.start_time():
-                raise_log(
-                    ValueError(
-                        "The pred_series must be the forecast of the insample series"
-                    ),
-                    logger=logger,
-                )
             input_series += (insample,)
             num_series_in_args += 1
 
@@ -277,18 +269,18 @@ def _get_values_or_raise(
     intersect: bool,
     stochastic_quantile: Optional[float] = 0.5,
     remove_nan_union: bool = False,
+    is_insample: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns the processed numpy values of two time series. Processing can be customized with arguments
     `intersect, stochastic_quantile, remove_nan_union`.
 
-    Raises a ValueError if the two time series (or their intersection) do not have the same time index.
-
     Parameters
     ----------
     series_a
-        A deterministic ``TimeSeries`` instance (the actual series).
+        A deterministic ``TimeSeries`` instance. If `is_insample=False`, it is the `actual_series`.
+        Otherwise, it is the `insample` series.
     series_b
-        A deterministic or stochastic ``TimeSeries`` instance (the predicted series).
+        A deterministic or stochastic ``TimeSeries`` instance (the predictions `pred_series`).
     intersect
         A boolean for whether to only consider the time intersection between `series_a` and `series_b`
     stochastic_quantile
@@ -296,7 +288,14 @@ def _get_values_or_raise(
         or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
     remove_nan_union
         By setting `remove_non_union` to True, sets all values from `series_a` and `series_b` to `np.nan` at indices
-        where any of the two series contain a NaN value.
+        where any of the two series contain a NaN value. Only effective when `is_insample=False`.
+    is_insample
+        Whether `series_a` corresponds to the `insample` series for scaled metrics.
+
+    Raises
+    ------
+    ValueError
+        If `is_insample=False` and the two time series (or their intersection) do not have the same time index.
     """
 
     if not series_a.width == series_b.width:
@@ -308,27 +307,49 @@ def _get_values_or_raise(
     if not isinstance(intersect, bool):
         raise_log(ValueError("The intersect parameter must be a bool"), logger=logger)
 
-    make_copy = True
-    if series_a.has_same_time_as(series_b) or not intersect:
-        vals_a_common = series_a.all_values(copy=make_copy)
-        vals_b_common = series_b.all_values(copy=make_copy)
+    make_copy = False
+    if not is_insample:
+        # get the time intersection and values of the two series (corresponds to `actual_series` and `pred_series`
+        if series_a.has_same_time_as(series_b) or not intersect:
+            vals_a_common = series_a.all_values(copy=make_copy)
+            vals_b_common = series_b.all_values(copy=make_copy)
+        else:
+            vals_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
+            vals_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
+
+        if not len(vals_a_common) == len(vals_b_common):
+            raise_log(
+                ValueError(
+                    "The two time series (or their intersection) "
+                    "must have the same time index."
+                ),
+                logger=logger,
+            )
+
+        vals_b_det = _get_values(vals_b_common, stochastic_quantile=stochastic_quantile)
     else:
-        vals_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
-        vals_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
-
-    if not len(vals_a_common) == len(vals_b_common):
-        raise_log(
-            ValueError(
-                "The two time series (or their intersection) "
-                "must have the same time index."
-            ),
-            logger=logger,
+        # for `insample` series we extract only values up until before start of `pred_series`
+        # find how many steps `insample` overlaps into `series_b`
+        end = (
+            n_steps_between(
+                end=series_b.start_time(), start=series_a.end_time(), freq=series_a.freq
+            )
+            - 1
         )
-
+        if end > 0 or abs(end) >= len(series_b):
+            raise_log(
+                ValueError(
+                    "The `insample` series must start before the `pred_series` and "
+                    "extend at least until one time step before the start of `pred_series`."
+                ),
+                logger=logger,
+            )
+        end = end or None
+        vals_a_common = series_a.all_values(copy=make_copy)[:end]
+        vals_b_det = None
     vals_a_det = _get_values(vals_a_common, stochastic_quantile=stochastic_quantile)
-    vals_b_det = _get_values(vals_b_common, stochastic_quantile=stochastic_quantile)
 
-    if not remove_nan_union:
+    if not remove_nan_union or is_insample:
         return vals_a_det, vals_b_det
 
     b_is_deterministic = bool(len(vals_b_det.shape) == 2)
@@ -407,6 +428,7 @@ def _get_reduction(
 
 def _get_error_scale(
     insample: TimeSeries,
+    pred_series: TimeSeries,
     m: int,
     metric: str,
 ):
@@ -418,8 +440,8 @@ def _get_error_scale(
         )
 
     # `x_t` are the true `y` values before the start of `y_pred`
-    _, x_t = _get_values_or_raise(
-        insample, insample, intersect=False, remove_nan_union=False
+    x_t, _ = _get_values_or_raise(
+        insample, pred_series, intersect=False, remove_nan_union=False, is_insample=True
     )
     diff = x_t[m:] - x_t[:-m]
     if metric == "mae":
@@ -739,7 +761,7 @@ def ase(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
+    m: int = 1,
     intersect: bool = True,
     *,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
@@ -825,7 +847,7 @@ def ase(
     ----------
     .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
-    error_scale = _get_error_scale(insample, m=m, metric="mae")
+    error_scale = _get_error_scale(insample, pred_series, m=m, metric="mae")
     errors = _get_wrapped_metric(ae)(
         actual_series,
         pred_series,
@@ -840,7 +862,7 @@ def mase(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
+    m: int = 1,
     intersect: bool = True,
     *,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
@@ -1079,7 +1101,7 @@ def sse(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
+    m: int = 1,
     intersect: bool = True,
     *,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
@@ -1165,7 +1187,7 @@ def sse(
     ----------
     .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
-    error_scale = _get_error_scale(insample, m=m, metric="mse")
+    error_scale = _get_error_scale(insample, pred_series, m=m, metric="mse")
     errors = _get_wrapped_metric(se)(
         actual_series,
         pred_series,
@@ -1180,7 +1202,7 @@ def msse(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
+    m: int = 1,
     intersect: bool = True,
     *,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
@@ -1346,7 +1368,7 @@ def rmsse(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     insample: Union[TimeSeries, Sequence[TimeSeries]],
-    m: Optional[int] = 1,
+    m: int = 1,
     intersect: bool = True,
     *,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
@@ -1426,7 +1448,7 @@ def rmsse(
     ----------
     .. [1] https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/
     """
-    error_scale = _get_error_scale(insample, m=m, metric="rmse")
+    error_scale = _get_error_scale(insample, pred_series, m=m, metric="rmse")
     errors = _get_wrapped_metric(rmse)(
         actual_series,
         pred_series,

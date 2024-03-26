@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - Time aggregated metric `merr()` (Mean Error)
       - Time aggregated scaled metrics  `rmsse()`, and `msse()`: The (Root) Mean Squared Scaled Error.
       - "Per time step" metrics that return a metric score per time step: `err()` (Error), `ae()` (Absolute Error), `se()` (Squared Error), `sle()` (Squared Log Error), `ase()` (Absolute Scaled Error), `sse` (Squared Scaled Error), `ape()` (Absolute Percentage Error), `sape()` (symmetric Absolute Percentage Error), `arre()` (Absolute Ranged Relative Error), `ql` (Quantile Loss)
+    - All scaled metrics now accept `insample` series that can be overlapping into `pred_series` (before that had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you. 
     - Improvements to the documentation:
       - Added a summary list of all metrics to the [metrics documentation page](https://unit8co.github.io/darts/generated_api/darts.metrics.html)
       - Standardized the documentation of each metric (added formula, improved return documentation, ...) 
