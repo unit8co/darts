@@ -37,7 +37,6 @@ from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
     _get_historical_forecast_predict_index,
@@ -46,12 +45,13 @@ from darts.utils.historical_forecasts.utils import (
     _historical_forecasts_sanitize_kwargs,
     _reconciliate_historical_time_indices,
 )
+from darts.utils.parallel import _build_tqdm_iterator, _parallel_apply
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
     generate_index,
 )
-from darts.utils.utils import get_single_series, series2seq
+from darts.utils.utils import _with_sanity_checks, get_single_series, series2seq
 
 logger = get_logger(__name__)
 

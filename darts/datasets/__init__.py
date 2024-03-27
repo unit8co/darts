@@ -14,7 +14,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
-from darts.utils.utils import _build_tqdm_iterator
+from darts.utils.parallel import _build_tqdm_iterator
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
