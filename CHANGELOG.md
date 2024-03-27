@@ -39,7 +39,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - New method `with_times_and_values()`, which returns a new series with a new time index and new values but with identical columns and metadata as the series called from (static covariates, hierarchy).
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.
   - Method `with_values()` now also acts on array-like `values` rather than only on numpy arrays.
-
+- Improvements to `TorchForecastingModel`: [#2295](https://github.com/unit8co/darts/pull/2295) by [Bohdan Bilonoh](https://github.com/BohdanBilonoh).
+  - Added `pin_memory`, `prefetch_factor` and `persistent_workers` parameters to `fit()` and `predict()` methods of PyTorch-based models,
 
 **Fixed**
 - Fixed a bug when using a `RegressionModel` (that supports validation series) with a validation set, and encoders and/or component-specific lags, where the encodings and component specific lags were not added to the set. [#2383](https://github.com/unit8co/darts/pull/2383) by [Dennis Bader](https://github.com/dennisbader).
