@@ -26,7 +26,7 @@ from __future__ import annotations
 import operator
 from collections.abc import Callable
 from functools import reduce
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Type, Union
 
 import torch
 from torch import nn
@@ -88,7 +88,6 @@ class TimeBatchNorm2d(nn.BatchNorm1d):
             raise ValueError(
                 f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."
             )
-
         x = x.reshape(x.shape[0], -1, 1)
         x = super().forward(x)
         x = x.reshape(x.shape[0], self.num_time_steps, self.num_channels)
@@ -105,7 +104,7 @@ class FeatureMixing(nn.Module):
         activation: Callable[[torch.Tensor], torch.Tensor],
         dropout: float,
         normalize_before: bool,
-        norm_type: type[nn.Module],
+        norm_type: Type[nn.Module],
     ) -> None:
         """A module for feature mixing with flexibility in normalization and activation based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
@@ -180,7 +179,7 @@ class ConditionalFeatureMixing(nn.Module):
         activation: Callable,
         dropout: float,
         normalize_before: bool,
-        norm_type: type[nn.Module],
+        norm_type: Type[nn.Module],
     ) -> None:
         """Conditional feature mixing module that incorporates static features based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
@@ -212,12 +211,14 @@ class ConditionalFeatureMixing(nn.Module):
         """
         super().__init__()
         self.static_dim = static_dim
+        self.fr_static: Optional[nn.Linear] = nn.Linear(static_dim, output_dim)
+
         if self.static_dim != 0:
-            self.fr_static: Optional[nn.Linear] = nn.Linear(static_dim, output_dim)
             feature_mixing_input = input_dim + output_dim
+            self.forward = self._forward_with_static
         else:
-            self.fr_static = None
             feature_mixing_input = input_dim
+            self.forward = self._forward_without_static
 
         self.fm = FeatureMixing(
             sequence_length=sequence_length,
@@ -230,14 +231,17 @@ class ConditionalFeatureMixing(nn.Module):
             norm_type=norm_type,
         )
 
-    def forward(
-        self, x: torch.Tensor, x_static: Optional[torch.Tensor]
+    def _forward_with_static(
+        self, x: torch.Tensor, x_static: torch.Tensor
     ) -> torch.Tensor:
-        if self.fr_static is None:
-            return self.fm(x)
         v = self.fr_static(x_static)
         v = v.repeat(1, x.size(1) // v.size(1), 1)
         return self.fm(torch.cat([x, v], dim=-1))
+
+    def _forward_without_static(
+        self, x: torch.Tensor, x_static: torch.Tensor
+    ) -> torch.Tensor:
+        return self.fm(x)
 
 
 class TimeMixing(nn.Module):
@@ -247,7 +251,7 @@ class TimeMixing(nn.Module):
         input_dim: int,
         activation: Callable,
         dropout: float,
-        norm_type: type[nn.Module],
+        norm_type: Type[nn.Module],
     ) -> None:
         """Applies a transformation over the time dimension of a sequence based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
@@ -298,7 +302,7 @@ class ConditionalMixerLayer(nn.Module):
         activation: Callable,
         dropout: float,
         normalize_before: bool,
-        norm_type: type[nn.Module],
+        norm_type: Type[nn.Module],
     ) -> None:
         """Conditional mix layer combining time and feature mixing with static context based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
