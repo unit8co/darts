@@ -35,7 +35,7 @@ from darts.explainability import TFTExplainabilityResult
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 try:
     from typing import Literal

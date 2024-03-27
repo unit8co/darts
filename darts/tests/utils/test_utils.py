@@ -3,8 +3,9 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.utils import _with_sanity_checks, retain_period_common_to_all
+from darts.utils import _with_sanity_checks
 from darts.utils.missing_values import extract_subseries
+from darts.utils.ts_utils import retain_period_common_to_all
 
 
 class TestUtils:

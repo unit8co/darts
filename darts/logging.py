@@ -2,6 +2,7 @@ import logging
 import os
 import time
 import warnings
+from typing import NoReturn
 
 
 def get_logger(name):
@@ -104,7 +105,9 @@ def raise_if(
     raise_if_not(not condition, message, logger)
 
 
-def raise_log(exception: Exception, logger: logging.Logger = get_logger("main_logger")):
+def raise_log(
+    exception: Exception, logger: logging.Logger = get_logger("main_logger")
+) -> NoReturn:
     """
     Can be used to replace "raise" when throwing an exception to ensure the logging
     of the exception. After logging it, the exception is raised.

@@ -29,6 +29,7 @@ from darts.models import (
 )
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -1510,12 +1511,12 @@ class TestRegressionModels:
         error_past_only = rmse(
             [target_test_1, target_test_2],
             prediction_past_only,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
         error_both = rmse(
             [target_test_1, target_test_2],
             prediction_past_and_future,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
 
         assert error_past_only > error_both
@@ -1540,7 +1541,7 @@ class TestRegressionModels:
         error_both_multi_ts = rmse(
             [target_test_1, target_test_2],
             prediction_past_and_future_multi_ts,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
 
         assert error_both > error_both_multi_ts
@@ -2324,7 +2325,7 @@ class TestRegressionModels:
         # past and future covariates longer than target
         n_comp = 2
         covs = TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=pd.Timestamp("1999-01-01"),
                 end=pd.Timestamp("2002-12-01"),
                 freq="MS",

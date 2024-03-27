@@ -8,6 +8,7 @@ from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import NotImportedModule, Prophet
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -145,7 +146,7 @@ class TestProphet:
         model = Prophet(growth="logistic", cap=1)
 
         # Create timeseries with logistic function
-        times = tg.generate_index(
+        times = generate_index(
             pd.Timestamp("20200101"), pd.Timestamp("20210101"), freq="D"
         )
         values = np.linspace(-10, 10, len(times))

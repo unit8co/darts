@@ -12,7 +12,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_log
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 try:
     from typing import Literal

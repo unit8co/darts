@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -91,8 +93,14 @@ class TestTimeSeriesMultivariate:
     def test_drop(self):
         TestTimeSeries.helper_test_drop(self, self.series1)
 
-    def test_intersect(self):
-        TestTimeSeries.helper_test_intersect(self, self.series1)
+    @pytest.mark.parametrize(
+        "config", itertools.product(["D", "2D", 1, 2], [False, True])
+    )
+    def test_intersect(self, config):
+        freq, mixed_freq = config
+        TestTimeSeries.helper_test_intersect(
+            self, freq, mixed_freq, is_univariate=False
+        )
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)
