@@ -1380,12 +1380,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             expected_seq_type = (
                 series_seq_type if last_points_only else series_seq_type + 1
             )
-            if expected_seq_type > 0:
-                error_msg += f"`historical_forecasts` of type {SeriesType.SEQ} with length n={len(series)}."
-            else:
+            if expected_seq_type == SeriesType.SINGLE:
                 error_msg += (
-                    f"a single `historical_forecasts` of type {SeriesType.SINGLE}."
+                    f"a single `historical_forecasts` of type {expected_seq_type}."
                 )
+            else:
+                error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."
             raise_log(
                 ValueError(error_msg),
                 logger=logger,
@@ -1985,15 +1985,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # if required, reduce to `series` input type
         if series_seq_type == SeriesType.SINGLE:
-            if last_points_only:
-                return residuals_out[0][0]
-            else:
-                return residuals_out[0]
+            return residuals_out[0][0] if last_points_only else residuals_out[0]
 
-        if last_points_only:
-            return [res for res_list in residuals_out for res in res_list]
-
-        return residuals_out
+        return (
+            [res for res_list in residuals_out for res in res_list]
+            if last_points_only
+            else residuals_out
+        )
 
     def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter

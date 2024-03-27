@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -32,7 +32,7 @@ def _optimized_historical_forecasts_last_points_only(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     **kwargs,
-) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[List[TimeSeries]]]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
@@ -187,7 +187,7 @@ def _optimized_historical_forecasts_all_points(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     **kwargs,
-) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[List[TimeSeries]]]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = False.
 

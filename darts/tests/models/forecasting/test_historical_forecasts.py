@@ -1007,10 +1007,10 @@ class TestHistoricalforecast:
                         stride=stride,
                         forecast_horizon=forecast_horizon,
                     )
-                    # # pack the output to generalize the tests
-                    # if last_points_only:
-                    #     hist_fct = [hist_fct]
-                    #     opti_hist_fct = [opti_hist_fct]
+                    # pack the output to generalize the tests
+                    if last_points_only:
+                        hist_fct = [hist_fct]
+                        opti_hist_fct = [opti_hist_fct]
 
                     for fct, opti_fct in zip(hist_fct, opti_hist_fct):
                         assert (fct.time_index == opti_fct.time_index).all()

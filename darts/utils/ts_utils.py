@@ -160,7 +160,6 @@ def seq2series(
         `ts` if `ts` if is not a single element TimeSeries sequence, else `ts[0]`
 
     """
-
     return series2seq(ts, seq_type_out=SeriesType.SINGLE)
 
 
@@ -186,6 +185,7 @@ def get_single_series(
     """
     seq_type = get_series_seq_type(ts)
     if seq_type <= SeriesType.SINGLE:
+        # `None` and `TimeSeries`
         return ts
     elif seq_type == SeriesType.SEQ:
         return ts[0]

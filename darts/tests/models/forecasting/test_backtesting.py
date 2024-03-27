@@ -142,6 +142,19 @@ class TestBacktesting:
             error_msg = "Expected `historical_forecasts` of type `Sequence[TimeSeries]`"
         assert str(err.value).startswith(error_msg)
 
+        # number of forecasts do not match number of `series`
+        if series_as_list:
+            with pytest.raises(ValueError) as err:
+                _ = model.backtest(
+                    series=y,
+                    historical_forecasts=hfc + y,
+                    reduction=None,
+                    metric=metric,
+                    last_points_only=True,
+                )
+            error_msg = f"expected `historical_forecasts` of type `Sequence[TimeSeries]` with length n={len(y)}."
+            assert str(err.value).endswith(error_msg)
+
         # no reduction
         bt = model.backtest(
             series=y,
@@ -222,6 +235,22 @@ class TestBacktesting:
             error_msg = "Expected `historical_forecasts` of type `TimeSeries`"
         assert str(err.value).startswith(error_msg)
 
+        # number of forecasts do not match number of `series`
+        if series_as_list:
+            with pytest.raises(ValueError) as err:
+                _ = model.backtest(
+                    series=y,
+                    historical_forecasts=hfc + [y],
+                    reduction=None,
+                    metric=metric,
+                    last_points_only=False,
+                )
+            error_msg = (
+                f"expected `historical_forecasts` of type `Sequence[Sequence[TimeSeries]]`"
+                f" with length n={len(y)}."
+            )
+            assert str(err.value).endswith(error_msg)
+
         # no reduction
         bt = model.backtest(
             series=y,
@@ -300,6 +329,18 @@ class TestBacktesting:
         )
         assert str(err.value).startswith(error_msg)
 
+        # number of forecasts do not match number of `series`
+        with pytest.raises(ValueError) as err:
+            _ = model.backtest(
+                series=y,
+                historical_forecasts=hfc + [y[0]],
+                reduction=None,
+                metric=metric,
+                last_points_only=True,
+            )
+        error_msg = f"expected `historical_forecasts` of type `Sequence[TimeSeries]` with length n={len(y)}."
+        assert str(err.value).endswith(error_msg)
+
         # no reduction
         bt = model.backtest(
             series=y,
@@ -370,6 +411,18 @@ class TestBacktesting:
             )
         error_msg = "Expected `historical_forecasts` of type `Sequence[TimeSeries]`"
         assert str(err.value).startswith(error_msg)
+
+        # number of forecasts do not match number of `series`
+        with pytest.raises(ValueError) as err:
+            _ = model.backtest(
+                series=y,
+                historical_forecasts=hfc + [[y[0]]],
+                reduction=None,
+                metric=metric,
+                last_points_only=False,
+            )
+        error_msg = f"expected `historical_forecasts` of type `Sequence[Sequence[TimeSeries]]` with length n={len(y)}."
+        assert str(err.value).endswith(error_msg)
 
         # no reduction
         bt = model.backtest(
@@ -604,7 +657,7 @@ class TestBacktesting:
                 output_chunk_length=1,
                 batch_size=1,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             # cannot perform historical forecasts with `retrain=False` and untrained model
             with pytest.raises(ValueError):
@@ -642,7 +695,7 @@ class TestBacktesting:
                 output_chunk_length=1,
                 batch_size=1,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             tcn_model.fit(linear_series, verbose=False)
             # univariate fitted model + multivariate series
@@ -660,7 +713,7 @@ class TestBacktesting:
                 output_chunk_length=3,
                 batch_size=1,
                 n_epochs=1,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
             pred = tcn_model.historical_forecasts(
                 linear_series_multi,
@@ -1049,7 +1102,7 @@ class TestBacktesting:
                 series=ts_train,
                 past_covariates=dummy_series,
                 val_series=ts_val,
-                **bt_kwargs
+                **bt_kwargs,
             )
         assert str(msg.value).startswith(
             "Model cannot be fit/trained with `past_covariates`."
@@ -1061,7 +1114,7 @@ class TestBacktesting:
                     series=ts_train,
                     future_covariates=dummy_series,
                     val_series=ts_val,
-                    **bt_kwargs
+                    **bt_kwargs,
                 )
             assert str(msg.value).startswith(
                 "Model cannot be fit/trained with `future_covariates`."

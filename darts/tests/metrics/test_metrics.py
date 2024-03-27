@@ -207,11 +207,13 @@ class TestMetrics:
             kwargs_multi_uv["insample"] = [kwargs_uv["insample"]] * 2
             kwargs_multi_mv["insample"] = [kwargs_mv["insample"]] * 2
 
-        # single univariate series
+        # SINGLE UNIVARIATE SERIES
+        # no reduction
         res = metric(
             y_t_uv, y_p_uv, **kwargs_uv, series_reduction=None, component_reduction=None
         )
         assert isinstance(res, float)
+        # series reduction
         res = metric(
             y_t_uv,
             y_p_uv,
@@ -220,6 +222,7 @@ class TestMetrics:
             component_reduction=None,
         )
         assert isinstance(res, float)
+        # comp reduction
         res = metric(
             y_t_uv,
             y_p_uv,
@@ -228,8 +231,18 @@ class TestMetrics:
             component_reduction=np.mean,
         )
         assert isinstance(res, float)
+        # series and comp reduction
+        res = metric(
+            y_t_uv,
+            y_p_uv,
+            **kwargs_uv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, float)
 
-        # list with single univariate series
+        # LIST OF SINGLE UNIVARIATE SERIES
+        # no reduction
         res = metric(
             [y_t_uv],
             [y_p_uv],
@@ -239,6 +252,7 @@ class TestMetrics:
         )
         assert isinstance(res, list) and len(res) == 1
         assert isinstance(res[0], float)
+        # series reduction
         res = metric(
             [y_t_uv],
             [y_p_uv],
@@ -247,6 +261,7 @@ class TestMetrics:
             component_reduction=None,
         )
         assert isinstance(res, float)
+        # comp reduction
         res = metric(
             [y_t_uv],
             [y_p_uv],
@@ -256,8 +271,54 @@ class TestMetrics:
         )
         assert isinstance(res, list) and len(res) == 1
         assert isinstance(res[0], float)
+        # series and comp reduction
+        res = metric(
+            [y_t_uv],
+            [y_p_uv],
+            **kwargs_list_single_uv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, float)
 
-        # list with single multivariate series
+        # SINGLE MULTIVARIATE SERIES
+        # no reduction
+        res = metric(
+            y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None
+        )
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
+        # series reduction
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
+        # comp reduction
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=None,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, float)
+        # series and comp reduction
+        res = metric(
+            y_t_mv,
+            y_p_mv,
+            **kwargs_mv,
+            series_reduction=np.mean,
+            component_reduction=np.mean,
+        )
+        assert isinstance(res, float)
+
+        # LIST OF SINGLE MULTIVARIATE SERIES
+        # no reduction
         res = metric(
             [y_t_mv],
             [y_p_mv],
@@ -267,6 +328,7 @@ class TestMetrics:
         )
         assert isinstance(res, list) and len(res) == 1
         assert isinstance(res[0], np.ndarray) and res[0].shape == (2,)
+        # series reduction
         res = metric(
             [y_t_mv],
             [y_p_mv],
@@ -275,6 +337,7 @@ class TestMetrics:
             component_reduction=None,
         )
         assert isinstance(res, np.ndarray) and res.shape == (2,)
+        # comp reduction
         res = metric(
             [y_t_mv],
             [y_p_mv],
@@ -284,6 +347,7 @@ class TestMetrics:
         )
         assert isinstance(res, list) and len(res) == 1
         assert isinstance(res[0], float)
+        # series and comp reduction
         res = metric(
             [y_t_mv],
             [y_p_mv],
@@ -293,41 +357,8 @@ class TestMetrics:
         )
         assert isinstance(res, float)
 
-        # single multivariate series with component reduction
-        res = metric(
-            y_t_mv,
-            y_p_mv,
-            **kwargs_mv,
-            series_reduction=None,
-            component_reduction=np.mean,
-        )
-        assert isinstance(res, float)
-        res = metric(
-            y_t_mv,
-            y_p_mv,
-            **kwargs_mv,
-            series_reduction=np.mean,
-            component_reduction=np.mean,
-        )
-        assert isinstance(res, float)
-
-        # single multivariate series without component reduction
-        res = metric(
-            y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None
-        )
-        assert isinstance(res, np.ndarray)
-        assert res.shape == (2,)
-        res = metric(
-            y_t_mv,
-            y_p_mv,
-            **kwargs_mv,
-            series_reduction=np.mean,
-            component_reduction=None,
-        )
-        assert isinstance(res, np.ndarray)
-        assert res.shape == (2,)
-
-        # multiple univariate series without series reduction
+        # MULTIPLE UNIVARIATE SERIES
+        # no reduction
         res = metric(
             y_t_multi_uv,
             y_p_multi_uv,
@@ -337,6 +368,16 @@ class TestMetrics:
         )
         assert isinstance(res, list)
         assert len(res) == 2
+        # series reduction
+        res = metric(
+            y_t_multi_uv,
+            y_p_multi_uv,
+            **kwargs_multi_uv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, float)
+        # comp reduction
         res = metric(
             y_t_multi_uv,
             y_p_multi_uv,
@@ -346,16 +387,7 @@ class TestMetrics:
         )
         assert isinstance(res, list)
         assert len(res) == 2
-
-        # multiple univariate series with series reduction
-        res = metric(
-            y_t_multi_uv,
-            y_p_multi_uv,
-            **kwargs_multi_uv,
-            series_reduction=np.mean,
-            component_reduction=None,
-        )
-        assert isinstance(res, float)
+        # series and comp reduction
         res = metric(
             y_t_multi_uv,
             y_p_multi_uv,
@@ -365,7 +397,8 @@ class TestMetrics:
         )
         assert isinstance(res, float)
 
-        # multiple multivariate series without series reduction
+        # MULTIPLE MULTIVARIATE SERIES
+        # no reduction
         res = metric(
             y_t_multi_mv,
             y_p_multi_mv,
@@ -377,6 +410,17 @@ class TestMetrics:
         assert len(res) == 2
         assert all(isinstance(el, np.ndarray) for el in res)
         assert all(el.shape == (2,) for el in res)
+        # series reduction
+        res = metric(
+            y_t_multi_mv,
+            y_p_multi_mv,
+            **kwargs_multi_mv,
+            series_reduction=np.mean,
+            component_reduction=None,
+        )
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
+        # comp reduction
         res = metric(
             y_t_multi_mv,
             y_p_multi_mv,
@@ -387,17 +431,7 @@ class TestMetrics:
         assert isinstance(res, list)
         assert len(res) == 2
         assert all(isinstance(el, float) for el in res)
-
-        # multiple multivariate series with series reduction
-        res = metric(
-            y_t_multi_mv,
-            y_p_multi_mv,
-            **kwargs_multi_mv,
-            series_reduction=np.mean,
-            component_reduction=None,
-        )
-        assert isinstance(res, np.ndarray)
-        assert res.shape == (2,)
+        # series and comp reduction
         res = metric(
             y_t_multi_mv,
             y_p_multi_mv,
