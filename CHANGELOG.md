@@ -16,7 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - Time aggregated metric `merr()` (Mean Error)
       - Time aggregated scaled metrics  `rmsse()`, and `msse()`: The (Root) Mean Squared Scaled Error.
       - "Per time step" metrics that return a metric score per time step: `err()` (Error), `ae()` (Absolute Error), `se()` (Squared Error), `sle()` (Squared Log Error), `ase()` (Absolute Scaled Error), `sse` (Squared Scaled Error), `ape()` (Absolute Percentage Error), `sape()` (symmetric Absolute Percentage Error), `arre()` (Absolute Ranged Relative Error), `ql` (Quantile Loss)
-    - All scaled metrics now accept `insample` series that can be overlapping into `pred_series` (before that had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you. 
+    - All scaled metrics now accept `insample` series that can be overlapping into `pred_series` (before that had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you.  
     - Improvements to the documentation:
       - Added a summary list of all metrics to the [metrics documentation page](https://unit8co.github.io/darts/generated_api/darts.metrics.html)
       - Standardized the documentation of each metric (added formula, improved return documentation, ...) 
@@ -31,9 +31,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
         - sequence of uni/multivariate series including `series_reduction` and at least one of `component_reduction=None` or `time_reduction=None` for "per time step metrics"
       - `List[float]`: Same as for type `float` but for a sequence of series
       - `List[np.ndarray]` Same as for type `np.ndarray` but for a sequence of series
-    - 🔴 Other breaking changes:
-      - Renamed metric `quantile_loss()` to `mql()` (Mean Quantile Loss)
-      - Renamed metric `quantile_risk()` to `qr()` (Quantile Risk)
+    - 🔴 Other breaking changes: 
+      - `quantile_loss()`:
+        - renamed to `mql()` (Mean Quantile Loss)
+        - renamed quantile parameter `tau` to `q`
+        - the metric is now multiplied by a factor `2` to make the loss more interpretable (e.g. for `q=0.5` it is identical to the `MAE`)
+      - `rho_risk()`:
+        - renamed to `mpr()` (Mean Quantile Risk)
+        - renamed quantile parameter `rho` to `r`
       - Renamed metric parameter `reduction` to `series_reduction`
       - Renamed metric parameter `inter_reduction` to `component_reduction`
       - Scaled metrics do not allow seasonality inference anymore with `m=None`.

@@ -2528,9 +2528,11 @@ def ql(
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
     of of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:
 
-    .. math:: \\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q})),
+    .. math:: 2 \\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q})),
 
     where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
+    The factor `2` makes the loss more interpretable, as for `q=0.5` the loss is identical to the Absolute Error
+    (:func:`~darts.metrics.metrics.ae`).
 
     Parameters
     ----------
@@ -2593,7 +2595,7 @@ def ql(
         remove_nan_union=True,
     )
     errors = y_true - y_pred
-    losses = np.maximum((q - 1) * errors, q * errors)
+    losses = 2.0 * np.maximum((q - 1) * errors, q * errors)
     return losses
 
 
@@ -2621,9 +2623,11 @@ def mql(
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
     of of shape :math:`T \\times N`, it is computed per column/component as:
 
-    .. math:: \\frac{1}{T}\\sum_{t=1}^T{\\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q}))},
+    .. math:: 2 \\frac{1}{T}\\sum_{t=1}^T{\\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q}))},
 
     where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
+    The factor `2` makes the loss more interpretable, as for `q=0.5` the loss is identical to the Mean Absolute Error
+    (:func:`~darts.metrics.metrics.mae`).
 
     Parameters
     ----------
