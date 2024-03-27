@@ -520,13 +520,28 @@ def err(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] blabla
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -586,13 +601,24 @@ def merr(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] blabla
     """
     return np.nanmean(
         _get_wrapped_metric(err)(
@@ -622,7 +648,7 @@ def ae(
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
     component/column and time step :math:`t` as:
 
-    .. math:: |\\hat{y}_t - y_t|
+    .. math:: |y_t - \\hat{y}_t|
 
     If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
     for time step :math:`t`.
@@ -666,13 +692,28 @@ def ae(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] blabla
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -698,7 +739,7 @@ def mae(
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
     component/column as:
 
-    .. math:: \\frac{1}{T}\\sum_{t=1}^T{|\\hat{y}_t - y_t|}
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{|y_t - \\hat{y}_t|}
 
     If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
     for time step :math:`t`.
@@ -737,13 +778,20 @@ def mae(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
         _get_wrapped_metric(ae)(
@@ -835,13 +883,24 @@ def ase(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
 
     References
     ----------
@@ -930,13 +989,20 @@ def mase(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
 
     References
     ----------
@@ -1011,13 +1077,24 @@ def se(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -1077,13 +1154,20 @@ def mse(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
         _get_wrapped_metric(se)(
@@ -1175,13 +1259,24 @@ def sse(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
 
     References
     ----------
@@ -1270,13 +1365,20 @@ def msse(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
 
     References
     ----------
@@ -1345,13 +1447,20 @@ def rmse(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.sqrt(
         _get_wrapped_metric(mse)(
@@ -1436,13 +1545,20 @@ def rmsse(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
 
     References
     ----------
@@ -1516,13 +1632,24 @@ def sle(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -1585,13 +1712,20 @@ def rmsle(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.sqrt(
         np.nanmean(
@@ -1670,13 +1804,24 @@ def ape(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -1751,13 +1896,20 @@ def mape(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     return np.nanmean(
@@ -1836,13 +1988,24 @@ def sape(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -1920,13 +2083,20 @@ def smape(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     return np.nanmean(
@@ -1996,13 +2166,20 @@ def ope(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -2083,13 +2260,24 @@ def arre(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -2162,16 +2350,21 @@ def marre(
     ValueError
         If :math:`\\max_t{y_t} = \\min_t{y_t}`.
 
-    Returns
-    -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
         _get_wrapped_metric(arre)(
@@ -2238,13 +2431,20 @@ def r2_score(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
 
     References
     ----------
@@ -2313,13 +2513,20 @@ def coefficient_of_variation(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -2389,13 +2596,20 @@ def dtw_metric(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
 
     alignment = dtw.dtw(actual_series, pred_series, **kwargs)
@@ -2467,13 +2681,20 @@ def qr(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     if not pred_series.is_stochastic:
         raise_log(
@@ -2570,13 +2791,24 @@ def ql(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     if not pred_series.is_stochastic:
         raise_log(
@@ -2660,13 +2892,20 @@ def mql(
     Returns
     -------
     float
-        A single metric score for single time series, either univariate or multivariate with `component_reduction`.
-    List[float]
-        A list of metric scores for multiple series, all either univariate or multivariate with `component_reduction`.
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A single array of metric scores for single multivariate time series without `component_reduction`
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
     List[np.ndarray]
-        A list of arrays of metric scores for multiple multivariate series without `component_reduction`.
+        Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
         _get_wrapped_metric(ql)(

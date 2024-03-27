@@ -23,9 +23,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - 🔴 Improved metric output consistency based on the type of input `series`, and the applied reductions:
       - `float`: A single metric score for:
         - single univariate series
-        - single multivariate with `component_reduction`
+        - single multivariate series with `component_reduction`
         - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction` (and `time_reduction` for "per time step metrics")
-      - `np.ndarray`: An numpy array of metric scores. The array has shape (n time steps, n components) without time and component reductions. The time dimension is only available for "per time step" metrics. For: 
+      - `np.ndarray`: A numpy array of metric scores. The array has shape (n time steps, n components) without time and component reductions. The time dimension is only available for "per time step" metrics. For: 
         - single multivariate series and at least `component_reduction=None` for time aggregated metrics.
         - single uni/multivariate series and at least `time_reduction=None` for "per time step metrics"
         - sequence of uni/multivariate series including `series_reduction` and at least one of `component_reduction=None` or `time_reduction=None` for "per time step metrics"
@@ -37,8 +37,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
         - renamed quantile parameter `tau` to `q`
         - the metric is now multiplied by a factor `2` to make the loss more interpretable (e.g. for `q=0.5` it is identical to the `MAE`)
       - `rho_risk()`:
-        - renamed to `mpr()` (Mean Quantile Risk)
-        - renamed quantile parameter `rho` to `r`
+          - renamed to `qr()` (Quantile Risk)
+        - renamed quantile parameter `rho` to `q`
       - Renamed metric parameter `reduction` to `series_reduction`
       - Renamed metric parameter `inter_reduction` to `component_reduction`
       - Scaled metrics do not allow seasonality inference anymore with `m=None`.
