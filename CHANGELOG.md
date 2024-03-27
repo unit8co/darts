@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Renamed the private `_is_probabilistic` property to a public `supports_probabilistic_prediction`.
 - Improvements to `DataTransformer`: [#2267](https://github.com/unit8co/darts/pull/2267) by [Alicja Krzeminska-Sciga](https://github.com/alicjakrzeminska).
   - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series.
+- Adopted a PyTorch implementation of the [TSMixer](https://github.com/ditschuk/pytorch-tsmixer) model to the Darts library [#1807](https://https://github.com/unit8co/darts/pull/001), by [Cristof Rojas](https://github.com/cristof-r).
 
 **Fixed**
 - Fixed type hint warning "Unexpected argument" when calling `historical_forecasts()` caused by the `_with_sanity_checks` decorator. The type hinting is now properly configured to expect any input arguments and return the output type of the method for which the sanity checks are performed for. [#2286](https://github.com/unit8co/darts/pull/2286) by [Dennis Bader](https://github.com/dennisbader).
