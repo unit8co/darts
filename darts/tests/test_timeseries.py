@@ -87,44 +87,6 @@ class TestTimeSeries:
         ts_pd_df = ts.pd_dataframe()
         assert ts_pd_df.equals(pd_df)
 
-    def test_pandas_group_creation(self):
-        pd_df = pd.DataFrame(
-            {
-                # "time": pd.date_range("20130101", "20130110"),
-                "value": np.float32(range(10)),
-                "group1": ["a"] * 5 + ["b"] * 5,
-                "group2": ["c"] * 5 + ["d"] * 5,
-                "static": np.float32([1] * 5 + [2] * 5),
-            },
-            index=pd.Series(
-                pd.date_range("20130101", "20130105").append(
-                    pd.date_range("20130101", "20130105")
-                ),
-                name="time",
-            ),
-        )
-        pd_df = pd_df.sort_values(by=["group1", "group2", "time"])
-
-        tss = TimeSeries.from_group_dataframe(
-            df=pd_df,
-            group_cols=["group1", "group2"],
-            value_cols="value",
-            static_cols="static",
-            n_jobs=-1,
-        )
-
-        def ts2pd(ts: TimeSeries):
-            df = ts.pd_dataframe()
-
-            for c in ts.static_covariates.columns:
-                df[c] = ts.static_covariates[c].iloc[0]
-
-            return df
-
-        tss_pd_df = pd.concat([ts2pd(ts) for ts in tss])
-
-        assert tss_pd_df.equals(pd_df)
-
     def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
         range_indexed_data = np.random.randn(

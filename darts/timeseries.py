@@ -749,70 +749,6 @@ class TimeSeries:
         )
 
     @classmethod
-    def _from_group_dataframe(
-        cls: Self,
-        static_cov_vals: List[str],
-        group: pd.DataFrame,
-        extract_value_cols: List[str],
-        group_cols: List[str],
-        extract_static_cov_cols: Optional[List[str]] = None,
-        drop_group_col_idx: Optional[List[int]] = None,
-        static_cols: Optional[List[str]] = None,
-        fill_missing_dates: Optional[bool] = False,
-        freq: Optional[Union[str, int]] = None,
-        fillna_value: Optional[float] = None,
-    ) -> Self:
-        split = group[extract_value_cols]
-
-        static_cov_vals = (
-            (static_cov_vals,)
-            if not isinstance(static_cov_vals, tuple)
-            else static_cov_vals
-        )
-        # optionally, exclude group columns from static covariates
-        if drop_group_col_idx:
-            if len(drop_group_col_idx) == len(group_cols):
-                static_cov_vals = tuple()
-            else:
-                static_cov_vals = tuple(
-                    val
-                    for idx, val in enumerate(static_cov_vals)
-                    if idx not in drop_group_col_idx
-                )
-
-        # check that for each group there is only one unique value per column in `static_cols`
-        if static_cols:
-            static_cols_valid = [len(group[col].unique()) == 1 for col in static_cols]
-            if not all(static_cols_valid):
-                # encountered performance issues when evaluating the error message from below in every
-                # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
-                invalid_cols = [
-                    static_col
-                    for static_col, is_valid in zip(static_cols, static_cols_valid)
-                    if not is_valid
-                ]
-                raise_if(
-                    True,
-                    f"Encountered more than one unique value in group {group} for given static columns: "
-                    f"{invalid_cols}.",
-                    logger,
-                )
-            # add the static covariates to the group values
-            static_cov_vals += tuple(group[static_cols].values[0])
-
-        return cls.from_dataframe(
-            df=split,
-            fill_missing_dates=fill_missing_dates,
-            freq=freq,
-            fillna_value=fillna_value,
-            static_covariates=(
-                pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-                if extract_static_cov_cols
-                else None
-            ),
-        )
-
-    @classmethod
     def from_group_dataframe(
         cls,
         df: pd.DataFrame,
@@ -948,21 +884,65 @@ class TimeSeries:
             desc="Creating TimeSeries",
         )
 
+        def from_group(static_cov_vals, group):
+            split = group[extract_value_cols]
+
+            static_cov_vals = (
+                (static_cov_vals,)
+                if not isinstance(static_cov_vals, tuple)
+                else static_cov_vals
+            )
+            # optionally, exclude group columns from static covariates
+            if drop_group_col_idx:
+                if len(drop_group_col_idx) == len(group_cols):
+                    static_cov_vals = tuple()
+                else:
+                    static_cov_vals = tuple(
+                        val
+                        for idx, val in enumerate(static_cov_vals)
+                        if idx not in drop_group_col_idx
+                    )
+
+            # check that for each group there is only one unique value per column in `static_cols`
+            if static_cols:
+                static_cols_valid = [
+                    len(group[col].unique()) == 1 for col in static_cols
+                ]
+                if not all(static_cols_valid):
+                    # encountered performance issues when evaluating the error message from below in every
+                    # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
+                    invalid_cols = [
+                        static_col
+                        for static_col, is_valid in zip(static_cols, static_cols_valid)
+                        if not is_valid
+                    ]
+                    raise_if(
+                        True,
+                        f"Encountered more than one unique value in group {group} for given static columns: "
+                        f"{invalid_cols}.",
+                        logger,
+                    )
+                # add the static covariates to the group values
+                static_cov_vals += tuple(group[static_cols].values[0])
+
+            return cls.from_dataframe(
+                df=split,
+                fill_missing_dates=fill_missing_dates,
+                freq=freq,
+                fillna_value=fillna_value,
+                static_covariates=(
+                    pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                    if extract_static_cov_cols
+                    else None
+                ),
+            )
+
         return _parallel_apply(
             iterator,
-            cls._from_group_dataframe,
+            from_group,
             n_jobs,
             fn_args=dict(),
-            fn_kwargs={
-                "extract_value_cols": extract_value_cols,
-                "group_cols": group_cols,
-                "extract_static_cov_cols": extract_static_cov_cols,
-                "drop_group_col_idx": drop_group_col_idx,
-                "static_cols": static_cols,
-                "fill_missing_dates": fill_missing_dates,
-                "freq": freq,
-                "fillna_value": fillna_value,
-            },
+            fn_kwargs=dict(),
         )
 
     @classmethod
