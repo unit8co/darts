@@ -345,13 +345,18 @@ def _check_valid_input(
             all(
                 [
                     series[idx].columns.to_list() == target_components,
-                    past_covariates[idx].columns.to_list() == past_covariates_components
-                    if past_covariates is not None
-                    else True,
-                    future_covariates[idx].columns.to_list()
-                    == future_covariates_components
-                    if future_covariates is not None
-                    else True,
+                    (
+                        past_covariates[idx].columns.to_list()
+                        == past_covariates_components
+                        if past_covariates is not None
+                        else True
+                    ),
+                    (
+                        future_covariates[idx].columns.to_list()
+                        == future_covariates_components
+                        if future_covariates is not None
+                        else True
+                    ),
                 ]
             ),
             "Columns names must be identical between TimeSeries list components (multi-TimeSeries).",

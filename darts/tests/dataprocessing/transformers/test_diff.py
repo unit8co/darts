@@ -27,7 +27,6 @@ class TestDiff:
         equal_nan: bool,
         to_compare: Optional[np.ndarray] = None,
     ):
-
         """
         Helper to compare series differenced by `Diff`.
 
@@ -97,7 +96,7 @@ class TestDiff:
 
         # Artifically truncate series:
         short_sine = self.sine_series.copy().drop_after(10)
-        for (lags, dropna) in test_cases:
+        for lags, dropna in test_cases:
             # Fit Diff to truncated series:
             diff = Diff(lags=lags, dropna=dropna)
             diff.fit(short_sine)
@@ -133,7 +132,7 @@ class TestDiff:
             (1, False, component_mask),
             ([1, 2, 3, 2, 1], False, component_mask),
         ]
-        for (lags, dropna, mask) in test_cases:
+        for lags, dropna, mask in test_cases:
             diff = Diff(lags=lags, dropna=dropna)
             transformed = diff.fit_transform(
                 [self.sine_series, self.sine_series], component_mask=mask
@@ -172,7 +171,7 @@ class TestDiff:
         vals = np.random.rand(10, 5, 10)
         series = TimeSeries.from_values(vals)
 
-        for (lags, dropna) in test_cases:
+        for lags, dropna in test_cases:
             transformer = Diff(lags=lags, dropna=dropna)
             new_series = transformer.fit_transform(series)
             series_back = transformer.inverse_transform(new_series)

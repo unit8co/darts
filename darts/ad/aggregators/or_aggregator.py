@@ -6,7 +6,6 @@ Aggregator that identifies a time step as anomalous if any of the components
 is flagged as anomalous (logical OR).
 """
 
-
 from typing import Sequence
 
 from darts import TimeSeries

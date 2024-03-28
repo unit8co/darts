@@ -211,7 +211,8 @@ class ForecastingAnomalyModel(AnomalyModel):
         series: Sequence[TimeSeries],
         name_covariates: str,
     ) -> Sequence[TimeSeries]:
-        """Convert `covariates` into Sequence, if not already, and checks if their length is equal to the one of `series`.
+        """Convert `covariates` into Sequence, if not already, and checks if their length is equal to the one of
+        `series`.
 
         Parameters
         ----------
@@ -407,7 +408,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = 1,
     ) -> TimeSeries:
-
         """Compute the historical forecasts that would have been obtained by this model on the `series`.
 
         `retrain` is set to False if possible (this is not supported by all models). If set to True, it will always

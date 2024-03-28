@@ -164,5 +164,5 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         return True
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True

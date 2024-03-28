@@ -2,6 +2,7 @@
 Pipeline
 --------
 """
+
 from copy import deepcopy
 from typing import Iterator, Sequence, Union
 

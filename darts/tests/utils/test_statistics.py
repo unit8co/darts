@@ -9,6 +9,8 @@ from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
     granger_causality_tests,
+    plot_acf,
+    plot_ccf,
     plot_pacf,
     plot_residuals_analysis,
     remove_seasonality,
@@ -235,5 +237,7 @@ class TestPlot:
         plt.close()
         plot_residuals_analysis(self.series[:10])
         plt.close()
+        plot_acf(self.series)
         plot_pacf(self.series)
+        plot_ccf(self.series, self.series)
         plt.close()

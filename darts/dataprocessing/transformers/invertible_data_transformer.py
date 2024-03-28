@@ -9,7 +9,7 @@ from typing import Any, List, Mapping, Optional, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 from .base_data_transformer import BaseDataTransformer
@@ -245,14 +245,14 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
     def inverse_transform(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
         *args,
         component_mask: Optional[np.array] = None,
         **kwargs,
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         """Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.
 
-        In case a sequence is passed as input data, this function takes care of parallelising the
+        In case a sequence or list of lists is passed as input data, this function takes care of parallelising the
         transformation of multiple series in the sequence at the same time. Additionally,
         if the `mask_components` attribute was set to `True` when instantiating `InvertibleDataTransformer`,
         then any provided `component_mask`s will be automatically applied to each input `TimeSeries`;
@@ -263,7 +263,14 @@ class InvertibleDataTransformer(BaseDataTransformer):
         Parameters
         ----------
         series
-            the (sequence of) series be inverse-transformed.
+            The series to inverse-transform.
+            If a single `TimeSeries`, returns a single series.
+            If a sequence of `TimeSeries`, returns a list of series. The series should be in the same order as the
+            sequence used to fit the transformer.
+            If a list of lists of `TimeSeries`, returns a list of lists of series. This can for example be the output
+            of `ForecastingModel.historical_forecasts()` when using multiple series. Each inner list should contain
+            `TimeSeries` related to the same series. The order of inner lists should be the same as the sequence used
+            to fit the transformer.
         args
             Additional positional arguments for the :func:`ts_inverse_transform()` method
         component_mask : Optional[np.ndarray] = None
@@ -274,7 +281,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         Returns
         -------
-        Union[TimeSeries, List[TimeSeries]]
+        Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]
             Inverse transformed data.
 
         Notes
@@ -295,22 +302,35 @@ class InvertibleDataTransformer(BaseDataTransformer):
         `component_masks` will be passed as a keyword argument `ts_inverse_transform`; the user can then manually
         specify how the `component_mask` should be applied to each series.
         """
-        if hasattr(self, "_fit_called"):
-            raise_if_not(
-                self._fit_called,
-                "fit() must have been called before inverse_transform()",
-                logger,
+        if hasattr(self, "_fit_called") and not self._fit_called:
+            raise_log(
+                ValueError("fit() must have been called before inverse_transform()"),
+                logger=logger,
             )
 
         desc = f"Inverse ({self._name})"
 
         # Take note of original input for unmasking purposes:
+        called_with_single_series = False
+        called_with_sequence_series = False
         if isinstance(series, TimeSeries):
             input_series = [series]
             data = [series]
-        else:
+            transformer_selector = [0]
+            called_with_single_series = True
+        elif isinstance(series[0], TimeSeries):  # Sequence[TimeSeries]
             input_series = series
             data = series
+            transformer_selector = range(len(series))
+            called_with_sequence_series = True
+        else:  # Sequence[Sequence[TimeSeries]]
+            input_series = []
+            data = []
+            transformer_selector = []
+            for idx, series_list in enumerate(series):
+                input_series.extend(series_list)
+                data.extend(series_list)
+                transformer_selector += [idx] * len(series_list)
 
         if self._mask_components:
             data = [
@@ -321,10 +341,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
             kwargs["component_mask"] = component_mask
 
         input_iterator = _build_tqdm_iterator(
-            zip(data, self._get_params(n_timeseries=len(data))),
+            zip(data, self._get_params(transformer_selector=transformer_selector)),
             verbose=self._verbose,
             desc=desc,
-            total=len(data),
+            total=len(transformer_selector),
         )
 
         transformed_data = _parallel_apply(
@@ -343,6 +363,13 @@ class InvertibleDataTransformer(BaseDataTransformer):
                 )
             transformed_data = unmasked
 
-        return (
-            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
-        )
+        if called_with_single_series:
+            return transformed_data[0]
+        elif called_with_sequence_series:
+            return transformed_data
+        else:
+            cum_len = np.cumsum([0] + [len(s_) for s_ in series])
+            return [
+                transformed_data[cum_len[i] : cum_len[i + 1]]
+                for i in range(len(cum_len) - 1)
+            ]

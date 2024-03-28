@@ -7,7 +7,7 @@ Some metrics to compare time series.
 
 from functools import wraps
 from inspect import signature
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
 
 
-def multi_ts_support(func):
+def multi_ts_support(func) -> Union[float, List[float]]:
     """
     This decorator further adapts the metrics that took as input two univariate/multivariate ``TimeSeries`` instances,
     adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric
@@ -46,9 +46,7 @@ def multi_ts_support(func):
         pred_series = (
             kwargs["pred_series"]
             if "pred_series" in kwargs
-            else args[0]
-            if "actual_series" in kwargs
-            else args[1]
+            else args[0] if "actual_series" in kwargs else args[1]
         )
 
         n_jobs = kwargs.pop("n_jobs", signature(func).parameters["n_jobs"].default)
@@ -107,7 +105,7 @@ def multi_ts_support(func):
     return wrapper_multi_ts_support
 
 
-def multivariate_support(func):
+def multivariate_support(func) -> Union[float, List[float]]:
     """
     This decorator transforms a metric function that takes as input two univariate TimeSeries instances
     into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
@@ -279,7 +277,7 @@ def mae(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Mean Absolute Error (MAE)
     """
 
@@ -336,7 +334,7 @@ def mse(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Mean Squared Error (MSE)
     """
 
@@ -393,7 +391,7 @@ def rmse(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Root Mean Squared Error (RMSE)
     """
     return np.sqrt(mse(actual_series, pred_series, intersect))
@@ -448,7 +446,7 @@ def rmsle(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Root Mean Squared Log Error (RMSLE)
     """
 
@@ -510,15 +508,15 @@ def coefficient_of_variation(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Coefficient of Variation
     """
 
-    return (
-        100
-        * rmse(actual_series, pred_series, intersect)
-        / actual_series.pd_dataframe(copy=False).mean().mean()
+    y_true, y_pred = _get_values_or_raise(
+        actual_series, pred_series, intersect, remove_nan_union=True
     )
+    # not calling rmse as y_true and y_pred are np.ndarray
+    return 100 * np.sqrt(np.mean((y_true - y_pred) ** 2)) / y_true.mean()
 
 
 @multi_ts_support
@@ -577,7 +575,7 @@ def mape(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Mean Absolute Percentage Error (MAPE)
     """
 
@@ -650,7 +648,7 @@ def smape(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The symmetric Mean Absolute Percentage Error (sMAPE)
     """
 
@@ -725,7 +723,7 @@ def mase(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Mean Absolute Scaled Error (MASE)
     """
 
@@ -907,7 +905,7 @@ def ope(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Overall Percentage Error (OPE)
     """
 
@@ -977,7 +975,7 @@ def marre(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Mean Absolute Ranged Relative Error (MARRE)
     """
 
@@ -1042,7 +1040,7 @@ def r2_score(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The Coefficient of Determination :math:`R^2`
     """
     y1, y2 = _get_values_or_raise(
@@ -1134,7 +1132,6 @@ def rho_risk(
     n_jobs: int = 1,
     verbose: bool = False
 ) -> float:
-
     """:math:`\\rho`-risk (rho-risk or quantile risk).
 
     Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions
@@ -1185,7 +1182,7 @@ def rho_risk(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The rho-risk metric
     """
 
@@ -1263,7 +1260,7 @@ def quantile_loss(
 
     Returns
     -------
-    float
+    Union[float, List[float]]
         The quantile loss metric
     """
 

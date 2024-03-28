@@ -167,7 +167,8 @@ class _TransformerModule(PLPastCovariatesModule):
         custom_decoder
             A custom transformer decoder provided by the user (default=None).
         **kwargs
-            All parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            All parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -327,6 +328,7 @@ class TransformerModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         d_model: int = 64,
         nhead: int = 4,
         num_encoder_layers: int = 3,
@@ -339,7 +341,6 @@ class TransformerModel(PastCovariatesTorchModel):
         custom_decoder: Optional[nn.Module] = None,
         **kwargs,
     ):
-
         """Transformer model
 
         Transformer is a state-of-the-art deep learning model introduced in 2017. It is an encoder-decoder
@@ -362,10 +363,16 @@ class TransformerModel(PastCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         d_model
             The number of expected features in the transformer encoder/decoder inputs (default=64).
         nhead

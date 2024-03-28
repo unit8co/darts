@@ -27,7 +27,6 @@ class ExponentialSmoothing(LocalForecastingModel):
         kwargs: Optional[Dict[str, Any]] = None,
         **fit_kwargs
     ):
-
         """Exponential Smoothing
 
         This is a wrapper around
@@ -160,7 +159,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         return False
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     @property

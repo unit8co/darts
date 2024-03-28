@@ -162,11 +162,12 @@ class TestTimeSeriesMultivariate:
         assert self.series1 == seriesB
 
     def test_add_datetime_attribute(self):
+        """datetime_attributes are 0-indexed (shift is applied when necessary)"""
         seriesA = self.series1.add_datetime_attribute("day")
         assert seriesA.width == self.series1.width + 1
         assert set(
             seriesA.pd_dataframe().iloc[:, seriesA.width - 1].values.flatten()
-        ) == set(range(1, 11))
+        ) == set(range(0, 10))
         seriesB = self.series3.add_datetime_attribute("day", True)
         assert seriesB.width == self.series3.width + 31
         assert set(
@@ -197,7 +198,13 @@ class TestTimeSeriesMultivariate:
         assert np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1)
 
         df = seriesF.pd_dataframe()
+        # first day is equivalent to t=0
         df = df[df.index.day == 1]
+        assert np.allclose(df["day_sin"].values, 0, atol=0.03)
+        assert np.allclose(df["day_cos"].values, 1, atol=0.03)
+
+        # second day is equivalent to t=1
+        df = df[df.index.day == 2]
         assert np.allclose(df["day_sin"].values, 0.2, atol=0.03)
         assert np.allclose(df["day_cos"].values, 0.97, atol=0.03)
 

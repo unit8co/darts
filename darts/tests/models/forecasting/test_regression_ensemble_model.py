@@ -551,7 +551,15 @@ class TestRegressionEnsembleModels:
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
         # -10 comes from the maximum minimum train series length of all models
-        assert ensemble.extreme_lags == (-10 - regr_train_n, -1, None, None, None, None)
+        assert ensemble.extreme_lags == (
+            -10 - regr_train_n,
+            -1,
+            None,
+            None,
+            None,
+            None,
+            0,
+        )
         ensemble.backtest(self.sine_series)
 
     def test_extreme_lags(self):
@@ -566,7 +574,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0)
+        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0)
 
         # mix of all the lags
         model3 = RandomForest(
@@ -578,7 +586,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5)
+        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0)
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]
@@ -602,7 +610,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert ensemble_allproba._models_are_probabilistic
-        assert ensemble_allproba._is_probabilistic
+        assert ensemble_allproba.supports_probabilistic_prediction
         ensemble_allproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_allproba.predict(5, num_samples=10)
@@ -619,7 +627,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_mixproba._models_are_probabilistic
-        assert ensemble_mixproba._is_probabilistic
+        assert ensemble_mixproba.supports_probabilistic_prediction
         ensemble_mixproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_mixproba.predict(5, num_samples=10)
@@ -639,7 +647,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_mixproba2._models_are_probabilistic
-        assert ensemble_mixproba2._is_probabilistic
+        assert ensemble_mixproba2.supports_probabilistic_prediction
         ensemble_mixproba2.fit(self.ts_random_walk[:100])
         pred = ensemble_mixproba2.predict(5, num_samples=10)
         assert pred.n_samples == 10
@@ -655,7 +663,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_proba_reg._models_are_probabilistic
-        assert ensemble_proba_reg._is_probabilistic
+        assert ensemble_proba_reg.supports_probabilistic_prediction
         ensemble_proba_reg.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_proba_reg.predict(5, num_samples=10)
@@ -672,7 +680,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert ensemble_dete_reg._models_are_probabilistic
-        assert not ensemble_dete_reg._is_probabilistic
+        assert not ensemble_dete_reg.supports_probabilistic_prediction
         ensemble_dete_reg.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_dete_reg.predict(5, num_samples=1)
@@ -691,7 +699,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_alldete._models_are_probabilistic
-        assert not ensemble_alldete._is_probabilistic
+        assert not ensemble_alldete.supports_probabilistic_prediction
         ensemble_alldete.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_alldete.predict(5, num_samples=1)
@@ -883,6 +891,31 @@ class TestRegressionEnsembleModels:
         assert all(
             pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values()
         ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
+
+    def test_wrong_model_creation_params(self):
+        """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the
+        forecasting model predictions), it is not supported."""
+        forcasting_models = [
+            self.get_deterministic_global_model(2),
+            self.get_deterministic_global_model([-5, -7]),
+        ]
+        RegressionEnsembleModel(
+            forecasting_models=forcasting_models,
+            regression_train_n_points=10,
+            regression_model=LinearRegressionModel(
+                lags_future_covariates=[0], output_chunk_length=2, multi_models=True
+            ),
+        )
+        with pytest.raises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=forcasting_models,
+                regression_train_n_points=10,
+                regression_model=LinearRegressionModel(
+                    lags_future_covariates=[0],
+                    output_chunk_length=2,
+                    multi_models=False,
+                ),
+            )
 
     @staticmethod
     def get_probabilistic_global_model(
