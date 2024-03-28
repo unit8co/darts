@@ -258,11 +258,11 @@ class _BoundedDetectorMixin:
             Name of the upper bound
         lower_bound
             (Sequence of) numerical bound below which a value is regarded as anomaly.
-            Must be between 0 and 1. If a sequence, must match the dimensionality of the series
+            If a sequence, must match the dimensionality of the series
             this detector is applied to.
         upper_bound
             (Sequence of) numerical bound above which a value is regarded as anomaly.
-            Must be between 0 and 1. If a sequence, must match the dimensionality of the series
+            If a sequence, must match the dimensionality of the series
             this detector is applied to.
 
         Returns
@@ -296,7 +296,7 @@ class _BoundedDetectorMixin:
         raise_if(
             all([lo is None for lo in lower_bound])
             and all([hi is None for hi in upper_bound]),
-            "All provided quantile values are None.",
+            "All provided upper and lower bounds values are None.",
             logger,
         )
 

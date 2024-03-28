@@ -25,11 +25,11 @@ class AndAggregator(Aggregator):
     def _predict_core(
         self, series: Sequence[TimeSeries], *args, **kwargs
     ) -> Sequence[TimeSeries]:
-        def _compononents_and(s: TimeSeries, _):
+        def _compononents_and(s: TimeSeries):
             return s.sum(axis=1).map(lambda x: (x >= s.width).astype(s.dtype))
 
         return _parallel_apply(
-            zip(series, [None] * len(series)),
+            [(s,) for s in series],
             _compononents_and,
             n_jobs=1,
             fn_args=args,
