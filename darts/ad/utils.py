@@ -2,7 +2,7 @@
 Utils for Anomaly Detection
 ---------------------------
 
-Common functions used by anomaly_model.py, scorers.py, aggregators.py and detectors.py
+Common functions used throughout the Anomaly Detection module.
 """
 
 # TODO:
@@ -10,7 +10,7 @@ Common functions used by anomaly_model.py, scorers.py, aggregators.py and detect
 #     - migrate metrics function to darts.metric
 #     - check error message
 #     - create a zoom option on anomalies for a show function
-#     - add an option visualize: "by window", "unique", "together"
+#     - add an option to visualize: "by window", "unique", "together"
 #     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 
 from typing import Sequence, Tuple, Union
@@ -41,7 +41,7 @@ def _assert_binary(series: TimeSeries, name_series: str):
     series
         series to check for.
     name_series
-        name str of the series.
+        name of the series.
     """
 
     raise_if_not(
@@ -59,7 +59,7 @@ def eval_metric_from_scores(
     window: Union[int, Sequence[int]] = 1,
     metric: str = "AUC_ROC",
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
-    """Scores the results against true anomalies.
+    """Computes a score/metric between anomaly scores against true anomalies.
 
     `actual_anomalies` and `anomaly_score` must have the same shape.
     `actual_anomalies` must be binary and have values belonging to the two classes (0 and 1).
@@ -71,34 +71,31 @@ def eval_metric_from_scores(
     Parameters
     ----------
     actual_anomalies
-        The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
+        The (sequence of) ground truth anomaly series (`1` if it is an anomaly and `0` if not).
     anomaly_score
-        Series indicating how anomoulous each window of size w is.
+        The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.
     window
-        Integer value indicating the number of past samples each point represents
-        in the anomaly_score. The parameter will be used by the function
-        ``_window_adjustment_anomalies()`` to transform actual_anomalies.
-        If a list is given. the length must match the number of series in anomaly_score
-        and actual_anomalies. If only one window is given, the value will be used for every
-        series in anomaly_score and actual_anomalies.
+        Integer value indicating the number of past samples each point represents in the `anomaly_score`.
+        The parameter will be used to transform `actual_anomalies`.
+        If a list of integers, the length must match the number of series in `anomaly_score`.
+        If an integer, the value will be used for every series in `anomaly_score` and `actual_anomalies`.
     metric
-        Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
+        Optionally, the name of the scoring function to use. Must be one of "AUC_ROC" (Area Under the
+        Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
         Default: "AUC_ROC"
 
     Returns
     -------
-    Union[float, Sequence[float], Sequence[Sequence[float]]]
-        Score of the anomalies score prediction
-            * ``float`` if `anomaly_score` is a univariate series (dimension=1).
-            * ``Sequence[float]``
+    float
+        A single score/metric for univariate `anomaly_score` series (with only one component/column).
+    Sequence[float]
+        A sequence (list) of scores for:
 
-                * if `anomaly_score` is a multivariate series (dimension>1),
-                  returns one value per dimension.
-                * if `anomaly_score` is a sequence of univariate series, returns one
-                  value per series
-            * ``Sequence[Sequence[float]]`` if `anomaly_score` is a sequence of
-              multivariate series. Outer Sequence is over the sequence input, and the inner
-              Sequence is over the dimensions of each element in the sequence input.
+        - multivariate `anomaly_score` series (multiple components). Gives a score for each component.
+        - a sequence (list) of univariate `anomaly_score` series. Gives a score for each series.
+    Sequence[Sequence[float]]
+        A sequence of sequences of scores for a sequence of multivariate `anomaly_score` series.
+        Gives a score for each series (outer sequence) and component (inner sequence).
     """
 
     raise_if_not(
@@ -153,13 +150,12 @@ def eval_metric_from_binary_prediction(
     window: Union[int, Sequence[int]] = 1,
     metric: str = "recall",
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
-    """Score the results against true anomalies.
+    """Computes a score/metric between predicted anomalies against true anomalies.
 
-    checks that `pred_anomalies` and `actual_anomalies` are the same:
-        - type,
-        - length,
-        - number of components
-        - binary and has values belonging to the two classes (1 and 0)
+    `pred_anomalies` and `actual_anomalies` must have:
+
+        - identical dimensions (number of time steps and number of components/columns),
+        - binary values belonging to the two classes (`1` if it is an anomaly and `0` if not)
 
     If one series is given for `actual_series` and `pred_series` contains more than
     one series, the function will consider `actual_series` as the true anomalies for
@@ -168,34 +164,30 @@ def eval_metric_from_binary_prediction(
     Parameters
     ----------
     actual_series
-        The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
     pred_series
-        Anomaly predictions.
+        The (sequence of) predicted binary anomaly series.
     window
-        Integer value indicating the number of past samples each point represents
-        in the pred_series. The parameter will be used to transform actual_series.
-        If a list is given. the length must match the number of series in pred_series
-        and actual_series. If only one window is given, the value will be used for every
-        series in pred_series and actual_series.
+        Integer value indicating the number of past samples each point represents in the `anomaly_score`.
+        The parameter will be used to transform `actual_anomalies`.
+        If a list of integers, the length must match the number of series in `anomaly_score`.
+        If an integer, the value will be used for every series in `anomaly_score` and `actual_anomalies`.
     metric
-        Optionally, Scoring function to use. Must be one of "recall", "precision",
+        Optionally, the name of the scoring function to use. Must be one of "recall", "precision",
         "f1", and "accuracy". Default: "recall"
 
     Returns
     -------
-    Union[float, Sequence[float], Sequence[Sequence[float]]]
-        Score of the anomalies prediction
+    float
+        A single score for univariate `pred_series` series (with only one component/column).
+    Sequence[float]
+        A sequence (list) of scores for:
 
-            * ``float`` if `pred_series` is a univariate series (dimension=1).
-            * ``Sequence[float]``
-
-                * if `pred_series` is a multivariate series (dimension>1),
-                  returns one value per dimension.
-                * if `pred_series` is a sequence of univariate series, returns one
-                  value per series
-            * ``Sequence[Sequence[float]]`` if `pred_series` is a sequence of
-              multivariate series. Outer Sequence is over the sequence input, and the inner
-              Sequence is over the dimensions of each element in the sequence input.
+        - multivariate `pred_series` series (multiple components). Gives a score for each component.
+        - a sequence (list) of univariate `pred_series` series. Gives a score for each series.
+    Sequence[Sequence[float]]
+        A sequence of sequences of scores for a sequence of multivariate `pred_series` series.
+        Gives a score for each series (outer sequence) and component (inner sequence).
     """
 
     raise_if_not(
