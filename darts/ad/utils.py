@@ -6,7 +6,6 @@ Common functions used throughout the Anomaly Detection module.
 """
 
 # TODO:
-#     - change structure of eval_accuracy_from_scores and eval_accuracy_from_binary_prediction (a lot of repeated code)
 #     - migrate metrics function to darts.metric
 #     - check error message
 #     - create a zoom option on anomalies for a show function
@@ -27,30 +26,10 @@ from sklearn.metrics import (
 )
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
-
-
-def _assert_binary(series: TimeSeries, name_series: str):
-    """Checks if series is a binary timeseries (1 and 0)"
-
-    Parameters
-    ----------
-    series
-        series to check for.
-    name_series
-        name of the series.
-    """
-
-    raise_if_not(
-        np.array_equal(
-            series.values(copy=False),
-            series.values(copy=False).astype(bool),
-        ),
-        f"Input series {name_series} must be a binary time series.",
-    )
 
 
 def eval_metric_from_scores(
@@ -97,51 +76,13 @@ def eval_metric_from_scores(
         A sequence of sequences of scores for a sequence of multivariate `anomaly_score` series.
         Gives a score for each series (outer sequence) and component (inner sequence).
     """
-
-    raise_if_not(
-        metric in {"AUC_ROC", "AUC_PR"},
-        "Argument `metric` must be one of 'AUC_ROC', 'AUC_PR'",
+    return _eval_metric(
+        actual_series=actual_anomalies,
+        pred_series=anomaly_score,
+        window=window,
+        metric=metric,
+        pred_is_binary=False,
     )
-    metric_fn = roc_auc_score if metric == "AUC_ROC" else average_precision_score
-
-    list_actual_anomalies, list_anomaly_scores, list_window = (
-        series2seq(actual_anomalies),
-        series2seq(anomaly_score),
-        [window] if not isinstance(window, Sequence) else window,
-    )
-
-    if len(list_actual_anomalies) == 1 and len(list_anomaly_scores) > 1:
-        list_actual_anomalies = list_actual_anomalies * len(list_anomaly_scores)
-
-    _assert_same_length(list_actual_anomalies, list_anomaly_scores)
-
-    if len(list_window) == 1:
-        list_window = list_window * len(list_actual_anomalies)
-    else:
-        raise_if_not(
-            len(list_window) == len(list_actual_anomalies),
-            "The list of windows must be the same length as the list of `anomaly_score` and"
-            + " `actual_anomalies`. There must be one window value for each series."
-            + f" Found length {len(list_window)}, expected {len(list_actual_anomalies)}.",
-        )
-
-    sol = []
-    for idx, (s_anomalies, s_score) in enumerate(
-        zip(list_actual_anomalies, list_anomaly_scores)
-    ):
-
-        _assert_binary(s_anomalies, "actual_anomalies")
-
-        sol.append(
-            _eval_accuracy_from_data(
-                s_anomalies, s_score, list_window[idx], metric_fn, metric
-            )
-        )
-
-    if len(sol) == 1 and not isinstance(anomaly_score, Sequence):
-        return sol[0]
-    else:
-        return sol
 
 
 def eval_metric_from_binary_prediction(
@@ -152,7 +93,7 @@ def eval_metric_from_binary_prediction(
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
     """Computes a score/metric between predicted anomalies against true anomalies.
 
-    `pred_anomalies` and `actual_anomalies` must have:
+    `pred_anomalies` and `actual_series` must have:
 
         - identical dimensions (number of time steps and number of components/columns),
         - binary values belonging to the two classes (`1` if it is an anomaly and `0` if not)
@@ -169,9 +110,9 @@ def eval_metric_from_binary_prediction(
         The (sequence of) predicted binary anomaly series.
     window
         Integer value indicating the number of past samples each point represents in the `anomaly_score`.
-        The parameter will be used to transform `actual_anomalies`.
+        The parameter will be used to transform `actual_series`.
         If a list of integers, the length must match the number of series in `anomaly_score`.
-        If an integer, the value will be used for every series in `anomaly_score` and `actual_anomalies`.
+        If an integer, the value will be used for every series in `anomaly_score` and `actual_series`.
     metric
         Optionally, the name of the scoring function to use. Must be one of "recall", "precision",
         "f1", and "accuracy". Default: "recall"
@@ -189,14 +130,71 @@ def eval_metric_from_binary_prediction(
         A sequence of sequences of scores for a sequence of multivariate `pred_series` series.
         Gives a score for each series (outer sequence) and component (inner sequence).
     """
-
-    raise_if_not(
-        metric in {"recall", "precision", "f1", "accuracy"},
-        "Argument `metric` must be one of 'recall', 'precision', "
-        "'f1' and 'accuracy'.",
+    return _eval_metric(
+        actual_series=actual_series,
+        pred_series=pred_series,
+        window=window,
+        metric=metric,
+        pred_is_binary=True,
     )
 
-    if metric == "recall":
+
+def _eval_metric(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    window: Union[int, Sequence[int]],
+    metric: str,
+    pred_is_binary: bool,
+):
+    """Computes a score/metric between anomaly scores or binary predicted anomalies against true
+    anomalies.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
+    pred_series
+        The (sequence of) anomaly scores or predicted binary anomaly series.
+    window
+        Integer value indicating the number of past samples each point represents in the `anomaly_score`.
+        The parameter will be used to transform `actual_series`.
+        If a list of integers, the length must match the number of series in `anomaly_score`.
+        If an integer, the value will be used for every series in `anomaly_score` and `actual_series`.
+    metric
+        Optionally, the name of the scoring function to use. Must be one of "recall", "precision",
+        "f1", and "accuracy". Default: "recall"
+    pred_is_binary
+        Whether `pred_series` refers predicted binary anomalies or anomaly scores.
+
+    Returns
+    -------
+    float
+        A single score for univariate `pred_series` series (with only one component/column).
+    Sequence[float]
+        A sequence (list) of scores for:
+
+        - multivariate `pred_series` series (multiple components). Gives a score for each component.
+        - a sequence (list) of univariate `pred_series` series. Gives a score for each series.
+    Sequence[Sequence[float]]
+        A sequence of sequences of scores for a sequence of multivariate `pred_series` series.
+        Gives a score for each series (outer sequence) and component (inner sequence).
+    """
+    metrics_exp = (
+        {"recall", "precision", "f1", "accuracy"}
+        if pred_is_binary
+        else {"AUC_ROC", "AUC_PR"}
+    )
+    if metric not in metrics_exp:
+        raise_log(
+            ValueError(f"Argument `metric` must be one of {metrics_exp}"),
+            logger=logger,
+        )
+
+    if metric == "AUC_ROC":
+        metric_fn = roc_auc_score
+    elif metric == "AUC_PR":
+        metric_fn = average_precision_score
+    elif metric == "recall":
         metric_fn = recall_score
     elif metric == "precision":
         metric_fn = precision_score
@@ -205,268 +203,87 @@ def eval_metric_from_binary_prediction(
     else:
         metric_fn = accuracy_score
 
-    list_actual_anomalies, list_binary_pred_anomalies, list_window = (
-        series2seq(actual_series),
-        series2seq(pred_series),
-        [window] if not isinstance(window, Sequence) else window,
-    )
+    called_with_single_series = isinstance(pred_series, TimeSeries)
+    actual_series = series2seq(actual_series)
+    pred_series = series2seq(pred_series)
+    window = [window] if not isinstance(window, Sequence) else window
 
-    if len(list_actual_anomalies) == 1 and len(list_binary_pred_anomalies) > 1:
-        list_actual_anomalies = list_actual_anomalies * len(list_binary_pred_anomalies)
+    if len(actual_series) == 1 and len(pred_series) > 1:
+        actual_series = actual_series * len(pred_series)
 
-    _assert_same_length(list_actual_anomalies, list_binary_pred_anomalies)
+    _assert_same_length(actual_series, pred_series)
 
-    if len(list_window) == 1:
-        list_window = list_window * len(list_actual_anomalies)
+    actual_name = "`actual_series`" if pred_is_binary else "`actual_anomalies`"
+    pred_name = "`pred_series`" if pred_is_binary else "`anomaly_score`"
+    if len(window) == 1:
+        window = window * len(actual_series)
     else:
-        raise_if_not(
-            len(list_window) == len(list_actual_anomalies),
-            "The list of windows must be the same length as the list of `pred_series` and"
-            + " `actual_series`. There must be one window value for each series."
-            + f" Found length {len(list_window)}, expected {len(list_actual_anomalies)}.",
-        )
+        if len(window) != len(actual_series):
+            raise_log(
+                ValueError(
+                    f"The list of windows must be the same length as the list of {pred_name} and "
+                    f"{actual_name}. There must be one window value for each series. "
+                    f"Found length {len(window)}, expected {len(actual_series)}."
+                ),
+                logger=logger,
+            )
 
     sol = []
-    for idx, (s_anomalies, s_pred) in enumerate(
-        zip(list_actual_anomalies, list_binary_pred_anomalies)
-    ):
+    for s_anomalies, s_pred, s_window in zip(actual_series, pred_series, window):
+        _assert_binary(s_anomalies, actual_name)
+        if pred_is_binary:
+            _assert_binary(s_pred, pred_name)
 
-        _assert_binary(s_pred, "pred_series")
-        _assert_binary(s_anomalies, "actual_series")
+        _assert_timeseries(s_pred, "Prediction series input")
+        _assert_timeseries(s_anomalies, "actual_anomalies input")
 
-        sol.append(
-            _eval_accuracy_from_data(
-                s_anomalies, s_pred, list_window[idx], metric_fn, metric
+        # if s_window > 1, the anomalies will be adjusted so that it can be compared timewise with s_pred
+        s_anomalies = _max_pooling(s_anomalies, s_window)
+
+        _sanity_check_two_series(s_pred, s_anomalies)
+
+        s_pred, s_anomalies = _intersect(s_pred, s_anomalies)
+
+        if not pred_is_binary:  # `pred_series` is an anomaly score
+            nr_anomalies_per_component = (
+                s_anomalies.values(copy=False).sum(axis=0).flatten()
             )
-        )
 
-    if len(sol) == 1 and not isinstance(pred_series, Sequence):
-        return sol[0]
-    else:
-        return sol
+            if nr_anomalies_per_component.min() == 0:
+                raise_log(
+                    ValueError(
+                        f"{actual_name} does not contain anomalies. {metric} cannot be computed."
+                    ),
+                    logger=logger,
+                )
+            if nr_anomalies_per_component.max() == len(s_anomalies):
+                add_txt = (
+                    ""
+                    if s_window <= 1
+                    else f" Consider decreasing the window size (window={s_window})"
+                )
+                raise_log(
+                    ValueError(
+                        f"{actual_name} only contains anomalies. {metric} cannot be computed."
+                        + add_txt
+                    ),
+                    logger=logger,
+                )
 
-
-def _eval_accuracy_from_data(
-    s_anomalies: TimeSeries,
-    s_data: TimeSeries,
-    window: int,
-    metric_fn,
-    metric_name: str,
-) -> Union[float, Sequence[float]]:
-    """Internal function for:
-        - ``eval_accuracy_from_binary_prediction()``
-        - ``eval_accuracy_from_scores()``
-
-    Score the results against true anomalies.
-
-    Parameters
-    ----------
-    actual_anomalies
-        The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-    s_data
-        series prediction
-    window
-        Integer value indicating the number of past samples each point represents
-        in the anomaly_score. The parameter will be used by the function
-        ``_window_adjustment_anomalies()`` to transform s_anomalies.
-    metric_fn
-        Function to use. Can be "average_precision_score", "roc_auc_score", "accuracy_score",
-        "f1_score", "precision_score" and "recall_score".
-    metric_name
-        Name str of the function to use. Can be "AUC_PR", "AUC_ROC", "accuracy",
-        "f1", "precision" and "recall".
-
-    Returns
-    -------
-    Union[float, Sequence[float]]
-        Score of the anomalies prediction
-            - float -> if `s_data` is a univariate series (dimension=1).
-            - Sequence[float] -> if `s_data` is a multivariate series (dimension>1),
-            returns one value per dimension.
-    """
-
-    _assert_timeseries(s_data, "Prediction series input")
-    _assert_timeseries(s_anomalies, "actual_anomalies input")
-
-    # if window > 1, the anomalies will be adjusted so that it can be compared timewise with s_data
-    s_anomalies = _max_pooling(s_anomalies, window)
-
-    _sanity_check_two_series(s_data, s_anomalies)
-
-    s_data, s_anomalies = _intersect(s_data, s_anomalies)
-
-    if metric_name == "AUC_ROC" or metric_name == "AUC_PR":
-
-        nr_anomalies_per_component = (
-            s_anomalies.sum(axis=0).values(copy=False).flatten()
-        )
-
-        raise_if(
-            nr_anomalies_per_component.min() == 0,
-            f"`actual_anomalies` does not contain anomalies. {metric_name} cannot be computed.",
-        )
-
-        raise_if(
-            nr_anomalies_per_component.max() == len(s_anomalies),
-            f"`actual_anomalies` only contains anomalies. {metric_name} cannot be computed."
-            + ["", f" Consider decreasing the window size (window={window})"][
-                window > 1
-            ],
-        )
-
-    # TODO: could we vectorize this?
-    metrics = []
-    for component_idx in range(s_data.width):
-        metrics.append(
-            metric_fn(
-                s_anomalies.all_values(copy=False)[:, component_idx],
-                s_data.all_values(copy=False)[:, component_idx],
+        # TODO: could we vectorize this?
+        s_anomalies_vals = s_anomalies.all_values(copy=False)
+        s_pred_vals = s_pred.all_values(copy=False)
+        metrics = []
+        for component_idx in range(s_pred.width):
+            metrics.append(
+                metric_fn(
+                    s_anomalies_vals[:, component_idx],
+                    s_pred_vals[:, component_idx],
+                )
             )
-        )
+        sol.append(metrics if len(metrics) > 1 else metrics[0])
 
-    if len(metrics) == 1:
-        return metrics[0]
-    else:
-        return metrics
-
-
-def _intersect(
-    series_1: TimeSeries,
-    series_2: TimeSeries,
-) -> Tuple[TimeSeries, TimeSeries]:
-    """Returns the sub-series of series_1 and of series_2 that share the same time index.
-    (Intersection in time of the two time series)
-
-    Parameters
-    ----------
-    series_1
-        1st time series
-    series_2:
-        2nd time series
-
-    Returns
-    -------
-    Tuple[TimeSeries, TimeSeries]
-    """
-
-    new_series_1 = series_1.slice_intersect(series_2)
-    raise_if(
-        len(new_series_1) == 0,
-        "Time intersection between the two series must be non empty.",
-    )
-
-    return new_series_1, series_2.slice_intersect(series_1)
-
-
-def _assert_timeseries(series: TimeSeries, message: str = None):
-    """Checks if given input is of type Darts TimeSeries"""
-
-    raise_if_not(
-        isinstance(series, TimeSeries),
-        "{} must be type darts.timeseries.TimeSeries and not {}.".format(
-            message if message is not None else "Series input", type(series)
-        ),
-    )
-
-
-def _sanity_check_two_series(
-    series_1: TimeSeries,
-    series_2: TimeSeries,
-):
-    """Performs sanity check on the two given inputs
-
-    Checks if the two inputs:
-        - type is Darts Timeseries
-        - have the same number of components
-        - if their intersection in time is not null
-
-    Parameters
-    ----------
-    series_1
-        1st time series
-    series_2:
-        2nd time series
-    """
-
-    _assert_timeseries(series_1)
-    _assert_timeseries(series_2)
-
-    # check if the two inputs time series have the same number of components
-    raise_if_not(
-        series_1.width == series_2.width,
-        "Series must have the same number of components,"
-        + f" found {series_1.width} and {series_2.width}.",
-    )
-
-    # check if the time intersection between the two inputs time series is not empty
-    raise_if_not(
-        len(series_1.time_index.intersection(series_2.time_index)) > 0,
-        "Series must have a non-empty intersection timestamps.",
-    )
-
-
-def _max_pooling(series: TimeSeries, window: int) -> TimeSeries:
-    """Slides a window of size `window` along the input series, and replaces the value of the
-    input time series by the maximum of the values contained in the window.
-
-    The binary time series output represents if there is an anomaly (=1) or not (=0) in the past
-    window points. The new series will equal the length of the input series - window. Its first
-    point will start at the first time index of the input time series + window points.
-
-    Parameters
-    ----------
-    series:
-        Binary time series.
-    window:
-        Integer value indicating the number of past samples each point represents.
-
-    Returns
-    -------
-    Binary TimeSeries
-    """
-
-    raise_if_not(
-        isinstance(window, int),
-        f"Parameter `window` must be of type int, found {type(window)}.",
-    )
-
-    raise_if_not(
-        window > 0,
-        f"Parameter `window` must be stricly greater than 0, found size {window}.",
-    )
-
-    raise_if_not(
-        window < len(series),
-        "Parameter `window` must be smaller than the length of the input series, "
-        + f" found window size {(window)}, and max size {len(series)}.",
-    )
-
-    if window == 1:
-        # the process results in replacing every value by itself -> return directly the series
-        return series
-    else:
-        return series.window_transform(
-            transforms={
-                "window": window,
-                "function": "max",
-                "mode": "rolling",
-                "min_periods": window,
-            },
-            treat_na="dropna",
-        )
-
-
-def _assert_same_length(
-    list_series_1: Sequence[TimeSeries],
-    list_series_2: Sequence[TimeSeries],
-):
-    """Checks if the two sequences contain the same number of TimeSeries."""
-
-    raise_if_not(
-        len(list_series_1) == len(list_series_2),
-        "Sequences of series must be of the same length, found length:"
-        + f" {len(list_series_1)} and {len(list_series_2)}.",
-    )
+    return sol[0] if called_with_single_series else sol
 
 
 def show_anomalies_from_scores(
@@ -509,129 +326,85 @@ def show_anomalies_from_scores(
         Default: 1. If a list of anomaly scores is given, the same default window will be used for every score.
     names_of_scorers
         Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
+        Only effective when `anomaly_scores` is not `None`.
     actual_anomalies
         The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
     title
         Title of the figure
     metric
         Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-        Default: "AUC_ROC"
+        Only effective when `anomaly_scores` is not `None`. Default: "AUC_ROC"
     """
-
-    raise_if_not(
-        isinstance(series, TimeSeries),
-        f"Input `series` must be of type TimeSeries, found {type(series)}.",
-    )
-
-    if title is None:
-        if anomaly_scores is not None:
-            title = "Anomaly results"
-    else:
-        raise_if_not(
-            isinstance(title, str),
-            f"Input `title` must be of type str, found {type(title)}.",
+    if not isinstance(series, TimeSeries):
+        raise_log(
+            ValueError("`series` must be a single `TimeSeries`."),
+            logger=logger,
         )
+
+    if title is None and anomaly_scores is not None:
+        title = "Anomaly results"
 
     nbr_plots = 1
-
-    if model_output is not None:
-        raise_if_not(
-            isinstance(model_output, TimeSeries),
-            f"Input `model_output` must be of type TimeSeries, found {type(model_output)}.",
-        )
-
     if actual_anomalies is not None:
-        raise_if_not(
-            isinstance(actual_anomalies, TimeSeries),
-            f"Input `actual_anomalies` must be of type TimeSeries, found {type(actual_anomalies)}.",
-        )
-
         nbr_plots = nbr_plots + 1
-    else:
-        raise_if_not(
-            metric is None,
-            "`actual_anomalies` must be given in order to calculate a metric.",
+    elif metric is not None:
+        raise_log(
+            ValueError(
+                "`actual_anomalies` must be given in order to calculate a metric."
+            ),
+            logger=logger,
         )
 
+    anomaly_scores = series2seq(anomaly_scores)
     if anomaly_scores is not None:
-
-        if isinstance(anomaly_scores, Sequence):
-            for idx, s in enumerate(anomaly_scores):
-                raise_if_not(
-                    isinstance(s, TimeSeries),
-                    f"Elements of anomaly_scores must be of type TimeSeries, found {type(s)} at index {idx}.",
-                )
-        else:
-            raise_if_not(
-                isinstance(anomaly_scores, TimeSeries),
-                f"Input `anomaly_scores` must be of type TimeSeries or Sequence, found {type(actual_anomalies)}.",
-            )
-            anomaly_scores = [anomaly_scores]
-
         if names_of_scorers is not None:
-
-            if isinstance(names_of_scorers, str):
-                names_of_scorers = [names_of_scorers]
-            elif isinstance(names_of_scorers, Sequence):
-                for idx, name in enumerate(names_of_scorers):
-                    raise_if_not(
-                        isinstance(name, str),
-                        f"Elements of names_of_scorers must be of type str, found {type(name)} at index {idx}.",
-                    )
-            else:
-                raise ValueError(
-                    f"Input `names_of_scorers` must be of type str or Sequence, found {type(names_of_scorers)}."
+            names_of_scorers = (
+                [names_of_scorers]
+                if isinstance(names_of_scorers, str)
+                else names_of_scorers
+            )
+            if len(names_of_scorers) != len(anomaly_scores):
+                raise_log(
+                    ValueError(
+                        f"The number of names in `names_of_scorers` must match the "
+                        f"number of anomaly score given as input, found "
+                        f"{len(names_of_scorers)} and expected {len(anomaly_scores)}."
+                    ),
+                    logger=logger,
                 )
 
-            raise_if_not(
-                len(names_of_scorers) == len(anomaly_scores),
-                "The number of names in `names_of_scorers` must match the number of anomaly score "
-                + f"given as input, found {len(names_of_scorers)} and expected {len(anomaly_scores)}.",
+        window = [window] if isinstance(window, int) else window
+        if not all([w > 0 for w in window]):
+            raise_log(
+                ValueError(
+                    "Parameter `window` must be a positive integer, "
+                    "or a sequence of positive integers."
+                ),
+                logger=logger,
+            )
+        window = window if len(window) > 1 else window * len(anomaly_scores)
+        if len(window) != len(anomaly_scores):
+            raise_log(
+                ValueError(
+                    f"The number of window in `window` must match the "
+                    f"number of anomaly score given as input. One window "
+                    f"value for each series. Found length {len(window)}, "
+                    f"and expected {len(anomaly_scores)}."
+                ),
+                logger=logger,
             )
 
-        if isinstance(window, int):
-            window = [window]
-        elif isinstance(window, Sequence):
-            for idx, w in enumerate(window):
-                raise_if_not(
-                    isinstance(w, int),
-                    f"Every window must be of type int, found {type(w)} at index {idx}.",
-                )
-        else:
-            raise ValueError(
-                f"Input `window` must be of type int or Sequence, found {type(window)}."
+        if not all([w < len(s) for (w, s) in zip(window, anomaly_scores)]):
+            raise_log(
+                ValueError(
+                    "Parameter `window` must be an integer or sequence of integers "
+                    "with value(s) smaller than the length of the corresponding series "
+                    "in `anomaly_scores`."
+                ),
+                logger=logger,
             )
-
-        raise_if_not(
-            all([w > 0 for w in window]),
-            "All windows must be positive integer.",
-        )
-
-        if len(window) == 1:
-            window = window * len(anomaly_scores)
-        else:
-            raise_if_not(
-                len(window) == len(anomaly_scores),
-                "The number of window in `window` must match the number of anomaly score given as input. One "
-                + f"window value for each series. Found length {len(window)}, and expected {len(anomaly_scores)}.",
-            )
-
-        raise_if_not(
-            all([w < len(s) for (w, s) in zip(window, anomaly_scores)]),
-            "All windows must be smaller than the length of their corresponding score.",
-        )
 
         nbr_plots = nbr_plots + len(set(window))
-    else:
-        if names_of_scorers is not None:
-            logger.warning(
-                "The parameter `names_of_scorers` is given, but the input `anomaly_scores` is None."
-            )
-
-        if metric is not None:
-            logger.warning(
-                "The parameter `metric` is given, but the input `anomaly_scores` is None."
-            )
 
     fig, axs = plt.subplots(
         nbr_plots,
@@ -646,7 +419,6 @@ def show_anomalies_from_scores(
     _plot_series(series=series, ax_id=axs[index_ax][0], linewidth=0.5, label_name="")
 
     if model_output is not None:
-
         _plot_series(
             series=model_output,
             ax_id=axs[index_ax][0],
@@ -739,6 +511,169 @@ def show_anomalies_from_scores(
     fig.suptitle(title)
 
 
+def _intersect(
+    series_1: TimeSeries,
+    series_2: TimeSeries,
+) -> Tuple[TimeSeries, TimeSeries]:
+    """Returns the sub-series of series_1 and of series_2 that share the same time index.
+    (Intersection in time of the two time series)
+
+    Parameters
+    ----------
+    series_1
+        1st time series
+    series_2:
+        2nd time series
+
+    Returns
+    -------
+    Tuple[TimeSeries, TimeSeries]
+    """
+    new_series_1 = series_1.slice_intersect(series_2)
+    if len(new_series_1) == 0:
+        raise_log(
+            ValueError("Time intersection between the two series must be non empty."),
+            logger=logger,
+        )
+    return new_series_1, series_2.slice_intersect(series_1)
+
+
+def _assert_binary(series: TimeSeries, name_series: str):
+    """Checks if series is a binary timeseries (1 and 0)"
+
+    Parameters
+    ----------
+    series
+        series to check for.
+    name_series
+        name of the series.
+    """
+
+    vals = series.values(copy=False)
+    if not np.array_equal(vals, vals.astype(bool)):
+        raise_log(
+            ValueError(f"Input series {name_series} must be a binary time series."),
+            logger=logger,
+        )
+
+
+def _assert_timeseries(series: TimeSeries, message: str = None):
+    """Checks if given input is of type Darts TimeSeries"""
+    if not isinstance(series, TimeSeries):
+        raise_log(
+            ValueError(
+                f"{message if message is not None else 'Series input'} "
+                f"must be a `TimeSeries`. Received {type(series)}."
+            ),
+            logger=logger,
+        )
+
+
+def _sanity_check_two_series(
+    series_1: TimeSeries,
+    series_2: TimeSeries,
+):
+    """Performs sanity check on the two given inputs
+
+    Checks if the two inputs:
+        - type is Darts Timeseries
+        - have the same number of components
+        - if their intersection in time is not null
+
+    Parameters
+    ----------
+    series_1
+        1st time series
+    series_2:
+        2nd time series
+    """
+
+    _assert_timeseries(series_1)
+    _assert_timeseries(series_2)
+
+    # check if the two inputs time series have the same number of components
+    if series_1.width != series_2.width:
+        raise_log(
+            ValueError(
+                f"Series must have the same number of components, "
+                f"found {series_1.width} and {series_2.width}."
+            ),
+            logger=logger,
+        )
+
+    # check if the time intersection between the two inputs time series is not empty
+    if len(series_1.time_index.intersection(series_2.time_index)) == 0:
+        raise_log(
+            ValueError("Series must have a non-empty intersection timestamps."),
+            logger=logger,
+        )
+
+
+def _max_pooling(series: TimeSeries, window: int) -> TimeSeries:
+    """Slides a window of size `window` along the input series, and replaces the value of the
+    input time series by the maximum of the values contained in the window.
+
+    The binary time series output represents if there is an anomaly (=1) or not (=0) in the past
+    window points. The new series will equal the length of the input series - window. Its first
+    point will start at the first time index of the input time series + window points.
+
+    Parameters
+    ----------
+    series:
+        Binary time series.
+    window:
+        Integer value indicating the number of past samples each point represents.
+
+    Returns
+    -------
+    Binary TimeSeries
+    """
+    if window <= 0:
+        raise_log(
+            ValueError(
+                f"Parameter `window` must be strictly greater than 0, found size {window}."
+            ),
+            logger=logger,
+        )
+    if window >= len(series):
+        raise_log(
+            ValueError(
+                f"Parameter `window` must be smaller than the length of the "
+                f"input series, found window size {window}, and max size {len(series)}."
+            ),
+            logger=logger,
+        )
+
+    if window == 1:
+        # the process results in replacing every value by itself -> return directly the series
+        return series
+
+    return series.window_transform(
+        transforms={
+            "window": window,
+            "function": "max",
+            "mode": "rolling",
+            "min_periods": window,
+        },
+        treat_na="dropna",
+    )
+
+
+def _assert_same_length(
+    list_series_1: Sequence[TimeSeries],
+    list_series_2: Sequence[TimeSeries],
+):
+    """Checks if the two sequences contain the same number of TimeSeries."""
+    if len(list_series_1) != len(list_series_2):
+        raise_log(
+            ValueError(
+                f"Sequences of series must be of the same length, "
+                f"found length: {len(list_series_1)} and {len(list_series_2)}."
+            ),
+            logger=logger,
+        )
+
+
 def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
     """Internal function called by ``show_anomalies_from_scores()``
 
@@ -755,7 +690,6 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
     label_name
         Name that will appear in the legend.
     """
-
     for i, c in enumerate(series._xa.component[:10]):
         comp = series._xa.sel(component=c)
 

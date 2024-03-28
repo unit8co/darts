@@ -1401,16 +1401,13 @@ class TestAnomalyDetectionModel:
     def show_anomalies_function(self, visualization_function):
 
         # must input only one series
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             visualization_function(series=[self.train, self.train])
+        assert str(err.value) == "`series` must be a single `TimeSeries`."
 
         # input must be a series
         with pytest.raises(ValueError):
             visualization_function(series=[1, 2, 4])
-
-        # title must be str
-        with pytest.raises(ValueError):
-            visualization_function(series=self.train, title=1)
 
         if visualization_function != show_anomalies_from_scores:
             # metric must be "AUC_ROC" or "AUC_PR"
@@ -1454,12 +1451,7 @@ class TestAnomalyDetectionModel:
                     metric="AUC_ROC",
                 )
         else:
-            # window must be int
-            with pytest.raises(ValueError):
-                show_anomalies_from_scores(
-                    series=self.train, anomaly_scores=self.test, window="1"
-                )
-            # window must be an int positive
+            # window must be a positive int
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
                     series=self.train, anomaly_scores=self.test, window=-1
@@ -1469,7 +1461,6 @@ class TestAnomalyDetectionModel:
                 show_anomalies_from_scores(
                     series=self.train, anomaly_scores=self.test, window=200
                 )
-
             # must have the same nbr of windows than scores
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
@@ -1480,12 +1471,6 @@ class TestAnomalyDetectionModel:
                     series=self.train,
                     anomaly_scores=[self.test, self.test],
                     window=[1, 2, 1],
-                )
-
-            # names_of_scorers must be str
-            with pytest.raises(ValueError):
-                show_anomalies_from_scores(
-                    series=self.train, anomaly_scores=self.test, names_of_scorers=2
                 )
             # nbr of names_of_scorers must match the nbr of scores
             with pytest.raises(ValueError):

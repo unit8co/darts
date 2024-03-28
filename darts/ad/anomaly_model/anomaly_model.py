@@ -9,7 +9,7 @@ import pandas as pd
 
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.utils import series2seq
 
@@ -155,14 +155,11 @@ class AnomalyModel(ABC):
         score_kwargs
             parameters for the `.score()` function
         """
-
-        if isinstance(series, Sequence):
-            raise_if_not(
-                len(series) == 1,
-                f"`show_anomalies` expects one series, found a list of length {len(series)} as input.",
+        if not isinstance(series, TimeSeries):
+            raise_log(
+                ValueError("`series` must be a single `TimeSeries`."),
+                logger=logger,
             )
-
-            series = series[0]
 
         raise_if_not(
             isinstance(series, TimeSeries),
