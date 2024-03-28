@@ -87,7 +87,7 @@ class TestAnomalyDetectionModel:
         with pytest.raises(ValueError) as err:
             check_metric(med_series, actual_series, metric, scores_exp[2])
         assert str(err.value).startswith(
-            "Input series `actual_anomalies` must be a binary time series."
+            "Input series `actual_anomalies` must have binary values only."
         )
 
         # wrong metric
@@ -151,14 +151,14 @@ class TestAnomalyDetectionModel:
         with pytest.raises(ValueError) as err:
             check_metric(med_series, actual_series, metric, scores_exp[2])
         assert str(err.value).startswith(
-            "Input series `actual_series` must be a binary time series."
+            "Input series `actual_series` must have binary values only."
         )
 
         # pred must be binary
         with pytest.raises(ValueError) as err:
             check_metric(actual_series, med_series, metric, scores_exp[2])
         assert str(err.value).startswith(
-            "Input series `pred_series` must be a binary time series."
+            "Input series `pred_series` must have binary values only."
         )
 
         # wrong metric

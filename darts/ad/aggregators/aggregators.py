@@ -13,10 +13,12 @@ Anomaly aggregators base classes
 from abc import ABC, abstractmethod
 from typing import Sequence, Union
 
-import numpy as np
-
 from darts import TimeSeries
-from darts.ad.utils import eval_metric_from_binary_prediction, series2seq
+from darts.ad.utils import (
+    _assert_binary,
+    eval_metric_from_binary_prediction,
+    series2seq,
+)
 from darts.logging import get_logger, raise_if_not, raise_log
 
 logger = get_logger(__name__)
@@ -79,34 +81,29 @@ class Aggregator(ABC):
         """
 
         list_series = series2seq(series)
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all series in `series` must be of type TimeSeries.",
-        )
-
-        raise_if_not(
-            all([s.width > 1 for s in list_series]),
-            "all series in `series` must be multivariate (width>1).",
-        )
-
-        raise_if_not(
-            all([s.is_deterministic for s in list_series]),
-            "all series in `series` must be deterministic (number of samples=1).",
-        )
-
-        raise_if_not(
-            all(
-                [
-                    np.array_equal(
-                        s.values(copy=False), s.values(copy=False).astype(bool)
-                    )
-                    for s in list_series
-                ]
-            ),
-            "all series in `series` must be binary (only 0 and 1 values).",
-        )
-
+        for s in list_series:
+            if not isinstance(s, TimeSeries):
+                raise_log(
+                    ValueError(
+                        "all series in `actual_series` must be of type TimeSeries."
+                    ),
+                    logger=logger,
+                )
+            if not s.is_deterministic:
+                raise_log(
+                    ValueError(
+                        "all series in `actual_series` must be deterministic (number of samples=1)."
+                    ),
+                    logger=logger,
+                )
+            if not s.width > 1:
+                raise_log(
+                    ValueError(
+                        "all series in `actual_series` must be multivariate (width>1)."
+                    ),
+                    logger=logger,
+                )
+            _assert_binary(s, name_series="`series`")
         return list_series
 
     def eval_metric(
@@ -140,43 +137,9 @@ class Aggregator(ABC):
         Union[float, Sequence[float]]
             (Sequence of) score for the (sequence of) series
         """
-
-        list_actual_series = series2seq(actual_series)
-
-        for s in list_actual_series:
-            if not isinstance(s, TimeSeries):
-                raise_log(
-                    ValueError(
-                        "all series in `actual_series` must be of type TimeSeries."
-                    ),
-                    logger=logger,
-                )
-            if not s.is_deterministic:
-                raise_log(
-                    ValueError(
-                        "all series in `actual_series` must be deterministic (number of samples=1)."
-                    ),
-                    logger=logger,
-                )
-            if s.width != 1:
-                raise_log(
-                    ValueError(
-                        "all series in `actual_series` must be univariate (width=1)."
-                    ),
-                    logger=logger,
-                )
-
-        if len(list_actual_series) != len(series2seq(pred_series)):
-            raise_log(
-                ValueError(
-                    "`actual_series` and `pred_series` must contain the same number of series."
-                ),
-                logger=logger,
-            )
         preds = self.predict(pred_series)
-
         return eval_metric_from_binary_prediction(
-            list_actual_series, preds, window, metric
+            series2seq(actual_series), preds, window, metric
         )
 
 

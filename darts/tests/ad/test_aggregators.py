@@ -271,7 +271,7 @@ class TestAnomalyDetectionAggregator:
             aggregator.predict([self.mts_anomalies1, self.real_anomalies])
 
         # input a (sequence of) non binary series
-        expected_msg = "all series in `series` must be binary (only 0 and 1 values)."
+        expected_msg = "Input series `series` must have binary values only."
         with pytest.raises(ValueError) as err:
             aggregator.predict(self.mts_train)
         assert str(err.value) == expected_msg
