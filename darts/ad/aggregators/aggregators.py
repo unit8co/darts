@@ -17,7 +17,9 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.ad.utils import eval_metric_from_binary_prediction, series2seq
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
+
+logger = get_logger(__name__)
 
 
 class Aggregator(ABC):
@@ -141,26 +143,36 @@ class Aggregator(ABC):
 
         list_actual_series = series2seq(actual_series)
 
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_actual_series]),
-            "all series in `actual_series` must be of type TimeSeries.",
-        )
+        for s in list_actual_series:
+            if not isinstance(s, TimeSeries):
+                raise_log(
+                    ValueError(
+                        "all series in `actual_series` must be of type TimeSeries."
+                    ),
+                    logger=logger,
+                )
+            if not s.is_deterministic:
+                raise_log(
+                    ValueError(
+                        "all series in `actual_series` must be deterministic (number of samples=1)."
+                    ),
+                    logger=logger,
+                )
+            if s.width != 1:
+                raise_log(
+                    ValueError(
+                        "all series in `actual_series` must be univariate (width=1)."
+                    ),
+                    logger=logger,
+                )
 
-        raise_if_not(
-            all([s.is_deterministic for s in list_actual_series]),
-            "all series in `actual_series` must be deterministic (number of samples=1).",
-        )
-
-        raise_if_not(
-            all([s.width == 1 for s in list_actual_series]),
-            "all series in `actual_series` must be univariate (width=1).",
-        )
-
-        raise_if_not(
-            len(list_actual_series) == len(series2seq(pred_series)),
-            "`actual_series` and `pred_series` must contain the same number of series.",
-        )
-
+        if len(list_actual_series) != len(series2seq(pred_series)):
+            raise_log(
+                ValueError(
+                    "`actual_series` and `pred_series` must contain the same number of series."
+                ),
+                logger=logger,
+            )
         preds = self.predict(pred_series)
 
         return eval_metric_from_binary_prediction(
