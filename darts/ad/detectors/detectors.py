@@ -284,9 +284,9 @@ class _BoundedDetectorMixin:
             return (
                 boundaries.tolist()
                 if isinstance(boundaries, np.ndarray)
-                else [boundaries]
-                if not isinstance(boundaries, Sequence)
-                else boundaries
+                else (
+                    [boundaries] if not isinstance(boundaries, Sequence) else boundaries
+                )
             )
 
         # convert to list
