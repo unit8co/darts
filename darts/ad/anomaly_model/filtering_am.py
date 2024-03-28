@@ -11,8 +11,8 @@ from typing import Dict, Sequence, Union
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _assert_same_length, _to_list
-from darts.logging import get_logger, raise_if_not
+from darts.ad.utils import _assert_same_length, series2seq
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
 
@@ -88,26 +88,18 @@ class FilteringAnomalyModel(AnomalyModel):
         """
         # TODO: add support for covariates (see eg. Kalman Filter)
 
-        raise_if_not(
-            type(allow_model_training) is bool,
-            f"`allow_filter_training` must be Boolean, found type: {type(allow_model_training)}.",
-        )
+        super().fit(series=series, allow_model_training=allow_model_training)
 
-        # checks if model does not need training and all scorer(s) are not fittable
+        # interrupt training if nothing to fit
         if not allow_model_training and not self.scorers_are_trainable:
             logger.warning(
-                f"The filtering model {self.model.__class__.__name__} is not required to be trained"
-                + " because the parameter `allow_filter_training` is set to False, and no scorer"
-                + " fittable. The ``.fit()`` function has no effect."
+                f"The filtering model {self.model.__class__.__name__} won't be trained"
+                + " because the parameter `allow_model_training` is set to False, and no scorer"
+                + " is fittable. ``.fit()`` method has no effect."
             )
             return
 
-        list_series = _to_list(series)
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input `series` must be of type Timeseries.",
-        )
+        list_series = series2seq(series)
 
         if allow_model_training:
             # fit filtering model
@@ -121,9 +113,12 @@ class FilteringAnomalyModel(AnomalyModel):
 
                 self.filter.fit(list_series[0], **filter_fit_kwargs)
             else:
-                raise ValueError(
-                    "`allow_filter_training` was set to True, but the filter"
-                    + f" {self.model.__class__.__name__} has no fit() method."
+                raise_log(
+                    ValueError(
+                        "`allow_filter_training` was set to True, but the filter"
+                        + f" {self.model.__class__.__name__} has no fit() method."
+                    ),
+                    logger,
                 )
         else:
             # TODO: check if Kalman is fitted or not
@@ -133,76 +128,10 @@ class FilteringAnomalyModel(AnomalyModel):
         if self.scorers_are_trainable:
             list_pred = [self.filter.filter(series) for series in list_series]
 
-        # fit the scorers
-        for scorer in self.scorers:
-            if hasattr(scorer, "fit"):
-                scorer.fit_from_prediction(list_series, list_pred)
+            # fit the scorers
+            self._fit_scorers(list_series, list_pred)
 
         return self
-
-    def show_anomalies(
-        self,
-        series: TimeSeries,
-        actual_anomalies: TimeSeries = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        title: str = None,
-        metric: str = None,
-        **score_kwargs,
-    ):
-        """Plot the results of the anomaly model.
-
-        Computes the score on the given series input and shows the different anomaly scores with respect to time.
-
-        The plot will be composed of the following:
-
-        - the series itself with the output of the filtering model
-        - the anomaly score of each scorer. The scorer with different windows will be separated.
-        - the actual anomalies, if given.
-
-        It is possible to:
-
-        - add a title to the figure with the parameter `title`
-        - give personalized names for the scorers with `names_of_scorers`
-        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies are given
-
-        Parameters
-        ----------
-        series
-            The series to visualize anomalies from.
-        actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        names_of_scorers
-            Name of the scorers. Must be a list of length equal to the number of scorers in the anomaly_model.
-        title
-            Title of the figure
-        metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-            Default: "AUC_ROC"
-        score_kwargs
-            parameters for the `.score()` function
-        """
-
-        if isinstance(series, Sequence):
-            raise_if_not(
-                len(series) == 1,
-                f"`show_anomalies` expects one series, found a sequence of length {len(series)} as input.",
-            )
-
-            series = series[0]
-
-        anomaly_scores, model_output = self.score(
-            series, return_model_prediction=True, **score_kwargs
-        )
-
-        return self._show_anomalies(
-            series,
-            model_output=model_output,
-            anomaly_scores=anomaly_scores,
-            names_of_scorers=names_of_scorers,
-            actual_anomalies=actual_anomalies,
-            title=title,
-            metric=metric,
-        )
 
     def score(
         self,
@@ -248,7 +177,7 @@ class FilteringAnomalyModel(AnomalyModel):
             f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
 
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         # TODO: vectorize this call later on if we have any filtering models allowing this
         list_pred = [self.filter.filter(s, **filter_kwargs) for s in list_series]
@@ -277,7 +206,7 @@ class FilteringAnomalyModel(AnomalyModel):
         else:
             return scores
 
-    def eval_accuracy(
+    def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -317,7 +246,7 @@ class FilteringAnomalyModel(AnomalyModel):
             (by nature of the scorer or if its component_wise is set to True), the values of the dictionary
             will be a Sequence containing the score for each dimension.
         """
-        list_series, list_actual_anomalies = _to_list(series), _to_list(
+        list_series, list_actual_anomalies = series2seq(series), series2seq(
             actual_anomalies
         )
 
@@ -336,7 +265,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         list_anomaly_scores = self.score(series=list_series, **filter_kwargs)
 
-        acc_anomaly_scores = self._eval_accuracy_from_scores(
+        acc_anomaly_scores = self._eval_metric_from_scores(
             list_actual_anomalies=list_actual_anomalies,
             list_anomaly_scores=list_anomaly_scores,
             metric=metric,

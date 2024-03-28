@@ -1,3 +1,4 @@
+from itertools import product
 from typing import Dict, Sequence, Tuple
 
 import numpy as np
@@ -6,14 +7,6 @@ import pytest
 from pyod.models.knn import KNN
 
 from darts import TimeSeries
-
-# anomaly aggregators
-# import everything in darts.ad (also for testing imports)
-from darts.ad import AndAggregator  # noqa: F401
-from darts.ad import EnsembleSklearnAggregator  # noqa: F401
-from darts.ad import OrAggregator  # noqa: F401
-from darts.ad import QuantileDetector  # noqa: F401
-from darts.ad import ThresholdDetector  # noqa: F401
 from darts.ad import CauchyNLLScorer
 from darts.ad import DifferenceScorer as Difference
 from darts.ad import (
@@ -24,16 +17,41 @@ from darts.ad import (
     GaussianNLLScorer,
     KMeansScorer,
     LaplaceNLLScorer,
-    NormScorer,
-    PoissonNLLScorer,
-    PyODScorer,
-    WassersteinScorer,
 )
-from darts.ad.utils import eval_accuracy_from_scores, show_anomalies_from_scores
+from darts.ad import NormScorer as Norm
+from darts.ad import PoissonNLLScorer, PyODScorer, WassersteinScorer
+from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverageFilter, NaiveSeasonal, RegressionModel
 
+filtering_am = [
+    (
+        FilteringAnomalyModel,
+        {"model": MovingAverageFilter(window=10), "scorer": Norm()},
+    ),
+    (
+        FilteringAnomalyModel,
+        {"model": MovingAverageFilter(window=10), "scorer": [Norm(), KMeansScorer()]},
+    ),
+    (
+        FilteringAnomalyModel,
+        {"model": MovingAverageFilter(window=10), "scorer": KMeansScorer()},
+    ),
+]
 
-class TestADAnomalyModel:
+forecasting_am = [
+    (ForecastingAnomalyModel, {"model": RegressionModel(lags=10), "scorer": Norm()}),
+    (
+        ForecastingAnomalyModel,
+        {"model": RegressionModel(lags=10), "scorer": [Norm(), KMeansScorer()]},
+    ),
+    (
+        ForecastingAnomalyModel,
+        {"model": RegressionModel(lags=10), "scorer": KMeansScorer()},
+    ),
+]
+
+
+class TestAnomalyDetectionModel:
     np.random.seed(42)
 
     # univariate series
@@ -79,178 +97,166 @@ class TestADAnomalyModel:
         mts_train._time_index, np_mts_anomalies
     )
 
-    def test_Scorer(self):
+    @pytest.mark.parametrize(
+        "scorer,anomaly_model_config",
+        product(
+            [
+                Norm(),
+                Difference(),
+                GaussianNLLScorer(),
+                ExponentialNLLScorer(),
+                PoissonNLLScorer(),
+                LaplaceNLLScorer(),
+                CauchyNLLScorer(),
+                GammaNLLScorer(),
+            ],
+            [
+                (ForecastingAnomalyModel, {"model": RegressionModel(lags=10)}),
+                (FilteringAnomalyModel, {"model": MovingAverageFilter(window=20)}),
+            ],
+        ),
+    )
+    def test_non_fittable_scorer(self, scorer, anomaly_model_config):
+        am_cls, am_kwargs = anomaly_model_config
+        anomaly_model = am_cls(scorer=scorer, **am_kwargs)
+        assert not anomaly_model.scorers_are_trainable
 
-        list_NonFittableAnomalyScorer = [
-            NormScorer(),
-            Difference(),
-            GaussianNLLScorer(),
-            ExponentialNLLScorer(),
-            PoissonNLLScorer(),
-            LaplaceNLLScorer(),
-            CauchyNLLScorer(),
-            GammaNLLScorer(),
-        ]
+    @pytest.mark.parametrize(
+        "scorer,anomaly_model_config",
+        product(
+            [
+                PyODScorer(model=KNN()),
+                KMeansScorer(),
+                WassersteinScorer(window_agg=False),
+            ],
+            [
+                (ForecastingAnomalyModel, {"model": RegressionModel(lags=10)}),
+                (FilteringAnomalyModel, {"model": MovingAverageFilter(window=20)}),
+            ],
+        ),
+    )
+    def test_fittable_scorer(self, scorer, anomaly_model_config):
+        am_cls, am_kwargs = anomaly_model_config
+        anomaly_model = am_cls(scorer=scorer, **am_kwargs)
+        assert anomaly_model.scorers_are_trainable
 
-        for scorers in list_NonFittableAnomalyScorer:
-            for anomaly_model in [
-                ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=scorers),
+    @pytest.mark.parametrize(
+        "anomaly_model,fit_model",
+        zip(
+            [
+                ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
                 FilteringAnomalyModel(
-                    model=MovingAverageFilter(window=20), scorer=scorers
+                    model=MovingAverageFilter(window=20), scorer=Norm()
                 ),
-            ]:
+            ],
+            [True, False],
+        ),
+    )
+    def test_score(self, anomaly_model, fit_model):
+        if fit_model:
+            anomaly_model.fit(self.train, allow_model_training=True)
 
-                # scorer are trainable
-                assert not anomaly_model.scorers_are_trainable
+        # parameter return_model_prediction must be bool
+        with pytest.raises(ValueError):
+            anomaly_model.score(self.test, return_model_prediction=1)
+        with pytest.raises(ValueError):
+            anomaly_model.score(self.test, return_model_prediction="True")
 
-        list_FittableAnomalyScorer = [
-            PyODScorer(model=KNN()),
-            KMeansScorer(),
-            WassersteinScorer(),
-        ]
-
-        for scorers in list_FittableAnomalyScorer:
-            for anomaly_model in [
-                ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=scorers),
-                FilteringAnomalyModel(
-                    model=MovingAverageFilter(window=20), scorer=scorers
-                ),
-            ]:
-
-                # scorer are not trainable
-                assert anomaly_model.scorers_are_trainable
-
-    def test_Score(self):
-
-        am1 = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=NormScorer()
-        )
-        am1.fit(self.train, allow_model_training=True)
-
-        am2 = FilteringAnomalyModel(
-            model=MovingAverageFilter(window=20), scorer=NormScorer()
+        # if return_model_prediction set to true, output must be tuple
+        assert isinstance(
+            anomaly_model.score(self.test, return_model_prediction=True), Tuple
         )
 
-        for am in [am1, am2]:
-            # Parameter return_model_prediction
-            # parameter return_model_prediction must be bool
-            with pytest.raises(ValueError):
-                am.score(self.test, return_model_prediction=1)
-            with pytest.raises(ValueError):
-                am.score(self.test, return_model_prediction="True")
+        # if return_model_prediction set to false output must be
+        # Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+        assert not isinstance(
+            anomaly_model.score(self.test, return_model_prediction=False), Tuple
+        )
 
-            # if return_model_prediction set to true, output must be tuple
-            assert isinstance(am.score(self.test, return_model_prediction=True), Tuple)
+    @pytest.mark.parametrize("anomaly_model_config", filtering_am)
+    def test_FitFilteringAnomalyModelInput(self, anomaly_model_config):
+        am_cls, am_kwargs = anomaly_model_config
+        anomaly_model = am_cls(**am_kwargs)
+        # filter must be fittable if allow_filter_training is set to True
+        with pytest.raises(ValueError):
+            anomaly_model.fit(self.train, allow_model_training=True)
 
-            # if return_model_prediction set to false output must be
-            # Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-            assert not isinstance(
-                am.score(self.test, return_model_prediction=False), Tuple
+        # input 'series' must be a series or Sequence of series
+        with pytest.raises(ValueError):
+            anomaly_model.fit([self.train, "str"], allow_model_training=True)
+        with pytest.raises(ValueError):
+            anomaly_model.fit([[self.train, self.train]], allow_model_training=True)
+        with pytest.raises(ValueError):
+            anomaly_model.fit("str", allow_model_training=True)
+        with pytest.raises(ValueError):
+            anomaly_model.fit([1, 2, 3], allow_model_training=True)
+
+        # allow_model_training must be a bool
+        with pytest.raises(ValueError):
+            anomaly_model.fit(self.train, allow_model_training=1)
+        with pytest.raises(ValueError):
+            anomaly_model.fit(self.train, allow_model_training="True")
+
+    @pytest.mark.parametrize("anomaly_model_config", forecasting_am)
+    def test_FitForecastingAnomalyModelInput(self, anomaly_model_config):
+        am_cls, am_kwargs = anomaly_model_config
+        anomaly_model = am_cls(**am_kwargs)
+
+        # input 'series' must be a series or Sequence of series
+        with pytest.raises(ValueError):
+            anomaly_model.fit([self.train, "str"], allow_model_training=True)
+        with pytest.raises(ValueError):
+            anomaly_model.fit([[self.train, self.train]], allow_model_training=True)
+        with pytest.raises(ValueError):
+            anomaly_model.fit("str", allow_model_training=True)
+        with pytest.raises(ValueError):
+            anomaly_model.fit([1, 2, 3], allow_model_training=True)
+
+        # allow_model_training must be a bool
+        with pytest.raises(ValueError):
+            anomaly_model.fit(self.train, allow_model_training=1)
+        with pytest.raises(ValueError):
+            anomaly_model.fit(self.train, allow_model_training="True")
+
+        # 'allow_model_training' must be set to True if forecasting model is not fitted
+        if anomaly_model.scorers_are_trainable:
+            with pytest.raises(ValueError):
+                anomaly_model.fit(self.train, allow_model_training=False)
+                anomaly_model.score(self.train)
+
+        with pytest.raises(ValueError):
+            # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
+            anomaly_model.fit(
+                series=[self.train, self.train],
+                past_covariates=self.covariates,
+                allow_model_training=True,
             )
 
-    def test_FitFilteringAnomalyModelInput(self):
+        with pytest.raises(ValueError):
+            # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
+            anomaly_model.fit(
+                series=self.train,
+                past_covariates=[self.covariates, self.covariates],
+                allow_model_training=True,
+            )
 
-        for anomaly_model in [
-            FilteringAnomalyModel(
-                model=MovingAverageFilter(window=20), scorer=NormScorer()
-            ),
-            FilteringAnomalyModel(
-                model=MovingAverageFilter(window=20),
-                scorer=[NormScorer(), KMeansScorer()],
-            ),
-            FilteringAnomalyModel(
-                model=MovingAverageFilter(window=20), scorer=KMeansScorer()
-            ),
-        ]:
+        with pytest.raises(ValueError):
+            # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
+            anomaly_model.fit(
+                series=[self.train, self.train],
+                future_covariates=self.covariates,
+                allow_model_training=True,
+            )
 
-            # filter must be fittable if allow_filter_training is set to True
-            with pytest.raises(ValueError):
-                anomaly_model.fit(self.train, allow_model_training=True)
+        with pytest.raises(ValueError):
+            # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
+            anomaly_model.fit(
+                series=self.train,
+                future_covariates=[self.covariates, self.covariates],
+                allow_model_training=True,
+            )
 
-            # input 'series' must be a series or Sequence of series
-            with pytest.raises(ValueError):
-                anomaly_model.fit([self.train, "str"], allow_model_training=True)
-            with pytest.raises(ValueError):
-                anomaly_model.fit([[self.train, self.train]], allow_model_training=True)
-            with pytest.raises(ValueError):
-                anomaly_model.fit("str", allow_model_training=True)
-            with pytest.raises(ValueError):
-                anomaly_model.fit([1, 2, 3], allow_model_training=True)
-
-            # allow_model_training must be a bool
-            with pytest.raises(ValueError):
-                anomaly_model.fit(self.train, allow_model_training=1)
-            with pytest.raises(ValueError):
-                anomaly_model.fit(self.train, allow_model_training="True")
-
-    def test_FitForecastingAnomalyModelInput(self):
-
-        for anomaly_model in [
-            ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=NormScorer()
-            ),
-            ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[NormScorer(), KMeansScorer()]
-            ),
-            ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=KMeansScorer()
-            ),
-        ]:
-
-            # input 'series' must be a series or Sequence of series
-            with pytest.raises(ValueError):
-                anomaly_model.fit([self.train, "str"], allow_model_training=True)
-            with pytest.raises(ValueError):
-                anomaly_model.fit([[self.train, self.train]], allow_model_training=True)
-            with pytest.raises(ValueError):
-                anomaly_model.fit("str", allow_model_training=True)
-            with pytest.raises(ValueError):
-                anomaly_model.fit([1, 2, 3], allow_model_training=True)
-
-            # allow_model_training must be a bool
-            with pytest.raises(ValueError):
-                anomaly_model.fit(self.train, allow_model_training=1)
-            with pytest.raises(ValueError):
-                anomaly_model.fit(self.train, allow_model_training="True")
-
-            # 'allow_model_training' must be set to True if forecasting model is not fitted
-            if anomaly_model.scorers_are_trainable:
-                with pytest.raises(ValueError):
-                    anomaly_model.fit(self.train, allow_model_training=False)
-                    anomaly_model.score(self.train)
-
-            with pytest.raises(ValueError):
-                # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
-                anomaly_model.fit(
-                    series=[self.train, self.train],
-                    past_covariates=self.covariates,
-                    allow_model_training=True,
-                )
-
-            with pytest.raises(ValueError):
-                # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
-                anomaly_model.fit(
-                    series=self.train,
-                    past_covariates=[self.covariates, self.covariates],
-                    allow_model_training=True,
-                )
-
-            with pytest.raises(ValueError):
-                # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
-                anomaly_model.fit(
-                    series=[self.train, self.train],
-                    future_covariates=self.covariates,
-                    allow_model_training=True,
-                )
-
-            with pytest.raises(ValueError):
-                # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
-                anomaly_model.fit(
-                    series=self.train,
-                    future_covariates=[self.covariates, self.covariates],
-                    allow_model_training=True,
-                )
-
+    def test_pretrain_forecasting_model(self):
         fitted_model = RegressionModel(lags=10).fit(self.train)
         # Fittable scorer must be fitted before calling .score(), even if forecasting model is fitted
         with pytest.raises(ValueError):
@@ -259,267 +265,248 @@ class TestADAnomalyModel:
             )
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(
-                model=fitted_model, scorer=[NormScorer(), KMeansScorer()]
+                model=fitted_model, scorer=[Norm(), KMeansScorer()]
             ).score(series=self.test)
 
         # forecasting model that do not accept past/future covariates
-        anomaly_model = ForecastingAnomalyModel(
-            model=NaiveSeasonal(), scorer=NormScorer()
-        )
-        with pytest.raises(TypeError):
-            anomaly_model.fit(
-                series=self.train,
-                past_covariates=self.covariates,
-                allow_model_training=True,
-            )
-        anomaly_model = ForecastingAnomalyModel(
-            model=NaiveSeasonal(), scorer=NormScorer()
-        )
-        with pytest.raises(TypeError):
-            anomaly_model.fit(
-                series=self.train,
-                future_covariates=self.covariates,
-                allow_model_training=True,
-            )
+        # with pytest.raises(ValueError):
+        #    ForecastingAnomalyModel(model=ExponentialSmoothing(),
+        #       scorer=NormScorer()).fit(
+        #           series=self.train, past_covariates=self.covariates, allow_model_training=True
+        #       )
+        # with pytest.raises(ValueError):
+        #    ForecastingAnomalyModel(model=ExponentialSmoothing(),
+        #       scorer=NormScorer()).fit(
+        #           series=self.train, future_covariates=self.covariates, allow_model_training=True
+        #       )
 
         # check window size
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=KMeansScorer(window=50)
+                model=RegressionModel(lags=10),
+                scorer=KMeansScorer(window=50, window_agg=False),
             ).fit(series=self.train, start=0.9)
 
         # forecasting model that cannot be trained on a list of series
         with pytest.raises(ValueError):
-            ForecastingAnomalyModel(model=NaiveSeasonal(), scorer=NormScorer()).fit(
+            ForecastingAnomalyModel(model=NaiveSeasonal(), scorer=Norm()).fit(
                 series=[self.train, self.train], allow_model_training=True
             )
 
-    def test_ScoreForecastingAnomalyModelInput(self):
+    @pytest.mark.parametrize("anomaly_model_config", forecasting_am)
+    def test_ScoreForecastingAnomalyModelInput(self, anomaly_model_config):
+        am_cls, am_kwargs = anomaly_model_config
+        anomaly_model = am_cls(**am_kwargs)
+        anomaly_model.fit(self.train, allow_model_training=True)
 
-        for anomaly_model in [
-            ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=NormScorer()
-            ),
-            ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[NormScorer(), KMeansScorer()]
-            ),
-            ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=KMeansScorer()
-            ),
-        ]:
+        # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
+        with pytest.raises(ValueError):
+            anomaly_model.score(
+                series=[self.train, self.train], past_covariates=self.covariates
+            )
 
-            anomaly_model.fit(self.train, allow_model_training=True)
+        # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
+        with pytest.raises(ValueError):
+            anomaly_model.score(
+                series=self.train,
+                past_covariates=[self.covariates, self.covariates],
+            )
 
-            # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
-            with pytest.raises(ValueError):
-                anomaly_model.score(
-                    series=[self.train, self.train], past_covariates=self.covariates
-                )
+        # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
+        with pytest.raises(ValueError):
+            anomaly_model.score(
+                series=[self.train, self.train], future_covariates=self.covariates
+            )
 
-            # number of 'past_covariates' must be the same as the number of Timeseries in 'series'
-            with pytest.raises(ValueError):
-                anomaly_model.score(
-                    series=self.train,
-                    past_covariates=[self.covariates, self.covariates],
-                )
+        # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
+        with pytest.raises(ValueError):
+            anomaly_model.score(
+                series=self.train,
+                future_covariates=[self.covariates, self.covariates],
+            )
 
-            # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
-            with pytest.raises(ValueError):
-                anomaly_model.score(
-                    series=[self.train, self.train], future_covariates=self.covariates
-                )
-
-            # number of 'future_covariates' must be the same as the number of Timeseries in 'series'
-            with pytest.raises(ValueError):
-                anomaly_model.score(
-                    series=self.train,
-                    future_covariates=[self.covariates, self.covariates],
-                )
-
-        # check window size
+    def test_window_size(self):
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1 for score()
         anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=KMeansScorer(window=30)
+            model=RegressionModel(lags=10),
+            scorer=KMeansScorer(window=30, window_agg=False),
         )
         anomaly_model.fit(self.train, allow_model_training=True)
         with pytest.raises(ValueError):
             anomaly_model.score(series=self.train, start=0.9)
 
-    def test_ScoreFilteringAnomalyModelInput(self):
+    @pytest.mark.parametrize("anomaly_model_config", filtering_am)
+    def test_ScoreFilteringAnomalyModelInput(self, anomaly_model_config):
+        am_cls, am_kwargs = anomaly_model_config
+        anomaly_model = am_cls(**am_kwargs)
 
-        for anomaly_model in [
-            FilteringAnomalyModel(
-                model=MovingAverageFilter(window=10), scorer=NormScorer()
-            ),
-            FilteringAnomalyModel(
-                model=MovingAverageFilter(window=10),
-                scorer=[NormScorer(), KMeansScorer()],
-            ),
-            FilteringAnomalyModel(
-                model=MovingAverageFilter(window=10), scorer=KMeansScorer()
-            ),
-        ]:
+        if anomaly_model.scorers_are_trainable:
+            anomaly_model.fit(self.train)
 
-            if anomaly_model.scorers_are_trainable:
-                anomaly_model.fit(self.train)
-
-    def test_eval_accuracy(self):
-
-        am1 = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=NormScorer()
-        )
-        am1.fit(self.train, allow_model_training=True)
-
-        am2 = FilteringAnomalyModel(
-            model=MovingAverageFilter(window=20), scorer=NormScorer()
-        )
-
-        am3 = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=[NormScorer(), WassersteinScorer()]
-        )
-        am3.fit(self.train, allow_model_training=True)
-
-        am4 = FilteringAnomalyModel(
-            model=MovingAverageFilter(window=20),
-            scorer=[NormScorer(), WassersteinScorer()],
-        )
-        am4.fit(self.train)
-
-        for am in [am1, am2, am3, am4]:
-
-            # if the anomaly_model have scorers that have the parameter univariate_scorer set to True,
-            # 'actual_anomalies' must have widths of 1
-            if am.univariate_scoring:
-                with pytest.raises(ValueError):
-                    am.eval_accuracy(
-                        actual_anomalies=self.mts_anomalies, series=self.test
-                    )
-                with pytest.raises(ValueError):
-                    am.eval_accuracy(
-                        actual_anomalies=self.mts_anomalies, series=self.mts_test
-                    )
-                with pytest.raises(ValueError):
-                    am.eval_accuracy(
-                        actual_anomalies=[self.anomalies, self.mts_anomalies],
-                        series=[self.test, self.mts_test],
-                    )
-
-            # 'metric' must be str and "AUC_ROC" or "AUC_PR"
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=self.anomalies, series=self.test, metric=1
-                )
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
-                )
-            with pytest.raises(TypeError):
-                am.eval_accuracy(
-                    actual_anomalies=self.anomalies,
-                    series=self.test,
-                    metric=["AUC_ROC"],
-                )
-
-            # 'actual_anomalies' must be binary
-            with pytest.raises(ValueError):
-                am.eval_accuracy(actual_anomalies=self.test, series=self.test)
-
-            # 'actual_anomalies' must contain anomalies (at least one)
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=self.only_0_anomalies, series=self.test
-                )
-
-            # 'actual_anomalies' cannot contain only anomalies
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=self.only_1_anomalies, series=self.test
-                )
-
-            # 'actual_anomalies' must match the number of series
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=self.anomalies, series=[self.test, self.test]
-                )
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=[self.anomalies, self.anomalies], series=self.test
-                )
-
-            # 'actual_anomalies' must have non empty intersection with 'series'
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=self.anomalies[:20], series=self.test[30:]
-                )
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    actual_anomalies=[self.anomalies, self.anomalies[:20]],
-                    series=[self.test, self.test[40:]],
-                )
-
-            # Check input type
-            # 'actual_anomalies' and 'series' must be of same length
-            with pytest.raises(ValueError):
-                am.eval_accuracy([self.anomalies], [self.test, self.test])
-            with pytest.raises(ValueError):
-                am.eval_accuracy(self.anomalies, [self.test, self.test])
-            with pytest.raises(ValueError):
-                am.eval_accuracy([self.anomalies, self.anomalies], [self.test])
-            with pytest.raises(ValueError):
-                am.eval_accuracy([self.anomalies, self.anomalies], self.test)
-
-            # 'actual_anomalies' and 'series' must be of type Timeseries
-            with pytest.raises(ValueError):
-                am.eval_accuracy([self.anomalies], [2, 3, 4])
-            with pytest.raises(ValueError):
-                am.eval_accuracy([self.anomalies], "str")
-            with pytest.raises(ValueError):
-                am.eval_accuracy([2, 3, 4], self.test)
-            with pytest.raises(ValueError):
-                am.eval_accuracy("str", self.test)
-            with pytest.raises(ValueError):
-                am.eval_accuracy(
-                    [self.anomalies, self.anomalies], [self.test, [3, 2, 1]]
-                )
-            with pytest.raises(ValueError):
-                am.eval_accuracy([self.anomalies, [3, 2, 1]], [self.test, self.test])
-
-            # Check return types
-            # Check if return type is float when input is a series
-            assert isinstance(
-                am.eval_accuracy(self.anomalies, self.test),
-                Dict,
-            )
-
-            # Check if return type is Sequence when input is a Sequence of series
-            assert isinstance(
-                am.eval_accuracy(self.anomalies, [self.test]),
-                Sequence,
-            )
-            assert isinstance(
-                am.eval_accuracy(
-                    [self.anomalies, self.anomalies], [self.test, self.test]
+    @pytest.mark.parametrize(
+        "anomaly_model,fit_kwargs",
+        zip(
+            [
+                ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
+                FilteringAnomalyModel(
+                    model=MovingAverageFilter(window=20), scorer=Norm()
                 ),
-                Sequence,
+                ForecastingAnomalyModel(
+                    model=RegressionModel(lags=10),
+                    scorer=[Norm(), WassersteinScorer(window_agg=False)],
+                ),
+                FilteringAnomalyModel(
+                    model=MovingAverageFilter(window=20),
+                    scorer=[Norm(), WassersteinScorer(window_agg=False)],
+                ),
+            ],
+            [
+                {"series": train, "allow_model_training": True},
+                False,
+                {"series": train, "allow_model_training": True},
+                {"series": train},
+            ],
+        ),
+    )
+    def test_eval_metric(self, anomaly_model, fit_kwargs):
+
+        if fit_kwargs:
+            anomaly_model.fit(**fit_kwargs)
+
+        # if the anomaly_model have scorers that have the parameter univariate_scorer set to True,
+        # 'actual_anomalies' must have widths of 1
+        if anomaly_model.univariate_scoring:
+            with pytest.raises(ValueError):
+                anomaly_model.eval_metric(
+                    actual_anomalies=self.mts_anomalies, series=self.test
+                )
+            with pytest.raises(ValueError):
+                anomaly_model.eval_metric(
+                    actual_anomalies=self.mts_anomalies, series=self.mts_test
+                )
+            with pytest.raises(ValueError):
+                anomaly_model.eval_metric(
+                    actual_anomalies=[self.anomalies, self.mts_anomalies],
+                    series=[self.test, self.mts_test],
+                )
+
+        # 'metric' must be str and "AUC_ROC" or "AUC_PR"
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=self.anomalies, series=self.test, metric=1
             )
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
+            )
+        with pytest.raises(TypeError):
+            anomaly_model.eval_metric(
+                actual_anomalies=self.anomalies,
+                series=self.test,
+                metric=["AUC_ROC"],
+            )
+
+        # 'actual_anomalies' must be binary
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(actual_anomalies=self.test, series=self.test)
+
+        # 'actual_anomalies' must contain anomalies (at least one)
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=self.only_0_anomalies, series=self.test
+            )
+
+        # 'actual_anomalies' cannot contain only anomalies
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=self.only_1_anomalies, series=self.test
+            )
+
+        # 'actual_anomalies' must match the number of series
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=self.anomalies, series=[self.test, self.test]
+            )
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=[self.anomalies, self.anomalies], series=self.test
+            )
+
+        # 'actual_anomalies' must have non empty intersection with 'series'
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=self.anomalies[:20], series=self.test[30:]
+            )
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                actual_anomalies=[self.anomalies, self.anomalies[:20]],
+                series=[self.test, self.test[40:]],
+            )
+
+        # Check input type
+        # 'actual_anomalies' and 'series' must be of same length
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric([self.anomalies], [self.test, self.test])
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(self.anomalies, [self.test, self.test])
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric([self.anomalies, self.anomalies], [self.test])
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric([self.anomalies, self.anomalies], self.test)
+
+        # 'actual_anomalies' and 'series' must be of type Timeseries
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric([self.anomalies], [2, 3, 4])
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric([self.anomalies], "str")
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric([2, 3, 4], self.test)
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric("str", self.test)
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                [self.anomalies, self.anomalies], [self.test, [3, 2, 1]]
+            )
+        with pytest.raises(ValueError):
+            anomaly_model.eval_metric(
+                [self.anomalies, [3, 2, 1]], [self.test, self.test]
+            )
+
+        # Check return types
+        # Check if return type is float when input is a series
+        assert isinstance(
+            anomaly_model.eval_metric(self.anomalies, self.test),
+            Dict,
+        )
+
+        # Check if return type is Sequence when input is a Sequence of series
+        assert isinstance(
+            anomaly_model.eval_metric(self.anomalies, [self.test]),
+            Sequence,
+        )
+
+        assert isinstance(
+            anomaly_model.eval_metric(
+                [self.anomalies, self.anomalies], [self.test, self.test]
+            ),
+            Sequence,
+        )
 
     def test_ForecastingAnomalyModelInput(self):
 
         # model input
         # model input must be of type ForecastingModel
         with pytest.raises(ValueError):
-            ForecastingAnomalyModel(model="str", scorer=NormScorer())
+            ForecastingAnomalyModel(model="str", scorer=Norm())
         with pytest.raises(ValueError):
-            ForecastingAnomalyModel(model=1, scorer=NormScorer())
+            ForecastingAnomalyModel(model=1, scorer=Norm())
         with pytest.raises(ValueError):
-            ForecastingAnomalyModel(
-                model=MovingAverageFilter(window=10), scorer=NormScorer()
-            )
+            ForecastingAnomalyModel(model=MovingAverageFilter(window=10), scorer=Norm())
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(
                 model=[RegressionModel(lags=10), RegressionModel(lags=5)],
-                scorer=NormScorer(),
+                scorer=Norm(),
             )
 
         # scorer input
@@ -534,7 +521,7 @@ class TestADAnomalyModel:
             )
         with pytest.raises(ValueError):
             ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[NormScorer(), "str"]
+                model=RegressionModel(lags=10), scorer=[Norm(), "str"]
             )
 
     def test_FilteringAnomalyModelInput(self):
@@ -542,15 +529,15 @@ class TestADAnomalyModel:
         # model input
         # model input must be of type FilteringModel
         with pytest.raises(ValueError):
-            FilteringAnomalyModel(model="str", scorer=NormScorer())
+            FilteringAnomalyModel(model="str", scorer=Norm())
         with pytest.raises(ValueError):
-            FilteringAnomalyModel(model=1, scorer=NormScorer())
+            FilteringAnomalyModel(model=1, scorer=Norm())
         with pytest.raises(ValueError):
-            FilteringAnomalyModel(model=RegressionModel(lags=10), scorer=NormScorer())
+            FilteringAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
         with pytest.raises(ValueError):
             FilteringAnomalyModel(
                 model=[MovingAverageFilter(window=10), MovingAverageFilter(window=10)],
-                scorer=NormScorer(),
+                scorer=Norm(),
             )
 
         # scorer input
@@ -566,7 +553,7 @@ class TestADAnomalyModel:
             )
         with pytest.raises(ValueError):
             FilteringAnomalyModel(
-                model=MovingAverageFilter(window=10), scorer=[NormScorer(), "str"]
+                model=MovingAverageFilter(window=10), scorer=[Norm(), "str"]
             )
 
     def test_univariate_ForecastingAnomalyModel(self):
@@ -594,14 +581,14 @@ class TestADAnomalyModel:
         anomaly_model = ForecastingAnomalyModel(
             model=RegressionModel(lags=5),
             scorer=[
-                NormScorer(),
+                Norm(),
                 Difference(),
-                WassersteinScorer(),
+                WassersteinScorer(window_agg=False),
                 KMeansScorer(k=5),
-                KMeansScorer(window=10),
+                KMeansScorer(window=10, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10),
-                WassersteinScorer(window=15),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
+                WassersteinScorer(window=15, window_agg=False),
             ],
         )
 
@@ -613,9 +600,7 @@ class TestADAnomalyModel:
         # check that NormScorer is the abs difference of model_output and test_series_slope
         assert (
             model_output - test_series_slope.slice_intersect(model_output)
-        ).__abs__() == NormScorer().score_from_prediction(
-            test_series_slope, model_output
-        )
+        ).__abs__() == Norm().score_from_prediction(test_series_slope, model_output)
 
         # check that Difference is the difference of model_output and test_series_slope
         assert test_series_slope.slice_intersect(
@@ -624,21 +609,21 @@ class TestADAnomalyModel:
             test_series_slope, model_output
         )
 
-        dict_auc_roc = anomaly_model.eval_accuracy(
+        dict_auc_roc = anomaly_model.eval_metric(
             ts_anomalies, test_series_slope, metric="AUC_ROC", start=0.1
         )
-        dict_auc_pr = anomaly_model.eval_accuracy(
+        dict_auc_pr = anomaly_model.eval_metric(
             ts_anomalies, test_series_slope, metric="AUC_PR", start=0.1
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
@@ -720,14 +705,14 @@ class TestADAnomalyModel:
         anomaly_model = FilteringAnomalyModel(
             model=MovingAverageFilter(window=5),
             scorer=[
-                NormScorer(),
+                Norm(),
                 Difference(),
-                WassersteinScorer(),
+                WassersteinScorer(window_agg=False),
                 KMeansScorer(),
-                KMeansScorer(window=10),
+                KMeansScorer(window=10, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10),
-                WassersteinScorer(window=15),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
+                WassersteinScorer(window=15, window_agg=False),
             ],
         )
         anomaly_model.fit(train_series_noise)
@@ -745,25 +730,23 @@ class TestADAnomalyModel:
         # check that NormScorer is the abs difference of model_output and test_series_noise
         assert (
             test_series_noise.slice_intersect(model_output) - model_output
-        ).__abs__() == NormScorer().score_from_prediction(
-            test_series_noise, model_output
-        )
+        ).__abs__() == Norm().score_from_prediction(test_series_noise, model_output)
 
-        dict_auc_roc = anomaly_model.eval_accuracy(
+        dict_auc_roc = anomaly_model.eval_metric(
             ts_anomalies, test_series_noise, metric="AUC_ROC"
         )
-        dict_auc_pr = anomaly_model.eval_accuracy(
+        dict_auc_pr = anomaly_model.eval_metric(
             ts_anomalies, test_series_noise, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
@@ -847,14 +830,14 @@ class TestADAnomalyModel:
         anomaly_model = ForecastingAnomalyModel(
             model=RegressionModel(lags=2, lags_future_covariates=[0]),
             scorer=[
-                NormScorer(),
+                Norm(),
                 Difference(),
-                WassersteinScorer(),
+                WassersteinScorer(window_agg=False),
                 KMeansScorer(k=4),
-                KMeansScorer(k=7, window=10),
+                KMeansScorer(k=7, window=10, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10),
-                WassersteinScorer(window=15),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
+                WassersteinScorer(window=15, window_agg=False),
             ],
         )
 
@@ -875,7 +858,7 @@ class TestADAnomalyModel:
         # check that NormScorer is the abs difference of model_output and series_test
         assert (
             series_test.slice_intersect(model_output) - model_output
-        ).__abs__() == NormScorer().score_from_prediction(series_test, model_output)
+        ).__abs__() == Norm().score_from_prediction(series_test, model_output)
 
         # check that Difference is the difference of model_output and series_test
         assert series_test.slice_intersect(
@@ -884,21 +867,21 @@ class TestADAnomalyModel:
             series_test, model_output
         )
 
-        dict_auc_roc = anomaly_model.eval_accuracy(
+        dict_auc_roc = anomaly_model.eval_metric(
             ts_anomalies, series_test, metric="AUC_ROC", start=0.2
         )
-        dict_auc_pr = anomaly_model.eval_accuracy(
+        dict_auc_pr = anomaly_model.eval_metric(
             ts_anomalies, series_test, metric="AUC_PR", start=0.2
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
@@ -936,7 +919,7 @@ class TestADAnomalyModel:
         )
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
-    def test_multivariate__FilteringAnomalyModel(self):
+    def test_multivariate_FilteringAnomalyModel(self):
 
         np.random.seed(40)
 
@@ -996,13 +979,13 @@ class TestADAnomalyModel:
         anomaly_model = FilteringAnomalyModel(
             model=MovingAverageFilter(window=10),
             scorer=[
-                NormScorer(component_wise=False),
-                WassersteinScorer(),
-                WassersteinScorer(window=12),
+                Norm(component_wise=False),
+                WassersteinScorer(window_agg=False),
+                WassersteinScorer(window=12, window_agg=False),
                 KMeansScorer(),
-                KMeansScorer(window=5),
+                KMeansScorer(window=5, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=5),
+                PyODScorer(model=KNN(), window=5, window_agg=False),
             ],
         )
         anomaly_model.fit(mts_series_train)
@@ -1017,21 +1000,21 @@ class TestADAnomalyModel:
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
 
-        dict_auc_roc = anomaly_model.eval_accuracy(
+        dict_auc_roc = anomaly_model.eval_metric(
             mts_anomalies, mts_series_test, metric="AUC_ROC"
         )
-        dict_auc_pr = anomaly_model.eval_accuracy(
+        dict_auc_pr = anomaly_model.eval_metric(
             mts_anomalies, mts_series_test, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 12, 1, 5, 1, 5],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 12, 1, 5, 1, 5],
@@ -1080,14 +1063,16 @@ class TestADAnomalyModel:
         anomaly_model = FilteringAnomalyModel(
             model=MovingAverageFilter(window=10),
             scorer=[
-                NormScorer(component_wise=True),
+                Norm(component_wise=True),
                 Difference(),
-                WassersteinScorer(component_wise=True),
-                WassersteinScorer(window=12, component_wise=True),
+                WassersteinScorer(component_wise=True, window_agg=False),
+                WassersteinScorer(window=12, component_wise=True, window_agg=False),
                 KMeansScorer(component_wise=True),
-                KMeansScorer(window=5, component_wise=True),
+                KMeansScorer(window=5, component_wise=True, window_agg=False),
                 PyODScorer(model=KNN(), component_wise=True),
-                PyODScorer(model=KNN(), window=5, component_wise=True),
+                PyODScorer(
+                    model=KNN(), window=5, component_wise=True, window_agg=False
+                ),
             ],
         )
         anomaly_model.fit(mts_series_train)
@@ -1102,21 +1087,21 @@ class TestADAnomalyModel:
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
 
-        dict_auc_roc = anomaly_model.eval_accuracy(
+        dict_auc_roc = anomaly_model.eval_metric(
             ts_anomalies, mts_series_test, metric="AUC_ROC"
         )
-        dict_auc_pr = anomaly_model.eval_accuracy(
+        dict_auc_pr = anomaly_model.eval_metric(
             ts_anomalies, mts_series_test, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 12, 1, 5, 1, 5],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 12, 1, 5, 1, 5],
@@ -1163,7 +1148,7 @@ class TestADAnomalyModel:
         )
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
-    def test_multivariate__ForecastingAnomalyModel(self):
+    def test_multivariate_ForecastingAnomalyModel(self):
 
         np.random.seed(40)
 
@@ -1224,13 +1209,13 @@ class TestADAnomalyModel:
         anomaly_model = ForecastingAnomalyModel(
             model=RegressionModel(lags=10),
             scorer=[
-                NormScorer(component_wise=False),
-                WassersteinScorer(),
-                WassersteinScorer(window=20),
+                Norm(component_wise=False),
+                WassersteinScorer(window_agg=False),
+                WassersteinScorer(window=20, window_agg=False),
                 KMeansScorer(),
-                KMeansScorer(window=20),
+                KMeansScorer(window=20, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
             ],
         )
         anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
@@ -1245,21 +1230,21 @@ class TestADAnomalyModel:
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
 
-        dict_auc_roc = anomaly_model.eval_accuracy(
+        dict_auc_roc = anomaly_model.eval_metric(
             mts_anomalies, mts_series_test, start=0.1, metric="AUC_ROC"
         )
-        dict_auc_pr = anomaly_model.eval_accuracy(
+        dict_auc_pr = anomaly_model.eval_metric(
             mts_anomalies, mts_series_test, start=0.1, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 20, 1, 20, 1, 10],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
             anomaly_score=scores,
             window=[1, 10, 20, 1, 20, 1, 10],
@@ -1308,14 +1293,16 @@ class TestADAnomalyModel:
         anomaly_model = ForecastingAnomalyModel(
             model=RegressionModel(lags=10),
             scorer=[
-                NormScorer(component_wise=True),
+                Norm(component_wise=True),
                 Difference(),
-                WassersteinScorer(component_wise=True),
-                WassersteinScorer(window=20, component_wise=True),
+                WassersteinScorer(component_wise=True, window_agg=False),
+                WassersteinScorer(window=20, component_wise=True, window_agg=False),
                 KMeansScorer(component_wise=True),
-                KMeansScorer(window=20, component_wise=True),
+                KMeansScorer(window=20, component_wise=True, window_agg=False),
                 PyODScorer(model=KNN(), component_wise=True),
-                PyODScorer(model=KNN(), window=10, component_wise=True),
+                PyODScorer(
+                    model=KNN(), window=10, component_wise=True, window_agg=False
+                ),
             ],
         )
         anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
@@ -1330,21 +1317,21 @@ class TestADAnomalyModel:
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
 
-        dict_auc_roc = anomaly_model.eval_accuracy(
+        dict_auc_roc = anomaly_model.eval_metric(
             ts_anomalies, mts_series_test, start=0.1, metric="AUC_ROC"
         )
-        dict_auc_pr = anomaly_model.eval_accuracy(
+        dict_auc_pr = anomaly_model.eval_metric(
             ts_anomalies, mts_series_test, start=0.1, metric="AUC_PR"
         )
 
-        auc_roc_from_scores = eval_accuracy_from_scores(
+        auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 20, 1, 20, 1, 10],
             metric="AUC_ROC",
         )
 
-        auc_pr_from_scores = eval_accuracy_from_scores(
+        auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=scores,
             window=[1, 1, 10, 20, 1, 20, 1, 10],
@@ -1391,54 +1378,65 @@ class TestADAnomalyModel:
         )
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
-    def test_show_anomalies(self):
+    def test_visualization(self):
+        # test function show_anomalies() and show_anomalies_from_scores()
 
         forecasting_anomaly_model = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=NormScorer()
+            model=RegressionModel(lags=10), scorer=Norm()
         )
         forecasting_anomaly_model.fit(self.train, allow_model_training=True)
 
         filtering_anomaly_model = FilteringAnomalyModel(
-            model=MovingAverageFilter(window=10), scorer=NormScorer()
+            model=MovingAverageFilter(window=10), scorer=Norm()
         )
 
-        for anomaly_model in [forecasting_anomaly_model, filtering_anomaly_model]:
+        self.show_anomalies_function(
+            visualization_function=forecasting_anomaly_model.show_anomalies
+        )
+        self.show_anomalies_function(
+            visualization_function=filtering_anomaly_model.show_anomalies
+        )
+        self.show_anomalies_function(visualization_function=show_anomalies_from_scores)
 
-            # must input only one series
-            with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(series=[self.train, self.train])
+    def show_anomalies_function(self, visualization_function):
 
-            # input must be a series
-            with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(series=[1, 2, 4])
+        # must input only one series
+        with pytest.raises(ValueError) as err:
+            visualization_function(series=[self.train, self.train])
+        assert str(err.value) == "`series` must be a single `TimeSeries`."
 
+        # input must be a series
+        with pytest.raises(ValueError):
+            visualization_function(series=[1, 2, 4])
+
+        if visualization_function != show_anomalies_from_scores:
             # metric must be "AUC_ROC" or "AUC_PR"
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(
+                visualization_function(
                     series=self.train, actual_anomalies=self.anomalies, metric="str"
                 )
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(
+                visualization_function(
                     series=self.train, actual_anomalies=self.anomalies, metric="auc_roc"
                 )
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(
+                visualization_function(
                     series=self.train, actual_anomalies=self.anomalies, metric=1
                 )
 
             # actual_anomalies must be not none if metric is given
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(series=self.train, metric="AUC_ROC")
+                visualization_function(series=self.train, metric="AUC_ROC")
 
             # actual_anomalies must be binary
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(
+                visualization_function(
                     series=self.train, actual_anomalies=self.test, metric="AUC_ROC"
                 )
 
             # actual_anomalies must contain at least 1 anomaly if metric is given
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(
+                visualization_function(
                     series=self.train,
                     actual_anomalies=self.only_0_anomalies,
                     metric="AUC_ROC",
@@ -1447,145 +1445,43 @@ class TestADAnomalyModel:
             # actual_anomalies must contain at least 1 non-anomoulous timestamp
             # if metric is given
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(
+                visualization_function(
                     series=self.train,
                     actual_anomalies=self.only_1_anomalies,
                     metric="AUC_ROC",
                 )
-
-            # names_of_scorers must be str
+        else:
+            # window must be a positive int
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(series=self.train, names_of_scorers=2)
-            # nbr of names_of_scorers must match the nbr of scores (only 1 here)
-            with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(
-                    series=self.train, names_of_scorers=["scorer1", "scorer2"]
+                show_anomalies_from_scores(
+                    series=self.train, anomaly_scores=self.test, window=-1
                 )
-
-            # title must be str
+            # window must smaller than the score series
             with pytest.raises(ValueError):
-                anomaly_model.show_anomalies(series=self.train, title=1)
-
-    def test_show_anomalies_from_scores(self):
-
-        # must input only one series
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(series=[self.train, self.train])
-
-        # input must be a series
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(series=[1, 2, 4])
-
-        # must input only one model_output
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train, model_output=[self.test, self.train]
-            )
-
-        # metric must be "AUC_ROC" or "AUC_PR"
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=self.test,
-                actual_anomalies=self.anomalies,
-                metric="str",
-            )
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=self.test,
-                actual_anomalies=self.anomalies,
-                metric="auc_roc",
-            )
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=self.test,
-                actual_anomalies=self.anomalies,
-                metric=1,
-            )
-
-        # actual_anomalies must be not none if metric is given
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train, anomaly_scores=self.test, metric="AUC_ROC"
-            )
-
-        # actual_anomalies must be binary
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=self.test,
-                actual_anomalies=self.test,
-                metric="AUC_ROC",
-            )
-
-        # actual_anomalies must contain at least 1 anomaly if metric is given
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=self.test,
-                actual_anomalies=self.only_0_anomalies,
-                metric="AUC_ROC",
-            )
-
-        # actual_anomalies must contain at least 1 non-anomoulous timestamp
-        # if metric is given
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=self.test,
-                actual_anomalies=self.only_1_anomalies,
-                metric="AUC_ROC",
-            )
-
-        # window must be int
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train, anomaly_scores=self.test, window="1"
-            )
-        # window must be an int positive
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train, anomaly_scores=self.test, window=-1
-            )
-        # window must smaller than the score series
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train, anomaly_scores=self.test, window=200
-            )
-
-        # must have the same nbr of windows than scores
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train, anomaly_scores=self.test, window=[1, 2]
-            )
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=[self.test, self.test],
-                window=[1, 2, 1],
-            )
-
-        # names_of_scorers must be str
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train, anomaly_scores=self.test, names_of_scorers=2
-            )
-        # nbr of names_of_scorers must match the nbr of scores
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=self.test,
-                names_of_scorers=["scorer1", "scorer2"],
-            )
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(
-                series=self.train,
-                anomaly_scores=[self.test, self.test],
-                names_of_scorers=["scorer1", "scorer2", "scorer3"],
-            )
-
-        # title must be str
-        with pytest.raises(ValueError):
-            show_anomalies_from_scores(series=self.train, title=1)
+                show_anomalies_from_scores(
+                    series=self.train, anomaly_scores=self.test, window=200
+                )
+            # must have the same nbr of windows than scores
+            with pytest.raises(ValueError):
+                show_anomalies_from_scores(
+                    series=self.train, anomaly_scores=self.test, window=[1, 2]
+                )
+            with pytest.raises(ValueError):
+                show_anomalies_from_scores(
+                    series=self.train,
+                    anomaly_scores=[self.test, self.test],
+                    window=[1, 2, 1],
+                )
+            # nbr of names_of_scorers must match the nbr of scores
+            with pytest.raises(ValueError):
+                show_anomalies_from_scores(
+                    series=self.train,
+                    anomaly_scores=self.test,
+                    names_of_scorers=["scorer1", "scorer2"],
+                )
+            with pytest.raises(ValueError):
+                show_anomalies_from_scores(
+                    series=self.train,
+                    anomaly_scores=[self.test, self.test],
+                    names_of_scorers=["scorer1", "scorer2", "scorer3"],
+                )

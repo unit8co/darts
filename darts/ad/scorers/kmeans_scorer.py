@@ -9,23 +9,22 @@ References
 .. [1] https://en.wikipedia.org/wiki/K-means_clustering
 """
 
-from typing import Sequence
-
 import numpy as np
-from numpy.lib.stride_tricks import sliding_window_view
 from sklearn.cluster import KMeans
 
-from darts.ad.scorers.scorers import FittableAnomalyScorer
-from darts.logging import raise_if_not
-from darts.timeseries import TimeSeries
+from darts.ad.scorers.scorers import WindowedAnomalyScorer
+from darts.logging import get_logger, raise_if_not
+
+logger = get_logger(__name__)
 
 
-class KMeansScorer(FittableAnomalyScorer):
+class KMeansScorer(WindowedAnomalyScorer):
     def __init__(
         self,
         window: int = 1,
         k: int = 8,
         component_wise: bool = False,
+        window_agg: bool = True,
         diff_fn="abs_diff",
         **kwargs,
     ) -> None:
@@ -88,16 +87,21 @@ class KMeansScorer(FittableAnomalyScorer):
             Size of the window used to create the subsequences of the series.
         k
             The number of clusters to form as well as the number of centroids to generate by the KMeans model.
+        component_wise
+            Boolean value indicating if the score needs to be computed for each component independently (True)
+            or by concatenating the component in the considered window to compute one score (False).
+            Default: False
+        window_agg
+            Boolean indicating whether the anomaly score for each time step is computed by
+            averaging the anomaly scores for all windows this point is included in.
+            If False, the anomaly score for each point is the anomaly score of its trailing window.
+            Default: True.
         diff_fn
             Optionally, reduction function to use if two series are given. It will transform the two series into one.
             This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference
             between the prediction and the original series).
             Must be one of "abs_diff" and "diff" (defined in ``_diff_series()``).
             Default: "abs_diff"
-        component_wise
-            Boolean value indicating if the score needs to be computed for each component independently (True)
-            or by concatenating the component in the considered window to compute one score (False).
-            Default: False
         kwargs
             Additional keyword arguments passed to the internal scikit-learn KMeans model(s).
         """
@@ -105,6 +109,7 @@ class KMeansScorer(FittableAnomalyScorer):
         raise_if_not(
             type(component_wise) is bool,
             f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
+            logger,
         )
         self.component_wise = component_wise
 
@@ -114,91 +119,19 @@ class KMeansScorer(FittableAnomalyScorer):
         if "n_init" not in self.kmeans_kwargs:
             self.kmeans_kwargs["n_init"] = 10
 
+        self.model = KMeans(**self.kmeans_kwargs)
+
         super().__init__(
-            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
+            univariate_scorer=(not component_wise),
+            window=window,
+            diff_fn=diff_fn,
+            window_agg=window_agg,
         )
 
     def __str__(self):
         return "k-means Scorer"
 
-    def _fit_core(
-        self,
-        list_series: Sequence[TimeSeries],
-    ):
-
-        list_np_series = [series.all_values(copy=False) for series in list_series]
-
-        if not self.component_wise:
-            self.model = KMeans(**self.kmeans_kwargs)
-            self.model.fit(
-                np.concatenate(
-                    [
-                        sliding_window_view(ar, window_shape=self.window, axis=0)
-                        .transpose(0, 3, 1, 2)
-                        .reshape(-1, self.window * len(ar[0]))
-                        for ar in list_np_series
-                    ],
-                    axis=0,
-                )
-            )
-        else:
-            models = []
-            for component_idx in range(self.width_trained_on):
-                model = KMeans(**self.kmeans_kwargs)
-                model.fit(
-                    np.concatenate(
-                        [
-                            sliding_window_view(
-                                ar[:, component_idx], window_shape=self.window, axis=0
-                            )
-                            .transpose(0, 2, 1)
-                            .reshape(-1, self.window)
-                            for ar in list_np_series
-                        ],
-                        axis=0,
-                    )
-                )
-                models.append(model)
-            self.models = models
-
-    def _score_core(self, series: TimeSeries) -> TimeSeries:
-        raise_if_not(
-            self.width_trained_on == series.width,
-            "Input must have the same number of components as the data used for"
-            + " training the KMeans model, found number of components equal to"
-            + f" {series.width} and expected {self.width_trained_on}.",
-        )
-
-        np_series = series.all_values(copy=False)
-        np_anomaly_score = []
-
-        if not self.component_wise:
-            # return distance to the clostest centroid
-            np_anomaly_score.append(
-                self.model.transform(
-                    sliding_window_view(np_series, window_shape=self.window, axis=0)
-                    .transpose(0, 3, 1, 2)
-                    .reshape(-1, self.window * series.width)
-                ).min(axis=1)
-            )  # only return the closest distance out of the k ones (k centroids)
-        else:
-            for component_idx in range(self.width_trained_on):
-                score = (
-                    self.models[component_idx]
-                    .transform(
-                        sliding_window_view(
-                            np_series[:, component_idx],
-                            window_shape=self.window,
-                            axis=0,
-                        )
-                        .transpose(0, 2, 1)
-                        .reshape(-1, self.window)
-                    )
-                    .min(axis=1)
-                )
-
-                np_anomaly_score.append(score)
-
-        return TimeSeries.from_times_and_values(
-            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
-        )
+    def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:
+        """Wrapper around model inference method"""
+        # only return the closest distance out of the k ones (k centroids)
+        return model.transform(data).min(axis=1)

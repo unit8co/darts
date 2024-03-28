@@ -13,6 +13,7 @@ detection of a single model, and returns one (or multiple) univariate
 binary TimeSeries representing the final detection.
 """
 
+from .aggregators import Aggregator, FittableAggregator
 from .and_aggregator import AndAggregator
 from .ensemble_sklearn_aggregator import EnsembleSklearnAggregator
 from .or_aggregator import OrAggregator

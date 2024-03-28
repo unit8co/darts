@@ -28,7 +28,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         self.model = model
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "EnsembleSklearnAggregator: {}".format(
             self.model.__str__().split("(")[0]
         )
@@ -53,7 +53,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         return self
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
-
+        # assume that parallelization occurs at sklearn model level
         return [
             TimeSeries.from_times_and_values(
                 s.time_index,

@@ -16,7 +16,7 @@ import pandas as pd
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _assert_same_length, _assert_timeseries, _to_list
+from darts.ad.utils import _assert_same_length, _assert_timeseries, series2seq
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
@@ -121,12 +121,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             Fitted model
         """
 
-        raise_if_not(
-            type(allow_model_training) is bool,
-            f"`allow_model_training` must be Boolean, found type: {type(allow_model_training)}.",
-        )
+        super().fit(series=series, allow_model_training=allow_model_training)
 
-        # checks if model does not need training and all scorer(s) are not fittable
+        # interrupt training if nothing to fit
         if not allow_model_training and not self.scorers_are_trainable:
             logger.warning(
                 f"The forecasting model {self.model.__class__.__name__} won't be trained"
@@ -135,12 +132,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
             return
 
-        list_series = _to_list(series)
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input `series` must be of type Timeseries.",
-        )
+        list_series = series2seq(series)
 
         list_past_covariates = self._prepare_covariates(
             past_covariates, list_series, "past"
@@ -208,10 +200,8 @@ class ForecastingAnomalyModel(AnomalyModel):
                     )
                 )
 
-        # fit the scorers
-        for scorer in self.scorers:
-            if hasattr(scorer, "fit"):
-                scorer.fit_from_prediction(list_series, list_pred)
+            # fit the scorers
+            self._fit_scorers(list_series, list_pred)
 
         return self
 
@@ -240,7 +230,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         """
 
         if covariates is not None:
-            list_covariates = _to_list(covariates)
+            list_covariates = series2seq(covariates)
 
             for covariates in list_covariates:
                 _assert_timeseries(
@@ -254,104 +244,6 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
 
         return list_covariates if covariates is not None else None
-
-    def show_anomalies(
-        self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
-        forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
-        num_samples: int = 1,
-        actual_anomalies: TimeSeries = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        title: str = None,
-        metric: str = None,
-    ):
-        """Plot the results of the anomaly model.
-
-        Computes the score on the given series input and shows the different anomaly scores with respect to time.
-
-        The plot will be composed of the following:
-
-        - the series itself with the output of the forecasting model.
-        - the anomaly score for each scorer. The scorers with different windows will be separated.
-        - the actual anomalies, if given.
-
-        It is possible to:
-
-        - add a title to the figure with the parameter `title`
-        - give personalized names for the scorers with `names_of_scorers`
-        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
-            if the actual anomalies are provided.
-
-        Parameters
-        ----------
-        series
-            The series to visualize anomalies from.
-        past_covariates
-            An optional past-observed covariate series or sequence of series. This applies only if the model
-            supports past covariates.
-        future_covariates
-            An optional future-known covariate series or sequence of series. This applies only if the model
-            supports future covariates.
-        forecast_horizon
-            The forecast horizon for the predictions.
-        start
-            The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
-            directly.
-        num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
-        actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        names_of_scorers
-            Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
-        title
-            Title of the figure
-        metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-            Default: "AUC_ROC"
-        """
-
-        if isinstance(series, Sequence):
-            raise_if_not(
-                len(series) == 1,
-                f"`show_anomalies` expects one series, found a list of length {len(series)} as input.",
-            )
-
-            series = series[0]
-
-        raise_if_not(
-            isinstance(series, TimeSeries),
-            f"`show_anomalies` expects an input of type TimeSeries, found type: {type(series)}.",
-        )
-
-        anomaly_scores, model_output = self.score(
-            series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            forecast_horizon=forecast_horizon,
-            start=start,
-            num_samples=num_samples,
-            return_model_prediction=True,
-        )
-
-        return self._show_anomalies(
-            series,
-            model_output=model_output,
-            anomaly_scores=anomaly_scores,
-            names_of_scorers=names_of_scorers,
-            actual_anomalies=actual_anomalies,
-            title=title,
-            metric=metric,
-        )
 
     def score(
         self,
@@ -423,7 +315,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             f"Model {self.model} has not been trained. Please call ``.fit()``.",
         )
 
-        list_series = _to_list(series)
+        list_series = series2seq(series)
 
         list_past_covariates = self._prepare_covariates(
             past_covariates, list_series, "past"
@@ -574,7 +466,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         return self.model.historical_forecasts(series, **historical_forecasts_param)
 
-    def eval_accuracy(
+    def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -637,8 +529,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             will be a Sequence containing the score for each dimension.
         """
 
-        list_actual_anomalies = _to_list(actual_anomalies)
-        list_series = _to_list(series)
+        list_actual_anomalies = series2seq(actual_anomalies)
+        list_series = series2seq(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
@@ -662,7 +554,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             num_samples=num_samples,
         )
 
-        acc_anomaly_scores = self._eval_accuracy_from_scores(
+        acc_anomaly_scores = self._eval_metric_from_scores(
             list_actual_anomalies=list_actual_anomalies,
             list_anomaly_scores=list_anomaly_scores,
             metric=metric,
