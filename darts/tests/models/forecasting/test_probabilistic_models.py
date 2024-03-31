@@ -204,7 +204,7 @@ if TORCH_AVAILABLE:
                 "blocks": 1,
                 "hidden_size": 32,
                 "dropout": 0.2,
-                "ff_dim": 32,
+                "ff_size": 32,
                 "batch_size": 8,
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
