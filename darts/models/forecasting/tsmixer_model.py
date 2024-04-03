@@ -1,37 +1,33 @@
 """
 Time-Series Mixer (TSMixer)
--------
-The inner layers (``nn.Modules``) and the ``TimeBatchNorm2d`` were provided by a PyTorch implementation
-of TSMixer: https://github.com/ditschuk/pytorch-tsmixer
-
-The License of pytorch-tsmixer v0.2.0 from https://github.com/ditschuk/pytorch-tsmixer/blob/main/LICENSE,
-accessed Thursday, March 21st, 2024:
-'The MIT License
-
-Copyright 2023 Konstantin Ditschuneit
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the “Software”), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial
-portions of the Software.
-'
+---------------------------
 """
 
-from __future__ import annotations
+# The inner layers (``nn.Modules``) and the ``TimeBatchNorm2d`` were provided by a PyTorch implementation
+# of TSMixer: https://github.com/ditschuk/pytorch-tsmixer
+#
+# The License of pytorch-tsmixer v0.2.0 from https://github.com/ditschuk/pytorch-tsmixer/blob/main/LICENSE,
+# accessed Thursday, March 21st, 2024:
+# 'The MIT License
+#
+# Copyright 2023 Konstantin Ditschuneit
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+# associated documentation files (the “Software”), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial
+# portions of the Software.
+# '
 
-import operator
-from collections.abc import Callable
-from functools import reduce
-from typing import Optional, Tuple, Type, Union
+from typing import Callable, Optional, Tuple, Union
 
 import torch
 from torch import nn
 
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.components import layer_norm_variants
 from darts.models.forecasting.pl_forecasting_module import (
     PLMixedCovariatesModule,
@@ -59,42 +55,39 @@ ACTIVATIONS = [
     "GELU",
 ]
 
+NORMS = [
+    "LayerNorm",
+    "LayerNormNoBias",
+    "TimeBatchNorm2d",
+]
 
-def time_to_feature(x: torch.Tensor) -> torch.Tensor:
+
+def _time_to_feature(x: torch.Tensor) -> torch.Tensor:
     """Converts a time series Tensor to a feature Tensor."""
     return x.permute(0, 2, 1)
 
 
-class TimeBatchNorm2d(nn.BatchNorm1d):
-    def __init__(self, normalized_shape: Tuple[int, int]):
-        """A batch normalization layer that normalizes over the last two dimensions of a
-        sequence in PyTorch, mimicking Keras behavior based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
-
-        This class extends nn.BatchNorm1d to apply batch normalization across time and
-        feature dimensions.
-
-        Parameters
-        ----------
-        normalized_shape: Tuple
-            A Tuple (num_time_steps, num_channels) representing the shape of the time and feature
-            dimensions to normalize.
-        """
-        self.num_time_steps, self.num_channels = normalized_shape
-        super().__init__(reduce(operator.mul, normalized_shape))
+class TimeBatchNorm2d(nn.BatchNorm2d):
+    def __init__(self, *args, **kwargs):
+        """A batch normalization layer that normalizes over the last two dimensions of a Tensor."""
+        super().__init__(num_features=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # `x` has shape (batch_size, time, features)
         if x.ndim != 3:
-            raise ValueError(
-                f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."
+            raise_log(
+                ValueError(
+                    f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."
+                ),
+                logger=logger,
             )
-        x = x.reshape(x.shape[0], -1, 1)
-        x = super().forward(x)
-        x = x.reshape(x.shape[0], self.num_time_steps, self.num_channels)
-        return x
+        # apply 2D batch norm over reshape input_data `(batch_size, 1, timepoints, features)`
+        output = super().forward(x.unsqueeze(1))
+        # reshape back to (batch_size, timepoints, features)
+        return output.squeeze(1)
 
 
-class FeatureMixing(nn.Module):
+class _FeatureMixing(nn.Module):
     def __init__(
         self,
         sequence_length: int,
@@ -104,7 +97,7 @@ class FeatureMixing(nn.Module):
         activation: Callable[[torch.Tensor], torch.Tensor],
         dropout: float,
         normalize_before: bool,
-        norm_type: Type[nn.Module],
+        norm_type: nn.Module,
     ) -> None:
         """A module for feature mixing with flexibility in normalization and activation based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
@@ -115,22 +108,22 @@ class FeatureMixing(nn.Module):
 
         Parameters
         ----------
-        sequence_length: int
+        sequence_length
             The length of the input sequences.
-        input_dim: int
+        input_dim
             The number of input channels to the module.
-        output_dim: int
+        output_dim
             The number of output channels from the module.
-        ff_size: int
+        ff_size
             The dimension of the feed-forward network internal to the module.
-        activation: Callable[[torch.Tensor], torch.Tensor]
+        activation
             The activation function used within the feed-forward network.
-        dropout: float
+        dropout
             The dropout probability used for regularization.
-        normalize_before: bool
+        normalize_before
             A boolean indicating whether to apply normalization before
             the rest of the operations.
-        norm_type: type[nn.Module]
+        norm_type
             The type of normalization to use.
         """
         super().__init__()
@@ -168,90 +161,15 @@ class FeatureMixing(nn.Module):
         return x
 
 
-class ConditionalFeatureMixing(nn.Module):
+class _TimeMixing(nn.Module):
     def __init__(
         self,
         sequence_length: int,
         input_dim: int,
-        output_dim: int,
-        static_dim: int,
-        ff_size: int,
         activation: Callable,
         dropout: float,
         normalize_before: bool,
-        norm_type: Type[nn.Module],
-    ) -> None:
-        """Conditional feature mixing module that incorporates static features based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
-
-        This module extends the feature mixing process by including static features. It uses
-        a linear transformation to integrate static features into the dynamic feature space,
-        then applies the feature mixing on the concatenated features.
-
-        Parameters
-        ----------
-        sequence_length: int
-            The length of the sequences to be transformed.
-        input_dim: int
-            The number of input channels of the dynamic features.
-        output_dim: int
-            The number of output channels after feature mixing.
-        static_dim: int
-            The number of channels in the static feature input.
-        ff_size: int
-            The inner dimension of the feedforward network used in feature mixing.
-        activation: Callable
-            The activation function used in feature mixing.
-        dropout: float
-            The dropout probability used in the feature mixing operation.
-        normalize_before: bool
-            Whether to apply normalization before or after feature mixing.
-        norm_type: type[nn.Module]
-            The type of normalization to use.
-        """
-        super().__init__()
-        self.static_dim = static_dim
-        self.fr_static: Optional[nn.Linear] = nn.Linear(static_dim, output_dim)
-
-        if self.static_dim != 0:
-            feature_mixing_input = input_dim + output_dim
-            self.forward = self._forward_with_static
-        else:
-            feature_mixing_input = input_dim
-            self.forward = self._forward_without_static
-
-        self.fm = FeatureMixing(
-            sequence_length=sequence_length,
-            input_dim=feature_mixing_input,
-            output_dim=output_dim,
-            ff_size=ff_size,
-            activation=activation,
-            dropout=dropout,
-            normalize_before=normalize_before,
-            norm_type=norm_type,
-        )
-
-    def _forward_with_static(
-        self, x: torch.Tensor, x_static: torch.Tensor
-    ) -> torch.Tensor:
-        v = self.fr_static(x_static)
-        v = v.repeat(1, x.size(1) // v.size(1), 1)
-        return self.fm(torch.cat([x, v], dim=-1))
-
-    def _forward_without_static(
-        self, x: torch.Tensor, x_static: torch.Tensor
-    ) -> torch.Tensor:
-        return self.fm(x)
-
-
-class TimeMixing(nn.Module):
-    def __init__(
-        self,
-        sequence_length: int,
-        input_dim: int,
-        activation: Callable,
-        dropout: float,
-        norm_type: Type[nn.Module],
+        norm_type: nn.Module,
     ) -> None:
         """Applies a transformation over the time dimension of a sequence based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
@@ -262,47 +180,60 @@ class TimeMixing(nn.Module):
 
         Parameters
         ----------
-        sequence_length: int
+        sequence_length
             The length of the sequences to be transformed.
-        input_dim: int
+        input_dim
             The number of input channels to the module.
-        activation: Callable
+        activation
             The activation function to be used after the linear
             transformation.
-        dropout: float
+        dropout
             The dropout probability to be used after the activation function.
-        norm_type: type[nn.Module]
+        normalize_before
+            Whether to apply normalization before or after feature mixing.
+        norm_type
             The type of normalization to use.
         """
         super().__init__()
-        self.norm = norm_type((sequence_length, input_dim))
+        self.normalize_before = normalize_before
+        self.norm_before = (
+            norm_type((sequence_length, input_dim))
+            if normalize_before
+            else nn.Identity()
+        )
         self.activation = activation
         self.dropout = MonteCarloDropout(dropout)
         self.fc1 = nn.Linear(sequence_length, sequence_length)
+        self.norm_after = (
+            norm_type((sequence_length, input_dim))
+            if not normalize_before
+            else nn.Identity()
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # permute the feature dim with the time dim
-        x_temp = time_to_feature(x)
+        x_temp = self.norm_before(x)
+        x_temp = _time_to_feature(x_temp)
         x_temp = self.activation(self.fc1(x_temp))
         x_temp = self.dropout(x_temp)
         # permute back the time dim with the feature dim
-        x_res = time_to_feature(x_temp)
-        x_temp = self.norm(x + x_res)
+        x_temp = x + _time_to_feature(x_temp)
+        x_temp = self.norm_after(x_temp)
         return x_temp
 
 
-class ConditionalMixerLayer(nn.Module):
+class _ConditionalMixerLayer(nn.Module):
     def __init__(
         self,
         sequence_length: int,
         input_dim: int,
         output_dim: int,
-        static_dim: int,
+        static_cov_dim: int,
         ff_size: int,
         activation: Callable,
         dropout: float,
         normalize_before: bool,
-        norm_type: Type[nn.Module],
+        norm_type: nn.Module,
     ) -> None:
         """Conditional mix layer combining time and feature mixing with static context based on the
         `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
@@ -313,39 +244,55 @@ class ConditionalMixerLayer(nn.Module):
 
         Parameters
         ----------
-        sequence_length: int
+        sequence_length
             The length of the input sequences.
-        input_dim: int
+        input_dim
             The number of input channels of the dynamic features.
-        output_dim: int
+        output_dim
             The number of output channels after feature mixing.
-        static_dim: int
+        static_cov_dim
             The number of channels in the static feature input.
-        ff_size: int
+        ff_size
             The inner dimension of the feedforward network used in feature mixing.
-        activation: Callable
+        activation
             The activation function used in both mixing operations.
-        dropout: float
+        dropout
             The dropout probability used in both mixing operations.
-        normalize_before: bool
+        normalize_before
             Whether to apply normalization before or after mixing.
-        norm_type: type[nn.Module]
+        norm_type
             The type of normalization to use.
         """
         super().__init__()
 
-        self.time_mixing = TimeMixing(
+        mixing_input = input_dim
+        if static_cov_dim != 0:
+            self.feature_mixing_static = _FeatureMixing(
+                sequence_length=sequence_length,
+                input_dim=static_cov_dim,
+                output_dim=output_dim,
+                ff_size=ff_size,
+                activation=activation,
+                dropout=dropout,
+                normalize_before=normalize_before,
+                norm_type=norm_type,
+            )
+            mixing_input += output_dim
+        else:
+            self.feature_mixing_static = None
+
+        self.time_mixing = _TimeMixing(
             sequence_length=sequence_length,
-            input_dim=input_dim,
+            input_dim=mixing_input,
             activation=activation,
             dropout=dropout,
+            normalize_before=normalize_before,
             norm_type=norm_type,
         )
-        self.feature_mixing = ConditionalFeatureMixing(
+        self.feature_mixing = _FeatureMixing(
             sequence_length=sequence_length,
-            input_dim=input_dim,
+            input_dim=mixing_input,
             output_dim=output_dim,
-            static_dim=static_dim,
             ff_size=ff_size,
             activation=activation,
             dropout=dropout,
@@ -356,27 +303,30 @@ class ConditionalMixerLayer(nn.Module):
     def forward(
         self, x: torch.Tensor, x_static: Optional[torch.Tensor]
     ) -> torch.Tensor:
+        if self.feature_mixing_static is not None:
+            x_static_mixed = self.feature_mixing_static(x_static)
+            x = torch.cat([x, x_static_mixed], dim=-1)
         x = self.time_mixing(x)
-        x = self.feature_mixing(x, x_static)
+        x = self.feature_mixing(x)
         return x
 
 
 class _TSMixerModule(PLMixedCovariatesModule):
     def __init__(
         self,
-        activation: str,
-        blocks: int,
-        dropout: float,
-        hidden_size: int,
-        static_cov_dim: int,
-        past_cov_dim: int,
-        future_cov_dim: int,
         input_dim: int,
         output_dim: int,
-        ff_size: int,
+        past_cov_dim: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
         nr_params: int,
-        normalize_before: bool,
+        hidden_size: int,
+        ff_size: int,
+        num_blocks: int,
+        activation: str,
+        dropout: float,
         norm_type: Union[str, nn.Module],
+        normalize_before: bool,
         **kwargs,
     ) -> None:
         """
@@ -384,120 +334,126 @@ class _TSMixerModule(PLMixedCovariatesModule):
 
         Parameters
         ----------
-        input_dim: int
-            Number of input channels (features).
-        output_dim: int
-            Number of output channels (forecast horizon).
-        ff_size: int
+        input_dim
+            Number of input target features.
+        output_dim
+            Number of output target features.
+        past_cov_dim
+            Number of past covariate features.
+        future_cov_dim
+            Number of future covariate features.
+        static_cov_dim
+            Number of static covariate features (number of target features
+            (or 1 if global static covariates) * number of static covariate features).
+        nr_params
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
+        hidden_size
+           Hidden state size of the TSMixer.
+        ff_size
             Dimension of the feedforward network internal to the module.
-        dropout: float
-            Dropout rate for regularization.
-        blocks: int
+        num_blocks
             Number of mixer blocks.
-        activation: str
+        activation
             Activation function to use.
-        normalize_before: bool
-            Whether to apply normalization before or after mixing.
-        norm_type: str
+        dropout
+            Dropout rate for regularization.
+        norm_type
             Type of normalization to use.
+        normalize_before
+            Whether to apply normalization before or after mixing.
         """
         super().__init__(**kwargs)
-
-        self.ff_size = ff_size
-        self.hidden_size = hidden_size
-        self.normalize_before = normalize_before
-
-        self.norm_type = norm_type
-        self.dropout = dropout
-        self.activation = activation
-
-        self.static_cov_dim = static_cov_dim
-        self.past_cov_dim = past_cov_dim
-        self.future_cov_dim = future_cov_dim
-        self.nr_params = nr_params
         self.input_dim = input_dim
-
         self.output_dim = output_dim
-        self.blocks = blocks
+        self.future_cov_dim = future_cov_dim
+        self.static_cov_dim = static_cov_dim
+        self.nr_params = nr_params
 
-        raise_if_not(
-            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
-        )
-        self.activation_func = getattr(nn, activation)()
+        if activation not in ACTIVATIONS:
+            raise_log(
+                ValueError(
+                    f"Invalid `activation={activation}`. Must be on of {ACTIVATIONS}."
+                ),
+                logger=logger,
+            )
+        activation = getattr(nn, activation)()
 
         if isinstance(norm_type, str):
+            if norm_type not in NORMS:
+                raise_log(
+                    ValueError(
+                        f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."
+                    ),
+                    logger=logger,
+                )
             if norm_type == "TimeBatchNorm2d":
-                self.layer_norm = TimeBatchNorm2d
+                norm_type = TimeBatchNorm2d
             else:
-                try:
-                    self.layer_norm = getattr(layer_norm_variants, norm_type)
-                except AttributeError:
-                    raise_log(
-                        AttributeError("Please provide a valid layer norm type"),
-                    )
+                norm_type = getattr(layer_norm_variants, norm_type)
         else:
-            self.layer_norm = norm_type
-
-        self.fc_hist = nn.Linear(self.input_chunk_length, self.output_chunk_length)
+            norm_type = norm_type
 
         mixer_params = {
-            "ff_size": self.ff_size,
-            "activation": self.activation_func,
-            "dropout": self.dropout,
-            "static_dim": self.static_cov_dim,
-            "norm_type": self.layer_norm,
-            "normalize_before": self.normalize_before,
+            "ff_size": ff_size,
+            "activation": activation,
+            "dropout": dropout,
+            "norm_type": norm_type,
+            "normalize_before": normalize_before,
         }
 
-        hidden_output_size = self.hidden_size * self.output_dim * self.nr_params
-
-        self.feature_mixing_hist = ConditionalFeatureMixing(
+        self.fc_hist = nn.Linear(self.input_chunk_length, self.output_chunk_length)
+        self.feature_mixing_hist = _FeatureMixing(
             sequence_length=self.output_chunk_length,
-            input_dim=self.input_dim + self.past_cov_dim + self.future_cov_dim,
-            output_dim=hidden_output_size,
+            input_dim=input_dim + past_cov_dim + future_cov_dim,
+            output_dim=hidden_size,
             **mixer_params,
         )
-
-        self.feature_mixing_future = ConditionalFeatureMixing(
-            sequence_length=self.output_chunk_length,
-            input_dim=self.future_cov_dim,
-            output_dim=hidden_output_size,
-            **mixer_params,
-        )
-
+        if future_cov_dim:
+            self.feature_mixing_future = _FeatureMixing(
+                sequence_length=self.output_chunk_length,
+                input_dim=future_cov_dim,
+                output_dim=hidden_size,
+                **mixer_params,
+            )
+        else:
+            self.feature_mixing_future = None
         self.conditional_mixer = self._build_mixer(
             prediction_length=self.output_chunk_length,
-            blocks=self.blocks,
-            hidden_size=hidden_output_size,
+            num_blocks=num_blocks,
+            hidden_size=hidden_size,
+            future_cov_dim=future_cov_dim,
+            static_cov_dim=static_cov_dim,
             **mixer_params,
         )
+        self.fc_out = nn.Linear(hidden_size, output_dim * nr_params)
 
-        self.fc_out = nn.Linear(
-            hidden_output_size,
-            self.output_dim * self.nr_params,
-        )
-
+    @staticmethod
     def _build_mixer(
-        self, blocks: int, hidden_size: int, prediction_length: int, **kwargs
-    ):
+        prediction_length: int,
+        num_blocks: int,
+        hidden_size: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
+        **kwargs,
+    ) -> nn.ModuleList:
         """Build the mixer blocks for the model."""
-        # in case there are no future covariates, the feature_mixing_future layer
-        # does not provide any output, so the input to the mixer layers is
-        # the same as the output of the feature_mixing_hist layer
-        input_dim = 2 * hidden_size if self.future_cov_dim > 0 else hidden_size
+        # the first block takes `x` consisting of concatenated features with size `hidden_size`:
+        # - historic features
+        # - optional future features
+        input_dim_block = hidden_size * (1 + int(future_cov_dim > 0))
 
         mixer_layers = nn.ModuleList()
-        for _ in range(blocks):
-            layer = ConditionalMixerLayer(
-                input_dim=input_dim,
+        for _ in range(num_blocks):
+            layer = _ConditionalMixerLayer(
+                input_dim=input_dim_block,
                 output_dim=hidden_size,
                 sequence_length=prediction_length,
+                static_cov_dim=static_cov_dim,
                 **kwargs,
             )
             mixer_layers.append(layer)
-            # After the first layer, input_dim should match the output_dim of the layers
-            input_dim = hidden_size
-
+            # after the first block, `x` consists of previous block output with size `hidden_size`
+            input_dim_block = hidden_size
         return mixer_layers
 
     @io_processor
@@ -505,54 +461,64 @@ class _TSMixerModule(PLMixedCovariatesModule):
         self,
         x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
     ) -> torch.Tensor:
+        # x_hist contains the historical time series data and the historical
         """TSMixer model forward pass.
+
         Parameters
         ----------
         x_in
-            comes as Tuple `(x_past, x_future, x_static)` where
-            `x_past` is the input/past chunk and
-            `x_future` is the output/future chunk.
-            Input dimensions are `(batch_size, time_steps, components)`
+            comes as Tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and
+            `x_future` is the output/future chunk. Input dimensions are `(batch_size, time_steps,
+            components)`.
+
         Returns
         -------
         torch.torch.Tensor
-            The output  Tensorof shape
-            `(batch_size, output_chunk_length, output_dim, nr_params)`
+            The output  Tensorof shape `(batch_size, output_chunk_length, output_dim, nr_params)`.
         """
-        x, x_future_covariates, x_static_covariates = x_in
+        # B: batch size
+        # L: input chunk length
+        # T: output chunk length
+        # C: target components
+        # P: past cov features
+        # F: future cov features
+        # S: static cov features
+        # H = C + P + F: historic features
+        # H_S: hidden Size
+        # N_P: likelihood parameters
 
-        # x_hist contains the historical time series data and the historical
-        # past and future covariates
-        # (batch_size, input_chunk_length, input_dim + past_cov_dim + future_cov_dim)
-        x_hist = x[:, :, : self.input_dim + self.past_cov_dim + self.future_cov_dim]
+        # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
+        x, x_future, x_static = x_in
 
-        x_static = x_static_covariates
+        # swap feature and time dimensions (B, L, H) -> (B, H, L)
+        x = _time_to_feature(x)
+        # linear transformations to horizon (B, H, L) -> (B, H, T)
+        x = self.fc_hist(x)
+        # (B, H, T) -> (B, T, H)
+        x = _time_to_feature(x)
 
-        # Feature space to time space transformations and linear transformations
-        # permute the feature dim with the time dim
-        x_hist_temp = time_to_feature(x_hist)
-        x_hist_temp = self.fc_hist(x_hist_temp)
-        # permute back the time dim with the feature dim
-        x_hist = time_to_feature(x_hist_temp)
+        # feature mixing for historical features (B, T, H) -> (B, T, H_S)
+        x = self.feature_mixing_hist(x)
+        if self.future_cov_dim:
+            # feature mixing for future features (B, T, F) -> (B, T, H_S)
+            x_future = self.feature_mixing_future(x_future)
+            # (B, T, H_S) + (B, T, H_S) -> (B, T, 2*H_S)
+            x = torch.cat([x, x_future], dim=-1)
 
-        # Conditional feature mixing for historical and future data
-        x_hist = self.feature_mixing_hist(x_hist, x_static=x_static)
-        if x_future_covariates is not None:
-            x_future = self.feature_mixing_future(
-                x_future_covariates, x_static=x_static
-            )
-            x = torch.cat([x_hist, x_future], dim=-1)
-        else:
-            x = x_hist
+        if self.static_cov_dim:
+            # (B, C, S) -> (B, 1, C * S)
+            x_static = x_static.reshape(x_static.shape[0], 1, -1)
+            # repeat to match horizon (B, 1, C * S) -> (B, T, C * S)
+            x_static = x_static.repeat(1, self.output_chunk_length, 1)
 
-        # Process through mixer layers
         for mixing_layer in self.conditional_mixer:
+            # conditional mixer layers with static covariates (B, T, 2 * H_S), (B, T, C * S) -> (B, T, H_S)
             x = mixing_layer(x, x_static=x_static)
 
-        # Final linear transformation to produce the forecast
+        # linear transformation to generate the forecast (B, T, H_S) -> (B, T, C * N_P)
         x = self.fc_out(x)
+        # (B, T, C * N_P) -> (B, T, C, N_P)
         x = x.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
-
         return x
 
 
@@ -562,39 +528,37 @@ class TSMixerModel(MixedCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        hidden_size: int = 256,
+        hidden_size: int = 64,
         ff_size: int = 64,
-        dropout: float = 0.2,
-        blocks: int = 6,
+        num_blocks: int = 2,
         activation: str = "ReLU",
-        normalize_before: bool = False,
+        dropout: float = 0.1,
         norm_type: Union[str, nn.Module] = "LayerNorm",
+        normalize_before: bool = False,
         use_static_covariates: bool = True,
         **kwargs,
     ) -> None:
         """Time-Series Mixer (TSMixer): An All-MLP Architecture for Time Series.
 
         The internal layers are adopted from the `PyTorch implementation
-        <https://github.com/ditschuk/pytorch-tsmixer>`_.
-        This is an implementation of the TSMixer architecture, as outlined in [1]_.
+        <https://github.com/ditschuk/pytorch-tsmixer>`_. This is an implementation of the TSMixer architecture,
+        as outlined in [1]_.
 
-        TSMixer forecasts time series data by integrating historical time series
-        data, future known inputs, and static contextual information. It uses a
-        combination of conditional feature mixing and mixer layers to process and
+        TSMixer forecasts time series data by integrating historical time series data, future known inputs, and static
+        contextual information. It uses a combination of conditional feature mixing and mixer layers to process and
         combine these different types of data for effective forecasting.
 
-        This model supports past covariates (known for `input_chunk_length` points
-        before prediction time), future covariates (known for `output_chunk_length`
-        points after prediction time), static covariates, as well as probabilistic
-        forecasting.
+        This model supports past covariates (known for `input_chunk_length` points before prediction time), future
+        covariates (known for `output_chunk_length` points after prediction time), static covariates, as well as
+        probabilistic forecasting.
 
         Parameters
         ----------
-        input_chunk_length: int
+        input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
             Also called: Encoder length
-        output_chunk_length: int
+        output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
@@ -603,40 +567,30 @@ class TSMixerModel(MixedCovariatesTorchModel):
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
             Also called: Decoder length
-        output_chunk_shift: int
+        output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
-        hidden_size: int
-            Hidden state size of the TSMixer.
-        activation: str
-            The activation function of the mixer layers (default='ReLU').
-            Supported activations: ["ReLU", "RReLU", "PReLU", "ELU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid",
-            "GELU"]
-        blocks: int
-            The number of mixer blocks in the model.
-        dropout: float
-            Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout
-            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
-            prediction time).
-        ff_size: int
-            The inner size of the feedforward network in the mixer layers.
-        normalize_before: bool
+        hidden_size
+            The hidden state size / size of the second feed-forward layer in the feature mixing MLP.
+        ff_size
+            The size of the first feed-forward layer in the feature mixing MLP.
+        num_blocks
+            The number of mixer blocks in the model. The number includes the first block and all subsequent blocks.
+        activation
+            The name of the activation function to use in the mixer layers. Default: `"ReLU"`. Must be one of
+            `"ReLU", "RReLU", "PReLU", "ELU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid", "GELU"`.
+        dropout
+            Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout at inference time
+            for model uncertainty estimation (enabled with ``mc_dropout=True`` at prediction time).
+        norm_type
+            The type of `LayerNorm` variant to use.  Default: `"LayerNorm"`. If a string, must be one of
+            `"LayerNormNoBias", "LayerNorm", "TimeBatchNorm2d"`. Otherwise, must be a custom `nn.Module`.
+        normalize_before
             Whether to apply layer normalization before or after mixer layer.
-        loss_fn: nn.Module
-            PyTorch loss function used for training. By default, the TFT
-            model is probabilistic and uses a ``likelihood`` instead
-            (``QuantileRegression``). To make the model deterministic, you
-            can set the ``likelihood`` to None and give a ``loss_fn``
-            argument.
-        likelihood
-            The likelihood model to be used for probabilistic forecasts.
-        norm_type: str | nn.Module
-            The type of LayerNorm variant to use.  Default: ``LayerNorm``. Available options are
-            ["LayerNormNoBias", "LayerNorm", "RINorm"], or provide a custom nn.Module.
-        use_static_covariates: bool
+        use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
@@ -644,6 +598,14 @@ class TSMixerModel(MixedCovariatesTorchModel):
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
 
+        loss_fn
+            PyTorch loss function used for training. By default, the TFT
+            model is probabilistic and uses a ``likelihood`` instead
+            (``QuantileRegression``). To make the model deterministic, you
+            can set the ``likelihood`` to None and give a ``loss_fn``
+            argument.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -806,7 +768,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         # Model specific parameters
         self.ff_size = ff_size
         self.dropout = dropout
-        self.blocks = blocks
+        self.num_blocks = num_blocks
         self.activation = activation
         self.normalize_before = normalize_before
         self.norm_type = norm_type
@@ -815,23 +777,15 @@ class TSMixerModel(MixedCovariatesTorchModel):
 
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
         """
-        `train_sample` contains the following torch.Tensors:
-            (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
-            future_target)
+        Parameters
+        ----------
+        train_sample
+            contains the following torch.Tensors: `(past_target, past_covariates, historic_future_covariates,
+            future_covariates, static_covariates, future_target)`:
 
-            each torch.Tensor has shape (n_timesteps, n_variables)
             - past/historic torch.Tensors have shape (input_chunk_length, n_variables)
             - future torch.Tensors have shape (output_chunk_length, n_variables)
             - static covariates have shape (component, static variable)
-
-        Darts Interpretation of pytorch-forecasting's TimeSeriesDataSet:
-            time_varying_knowns : future_covariates (including historic_future_covariates)
-            time_varying_unknowns : past_targets, past_covariates
-
-            time_varying_encoders : [past_targets, past_covariates, historic_future_covariates, future_covariates]
-            time_varying_decoders : [historic_future_covariates, future_covariates]
-
-        `variable_meta` is used in TFT to access specific variables
         """
         (
             past_target,
@@ -842,40 +796,36 @@ class TSMixerModel(MixedCovariatesTorchModel):
             future_target,
         ) = train_sample
 
-        self.input_dim = past_target.shape[1]
-        self.output_dim = future_target.shape[1]
+        input_dim = past_target.shape[1]
+        output_dim = future_target.shape[1]
 
-        self.static_cov_dim = (
-            static_covariates.shape[-1] if static_covariates is not None else 0
+        static_cov_dim = (
+            static_covariates.shape[0] * static_covariates.shape[1]
+            if static_covariates is not None
+            else 0
         )
-        self.future_cov_dim = (
+        future_cov_dim = (
             future_covariates.shape[1] if future_covariates is not None else 0
         )
-        self.past_cov_dim = (
-            past_covariates.shape[1] if past_covariates is not None else 0
-        )
-        self.nr_params = (
-            1 if self.likelihood is None else self.likelihood.num_parameters
-        )
+        past_cov_dim = past_covariates.shape[1] if past_covariates is not None else 0
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        self.model = _TSMixerModule(
+        return _TSMixerModule(
+            input_dim=input_dim,
+            output_dim=output_dim,
+            future_cov_dim=future_cov_dim,
+            past_cov_dim=past_cov_dim,
+            static_cov_dim=static_cov_dim,
+            nr_params=nr_params,
             hidden_size=self.hidden_size,
-            static_cov_dim=self.static_cov_dim,
-            past_cov_dim=self.past_cov_dim,
-            future_cov_dim=self.future_cov_dim,
-            input_dim=self.input_dim,
-            output_dim=self.output_dim,
             ff_size=self.ff_size,
-            dropout=self.dropout,
-            blocks=self.blocks,
+            num_blocks=self.num_blocks,
             activation=self.activation,
-            normalize_before=self.normalize_before,
+            dropout=self.dropout,
             norm_type=self.norm_type,
-            nr_params=self.nr_params,
+            normalize_before=self.normalize_before,
             **self.pl_module_params,
         )
-
-        return self.model
 
     @property
     def supports_multivariate(self) -> bool:
