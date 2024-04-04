@@ -44,7 +44,7 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
+from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode, generate_index
 
 logger = get_logger(__name__)
 
@@ -259,11 +259,11 @@ class TestLocalForecastingModels:
 
         # test case with numerical pd.RangeIndex
         target_num_idx = TimeSeries.from_times_and_values(
-            times=tg.generate_index(start=0, length=len(self.ts_gaussian)),
+            times=generate_index(start=0, length=len(self.ts_gaussian)),
             values=self.ts_gaussian.all_values(copy=False),
         )
         fc_num_idx = TimeSeries.from_times_and_values(
-            times=tg.generate_index(start=0, length=len(self.ts_gaussian_long)),
+            times=generate_index(start=0, length=len(self.ts_gaussian_long)),
             values=self.ts_gaussian_long.all_values(copy=False),
         )
 
