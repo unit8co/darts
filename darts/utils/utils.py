@@ -116,19 +116,18 @@ def _build_tqdm_iterator(iterable, verbose, **kwargs):
     return iterator
 
 
-# Types for sanity checks decorator
-A = TypeVar("A")
-B = TypeVar("B")
+# Types for sanity checks decorator: T is the output of the method to sanitize
 T = TypeVar("T")
 
 
 def _with_sanity_checks(
     *sanity_check_methods: str,
-) -> Callable[[Callable[[A, B], T]], Callable[[A, B], T]]:
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
     Decorator allowing to specify some sanity check method(s) to be used on a class method.
     The decorator guarantees that args and kwargs from the method to sanitize will be available in the
     sanity check methods as specified in the sanitized method's signature, irrespective of how it was called.
+    TypeVar `T` corresponds to the output of the method that the sanity checks are performed for.
 
     Parameters
     ----------
@@ -150,9 +149,10 @@ def _with_sanity_checks(
             ...
     """
 
-    def decorator(method_to_sanitize: Callable[[A, B], T]) -> Callable[[A, B], T]:
+    def decorator(method_to_sanitize: Callable[..., T]) -> Callable[..., T]:
         @wraps(method_to_sanitize)
-        def sanitized_method(self, *args: A, **kwargs: B) -> T:
+        def sanitized_method(self, *args, **kwargs) -> T:
+            only_args, only_kwargs = {}, {}
             for sanity_check_method in sanity_check_methods:
                 # Convert all arguments into keyword arguments
                 all_as_kwargs = getcallargs(method_to_sanitize, self, *args, **kwargs)
