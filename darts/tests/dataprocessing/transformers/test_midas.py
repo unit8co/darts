@@ -5,7 +5,8 @@ import pytest
 from darts import TimeSeries
 from darts.dataprocessing.transformers import MIDAS
 from darts.models import LinearRegressionModel
-from darts.utils.timeseries_generation import generate_index, linear_timeseries
+from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import generate_index
 
 # TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)
 pd_above_v22 = pd.__version__ >= "2.2"

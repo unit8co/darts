@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -13,7 +13,7 @@ from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -32,9 +32,7 @@ def _optimized_historical_forecasts_last_points_only(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
@@ -172,7 +170,7 @@ def _optimized_historical_forecasts_last_points_only(
                 hierarchy=series_.hierarchy,
             )
         )
-    return forecasts_list if len(series) > 1 else forecasts_list[0]
+    return forecasts_list
 
 
 def _optimized_historical_forecasts_all_points(
@@ -189,9 +187,7 @@ def _optimized_historical_forecasts_all_points(
     show_warnings: bool = True,
     predict_likelihood_parameters: bool = False,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = False.
 
@@ -352,4 +348,4 @@ def _optimized_historical_forecasts_all_points(
             )
 
         forecasts_list.append(forecasts_)
-    return forecasts_list if len(series) > 1 else forecasts_list[0]
+    return forecasts_list

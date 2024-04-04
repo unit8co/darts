@@ -17,8 +17,10 @@ from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
+from darts.logging import get_logger, raise_if_not
 from darts.timeseries import TimeSeries
-from darts.utils.utils import raise_if_not
+
+logger = get_logger(__name__)
 
 
 def _get_summation_matrix(series: TimeSeries):
@@ -37,6 +39,7 @@ def _get_summation_matrix(series: TimeSeries):
     raise_if_not(
         series.has_hierarchy,
         "The provided series must have a hierarchy defined for reconciliation to be performed.",
+        logger=logger,
     )
     hierarchy = series.hierarchy
     components_seq = list(series.components)

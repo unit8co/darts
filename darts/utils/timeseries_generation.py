@@ -12,6 +12,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -25,74 +26,6 @@ ONE_INDEXED_FREQS = {
     "weekofyear",
     "week_of_year",
 }
-
-
-def generate_index(
-    start: Optional[Union[pd.Timestamp, int]] = None,
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int, pd.DateOffset] = None,
-    name: str = None,
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
-    """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
-    or a pandas RangeIndex. The index starts at
-
-    Parameters
-    ----------
-    start
-        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
-        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
-        either `length` or `end`.
-    end
-        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
-        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
-    length
-        Optionally, the length of the returned index. Works only with either `start` or `end`.
-    freq
-        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
-        a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-        By default, "D" (daily) is used.
-        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
-        The freq is optional for generating an integer index (if not specified, 1 is used).
-    name
-        Optionally, an index name.
-    """
-    constructors = [
-        arg_name
-        for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
-        if arg is not None
-    ]
-    raise_if(
-        len(constructors) != 2,
-        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
-        f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
-        f"`start` to None.",
-        logger,
-    )
-    raise_if(
-        end is not None and start is not None and type(start) is not type(end),
-        "index generation with `start` and `end` requires equal object types of `start` and `end`",
-        logger,
-    )
-
-    if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
-        index = pd.date_range(
-            start=start,
-            end=end,
-            periods=length,
-            freq="D" if freq is None else freq,
-            name=name,
-        )
-    else:  # int
-        step = 1 if freq is None else freq
-        index = pd.RangeIndex(
-            start=start if start is not None else end - step * length + step,
-            stop=end + step if end is not None else start + step * length,
-            step=step,
-            name=name,
-        )
-    return index
 
 
 def constant_timeseries(

@@ -16,6 +16,7 @@ from darts.models import (
     CatBoostModel,
     LightGBMModel,
     LinearRegressionModel,
+    NaiveDrift,
     NaiveSeasonal,
     NotImportedModule,
 )
@@ -401,6 +402,86 @@ class TestHistoricalforecast:
                 random_state=42,
                 **tfm_kwargs,
             )
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [True, False],
+                [0, 1, 3],
+                [0, 1, 2],
+            )
+        ),
+    )
+    def test_historical_forecasts_output(self, config):
+        """Tests historical forecasts output type and values for all combinations of:
+
+        - uni or multivariate `series`
+        - different number of `series`, `0` represents a single `TimeSeries`,
+          `1` a list of one `TimeSeries`, and so on.
+        - different number of expected forecasts.
+        """
+        is_univariate, series_list_length, n_fc_expected = config
+
+        model = NaiveDrift()
+        horizon = 7
+        ts_length = horizon + model.min_train_series_length + (n_fc_expected - 1)
+
+        y = tg.constant_timeseries(value=1.0, length=ts_length)
+        if not is_univariate:
+            y = y.stack(y + 1.0)
+        # remember `y` for expected output
+        y_ref = y
+
+        if series_list_length:
+            y = [y] * series_list_length
+
+        if not n_fc_expected:
+            # cannot generate a single forecast
+            with pytest.raises(ValueError) as err:
+                _ = model.historical_forecasts(
+                    series=y, forecast_horizon=horizon, last_points_only=True
+                )
+            assert str(err.value).startswith(
+                "Cannot build a single input for prediction"
+            )
+            return
+
+        # last_points_only = True: gives a list with a single forecasts per series,
+        # where each forecast contains only the last points of all possible historical
+        # forecasts
+        hfcs = model.historical_forecasts(
+            series=y, forecast_horizon=horizon, last_points_only=True
+        )
+        if not series_list_length:
+            # make output the same as if a list of `series` was used
+            hfcs = [hfcs]
+
+        n_series = len(y) if series_list_length else 1
+        assert isinstance(hfcs, list) and len(hfcs) == n_series
+        for hfc in hfcs:
+            assert isinstance(hfc, TimeSeries) and len(hfc) == n_fc_expected
+            np.testing.assert_array_almost_equal(
+                hfc.values(), y_ref.values()[-n_fc_expected:]
+            )
+
+        # last_points_only = False: gives a list of lists, where each inner list
+        # contains the forecasts (with the entire forecast horizon) of one series
+        hfcs = model.historical_forecasts(
+            series=y, forecast_horizon=horizon, last_points_only=False
+        )
+        if not series_list_length:
+            # make output the same as if a list of `series` was used
+            hfcs = [hfcs]
+
+        assert isinstance(hfcs, list) and len(hfcs) == n_series
+        for hfc_series in hfcs:  # list of forecasts per series
+            assert isinstance(hfc_series, list) and len(hfc_series) == n_fc_expected
+            for hfc in hfc_series:  # each individual forecast
+                assert isinstance(hfc, TimeSeries) and len(hfc) == horizon
+                np.testing.assert_array_almost_equal(
+                    hfc.values(), y_ref.values()[-horizon:]
+                )
 
     @pytest.mark.parametrize(
         "arima_args",
@@ -926,12 +1007,12 @@ class TestHistoricalforecast:
 
                     # manually packing the series in list to match expected inputs
                     opti_hist_fct = model._optimized_historical_forecasts(
-                        series=[ts],
+                        series=ts,
                         past_covariates=(
-                            [ts_covs] if model.supports_past_covariates else None
+                            ts_covs if model.supports_past_covariates else None
                         ),
                         future_covariates=(
-                            [ts_covs] if model.supports_future_covariates else None
+                            ts_covs if model.supports_future_covariates else None
                         ),
                         start=start,
                         last_points_only=last_points_only,
@@ -1015,9 +1096,9 @@ class TestHistoricalforecast:
         )
 
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=[series_val],
-            past_covariates=[pc],
-            future_covariates=[fc],
+            series=series_val,
+            past_covariates=pc,
+            future_covariates=fc,
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,
@@ -1106,7 +1187,7 @@ class TestHistoricalforecast:
             enable_optimization=False,
         )
 
-        opti_hist_fct = model._optimized_historical_forecasts(series=[series_val])
+        opti_hist_fct = model._optimized_historical_forecasts(series=series_val)
 
         if not isinstance(hist_fct, list):
             hist_fct = [hist_fct]
@@ -1234,9 +1315,9 @@ class TestHistoricalforecast:
         )
 
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=series_val if isinstance(series_val, list) else [series_val],
-            past_covariates=pc if (isinstance(pc, list) or pc is None) else [pc],
-            future_covariates=fc if (isinstance(fc, list) or fc is None) else [fc],
+            series=series_val,
+            past_covariates=pc,
+            future_covariates=fc,
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,

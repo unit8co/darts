@@ -21,7 +21,7 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Have a monotonically increasing time index, without holes (without missing dates)
     - Contain numeric types only
     - Have distinct components/columns names
-    - Have a well defined frequency (`date offset aliases
+    - Have a well-defined frequency (`date offset aliases
       <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
       for ``DateTimeIndex``, or step size for ``RangeIndex``)
     - Have static covariates consistent with their components, or no static covariates
@@ -49,6 +49,8 @@ import pandas as pd
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
+
+from darts.utils.utils import generate_index, n_steps_between
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
 
@@ -267,7 +269,7 @@ class TimeSeries:
                     ),
                     logger,
                 )
-            # pre-compute grouping informations
+            # pre-compute grouping information
             components_set = set(self.components)
             children = set(hierarchy.keys())
 
@@ -2474,8 +2476,52 @@ class TimeSeries:
         TimeSeries
             a new series, containing the values of this series, over the time-span common to both time series.
         """
-        time_index = self.time_index.intersection(other.time_index)
-        return self[time_index]
+        if other.has_same_time_as(self):
+            return self.__class__(self._xa)
+        if other.freq == self.freq:
+            start, end = self._slice_intersect_bounds(other)
+            return self[start:end]
+        else:
+            time_index = self.time_index.intersection(other.time_index)
+            return self[time_index]
+
+    def slice_intersect_values(self, other: Self, copy: bool = False) -> Self:
+        """
+        Return the sliced values of this series, where the time index has been intersected with the one
+        of the `other` series.
+
+        This method is in general *not* symmetric.
+
+        Parameters
+        ----------
+        other
+            The other time series
+        copy
+            Whether to return a copy of the values, otherwise returns a view.
+            Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        np.ndarray
+            The values of this series, over the time-span common to both time series.
+        """
+        vals = self.all_values(copy=copy)
+        if other.has_same_time_as(self):
+            return vals
+        if other.freq == self.freq:
+            start, end = self._slice_intersect_bounds(other)
+            return vals[start:end]
+        else:
+            return vals[self.time_index.isin(other.time_index)]
+
+    def _slice_intersect_bounds(self, other: Self) -> Tuple[int, int]:
+        shift_start = n_steps_between(
+            other.start_time(), self.start_time(), freq=self.freq
+        )
+        shift_end = n_steps_between(other.end_time(), self.end_time(), freq=self.freq)
+        shift_start = shift_start if shift_start >= 0 else 0
+        shift_end = shift_end if shift_end < 0 else None
+        return shift_start, shift_end
 
     def strip(self, how: str = "all") -> Self:
         """
@@ -2716,7 +2762,12 @@ class TimeSeries:
         """
         if len(other) != len(self):
             return False
-        return (other.time_index == self.time_index).all()
+        if other.freq != self.freq:
+            return False
+        if other.start_time() != self.start_time():
+            return False
+        else:
+            return True
 
     def append(self, other: Self) -> Self:
         """
@@ -5085,11 +5136,16 @@ class TimeSeries:
             return self.__class__(xa_)
         elif isinstance(key, pd.RangeIndex):
             _check_range()
-            xa_ = self._xa.sel({self._time_dim: key})
+            idx_ = key
+            if not len(key) and self.freq != key.step:
+                # keep original step size in case of empty range index
+                idx_ = pd.RangeIndex(step=self.freq)
+
+            xa_ = self._xa.sel({self._time_dim: idx_})
 
             # sel() gives us an Int64Index. We have to set the RangeIndex.
             # see: https://github.com/pydata/xarray/issues/6256
-            xa_ = xa_.assign_coords({self.time_dim: key})
+            xa_ = xa_.assign_coords({self.time_dim: idx_})
 
             return self.__class__(xa_)
 
@@ -5394,8 +5450,6 @@ def concatenate(
                 "this behavior and concatenate the series by extending the time axis "
                 "of the first series.",
             )
-
-            from darts.utils.timeseries_generation import generate_index
 
             tindex = generate_index(
                 start=series[0].start_time(),
