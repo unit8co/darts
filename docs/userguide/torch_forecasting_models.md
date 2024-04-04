@@ -25,6 +25,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
     - [Callbacks](#callbacks)
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
+      - [MLFlow: train, track and monitor](#example-with-mlflow-autologging)
 
 4. [Performance optimisation section](#performance-recommendations) lists tricks to speed up the computation during training.
 
