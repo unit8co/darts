@@ -13,7 +13,7 @@ from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries, concatenate
-from darts.utils.utils import seq2series, series2seq
+from darts.utils.ts_utils import seq2series, series2seq
 
 logger = get_logger(__name__)
 
@@ -234,10 +234,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 predict_likelihood_parameters=False,
             )
             # concatenate the strided predictions of output_chunk_length values each
-            if is_single_series:
-                tmp_pred = [concatenate(tmp_pred, axis=0)]
-            else:
-                tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
+            tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
 
             # add the missing steps at beginning by taking the first values of precomputed predictions
             if missing_steps:

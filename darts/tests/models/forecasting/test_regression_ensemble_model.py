@@ -737,7 +737,7 @@ class TestRegressionEnsembleModels:
                 regression_train_num_samples=500,
             )
 
-        # must use apprioriate reduction method
+        # must use appropriate reduction method
         with pytest.raises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[

@@ -54,12 +54,8 @@ from darts.utils.historical_forecasts import (
     _process_historical_forecast_input,
 )
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import (
-    _check_quantiles,
-    get_single_series,
-    seq2series,
-    series2seq,
-)
+from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
 
@@ -1237,9 +1233,9 @@ class RegressionModel(GlobalForecastingModel):
 
     def _optimized_historical_forecasts(
         self,
-        series: Optional[Sequence[TimeSeries]],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -1251,9 +1247,7 @@ class RegressionModel(GlobalForecastingModel):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         **kwargs,
-    ) -> Union[
-        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-    ]:
+    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For RegressionModels we create the lagged prediction data once per series using a moving window.
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
@@ -1262,18 +1256,20 @@ class RegressionModel(GlobalForecastingModel):
 
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
-        series, past_covariates, future_covariates = _process_historical_forecast_input(
-            model=self,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            forecast_horizon=forecast_horizon,
-            allow_autoregression=False,
+        series, past_covariates, future_covariates, series_seq_type = (
+            _process_historical_forecast_input(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                forecast_horizon=forecast_horizon,
+                allow_autoregression=False,
+            )
         )
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
-            return _optimized_historical_forecasts_last_points_only(
+            hfc = _optimized_historical_forecasts_last_points_only(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,
@@ -1289,7 +1285,7 @@ class RegressionModel(GlobalForecastingModel):
                 **kwargs,
             )
         else:
-            return _optimized_historical_forecasts_all_points(
+            hfc = _optimized_historical_forecasts_all_points(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,
@@ -1304,6 +1300,7 @@ class RegressionModel(GlobalForecastingModel):
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
+        return series2seq(hfc, seq_type_out=series_seq_type)
 
 
 class _LikelihoodMixin:
