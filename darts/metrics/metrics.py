@@ -213,8 +213,8 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         if not 1 <= len(vals.shape) <= 2:
             raise_log(
                 ValueError(
-                    "Metric output must 1 dimension for aggregated metrics (e.g. MAE, ...), or 2 dimension for "
-                    "time dependent metrics (e.g. residuals)"
+                    "Metric output must have 1 dimension for aggregated metrics (e.g. `mae()`, ...), "
+                    "or 2 dimension for time dependent metrics (e.g. `ae()`, ...)"
                 ),
                 logger=logger,
             )
@@ -295,7 +295,7 @@ def _get_values_or_raise(
     Raises
     ------
     ValueError
-        If `is_insample=False` and the two time series (or their intersection) do not have the same time index.
+        If `is_insample=False` and the two time series do not have at least a partially overlapping time index.
     """
 
     if not series_a.width == series_b.width:
@@ -320,8 +320,7 @@ def _get_values_or_raise(
         if not len(vals_a_common) == len(vals_b_common):
             raise_log(
                 ValueError(
-                    "The two time series (or their intersection) "
-                    "must have the same time index."
+                    "The two time series must have at least a partially overlapping time index."
                 ),
                 logger=logger,
             )
@@ -538,10 +537,6 @@ def err(
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
-
-    References
-    ----------
-    .. [1] blabla
     """
 
     y_true, y_pred = _get_values_or_raise(
@@ -615,10 +610,6 @@ def merr(
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
-
-    References
-    ----------
-    .. [1] blabla
     """
     return np.nanmean(
         _get_wrapped_metric(err)(
@@ -710,10 +701,6 @@ def ae(
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
-
-    References
-    ----------
-    .. [1] blabla
     """
 
     y_true, y_pred = _get_values_or_raise(

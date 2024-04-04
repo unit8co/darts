@@ -1579,7 +1579,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If `True`, uses the comparison with the fitted values.
             Raises an error if ``fitted_values`` is not an attribute of `model_class`.
         metric
-            A metric function that returns the error between to `TimeSeries` as a float value . Must either be one of
+            A metric function that returns the error between two `TimeSeries` as a float value . Must either be one of
             Darts' "aggregated over time" metrics (see `here
             <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that as input two
             `TimeSeries` and returns the error
@@ -1874,11 +1874,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only
             Whether to use the whole historical forecasts or only the last point of each forecast to compute the error.
         metric
-            Either one of Darts' "per time step" metric (see `here
+            Either one of Darts' "per time step" metrics (see `here
             <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
             identical signature as Darts' "per time step" metrics, uses decorators
             :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
-            and returns a metric per time step.
+            and returns one value per time step.
         verbose
             Whether to print progress.
         show_warnings

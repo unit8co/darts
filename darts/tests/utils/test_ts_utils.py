@@ -9,7 +9,7 @@ from darts.utils.ts_utils import (
 )
 
 
-class TestUtils:
+class TestTsUtils:
     def test_series_type(self):
         assert SeriesType.NONE.value == -1
         assert SeriesType.SINGLE.value == 0
