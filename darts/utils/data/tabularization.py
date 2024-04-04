@@ -1220,6 +1220,116 @@ def _create_lagged_data_by_intersecting_times(
     return X, y, shared_times
 
 
+def _create_lagged_data_autoregression(
+    t_pred: int,
+    shift: int,
+    last_step_shift: int,
+    predictions: List[np.ndarray],
+    series_matrix: np.ndarray,
+    covariate_matrices: Dict[str, np.ndarray],
+    lags: Dict[str, List[int]],
+    component_lags: Dict[str, Dict[str, List[int]]],
+    relative_cov_lags: Dict[str, np.ndarray],
+    series_length: int,
+    num_samples: int,
+) -> np.ndarray:
+    """
+
+    Parameters
+    ----------
+    """
+    np_X = []
+    # retrieve target lags
+    if "target" in lags:
+        # component-wise lags
+        if "target" in component_lags:
+            tmp_X = _extract_component_lags_autoregression(
+                series_type="target",
+                values_matrix=series_matrix,
+                shift=shift,
+                last_step_shift=last_step_shift,
+                t_pred=t_pred,
+                lags=lags,
+                component_lags=component_lags,
+            )
+            np_X.append(tmp_X.reshape(series_length * num_samples, -1))
+        # shared lags
+        else:
+            np_X.append(
+                series_matrix[
+                    :,
+                    [lag - (shift + last_step_shift) for lag in lags["target"]],
+                ].reshape(series_length * num_samples, -1)
+            )
+
+    # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
+    for cov_type in ["past", "future"]:
+        if cov_type in covariate_matrices:
+            # component-wise lags
+            if cov_type in component_lags:
+                tmp_X = _extract_component_lags_autoregression(
+                    series_type=cov_type,
+                    values_matrix=covariate_matrices[cov_type],
+                    shift=shift,
+                    last_step_shift=last_step_shift,
+                    t_pred=t_pred,
+                    lags=lags,
+                    component_lags=component_lags,
+                )
+                np_X.append(tmp_X.reshape(series_length * num_samples, -1))
+            # shared lags
+            else:
+                np_X.append(
+                    covariate_matrices[cov_type][
+                        :, relative_cov_lags[cov_type] + t_pred
+                    ].reshape(series_length * num_samples, -1)
+                )
+
+    # concatenate retrieved lags
+    return np.concatenate(np_X, axis=1)
+
+
+def _extract_component_lags_autoregression(
+    series_type: str,
+    values_matrix: np.ndarray,
+    shift: int,
+    last_step_shift: int,
+    t_pred: int,
+    lags: Dict[str, List[int]],
+    component_lags: Dict[str, Dict[str, List[int]]],
+) -> np.ndarray:
+    """Extract, concatenate and reorder component-wise lags to obtain a features order
+    identical to tabularization.
+
+    Parameters
+    ----------
+
+    """
+    # prepare index to reorder features by lags across components
+    comp_lags_reordered = np.concatenate(
+        [comp_lags for comp_lags in component_lags[series_type].values()]
+    ).argsort()
+
+    # convert relative lags to absolute
+    if series_type == "target":
+        lags_shift = -shift - last_step_shift
+    else:
+        lags_shift = -lags[series_type][0] + t_pred
+
+    # extract features
+    tmp_X = [
+        values_matrix[
+            :,
+            [lag + lags_shift for lag in comp_lags],
+            comp_i,
+        ]
+        for comp_i, comp_lags in enumerate(component_lags[series_type].values())
+    ]
+
+    # concatenate on features dimension and reorder
+    return np.concatenate(tmp_X, axis=1)[:, comp_lags_reordered]
+
+
 # For convenience, define following types for `_get_feature_times`:
 FeatureTimes = Tuple[
     Optional[Union[pd.Index, pd.DatetimeIndex, pd.RangeIndex]],

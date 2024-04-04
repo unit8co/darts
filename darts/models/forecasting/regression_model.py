@@ -43,6 +43,7 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
+    _create_lagged_data_autoregression,
     add_static_covariates_to_lagged_data,
     create_lagged_component_names,
     create_lagged_training_data,
@@ -1015,6 +1016,7 @@ class RegressionModel(GlobalForecastingModel):
         predictions = []
         last_step_shift = 0
 
+        series_length = len(series)
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
@@ -1023,62 +1025,30 @@ class RegressionModel(GlobalForecastingModel):
                 last_step_shift = t_pred - (n - step)
                 t_pred = n - step
 
-            np_X = []
-            # retrieve target lags
-            if "target" in self.lags:
-                if predictions:
-                    series_matrix = np.concatenate(
-                        [series_matrix, predictions[-1]], axis=1
-                    )
-                # component-wise lags
-                if "target" in self.component_lags:
-                    tmp_X = self._extract_component_lags_autoregression(
-                        series_type="target",
-                        values_matrix=series_matrix,
-                        shift=shift,
-                        last_step_shift=last_step_shift,
-                        t_pred=t_pred,
-                    )
-                    np_X.append(tmp_X.reshape(len(series) * num_samples, -1))
-                # shared lags
-                else:
-                    np_X.append(
-                        series_matrix[
-                            :,
-                            [
-                                lag - (shift + last_step_shift)
-                                for lag in self.lags["target"]
-                            ],
-                        ].reshape(len(series) * num_samples, -1)
-                    )
-            # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
-            for cov_type in ["past", "future"]:
-                if cov_type in covariate_matrices:
-                    # component-wise lags
-                    if cov_type in self.component_lags:
-                        tmp_X = self._extract_component_lags_autoregression(
-                            series_type=cov_type,
-                            values_matrix=covariate_matrices[cov_type],
-                            shift=shift,
-                            last_step_shift=last_step_shift,
-                            t_pred=t_pred,
-                        )
-                        np_X.append(tmp_X.reshape(len(series) * num_samples, -1))
-                    # shared lags
-                    else:
-                        np_X.append(
-                            covariate_matrices[cov_type][
-                                :, relative_cov_lags[cov_type] + t_pred
-                            ].reshape(len(series) * num_samples, -1)
-                        )
+            # concatenate previous iteration forecasts
+            if "target" in self.lags and len(predictions) > 0:
+                series_matrix = np.concatenate([series_matrix, predictions[-1]], axis=1)
 
-            # concatenate retrieved lags
-            X = np.concatenate(np_X, axis=1)
+            # extract and concatenate lags from target and covariates series
+            X = _create_lagged_data_autoregression(
+                t_pred=t_pred,
+                shift=shift,
+                last_step_shift=last_step_shift,
+                predictions=predictions,
+                series_matrix=series_matrix,
+                covariate_matrices=covariate_matrices,
+                lags=self.lags,
+                component_lags=self.component_lags,
+                relative_cov_lags=relative_cov_lags,
+                series_length=series_length,
+                num_samples=num_samples,
+            )
+
             # Need to split up `X` into three equally-sized sub-blocks
             # corresponding to each timeseries in `series`, so that
             # static covariates can be added to each block; valid since
             # each block contains same number of observations:
-            X_blocks = np.split(X, len(series), axis=0)
+            X_blocks = np.split(X, series_length, axis=0)
             X_blocks, _ = add_static_covariates_to_lagged_data(
                 X_blocks,
                 series,
@@ -1100,7 +1070,7 @@ class RegressionModel(GlobalForecastingModel):
 
         # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
         predictions = np.moveaxis(
-            predictions.reshape(len(series), num_samples, n, -1), 1, -1
+            predictions.reshape(series_length, num_samples, n, -1), 1, -1
         )
 
         # build time series from the predicted values starting after end of series
@@ -1134,43 +1104,6 @@ class RegressionModel(GlobalForecastingModel):
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.pred_dim, -1)
-
-    def _extract_component_lags_autoregression(
-        self,
-        series_type: str,
-        values_matrix: np.ndarray,
-        shift: int,
-        last_step_shift: int,
-        t_pred: int,
-    ) -> np.ndarray:
-        """Extract, concatenate and reorder component-wise lags to obtain a features order
-        identical to tabularization.
-        """
-        # prepare index to reorder features by lags across components
-        comp_lags_reordered = np.concatenate(
-            [comp_lags for comp_lags in self.component_lags[series_type].values()]
-        ).argsort()
-
-        # convert relative lags to absolute
-        if series_type == "target":
-            lags_shift = -shift - last_step_shift
-        else:
-            lags_shift = -self.lags[series_type][0] + t_pred
-
-        # extract features
-        tmp_X = [
-            values_matrix[
-                :,
-                [lag + lags_shift for lag in comp_lags],
-                comp_i,
-            ]
-            for comp_i, comp_lags in enumerate(
-                self.component_lags[series_type].values()
-            )
-        ]
-
-        # concatenate on features dimension and reorder
-        return np.concatenate(tmp_X, axis=1)[:, comp_lags_reordered]
 
     @property
     def lagged_feature_names(self) -> Optional[List[str]]:
