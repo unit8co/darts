@@ -275,19 +275,26 @@ def create_lagged_data(
         if seq_ts is not None
     ]
     seq_ts_lens = set(seq_ts_lens)
-    raise_if(
-        len(seq_ts_lens) > 1,
-        "Must specify the same number of `TimeSeries` for each series input.",
+    if len(seq_ts_lens) > 1:
+        raise_log(
+            ValueError(
+                "Must specify the same number of `TimeSeries` for each series input."
+            ),
+            logger,
+        )
+    lags_passed_as_dict = any(
+        isinstance(lags_, dict)
+        for lags_ in [lags, lags_past_covariates, lags_future_covariates]
     )
-    raise_if(
-        not use_moving_windows
-        and any(
-            isinstance(lags_, dict)
-            for lags_ in [lags, lags_past_covariates, lags_future_covariates]
-        ),
-        "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary. "
-        f"Received: {[lags, lags_past_covariates, lags_future_covariates]}.",
-    )
+    if (not use_moving_windows) and lags_passed_as_dict:
+        raise_log(
+            ValueError(
+                "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary. "
+                f"Received: {[lags, lags_past_covariates, lags_future_covariates]}."
+            ),
+            logger,
+        )
+
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
     X, y, times = [], [], []
@@ -295,7 +302,18 @@ def create_lagged_data(
         target_i = target_series[i] if target_series else None
         past_i = past_covariates[i] if past_covariates else None
         future_i = future_covariates[i] if future_covariates else None
-        if use_moving_windows and _all_equal_freq(target_i, past_i, future_i):
+        series_equal_freq = _all_equal_freq(target_i, past_i, future_i)
+        # component-wise lags extraction is not support with times intersectiona at the moment
+        if use_moving_windows and lags_passed_as_dict and (not series_equal_freq):
+            raise_log(
+                ValueError(
+                    f"Cannot create tabularized data for the {i}th series because target and covariates don't have "
+                    "the same frequency and some of the lags are provided as a dictionary. Either resample the "
+                    "series or change the lags definition."
+                ),
+                logger,
+            )
+        if use_moving_windows and series_equal_freq:
             X_i, y_i, times_i = _create_lagged_data_by_moving_window(
                 target_i,
                 output_chunk_length,
@@ -787,7 +805,8 @@ def create_lagged_component_names(
             if "default_lags" in variate_lags:
                 raise_log(
                     ValueError(
-                        "All the lags must be explitely defined, 'default_lags' is not allowed in the lags dictionary."
+                        "All the lags must be explicitely defined, 'default_lags' is not allowed in the "
+                        "lags dictionary."
                     ),
                     logger,
                 )
@@ -867,7 +886,7 @@ def _create_lagged_data_by_moving_window(
     windows can then be reshaped into the correct shape. This approach can only be used if
     we *can* assume that the specified series are all of the same frequency.
 
-    Assume that all the lags are sorted in ascending order.
+    Assumes that all the lags are sorted in ascending order.
     """
     feature_times, min_lags, max_lags = _get_feature_times(
         target_series,

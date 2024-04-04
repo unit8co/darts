@@ -1033,7 +1033,7 @@ class RegressionModel(GlobalForecastingModel):
                 # component-wise lags
                 if "target" in self.component_lags:
                     tmp_X = self._extract_component_lags_autoregression(
-                        cov_type="target",
+                        series_type="target",
                         values_matrix=series_matrix,
                         shift=shift,
                         last_step_shift=last_step_shift,
@@ -1057,7 +1057,7 @@ class RegressionModel(GlobalForecastingModel):
                     # component-wise lags
                     if cov_type in self.component_lags:
                         tmp_X = self._extract_component_lags_autoregression(
-                            cov_type=cov_type,
+                            series_type=cov_type,
                             values_matrix=covariate_matrices[cov_type],
                             shift=shift,
                             last_step_shift=last_step_shift,
@@ -1137,7 +1137,7 @@ class RegressionModel(GlobalForecastingModel):
 
     def _extract_component_lags_autoregression(
         self,
-        cov_type: str,
+        series_type: str,
         values_matrix: np.ndarray,
         shift: int,
         last_step_shift: int,
@@ -1148,26 +1148,25 @@ class RegressionModel(GlobalForecastingModel):
         """
         # prepare index to reorder features by lags across components
         comp_lags_reordered = np.concatenate(
-            [
-                np.array(comp_lags, dtype=int)
-                for comp_lags in self.component_lags[cov_type].values()
-            ]
+            [comp_lags for comp_lags in self.component_lags[series_type].values()]
         ).argsort()
 
         # convert relative lags to absolute
-        if cov_type == "target":
+        if series_type == "target":
             lags_shift = -shift - last_step_shift
         else:
-            lags_shift = -self.lags[cov_type][0] + t_pred
+            lags_shift = -self.lags[series_type][0] + t_pred
 
         # extract features
         tmp_X = [
             values_matrix[
                 :,
-                np.array(comp_lags) + lags_shift,
+                [lag + lags_shift for lag in comp_lags],
                 comp_i,
             ]
-            for comp_i, comp_lags in enumerate(self.component_lags[cov_type].values())
+            for comp_i, comp_lags in enumerate(
+                self.component_lags[series_type].values()
+            )
         ]
 
         # concatenate on features dimension and reorder
