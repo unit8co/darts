@@ -140,8 +140,9 @@ class _FeatureMixing(nn.Module):
         )
         self.fc1 = nn.Linear(input_dim, ff_size)
         self.activation = activation
-        self.dropout = MonteCarloDropout(dropout)
+        self.dropout1 = MonteCarloDropout(dropout)
         self.fc2 = nn.Linear(ff_size, output_dim)
+        self.dropout2 = MonteCarloDropout(dropout)
         self.norm_after = (
             norm_type((sequence_length, output_dim))
             if not normalize_before
@@ -153,9 +154,9 @@ class _FeatureMixing(nn.Module):
         x = self.norm_before(x)
         x = self.fc1(x)
         x = self.activation(x)
-        x = self.dropout(x)
+        x = self.dropout1(x)
         x = self.fc2(x)
-        x = self.dropout(x)
+        x = self.dropout2(x)
         x = x_proj + x
         x = self.norm_after(x)
         return x
