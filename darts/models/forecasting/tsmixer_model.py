@@ -739,26 +739,27 @@ class TSMixerModel(MixedCovariatesTorchModel):
         >>> from darts.datasets import WeatherDataset
         >>> from darts.models import TSMixerModel
         >>> series = WeatherDataset().load()
-        >>> # predicting atmospheric pressure
-        >>> target = series['p (mbar)'][:100]
+        >>> # predicting temperatures
+        >>> target = series['T (degC)'][:100]
         >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
-        >>> # optionally, use future temperatures (pretending this component is a forecast)
-        >>> future_cov = series['T (degC)'][:106]
+        >>> # optionally, use future atmospheric pressure (pretending this component is a forecast)
+        >>> future_cov = series['p (mbar)'][:106]
         >>> model = TSMixerModel(
         >>>     input_chunk_length=6,
         >>>     output_chunk_length=6,
+        >>>     use_reversible_instance_norm=True,
         >>>     n_epochs=20
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
-        array([[26.75691625],
-            [27.3836554 ],
-            [26.02049222],
-            [26.9186771 ],
-            [27.88810697],
-            [25.86081595]])
+        array([[3.92519848],
+            [4.05650312],
+            [4.21781987],
+            [4.29394973],
+            [4.4122863 ],
+            [4.42762751]])
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         super().__init__(**self._extract_torch_model_params(**model_kwargs))
