@@ -1,7 +1,7 @@
 import itertools
 import warnings
 from itertools import product
-from typing import Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,7 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import generate_index
 
 
 def helper_create_multivariate_linear_timeseries(
@@ -406,12 +407,171 @@ class TestCreateLaggedTrainingData:
             [lags_tg, lags_pc, lags_fc],
             ["target", "past", "future"],
         ):
-            single_ts = ts_[0] if isinstance(ts_, list) else ts_
+            single_ts = ts_[0] if isinstance(ts_, Sequence) else ts_
             if single_ts is None or lags_ is None:
                 lags_as_dict[name_] = None
-            else:
+            # already in dict format
+            elif isinstance(lags_, dict):
+                lags_as_dict[name_] = lags_
+            # from list
+            elif isinstance(lags_, list):
                 lags_as_dict[name_] = {c_name: lags_ for c_name in single_ts.components}
+            else:
+                raise ValueError(
+                    f"Lags shoudl be `None`, a list or a dictionary. Received {type(lags_)}."
+                )
         return lags_as_dict
+
+    def helper_create_expected_lagged_data(
+        self,
+        target: Optional[Union[TimeSeries, List[TimeSeries]]],
+        past: Optional[Union[TimeSeries, List[TimeSeries]]],
+        future: Optional[Union[TimeSeries, List[TimeSeries]]],
+        lags: Optional[Union[List[int], Dict[str, List[int]]]],
+        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
+        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        output_chunk_length: int,
+        output_chunk_shift: int,
+        multi_models: bool,
+        max_samples_per_ts: Optional[int],
+    ) -> Tuple[np.ndarray, np.ndarray, Any]:
+        """Helper function to create the X and y arrays by building them block by block (one per covariates)."""
+        feats_times = self.get_feature_times(
+            target,
+            past,
+            future,
+            lags,
+            lags_past,
+            lags_future,
+            output_chunk_length,
+            max_samples_per_ts,
+            output_chunk_shift,
+        )
+        # Construct `X` by constructing each block, then concatenate these
+        # blocks together along component axis:
+        X_target = self.construct_X_block(target, feats_times, lags)
+        X_past = self.construct_X_block(past, feats_times, lags_past)
+        X_future = self.construct_X_block(future, feats_times, lags_future)
+        all_X = (X_target, X_past, X_future)
+        to_concat = [X for X in all_X if X is not None]
+        expected_X = np.concatenate(to_concat, axis=1)
+        expected_y = self.create_y(
+            target,
+            feats_times,
+            output_chunk_length,
+            multi_models,
+            output_chunk_shift,
+        )
+        if len(expected_X.shape) == 2:
+            expected_X = expected_X[:, :, np.newaxis]
+        if len(expected_y.shape) == 2:
+            expected_y = expected_y[:, :, np.newaxis]
+        return expected_X, expected_y, feats_times
+
+    def helper_check_lagged_data(
+        self,
+        convert_lags_to_dict: bool,
+        expected_X: np.ndarray,
+        expected_y: np.ndarray,
+        expected_times_x,
+        expected_times_y,
+        target: Optional[Union[TimeSeries, List[TimeSeries]]],
+        past_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
+        future_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
+        lags: Optional[Union[List[int], Dict[str, List[int]]]],
+        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
+        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        output_chunk_length: int,
+        output_chunk_shift: int,
+        use_static_covariates: bool,
+        multi_models: bool,
+        max_samples_per_ts: Optional[int],
+        use_moving_windows: bool,
+        concatenate: bool,
+        **kwargs,
+    ):
+        """Helper function to call the `creater_lagged_training_data()` method with lags argument either in the list
+        format or the dictionary format (automatically convert them when they are identical across components).
+
+        Assertions are different depending on the value of `concatenate` to account for the output shape.
+        """
+        if convert_lags_to_dict:
+            lags_as_dict = self.convert_lags_to_dict(
+                target,
+                past_cov if lags_past else None,
+                future_cov if lags_future else None,
+                lags,
+                lags_past,
+                lags_future,
+            )
+            lags_ = lags_as_dict["target"]
+            lags_past_ = lags_as_dict["past"]
+            lags_future_ = lags_as_dict["future"]
+        else:
+            lags_ = lags
+            lags_past_ = lags_past
+            lags_future_ = lags_future
+
+        # convert indexes to list of tuples to simplify processing
+        expected_times_x = (
+            expected_times_x
+            if isinstance(expected_times_x, Sequence)
+            else [expected_times_x]
+        )
+        expected_times_y = (
+            expected_times_y
+            if isinstance(expected_times_y, Sequence)
+            else [expected_times_y]
+        )
+
+        X, y, times, _ = create_lagged_training_data(
+            target_series=target,
+            output_chunk_length=output_chunk_length,
+            past_covariates=past_cov if lags_past_ else None,
+            future_covariates=future_cov if lags_future_ else None,
+            lags=lags_,
+            lags_past_covariates=lags_past_,
+            lags_future_covariates=lags_future_,
+            uses_static_covariates=use_static_covariates,
+            multi_models=multi_models,
+            max_samples_per_ts=max_samples_per_ts,
+            use_moving_windows=use_moving_windows,
+            output_chunk_shift=output_chunk_shift,
+            concatenate=concatenate,
+        )
+        # should have the exact same number of indexes
+        assert len(times) == len(expected_times_x) == len(expected_times_y)
+
+        # Check that time index(es) match:
+        for time, exp_time in zip(times, expected_times_x, strict=True):
+            assert exp_time.equals(time)
+
+        if concatenate:
+            # Number of observations should match number of feature times:
+            data_length = sum(len(time) for time in times)
+            exp_length_x = sum(len(exp_time) for exp_time in expected_times_x)
+            exp_length_y = sum(len(exp_time) for exp_time in expected_times_y)
+            assert exp_length_x == exp_length_y
+            assert X.shape[0] == exp_length_x == data_length
+            assert y.shape[0] == exp_length_y == data_length
+
+            # Check that outputs match:
+            assert X.shape == expected_X.shape
+            assert np.allclose(expected_X, X)
+            assert y.shape == expected_y.shape
+            assert np.allclose(expected_y, y)
+        else:
+            # Check the number of observation for each series
+            for x_, exp_time_x, y_, exp_time_y, time in zip(
+                X, expected_times_x, y, expected_times_y, times, strict=True
+            ):
+                assert x_.shape[0] == len(time) == len(exp_time_x)
+                assert y_.shape[0] == len(time) == len(exp_time_y)
+
+            # Check that outputs match:
+            for x_, y_ in zip(X, y, strict=True):
+                assert np.allclose(X, x_)
+                assert np.allclose(y, y_)
 
     #
     #   Generated Test Cases
@@ -579,84 +739,45 @@ class TestCreateLaggedTrainingData:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=True,
-                output_chunk_shift=output_chunk_shift,
-            )
-            feats_times = self.get_feature_times(
-                target,
-                past,
-                future,
-                lags,
-                lags_past,
-                lags_future,
-                output_chunk_length,
-                max_samples_per_ts,
-                output_chunk_shift,
-            )
-            # Construct `X` by constructing each block, then concatenate these
-            # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags)
-            X_past = self.construct_X_block(past, feats_times, lags_past)
-            X_future = self.construct_X_block(future, feats_times, lags_future)
-            all_X = (X_target, X_past, X_future)
-            to_concat = [X for X in all_X if X is not None]
-            expected_X = np.concatenate(to_concat, axis=1)
-            expected_y = self.create_y(
-                target,
-                feats_times,
-                output_chunk_length,
-                multi_models,
-                output_chunk_shift,
-            )
-            # Number of observations should match number of feature times:
-            assert X.shape[0] == len(feats_times) == len(times[0])
-            assert y.shape[0] == len(feats_times) == len(times[0])
-            # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
-            assert feats_times.equals(times[0])
 
-            # passing lags a dictionary
-            lags_as_dict = self.convert_lags_to_dict(
-                target,
-                past if lags_past else None,
-                future if lags_future else None,
-                lags,
-                lags_past,
-                lags_future,
+            expected_X, expected_y, expected_times = (
+                self.helper_create_expected_lagged_data(
+                    target,
+                    past,
+                    future,
+                    lags,
+                    lags_past,
+                    lags_future,
+                    output_chunk_length,
+                    output_chunk_shift,
+                    multi_models,
+                    max_samples_per_ts,
+                )
             )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags_as_dict["target"],
-                lags_past_covariates=lags_as_dict["past"],
-                lags_future_covariates=lags_as_dict["future"],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=True,
-                output_chunk_shift=output_chunk_shift,
-            )
-            # check length
-            assert X_dict_lags.shape[0] == len(feats_times) == len(times[0])
-            assert y_dict_lags.shape[0] == len(feats_times) == len(times[0])
-            # check values
-            assert np.allclose(expected_X, X_dict_lags[:, :, 0])
-            assert np.allclose(expected_y, y_dict_lags[:, :, 0])
-            assert feats_times.equals(times_dict_lags[0])
+
+            kwargs = {
+                "expected_X": expected_X,
+                "expected_y": expected_y,
+                "expected_times_x": expected_times,
+                "expected_times_y": expected_times,
+                "target": target,
+                "past_cov": past,
+                "future_cov": future,
+                "lags": lags,
+                "lags_past": lags_past,
+                "lags_future": lags_future,
+                "output_chunk_length": output_chunk_length,
+                "output_chunk_shift": output_chunk_shift,
+                "use_static_covariates": False,
+                "multi_models": multi_models,
+                "max_samples_per_ts": max_samples_per_ts,
+                "use_moving_windows": True,
+                "concatenate": True,
+            }
+
+            self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
 
     @pytest.mark.parametrize(
         "series_type",
@@ -738,54 +859,49 @@ class TestCreateLaggedTrainingData:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
-            X, y, times, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=False,
-                output_chunk_shift=output_chunk_shift,
-            )
-            feats_times = self.get_feature_times(
-                target,
-                past,
-                future,
-                lags,
-                lags_past,
-                lags_future,
-                output_chunk_length,
-                max_samples_per_ts,
-                output_chunk_shift,
-            )
-            # Construct `X` by constructing each block, then concatenate these
-            # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags)
-            X_past = self.construct_X_block(past, feats_times, lags_past)
-            X_future = self.construct_X_block(future, feats_times, lags_future)
-            all_X = (X_target, X_past, X_future)
-            to_concat = [x for x in all_X if x is not None]
-            expected_X = np.concatenate(to_concat, axis=1)
-            expected_y = self.create_y(
-                target,
-                feats_times,
-                output_chunk_length,
-                multi_models,
-                output_chunk_shift,
-            )
-            # Number of observations should match number of feature times:
-            assert X.shape[0] == len(feats_times) == len(times[0])
-            assert y.shape[0] == len(feats_times) == len(times[0])
 
-            # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
-            assert np.allclose(expected_y, y[:, :, 0])
-            assert feats_times.equals(times[0])
+            expected_X, expected_y, expected_times = (
+                self.helper_create_expected_lagged_data(
+                    target,
+                    past,
+                    future,
+                    lags,
+                    lags_past,
+                    lags_future,
+                    output_chunk_length,
+                    output_chunk_shift,
+                    multi_models,
+                    max_samples_per_ts,
+                )
+            )
+
+            kwargs = {
+                "expected_X": expected_X,
+                "expected_y": expected_y,
+                "expected_times_x": expected_times,
+                "expected_times_y": expected_times,
+                "target": target,
+                "past_cov": past,
+                "future_cov": future,
+                "lags": lags,
+                "lags_past": lags_past,
+                "lags_future": lags_future,
+                "output_chunk_length": output_chunk_length,
+                "output_chunk_shift": output_chunk_shift,
+                "use_static_covariates": False,
+                "multi_models": multi_models,
+                "max_samples_per_ts": max_samples_per_ts,
+                "use_moving_windows": False,
+                "concatenate": True,
+            }
+
+            self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
+            )
 
     @pytest.mark.parametrize(
         "series_type",
@@ -939,7 +1055,7 @@ class TestCreateLaggedTrainingData:
         expected_y = series.all_values(copy=False)[
             3 + output_chunk_shift : 3 + output_chunk_shift + len(expected_times_y),
             :,
-            0,
+            :,
         ]
         # Offset `3:-2` by `-1` lag:
         expected_X_target = series.all_values(copy=False)[
@@ -953,52 +1069,38 @@ class TestCreateLaggedTrainingData:
         ]
         expected_X = np.concatenate(
             [expected_X_target, expected_X_past, expected_X_future], axis=1
-        )
-        X, y, times, _ = create_lagged_training_data(
-            target_series=series,
-            output_chunk_length=output_chunk_length,
-            past_covariates=series,
-            future_covariates=series,
-            lags=lags,
-            lags_past_covariates=past_lags,
-            lags_future_covariates=future_lags,
-            uses_static_covariates=False,
-            use_moving_windows=use_moving_windows,
-            output_chunk_shift=output_chunk_shift,
-        )
-        # Number of observations should match number of feature times:
-        assert X.shape[0] == len(expected_times_x) == len(times[0])
-        assert y.shape[0] == len(expected_times_y) == len(times[0])
+        )[:, :, np.newaxis]
 
-        # Check that outputs match:
-        assert np.allclose(expected_X, X[:, :, 0])
-        assert np.allclose(expected_y, y[:, :, 0])
-        assert expected_times_x.equals(times[0])
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times_x,
+            "expected_times_y": expected_times_y,
+            "target": series,
+            "past_cov": series,
+            "future_cov": series,
+            "lags": lags,
+            "lags_past": past_lags,
+            "lags_future": future_lags,
+            "output_chunk_length": output_chunk_length,
+            "output_chunk_shift": output_chunk_shift,
+            "use_static_covariates": False,
+            "multi_models": True,
+            "max_samples_per_ts": None,
+            "use_moving_windows": use_moving_windows,
+            "concatenate": True,
+        }
 
-        # passing lags a dictionary, only supported when use_moving_windows=True
+        self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
         if use_moving_windows:
-            lags_as_dict = self.convert_lags_to_dict(
-                series, series, series, lags, past_lags, future_lags
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+        else:
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
             )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target_series=series,
-                output_chunk_length=output_chunk_length,
-                past_covariates=series,
-                future_covariates=series,
-                lags=lags_as_dict["target"],
-                lags_past_covariates=lags_as_dict["past"],
-                lags_future_covariates=lags_as_dict["future"],
-                uses_static_covariates=False,
-                use_moving_windows=use_moving_windows,
-                output_chunk_shift=output_chunk_shift,
-            )
-            # check length
-            assert X_dict_lags.shape[0] == len(expected_times_x) == len(times[0])
-            assert y_dict_lags.shape[0] == len(expected_times_y) == len(times[0])
-            # check values
-            assert np.allclose(expected_X, X_dict_lags[:, :, 0])
-            assert np.allclose(expected_y, y_dict_lags[:, :, 0])
-            assert expected_times_x.equals(times_dict_lags[0])
 
     @pytest.mark.parametrize(
         "config",
@@ -1068,52 +1170,48 @@ class TestCreateLaggedTrainingData:
                 past.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
                 future.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
             ]
-        ).reshape(1, -1)
+        ).reshape(1, -1, 1)
         # Label is very last value of `target`:
-        expected_y = target.all_values(copy=False)[-1, :, 0]
+        expected_y = target.all_values(copy=False)[-1:, :, :]
+
+        expected_times = generate_index(
+            start=target.end_time() - output_chunk_shift * target.freq,
+            length=1,
+            freq=target.freq,
+        )
+
         # Check correctness for both 'moving window' method
         # and 'time intersection' method:
-        X, y, times, _ = create_lagged_training_data(
-            target,
-            output_chunk_length=1,
-            past_covariates=past,
-            future_covariates=future,
-            lags=lags,
-            lags_past_covariates=lags_past,
-            lags_future_covariates=lags_future,
-            uses_static_covariates=False,
-            max_samples_per_ts=max_samples_per_ts,
-            use_moving_windows=use_moving_windows,
-            output_chunk_shift=output_chunk_shift,
-        )
-        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
-        assert np.allclose(expected_X, X[:, :, 0])
-        assert np.allclose(expected_y, y[:, :, 0])
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times,
+            "expected_times_y": expected_times,
+            "target": target,
+            "past_cov": past,
+            "future_cov": future,
+            "lags": lags,
+            "lags_past": lags_past,
+            "lags_future": lags_future,
+            "output_chunk_length": 1,
+            "output_chunk_shift": output_chunk_shift,
+            "use_static_covariates": False,
+            "multi_models": True,
+            "max_samples_per_ts": max_samples_per_ts,
+            "use_moving_windows": use_moving_windows,
+            "concatenate": True,
+        }
 
-        # passing lags a dictionary, only supported when use_moving_windows=True
+        self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
         if use_moving_windows:
-            lags_as_dict = self.convert_lags_to_dict(
-                target, past, future, lags, lags_past, lags_future
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+        else:
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
             )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=1,
-                past_covariates=past,
-                future_covariates=future,
-                lags=lags_as_dict["target"],
-                lags_past_covariates=lags_as_dict["past"],
-                lags_future_covariates=lags_as_dict["future"],
-                uses_static_covariates=False,
-                use_moving_windows=use_moving_windows,
-                max_samples_per_ts=max_samples_per_ts,
-                output_chunk_shift=output_chunk_shift,
-            )
-            assert (
-                times_dict_lags[0][0]
-                == target.end_time() - output_chunk_shift * target.freq
-            )
-            assert np.allclose(expected_X, X_dict_lags[:, :, 0])
-            assert np.allclose(expected_y, y_dict_lags[:, :, 0])
 
     @pytest.mark.parametrize(
         "config",
@@ -1145,44 +1243,42 @@ class TestCreateLaggedTrainingData:
         lags = [-1]
         expected_X = np.zeros((1, 1, 1))
         expected_y = np.ones((1, 1, 1))
+        expected_times = generate_index(
+            start=target.end_time() - output_chunk_shift * target.freq,
+            length=1,
+            freq=target.freq,
+        )
         # Test correctness for 'moving window' and for 'time intersection' methods, as well
         # as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
-            target,
-            output_chunk_length,
-            lags=lags,
-            uses_static_covariates=False,
-            multi_models=multi_models,
-            use_moving_windows=use_moving_windows,
-            output_chunk_shift=output_chunk_shift,
-        )
-        assert np.allclose(expected_X, X)
-        assert np.allclose(expected_y, y)
-        # Should only have one sample, generated for `t = target.end_time()`:
-        assert len(times[0]) == 1
-        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times,
+            "expected_times_y": expected_times,
+            "target": target,
+            "past_cov": None,
+            "future_cov": None,
+            "lags": lags,
+            "lags_past": None,
+            "lags_future": None,
+            "output_chunk_length": output_chunk_length,
+            "output_chunk_shift": output_chunk_shift,
+            "use_static_covariates": False,
+            "multi_models": multi_models,
+            "max_samples_per_ts": None,
+            "use_moving_windows": use_moving_windows,
+            "concatenate": True,
+        }
 
-        # passing lags a dictionary, only supported when use_moving_windows=True
+        self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
         if use_moving_windows:
-            lags_as_dict = self.convert_lags_to_dict(
-                target, None, None, lags, None, None
-            )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=output_chunk_length,
-                lags=lags_as_dict["target"],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-                output_chunk_shift=output_chunk_shift,
-            )
-            assert np.allclose(expected_X, X_dict_lags)
-            assert np.allclose(expected_y, y_dict_lags)
-            # Should only have one sample, generated for `t = target.end_time()`:
-            assert len(times_dict_lags[0]) == 1
-            assert (
-                times_dict_lags[0][0]
-                == target.end_time() - output_chunk_shift * target.freq
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+        else:
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
             )
 
     @pytest.mark.parametrize(
@@ -1230,48 +1326,44 @@ class TestCreateLaggedTrainingData:
             )
 
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
-        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
+        expected_X = np.array([[[0.0], [1.0]]])
         expected_y = np.ones((1, 1, 1))
+        expected_times = generate_index(
+            start=target.end_time() - output_chunk_shift * target.freq,
+            length=1,
+            freq=target.freq,
+        )
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
-            target,
-            output_chunk_length=1,
-            future_covariates=future,
-            lags=[-1],
-            lags_future_covariates=[0],
-            uses_static_covariates=False,
-            multi_models=multi_models,
-            use_moving_windows=use_moving_windows,
-            output_chunk_shift=output_chunk_shift,
-        )
-        assert np.allclose(expected_X, X)
-        assert np.allclose(expected_y, y)
-        assert len(times[0]) == 1
-        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times,
+            "expected_times_y": expected_times,
+            "target": target,
+            "past_cov": None,
+            "future_cov": future,
+            "lags": [-1],
+            "lags_past": None,
+            "lags_future": [0],
+            "output_chunk_length": 1,
+            "output_chunk_shift": output_chunk_shift,
+            "use_static_covariates": False,
+            "multi_models": multi_models,
+            "max_samples_per_ts": None,
+            "use_moving_windows": use_moving_windows,
+            "concatenate": True,
+        }
 
-        # passing lags a dictionary, only supported when use_moving_windows=True
+        self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
         if use_moving_windows:
-            lags_as_dict = self.convert_lags_to_dict(
-                target, None, future, [-1], None, [0]
-            )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=1,
-                future_covariates=future,
-                lags=lags_as_dict["target"],
-                lags_future_covariates=lags_as_dict["future"],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-                output_chunk_shift=output_chunk_shift,
-            )
-            assert np.allclose(expected_X, X_dict_lags)
-            assert np.allclose(expected_y, y_dict_lags)
-            assert len(times_dict_lags[0]) == 1
-            assert (
-                times_dict_lags[0][0]
-                == target.end_time() - output_chunk_shift * target.freq
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+        else:
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
             )
 
     @pytest.mark.parametrize(
@@ -1336,46 +1428,42 @@ class TestCreateLaggedTrainingData:
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
         expected_X = future[-1].all_values(copy=False)
         expected_y = target[-1].all_values(copy=False)
+        expected_times = generate_index(
+            start=target.end_time() - output_chunk_shift * target.freq,
+            length=1,
+            freq=target.freq,
+        )
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
-            target,
-            output_chunk_length=1,
-            future_covariates=future,
-            lags=None,
-            lags_future_covariates=[cov_lag],
-            uses_static_covariates=False,
-            multi_models=multi_models,
-            use_moving_windows=use_moving_windows,
-            output_chunk_shift=output_chunk_shift,
-        )
-        assert np.allclose(expected_X, X)
-        assert np.allclose(expected_y, y)
-        assert len(times[0]) == 1
-        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times,
+            "expected_times_y": expected_times,
+            "target": target,
+            "past_cov": None,
+            "future_cov": future,
+            "lags": None,
+            "lags_past": None,
+            "lags_future": [cov_lag],
+            "output_chunk_length": 1,
+            "output_chunk_shift": output_chunk_shift,
+            "use_static_covariates": False,
+            "multi_models": multi_models,
+            "max_samples_per_ts": None,
+            "use_moving_windows": use_moving_windows,
+            "concatenate": True,
+        }
 
-        # passing lags a dictionary, only supported when use_moving_windows=True
+        self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
         if use_moving_windows:
-            lags_as_dict = self.convert_lags_to_dict(
-                target, None, future, None, None, [cov_lag]
-            )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=1,
-                future_covariates=future,
-                lags=lags_as_dict["target"],
-                lags_future_covariates=lags_as_dict["future"],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-                output_chunk_shift=output_chunk_shift,
-            )
-            assert np.allclose(expected_X, X_dict_lags)
-            assert np.allclose(expected_y, y_dict_lags)
-            assert len(times_dict_lags[0]) == 1
-            assert (
-                times_dict_lags[0][0]
-                == target.end_time() - output_chunk_shift * target.freq
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+        else:
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
             )
 
     @pytest.mark.parametrize(
@@ -1439,46 +1527,42 @@ class TestCreateLaggedTrainingData:
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
         expected_X = past[-1].all_values(copy=False)
         expected_y = target[-1].all_values(copy=False)
+        expected_times = generate_index(
+            start=target.end_time() - output_chunk_shift * target.freq,
+            length=1,
+            freq=target.freq,
+        )
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
-            target,
-            output_chunk_length=1,
-            past_covariates=past,
-            lags=None,
-            lags_past_covariates=[cov_lag],
-            uses_static_covariates=False,
-            multi_models=multi_models,
-            use_moving_windows=use_moving_windows,
-            output_chunk_shift=output_chunk_shift,
-        )
-        assert np.allclose(expected_X, X)
-        assert np.allclose(expected_y, y)
-        assert len(times[0]) == 1
-        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times,
+            "expected_times_y": expected_times,
+            "target": target,
+            "past_cov": past,
+            "future_cov": None,
+            "lags": None,
+            "lags_past": [cov_lag],
+            "lags_future": None,
+            "output_chunk_length": 1,
+            "output_chunk_shift": output_chunk_shift,
+            "use_static_covariates": False,
+            "multi_models": multi_models,
+            "max_samples_per_ts": None,
+            "use_moving_windows": use_moving_windows,
+            "concatenate": True,
+        }
 
-        # passing lags a dictionary, only supported when use_moving_windows=True
+        self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
         if use_moving_windows:
-            lags_as_dict = self.convert_lags_to_dict(
-                target, past, None, None, [cov_lag], None
-            )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=1,
-                past_covariates=past,
-                lags=lags_as_dict["target"],
-                lags_past_covariates=lags_as_dict["past"],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-                output_chunk_shift=output_chunk_shift,
-            )
-            assert np.allclose(expected_X, X_dict_lags)
-            assert np.allclose(expected_y, y_dict_lags)
-            assert len(times_dict_lags[0]) == 1
-            assert (
-                times_dict_lags[0][0]
-                == target.end_time() - output_chunk_shift * target.freq
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+        else:
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
             )
 
     @pytest.mark.parametrize(
@@ -1526,49 +1610,44 @@ class TestCreateLaggedTrainingData:
                 end_value=2,
             )
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
-        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
+        expected_X = np.array([[[0.0], [1.0]]])
         expected_y = np.ones((1, 1, 1))
+        expected_times = generate_index(
+            start=target.end_time() - output_chunk_shift * target.freq,
+            length=1,
+            freq=target.freq,
+        )
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
-            target,
-            output_chunk_length=1,
-            future_covariates=future,
-            lags=[-1],
-            lags_future_covariates=[1],
-            uses_static_covariates=False,
-            multi_models=multi_models,
-            use_moving_windows=use_moving_windows,
-            output_chunk_shift=output_chunk_shift,
-        )
-        assert np.allclose(expected_X, X)
-        assert np.allclose(expected_y, y)
-        assert len(times[0]) == 1
-        assert times[0][0] == target.end_time() - output_chunk_shift * target.freq
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times,
+            "expected_times_y": expected_times,
+            "target": target,
+            "past_cov": None,
+            "future_cov": future,
+            "lags": [-1],
+            "lags_past": None,
+            "lags_future": [1],
+            "output_chunk_length": 1,
+            "output_chunk_shift": output_chunk_shift,
+            "use_static_covariates": False,
+            "multi_models": multi_models,
+            "max_samples_per_ts": None,
+            "use_moving_windows": use_moving_windows,
+            "concatenate": True,
+        }
 
-        # passing lags a dictionary, only supported when use_moving_windows=True
+        self.helper_check_lagged_data(convert_lags_to_dict=False, **kwargs)
+
         if use_moving_windows:
-            lags_as_dict = self.convert_lags_to_dict(
-                target, None, future, [-1], None, [1]
-            )
-            X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=1,
-                future_covariates=future,
-                lags=lags_as_dict["target"],
-                lags_future_covariates=lags_as_dict["future"],
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                use_moving_windows=use_moving_windows,
-                output_chunk_shift=output_chunk_shift,
-            )
-
-            assert np.allclose(expected_X, X_dict_lags)
-            assert np.allclose(expected_y, y_dict_lags)
-            assert len(times_dict_lags[0]) == 1
-            assert (
-                times_dict_lags[0][0]
-                == target.end_time() - output_chunk_shift * target.freq
+            self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+        else:
+            with pytest.raises(ValueError) as err:
+                self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
+            assert str(err.value).startswith(
+                "`use_moving_windows=False` is not supported when any of the lags"
             )
 
     @pytest.mark.parametrize(
@@ -1679,33 +1758,36 @@ class TestCreateLaggedTrainingData:
             ),
         ]
         all_X = X_target + X_past + X_future
-        # 2 feat/comp in target, 1 feat/comp in past, 2 feat/comp in future
-        expected_X = np.concatenate(all_X, axis=1).reshape(1, (2 + 1 + 2) * 2, 1)
+        expected_X = np.concatenate(all_X, axis=1)[:, :, np.newaxis]
         expected_y = self.create_y(
             target,
             feats_times,
             output_chunk_length,
             multi_models,
             output_chunk_shift,
-        )[..., np.newaxis]
+        )[:, :, np.newaxis]
 
-        X, y, times, _ = create_lagged_training_data(
-            target_series=target,
-            output_chunk_length=output_chunk_length,
-            past_covariates=past,
-            future_covariates=future,
+        # lags are already in dict format
+        self.helper_check_lagged_data(
+            convert_lags_to_dict=True,
+            expected_X=expected_X,
+            expected_y=expected_y,
+            expected_times_x=feats_times,
+            expected_times_y=feats_times,
+            target=target,
+            past_cov=past,
+            future_cov=future,
             lags=lags_tg,
-            lags_past_covariates=lags_pc,
-            lags_future_covariates=lags_fc,
-            uses_static_covariates=False,
-            multi_models=multi_models,
-            use_moving_windows=True,
+            lags_past=lags_pc,
+            lags_future=lags_fc,
+            output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
+            use_static_covariates=False,
+            multi_models=multi_models,
+            max_samples_per_ts=None,
+            use_moving_windows=True,
+            concatenate=True,
         )
-
-        assert np.allclose(expected_X, X)
-        assert np.allclose(expected_y, y)
-        assert len(times[0]) == 1
 
     def test_lagged_training_data_sequence_inputs(self):
         """
@@ -1734,91 +1816,41 @@ class TestCreateLaggedTrainingData:
         expected_y = np.concatenate([expected_y_1, expected_y_2], axis=0)
         expected_times_1 = target_1.time_index[1:]
         expected_times_2 = target_2.time_index[1:]
-        # Check when `concatenate = True`:
-        X, y, times, _ = create_lagged_training_data(
-            ts_tg,
-            output_chunk_length=output_chunk_length,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags,
-            lags_past_covariates=lags_past,
-            lags_future_covariates=lags_future,
-            uses_static_covariates=False,
-            output_chunk_shift=0,
-        )
-        assert np.allclose(X, expected_X)
-        assert np.allclose(y, expected_y)
-        assert len(times) == 2
-        assert times[0].equals(expected_times_1)
-        assert times[1].equals(expected_times_2)
 
-        lags_as_dict = self.convert_lags_to_dict(
-            list(ts_tg), list(ts_pc), list(ts_fc), lags, lags_past, lags_future
-        )
-        X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-            target_series=ts_tg,
-            output_chunk_length=1,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags_as_dict["target"],
-            lags_past_covariates=lags_as_dict["past"],
-            lags_future_covariates=lags_as_dict["future"],
-            uses_static_covariates=False,
-            output_chunk_shift=0,
-        )
-        assert np.allclose(X_dict_lags, expected_X)
-        assert np.allclose(y_dict_lags, expected_y)
-        assert len(times_dict_lags) == 2
-        assert times_dict_lags[0].equals(expected_times_1)
-        assert times_dict_lags[1].equals(expected_times_2)
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": [expected_times_1, expected_times_2],
+            "expected_times_y": [expected_times_1, expected_times_2],
+            "target": ts_tg,
+            "past_cov": ts_pc,
+            "future_cov": ts_fc,
+            "lags": lags,
+            "lags_past": lags_past,
+            "lags_future": lags_future,
+            "output_chunk_length": output_chunk_length,
+            "output_chunk_shift": 0,
+            "use_static_covariates": False,
+            "multi_models": True,
+            "max_samples_per_ts": None,
+            "use_moving_windows": True,
+        }
 
-        # Check when `concatenate = False`:
-        X, y, times, _ = create_lagged_training_data(
-            ts_tg,
-            output_chunk_length=output_chunk_length,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags,
-            lags_past_covariates=lags_past,
-            lags_future_covariates=lags_future,
-            uses_static_covariates=False,
-            concatenate=False,
-            output_chunk_shift=0,
+        # concatenate=True
+        self.helper_check_lagged_data(
+            convert_lags_to_dict=False, concatenate=True, **kwargs
         )
-        assert len(X) == 2
-        assert len(y) == 2
-        assert np.allclose(X[0], expected_X_1)
-        assert np.allclose(X[1], expected_X_2)
-        assert np.allclose(y[0], expected_y_1)
-        assert np.allclose(y[1], expected_y_2)
-        assert len(times) == 2
-        assert times[0].equals(expected_times_1)
-        assert times[1].equals(expected_times_2)
+        self.helper_check_lagged_data(
+            convert_lags_to_dict=True, concatenate=True, **kwargs
+        )
 
-        lags_as_dict = self.convert_lags_to_dict(
-            list(ts_tg), list(ts_pc), list(ts_fc), lags, lags_past, lags_future
+        # concatenate=False
+        self.helper_check_lagged_data(
+            convert_lags_to_dict=False, concatenate=False, **kwargs
         )
-        X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-            target_series=ts_tg,
-            output_chunk_length=1,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags_as_dict["target"],
-            lags_past_covariates=lags_as_dict["past"],
-            lags_future_covariates=lags_as_dict["future"],
-            uses_static_covariates=False,
-            concatenate=False,
-            output_chunk_shift=0,
+        self.helper_check_lagged_data(
+            convert_lags_to_dict=True, concatenate=False, **kwargs
         )
-        assert len(X_dict_lags) == 2
-        assert len(y_dict_lags) == 2
-        assert np.allclose(X_dict_lags[0], expected_X_1)
-        assert np.allclose(X_dict_lags[1], expected_X_2)
-        assert np.allclose(y_dict_lags[0], expected_y_1)
-        assert np.allclose(y_dict_lags[1], expected_y_2)
-        assert len(times_dict_lags) == 2
-        assert times_dict_lags[0].equals(expected_times_1)
-        assert times_dict_lags[1].equals(expected_times_2)
 
     def test_lagged_training_data_stochastic_series(self):
         """
@@ -1839,38 +1871,32 @@ class TestCreateLaggedTrainingData:
         )
         expected_y = target.all_values(copy=False)[1:, :, :]
         expected_times = target.time_index[1:]
-        X, y, times, _ = create_lagged_training_data(
-            target,
-            output_chunk_length=output_chunk_length,
-            past_covariates=past,
-            future_covariates=future,
-            lags=lags,
-            lags_past_covariates=lags_past,
-            lags_future_covariates=lags_future,
-            uses_static_covariates=False,
-            output_chunk_shift=0,
-        )
-        assert np.allclose(X, expected_X)
-        assert np.allclose(y, expected_y)
-        assert times[0].equals(expected_times)
 
-        lags_as_dict = self.convert_lags_to_dict(
-            target, past, future, lags, lags_past, lags_future
+        kwargs = {
+            "expected_X": expected_X,
+            "expected_y": expected_y,
+            "expected_times_x": expected_times,
+            "expected_times_y": expected_times,
+            "target": target,
+            "past_cov": past,
+            "future_cov": future,
+            "lags": lags,
+            "lags_past": lags_past,
+            "lags_future": lags_future,
+            "output_chunk_length": output_chunk_length,
+            "output_chunk_shift": 0,
+            "use_static_covariates": False,
+            "multi_models": True,
+            "max_samples_per_ts": None,
+            "use_moving_windows": True,
+        }
+
+        self.helper_check_lagged_data(
+            convert_lags_to_dict=False, concatenate=True, **kwargs
         )
-        X_dict_lags, y_dict_lags, times_dict_lags, _ = create_lagged_training_data(
-            target_series=target,
-            output_chunk_length=output_chunk_length,
-            past_covariates=past,
-            future_covariates=future,
-            lags=lags_as_dict["target"],
-            lags_past_covariates=lags_as_dict["past"],
-            lags_future_covariates=lags_as_dict["future"],
-            uses_static_covariates=False,
-            output_chunk_shift=0,
+        self.helper_check_lagged_data(
+            convert_lags_to_dict=True, concatenate=True, **kwargs
         )
-        assert np.allclose(X_dict_lags, expected_X)
-        assert np.allclose(y_dict_lags, expected_y)
-        assert times_dict_lags[0].equals(expected_times)
 
     def test_lagged_training_data_no_shared_times_error(self):
         """
