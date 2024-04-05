@@ -540,9 +540,9 @@ class TSMixerModel(MixedCovariatesTorchModel):
     ) -> None:
         """Time-Series Mixer (TSMixer): An All-MLP Architecture for Time Series.
 
-        The internal layers are adopted from the `PyTorch implementation
-        <https://github.com/ditschuk/pytorch-tsmixer>`_. This is an implementation of the TSMixer architecture,
-        as outlined in [1]_.
+        This is an implementation of the TSMixer architecture, as outlined in [1]_. A major part of the architecture
+        was adopted from `this PyTorch implementation <https://github.com/ditschuk/pytorch-tsmixer>`_. Additional
+        changes were applied to increase model performance and efficiency.
 
         TSMixer forecasts time series data by integrating historical time series data, future known inputs, and static
         contextual information. It uses a combination of conditional feature mixing and mixer layers to process and
