@@ -27,9 +27,9 @@ def helper_create_multivariate_linear_timeseries(
     to each value of the `i`th component. Any additional keyword arguments are passed
     to `linear_timeseries` (`start_value`, `end_value`, `start`, `end`, `length`, etc).
     """
-    timeseries = []
     if components_names is None or len(components_names) < n_components:
         components_names = [f"lin_ts_{i}" for i in range(n_components)]
+    timeseries = []
     for i in range(n_components):
         # Values of each component is 1 larger than the last:
         timeseries_i = linear_timeseries(column_name=components_names[i], **kwargs) + i
