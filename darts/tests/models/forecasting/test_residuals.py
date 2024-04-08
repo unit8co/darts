@@ -325,15 +325,15 @@ class TestResiduals:
 
         model = NaiveDrift()
 
-        with pytest.raises(ValueError) as err:
+        with pytest.raises(TypeError) as err:
             _ = model.residuals(
                 series=y,
                 historical_forecasts=hfc,
                 metric=metrics.mape,
                 last_points_only=True,
             )
-        assert str(err.value).startswith(
-            "`metric` function did not yield expected output."
+        assert str(err.value).endswith(
+            "got an unexpected keyword argument 'time_reduction'"
         )
 
     def test_forecasting_residuals_nocov_output(self):

@@ -1165,7 +1165,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
-        metric_kwargs: Optional[Dict[str, Any]] = None,
+        metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
@@ -1317,6 +1317,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Same as for type `np.ndarray` but for a sequence of series. The returned metric list has length
             `len(series)` with the `np.ndarray` metrics for each input `series`.
         """
+        metric_kwargs = metric_kwargs or dict()
+        if not isinstance(metric_kwargs, list):
+            metric_kwargs = [metric_kwargs]
+
+        if not isinstance(metric, list):
+            metric = [metric]
+
+        if len(metric_kwargs) > 1 and len(metric_kwargs) != len(metric):
+            raise_log(
+                ValueError(
+                    f"Mismatch between number of metric-specific `metric_kwargs` "
+                    f"({len(metric_kwargs)}) and number of metrics in `metric` ({len(metric)}). "
+                    f"For `metric_kwargs`, either give a list of dicts of length `{len(metric)}` "
+                    f"with metric-specific kwargs, or a single dict that is applied to all metrics."
+                ),
+                logger=logger,
+            )
+        if len(metric_kwargs) != len(metric):
+            metric_kwargs = [metric_kwargs[0] for _ in range(len(metric))]
 
         historical_forecasts = historical_forecasts or self.historical_forecasts(
             series=series,
@@ -1391,9 +1410,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger=logger,
             )
 
-        if not isinstance(metric, list):
-            metric = [metric]
-
         # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
         # flatten historical forecasts, get matching target series index, remember cumulative target lengths
         # for later reshaping back to original
@@ -1420,15 +1436,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # errors shape `(n metrics, n total historical forecasts)`
         series_gen = SeriesGenerator()
         errors = []
-        for metric_f in metric:
+        for metric_f, metric_f_kwargs in zip(metric, metric_kwargs):
             # add user supplied metric kwargs
-            kwargs = {}
+            kwargs = {k: v for k, v in metric_f_kwargs.items()}
             metric_params = inspect.signature(metric_f).parameters
-            if metric_kwargs:
-                kwargs = {
-                    k: metric_kwargs[k]
-                    for k in set(metric_kwargs).intersection(metric_params)
-                }
 
             # scaled metrics require `insample` series
             if "insample" in metric_params:
@@ -1774,10 +1785,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         """Compute the residuals produced by this model on a (or sequence of) `TimeSeries`.
 
-        This function computes the difference (or a custom `metric`) between the actual observations from `series` and
-        the fitted values obtained by training the model on `series` (or using a pre-trained model with
-        `retrain=False`). Not all models support fitted values, so we use historical forecasts as an approximation for
-        them.
+        This function computes the difference (or one of Darts' "per time step" metrics) between the actual
+        observations from `series` and the fitted values obtained by training the model on `series` (or using a
+        pre-trained model with `retrain=False`). Not all models support fitted values, so we use historical forecasts
+        as an approximation for them.
 
         In sequence this method performs:
 
@@ -1786,9 +1797,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
           How the historical forecasts are generated can be configured with parameters `num_samples`, `train_length`,
           `start`, `start_format`, `forecast_horizon`, `stride`, `retrain`, `last_points_only`, `fit_kwargs`, and
           `predict_kwargs`.
-        - compute a backtest using `metric` between the historical forecasts and `series` per component/column
-          and time step (see :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest` for more
-          details). By default, uses the residuals :func:`~darts.metrics.metrics.err` as a `metric`.
+        - compute a backtest using a "per time step" `metric` between the historical forecasts and `series` per
+          component/column and time step (see
+          :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest` for more details). By default,
+          uses the residuals :func:`~darts.metrics.metrics.err` as a `metric`.
         - create and return `TimeSeries` (or simply a np.ndarray with `values_only=True`) with the time index from
           historical forecasts, and values from the metrics per component and time step.
 

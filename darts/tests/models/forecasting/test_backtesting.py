@@ -1158,7 +1158,7 @@ class TestBacktesting:
     @pytest.mark.parametrize(
         "metric",
         [
-            metrics.mae,  # mae does not support time_reduction
+            [metrics.mae],  # mae does not support time_reduction
             [metrics.mae, metrics.ae],  # ae supports time_reduction
         ],
     )
@@ -1172,19 +1172,57 @@ class TestBacktesting:
         y = [y, y]
         hfc = [[hfc, hfc], [hfc]]
 
+        metric_kwargs = [{"component_reduction": np.median}]
+        if len(metric) > 1:
+            # give metric specific kwargs
+            metric_kwargs.append(
+                {"component_reduction": np.median, "time_reduction": np.mean}
+            )
+
         model = NaiveDrift()
-        # backtest should only pass `metric_kwargs` parameters to metrics that support them
+        # backtest should fail with invalid metric kwargs (mae does not support time reduction)
+        with pytest.raises(TypeError) as err:
+            _ = model.backtest(
+                series=y,
+                historical_forecasts=hfc,
+                metric=metric,
+                last_points_only=False,
+                reduction=None,
+                metric_kwargs={
+                    "component_reduction": np.median,
+                    "time_reduction": np.mean,
+                },
+            )
+        assert str(err.value).endswith("unexpected keyword argument 'time_reduction'")
+
         bts = model.backtest(
             series=y,
             historical_forecasts=hfc,
             metric=metric,
             last_points_only=False,
             reduction=None,
-            metric_kwargs={
-                "component_reduction": np.median,
-                "time_reduction": np.mean,
-                "n_jobs": -1,
-            },
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        bt_expected = metrics.mae(y[0], hfc[0][0], component_reduction=np.median)
+        for bt_list in bts:
+            for bt in bt_list:
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        def time_reduced_metric(*args, **kwargs):
+            return metrics.ae(*args, **kwargs, time_reduction=np.mean)
+
+        # check that single kwargs can be used for all metrics if params are supported
+        metric = [metric[0], time_reduced_metric]
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=False,
+            reduction=None,
+            metric_kwargs=metric_kwargs[0],
         )
         assert isinstance(bts, list) and len(bts) == 2
 
