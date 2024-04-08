@@ -96,6 +96,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
+- fixed failing docs build by adding new dependency `lxml_html_clean` for `nbsphinx`. [#2303](https://github.com/unit8co/darts/pull/2303) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.28.0](https://github.com/unit8co/darts/tree/0.28.0) (2024-03-05)
 ### For users of the library:
