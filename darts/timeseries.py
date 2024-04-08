@@ -53,7 +53,7 @@ from scipy.stats import kurtosis, skew
 from darts.utils.utils import generate_index, n_steps_between
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
-from .utils.parallel import _build_tqdm_iterator, _parallel_apply
+from .utils import _build_tqdm_iterator, _parallel_apply
 
 try:
     from typing import Literal
