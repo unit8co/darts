@@ -7,6 +7,14 @@ from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
+from darts.models.utils import NotImportedModule
+
+try:
+    # `lightgbm` needs to be imported first to avoid segmentation fault
+    from darts.models.forecasting.lgbm import LightGBMModel
+except ModuleNotFoundError:
+    LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
+
 # Forecasting
 from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.auto_arima import AutoARIMA
@@ -26,7 +34,6 @@ from darts.models.forecasting.regression_model import RegressionModel
 from darts.models.forecasting.tbats_model import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
-from darts.models.utils import NotImportedModule
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
@@ -51,11 +58,6 @@ except ModuleNotFoundError:
         'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )
-
-try:
-    from darts.models.forecasting.lgbm import LightGBMModel
-except ModuleNotFoundError:
-    LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet

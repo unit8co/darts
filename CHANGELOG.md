@@ -54,7 +54,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `ForecastingModel.backtest()`:
     - Metrics are now computed only once between all `series` and `historical_forecasts`, significantly speeding things up when using a large number of `series`.
     - Added support for scaled metrics as `metric` (such as `ase`, `mase`, ...). No extra code required, backtest extracts the correct `insample` series for you.   
-    - Added support for passing additional metric arguments with parameter `metric_kwargs`. This allows for example parallelization of the metric computation with `n_jobs`, customize the metric reduction with `*_reduction`, specify seasonality `m` for scaled metrics, etc..  
+    - Added support for passing additional metric (-specific) arguments with parameter `metric_kwargs`. This allows for example parallelization of the metric computation with `n_jobs`, customize the metric reduction with `*_reduction`, specify seasonality `m` for scaled metrics, etc..  
     - 🔴 Improved backtest output consistency based on the type of input `series`, `historical_forecast`, and the applied backtest reduction:
       - `float`: A single backtest score for single uni/multivariate series, a single `metric` function and:
         - `historical_forecasts` generated with `last_points_only=True`
@@ -90,8 +90,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series.
 
 **Fixed**
-- fixed a bug in `quantile_loss`, where the loss was computed on all samples rather than only on the predicted quantiles. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `quantile_loss`, where the loss was computed on all samples rather than only on the predicted quantiles. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed type hint warning "Unexpected argument" when calling `historical_forecasts()` caused by the `_with_sanity_checks` decorator. The type hinting is now properly configured to expect any input arguments and return the output type of the method for which the sanity checks are performed for. [#2286](https://github.com/unit8co/darts/pull/2286) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a segmentation fault that some users were facing when importing a `LightGBMModel`. [#2304](https://github.com/unit8co/darts/pull/2304) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
