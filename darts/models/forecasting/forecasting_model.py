@@ -1785,10 +1785,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         """Compute the residuals produced by this model on a (or sequence of) `TimeSeries`.
 
-        This function computes the difference (or a custom `metric`) between the actual observations from `series` and
-        the fitted values obtained by training the model on `series` (or using a pre-trained model with
-        `retrain=False`). Not all models support fitted values, so we use historical forecasts as an approximation for
-        them.
+        This function computes the difference (or one of Darts' "per time step" metrics) between the actual
+        observations from `series` and the fitted values obtained by training the model on `series` (or using a
+        pre-trained model with `retrain=False`). Not all models support fitted values, so we use historical forecasts
+        as an approximation for them.
 
         In sequence this method performs:
 
@@ -1797,9 +1797,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
           How the historical forecasts are generated can be configured with parameters `num_samples`, `train_length`,
           `start`, `start_format`, `forecast_horizon`, `stride`, `retrain`, `last_points_only`, `fit_kwargs`, and
           `predict_kwargs`.
-        - compute a backtest using `metric` between the historical forecasts and `series` per component/column
-          and time step (see :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest` for more
-          details). By default, uses the residuals :func:`~darts.metrics.metrics.err` as a `metric`.
+        - compute a backtest using a "per time step" `metric` between the historical forecasts and `series` per
+          component/column and time step (see
+          :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest` for more details). By default,
+          uses the residuals :func:`~darts.metrics.metrics.err` as a `metric`.
         - create and return `TimeSeries` (or simply a np.ndarray with `values_only=True`) with the time index from
           historical forecasts, and values from the metrics per component and time step.
 
