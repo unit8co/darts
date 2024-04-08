@@ -51,6 +51,7 @@ try:
     from darts.models.forecasting.tft_model import TFTModel
     from darts.models.forecasting.tide_model import TiDEModel
     from darts.models.forecasting.transformer_model import TransformerModel
+    from darts.models.forecasting.tsmixer_model import TSMixerModel
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based models not available. "

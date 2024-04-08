@@ -33,6 +33,7 @@ try:
         TFTModel,
         TiDEModel,
         TransformerModel,
+        TSMixerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import (
         DualCovariatesTorchModel,
@@ -154,6 +155,14 @@ if TORCH_AVAILABLE:
                 "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
             },
             40.0,
+        ),
+        (
+            TSMixerModel,
+            {
+                "n_epochs": 10,
+                "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+            },
+            60.0,
         ),
         (
             GlobalNaiveAggregate,
@@ -527,7 +536,7 @@ if TORCH_AVAILABLE:
         @pytest.mark.parametrize(
             "model_cls,ts",
             product(
-                [TFTModel, DLinearModel, NLinearModel, TiDEModel],
+                [TFTModel, DLinearModel, NLinearModel, TiDEModel, TSMixerModel],
                 [ts_w_static_cov, ts_shared_static_cov, ts_comps_static_cov],
             ),
         )

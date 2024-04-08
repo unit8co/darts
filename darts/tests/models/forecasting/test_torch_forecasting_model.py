@@ -41,6 +41,7 @@ try:
         TFTModel,
         TiDEModel,
         TransformerModel,
+        TSMixerModel,
     )
     from darts.models.components.layer_norm_variants import RINorm
     from darts.utils.likelihood_models import (
@@ -66,6 +67,7 @@ try:
         (TFTModel, {"add_relative_index": 2, **kwargs}),
         (TiDEModel, kwargs),
         (TransformerModel, kwargs),
+        (TSMixerModel, kwargs),
         (GlobalNaiveSeasonal, kwargs),
         (GlobalNaiveAggregate, kwargs),
         (GlobalNaiveDrift, kwargs),
@@ -1505,6 +1507,7 @@ if TORCH_AVAILABLE:
                     (NHiTSModel, {}),
                     (TransformerModel, {}),
                     (TCNModel, {}),
+                    (TSMixerModel, {}),
                     (BlockRNNModel, {}),
                     (GlobalNaiveSeasonal, {}),
                     (GlobalNaiveAggregate, {}),
