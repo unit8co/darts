@@ -89,6 +89,7 @@ jobs:
         with:
           fail_ci_if_error: true
           files: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   docs:
     runs-on: ubuntu-latest

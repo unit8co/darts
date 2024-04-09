@@ -38,6 +38,7 @@ try:
         TFTModel,
         TiDEModel,
         TransformerModel,
+        TSMixerModel,
     )
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
@@ -226,6 +227,17 @@ if TORCH_AVAILABLE:
         ),
         (
             TiDEModel,
+            {
+                "input_chunk_length": IN_LEN,
+                "output_chunk_length": OUT_LEN,
+                "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
+            },
+            (IN_LEN, OUT_LEN),
+            "MixedCovariates",
+        ),
+        (
+            TSMixerModel,
             {
                 "input_chunk_length": IN_LEN,
                 "output_chunk_length": OUT_LEN,

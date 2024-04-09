@@ -1,3 +1,4 @@
+import itertools
 import platform
 
 import numpy as np
@@ -34,6 +35,7 @@ try:
         TFTModel,
         TiDEModel,
         TransformerModel,
+        TSMixerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
     from darts.utils.likelihood_models import (
@@ -193,6 +195,24 @@ if TORCH_AVAILABLE:
             0.06,
             0.1,
         ),
+        (
+            TSMixerModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 5,
+                "n_epochs": 100,
+                "random_state": 0,
+                "num_blocks": 1,
+                "hidden_size": 32,
+                "dropout": 0.2,
+                "ff_size": 32,
+                "batch_size": 8,
+                "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
+            },
+            0.06,
+            0.1,
+        ),
     ]
 
 
@@ -278,81 +298,74 @@ class TestProbabilisticModels:
             mae_err = new_mae
 
     @pytest.mark.slow
-    def test_predict_likelihood_parameters_regression_models(self):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [(LinearRegressionModel, False), (XGBModel, False)]
+            + ([(LightGBMModel, False)] if lgbm_available else [])
+            + ([(CatBoostModel, True)] if cb_available else []),
+            [1, 3],
+            [
+                "quantile",
+                "poisson",
+                "gaussian",
+            ],
+        ),
+    )
+    def test_predict_likelihood_parameters_regression_models(self, config):
         """
         Check that the shape of the predicted likelihood parameters match expectations, for both
         univariate and multivariate series.
 
         Note: values are not tested as it would be too time consuming
         """
+        (model_cls, supports_gaussian), n_comp, likelihood = config
+
         seed = 142857
         n_times, n_samples = 100, 1
-        model_classes = [LinearRegressionModel, XGBModel]
-        if lgbm_available:
-            model_classes.append(LightGBMModel)
-        if cb_available:
-            model_classes.append(CatBoostModel)
+        lkl = {"kwargs": {"likelihood": likelihood}}
 
-        for n_comp in [1, 3]:
-            list_lkl = [
-                {
-                    "kwargs": {
-                        "likelihood": "quantile",
-                        "quantiles": [0.05, 0.50, 0.95],
-                    },
-                    "ts": TimeSeries.from_values(
-                        np.random.normal(
-                            loc=0, scale=1, size=(n_times, n_comp, n_samples)
-                        )
-                    ),
-                    "expected": np.array([-1.67, 0, 1.67]),
-                },
-                {
-                    "kwargs": {"likelihood": "poisson"},
-                    "ts": TimeSeries.from_values(
-                        np.random.poisson(lam=4, size=(n_times, n_comp, n_samples))
-                    ),
-                    "expected": np.array([4]),
-                },
-            ]
+        if likelihood == "quantile":
+            lkl["kwargs"]["quantiles"] = [0.05, 0.50, 0.95]
+            lkl["ts"] = TimeSeries.from_values(
+                np.random.normal(loc=0, scale=1, size=(n_times, n_comp, n_samples))
+            )
+            lkl["expected"] = np.array([-1.67, 0, 1.67])
+        elif likelihood == "poisson":
+            lkl["ts"] = TimeSeries.from_values(
+                np.random.poisson(lam=4, size=(n_times, n_comp, n_samples))
+            )
+            lkl["expected"] = np.array([4])
+        elif likelihood == "gaussian":
+            if not supports_gaussian:
+                return
 
-            for model_cls in model_classes:
-                # Catboost is the only regression model supporting the GaussianLikelihood
-                if cb_available and issubclass(model_cls, CatBoostModel):
-                    list_lkl.append(
-                        {
-                            "kwargs": {"likelihood": "gaussian"},
-                            "ts": TimeSeries.from_values(
-                                np.random.normal(
-                                    loc=10, scale=3, size=(n_times, n_comp, n_samples)
-                                )
-                            ),
-                            "expected": np.array([10, 3]),
-                        }
-                    )
+            lkl["ts"] = TimeSeries.from_values(
+                np.random.normal(loc=10, scale=3, size=(n_times, n_comp, n_samples))
+            )
+            lkl["expected"] = np.array([10, 3])
+        else:
+            assert False, f"unknown likelihood {likelihood}"
 
-                for lkl in list_lkl:
-                    model = model_cls(lags=3, random_state=seed, **lkl["kwargs"])
-                    model.fit(lkl["ts"])
-                    pred_lkl_params = model.predict(
-                        n=1, num_samples=1, predict_likelihood_parameters=True
-                    )
-                    if n_comp == 1:
-                        assert (
-                            lkl["expected"].shape == pred_lkl_params.values()[0].shape
-                        ), (
-                            "The shape of the predicted likelihood parameters do not match expectation "
-                            "for univariate series."
-                        )
-                    else:
-                        assert (
-                            1,
-                            len(lkl["expected"]) * n_comp,
-                            1,
-                        ) == pred_lkl_params.all_values().shape, (
-                            "The shape of the predicted likelihood parameters do not match expectation "
-                            "for multivariate series."
-                        )
+        model = model_cls(lags=3, random_state=seed, **lkl["kwargs"])
+        model.fit(lkl["ts"])
+        pred_lkl_params = model.predict(
+            n=1, num_samples=1, predict_likelihood_parameters=True
+        )
+        if n_comp == 1:
+            assert lkl["expected"].shape == pred_lkl_params.values()[0].shape, (
+                "The shape of the predicted likelihood parameters do not match expectation "
+                "for univariate series."
+            )
+        else:
+            assert (
+                1,
+                len(lkl["expected"]) * n_comp,
+                1,
+            ) == pred_lkl_params.all_values().shape, (
+                "The shape of the predicted likelihood parameters do not match expectation "
+                "for multivariate series."
+            )
 
     """ More likelihood tests
     """

@@ -215,6 +215,16 @@ class TestTimeSeriesStaticCovariate:
         for ts in ts_groups7:
             assert ts.static_covariates is None
 
+        ts_groups7_parallel = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+            n_jobs=-1,
+        )
+        assert ts_groups7_parallel == ts_groups7
+
     def test_from_group_dataframe_invalid_drop_cols(self):
         # drop col is not part of `group_cols`
         with pytest.raises(ValueError) as err:
