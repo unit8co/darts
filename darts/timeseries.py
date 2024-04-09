@@ -53,6 +53,7 @@ from scipy.stats import kurtosis, skew
 from darts.utils.utils import generate_index, n_steps_between
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
+from .utils import _build_tqdm_iterator, _parallel_apply
 
 try:
     from typing import Literal
@@ -759,6 +760,8 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         drop_group_cols: Optional[Union[List[str], str]] = None,
+        n_jobs: Optional[int] = 1,
+        verbose: Optional[bool] = False,
     ) -> List[Self]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
@@ -808,6 +811,11 @@ class TimeSeries:
             Optionally, a numeric value to fill missing values (NaNs) with.
         drop_group_cols
             Optionally, a string or list of strings with `group_cols` column(s) to exclude from the static covariates.
+        n_jobs
+            Optionally, an integer representing the number of parallel jobs to run. Behavior is the same as in the
+            `joblib.Parallel` class.
+        verbose
+            Optionally, a boolean value indicating whether to display a progress bar.
 
         Returns
         -------
@@ -867,12 +875,18 @@ class TimeSeries:
             df = df.drop(columns=time_col)
         df = df.sort_index()
 
-        # split df by groups, and store group values and static values (static covariates)
-        # single elements group columns must be unpacked for same groupby() behavior across different pandas versions
-        splits = []
-        for static_cov_vals, group in df.groupby(
-            group_cols[0] if len(group_cols) == 1 else group_cols
-        ):
+        groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
+
+        iterator = _build_tqdm_iterator(
+            groups,
+            verbose=verbose,
+            total=len(groups),
+            desc="Creating TimeSeries",
+        )
+
+        def from_group(static_cov_vals, group):
+            split = group[extract_value_cols]
+
             static_cov_vals = (
                 (static_cov_vals,)
                 if not isinstance(static_cov_vals, tuple)
@@ -910,29 +924,26 @@ class TimeSeries:
                     )
                 # add the static covariates to the group values
                 static_cov_vals += tuple(group[static_cols].values[0])
-            # store static covariate Series and group DataFrame (without static cov columns)
-            splits.append(
-                (
-                    (
-                        pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-                        if extract_static_cov_cols
-                        else None
-                    ),
-                    group[extract_value_cols],
-                )
-            )
 
-        # create a list with multiple TimeSeries and add static covariates
-        return [
-            cls.from_dataframe(
+            return cls.from_dataframe(
                 df=split,
                 fill_missing_dates=fill_missing_dates,
                 freq=freq,
                 fillna_value=fillna_value,
-                static_covariates=static_covs,
+                static_covariates=(
+                    pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                    if extract_static_cov_cols
+                    else None
+                ),
             )
-            for static_covs, split in splits
-        ]
+
+        return _parallel_apply(
+            iterator,
+            from_group,
+            n_jobs,
+            fn_args=dict(),
+            fn_kwargs=dict(),
+        )
 
     @classmethod
     def from_series(
