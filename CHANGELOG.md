@@ -78,18 +78,17 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - `TimeSeries`: Residual `TimeSeries` for a single `series` and `historical_forecasts` generated with `last_points_only=True`.
       - `List[TimeSeries]` A list of residual `TimeSeries` for a sequence (list) of `series` with `last_points_only=True`. The residual list has length `len(series)`.
       - `List[List[TimeSeries]]` A list of lists of residual `TimeSeries` for a sequence of `series` with `last_points_only=False`. The outer residual list has length `len(series)`. The inner lists consist of the residuals from all possible series-specific historical forecasts.
-- Improvements to `TimeSeries`: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
-  - Performance boost for methods: `slice_intersect()`, `has_same_time_as()`
-  - New method `slice_intersect_values()`, which returns the sliced values of a series, where the time index has been intersected with another series.
+- Improvements to `TimeSeries`:
+  - `from_group_dataframe()` now supports parallelized creation from a `grouped` DataFrame. This can be enabled with parameter `n_jobs`. [#2292](https://github.com/unit8co/darts/pull/2292) by [Bohdan Bilonoha](https://github.com/BohdanBilonoh).
+  - Performance boost for methods: `slice_intersect()`, `has_same_time_as()`. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+  - New method `slice_intersect_values()`, which returns the sliced values of a series, where the time index has been intersected with another series. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Moved utils functions to clearly separate Darts-specific from non-Darts-specific logic: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
   - Moved function `generate_index()` from `darts.utils.timeseries_generation` to `darts.utils.utils`
   - Moved functions `retain_period_common_to_all()`, `series2seq()`, `seq2series()`, `get_single_series()` from `darts.utils.utils` to `darts.utils.ts_utils`.
 - Improvements to `ForecastingModel`: [#2269](https://github.com/unit8co/darts/pull/2269) by [Felix Divo](https://github.com/felixdivo).
   - Renamed the private `_is_probabilistic` property to a public `supports_probabilistic_prediction`.
 - Improvements to `DataTransformer`: [#2267](https://github.com/unit8co/darts/pull/2267) by [Alicja Krzeminska-Sciga](https://github.com/alicjakrzeminska).
-  - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series.
-- Improvements to `TimeSeries`: [#2292](https://github.com/unit8co/darts/pull/2292) by [Bohdan Bilonoha](https://github.com/BohdanBilonoh)
-  - `TimeSeries.from_group_dataframe()` now supports parallelized creation of `TimeSeries` from a `grouped` DataFrame. This can be enabled with the new parameter `n_jobs`. 
+  - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series. 
 
 **Fixed**
 - Fixed a bug in `quantile_loss`, where the loss was computed on all samples rather than only on the predicted quantiles. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
