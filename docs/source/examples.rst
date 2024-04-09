@@ -185,7 +185,7 @@ TSMixer model example notebook:
 .. toctree::
    :maxdepth: 1
 
-   21-TSMixer-examples.ipynb
+   examples/21-TSMixer-examples.ipynb
 
 Ensemble Models
 =============================

@@ -1,5 +1,7 @@
 from itertools import combinations
 
+import pytest
+
 from darts.logging import get_logger
 
 logger = get_logger(__name__)
@@ -42,25 +44,24 @@ try:
             BetaLikelihood(prior_alpha=0.2, prior_beta=0.4, prior_strength=0.6),
         ],
     }
-
-    TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning("Torch not available. LikelihoodModels tests will be skipped.")
-    TORCH_AVAILABLE = False
+    pytest.skip(
+        f"Torch not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
 
-if TORCH_AVAILABLE:
 
-    class TestLikelihoodModel:
-        def test_intra_class_equality(self):
-            for _, model_pair in likelihood_models.items():
-                assert model_pair[0] == model_pair[0]
-                assert model_pair[1] == model_pair[1]
-                assert model_pair[0] != model_pair[1]
+class TestLikelihoodModel:
+    def test_intra_class_equality(self):
+        for _, model_pair in likelihood_models.items():
+            assert model_pair[0] == model_pair[0]
+            assert model_pair[1] == model_pair[1]
+            assert model_pair[0] != model_pair[1]
 
-        def test_inter_class_equality(self):
-            model_combinations = combinations(likelihood_models.keys(), 2)
-            for first_model_name, second_model_name in model_combinations:
-                assert (
-                    likelihood_models[first_model_name][0]
-                    != likelihood_models[second_model_name][0]
-                )
+    def test_inter_class_equality(self):
+        model_combinations = combinations(likelihood_models.keys(), 2)
+        for first_model_name, second_model_name in model_combinations:
+            assert (
+                likelihood_models[first_model_name][0]
+                != likelihood_models[second_model_name][0]
+            )
