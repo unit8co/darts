@@ -35,6 +35,7 @@ try:
         TFTModel,
         TiDEModel,
         TransformerModel,
+        TSMixerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
     from darts.utils.likelihood_models import (
@@ -188,6 +189,24 @@ if TORCH_AVAILABLE:
                 "output_chunk_length": 5,
                 "n_epochs": 10,
                 "random_state": 0,
+                "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
+            },
+            0.06,
+            0.1,
+        ),
+        (
+            TSMixerModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 5,
+                "n_epochs": 100,
+                "random_state": 0,
+                "num_blocks": 1,
+                "hidden_size": 32,
+                "dropout": 0.2,
+                "ff_size": 32,
+                "batch_size": 8,
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },

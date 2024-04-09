@@ -16,6 +16,7 @@ runs/
 htmlcov
 coverage.xml
 .darts
+darts_logs/
 docs_env
 .DS_Store
 .gradle

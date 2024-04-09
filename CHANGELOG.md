@@ -9,14 +9,15 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 **Improved**
-- 🚀🚀🚀 Improvements to metrics, historical forecasts, backtest, and residuals through major refactor. The refactor includes optimization of multiple process and improvemenets to consistency, reliability, and the documentation. Some of these necessary changes come at the cost of breaking changes. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+- 🚀🚀 New forecasting model: `TSMixerModel`  as proposed in [this paper](https://arxiv.org/abs/2303.06053). An MLP based model that combines temporal, static and cross-sectional feature information using stacked mixing layers. [#1807](https://https://github.com/unit8co/darts/pull/001), by [Dennis Bader](https://github.com/dennisbader) and [Cristof Rojas](https://github.com/cristof-r).
+- 🚀🚀 Improvements to metrics, historical forecasts, backtest, and residuals through major refactor. The refactor includes optimization of multiple process and improvemenets to consistency, reliability, and the documentation. Some of these necessary changes come at the cost of breaking changes. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
   - Metrics:
-    - Optimized all metrics, which now run >20 times faster than before for univariate series, and >>20 times for multivariate series. This boosts direct metric computations as well as backtesting and residuals computation!
+    - Optimized all metrics, which now run **> n * 20 times faster** than before for series with `n` components/columns. This boosts direct metric computations as well as backtesting and residuals computation!
     - Added new metrics:
       - Time aggregated metric `merr()` (Mean Error)
       - Time aggregated scaled metrics  `rmsse()`, and `msse()`: The (Root) Mean Squared Scaled Error.
       - "Per time step" metrics that return a metric score per time step: `err()` (Error), `ae()` (Absolute Error), `se()` (Squared Error), `sle()` (Squared Log Error), `ase()` (Absolute Scaled Error), `sse` (Squared Scaled Error), `ape()` (Absolute Percentage Error), `sape()` (symmetric Absolute Percentage Error), `arre()` (Absolute Ranged Relative Error), `ql` (Quantile Loss)
-    - All scaled metrics now accept `insample` series that can be overlapping into `pred_series` (before that had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you.  
+    - All scaled metrics now accept `insample` series that can be overlapping into `pred_series` (before they had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you.  
     - Improvements to the documentation:
       - Added a summary list of all metrics to the [metrics documentation page](https://unit8co.github.io/darts/generated_api/darts.metrics.html)
       - Standardized the documentation of each metric (added formula, improved return documentation, ...) 
@@ -77,16 +78,17 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - `TimeSeries`: Residual `TimeSeries` for a single `series` and `historical_forecasts` generated with `last_points_only=True`.
       - `List[TimeSeries]` A list of residual `TimeSeries` for a sequence (list) of `series` with `last_points_only=True`. The residual list has length `len(series)`.
       - `List[List[TimeSeries]]` A list of lists of residual `TimeSeries` for a sequence of `series` with `last_points_only=False`. The outer residual list has length `len(series)`. The inner lists consist of the residuals from all possible series-specific historical forecasts.
-- Improvements to `TimeSeries`: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
-  - Performance boost for methods: `slice_intersect()`, `has_same_time_as()`
-  - New method `slice_intersect_values()`, which returns the sliced values of a series, where the time index has been intersected with another series.
+- Improvements to `TimeSeries`:
+  - `from_group_dataframe()` now supports parallelized creation from a grouped `pandas.DataFrame`. This can be enabled with parameter `n_jobs`. [#2292](https://github.com/unit8co/darts/pull/2292) by [Bohdan Bilonoha](https://github.com/BohdanBilonoh).
+  - Performance boost for methods: `slice_intersect()`, `has_same_time_as()`. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
+  - New method `slice_intersect_values()`, which returns the sliced values of a series, where the time index has been intersected with another series. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Moved utils functions to clearly separate Darts-specific from non-Darts-specific logic: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
   - Moved function `generate_index()` from `darts.utils.timeseries_generation` to `darts.utils.utils`
   - Moved functions `retain_period_common_to_all()`, `series2seq()`, `seq2series()`, `get_single_series()` from `darts.utils.utils` to `darts.utils.ts_utils`.
 - Improvements to `ForecastingModel`: [#2269](https://github.com/unit8co/darts/pull/2269) by [Felix Divo](https://github.com/felixdivo).
   - Renamed the private `_is_probabilistic` property to a public `supports_probabilistic_prediction`.
 - Improvements to `DataTransformer`: [#2267](https://github.com/unit8co/darts/pull/2267) by [Alicja Krzeminska-Sciga](https://github.com/alicjakrzeminska).
-  - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series.
+  - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series. 
 
 **Fixed**
 - Fixed a bug in `quantile_loss`, where the loss was computed on all samples rather than only on the predicted quantiles. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
@@ -97,7 +99,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
-- fixed failing docs build by adding new dependency `lxml_html_clean` for `nbsphinx`. [#2303](https://github.com/unit8co/darts/pull/2303) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed failing docs build by adding new dependency `lxml_html_clean` for `nbsphinx`. [#2303](https://github.com/unit8co/darts/pull/2303) by [Dennis Bader](https://github.com/dennisbader).
+- Bumped `black` from 24.1.1 to 24.3.0. [#2308](https://github.com/unit8co/darts/pull/2308) by [Dennis Bader](https://github.com/dennisbader).
+- Added a Codecov token as repository secret for codecov upload authentication in CI pipelines. [#2309](https://github.com/unit8co/darts/pull/2309) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.28.0](https://github.com/unit8co/darts/tree/0.28.0) (2024-03-05)
 ### For users of the library:

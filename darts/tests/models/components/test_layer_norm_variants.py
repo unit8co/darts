@@ -8,46 +8,45 @@ logger = get_logger(__name__)
 try:
     import torch
 
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not available. Loss tests will be skipped.")
-    TORCH_AVAILABLE = False
-
-
-if TORCH_AVAILABLE:
     from darts.models.components.layer_norm_variants import (
         LayerNorm,
         LayerNormNoBias,
         RINorm,
         RMSNorm,
     )
+except ImportError:
+    pytest.skip(
+        f"Torch not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
 
-    class TestLayerNormVariants:
-        def test_lnv(self):
-            for layer_norm in [RMSNorm, LayerNorm, LayerNormNoBias]:
-                ln = layer_norm(4)
-                inputs = torch.zeros(1, 4, 4)
-                ln(inputs)
 
-        def test_rin(self):
+class TestLayerNormVariants:
+    def test_lnv(self):
+        for layer_norm in [RMSNorm, LayerNorm, LayerNormNoBias]:
+            ln = layer_norm(4)
+            inputs = torch.zeros(1, 4, 4)
+            ln(inputs)
 
-            np.random.seed(42)
-            torch.manual_seed(42)
+    def test_rin(self):
 
-            x = torch.randn(3, 4, 7)
-            affine_options = [True, False]
+        np.random.seed(42)
+        torch.manual_seed(42)
 
-            # test with and without affine and correct input dim
-            for affine in affine_options:
+        x = torch.randn(3, 4, 7)
+        affine_options = [True, False]
 
-                rin = RINorm(input_dim=7, affine=affine)
-                x_norm = rin(x)
+        # test with and without affine and correct input dim
+        for affine in affine_options:
 
-                # expand dims to simulate probablistic forecasting
-                x_denorm = rin.inverse(x_norm.view(x_norm.shape + (1,))).squeeze(-1)
-                assert torch.all(torch.isclose(x, x_denorm)).item()
+            rin = RINorm(input_dim=7, affine=affine)
+            x_norm = rin(x)
 
-            # try invalid input_dim
-            rin = RINorm(input_dim=3, affine=True)
-            with pytest.raises(RuntimeError):
-                x_norm = rin(x)
+            # expand dims to simulate probablistic forecasting
+            x_denorm = rin.inverse(x_norm.view(x_norm.shape + (1,))).squeeze(-1)
+            assert torch.all(torch.isclose(x, x_denorm)).item()
+
+        # try invalid input_dim
+        rin = RINorm(input_dim=3, affine=True)
+        with pytest.raises(RuntimeError):
+            x_norm = rin(x)
