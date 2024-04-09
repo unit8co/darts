@@ -14,18 +14,13 @@ try:
     from darts.tests.conftest import tfm_kwargs
     from darts.utils import timeseries_generation as tg
     from darts.utils.likelihood_models import GaussianLikelihood
-
-    TORCH_AVAILABLE = True
-
 except ImportError:
-    logger.warning("Torch not available. TSMixerModel tests will be skipped.")
-    TORCH_AVAILABLE = False
+    pytest.skip(
+        f"Torch not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
 
 
-@pytest.mark.skipif(
-    TORCH_AVAILABLE is False,
-    reason="Torch not available. TSMixerModel tests will be skipped.",
-)
 class TestTSMixerModel:
     np.random.seed(42)
     torch.manual_seed(42)
