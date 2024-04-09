@@ -79,7 +79,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - `List[TimeSeries]` A list of residual `TimeSeries` for a sequence (list) of `series` with `last_points_only=True`. The residual list has length `len(series)`.
       - `List[List[TimeSeries]]` A list of lists of residual `TimeSeries` for a sequence of `series` with `last_points_only=False`. The outer residual list has length `len(series)`. The inner lists consist of the residuals from all possible series-specific historical forecasts.
 - Improvements to `TimeSeries`:
-  - `from_group_dataframe()` now supports parallelized creation from a `grouped` DataFrame. This can be enabled with parameter `n_jobs`. [#2292](https://github.com/unit8co/darts/pull/2292) by [Bohdan Bilonoha](https://github.com/BohdanBilonoh).
+  - `from_group_dataframe()` now supports parallelized creation from a grouped `pandas.DataFrame`. This can be enabled with parameter `n_jobs`. [#2292](https://github.com/unit8co/darts/pull/2292) by [Bohdan Bilonoha](https://github.com/BohdanBilonoh).
   - Performance boost for methods: `slice_intersect()`, `has_same_time_as()`. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
   - New method `slice_intersect_values()`, which returns the sliced values of a series, where the time index has been intersected with another series. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Moved utils functions to clearly separate Darts-specific from non-Darts-specific logic: [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
