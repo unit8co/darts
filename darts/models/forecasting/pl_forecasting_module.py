@@ -197,6 +197,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_batch_size: Optional[int] = None
         self.pred_n_jobs: Optional[int] = None
         self.predict_likelihood_parameters: Optional[bool] = None
+        self.pred_mc_dropout: Optional[bool] = None
 
     @property
     def first_prediction_index(self) -> int:
@@ -240,6 +241,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
         )
         self._calculate_metrics(output, target, self.val_metrics)
         return loss
+
+    def on_predict_start(self) -> None:
+        # optionally, activate monte carlo dropout for prediction
+        self.set_mc_dropout(active=self.pred_mc_dropout)
+
+    def on_predict_end(self) -> None:
+        # deactivate, monte carlo dropout for any downstream task
+        self.set_mc_dropout(active=False)
 
     def predict_step(
         self, batch: Tuple, batch_idx: int, dataloader_idx: Optional[int] = None
@@ -339,6 +348,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_size: int,
         n_jobs: int,
         predict_likelihood_parameters: bool,
+        mc_dropout: bool,
     ) -> None:
         """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
         self.pred_n = n
@@ -347,6 +357,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_batch_size = batch_size
         self.pred_n_jobs = n_jobs
         self.predict_likelihood_parameters = predict_likelihood_parameters
+        self.pred_mc_dropout = mc_dropout
 
     def _compute_loss(self, output, target):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
