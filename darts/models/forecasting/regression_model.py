@@ -44,7 +44,6 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
-    add_static_covariates_to_lagged_data,
     create_lagged_component_names,
     create_lagged_training_data,
 )
@@ -1012,7 +1011,6 @@ class RegressionModel(GlobalForecastingModel):
         predictions = []
         last_step_shift = 0
 
-        series_length = len(series)
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
@@ -1022,36 +1020,24 @@ class RegressionModel(GlobalForecastingModel):
                 t_pred = n - step
 
             # concatenate previous iteration forecasts
-            if "target" in self.lags and len(predictions) > 0:
+            if "target" in self.lags and predictions:
                 series_matrix = np.concatenate([series_matrix, predictions[-1]], axis=1)
 
             # extract and concatenate lags from target and covariates series
             X = _create_lagged_data_autoregression(
+                target_series=series,
                 t_pred=t_pred,
                 shift=shift,
                 last_step_shift=last_step_shift,
-                predictions=predictions,
                 series_matrix=series_matrix,
                 covariate_matrices=covariate_matrices,
                 lags=self.lags,
                 component_lags=self.component_lags,
                 relative_cov_lags=relative_cov_lags,
-                series_length=series_length,
                 num_samples=num_samples,
-            )
-
-            # Need to split up `X` into three equally-sized sub-blocks
-            # corresponding to each timeseries in `series`, so that
-            # static covariates can be added to each block; valid since
-            # each block contains same number of observations:
-            X_blocks = np.split(X, series_length, axis=0)
-            X_blocks, _ = add_static_covariates_to_lagged_data(
-                X_blocks,
-                series,
                 uses_static_covariates=self.uses_static_covariates,
-                last_shape=self._static_covariates_shape,
+                last_static_covariates_shape=self._static_covariates_shape,
             )
-            X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(
@@ -1066,7 +1052,7 @@ class RegressionModel(GlobalForecastingModel):
 
         # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
         predictions = np.moveaxis(
-            predictions.reshape(series_length, num_samples, n, -1), 1, -1
+            predictions.reshape(len(series), num_samples, n, -1), 1, -1
         )
 
         # build time series from the predicted values starting after end of series

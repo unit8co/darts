@@ -418,7 +418,7 @@ class TestCreateLaggedTrainingData:
                 lags_as_dict[name_] = {c_name: lags_ for c_name in single_ts.components}
             else:
                 raise ValueError(
-                    f"Lags shoudl be `None`, a list or a dictionary. Received {type(lags_)}."
+                    f"Lags should be `None`, a list or a dictionary. Received {type(lags_)}."
                 )
         return lags_as_dict
 
@@ -490,7 +490,7 @@ class TestCreateLaggedTrainingData:
         concatenate: bool,
         **kwargs,
     ):
-        """Helper function to call the `creater_lagged_training_data()` method with lags argument either in the list
+        """Helper function to call the `create_lagged_training_data()` method with lags argument either in the list
         format or the dictionary format (automatically convert them when they are identical across components).
 
         Assertions are different depending on the value of `concatenate` to account for the output shape.
