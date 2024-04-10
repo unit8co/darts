@@ -78,7 +78,7 @@ class _ResidualBlock(nn.Module):
         self.dilation_base = dilation_base
         self.kernel_size = kernel_size
         self.dropout1 = MonteCarloDropout(dropout)
-        self.dropout2 = nn.Dropout(dropout)
+        self.dropout2 = MonteCarloDropout(dropout)
         self.num_layers = num_layers
         self.nr_blocks_below = nr_blocks_below
 

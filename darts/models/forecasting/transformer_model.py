@@ -21,6 +21,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -99,7 +100,7 @@ class _PositionalEncoding(nn.Module):
             Tensor containing the embedded time series enhanced with positional encoding.
         """
         super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
