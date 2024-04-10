@@ -543,7 +543,7 @@ class TestCreateLaggedTrainingData:
         assert len(times) == len(expected_times_x) == len(expected_times_y)
 
         # Check that time index(es) match:
-        for time, exp_time in zip(times, expected_times_x, strict=True):
+        for time, exp_time in zip(times, expected_times_x):
             assert exp_time.equals(time)
 
         if concatenate:
@@ -563,13 +563,13 @@ class TestCreateLaggedTrainingData:
         else:
             # Check the number of observation for each series
             for x_, exp_time_x, y_, exp_time_y, time in zip(
-                X, expected_times_x, y, expected_times_y, times, strict=True
+                X, expected_times_x, y, expected_times_y, times
             ):
                 assert x_.shape[0] == len(time) == len(exp_time_x)
                 assert y_.shape[0] == len(time) == len(exp_time_y)
 
             # Check that outputs match:
-            for x_, y_ in zip(X, y, strict=True):
+            for x_, y_ in zip(X, y):
                 assert np.allclose(X, x_)
                 assert np.allclose(y, y_)
 
