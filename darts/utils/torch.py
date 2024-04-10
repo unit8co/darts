@@ -37,17 +37,20 @@ class MonteCarloDropout(nn.Dropout):
     often improves its performance.
     """
 
-    # mc dropout is only activated on `PLForecastingModule.on_predict_start()`
-    # otherwise, it is activated based on the `model.training` flag.
-    mc_dropout_enabled = False
+    # mc dropout is deactivated at init; see `MonteCarloDropout.mc_dropout_enabled` for more info
+    _mc_dropout_enabled = False
 
     def forward(self, input: Tensor) -> Tensor:
         # NOTE: we could use the following line in case a different rate
         # is used for inference:
         # return F.dropout(input, self.applied_rate, True, self.inplace)
-        return F.dropout(
-            input, self.p, self.mc_dropout_enabled or self.training, self.inplace
-        )
+        return F.dropout(input, self.p, self.mc_dropout_enabled, self.inplace)
+
+    @property
+    def mc_dropout_enabled(self) -> bool:
+        # mc dropout is only activated on `PLForecastingModule.on_predict_start()`
+        # otherwise, it is activated based on the `model.training` flag.
+        return self._mc_dropout_enabled or self.training
 
 
 def _is_method(func: Callable[..., Any]) -> bool:

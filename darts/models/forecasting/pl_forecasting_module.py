@@ -475,8 +475,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return recurse_children(self.children(), set())
 
     def set_mc_dropout(self, active: bool):
+        # optionally, activate dropout in all MonteCarloDropout modules
         for module in self._get_mc_dropout_modules():
-            module.mc_dropout_enabled = active
+            module._mc_dropout_enabled = active
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
