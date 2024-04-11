@@ -1,0 +1,8 @@
+coverage:
+  status:
+    project:
+      default:
+        if_ci_failed: ignore
+    patch:
+      default:
+        if_ci_failed: error
