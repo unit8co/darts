@@ -1522,6 +1522,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             batch_size=batch_size,
             n_jobs=n_jobs,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            mc_dropout=mc_dropout,
         )
 
         pred_loader = DataLoader(
@@ -1533,9 +1534,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             drop_last=False,
             collate_fn=self._batch_collate_fn,
         )
-
-        # set mc_dropout rate
-        self.model.set_mc_dropout(mc_dropout)
 
         # set up trainer. use user supplied trainer or create a new trainer from scratch
         self.trainer = self._setup_trainer(
