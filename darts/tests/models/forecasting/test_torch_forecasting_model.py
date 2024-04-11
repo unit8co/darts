@@ -1415,7 +1415,6 @@ class TestTorchForecastingModel:
             init_val=init_batch_size,
         )
         assert isinstance(batch_size, int)
-        assert isinstance(batch_size, int)
         assert batch_size != init_batch_size
 
     def test_encoders(self, tmpdir_fn):
