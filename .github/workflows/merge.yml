@@ -78,11 +78,9 @@ jobs:
 
       - name: "7. Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          allow_coverage_offsets: true
           fail_ci_if_error: true
-          files: ./coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
 
   check-examples:
