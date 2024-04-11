@@ -1402,6 +1402,22 @@ class TestTorchForecastingModel:
             )
         assert scores["worst"] > scores["suggested"]
 
+    @pytest.mark.slow
+    def test_scale_batch_size(self):
+        train_series, val_series = self.series[:-40], self.series[-40:]
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, batch_size=1, **tfm_kwargs)
+        # find the batch size
+        init_batch_size = model.batch_size
+        batch_size = model.scale_batch_size(
+            series=train_series,
+            val_series=val_series,
+            epochs=50,
+            init_val=init_batch_size,
+        )
+        assert isinstance(batch_size, int)
+        assert isinstance(batch_size, int)
+        assert batch_size != init_batch_size
+
     def test_encoders(self, tmpdir_fn):
         series = tg.linear_timeseries(length=10)
         pc = tg.linear_timeseries(length=12)

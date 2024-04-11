@@ -1207,6 +1207,138 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @random_method
+    def scale_batch_size(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        val_series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        trainer: Optional[pl.Trainer] = None,
+        verbose: Optional[bool] = None,
+        epochs: int = 0,
+        max_samples_per_ts: Optional[int] = None,
+        num_loader_workers: int = 0,
+        method: Literal["fit", "validate", "test", "predict"] = "fit",
+        mode: str = "power",
+        steps_per_trial: int = 3,
+        init_val: int = 2,
+        max_trials: int = 25,
+    ) -> Optional[int]:
+        """
+        A wrapper around PyTorch Lightning's `Tuner.scale_batch_size()`. Scales the batch size of the model to find the
+        largest batch size that can be used without running out of memory. For more information on PyTorch Lightning's
+        Tuner check out
+        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
+
+        Parameters
+        ----------
+        series
+            A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
+        past_covariates
+            Optionally, a series or sequence of series specifying past-observed covariates
+        future_covariates
+            Optionally, a series or sequence of series specifying future-known covariates
+        val_series
+            Optionally, one or a sequence of validation target series, which will be used to compute the validation
+            loss throughout training and keep track of the best performing models.
+        val_past_covariates
+            Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
+        val_future_covariates
+            Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
+        trainer
+            Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
+            override Darts' default trainer.
+        verbose
+            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            `pl_trainer_kwargs`.
+        epochs
+            If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
+            was provided to the model constructor.
+        max_samples_per_ts
+            Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
+            by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
+            large number of training samples. This parameter upper-bounds the number of training samples per time
+            series (taking only the most recent samples in each series). Leaving to None does not apply any
+            upper bound.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            both for the training and validation loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
+        method
+            The method to use for scaling the batch size. Can be one of 'fit', 'validate', 'test', or 'predict'.
+        mode
+            The mode to use for scaling the batch size. Can be one of 'power' or 'linear'.
+        steps_per_trial
+            The number of steps to try for each trial.
+        init_val
+            The initial value to start the search with.
+        max_trials
+            The maximum number of trials to run.
+        batch_arg_name
+            The name of the argument to scale in the model. Defaults to 'batch_size'.
+
+        Returns
+        -------
+        int
+            The largest batch size that can be used without running out of memory.
+        """
+        _, params = self._setup_for_fit_from_dataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            trainer=trainer,
+            verbose=verbose,
+            epochs=epochs,
+            max_samples_per_ts=max_samples_per_ts,
+            num_loader_workers=num_loader_workers,
+        )
+        trainer, model, train_loader, val_loader = self._setup_for_train(*params)
+
+        class DataModule(pl.LightningDataModule):
+            def __init__(self, batch_size):
+                super().__init__()
+                self.save_hyperparameters()
+                self.batch_size = batch_size
+
+            def train_dataloader(self):
+                return DataLoader(
+                    train_loader.dataset,
+                    batch_size=self.batch_size,
+                    shuffle=True,
+                    num_workers=train_loader.num_workers,
+                    pin_memory=True,
+                    drop_last=False,
+                    collate_fn=train_loader.collate_fn,
+                )
+
+            def val_dataloader(self):
+                return DataLoader(
+                    val_loader.dataset,
+                    batch_size=self.batch_size,
+                    shuffle=False,
+                    num_workers=val_loader.num_workers,
+                    pin_memory=True,
+                    drop_last=False,
+                    collate_fn=val_loader.collate_fn,
+                )
+
+        return Tuner(trainer).scale_batch_size(
+            model=model,
+            datamodule=DataModule(batch_size=init_val),
+            method=method,
+            mode=mode,
+            steps_per_trial=steps_per_trial,
+            init_val=init_val,
+            max_trials=max_trials,
+        )
+
+    @random_method
     def predict(
         self,
         n: int,
