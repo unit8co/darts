@@ -95,6 +95,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed type hint warning "Unexpected argument" when calling `historical_forecasts()` caused by the `_with_sanity_checks` decorator. The type hinting is now properly configured to expect any input arguments and return the output type of the method for which the sanity checks are performed for. [#2286](https://github.com/unit8co/darts/pull/2286) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed the order of the features when using component-wise lags so that they are grouped by values, then by components (before, were grouped by components, then by values). [#2272](https://github.com/unit8co/darts/pull/2272) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a segmentation fault that some users were facing when importing a `LightGBMModel`. [#2304](https://github.com/unit8co/darts/pull/2304) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug when using a dropout with a `TorchForecasting` and pytorch lightning versions >= 2.2.0, where the dropout was not properly activated during training. [#2312](https://github.com/unit8co/darts/pull/2312) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 

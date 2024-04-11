@@ -1,3 +1,4 @@
+import copy
 import itertools
 import os
 from typing import Any, Dict, Optional
@@ -6,6 +7,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from pytorch_lightning.callbacks import Callback
 
 import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
@@ -1465,6 +1467,70 @@ class TestTorchForecastingModel:
         assert model_rin_mv.model.use_reversible_instance_norm
         assert isinstance(model_rin_mv.model.rin, RINorm)
         assert model_rin_mv.model.rin.input_dim == self.multivariate_series.n_components
+
+    @pytest.mark.parametrize("use_mc_dropout", [False, True])
+    def test_mc_dropout_active(self, use_mc_dropout):
+        """Test that model activates dropout ."""
+
+        class CheckMCDropout(Callback):
+            def __init__(self, activate_mc_dropout):
+                self.use_mc_dropout = activate_mc_dropout
+
+            @staticmethod
+            def _check_dropout_activity(pl_module, expected_active: bool):
+                dropouts = pl_module._get_mc_dropout_modules()
+                assert all(
+                    [
+                        dropout.mc_dropout_enabled is expected_active
+                        for dropout in dropouts
+                    ]
+                )
+
+            def on_train_batch_start(self, *args, **kwargs) -> None:
+                self._check_dropout_activity(args[1], expected_active=True)
+
+            def on_validation_batch_start(self, *args, **kwargs) -> None:
+                self._check_dropout_activity(args[1], expected_active=False)
+
+            def on_predict_batch_start(self, *args, **kwargs) -> None:
+                self._check_dropout_activity(
+                    args[1], expected_active=self.use_mc_dropout
+                )
+
+        series = self.series[:20]
+        pl_trainer_kwargs = copy.deepcopy(tfm_kwargs)
+        pl_trainer_kwargs["pl_trainer_kwargs"]["callbacks"] = [
+            CheckMCDropout(activate_mc_dropout=use_mc_dropout)
+        ]
+        model = TiDEModel(10, 10, dropout=0.1, random_state=42, **pl_trainer_kwargs)
+        model.fit(series, val_series=series, epochs=1)
+
+        num_samples = 1 if not use_mc_dropout else 10
+        preds = model.predict(
+            n=10, series=series, mc_dropout=use_mc_dropout, num_samples=num_samples
+        )
+        assert preds.n_samples == num_samples
+
+    @pytest.mark.parametrize("use_mc_dropout", [False, True])
+    def test_dropout_output(self, use_mc_dropout):
+        """Test that model without dropout generates different results than one which uses near-full dropout."""
+        series = self.series[:20]
+        num_samples = 1 if not use_mc_dropout else 10
+
+        # dropouts for overfit and underfit
+        preds = []
+        for dropout in [0.0, 0.99]:
+            model = TiDEModel(10, 10, dropout=dropout, random_state=42, **tfm_kwargs)
+            model.fit(series, val_series=series, epochs=1)
+            preds.append(
+                model.predict(
+                    n=10,
+                    series=series,
+                    mc_dropout=use_mc_dropout,
+                    num_samples=num_samples,
+                ).all_values()
+            )
+        assert not np.array_equal(preds[0], preds[1])
 
     @pytest.mark.parametrize(
         "config",
