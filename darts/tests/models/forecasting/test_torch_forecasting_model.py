@@ -7,7 +7,6 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-from pytorch_lightning.callbacks import Callback
 
 import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
@@ -21,6 +20,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
+    from pytorch_lightning.callbacks import Callback
     from pytorch_lightning.loggers.logger import DummyLogger
     from pytorch_lightning.tuner.lr_finder import _LRFinder
     from torchmetrics import (
