@@ -338,17 +338,21 @@ def create_lagged_data(
         if sample_weight:
             weights = None
             if sample_weight == "equal":
-                weights = constant_timeseries(
-                    1, start=times_i[0], end=times_i[-1], freq=times_i.freq
-                ).values()
+                # weights = constant_timeseries(
+                #    1, start=times_i[0], end=times_i[-1], freq=times_i.freq
+                # ).values()
+                weights = np.full(len(y_i), 1)
             elif sample_weight == "linear_decay":
-                weights = non_zero_linear_timeseries(
-                    start=times_i[0], end=times_i[-1], freq=times_i.freq
-                ).values()
+                # weights = non_zero_linear_timeseries(
+                #    start=times_i[0], end=times_i[-1], freq=times_i.freq
+                # ).values()
+                weights = np.linspace(0, 1, len(y_i))
             elif sample_weight == "exponential_decay":
-                weights = exponential_timeseries(
-                    start=times_i[0], end=times_i[-1], freq=times_i.freq
-                ).values()[::-1]
+                # weights = exponential_timeseries(
+                #    start=times_i[0], end=times_i[-1], freq=times_i.freq
+                # ).values()[::-1]
+                time_steps = np.linspace(0, 1, len(y_i))
+                weights = np.exp(-10 * (1 - time_steps))
             elif isinstance(sample_weight, TimeSeries):
                 weights = sample_weight.values()
             else:

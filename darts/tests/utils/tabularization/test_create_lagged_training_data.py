@@ -2001,3 +2001,64 @@ class TestCreateLaggedTrainingData:
             concatenate=False,
         )
         assert expected_lagged_features == created_lagged_features
+
+    @pytest.mark.parametrize(
+        "config", itertools.product([10, 50, 100], [[-3, -2, -1], [-4, -1]])
+    )
+    def test_correct_generated_weights_equal(self, config):
+        training_size, lag = config
+        train_y = linear_timeseries(start=1, length=training_size, freq=1)
+
+        _, y, _, _, weights = create_lagged_training_data(
+            lags=lag,
+            target_series=train_y,
+            output_chunk_length=1,
+            uses_static_covariates=False,
+            sample_weight="equal",
+            output_chunk_shift=0,
+        )
+
+        assert len(weights) == len(y)
+        assert (weights == [1] * len(y)).all()
+
+    """@pytest.mark.parametrize(
+        "config",
+        [],
+    )
+    def test_correct_generated_weights_linear(self, config):
+        model, training_size = config
+        weights_size = training_size - len(model.lags["target"])
+
+        expected_weights = np.linspace(0, 1, weights_size + 1)[1:]
+
+        train_y = self.sine_univariate1[:training_size]
+        _, _, weights = model._create_lagged_data(
+            target_series=train_y,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
+            sample_weight="linear_decay",
+        )
+
+        assert len(weights) == weights_size
+        assert (weights == expected_weights).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        [],
+    )
+    def test_correct_generated_weights_exponential(self, config):
+        model, training_size, decay_rate = config
+        weights_size = training_size - len(model.lags["target"])
+
+        time_steps = np.linspace(0, 1, weights_size)
+        expected_weights = np.exp(-decay_rate * (1 - time_steps))
+
+        train_y = self.sine_univariate1[:training_size]
+        _, _, weights = model._create_lagged_data(
+            target_series=train_y,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
+            sample_weight="exponential_decay",
+        )"""
