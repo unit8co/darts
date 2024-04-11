@@ -85,7 +85,7 @@ jobs:
 
       - name: "8. Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           allow_coverage_offsets: true
           fail_ci_if_error: true
