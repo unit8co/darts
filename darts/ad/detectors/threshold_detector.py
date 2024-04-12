@@ -88,11 +88,9 @@ class ThresholdDetector(Detector):
 
         raise_if_not(
             all(
-                [
-                    low <= high
-                    for (low, high) in zip(self.low_threshold, self.high_threshold)
-                    if ((low is not None) and (high is not None))
-                ]
+                low <= high
+                for (low, high) in zip(self.low_threshold, self.high_threshold)
+                if ((low is not None) and (high is not None))
             ),
             "all values in `low_threshold` must be lower than or equal"
             + "to their corresponding value in `high_threshold`.",

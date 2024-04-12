@@ -103,7 +103,7 @@ class PyODScorer(FittableAnomalyScorer):
         self.model = model
 
         raise_if_not(
-            isinstance(component_wise, bool),
+            type(component_wise) is bool,  # noqa: E721
             f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
         )
         self.component_wise = component_wise

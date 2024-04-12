@@ -122,7 +122,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         """
 
         raise_if_not(
-            isinstance(allow_model_training, bool),
+            type(allow_model_training) is bool,  # noqa: E721
             f"`allow_model_training` must be Boolean, found type: {type(allow_model_training)}.",
         )
 
@@ -414,7 +414,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                   and inner sequence is over the scorers.
         """
         raise_if_not(
-            isinstance(return_model_prediction, bool),
+            type(return_model_prediction) is bool,  # noqa: E721
             f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
 
