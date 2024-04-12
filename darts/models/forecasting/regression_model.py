@@ -1199,6 +1199,7 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
@@ -1215,6 +1216,7 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )

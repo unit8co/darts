@@ -87,6 +87,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Moved functions `retain_period_common_to_all()`, `series2seq()`, `seq2series()`, `get_single_series()` from `darts.utils.utils` to `darts.utils.ts_utils`.
 - Improvements to `ForecastingModel`: [#2269](https://github.com/unit8co/darts/pull/2269) by [Felix Divo](https://github.com/felixdivo).
   - Renamed the private `_is_probabilistic` property to a public `supports_probabilistic_prediction`.
+- Improvements to `RegressionModel`: [#2320](https://github.com/unit8co/darts/pull/2320) by [Felix Divo](https://github.com/felixdivo).
+  - Added a progress bar when performing optimized historical forecasts (`retrain=False` and no autoregression) to display the series-level progress.
 - Improvements to `DataTransformer`: [#2267](https://github.com/unit8co/darts/pull/2267) by [Alicja Krzeminska-Sciga](https://github.com/alicjakrzeminska).
   - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series. 
 
