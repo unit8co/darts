@@ -97,9 +97,9 @@ task pipInstall() {
     dependsOn pip_core, pip_dev, pip_notorch, pip_torch, pip_release
 }
 
-task lint {
+task lint(type: Exec) {
     dependsOn pip_dev
-    commandLine "pre-commit", "--all-files"
+    commandLine "pre-commit", "run", "--all-files"
 }
 
 void createPipRelatedTask(String flavour) {
