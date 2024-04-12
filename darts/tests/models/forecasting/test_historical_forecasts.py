@@ -1733,6 +1733,7 @@ class TestHistoricalforecast:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize("model_config", models_torch_cls_kwargs)
     def test_torch_auto_start_with_past_cov(self, model_config):
+        n_fcs = 3
         forecast_hrz = 10
         # Past covariates only
         model_cls, kwargs, bounds, cov_type = model_config
@@ -1752,15 +1753,20 @@ class TestHistoricalforecast:
             )
             return
 
-        model.fit(self.ts_pass_train, self.ts_past_cov_train)
+        # we expect first predicted point after `min_train_series_length`
+        # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz`,
+        # `series` of length `length_past`, and covariates that cover the required time range
+        length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
+        series = self.ts_pass_train[:length_series_history]
+
+        # for historical forecasts, minimum required past covariates should end
+        # `forecast_hrz` before the end of `series`
+        pc = series[:-forecast_hrz]
 
         # same start
         forecasts = model.historical_forecasts(
-            series=[self.ts_pass_val, self.ts_pass_val],
-            past_covariates=[
-                self.ts_past_cov_valid_same_start,
-                self.ts_past_cov_valid_same_start,
-            ],
+            series=[series] * 2,
+            past_covariates=[pc] * 2,
             forecast_horizon=forecast_hrz,
             stride=1,
             retrain=True,
@@ -1771,61 +1777,34 @@ class TestHistoricalforecast:
             len(forecasts) == 2
         ), f"Model {model_cls} did not return a list of historical forecasts"
 
-        theorical_forecast_length = (
-            self.ts_val_length
-            - (bounds[0] + bounds[1])  # train sample length
-            - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
-            - 0  # past covs have same start as target -> no shift
-            - 0  # we don't have future covs in output chunk -> no shift
-        )
-        assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length, (
-            f"Model {model_cls} does not return the right number of historical forecasts in case "
-            f"of retrain=True and overlap_end=False and past_covariates with same start. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
-        )
+        # with the required time spands we expect to get `n_fcs` forecasts
+        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs
 
-        model = model_cls(
-            random_state=0,
-            **kwargs,
-        )
-        model.fit(self.ts_pass_train, past_covariates=self.ts_past_cov_train)
+        # `pc_longer` has more than required length
+        pc_longer = pc.prepend_values([0.0]).append_values([0.0])
+        # `pc_before` starts before and has required times
+        pc_longer_start = pc.prepend_values([0.0])
+        # `pc_after` has required length but starts one step after `pc`
+        pc_start_after = pc[1:].append_values([0.0])
 
-        # start before, after
+        # `overlap_end=True`
         forecasts = model.historical_forecasts(
-            series=[self.ts_pass_val, self.ts_pass_val],
+            series=[series] * 3,
             past_covariates=[
-                self.ts_past_cov_valid_5_aft_start,
-                self.ts_past_cov_valid_10_bef_start,
+                pc_longer,
+                pc_longer_start,
+                pc_start_after,
             ],
             forecast_horizon=forecast_hrz,
             stride=1,
             retrain=True,
             overlap_end=False,
         )
-        theorical_forecast_length = (
-            self.ts_val_length
-            - (bounds[0] + bounds[1])  # train sample length
-            - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
-            - 5  # past covs start 5 later -> shift
-            - 0  # we don't have future covs in output chunk -> no shift
-        )
-        assert len(forecasts[0]) == theorical_forecast_length, (
-            f"Model {model_cls} does not return the right number of historical forecasts in case "
-            f"of retrain=True and overlap_end=False and past_covariates starting after. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts[0])}"
-        )
-        theorical_forecast_length = (
-            self.ts_val_length
-            - (bounds[0] + bounds[1])  # train sample length
-            - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
-            - 0  # past covs have same start as target -> no shift
-            - 0  # we don't have future covs in output chunk -> no shift
-        )
-        assert len(forecasts[1]) == theorical_forecast_length, (
-            f"Model {model_cls} does not return the right number of historical forecasts in case "
-            f"of retrain=True and overlap_end=False and past_covariates starting before. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts[1])}"
-        )
+
+        # for long enough past covariates (but too short for overlapping after the end), we expect `n_fcs` forecast
+        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs
+        # `pc_start_after` is one step too short for all `n_fcs`
+        assert len(forecasts[2]) == n_fcs - 1
 
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
