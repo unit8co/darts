@@ -33,7 +33,7 @@ class AnomalyScorer(ABC):
     def __init__(self, univariate_scorer: bool, window: int) -> None:
 
         raise_if_not(
-            type(window) is int,
+            isinstance(window, int),
             f"Parameter `window` must be an integer, found type {type(window)}.",
         )
 

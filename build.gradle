@@ -97,23 +97,9 @@ task pipInstall() {
     dependsOn pip_core, pip_dev, pip_notorch, pip_torch, pip_release
 }
 
-task lint_black(type: Exec) {
-    dependsOn pip_dev
-    commandLine "black", "--check", "."
-}
-
-task lint_flake8(type: Exec) {
-    dependsOn pip_dev
-    commandLine "flake8"
-}
-
-task lint_isort(type: Exec) {
-    dependsOn pip_dev
-    commandLine "isort", "--check", "."
-}
-
 task lint {
-    dependsOn lint_black, lint_flake8, lint_isort
+    dependsOn pip_dev
+    commandLine "pre-commit", "--all-files"
 }
 
 void createPipRelatedTask(String flavour) {

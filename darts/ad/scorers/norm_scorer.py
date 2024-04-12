@@ -49,7 +49,7 @@ class NormScorer(NonFittableAnomalyScorer):
         """
 
         raise_if_not(
-            type(component_wise) is bool,
+            isinstance(component_wise, bool),
             f"`component_wise` must be Boolean, found type: {type(component_wise)}.",
         )
 

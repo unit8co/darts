@@ -106,9 +106,9 @@ class QuantileDetector(FittableDetector):
         raise_if_not(
             all(
                 [
-                    l <= h
-                    for (l, h) in zip(self.low_quantile, self.high_quantile)
-                    if ((l is not None) and (h is not None))
+                    low <= high
+                    for (low, high) in zip(self.low_quantile, self.high_quantile)
+                    if ((low is not None) and (high is not None))
                 ]
             ),
             "all values in `low_quantile` must be lower than or equal"

@@ -312,7 +312,7 @@ class TestADAnomalyScorer:
         for scorer in [non_fittable_scorer, fittable_scorer]:
 
             # name must be of type str
-            assert type(scorer.__str__()) == str
+            assert isinstance(scorer.__str__(), str)
 
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
             with pytest.raises(ValueError):
