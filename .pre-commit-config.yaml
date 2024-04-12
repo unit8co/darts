@@ -1,4 +1,24 @@
+default_language_version:
+  python: python3
+
+ci:
+  autofix_prs: true
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit suggestions"
+  autoupdate_schedule: quarterly
+  # submodules: true
+
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-json
+      - id: check-yaml
+        exclude: "conda_recipe/darts/meta.yaml"
+      - id: check-toml
+      - id: detect-private-key
+
   - repo: https://github.com/psf/black
     rev: 24.3.0
     hooks:
