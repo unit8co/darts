@@ -509,7 +509,7 @@ class TestCreateLaggedTrainingData:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
-            X, y, times, _ = create_lagged_training_data(
+            X, y, times, _, _ = create_lagged_training_data(
                 target,
                 output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -639,7 +639,7 @@ class TestCreateLaggedTrainingData:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
-            X, y, times, _ = create_lagged_training_data(
+            X, y, times, _, _ = create_lagged_training_data(
                 target,
                 output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -767,7 +767,7 @@ class TestCreateLaggedTrainingData:
             if all(lags_is_none):
                 continue
             # Using moving window method:
-            X_mw, y_mw, times_mw, _ = create_lagged_training_data(
+            X_mw, y_mw, times_mw, _, _ = create_lagged_training_data(
                 target_series=target,
                 output_chunk_length=output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -782,7 +782,7 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift=output_chunk_shift,
             )
             # Using time intersection method:
-            X_ti, y_ti, times_ti, _ = create_lagged_training_data(
+            X_ti, y_ti, times_ti, _, _ = create_lagged_training_data(
                 target_series=target,
                 output_chunk_length=output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -856,7 +856,7 @@ class TestCreateLaggedTrainingData:
         expected_X = np.concatenate(
             [expected_X_target, expected_X_past, expected_X_future], axis=1
         )
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target_series=series,
             output_chunk_length=output_chunk_length,
             past_covariates=series,
@@ -951,7 +951,7 @@ class TestCreateLaggedTrainingData:
         expected_y = target.all_values(copy=False)[-1, :, 0]
         # Check correctness for both 'moving window' method
         # and 'time intersection' method:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target,
             output_chunk_length=1,
             past_covariates=past,
@@ -1000,7 +1000,7 @@ class TestCreateLaggedTrainingData:
         expected_y = np.ones((1, 1, 1))
         # Test correctness for 'moving window' and for 'time intersection' methods, as well
         # as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target,
             output_chunk_length,
             lags=lags,
@@ -1064,7 +1064,7 @@ class TestCreateLaggedTrainingData:
         expected_y = np.ones((1, 1, 1))
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target,
             output_chunk_length=1,
             future_covariates=future,
@@ -1144,7 +1144,7 @@ class TestCreateLaggedTrainingData:
         expected_y = target[-1].all_values(copy=False)
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target,
             output_chunk_length=1,
             future_covariates=future,
@@ -1223,7 +1223,7 @@ class TestCreateLaggedTrainingData:
         expected_y = target[-1].all_values(copy=False)
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target,
             output_chunk_length=1,
             past_covariates=past,
@@ -1288,7 +1288,7 @@ class TestCreateLaggedTrainingData:
         expected_y = np.ones((1, 1, 1))
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target,
             output_chunk_length=1,
             future_covariates=future,
@@ -1329,7 +1329,7 @@ class TestCreateLaggedTrainingData:
         expected_times_1 = target_1.time_index[1:]
         expected_times_2 = target_2.time_index[1:]
         # Check when `concatenate = True`:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             (target_1, target_2),
             output_chunk_length=output_chunk_length,
             past_covariates=(past_1, past_2),
@@ -1346,7 +1346,7 @@ class TestCreateLaggedTrainingData:
         assert times[0].equals(expected_times_1)
         assert times[1].equals(expected_times_2)
         # Check when `concatenate = False`:
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             (target_1, target_2),
             output_chunk_length=output_chunk_length,
             past_covariates=(past_1, past_2),
@@ -1387,7 +1387,7 @@ class TestCreateLaggedTrainingData:
         )
         expected_y = target.all_values(copy=False)[1:, :, :]
         expected_times = target.time_index[1:]
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target,
             output_chunk_length=output_chunk_length,
             past_covariates=past,
@@ -2021,44 +2021,45 @@ class TestCreateLaggedTrainingData:
         assert len(weights) == len(y)
         assert (weights == [1] * len(y)).all()
 
-    """@pytest.mark.parametrize(
-        "config",
-        [],
+    @pytest.mark.parametrize(
+        "config", itertools.product([10, 50, 100], [[-3, -2, -1], [-4, -1]])
     )
     def test_correct_generated_weights_linear(self, config):
-        model, training_size = config
-        weights_size = training_size - len(model.lags["target"])
+        training_size, lag = config
+        train_y = linear_timeseries(start=1, length=training_size, freq=1)
 
-        expected_weights = np.linspace(0, 1, weights_size + 1)[1:]
-
-        train_y = self.sine_univariate1[:training_size]
-        _, _, weights = model._create_lagged_data(
+        _, y, _, _, weights = create_lagged_training_data(
+            lags=lag,
             target_series=train_y,
-            past_covariates=None,
-            future_covariates=None,
-            max_samples_per_ts=None,
+            output_chunk_length=1,
+            uses_static_covariates=False,
             sample_weight="linear_decay",
+            output_chunk_shift=0,
         )
 
-        assert len(weights) == weights_size
-        assert (weights == expected_weights).all()
+        expected_weights = np.linspace(0, 1, len(y))
+
+        assert len(weights) == len(y)
+        np.testing.assert_array_almost_equal(weights, expected_weights)
 
     @pytest.mark.parametrize(
-        "config",
-        [],
+        "config", itertools.product([10, 50, 100], [[-3, -2, -1], [-4, -1]])
     )
     def test_correct_generated_weights_exponential(self, config):
-        model, training_size, decay_rate = config
-        weights_size = training_size - len(model.lags["target"])
+        training_size, lag = config
+        train_y = linear_timeseries(start=1, length=training_size, freq=1)
 
-        time_steps = np.linspace(0, 1, weights_size)
-        expected_weights = np.exp(-decay_rate * (1 - time_steps))
-
-        train_y = self.sine_univariate1[:training_size]
-        _, _, weights = model._create_lagged_data(
+        _, y, _, _, weights = create_lagged_training_data(
+            lags=lag,
             target_series=train_y,
-            past_covariates=None,
-            future_covariates=None,
-            max_samples_per_ts=None,
+            output_chunk_length=1,
+            uses_static_covariates=False,
             sample_weight="exponential_decay",
-        )"""
+            output_chunk_shift=0,
+        )
+
+        time_steps = np.linspace(0, 1, len(y))
+        expected_weights = np.exp(-10 * (1 - time_steps))
+
+        assert len(weights) == len(y)
+        np.testing.assert_array_almost_equal(weights, expected_weights)

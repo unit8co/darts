@@ -1686,6 +1686,33 @@ class TestRegressionModels:
 
         np.testing.assert_array_almost_equal(pred.values(), np.array([[1, 0, 0]]).T)
 
+    """
+    
+    """
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (
+                LinearRegressionModel,
+                {"lags": 3, "output_chunk_length": 3, "multi_models": False},
+            )
+        ],
+    )
+    def test_weights_multimodel_false_single_sample(self, config):
+        (model_cls, model_kwargs) = config
+        model = model_cls(**model_kwargs)
+
+        weights = TimeSeries.from_values(np.array([1, 0, 0]))
+
+        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 0, 1, 0, 0]))
+
+        model.fit(ts, sample_weight=weights)
+
+        pred = model.predict(n=3)
+
+        np.testing.assert_array_almost_equal(pred.values(), np.array([[1, 1, 1]]).T)
+
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
         model = RegressionModel(lags_future_covariates=[-2], multi_models=mode)
