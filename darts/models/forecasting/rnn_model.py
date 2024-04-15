@@ -321,9 +321,9 @@ class RNNModel(DualCovariatesTorchModel):
             Fraction of neurons afected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
-            training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
-            because otherwise during training the RNN is never run for as many iterations as it will during
-            inference. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
+            training. Must have a larger value than `input_chunk_length`, because otherwise during training
+            the RNN is never run for as many iterations as it will during inference. For more information on
+            this parameter, please see `darts.utils.data.ShiftedDataset`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -485,6 +485,14 @@ class RNNModel(DualCovariatesTorchModel):
             `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
+        if training_length <= input_chunk_length:
+            raise_log(
+                ValueError(
+                    f"`training_length` ({training_length}) must be larger than "
+                    f"`input_chunk_length` ({input_chunk_length})."
+                ),
+                logger=logger,
+            )
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
 
@@ -585,3 +593,19 @@ class RNNModel(DualCovariatesTorchModel):
     @property
     def min_train_series_length(self) -> int:
         return self.training_length + 1
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        int,
+    ]:
+        lags = super().extreme_lags
+        # max_target_lag for training is given by `training_length - icl`
+        return lags[:1] + (self.training_length - self.input_chunk_length,) + lags[2:]
