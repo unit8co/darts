@@ -606,6 +606,14 @@ class RNNModel(DualCovariatesTorchModel):
         Optional[int],
         int,
     ]:
-        lags = super().extreme_lags
-        # max_target_lag for training is given by `training_length - icl`
-        return lags[:1] + (self.training_length - self.input_chunk_length,) + lags[2:]
+        # output window for training is given by `training_length - icl`
+        output_window = self.training_length - self.input_chunk_length
+        return (
+            -self.input_chunk_length,
+            output_window,
+            None,
+            None,
+            -self.input_chunk_length,
+            output_window,
+            self.output_chunk_shift,
+        )
