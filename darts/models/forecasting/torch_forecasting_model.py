@@ -2494,6 +2494,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2503,6 +2504,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
             None,
             self.output_chunk_shift,
+            None,
         )
 
 
@@ -2583,6 +2585,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2592,6 +2595,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
+            None,
         )
 
 
@@ -2673,6 +2677,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2682,6 +2687,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
+            None,
         )
 
 
@@ -2763,6 +2769,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2772,6 +2779,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
+            None,
         )
 
     def predict(
@@ -2910,6 +2918,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2919,4 +2928,5 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
+            None,
         )

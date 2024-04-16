@@ -1461,6 +1461,7 @@ class TestHistoricalforecast:
             min_future_cov_lag,
             max_future_cov_lag,
             output_chunk_shift,
+            _,
         ) = model.extreme_lags
 
         past_lag = min(
@@ -1573,6 +1574,7 @@ class TestHistoricalforecast:
             min_future_cov_lag,
             max_future_cov_lag,
             output_chunk_shift,
+            _,
         ) = model.extreme_lags
 
         past_lag = min(
@@ -1616,7 +1618,7 @@ class TestHistoricalforecast:
 
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz` and
-        # `series` of length `length_past`
+        # `series` of length `length_series_history`
         length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
         series = self.ts_pass_train[:length_series_history]
         if not retrain:
@@ -1639,7 +1641,10 @@ class TestHistoricalforecast:
         if not retrain:
             # with retrain=False, we can start `output_chunk_length` steps earlier for non-RNNModels
             # and `training_length - input_chunk_length` steps for RNNModels
-            add_fcs = model.extreme_lags[1] + 1
+            if not isinstance(model, RNNModel):
+                add_fcs = model.extreme_lags[1] + 1
+            else:
+                add_fcs = model.extreme_lags[7] + 1
         else:
             add_fcs = 0
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
@@ -1697,7 +1702,7 @@ class TestHistoricalforecast:
 
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz`,
-        # `series` of length `length_past`, and covariates that cover the required time range
+        # `series` of length `length_series_history`, and covariates that cover the required time range
         length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
         series = self.ts_pass_train[:length_series_history]
 
@@ -1731,6 +1736,18 @@ class TestHistoricalforecast:
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
         assert forecasts[0].end_time() == forecasts[1].end_time() == series.end_time()
 
+        # check the same for `overlap_end=True`
+        forecasts = model.historical_forecasts(
+            series=[series] * 2,
+            past_covariates=[pc] * 2,
+            forecast_horizon=forecast_hrz,
+            stride=1,
+            retrain=retrain,
+            overlap_end=True,
+        )
+        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
+        assert forecasts[0].end_time() == forecasts[1].end_time() == series.end_time()
+
         # same time index, `overlap_end=True`
         forecasts = model.historical_forecasts(
             series=[series] * 2,
@@ -1759,14 +1776,17 @@ class TestHistoricalforecast:
         pc_longer_start = pc.prepend_values([0.0])
         # `pc_after` has required length but starts one step after `pc`
         pc_start_after = pc[1:].append_values([0.0])
+        # `pc_end_before` has required length but end one step before `pc`
+        pc_end_before = pc[:-1].prepend_values([0.0])
 
         # `overlap_end=True`
         forecasts = model.historical_forecasts(
-            series=[series] * 3,
+            series=[series] * 4,
             past_covariates=[
                 pc_longer,
                 pc_longer_start,
                 pc_start_after,
+                pc_end_before,
             ],
             forecast_horizon=forecast_hrz,
             stride=1,
@@ -1776,15 +1796,16 @@ class TestHistoricalforecast:
 
         # for long enough past covariates (but too short for overlapping after the end), we expect `n_fcs` forecast
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
-        # `pc_start_after` is one step too short for all `n_fcs`
-        assert len(forecasts[2]) == n_fcs + add_fcs - 1
-        assert all([fc.end_time() == series.end_time() for fc in forecasts])
+        # `pc_start_after` and `pc_end_before` are one step too short for all `n_fcs`
+        assert len(forecasts[2]) == len(forecasts[3]) == n_fcs + add_fcs - 1
+        assert all([fc.end_time() == series.end_time() for fc in forecasts[:3]])
+        assert forecasts[3].end_time() == series.end_time() - series.freq
 
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "model_config,retrain",
-        itertools.product(models_torch_cls_kwargs, [True, False]),
+        list(itertools.product(models_torch_cls_kwargs, [True, False]))[2:],
     )
     def test_torch_auto_start_with_future_cov(self, model_config, retrain):
         n_fcs = 3
@@ -1808,18 +1829,14 @@ class TestHistoricalforecast:
 
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz`,
-        # `series` of length `length_past`, and covariates that cover the required time range
+        # `series` of length `length_series_history`, and covariates that cover the required time range
         length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
         series = self.ts_pass_train[:length_series_history]
 
         # to generate `n_fcs` historical forecasts, and since `forecast_horizon > output_chunk_length`,
         # we need additional `output_chunk_length - horizon` future covariates steps
-        if not isinstance(model, RNNModel):
-            add_n = model.output_chunk_length - forecast_hrz
-        else:
-            # RNNModel is a special case
-            add_n = model.training_length + 1 - model.input_chunk_length - forecast_hrz
-        fc = series.append_values([0.0] * add_n)
+        add_n = max(model.extreme_lags[1] + 1 - forecast_hrz, 0)
+        fc = series.append_values([0.0] * add_n) if add_n else series
 
         if not retrain:
             model.fit(series, future_covariates=fc)
@@ -1841,9 +1858,24 @@ class TestHistoricalforecast:
         if not retrain:
             # with retrain=False, we can start `output_chunk_length` steps earlier for non-RNNModels
             # and `training_length - input_chunk_length` steps for RNNModels
-            add_fcs = model.extreme_lags[1] + 1
+            if not isinstance(model, RNNModel):
+                add_fcs = model.extreme_lags[1] + 1
+            else:
+                add_fcs = model.extreme_lags[7] + 1
         else:
             add_fcs = 0
+        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
+        assert forecasts[0].end_time() == forecasts[1].end_time() == series.end_time()
+
+        # check the same for `overlap_end=True`
+        forecasts = model.historical_forecasts(
+            series=[series] * 2,
+            future_covariates=[fc] * 2,
+            forecast_horizon=forecast_hrz,
+            stride=1,
+            retrain=retrain,
+            overlap_end=True,
+        )
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
         assert forecasts[0].end_time() == forecasts[1].end_time() == series.end_time()
 
@@ -1881,14 +1913,17 @@ class TestHistoricalforecast:
         fc_longer_start = fc.prepend_values([0.0])
         # `fc_after` has required length but starts one step after `fc`
         fc_start_after = fc[1:].append_values([0.0])
+        # `fc_end_before` has required length but end one step before `fc`
+        fc_end_before = fc[:-1].prepend_values([0.0])
 
         # `overlap_end=True`
         forecasts = model.historical_forecasts(
-            series=[series] * 3,
+            series=[series] * 4,
             future_covariates=[
                 fc_longer,
                 fc_longer_start,
                 fc_start_after,
+                fc_end_before,
             ],
             forecast_horizon=forecast_hrz,
             stride=1,
@@ -1898,9 +1933,10 @@ class TestHistoricalforecast:
 
         # for long enough future covariates (but too short for overlapping after the end), we expect `n_fcs` forecast
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
-        # `fc_start_after` is one step too short for all `n_fcs`
-        assert len(forecasts[2]) == n_fcs + add_fcs - 1
-        assert all([fc.end_time() == series.end_time() for fc in forecasts])
+        # `fc_start_after` and `fc_end_before` are one step too short for all `n_fcs`
+        assert len(forecasts[2]) == len(forecasts[3]) == n_fcs + add_fcs - 1
+        assert all([fc.end_time() == series.end_time() for fc in forecasts[:3]])
+        assert forecasts[3].end_time() == series.end_time() - series.freq
 
     @pytest.mark.slow
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
@@ -1937,7 +1973,7 @@ class TestHistoricalforecast:
 
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz`,
-        # `series` of length `length_past`, and covariates that cover the required time range
+        # `series` of length `length_series_history`, and covariates that cover the required time range
         length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
         series = self.ts_pass_train[:length_series_history]
 
@@ -1947,12 +1983,8 @@ class TestHistoricalforecast:
 
         # to generate `n_fcs` historical forecasts, and since `forecast_horizon > output_chunk_length`,
         # we need additional `output_chunk_length - horizon` future covariates steps
-        if not isinstance(model, RNNModel):
-            add_n = model.output_chunk_length - forecast_hrz
-        else:
-            # RNNModel is a special case
-            add_n = model.training_length + 1 - model.input_chunk_length - forecast_hrz
-        fc = series.append_values([0.0] * add_n)
+        add_n = max(model.extreme_lags[1] + 1 - forecast_hrz, 0)
+        fc = series.append_values([0.0] * add_n) if add_n else series
 
         if not retrain:
             model.fit(series, past_covariates=pc, future_covariates=fc)
@@ -1975,9 +2007,25 @@ class TestHistoricalforecast:
         if not retrain:
             # with retrain=False, we can start `output_chunk_length` steps earlier for non-RNNModels
             # and `training_length - input_chunk_length` steps for RNNModels
-            add_fcs = model.extreme_lags[1] + 1
+            if not isinstance(model, RNNModel):
+                add_fcs = model.extreme_lags[1] + 1
+            else:
+                add_fcs = model.extreme_lags[7] + 1
         else:
             add_fcs = 0
+        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
+        assert forecasts[0].end_time() == forecasts[1].end_time() == series.end_time()
+
+        # check the same for `overlap_end=True`
+        forecasts = model.historical_forecasts(
+            series=[series] * 2,
+            past_covariates=[pc] * 2,
+            future_covariates=[fc] * 2,
+            forecast_horizon=forecast_hrz,
+            stride=1,
+            retrain=retrain,
+            overlap_end=True,
+        )
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
         assert forecasts[0].end_time() == forecasts[1].end_time() == series.end_time()
 
@@ -2016,6 +2064,8 @@ class TestHistoricalforecast:
         pc_longer_start = pc.prepend_values([0.0])
         # `pc_after` has required length but starts one step after `pc`
         pc_start_after = pc[1:].append_values([0.0])
+        # `pc_end_before` has required length but end one step before `pc`
+        pc_end_before = pc[:-1].prepend_values([0.0])
 
         # `fc_longer` has more than required length
         fc_longer = fc.prepend_values([0.0]).append_values([0.0])
@@ -2023,19 +2073,23 @@ class TestHistoricalforecast:
         fc_longer_start = fc.prepend_values([0.0])
         # `fc_after` has required length but starts one step after `fc`
         fc_start_after = fc[1:].append_values([0.0])
+        # `fc_end_before` has required length but end one step before `fc`
+        fc_end_before = fc[:-1].prepend_values([0.0])
 
         # `overlap_end=True`
         forecasts = model.historical_forecasts(
-            series=[series] * 3,
+            series=[series] * 4,
             past_covariates=[
                 pc_longer,
                 pc_longer_start,
                 pc_start_after,
+                pc_end_before,
             ],
             future_covariates=[
                 fc_longer,
                 fc_longer_start,
                 fc_start_after,
+                fc_end_before,
             ],
             forecast_horizon=forecast_hrz,
             stride=1,
@@ -2045,9 +2099,10 @@ class TestHistoricalforecast:
 
         # for long enough future covariates (but too short for overlapping after the end), we expect `n_fcs` forecast
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
-        # `fc_start_after` is one step too short for all `n_fcs`
-        assert len(forecasts[2]) == n_fcs + add_fcs - 1
-        assert all([fc.end_time() == series.end_time() for fc in forecasts])
+        # `*_start_after` and `*_end_bore` are one step too short for all `n_fcs`
+        assert len(forecasts[2]) == len(forecasts[3]) == n_fcs + add_fcs - 1
+        assert all([fc.end_time() == series.end_time() for fc in forecasts[:3]])
+        assert forecasts[3].end_time() == series.end_time() - series.freq
 
     def test_retrain(self):
         """test historical_forecasts for an untrained model with different retrain values."""

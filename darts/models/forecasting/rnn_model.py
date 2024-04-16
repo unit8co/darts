@@ -605,15 +605,15 @@ class RNNModel(DualCovariatesTorchModel):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
-        # output window for training is given by `training_length - icl`
-        output_window = self.training_length - self.input_chunk_length
         return (
             -self.input_chunk_length,
-            output_window,
+            self.output_chunk_length - 1,
             None,
             None,
             -self.input_chunk_length,
-            output_window,
+            self.output_chunk_length - 1,
             self.output_chunk_shift,
+            self.training_length - self.input_chunk_length,
         )
