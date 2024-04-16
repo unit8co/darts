@@ -404,6 +404,7 @@ def _get_historical_forecastable_time_index(
         min_future_cov_lag,
         max_future_cov_lag,
         output_chunk_shift,
+        max_target_lag_train,
     ) = model.extreme_lags
 
     # max_target_lag < 0 are local models which can predict for n (horizon) -> infinity (no auto-regression)
@@ -415,11 +416,17 @@ def _get_historical_forecastable_time_index(
     if min_target_lag is None:
         min_target_lag = 0
 
+    if is_training and max_target_lag_train is not None:
+        # the output lag/window can be different for train and predict modes
+        output_lag = max_target_lag_train
+    else:
+        output_lag = max_target_lag
+
     # longest possible time index for target
     if is_training:
         start = (
             series.start_time()
-            + (max_target_lag - output_chunk_shift - min_target_lag + 1) * series.freq
+            + (output_lag - output_chunk_shift - min_target_lag + 1) * series.freq
         )
     else:
         start = series.start_time() - min_target_lag * series.freq
@@ -432,7 +439,7 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_pc = (
                 past_covariates.start_time()
-                + (max_target_lag - output_chunk_shift - min_past_cov_lag + 1)
+                + (output_lag - output_chunk_shift - min_past_cov_lag + 1)
                 * past_covariates.freq
             )
         else:
@@ -456,7 +463,7 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_fc = (
                 future_covariates.start_time()
-                + (max_target_lag - output_chunk_shift - min_future_cov_lag + 1)
+                + (output_lag - output_chunk_shift - min_future_cov_lag + 1)
                 * future_covariates.freq
             )
         else:
@@ -476,7 +483,7 @@ def _get_historical_forecastable_time_index(
             min([intersect_[1], end_fc]),
         )
 
-    # overlap_end = True -> predictions must not go beyond end of target series
+    # overlap_end = False -> predictions must not go beyond end of target series
     if (
         not overlap_end
         and intersect_[1] + (forecast_horizon + output_chunk_shift - 1) * series.freq
@@ -724,6 +731,7 @@ def _get_historical_forecast_boundaries(
     )
 
     # re-adjust the slicing indexes to account for the lags
+    # `max_target_lag_train` is redundant, since optimized hist fc is running in predict mode only
     (
         min_target_lag,
         _,
@@ -732,6 +740,7 @@ def _get_historical_forecast_boundaries(
         min_future_cov_lag,
         max_future_cov_lag,
         output_chunk_shift,
+        max_target_lag_train,
     ) = model.extreme_lags
 
     # target lags are <= 0

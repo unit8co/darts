@@ -55,6 +55,25 @@ class TestRNNModel:
         dropout=0,
     )
 
+    def test_training_length_input(self):
+        # too small training length
+        with pytest.raises(ValueError) as msg:
+            RNNModel(input_chunk_length=2, training_length=1)
+        assert (
+            str(msg.value)
+            == "`training_length` (1) must be `>=input_chunk_length` (2)."
+        )
+
+        # training_length >= input_chunk_length works
+        model = RNNModel(
+            input_chunk_length=2,
+            training_length=2,
+            n_epochs=1,
+            random_state=42,
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:3])
+
     def test_creation(self):
         # cannot choose any string
         with pytest.raises(ValueError) as msg:
