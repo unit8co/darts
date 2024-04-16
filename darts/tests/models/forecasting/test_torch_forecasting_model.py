@@ -64,7 +64,7 @@ try:
         (NBEATSModel, kwargs),
         (NHiTSModel, kwargs),
         (NLinearModel, kwargs),
-        (RNNModel, {"training_length": 2, **kwargs}),
+        (RNNModel, {"training_length": 10, **kwargs}),
         (TCNModel, kwargs),
         (TFTModel, {"add_relative_index": 2, **kwargs}),
         (TiDEModel, kwargs),
