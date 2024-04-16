@@ -591,7 +591,10 @@ class TestRegressionEnsembleModels:
 
         assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0, None)
 
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_extreme_lags_torch(self):
         # test RNN case which has the 8th extreme lags element (max_target_lag_train)
+        train_n_points = 10
         icl = 20
         ocl = 5
         training_length = 24
