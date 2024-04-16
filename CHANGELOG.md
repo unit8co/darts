@@ -94,6 +94,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `RNNModel`: [#2329](https://github.com/unit8co/darts/pull/2329) by [Dennis Bader](https://github.com/dennisbader).
   - 🔴 Enforce `training_length>input_chunk_length` since otherwise, during training the model is never run for as many iterations as it will during prediction.
   - Historical forecasts now correctly infer all possible prediction start points for untrained and pre-trained `RNNModel`.
+- Other improvements:
+  - Added release notes to the Darts Documentation. [#2333](https://github.com/unit8co/darts/pull/2333) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 - Fixed a bug in `quantile_loss`, where the loss was computed on all samples rather than only on the predicted quantiles. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
