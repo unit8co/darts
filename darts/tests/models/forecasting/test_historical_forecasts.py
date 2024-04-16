@@ -1779,7 +1779,7 @@ class TestHistoricalforecast:
         # `pc_end_before` has required length but end one step before `pc`
         pc_end_before = pc[:-1].prepend_values([0.0])
 
-        # `overlap_end=True`
+        # checks for long enough and shorter covariates
         forecasts = model.historical_forecasts(
             series=[series] * 4,
             past_covariates=[
@@ -1916,7 +1916,7 @@ class TestHistoricalforecast:
         # `fc_end_before` has required length but end one step before `fc`
         fc_end_before = fc[:-1].prepend_values([0.0])
 
-        # `overlap_end=True`
+        # checks for long enough and shorter covariates
         forecasts = model.historical_forecasts(
             series=[series] * 4,
             future_covariates=[
@@ -2076,7 +2076,7 @@ class TestHistoricalforecast:
         # `fc_end_before` has required length but end one step before `fc`
         fc_end_before = fc[:-1].prepend_values([0.0])
 
-        # `overlap_end=True`
+        # checks for long enough and shorter covariates
         forecasts = model.historical_forecasts(
             series=[series] * 4,
             past_covariates=[
