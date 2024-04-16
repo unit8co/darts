@@ -596,7 +596,7 @@ class TestRegressionEnsembleModels:
         ocl = 5
         training_length = 24
         model = RegressionEnsembleModel(
-            forecasting_models=self.get_global_models(ocl, training_length),
+            forecasting_models=self.get_global_models(ocl, icl, training_length),
             regression_train_n_points=train_n_points,
         )
         assert model.extreme_lags == (
