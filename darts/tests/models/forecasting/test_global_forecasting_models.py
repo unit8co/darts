@@ -67,6 +67,7 @@ models_cls_kwargs_errs = [
         RNNModel,
         {
             "model": "RNN",
+            "training_length": IN_LEN + OUT_LEN,
             "hidden_dim": 10,
             "batch_size": 32,
             "n_epochs": 10,
@@ -77,7 +78,7 @@ models_cls_kwargs_errs = [
     (
         RNNModel,
         {
-            "training_length": 12,
+            "training_length": IN_LEN + OUT_LEN,
             "n_epochs": 10,
             "likelihood": GaussianLikelihood(),
             "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],

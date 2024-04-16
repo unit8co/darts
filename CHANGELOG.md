@@ -92,13 +92,17 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `DataTransformer`: [#2267](https://github.com/unit8co/darts/pull/2267) by [Alicja Krzeminska-Sciga](https://github.com/alicjakrzeminska).
   - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series.
 - Improvements to CI, running lint locally via pre-commit instead of particular tools. [#2327](https://github.com/unit8co/darts/pull/2327) by [Jirka Borovec](https://github.com/borda)
+- Improvements to `RNNModel`: [#2329](https://github.com/unit8co/darts/pull/2329) by [Dennis Bader](https://github.com/dennisbader).
+  - 🔴 Enforce `training_length>input_chunk_length` since otherwise, during training the model is never run for as many iterations as it will during prediction.
+  - Historical forecasts now correctly infer all possible prediction start points for untrained and pre-trained `RNNModel`.
 
 **Fixed**
 - Fixed a bug in `quantile_loss`, where the loss was computed on all samples rather than only on the predicted quantiles. [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed type hint warning "Unexpected argument" when calling `historical_forecasts()` caused by the `_with_sanity_checks` decorator. The type hinting is now properly configured to expect any input arguments and return the output type of the method for which the sanity checks are performed for. [#2286](https://github.com/unit8co/darts/pull/2286) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed the order of the features when using component-wise lags so that they are grouped by values, then by components (before, were grouped by components, then by values). [#2272](https://github.com/unit8co/darts/pull/2272) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a segmentation fault that some users were facing when importing a `LightGBMModel`. [#2304](https://github.com/unit8co/darts/pull/2304) by [Dennis Bader](https://github.com/dennisbader).
-- Fixed a bug when using a dropout with a `TorchForecasting` and pytorch lightning versions >= 2.2.0, where the dropout was not properly activated during training. [#2312](https://github.com/unit8co/darts/pull/2312) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug when using a dropout with a `TorchForecastingModel` and pytorch lightning versions >= 2.2.0, where the dropout was not properly activated during training. [#2312](https://github.com/unit8co/darts/pull/2312) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug when performing historical forecasts with an untrained `TorchForecastingModel` and using covariates, where the historical forecastable time index generation did not take the covariates into account. [#2329](https://github.com/unit8co/darts/pull/2329) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
