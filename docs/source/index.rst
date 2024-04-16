@@ -20,11 +20,15 @@
 
    API Reference<generated_api/darts>
 
-
 .. toctree::
    :hidden:
 
    Examples<examples>
+
+.. toctree::
+   :hidden:
+
+   Release Notes<release_notes/RELEASE_NOTES>
 
 
 Indices and tables
