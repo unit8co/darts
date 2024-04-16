@@ -485,11 +485,10 @@ class RNNModel(DualCovariatesTorchModel):
             `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
-        if training_length <= input_chunk_length:
+        if training_length < input_chunk_length:
             raise_log(
                 ValueError(
-                    f"`training_length` ({training_length}) must be larger than "
-                    f"`input_chunk_length` ({input_chunk_length})."
+                    f"`training_length` ({training_length}) must be `>=input_chunk_length` ({input_chunk_length})."
                 ),
                 logger=logger,
             )
