@@ -29,7 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - Time aggregated metric `merr()` (Mean Error)
       - Time aggregated scaled metrics  `rmsse()`, and `msse()` : The (Root) Mean Squared Scaled Error.
       - "Per time step" metrics that return a metric score per time step: `err()` (Error), `ae()` (Absolute Error), `se()` (Squared Error), `sle()` (Squared Log Error), `ase()` (Absolute Scaled Error), `sse` (Squared Scaled Error), `ape()` (Absolute Percentage Error), `sape()` (symmetric Absolute Percentage Error), `arre()` (Absolute Ranged Relative Error), `ql` (Quantile Loss)
-    - All scaled metrics (`mase()`, ...) now accept `insample` series that can be overlapping into `pred_series` (before they had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you.  
+    - All scaled metrics (`mase()`, ...) now accept `insample` series that can be overlapping into `pred_series` (before they had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you.
     - Improvements to the documentation:
       - Added a summary list of all metrics to the [metrics documentation page](https://unit8co.github.io/darts/generated_api/darts.metrics.html)
       - Standardized the documentation of each metric (added formula, improved return documentation, ...)
@@ -50,7 +50,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - 🔴 Improved historical forecasts output consistency based on the type of input `series` : If `series` is a sequence, historical forecasts will now always return a sequence/list of the same length (instead of trying to reduce to a `TimeSeries` object). You can find a detailed description in the [historical forecasts API documentation](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.historical_forecasts).
   - **Backtest**:
     - Metrics are now computed only once on all `series` and `historical_forecasts`, significantly speeding things up when using a large number of `series`.
-    - Added support for scaled metrics as `metric` (such as `ase`, `mase`, ...). No extra code required, backtest extracts the correct `insample` series for you.   
+    - Added support for scaled metrics as `metric` (such as `ase`, `mase`, ...). No extra code required, backtest extracts the correct `insample` series for you.
     - Added support for passing additional metric (-specific) arguments with parameter `metric_kwargs`. This allows for example to parallelize the metric computation with `n_jobs`, customize the metric reduction with `*_reduction`, specify seasonality `m` for scaled metrics, etc.
     - 🔴 Breaking changes:
       - Improved backtest output consistency based on the type of input `series`, `historical_forecast`, and the applied backtest reduction. For some scenarios, the output type changed compared to previous Darts versions. You can find a detailed description in the [backtest API documentation](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.backtest).
@@ -106,8 +106,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - Additional boosts for `from_group_dataframe()` by performing some of the heavy-duty computations on the entire DataFrame, rather than iteratively on the group level.
   - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 - 🚀 New global baseline models that use fixed input and output chunks for prediction. This offers support for univariate, multivariate, single and multiple target series prediction, one-shot- or autoregressive/moving forecasts, optimized historical forecasts, batch prediction, prediction from datasets, and more. [#2261](https://github.com/unit8co/darts/pull/2261) by [Dennis Bader](https://github.com/dennisbader).
-  - `GlobalNaiveAggregate` : Computes an aggregate (using a custom or built-in `torch` function) for each target component over the last `input_chunk_length` points, and repeats the values `output_chunk_length` times for prediction. Depending on the parameters, this model can be equivalent to `NaiveMean` and `NaiveMovingAverage`. 
-  - `GlobalNaiveDrift` : Takes the slope of each target component over the last `input_chunk_length` points and projects the trend over the next `output_chunk_length` points for prediction. Depending on the parameters, this model can be equivalent to `NaiveDrift`. 
+  - `GlobalNaiveAggregate` : Computes an aggregate (using a custom or built-in `torch` function) for each target component over the last `input_chunk_length` points, and repeats the values `output_chunk_length` times for prediction. Depending on the parameters, this model can be equivalent to `NaiveMean` and `NaiveMovingAverage`.
+  - `GlobalNaiveDrift` : Takes the slope of each target component over the last `input_chunk_length` points and projects the trend over the next `output_chunk_length` points for prediction. Depending on the parameters, this model can be equivalent to `NaiveDrift`.
   - `GlobalNaiveSeasonal` : Takes the target component value at the `input_chunk_length`th point before the end of the target `series`, and repeats the values `output_chunk_length` times for prediction. Depending on the parameters, this model can be equivalent to `NaiveSeasonal`.
 - Improvements to `TorchForecastingModel` :
   - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
@@ -212,10 +212,10 @@ No changes.
 - Improvements to `EnsembleModel`, [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou) and [Dennis Bader](https://github.com/dennisbader):
   - 🔴 Renamed model constructor argument `models` to `forecasting_models`.
   - 🚀🚀 Added support for pre-trained `GlobalForecastingModel` as `forecasting_models` to avoid re-training when ensembling. This requires all models to be pre-trained global models.
-  - 🚀 Added support for generating the `forecasting_model` forecasts (used to train the ensemble model) with historical forecasts rather than direct (auto-regressive) predictions. Enable it with `train_using_historical_forecasts=True` at model creation. 
+  - 🚀 Added support for generating the `forecasting_model` forecasts (used to train the ensemble model) with historical forecasts rather than direct (auto-regressive) predictions. Enable it with `train_using_historical_forecasts=True` at model creation.
   - Added an example notebook for ensemble models.
 - Improvements to historical forecasts, backtest and gridsearch, [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou):
-  - Added support for negative `start` values to start historical forecasts relative to the end of the target series. 
+  - Added support for negative `start` values to start historical forecasts relative to the end of the target series.
   - Added a new argument `start_format` that allows to use an integer `start` either as the index position or index value/label for `series` indexed with a `pd.RangeIndex`.
   - Added support for `TimeSeries` with a `RangeIndex` starting at a negative integer.
 - Other improvements:
