@@ -91,7 +91,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added a progress bar when performing optimized historical forecasts (`retrain=False` and no autoregression) to display the series-level progress.
 - Improvements to `DataTransformer`: [#2267](https://github.com/unit8co/darts/pull/2267) by [Alicja Krzeminska-Sciga](https://github.com/alicjakrzeminska).
   - `InvertibleDataTransformer` now supports parallelized inverse transformation for `series` being a list of lists of `TimeSeries` (`Sequence[Sequence[TimeSeries]]`). This `series` type represents for example the output from `historical_forecasts()` when using multiple series.
-- Improvements to CI, running lint locally via pre-commit instead of particular tools. [#2327](https://github.com/unit8co/darts/pull/2327) by [Jirka Borovec](https://github.com/borda)
+- Other improvements:
+  - Added release notes to the Darts Documentation. [#2333](https://github.com/unit8co/darts/pull/2333) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `RNNModel`: [#2329](https://github.com/unit8co/darts/pull/2329) by [Dennis Bader](https://github.com/dennisbader).
   - 🔴 Enforce `training_length>input_chunk_length` since otherwise, during training the model is never run for as many iterations as it will during prediction.
   - Historical forecasts now correctly infer all possible prediction start points for untrained and pre-trained `RNNModel`.
@@ -110,6 +111,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed failing docs build by adding new dependency `lxml_html_clean` for `nbsphinx`. [#2303](https://github.com/unit8co/darts/pull/2303) by [Dennis Bader](https://github.com/dennisbader).
 - Bumped `black` from 24.1.1 to 24.3.0. [#2308](https://github.com/unit8co/darts/pull/2308) by [Dennis Bader](https://github.com/dennisbader).
 - Bumped `codecov-action` from v2 to v4 and added codecov token as repository secret for codecov upload authentication in CI pipelines. [#2309](https://github.com/unit8co/darts/pull/2309) and [#2312](https://github.com/unit8co/darts/pull/2312) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to linting, switch from `flake8` to Ruff: [#2323](https://github.com/unit8co/darts/pull/2323) by [Jirka Borovec](https://github.com/borda).
+- Improvements to CI, running lint locally via pre-commit instead of particular tools. [#2327](https://github.com/unit8co/darts/pull/2327) by [Jirka Borovec](https://github.com/borda)
 
 ## [0.28.0](https://github.com/unit8co/darts/tree/0.28.0) (2024-03-05)
 ### For users of the library:
