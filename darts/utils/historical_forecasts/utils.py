@@ -168,8 +168,9 @@ def _historical_forecasts_general_checks(model, series, kwargs):
 
             # check that overlap_end and start together form a valid combination
             overlap_end = n.overlap_end
-            if not overlap_end and not (
-                start + (series_.freq * (n.forecast_horizon - 1)) in series_
+            if (
+                not overlap_end
+                and start + (series_.freq * (n.forecast_horizon - 1)) not in series_
             ):
                 raise_log(
                     ValueError(
