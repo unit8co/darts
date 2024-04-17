@@ -327,7 +327,7 @@ loaded_model.to_cpu()
 To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
 
 ```python
-# model with identical architecture but different optimizer (default: torch.optim.Adam) 
+# model with identical architecture but different optimizer (default: torch.optim.Adam)
 model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & values as in original model
                                            optimizer_cls=torch.optim.SGD,
                                            optimizer_kwargs={"lr": 0.001})
@@ -366,8 +366,8 @@ The code is triggered once the process execution reaches the corresponding hooks
 Some useful predefined PyTorch Lightning callbacks can be found [here](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks).
 
 #### Example with Early Stopping
-Early stopping is an efficient way to avoid overfitting and reduce training time. 
-It will exit the training process once the validation loss has not significantly improved over some epochs.   
+Early stopping is an efficient way to avoid overfitting and reduce training time.
+It will exit the training process once the validation loss has not significantly improved over some epochs.
 
 You can use Early Stopping with any `TorchForecastingModel`, leveraging PyTorch Lightning's [EarlyStopping](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.EarlyStopping.html#lightning.pytorch.callbacks.EarlyStopping) callback:
 ```python
@@ -568,5 +568,3 @@ We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 0           | 41s            |
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 2           | 31s            |
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 4           | 31s            |
-
-

@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 **Dependencies**
+- Improvements to linting via updated pre-commit configurations: [#2324](https://github.com/unit8co/darts/pull/2324) by [Jirka Borovec](https://github.com/borda).
+
 
 ### For developers of the library:
 
@@ -27,7 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - Time aggregated metric `merr()` (Mean Error)
       - Time aggregated scaled metrics  `rmsse()`, and `msse()` : The (Root) Mean Squared Scaled Error.
       - "Per time step" metrics that return a metric score per time step: `err()` (Error), `ae()` (Absolute Error), `se()` (Squared Error), `sle()` (Squared Log Error), `ase()` (Absolute Scaled Error), `sse` (Squared Scaled Error), `ape()` (Absolute Percentage Error), `sape()` (symmetric Absolute Percentage Error), `arre()` (Absolute Ranged Relative Error), `ql` (Quantile Loss)
-    - All scaled metrics (`mase()`, ...) now accept `insample` series that can be overlapping into `pred_series` (before they had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you.  
+    - All scaled metrics (`mase()`, ...) now accept `insample` series that can be overlapping into `pred_series` (before they had to end exactly one step before `pred_series`).  Darts will handle the correct time extraction for you.
     - Improvements to the documentation:
       - Added a summary list of all metrics to the [metrics documentation page](https://unit8co.github.io/darts/generated_api/darts.metrics.html)
       - Standardized the documentation of each metric (added formula, improved return documentation, ...)
@@ -48,7 +50,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - 🔴 Improved historical forecasts output consistency based on the type of input `series` : If `series` is a sequence, historical forecasts will now always return a sequence/list of the same length (instead of trying to reduce to a `TimeSeries` object). You can find a detailed description in the [historical forecasts API documentation](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.historical_forecasts).
   - **Backtest**:
     - Metrics are now computed only once on all `series` and `historical_forecasts`, significantly speeding things up when using a large number of `series`.
-    - Added support for scaled metrics as `metric` (such as `ase`, `mase`, ...). No extra code required, backtest extracts the correct `insample` series for you.   
+    - Added support for scaled metrics as `metric` (such as `ase`, `mase`, ...). No extra code required, backtest extracts the correct `insample` series for you.
     - Added support for passing additional metric (-specific) arguments with parameter `metric_kwargs`. This allows for example to parallelize the metric computation with `n_jobs`, customize the metric reduction with `*_reduction`, specify seasonality `m` for scaled metrics, etc.
     - 🔴 Breaking changes:
       - Improved backtest output consistency based on the type of input `series`, `historical_forecast`, and the applied backtest reduction. For some scenarios, the output type changed compared to previous Darts versions. You can find a detailed description in the [backtest API documentation](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.backtest).
@@ -99,13 +101,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🚀🚀🚀 All global models (regression and torch models) now support shifted predictions with model creation parameter `output_chunk_shift`. This will shift the output chunk for training and prediction by `output_chunk_shift` steps into the future. [#2176](https://github.com/unit8co/darts/pull/2176) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `TimeSeries`, [#2196](https://github.com/unit8co/darts/pull/2196) by [Dennis Bader](https://github.com/dennisbader):
   - 🚀🚀🚀 Significant performance boosts for several `TimeSeries` methods resulting increased efficiency across the entire `Darts` library. Up to 2x faster creation times for series indexed with "regular" frequencies (e.g. Daily, hourly, ...), and >100x for series indexed with "special" frequencies (e.g. "W-MON", ...). Affects:
-    - All `TimeSeries` creation methods     
+    - All `TimeSeries` creation methods
     - Additional boosts for slicing with integers and Timestamps
     - Additional boosts for `from_group_dataframe()` by performing some of the heavy-duty computations on the entire DataFrame, rather than iteratively on the group level.
   - Added option to exclude some `group_cols` from being added as static covariates when using `TimeSeries.from_group_dataframe()` with parameter `drop_group_cols`.
 - 🚀 New global baseline models that use fixed input and output chunks for prediction. This offers support for univariate, multivariate, single and multiple target series prediction, one-shot- or autoregressive/moving forecasts, optimized historical forecasts, batch prediction, prediction from datasets, and more. [#2261](https://github.com/unit8co/darts/pull/2261) by [Dennis Bader](https://github.com/dennisbader).
-  - `GlobalNaiveAggregate` : Computes an aggregate (using a custom or built-in `torch` function) for each target component over the last `input_chunk_length` points, and repeats the values `output_chunk_length` times for prediction. Depending on the parameters, this model can be equivalent to `NaiveMean` and `NaiveMovingAverage`. 
-  - `GlobalNaiveDrift` : Takes the slope of each target component over the last `input_chunk_length` points and projects the trend over the next `output_chunk_length` points for prediction. Depending on the parameters, this model can be equivalent to `NaiveDrift`. 
+  - `GlobalNaiveAggregate` : Computes an aggregate (using a custom or built-in `torch` function) for each target component over the last `input_chunk_length` points, and repeats the values `output_chunk_length` times for prediction. Depending on the parameters, this model can be equivalent to `NaiveMean` and `NaiveMovingAverage`.
+  - `GlobalNaiveDrift` : Takes the slope of each target component over the last `input_chunk_length` points and projects the trend over the next `output_chunk_length` points for prediction. Depending on the parameters, this model can be equivalent to `NaiveDrift`.
   - `GlobalNaiveSeasonal` : Takes the target component value at the `input_chunk_length`th point before the end of the target `series`, and repeats the values `output_chunk_length` times for prediction. Depending on the parameters, this model can be equivalent to `NaiveSeasonal`.
 - Improvements to `TorchForecastingModel` :
   - Added support for additional lr scheduler configuration parameters for more control ("interval", "frequency", "monitor", "strict", "name"). [#2218](https://github.com/unit8co/darts/pull/2218) by [Dennis Bader](https://github.com/dennisbader).
@@ -210,10 +212,10 @@ No changes.
 - Improvements to `EnsembleModel`, [#1815](https://github.com/unit8co/darts/pull/#1815) by [Antoine Madrona](https://github.com/madtoinou) and [Dennis Bader](https://github.com/dennisbader):
   - 🔴 Renamed model constructor argument `models` to `forecasting_models`.
   - 🚀🚀 Added support for pre-trained `GlobalForecastingModel` as `forecasting_models` to avoid re-training when ensembling. This requires all models to be pre-trained global models.
-  - 🚀 Added support for generating the `forecasting_model` forecasts (used to train the ensemble model) with historical forecasts rather than direct (auto-regressive) predictions. Enable it with `train_using_historical_forecasts=True` at model creation. 
+  - 🚀 Added support for generating the `forecasting_model` forecasts (used to train the ensemble model) with historical forecasts rather than direct (auto-regressive) predictions. Enable it with `train_using_historical_forecasts=True` at model creation.
   - Added an example notebook for ensemble models.
 - Improvements to historical forecasts, backtest and gridsearch, [#1866](https://github.com/unit8co/darts/pull/1866) by [Antoine Madrona](https://github.com/madtoinou):
-  - Added support for negative `start` values to start historical forecasts relative to the end of the target series. 
+  - Added support for negative `start` values to start historical forecasts relative to the end of the target series.
   - Added a new argument `start_format` that allows to use an integer `start` either as the index position or index value/label for `series` indexed with a `pd.RangeIndex`.
   - Added support for `TimeSeries` with a `RangeIndex` starting at a negative integer.
 - Other improvements:
@@ -241,7 +243,7 @@ No changes.
 **Installation**
 - 🔴 Removed Prophet, LightGBM, and CatBoost dependencies from PyPI packages (`darts`, `u8darts`, `u8darts[torch]`), and conda-forge packages (`u8darts`, `u8darts-torch`)  to avoid installation issues that some users were facing (installation on Apple M1/M2 devices, ...). [#1589](https://github.com/unit8co/darts/pull/1589) by [Julien Herzen](https://github.com/hrzn) and [Dennis Bader](https://github.com/dennisbader).
   - The models are still supported by installing the required packages as described in our [installation guide](https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-optional-dependencies).
-  - The Darts package including all dependencies can still be installed with PyPI package `u8darts[all]` or conda-forge package `u8darts-all`. 
+  - The Darts package including all dependencies can still be installed with PyPI package `u8darts[all]` or conda-forge package `u8darts-all`.
   - Added new PyPI flavor `u8darts[notorch]`, and conda-forge flavor `u8darts-notorch` which are equivalent to the old `u8darts` installation (all dependencies except neural networks).
 - 🔴 Removed support for Python 3.7 [#1864](https://github.com/unit8co/darts/pull/1864) by [Dennis Bader](https://github.com/dennisbader).
 
@@ -296,7 +298,7 @@ No changes.
   - New baseline forecasting model `NaiveMovingAverage`. [#1557](https://github.com/unit8co/darts/pull/1557) by [Janek Fidor](https://github.com/JanFidor).
   - New models `StatsForecastAutoCES`, and `StatsForecastAutoTheta` from Nixtla's statsforecasts library as local forecasting models without covariates support. AutoTheta supports probabilistic forecasts. [#1476](https://github.com/unit8co/darts/pull/1476) by [Boyd Biersteker](https://github.com/Beerstabr).
   - Added support for future covariates, and probabilistic forecasts to `StatsForecastAutoETS`. [#1476](https://github.com/unit8co/darts/pull/1476) by [Boyd Biersteker](https://github.com/Beerstabr).
-  - Added support for logistic growth to `Prophet` with parameters `growth`, `cap`, `floor`. [#1419](https://github.com/unit8co/darts/pull/1419) by [David Kleindienst](https://github.com/DavidKleindienst). 
+  - Added support for logistic growth to `Prophet` with parameters `growth`, `cap`, `floor`. [#1419](https://github.com/unit8co/darts/pull/1419) by [David Kleindienst](https://github.com/DavidKleindienst).
   - Improved the model string / object representation style similar to scikit-learn models. [#1590](https://github.com/unit8co/darts/pull/1590) by [Janek Fidor](https://github.com/JanFidor).
   - 🔴 Renamed `MovingAverage` to `MovingAverageFilter` to avoid confusion with new `NaiveMovingAverage` model. [#1557](https://github.com/unit8co/darts/pull/1557) by [Janek Fidor](https://github.com/JanFidor).
 - Improvements to `RegressionModel` :
@@ -541,7 +543,7 @@ Patch release
 - Improved user guide with more sections. [#905](https://github.com/unit8co/darts/pull/905)
   by [Julien Herzen](https://github.com/hrzn).
 - New notebook showcasing transfer learning and training forecasting models on large time
-  series datasets. [#885](https://github.com/unit8co/darts/pull/885) 
+  series datasets. [#885](https://github.com/unit8co/darts/pull/885)
   by [Julien Herzen](https://github.com/hrzn).
 
 
@@ -554,7 +556,7 @@ Patch release
 
 **Improved**
 - `LinearRegressionModel` and `LightGBMModel` can now be probabilistic, supporting quantile
-  and poisson regression. [#831](https://github.com/unit8co/darts/pull/831), 
+  and poisson regression. [#831](https://github.com/unit8co/darts/pull/831),
   [#853](https://github.com/unit8co/darts/pull/853) by [Gian Wiher](https://github.com/gnwhr).
 - New models: `BATS` and `TBATS`, based on [tbats](https://github.com/intive-DataScience/tbats).
   [#816](https://github.com/unit8co/darts/pull/816) by [Julien Herzen](https://github.com/hrzn).
@@ -564,7 +566,7 @@ Patch release
   by [@gsamaras](https://github.com/gsamaras).
 - Added train and validation loss to PyTorch Lightning progress bar.
   [#825](https://github.com/unit8co/darts/pull/825) by [Dennis Bader](https://github.com/dennisbader).
-- More losses available in `darts.utils.losses` for PyTorch-based models: 
+- More losses available in `darts.utils.losses` for PyTorch-based models:
   `SmapeLoss`, `MapeLoss` and `MAELoss`. [#845](https://github.com/unit8co/darts/pull/845)
   by [Julien Herzen](https://github.com/hrzn).
 - Improvement to the seasonal decomposition [#862](https://github.com/unit8co/darts/pull/862).
@@ -595,7 +597,7 @@ Patch release
   by [Dennis Bader](https://github.com/dennisbader).
 - Fixed an issue with the periodic basis functions of N-BEATS. [#804](https://github.com/unit8co/darts/pull/804)
   by [Vladimir Chernykh](https://github.com/vladimir-chernykh).
-- Relaxed requirements for `pandas`; from `pandas>=1.1.0` to `pandas>=1.0.5`. 
+- Relaxed requirements for `pandas`; from `pandas>=1.1.0` to `pandas>=1.0.5`.
   [#800](https://github.com/unit8co/darts/pull/800) by [@adelnick](https://github.com/adelnick).
 
 
@@ -629,7 +631,7 @@ Patch release
 
 
 **Fixed**
-- Fixed an issue with tensorboard and gridsearch when `model_name` is provided. 
+- Fixed an issue with tensorboard and gridsearch when `model_name` is provided.
   [#759](https://github.com/unit8co/darts/issues/759) by [@gdevos010](https://github.com/gdevos010).
 - Fixed issues with pip-tools. [#762](https://github.com/unit8co/darts/pull/762)
   by [Tomas Van Pottelbergh](https://github.com/tomasvanpottelbergh).
