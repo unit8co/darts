@@ -400,9 +400,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
                     ValueError(
                         "Error when building the optimizer or learning rate scheduler;"
                         "please check the provided class and arguments"
-                        "\nclass: {}"
-                        "\narguments (kwargs): {}"
-                        "\nerror:\n{}".format(cls, kws, e)
+                        f"\nclass: {cls}"
+                        f"\narguments (kwargs): {kws}"
+                        f"\nerror:\n{e}"
                     ),
                     logger,
                 )
