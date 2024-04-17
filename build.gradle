@@ -107,11 +107,6 @@ task lint_ruff(type: Exec) {
     commandLine "ruff", "check"
 }
 
-task lint_isort(type: Exec) {
-    dependsOn pip_dev
-    commandLine "isort", "--check", "."
-}
-
 task lint {
     dependsOn lint_black, lint_ruff, lint_isort
 }
