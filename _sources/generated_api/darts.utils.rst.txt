@@ -18,4 +18,5 @@
         darts.utils.statistics
         darts.utils.timeseries_generation
         darts.utils.torch
+        darts.utils.ts_utils
         darts.utils.utils

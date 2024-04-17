@@ -570,6 +570,12 @@ on bringing more models and features.
      - 🟩 🟩 🟩
      - 🟩 🟩
      - 🟩
+   * - `TSMixerModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tsmixer_model.html#darts.models.forecasting.tsmixer_model.TSMixerModel>`_
+     - `TSMixer paper <https://arxiv.org/pdf/2303.06053.pdf>`_\ , `PyTorch Implementation <https://github.com/ditschuk/pytorch-tsmixer>`_
+     - 🟩 🟩
+     - 🟩 🟩 🟩
+     - 🟩 🟩
+     - 🟩
    * - **Ensemble Models**\ :raw-html-m2r:`<br/>`\ (\ `GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_\ ): Model support is dependent on ensembled forecasting models and the ensemble model itself
      - 
      - 

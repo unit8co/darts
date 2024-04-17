@@ -106,6 +106,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -695,6 +701,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.varima.html">
        VARIMA
       </a>
@@ -788,6 +799,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.torch.html">
      Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
     </a>
    </li>
    <li class="toctree-l2">
@@ -1047,7 +1063,7 @@ components of the underlying <cite>series</cite> the transform should be fitted 
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.inverse_transform">
 <span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.inverse_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inverse transforms a (sequence of) series by calling the user-implemented <cite>ts_inverse_transform</cite> method.</p>
-<p>In case a sequence is passed as input data, this function takes care of parallelising the
+<p>In case a sequence or list of lists is passed as input data, this function takes care of parallelising the
 transformation of multiple series in the sequence at the same time. Additionally,
 if the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>InvertibleDataTransformer</cite>,
 then any provided <cite>component_mask`s will be automatically applied to each input `TimeSeries</cite>;
@@ -1056,7 +1072,14 @@ please refer to ‘Notes’ for further details on component masking.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series be inverse-transformed.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]]) – The series to inverse-transform.
+If a single <cite>TimeSeries</cite>, returns a single series.
+If a sequence of <cite>TimeSeries</cite>, returns a list of series. The series should be in the same order as the
+sequence used to fit the transformer.
+If a list of lists of <cite>TimeSeries</cite>, returns a list of lists of series. This can for example be the output
+of <cite>ForecastingModel.historical_forecasts()</cite> when using multiple series. Each inner list should contain
+<cite>TimeSeries</cite> related to the same series. The order of inner lists should be the same as the sequence used
+to fit the transformer.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
 <li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies
 which components of the underlying <cite>series</cite> the inverse transform should consider.</p></li>
@@ -1067,7 +1090,7 @@ which components of the underlying <cite>series</cite> the inverse transform sho
 <dd class="field-even"><p>Inverse transformed data.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>], List[List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]]</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>

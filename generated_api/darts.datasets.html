@@ -106,6 +106,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -695,6 +701,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.varima.html">
        VARIMA
       </a>
@@ -788,6 +799,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.torch.html">
      Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
     </a>
    </li>
    <li class="toctree-l2">
@@ -1308,7 +1324,8 @@ one for each household.</p>
 </table>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</p>
+<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+Default is True.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
@@ -1391,8 +1408,9 @@ Downloads the dataset if it is not present already</p>
 <dt class="sig sig-object py" id="darts.datasets.ExchangeRateDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ExchangeRateDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#ExchangeRateDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ExchangeRateDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
-<p>The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada, Switzerland, China, Japan, New Zealand,
-and Singapore, ranging from 1990 to 2016. Unfortunately, there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.
+<p>The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada,
+Switzerland, China, Japan, New Zealand, and Singapore, ranging from 1990 to 2016. Unfortunately,
+there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.
 Source: <a class="reference internal" href="#r6ab25be89118-1" id="id15">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
@@ -1414,7 +1432,8 @@ Source: <a class="reference internal" href="#r6ab25be89118-1" id="id15">[1]</a><
 </table>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</p>
+<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+Default is True.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
@@ -1543,15 +1562,27 @@ weekly data from the Centers for Disease Control and Prevention of the United St
 Source: <a class="reference internal" href="#ree20fb22807f-1" id="id17">[1]</a> <a class="reference internal" href="#ree20fb22807f-2" id="id18">[2]</a> <a class="reference internal" href="#ree20fb22807f-3" id="id19">[3]</a> <a class="reference internal" href="#ree20fb22807f-4" id="id20">[4]</a></p>
 <p>Components Descriptions:</p>
 <ul class="simple">
-<li><p>% WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week weighted by state population</p></li>
-<li><p>% UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week unweighted by state population</p></li>
+<li><dl class="simple">
+<dt>% WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week</dt><dd><p>weighted by state population</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>% UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each</dt><dd><p>week unweighted by state population</p>
+</dd>
+</dl>
+</li>
 <li><p>AGE 0-4: Number of patients between 0 and 4 years of age</p></li>
 <li><p>AGE 25-49: Number of patients between 25 and 49 years of age</p></li>
 <li><p>AGE 25-64: Number of patients between 25 and 64 years of age</p></li>
 <li><p>AGE 5-24: Number of patients between 5 and 24 years of age</p></li>
 <li><p>AGE 50-64: Number of patients between 50 and 64 years of age</p></li>
 <li><p>AGE 65: Number of patients above (&gt;=65) 65 years of age</p></li>
-<li><p>ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C] or greater) and a cough and/or a sore throat</p></li>
+<li><dl class="simple">
+<dt>ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C]</dt><dd><p>or greater) and a cough and/or a sore throat</p>
+</dd>
+</dl>
+</li>
 <li><p>NUM. OF PROVIDERS: Number of outpatient healthcare providers</p></li>
 <li><p>TOTAL PATIENTS: Total number of patients</p></li>
 </ul>
@@ -1850,8 +1881,9 @@ Downloads the dataset if it is not present already</p>
 <dt class="sig sig-object py" id="darts.datasets.TrafficDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TrafficDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#TrafficDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TrafficDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
-<p>The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department of Transportation. The data describes
-the road occupancy rates (between 0 and 1) measured by 862 different sensors on San Francisco Bay area freeways. The raw data is in <a class="reference external" href="http://pems.dot.ca.gov">http://pems.dot.ca.gov</a>.
+<p>The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department
+of Transportation. The data describes the road occupancy rates (between 0 and 1) measured by 862 different sensors
+on San Francisco Bay area freeways. The raw data is in <a class="reference external" href="http://pems.dot.ca.gov">http://pems.dot.ca.gov</a>.
 Source: <a class="reference internal" href="#r860edad1c9c7-1" id="id24">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
@@ -1873,7 +1905,8 @@ Source: <a class="reference internal" href="#r860edad1c9c7-1" id="id24">[1]</a><
 </table>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</p>
+<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+Default is True.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
@@ -1984,7 +2017,8 @@ one for each locationID.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>sample_freq</strong> (<em>str</em>) – The sampling frequency of the data. Can be “hourly” or “daily”. Default is “hourly”.</p></li>
-<li><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</p></li>
+<li><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+Default is True.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2051,7 +2085,8 @@ Source: <a class="reference internal" href="#r8a946e6db2bc-1" id="id27">[1]</a> 
 </table>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</p>
+<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+Default is True.</p>
 </dd>
 </dl>
 <p class="rubric">Methods</p>

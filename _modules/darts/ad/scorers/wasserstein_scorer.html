@@ -103,6 +103,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -276,7 +282,7 @@
         <span class="c1">#     only one sample</span>
         <span class="c1">#     - check if there is an equivalent Wasserstein distance for d-D distributions (currently only accepts 1D)</span>
 
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>  <span class="c1"># noqa: E721</span>
             <span class="k">if</span> <span class="n">window</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">window</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;The `window` parameter WassersteinScorer is smaller than 10 (w=</span><span class="si">{</span><span class="n">window</span><span class="si">}</span><span class="s2">).&quot;</span>
@@ -289,7 +295,7 @@
                 <span class="p">)</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">type</span><span class="p">(</span><span class="n">component_wise</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="nb">type</span><span class="p">(</span><span class="n">component_wise</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">,</span>  <span class="c1"># noqa: E721</span>
             <span class="sa">f</span><span class="s2">&quot;Parameter `component_wise` must be Boolean, found type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">component_wise</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">component_wise</span> <span class="o">=</span> <span class="n">component_wise</span>

@@ -220,6 +220,12 @@ Each Torch Forecasting Model inherits from one ``{X}CovariatesModel`` (covariate
      - 
      - 
      - ✅
+   * - ``TSMixerModel``
+     - 
+     - 
+     - 
+     - 
+     - ✅
 
 
 **Table 2: Darts' Torch Forecasting Model covariate support**

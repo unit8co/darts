@@ -103,6 +103,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -211,7 +217,7 @@
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.utils.data.tabularization</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">add_static_covariates_to_lagged_data</span><span class="p">,</span>
+    <span class="n">_create_lagged_data_autoregression</span><span class="p">,</span>
     <span class="n">create_lagged_component_names</span><span class="p">,</span>
     <span class="n">create_lagged_training_data</span><span class="p">,</span>
 <span class="p">)</span>
@@ -222,12 +228,8 @@
     <span class="n">_process_historical_forecast_input</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.utils.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">_check_quantiles</span><span class="p">,</span>
-    <span class="n">get_single_series</span><span class="p">,</span>
-    <span class="n">seq2series</span><span class="p">,</span>
-    <span class="n">series2seq</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">get_single_series</span><span class="p">,</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_check_quantiles</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -621,6 +623,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="nb">int</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
         <span class="n">min_target_lag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">max_target_lag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span>
@@ -636,6 +639,7 @@
             <span class="n">min_future_cov_lag</span><span class="p">,</span>
             <span class="n">max_future_cov_lag</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+            <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -1191,83 +1195,25 @@
                 <span class="n">last_step_shift</span> <span class="o">=</span> <span class="n">t_pred</span> <span class="o">-</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">step</span><span class="p">)</span>
                 <span class="n">t_pred</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="n">step</span>
 
-            <span class="n">np_X</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="c1"># retrieve target lags</span>
-            <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">predictions</span><span class="p">:</span>
-                    <span class="n">series_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-                        <span class="p">[</span><span class="n">series_matrix</span><span class="p">,</span> <span class="n">predictions</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
-                    <span class="p">)</span>
-                <span class="c1"># component-wise lags</span>
-                <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span><span class="p">:</span>
-                    <span class="n">tmp_X</span> <span class="o">=</span> <span class="p">[</span>
-                        <span class="n">series_matrix</span><span class="p">[</span>
-                            <span class="p">:,</span>
-                            <span class="p">[</span><span class="n">lag</span> <span class="o">-</span> <span class="p">(</span><span class="n">shift</span> <span class="o">+</span> <span class="n">last_step_shift</span><span class="p">)</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">comp_lags</span><span class="p">],</span>
-                            <span class="n">comp_i</span><span class="p">,</span>
-                        <span class="p">]</span>
-                        <span class="k">for</span> <span class="n">comp_i</span><span class="p">,</span> <span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">comp_lags</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                        <span class="p">)</span>
-                    <span class="p">]</span>
-                    <span class="c1"># values are grouped by component</span>
-                    <span class="n">np_X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">tmp_X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
-                            <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_samples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
-                        <span class="p">)</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># values are grouped by lags</span>
-                    <span class="n">np_X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="n">series_matrix</span><span class="p">[</span>
-                            <span class="p">:,</span>
-                            <span class="p">[</span>
-                                <span class="n">lag</span> <span class="o">-</span> <span class="p">(</span><span class="n">shift</span> <span class="o">+</span> <span class="n">last_step_shift</span><span class="p">)</span>
-                                <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span>
-                            <span class="p">],</span>
-                        <span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_samples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-                    <span class="p">)</span>
-            <span class="c1"># retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)</span>
-            <span class="k">for</span> <span class="n">cov_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;past&quot;</span><span class="p">,</span> <span class="s2">&quot;future&quot;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">cov_type</span> <span class="ow">in</span> <span class="n">covariate_matrices</span><span class="p">:</span>
-                    <span class="c1"># component-wise lags</span>
-                    <span class="k">if</span> <span class="n">cov_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span><span class="p">:</span>
-                        <span class="n">tmp_X</span> <span class="o">=</span> <span class="p">[</span>
-                            <span class="n">covariate_matrices</span><span class="p">[</span><span class="n">cov_type</span><span class="p">][</span>
-                                <span class="p">:,</span>
-                                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">comp_lags</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="n">cov_type</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">t_pred</span><span class="p">,</span>
-                                <span class="n">comp_i</span><span class="p">,</span>
-                            <span class="p">]</span>
-                            <span class="k">for</span> <span class="n">comp_i</span><span class="p">,</span> <span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">comp_lags</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span><span class="p">[</span><span class="n">cov_type</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                            <span class="p">)</span>
-                        <span class="p">]</span>
-                        <span class="n">np_X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                            <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">tmp_X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
-                                <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_samples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
-                            <span class="p">)</span>
-                        <span class="p">)</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">np_X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                            <span class="n">covariate_matrices</span><span class="p">[</span><span class="n">cov_type</span><span class="p">][</span>
-                                <span class="p">:,</span> <span class="n">relative_cov_lags</span><span class="p">[</span><span class="n">cov_type</span><span class="p">]</span> <span class="o">+</span> <span class="n">t_pred</span>
-                            <span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_samples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-                        <span class="p">)</span>
+            <span class="c1"># concatenate previous iteration forecasts</span>
+            <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="ow">and</span> <span class="n">predictions</span><span class="p">:</span>
+                <span class="n">series_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">series_matrix</span><span class="p">,</span> <span class="n">predictions</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-            <span class="c1"># concatenate retrieved lags</span>
-            <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">np_X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="c1"># Need to split up `X` into three equally-sized sub-blocks</span>
-            <span class="c1"># corresponding to each timeseries in `series`, so that</span>
-            <span class="c1"># static covariates can be added to each block; valid since</span>
-            <span class="c1"># each block contains same number of observations:</span>
-            <span class="n">X_blocks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">X_blocks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">add_static_covariates_to_lagged_data</span><span class="p">(</span>
-                <span class="n">X_blocks</span><span class="p">,</span>
-                <span class="n">series</span><span class="p">,</span>
+            <span class="c1"># extract and concatenate lags from target and covariates series</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">_create_lagged_data_autoregression</span><span class="p">(</span>
+                <span class="n">target_series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">t_pred</span><span class="o">=</span><span class="n">t_pred</span><span class="p">,</span>
+                <span class="n">shift</span><span class="o">=</span><span class="n">shift</span><span class="p">,</span>
+                <span class="n">last_step_shift</span><span class="o">=</span><span class="n">last_step_shift</span><span class="p">,</span>
+                <span class="n">series_matrix</span><span class="o">=</span><span class="n">series_matrix</span><span class="p">,</span>
+                <span class="n">covariate_matrices</span><span class="o">=</span><span class="n">covariate_matrices</span><span class="p">,</span>
+                <span class="n">lags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">,</span>
+                <span class="n">component_lags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">component_lags</span><span class="p">,</span>
+                <span class="n">relative_cov_lags</span><span class="o">=</span><span class="n">relative_cov_lags</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
                 <span class="n">uses_static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uses_static_covariates</span><span class="p">,</span>
-                <span class="n">last_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_static_covariates_shape</span><span class="p">,</span>
+                <span class="n">last_static_covariates_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_static_covariates_shape</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">X_blocks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
             <span class="c1"># X has shape (n_series * n_samples, n_regression_features)</span>
             <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_and_sample</span><span class="p">(</span>
@@ -1381,9 +1327,9 @@
 
     <span class="k">def</span> <span class="nf">_optimized_historical_forecasts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
@@ -1395,9 +1341,7 @@
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
-        <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
-    <span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For RegressionModels we create the lagged prediction data once per series using a moving window.</span>
 <span class="sd">        With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each</span>
@@ -1406,18 +1350,20 @@
 
 <span class="sd">        TODO: support forecast_horizon &gt; output_chunk_length (auto-regression)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">_process_historical_forecast_input</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
-            <span class="n">allow_autoregression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">series_seq_type</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">_process_historical_forecast_input</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+                <span class="n">allow_autoregression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="p">)</span>
 
         <span class="c1"># TODO: move the loop here instead of duplicated code in each sub-routine?</span>
         <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">_optimized_historical_forecasts_last_points_only</span><span class="p">(</span>
+            <span class="n">hfc</span> <span class="o">=</span> <span class="n">_optimized_historical_forecasts_last_points_only</span><span class="p">(</span>
                 <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
                 <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -1429,11 +1375,12 @@
                 <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
                 <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">_optimized_historical_forecasts_all_points</span><span class="p">(</span>
+            <span class="n">hfc</span> <span class="o">=</span> <span class="n">_optimized_historical_forecasts_all_points</span><span class="p">(</span>
                 <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
                 <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -1445,9 +1392,11 @@
                 <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
                 <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-            <span class="p">)</span></div>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">hfc</span><span class="p">,</span> <span class="n">seq_type_out</span><span class="o">=</span><span class="n">series_seq_type</span><span class="p">)</span></div>
 
 
 <span class="k">class</span> <span class="nc">_LikelihoodMixin</span><span class="p">:</span>

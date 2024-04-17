@@ -108,6 +108,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -269,6 +275,13 @@
  <li class="toctree-l1">
   <a class="reference internal" href="18-TiDE-examples.html">
    TimeSeries Deep Encoder
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="21-TSMixer-examples.html">
+   Time Series Mixer (TSMixer)
   </a>
  </li>
 </ul>
@@ -628,26 +641,46 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
-
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AustralianTourismDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">Theta</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">MinTReconciliator</span>
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
 </div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span><span class="p">,</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">MinTReconciliator</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AustralianTourismDataset</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">Theta</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/dennisbader/miniconda3/envs/darts310_test/lib/python3.10/site-packages/statsforecast/utils.py:237: FutureWarning: &#39;M&#39; is deprecated and will be removed in a future version, please use &#39;ME&#39; instead.
+  &#34;ds&#34;: pd.date_range(start=&#34;1949-01-01&#34;, periods=len(AirPassengers), freq=&#34;M&#34;),
+</pre></div></div>
 </div>
 <section id="Loading-Data">
 <h2>Loading Data<a class="headerlink" href="#Loading-Data" title="Permalink to this heading">¶</a></h2>
 <p>Below, we load a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, which is multivariate (i.e., contains multiple components). We simply use the <code class="docutils literal notranslate"><span class="pre">AustralianTourismDataset</span></code> Darts dataset for simplicity, but we could also use <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe(df)</span></code>, providing a DataFrame <code class="docutils literal notranslate"><span class="pre">df</span></code> containing one column per component and one row per timestamp.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -665,7 +698,7 @@ div.rendered_html tbody tr:hover {
 </ul>
 <p>Let’s plot a few of those:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -673,11 +706,20 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: xlabel=&#39;time&#39;&gt;
+</pre></div></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_5_0.png" src="../_images/examples_16-hierarchical-reconciliation_5_0.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_6_1.png" src="../_images/examples_16-hierarchical-reconciliation_6_1.png" />
 </div>
 </div>
 </section>
@@ -685,7 +727,7 @@ div.rendered_html tbody tr:hover {
 <h2>Inspecting the Hierarchy<a class="headerlink" href="#Inspecting-the-Hierarchy" title="Permalink to this heading">¶</a></h2>
 <p>Some of these components add up in certain ways. For instance, the sum of the holiday tourism done in New South Wales can be decomposed as the sum of “city” and “noncity” holiday New South Wales tourism:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -697,16 +739,25 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: xlabel=&#39;time&#39;&gt;
+</pre></div></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_7_0.png" src="../_images/examples_16-hierarchical-reconciliation_7_0.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_8_1.png" src="../_images/examples_16-hierarchical-reconciliation_8_1.png" />
 </div>
 </div>
 <p>Similarly, both the sum over regions and over reasons add up to the total:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -715,20 +766,25 @@ div.rendered_html tbody tr:hover {
 <span class="n">city_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">,</span> <span class="s2">&quot;noncity&quot;</span><span class="p">]</span>
 
 <span class="n">tourism_series</span><span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
-<span class="nb">sum</span><span class="p">([</span><span class="n">tourism_series</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">regions</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum regions&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span>
-<span class="p">)</span>
-<span class="nb">sum</span><span class="p">([</span><span class="n">tourism_series</span><span class="p">[</span><span class="n">reason</span><span class="p">]</span> <span class="k">for</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">reasons</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum reasons&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span>
-<span class="p">)</span>
+<span class="n">tourism_series</span><span class="p">[</span><span class="n">regions</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum regions&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">)</span>
+<span class="n">tourism_series</span><span class="p">[</span><span class="n">reasons</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum reasons&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: xlabel=&#39;time&#39;&gt;
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_9_0.png" src="../_images/examples_16-hierarchical-reconciliation_9_0.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_10_1.png" src="../_images/examples_16-hierarchical-reconciliation_10_1.png" />
 </div>
 </div>
 <p>So overall our hierarchy looks as follows:</p>
@@ -746,7 +802,7 @@ div.rendered_html tbody tr:hover {
 </ul>
 <p>So all components except <code class="docutils literal notranslate"><span class="pre">&quot;Total&quot;</span></code> will appear as a key in the hierarchy dictionary. As we have quite a few components (96), we will not build this dict by hand, but rather programmatically:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -774,7 +830,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>As a sanity check, let’s see what a few of the components map to in the hierarchy:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -796,7 +852,7 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 <p>Good, that looks as expected.</p>
 <p>In Darts, hierarchies are a property of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects. We can now embed our hierarchy in our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. We do this using the <code class="docutils literal notranslate"><span class="pre">with_hierarchy()</span></code> method, but we could also specify the hierarchy at the series construction; for instance providing a <code class="docutils literal notranslate"><span class="pre">hierarchy</span></code> to the <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe()</span></code> factory method.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -809,7 +865,7 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 <h2>Forecasting Using a Multivariate Model<a class="headerlink" href="#Forecasting-Using-a-Multivariate-Model" title="Permalink to this heading">¶</a></h2>
 <p>Now we have a multivariate time series, which contains the hierarchy information. Let’s split it in train / eval parts. We will keep the last 12 months as a validation set.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -818,8 +874,8 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </div>
 </div>
 <p>Getting forecasts is now as easy as using one of Darts models supporting multivariate series:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -829,18 +885,9 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-/Users/julien/unit8/darts/darts/timeseries.py:4079: FutureWarning: pandas.Int64Index is deprecated and will be removed from pandas in a future version. Use pandas.Index with the appropriate dtype instead.
-  if isinstance(time_idx, pd.Int64Index) and not isinstance(
-</pre></div></div>
-</div>
 <p>Let’s look at our forecasts:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -851,16 +898,25 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: xlabel=&#39;time&#39;&gt;
+</pre></div></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_22_0.png" src="../_images/examples_16-hierarchical-reconciliation_22_0.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_23_1.png" src="../_images/examples_16-hierarchical-reconciliation_23_1.png" />
 </div>
 </div>
 <p>Let’s also compute the accuracy at the different levels (MAE, averaged over several components):</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -882,11 +938,7 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
         <span class="nb">print</span><span class="p">(</span>
             <span class="s2">&quot;mean MAE on </span><span class="si">{}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">name</span><span class="p">,</span>
-                <span class="n">mae</span><span class="p">(</span>
-                    <span class="p">[</span><span class="n">pred</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">],</span>
-                    <span class="p">[</span><span class="n">val</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">],</span>
-                    <span class="n">inter_reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
-                <span class="p">),</span>
+                <span class="n">mae</span><span class="p">(</span><span class="n">pred</span><span class="p">[</span><span class="n">subset</span><span class="p">],</span> <span class="n">val</span><span class="p">[</span><span class="n">subset</span><span class="p">]),</span>
             <span class="p">)</span>
         <span class="p">)</span>
 
@@ -906,11 +958,11 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-mean MAE on total: 4141.65
-mean MAE on reasons: 1275.43
-mean MAE on regions: 799.99
-mean MAE on (region, reason): 312.05
-mean MAE on (region, reason, city): 189.69
+mean MAE on total: 4311.00
+mean MAE on reasons: 1299.87
+mean MAE on regions: 815.08
+mean MAE on (region, reason): 315.89
+mean MAE on (region, reason, city): 191.85
 </pre></div></div>
 </div>
 </section>
@@ -918,7 +970,7 @@ mean MAE on (region, reason, city): 189.69
 <h2>Reconciling Forecasts<a class="headerlink" href="#Reconciling-Forecasts" title="Permalink to this heading">¶</a></h2>
 <p>First, let’s see whether our current “raw” forecasts add up:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -926,12 +978,12 @@ mean MAE on (region, reason, city): 189.69
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
     <span class="n">pred_series</span><span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">regions</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of regions&quot;</span><span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reasons</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of reasons&quot;</span><span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">regions_reasons_comps</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">pred_series</span><span class="p">[</span><span class="n">regions</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of regions&quot;</span><span class="p">)</span>
+    <span class="n">pred_series</span><span class="p">[</span><span class="n">reasons</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of reasons&quot;</span><span class="p">)</span>
+    <span class="n">pred_series</span><span class="p">[</span><span class="n">regions_reasons_comps</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
         <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of (region, reason) series&quot;</span>
     <span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">regions_reasons_city_comps</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">pred_series</span><span class="p">[</span><span class="n">regions_reasons_city_comps</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
         <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of (region, reason, city) series&quot;</span>
     <span class="p">)</span>
 
@@ -948,7 +1000,7 @@ mean MAE on (region, reason, city): 189.69
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_26_0.png" src="../_images/examples_16-hierarchical-reconciliation_26_0.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_27_0.png" src="../_images/examples_16-hierarchical-reconciliation_27_0.png" />
 </div>
 </div>
 <p>It seems that they don’t. So let’s reconcile them. We will use some transformers available in <code class="docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers</span></code> to do that. These transformers can perform <em>posthoc</em> reconciliation (i.e., reconcile forecasts after they have been obtained). We have at our disposal the following methods:</p>
@@ -959,7 +1011,7 @@ mean MAE on (region, reason, city): 189.69
 </ul>
 <p>Below, we use the <code class="docutils literal notranslate"><span class="pre">wls_val</span></code> variant of <code class="docutils literal notranslate"><span class="pre">MinTReconciliator</span></code>:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -971,7 +1023,7 @@ mean MAE on (region, reason, city): 189.69
 </div>
 <p>Let’s now check whether the reconciled forecasts sum up as we expect:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -983,12 +1035,12 @@ mean MAE on (region, reason, city): 189.69
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_30_0.png" src="../_images/examples_16-hierarchical-reconciliation_30_0.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_31_0.png" src="../_images/examples_16-hierarchical-reconciliation_31_0.png" />
 </div>
 </div>
 <p>It looks good - and how about the MAE errors:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1001,11 +1053,11 @@ mean MAE on (region, reason, city): 189.69
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-mean MAE on total: 4168.35
-mean MAE on reasons: 1288.50
-mean MAE on regions: 781.98
-mean MAE on (region, reason): 309.29
-mean MAE on (region, reason, city): 188.89
+mean MAE on total: 4205.92
+mean MAE on reasons: 1294.87
+mean MAE on regions: 810.68
+mean MAE on (region, reason): 315.11
+mean MAE on (region, reason, city): 191.36
 </pre></div></div>
 </div>
 <p>Compared to before, the MAE slightly increased (e.g., on the total level), whereas it slightly decreased on some other more granular levels. This is typical of reconciliation: it can increase the error, but also decrease it in some cases.</p>
@@ -1014,7 +1066,7 @@ mean MAE on (region, reason, city): 188.89
 <h2>Alternative: Forecasting Components Independently<a class="headerlink" href="#Alternative:-Forecasting-Components-Independently" title="Permalink to this heading">¶</a></h2>
 <p>Above, we simply fit a single multivariate model on our multivariate series. This means that the forecasts for each dimension consumes the (lagged) values of all other dimensions. Below, for the sake of example, we repeat the experiment but using “local” models forecasting each component independently. We use a simple <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model, and concatenate all the forecasts in a single multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1033,17 +1085,13 @@ mean MAE on (region, reason, city): 188.89
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/Users/julien/miniconda3/envs/darts/lib/python3.9/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
-  warnings.warn(
-/Users/julien/miniconda3/envs/darts/lib/python3.9/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
-  warnings.warn(
-/Users/julien/miniconda3/envs/darts/lib/python3.9/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
+/Users/dennisbader/miniconda3/envs/darts310_test/lib/python3.10/site-packages/statsmodels/tsa/holtwinters/model.py:917: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
   warnings.warn(
 </pre></div></div>
 </div>
 <p>Let’s plot a few forecasts, and show the MAE errors:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1060,22 +1108,22 @@ mean MAE on (region, reason, city): 188.89
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 mean MAE on total: 3294.38
-mean MAE on reasons: 1194.38
-mean MAE on regions: 811.74
-mean MAE on (region, reason): 332.17
-mean MAE on (region, reason, city): 192.29
+mean MAE on reasons: 1204.76
+mean MAE on regions: 819.13
+mean MAE on (region, reason): 329.39
+mean MAE on (region, reason, city): 195.16
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_37_1.png" src="../_images/examples_16-hierarchical-reconciliation_37_1.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_38_1.png" src="../_images/examples_16-hierarchical-reconciliation_38_1.png" />
 </div>
 </div>
 <p>As expected, these forecasts don’t add up either:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1087,12 +1135,12 @@ mean MAE on (region, reason, city): 192.29
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_39_0.png" src="../_images/examples_16-hierarchical-reconciliation_39_0.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_40_0.png" src="../_images/examples_16-hierarchical-reconciliation_40_0.png" />
 </div>
 </div>
 <p>Let’s make them add up using a <code class="docutils literal notranslate"><span class="pre">MinTReconciliator</span></code>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1110,18 +1158,18 @@ mean MAE on (region, reason, city): 192.29
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-mean MAE on total: 3243.16
-mean MAE on reasons: 1207.85
-mean MAE on regions: 776.80
-mean MAE on (region, reason): 315.56
-mean MAE on (region, reason, city): 198.72
+mean MAE on total: 3349.33
+mean MAE on reasons: 1215.91
+mean MAE on regions: 782.26
+mean MAE on (region, reason): 316.39
+mean MAE on (region, reason, city): 199.92
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_16-hierarchical-reconciliation_41_1.png" src="../_images/examples_16-hierarchical-reconciliation_41_1.png" />
+<img alt="../_images/examples_16-hierarchical-reconciliation_42_1.png" src="../_images/examples_16-hierarchical-reconciliation_42_1.png" />
 </div>
 </div>
 </section>

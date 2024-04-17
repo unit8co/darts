@@ -103,6 +103,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -177,7 +183,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
 
 <span class="kn">from</span> <span class="nn">.base_data_transformer</span> <span class="kn">import</span> <span class="n">BaseDataTransformer</span>
@@ -413,14 +419,14 @@
 
 <div class="viewcode-block" id="InvertibleDataTransformer.inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.</span>
 
-<span class="sd">        In case a sequence is passed as input data, this function takes care of parallelising the</span>
+<span class="sd">        In case a sequence or list of lists is passed as input data, this function takes care of parallelising the</span>
 <span class="sd">        transformation of multiple series in the sequence at the same time. Additionally,</span>
 <span class="sd">        if the `mask_components` attribute was set to `True` when instantiating `InvertibleDataTransformer`,</span>
 <span class="sd">        then any provided `component_mask`s will be automatically applied to each input `TimeSeries`;</span>
@@ -431,7 +437,14 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
-<span class="sd">            the (sequence of) series be inverse-transformed.</span>
+<span class="sd">            The series to inverse-transform.</span>
+<span class="sd">            If a single `TimeSeries`, returns a single series.</span>
+<span class="sd">            If a sequence of `TimeSeries`, returns a list of series. The series should be in the same order as the</span>
+<span class="sd">            sequence used to fit the transformer.</span>
+<span class="sd">            If a list of lists of `TimeSeries`, returns a list of lists of series. This can for example be the output</span>
+<span class="sd">            of `ForecastingModel.historical_forecasts()` when using multiple series. Each inner list should contain</span>
+<span class="sd">            `TimeSeries` related to the same series. The order of inner lists should be the same as the sequence used</span>
+<span class="sd">            to fit the transformer.</span>
 <span class="sd">        args</span>
 <span class="sd">            Additional positional arguments for the :func:`ts_inverse_transform()` method</span>
 <span class="sd">        component_mask : Optional[np.ndarray] = None</span>
@@ -442,7 +455,7 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        Union[TimeSeries, List[TimeSeries]]</span>
+<span class="sd">        Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]</span>
 <span class="sd">            Inverse transformed data.</span>
 
 <span class="sd">        Notes</span>
@@ -463,22 +476,35 @@
 <span class="sd">        `component_masks` will be passed as a keyword argument `ts_inverse_transform`; the user can then manually</span>
 <span class="sd">        specify how the `component_mask` should be applied to each series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_fit_called&quot;</span><span class="p">):</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span>
-                <span class="s2">&quot;fit() must have been called before inverse_transform()&quot;</span><span class="p">,</span>
-                <span class="n">logger</span><span class="p">,</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_fit_called&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;fit() must have been called before inverse_transform()&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">desc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Inverse (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">)&quot;</span>
 
         <span class="c1"># Take note of original input for unmasking purposes:</span>
+        <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">called_with_sequence_series</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">input_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
+            <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">):</span>  <span class="c1"># Sequence[TimeSeries]</span>
             <span class="n">input_series</span> <span class="o">=</span> <span class="n">series</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
+            <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+            <span class="n">called_with_sequence_series</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Sequence[Sequence[TimeSeries]]</span>
+            <span class="n">input_series</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_list</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+                <span class="n">input_series</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
+                <span class="n">transformer_selector</span> <span class="o">+=</span> <span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
@@ -489,10 +515,10 @@
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
 
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
-            <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">n_timeseries</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))),</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">)),</span>
             <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
-            <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">transformer_selector</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="n">transformed_data</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span>
@@ -511,9 +537,16 @@
                 <span class="p">)</span>
             <span class="n">transformed_data</span> <span class="o">=</span> <span class="n">unmasked</span>
 
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="n">transformed_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">transformed_data</span>
-        <span class="p">)</span></div></div>
+        <span class="k">if</span> <span class="n">called_with_single_series</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">transformed_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">called_with_sequence_series</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">transformed_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cum_len</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s_</span><span class="p">)</span> <span class="k">for</span> <span class="n">s_</span> <span class="ow">in</span> <span class="n">series</span><span class="p">])</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">transformed_data</span><span class="p">[</span><span class="n">cum_len</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">:</span> <span class="n">cum_len</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cum_len</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">]</span></div></div>
 </pre></div>
 
               </div>

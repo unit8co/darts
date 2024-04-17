@@ -38,7 +38,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Additional util functions" href="darts.utils.utils.html" />
+    <link rel="next" title="Additional util functions" href="darts.utils.ts_utils.html" />
     <link rel="prev" title="Utils for time series generation" href="darts.utils.timeseries_generation.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -103,6 +103,12 @@
 <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../examples.html">
   Examples
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
  </a>
 </li>
 
@@ -695,6 +701,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.varima.html">
        VARIMA
       </a>
@@ -791,6 +802,11 @@
     </a>
    </li>
    <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
+    </a>
+   </li>
+   <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.utils.html">
      Additional util functions
     </a>
@@ -854,6 +870,18 @@ We can treat the many different networks
 from the space of all available models. This provides mathematical
 grounds to reason about the model’s uncertainty and, as it turns out,
 often improves its performance.</p>
+<p class="rubric">Attributes</p>
+<table class="table">
+<colgroup>
+<col style="width: 69%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>mc_dropout_enabled</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -1013,6 +1041,18 @@ often improves its performance.</p>
 </tbody>
 </table>
 <p>Initialize internal Module state, shared by both nn.Module and ScriptModule.</p>
+<p class="rubric">Attributes</p>
+<table class="table">
+<colgroup>
+<col style="width: 69%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>mc_dropout_enabled</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -1671,10 +1711,15 @@ exists in <a class="reference internal" href="#darts.utils.torch.MonteCarloDropo
 </div>
 </dd></dl>
 
-<dl class="py attribute">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.torch.MonteCarloDropout.mc_dropout_enabled">
-<span class="sig-name descname"><span class="pre">mc_dropout_enabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#darts.utils.torch.MonteCarloDropout.mc_dropout_enabled" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mc_dropout_enabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.torch.MonteCarloDropout.mc_dropout_enabled" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.torch.MonteCarloDropout.modules">
@@ -2425,7 +2470,7 @@ be recursively moved to the specified device.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.torch.MonteCarloDropout.train">
-<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/torch.html#MonteCarloDropout.train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.torch.MonteCarloDropout.train" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.torch.MonteCarloDropout.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the module in training mode.</p>
 <p>This has any effect only on certain modules. See documentations of
 particular modules for details of their behaviors in training/evaluation
@@ -2544,7 +2589,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
             <p class="prev-next-title">Utils for time series generation</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.utils.utils.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.utils.ts_utils.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Additional util functions</p>

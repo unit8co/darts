@@ -103,6 +103,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -681,7 +687,8 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        multivariate: bool</span>
-<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</span>
+<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.</span>
+<span class="sd">            Default is True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">def</span> <span class="nf">pre_proces_fn</span><span class="p">(</span><span class="n">extracted_dir</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">):</span>
@@ -752,7 +759,8 @@
 <span class="sd">        sample_freq: str</span>
 <span class="sd">            The sampling frequency of the data. Can be &quot;hourly&quot; or &quot;daily&quot;. Default is &quot;hourly&quot;.</span>
 <span class="sd">        multivariate: bool</span>
-<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</span>
+<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.</span>
+<span class="sd">            Default is True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">valid_sample_freq</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;daily&quot;</span><span class="p">,</span> <span class="s2">&quot;hourly&quot;</span><span class="p">]</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
@@ -833,15 +841,18 @@
 
 <span class="sd">    Components Descriptions:</span>
 
-<span class="sd">    * % WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week weighted by state population</span>
-<span class="sd">    * % UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week unweighted by state population</span>
+<span class="sd">    * % WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week</span>
+<span class="sd">        weighted by state population</span>
+<span class="sd">    * % UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each</span>
+<span class="sd">        week unweighted by state population</span>
 <span class="sd">    * AGE 0-4: Number of patients between 0 and 4 years of age</span>
 <span class="sd">    * AGE 25-49: Number of patients between 25 and 49 years of age</span>
 <span class="sd">    * AGE 25-64: Number of patients between 25 and 64 years of age</span>
 <span class="sd">    * AGE 5-24: Number of patients between 5 and 24 years of age</span>
 <span class="sd">    * AGE 50-64: Number of patients between 50 and 64 years of age</span>
 <span class="sd">    * AGE 65: Number of patients above (&gt;=65) 65 years of age</span>
-<span class="sd">    * ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C] or greater) and a cough and/or a sore throat</span>
+<span class="sd">    * ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C]</span>
+<span class="sd">        or greater) and a cough and/or a sore throat</span>
 <span class="sd">    * NUM. OF PROVIDERS: Number of outpatient healthcare providers</span>
 <span class="sd">    * TOTAL PATIENTS: Total number of patients</span>
 
@@ -877,8 +888,9 @@
 
 <div class="viewcode-block" id="ExchangeRateDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ExchangeRateDataset">[docs]</a><span class="k">class</span> <span class="nc">ExchangeRateDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada, Switzerland, China, Japan, New Zealand,</span>
-<span class="sd">    and Singapore, ranging from 1990 to 2016. Unfortunately, there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.</span>
+<span class="sd">    The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada,</span>
+<span class="sd">    Switzerland, China, Japan, New Zealand, and Singapore, ranging from 1990 to 2016. Unfortunately,</span>
+<span class="sd">    there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.</span>
 <span class="sd">    Source: [1]_</span>
 
 <span class="sd">    References</span>
@@ -891,7 +903,8 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        multivariate: bool</span>
-<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</span>
+<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.</span>
+<span class="sd">            Default is True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
@@ -912,8 +925,9 @@
 
 <div class="viewcode-block" id="TrafficDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.TrafficDataset">[docs]</a><span class="k">class</span> <span class="nc">TrafficDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department of Transportation. The data describes</span>
-<span class="sd">    the road occupancy rates (between 0 and 1) measured by 862 different sensors on San Francisco Bay area freeways. The raw data is in http://pems.dot.ca.gov.</span>
+<span class="sd">    The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department</span>
+<span class="sd">    of Transportation. The data describes the road occupancy rates (between 0 and 1) measured by 862 different sensors</span>
+<span class="sd">    on San Francisco Bay area freeways. The raw data is in http://pems.dot.ca.gov.</span>
 <span class="sd">    Source: [1]_</span>
 
 <span class="sd">    References</span>
@@ -926,7 +940,8 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        multivariate: bool</span>
-<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</span>
+<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.</span>
+<span class="sd">            Default is True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
@@ -965,7 +980,8 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        multivariate: bool</span>
-<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</span>
+<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.</span>
+<span class="sd">            Default is True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>

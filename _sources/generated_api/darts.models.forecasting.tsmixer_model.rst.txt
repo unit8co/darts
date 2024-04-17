@@ -1,0 +1,3 @@
+.. automodule:: darts.models.forecasting.tsmixer_model
+   :members:
+   :undoc-members:

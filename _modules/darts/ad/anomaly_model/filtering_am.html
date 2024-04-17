@@ -103,6 +103,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -257,7 +263,7 @@
         <span class="c1"># TODO: add support for covariates (see eg. Kalman Filter)</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">type</span><span class="p">(</span><span class="n">allow_model_training</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="nb">type</span><span class="p">(</span><span class="n">allow_model_training</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">,</span>  <span class="c1"># noqa: E721</span>
             <span class="sa">f</span><span class="s2">&quot;`allow_filter_training` must be Boolean, found type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">allow_model_training</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -412,7 +418,7 @@
 <span class="sd">                The outer sequence is over the series, and inner sequence is over the scorers.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">type</span><span class="p">(</span><span class="n">return_model_prediction</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="nb">type</span><span class="p">(</span><span class="n">return_model_prediction</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">,</span>  <span class="c1"># noqa: E721</span>
             <span class="sa">f</span><span class="s2">&quot;`return_model_prediction` must be Boolean, found type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">return_model_prediction</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 

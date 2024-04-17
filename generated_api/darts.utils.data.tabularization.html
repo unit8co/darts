@@ -106,6 +106,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -695,6 +701,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.varima.html">
        VARIMA
       </a>
@@ -788,6 +799,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.torch.html">
      Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
     </a>
    </li>
    <li class="toctree-l2">
@@ -891,10 +907,10 @@ each <cite>lagged_*</cite> has the following structure (grouped by lags):</p>
 <blockquote>
 <div><p>comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1</p>
 </div></blockquote>
-<p>For <cite>*_lags={‘comp0’:[-2, -1], ‘comp1’:[-5, -3]}</cite> and <cite>*_series.n_components = 2</cite> (component-
-specific lags), each <cite>lagged_*</cite> has the following structure (grouped by components):</p>
+<p>For <cite>*_lags={‘comp0’:[-3, -1], ‘comp1’:[-5, -3]}</cite> and <cite>*_series.n_components = 2</cite> (component-
+specific lags), each <cite>lagged_*</cite> has the following structure (sorted by lags, then by components):</p>
 <blockquote>
-<div><p>comp0_*_lag-2 | comp0_*_lag-1 | comp1_*_lag_-5 | comp1_*_lag-3</p>
+<div><p>comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1</p>
 </div></blockquote>
 <dl class="simple">
 <dt>and for static covariates (2 static covariates acting on 2 target components):</dt><dd><p>cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1</p>

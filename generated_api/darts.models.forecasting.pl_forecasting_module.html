@@ -106,6 +106,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -695,6 +701,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.varima.html">
        VARIMA
       </a>
@@ -788,6 +799,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.torch.html">
      Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
     </a>
    </li>
    <li class="toctree-l2">
@@ -951,8 +967,8 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
+<col style="width: 79%" />
+<col style="width: 21%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>device</strong></p></td>
@@ -967,7 +983,10 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-even"><td><p><strong>fabric</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>trainer</strong></p></td>
+<tr class="row-odd"><td><p><strong>supports_probabilistic_prediction</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>trainer</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -4039,7 +4058,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.set_predict_parameters">
-<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mc_dropout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4153,6 +4172,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strict_loading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.strict_loading" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines how Lightning loads this model using <cite>.load_state_dict(…, strict=model.strict_loading)</cite>.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
@@ -4818,8 +4847,8 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
+<col style="width: 79%" />
+<col style="width: 21%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>device</strong></p></td>
@@ -4834,7 +4863,10 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-even"><td><p><strong>fabric</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>trainer</strong></p></td>
+<tr class="row-odd"><td><p><strong>supports_probabilistic_prediction</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>trainer</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -6771,7 +6803,7 @@ There is no need for you to restore anything regarding training.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_predict_end">
-<span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_predict_end" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.on_predict_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_predict_end" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called at the end of predicting.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -6817,7 +6849,7 @@ to change the behavior.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_predict_start">
-<span class="sig-name descname"><span class="pre">on_predict_start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_predict_start" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">on_predict_start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.on_predict_start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_predict_start" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called at the beginning of predicting.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -7906,7 +7938,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_predict_parameters">
-<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.set_predict_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mc_dropout</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.set_predict_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -8020,6 +8052,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strict_loading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.strict_loading" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines how Lightning loads this model using <cite>.load_state_dict(…, strict=model.strict_loading)</cite>.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
@@ -8685,8 +8727,8 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
+<col style="width: 79%" />
+<col style="width: 21%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>device</strong></p></td>
@@ -8701,7 +8743,10 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-even"><td><p><strong>fabric</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>trainer</strong></p></td>
+<tr class="row-odd"><td><p><strong>supports_probabilistic_prediction</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>trainer</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -11196,6 +11241,11 @@ are direct members of this module.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.pred_mc_dropout">
+<span class="sig-name descname"><span class="pre">pred_mc_dropout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.pred_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.pred_n">
 <span class="sig-name descname"><span class="pre">pred_n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.pred_n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -11813,7 +11863,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.set_predict_parameters">
-<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mc_dropout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -11927,6 +11977,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strict_loading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.strict_loading" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines how Lightning loads this model using <cite>.load_state_dict(…, strict=model.strict_loading)</cite>.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
@@ -12592,8 +12652,8 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
+<col style="width: 79%" />
+<col style="width: 21%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>device</strong></p></td>
@@ -12608,7 +12668,10 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-even"><td><p><strong>fabric</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>trainer</strong></p></td>
+<tr class="row-odd"><td><p><strong>supports_probabilistic_prediction</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>trainer</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -15103,6 +15166,11 @@ are direct members of this module.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.pred_mc_dropout">
+<span class="sig-name descname"><span class="pre">pred_mc_dropout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.pred_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.pred_n">
 <span class="sig-name descname"><span class="pre">pred_n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.pred_n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -15720,7 +15788,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.set_predict_parameters">
-<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mc_dropout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -15834,6 +15902,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strict_loading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.strict_loading" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines how Lightning loads this model using <cite>.load_state_dict(…, strict=model.strict_loading)</cite>.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
@@ -16499,8 +16577,8 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
+<col style="width: 79%" />
+<col style="width: 21%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>device</strong></p></td>
@@ -16515,7 +16593,10 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-even"><td><p><strong>fabric</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>trainer</strong></p></td>
+<tr class="row-odd"><td><p><strong>supports_probabilistic_prediction</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>trainer</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -19010,6 +19091,11 @@ are direct members of this module.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.pred_mc_dropout">
+<span class="sig-name descname"><span class="pre">pred_mc_dropout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.pred_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.pred_n">
 <span class="sig-name descname"><span class="pre">pred_n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.pred_n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -19627,7 +19713,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.set_predict_parameters">
-<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mc_dropout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -19741,6 +19827,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strict_loading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.strict_loading" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines how Lightning loads this model using <cite>.load_state_dict(…, strict=model.strict_loading)</cite>.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
@@ -20406,8 +20502,8 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 64%" />
-<col style="width: 36%" />
+<col style="width: 79%" />
+<col style="width: 21%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>device</strong></p></td>
@@ -20422,7 +20518,10 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-even"><td><p><strong>fabric</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>trainer</strong></p></td>
+<tr class="row-odd"><td><p><strong>supports_probabilistic_prediction</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>trainer</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -22917,6 +23016,11 @@ are direct members of this module.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.pred_mc_dropout">
+<span class="sig-name descname"><span class="pre">pred_mc_dropout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.pred_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.pred_n">
 <span class="sig-name descname"><span class="pre">pred_n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.pred_n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -23534,7 +23638,7 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.set_predict_parameters">
-<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mc_dropout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -23648,6 +23752,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strict_loading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.strict_loading" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines how Lightning loads this model using <cite>.load_state_dict(…, strict=model.strict_loading)</cite>.</p>
 <dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>

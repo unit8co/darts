@@ -103,6 +103,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -205,29 +211,20 @@
 <span class="sd">    often improves its performance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># We need to init it to False as some models may start by</span>
-    <span class="c1"># a validation round, in which case MC dropout is disabled.</span>
-    <span class="n">mc_dropout_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-
-<div class="viewcode-block" id="MonteCarloDropout.train"><a class="viewcode-back" href="../../../generated_api/darts.utils.torch.html#darts.utils.torch.MonteCarloDropout.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-        <span class="c1"># NOTE: we could use the line below if self.mc_dropout_rate represented</span>
-        <span class="c1"># a rate to be applied at inference time, and self.applied_rate the</span>
-        <span class="c1"># actual rate to be used in self.forward(). However, the original paper</span>
-        <span class="c1"># considers the same rate for training and inference; we also stick to this.</span>
-
-        <span class="c1"># self.applied_rate = self.p if mode else self.mc_dropout_rate</span>
-
-        <span class="k">if</span> <span class="n">mode</span><span class="p">:</span>  <span class="c1"># in train mode, keep dropout as is</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout_enabled</span> <span class="o">=</span> <span class="kc">True</span></div>
-        <span class="c1"># in eval mode, bank on the mc_dropout_enabled flag</span>
-        <span class="c1"># mc_dropout_enabled is set equal to &quot;mc_dropout&quot; param given to predict()</span>
+    <span class="c1"># mc dropout is deactivated at init; see `MonteCarloDropout.mc_dropout_enabled` for more info</span>
+    <span class="n">_mc_dropout_enabled</span> <span class="o">=</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="MonteCarloDropout.forward"><a class="viewcode-back" href="../../../generated_api/darts.utils.torch.html#darts.utils.torch.MonteCarloDropout.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
         <span class="c1"># NOTE: we could use the following line in case a different rate</span>
         <span class="c1"># is used for inference:</span>
         <span class="c1"># return F.dropout(input, self.applied_rate, True, self.inplace)</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout_enabled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inplace</span><span class="p">)</span></div>
 
-        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout_enabled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inplace</span><span class="p">)</span></div></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mc_dropout_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># mc dropout is only activated on `PLForecastingModule.on_predict_start()`</span>
+        <span class="c1"># otherwise, it is activated based on the `model.training` flag.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mc_dropout_enabled</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span></div>
 
 
 <span class="k">def</span> <span class="nf">_is_method</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

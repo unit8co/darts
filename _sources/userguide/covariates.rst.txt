@@ -271,6 +271,10 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - ✅
      - ✅
      - ✅
+   * - `TSMixerModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tsmixer_model.html#darts.models.forecasting.tsmixer_model.TSMixerModel>`_
+     - ✅
+     - ✅
+     - ✅
    * - Ensemble Models (f)
      - ✅
      - ✅

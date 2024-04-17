@@ -106,6 +106,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -695,6 +701,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.varima.html">
        VARIMA
       </a>
@@ -791,6 +802,11 @@
     </a>
    </li>
    <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
+    </a>
+   </li>
+   <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.utils.html">
      Additional util functions
     </a>
@@ -840,6 +856,83 @@
                 
   <span class="target" id="module-darts.metrics"></span><section id="metrics">
 <h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h1>
+<dl class="simple">
+<dt>For deterministic forecasts (point predictions with <cite>num_samples == 1</cite>):</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>Aggregated over time:</dt><dd><dl class="simple">
+<dt>Absolute metrics:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.merr" title="darts.metrics.metrics.merr"><code class="xref py py-func docutils literal notranslate"><span class="pre">MERR</span></code></a>: Mean Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mae" title="darts.metrics.metrics.mae"><code class="xref py py-func docutils literal notranslate"><span class="pre">MAE</span></code></a>: Mean Absolute Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mse" title="darts.metrics.metrics.mse"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSE</span></code></a>: Mean Squared Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.rmse" title="darts.metrics.metrics.rmse"><code class="xref py py-func docutils literal notranslate"><span class="pre">RMSE</span></code></a>: Root Mean Squared Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.rmsle" title="darts.metrics.metrics.rmsle"><code class="xref py py-func docutils literal notranslate"><span class="pre">RMSLE</span></code></a>: Root Mean Squared Log Error</p></li>
+</ul>
+</dd>
+<dt>Relative metrics:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mase" title="darts.metrics.metrics.mase"><code class="xref py py-func docutils literal notranslate"><span class="pre">MASE</span></code></a>: Mean Absolute Scaled Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.msse" title="darts.metrics.metrics.msse"><code class="xref py py-func docutils literal notranslate"><span class="pre">MSSE</span></code></a>: Mean Squared Scaled Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.rmsse" title="darts.metrics.metrics.rmsse"><code class="xref py py-func docutils literal notranslate"><span class="pre">RMSSE</span></code></a>: Root Mean Squared Scaled Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mape" title="darts.metrics.metrics.mape"><code class="xref py py-func docutils literal notranslate"><span class="pre">MAPE</span></code></a>: Mean Absolute Percentage Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.smape" title="darts.metrics.metrics.smape"><code class="xref py py-func docutils literal notranslate"><span class="pre">sMAPE</span></code></a>: symmetric Mean Absolute Percentage Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ope" title="darts.metrics.metrics.ope"><code class="xref py py-func docutils literal notranslate"><span class="pre">OPE</span></code></a>: Overall Percentage Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.marre" title="darts.metrics.metrics.marre"><code class="xref py py-func docutils literal notranslate"><span class="pre">MARRE</span></code></a>: Mean Absolute Ranged Relative Error</p></li>
+</ul>
+</dd>
+<dt>Other metrics:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.r2_score" title="darts.metrics.metrics.r2_score"><code class="xref py py-func docutils literal notranslate"><span class="pre">R2</span></code></a>: Coefficient of Determination</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.coefficient_of_variation" title="darts.metrics.metrics.coefficient_of_variation"><code class="xref py py-func docutils literal notranslate"><span class="pre">CV</span></code></a>: Coefficient of Variation</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Per time step:</dt><dd><dl class="simple">
+<dt>Absolute metrics:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.err" title="darts.metrics.metrics.err"><code class="xref py py-func docutils literal notranslate"><span class="pre">ERR</span></code></a>: Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ae" title="darts.metrics.metrics.ae"><code class="xref py py-func docutils literal notranslate"><span class="pre">AE</span></code></a>: Absolute Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.se" title="darts.metrics.metrics.se"><code class="xref py py-func docutils literal notranslate"><span class="pre">SE</span></code></a>: Squared Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.sle" title="darts.metrics.metrics.sle"><code class="xref py py-func docutils literal notranslate"><span class="pre">SLE</span></code></a>: Squared Log Error</p></li>
+</ul>
+</dd>
+<dt>Relative metrics:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ase" title="darts.metrics.metrics.ase"><code class="xref py py-func docutils literal notranslate"><span class="pre">ASE</span></code></a>: Absolute Scaled Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.sse" title="darts.metrics.metrics.sse"><code class="xref py py-func docutils literal notranslate"><span class="pre">SSE</span></code></a>: Squared Scaled Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ape" title="darts.metrics.metrics.ape"><code class="xref py py-func docutils literal notranslate"><span class="pre">APE</span></code></a>: Absolute Percentage Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.sape" title="darts.metrics.metrics.sape"><code class="xref py py-func docutils literal notranslate"><span class="pre">sAPE</span></code></a>: symmetric Absolute Percentage Error</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.arre" title="darts.metrics.metrics.arre"><code class="xref py py-func docutils literal notranslate"><span class="pre">ARRE</span></code></a>: Absolute Ranged Relative Error</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>For probabilistic forecasts (storchastic predictions with <cite>num_samples &gt;&gt; 1</cite>):</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>Aggregated over time:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mql" title="darts.metrics.metrics.mql"><code class="xref py py-func docutils literal notranslate"><span class="pre">MQL</span></code></a>: Mean Quantile Loss</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.qr" title="darts.metrics.metrics.qr"><code class="xref py py-func docutils literal notranslate"><span class="pre">QR</span></code></a>: Quantile Risk</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Per time step:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ql" title="darts.metrics.metrics.ql"><code class="xref py py-func docutils literal notranslate"><span class="pre">QL</span></code></a>: Quantile Loss</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>For Dynamic Time Warping (DTW) (aggregated over time):</dt><dd><ul class="simple">
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.dtw_metric" title="darts.metrics.metrics.dtw_metric"><code class="xref py py-func docutils literal notranslate"><span class="pre">DTW</span></code></a>: Dynamic Time Warping Metric</p></li>
+</ul>
+</dd>
+</dl>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="darts.metrics.metrics.html">Metrics</a></li>

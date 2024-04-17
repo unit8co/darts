@@ -103,6 +103,12 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
     
 </ul>
       </div>
@@ -180,6 +186,7 @@
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">generate_index</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -193,74 +200,6 @@
     <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span>
     <span class="s2">&quot;week_of_year&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-
-
-<div class="viewcode-block" id="generate_index"><a class="viewcode-back" href="../../../generated_api/darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.generate_index">[docs]</a><span class="k">def</span> <span class="nf">generate_index</span><span class="p">(</span>
-    <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">freq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency</span>
-<span class="sd">    or a pandas RangeIndex. The index starts at</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    start</span>
-<span class="sd">        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with</span>
-<span class="sd">        either `length` or `end`.</span>
-<span class="sd">    end</span>
-<span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
-<span class="sd">        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.</span>
-<span class="sd">    length</span>
-<span class="sd">        Optionally, the length of the returned index. Works only with either `start` or `end`.</span>
-<span class="sd">    freq</span>
-<span class="sd">        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,</span>
-<span class="sd">        a DateOffset alias is expected; see</span>
-<span class="sd">        `docs &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects&gt;`_.</span>
-<span class="sd">        By default, &quot;D&quot; (daily) is used.</span>
-<span class="sd">        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.</span>
-<span class="sd">        The freq is optional for generating an integer index (if not specified, 1 is used).</span>
-<span class="sd">    name</span>
-<span class="sd">        Optionally, an index name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">constructors</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">arg_name</span>
-        <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">arg_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">length</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="s2">&quot;length&quot;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">arg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-    <span class="p">]</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="nb">len</span><span class="p">(</span><span class="n">constructors</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="s2">&quot;index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Observed parameters: </span><span class="si">{</span><span class="n">constructors</span><span class="si">}</span><span class="s2">. For generating an index with `end` and `length` consider setting &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;`start` to None.&quot;</span><span class="p">,</span>
-        <span class="n">logger</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">),</span>
-        <span class="s2">&quot;index generation with `start` and `end` requires equal object types of `start` and `end`&quot;</span><span class="p">,</span>
-        <span class="n">logger</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span>
-            <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
-            <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
-            <span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
-            <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span> <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">freq</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>  <span class="c1"># int</span>
-        <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">freq</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
-            <span class="n">start</span><span class="o">=</span><span class="n">start</span> <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">end</span> <span class="o">-</span> <span class="n">step</span> <span class="o">*</span> <span class="n">length</span> <span class="o">+</span> <span class="n">step</span><span class="p">,</span>
-            <span class="n">stop</span><span class="o">=</span><span class="n">end</span> <span class="o">+</span> <span class="n">step</span> <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">start</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="n">length</span><span class="p">,</span>
-            <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">index</span></div>
 
 
 <div class="viewcode-block" id="constant_timeseries"><a class="viewcode-back" href="../../../generated_api/darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.constant_timeseries">[docs]</a><span class="k">def</span> <span class="nf">constant_timeseries</span><span class="p">(</span>
@@ -913,7 +852,7 @@
         <span class="c1"># fill missing columns (in case not all values appear in time_index)</span>
         <span class="n">attribute_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">attribute_range</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">i</span> <span class="ow">in</span> <span class="n">values_df</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
                 <span class="n">values_df</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">values_df</span> <span class="o">=</span> <span class="n">values_df</span><span class="p">[</span><span class="n">attribute_range</span><span class="p">]</span>
 
