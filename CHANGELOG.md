@@ -5,8 +5,18 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.28.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.29.0...master)
 
+### For users of the library:
+**Improved**
+
+**Fixed**
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.29.0](https://github.com/unit8co/darts/tree/0.29.0) (2024-04-17)
 ### For users of the library:
 **Improved**
 - 🚀🚀 New forecasting model: `TSMixerModel`  as proposed in [this paper](https://arxiv.org/abs/2303.06053). An MLP based model that combines temporal, static and cross-sectional feature information using stacked mixing layers. [#1807](https://https://github.com/unit8co/darts/pull/001), by [Dennis Bader](https://github.com/dennisbader) and [Cristof Rojas](https://github.com/cristof-r).
