@@ -12,6 +12,7 @@ repos:
     rev: v4.6.0
     hooks:
       - id: end-of-file-fixer
+        exclude_types: [csv]
       - id: trailing-whitespace
       - id: check-json
       - id: check-yaml
