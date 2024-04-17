@@ -1,5 +1,5 @@
 black[jupyter]==24.3.0
-flake8==7.0.0
+ruff==0.3.5
 isort==5.13.2
 pre-commit
 pytest-cov
