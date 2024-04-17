@@ -108,7 +108,7 @@ task lint_ruff(type: Exec) {
 }
 
 task lint {
-    dependsOn lint_black, lint_ruff, lint_isort
+    dependsOn lint_black, lint_ruff
 }
 
 void createPipRelatedTask(String flavour) {
