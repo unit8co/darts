@@ -32,7 +32,7 @@ select = [
     "W", # see: https://pypi.org/project/pycodestyle
     "F", # see: https://pypi.org/project/pyflakes
 #    "I", #see: https://pypi.org/project/isort/
-#    "UP", # see: https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "UP", # see: https://docs.astral.sh/ruff/rules/#pyupgrade-up
 #    "D", # see: https://pypi.org/project/pydocstyle
 ]
 ignore = [

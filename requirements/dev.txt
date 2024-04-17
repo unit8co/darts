@@ -3,5 +3,4 @@ ruff==0.3.5
 isort==5.13.2
 pre-commit
 pytest-cov
-pyupgrade==v3.15.0
 testfixtures

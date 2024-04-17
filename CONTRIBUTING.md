@@ -69,7 +69,7 @@ As part of the checks on pull requests, it is checked whether the code still adh
 To ensure you don't need to worry about formatting and linting when contributing, it is recommended to set up at least one of the following:
 - Integration in git (recommended):
     1. Install the pre-commit hook using `pre-commit install`
-    2. This will install Black, `isort` and `pyupgrade` formatting and `ruff` linting hooks
+    2. This will install Black and `isort` formatting and `ruff` linting hooks
     3. The formatters will automatically fix all files and in case of some non-trivial case `ruff` will highlight any remaining problems before committing
 - Integration in your editor:
     - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
