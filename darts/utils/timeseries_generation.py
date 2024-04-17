@@ -678,7 +678,7 @@ def datetime_attribute_timeseries(
         # fill missing columns (in case not all values appear in time_index)
         attribute_range = range(num_values_dict[attribute])
         for i in attribute_range:
-            if not (i in values_df.columns):
+            if i not in values_df.columns:
                 values_df[i] = 0
         values_df = values_df[attribute_range]
 

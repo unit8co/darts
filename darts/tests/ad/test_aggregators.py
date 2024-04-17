@@ -151,7 +151,7 @@ class TestADAggregators:
         for aggregator in list_NonFittableAggregator:
 
             # name must be of type str
-            assert type(aggregator.__str__()) == str
+            assert isinstance(aggregator.__str__(), str)
 
             # Check if trainable is False, being a NonFittableAggregator
             assert not aggregator.trainable
@@ -196,7 +196,7 @@ class TestADAggregators:
         for aggregator in list_FittableAggregator:
 
             # name must be of type str
-            assert type(aggregator.__str__()) == str
+            assert isinstance(aggregator.__str__(), str)
 
             # Need to call fit() before calling predict()
             with pytest.raises(ValueError):

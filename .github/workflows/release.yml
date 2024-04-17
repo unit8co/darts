@@ -73,8 +73,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.bump_dry.outputs.new_tag }}
-          release_name: Release ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
+          release_name: Darts ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
           draft: false
+          body_path: .github/RELEASE_TEMPLATE/release_body.md
+
 
   deploy-docker:
     needs: [release]

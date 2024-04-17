@@ -25,12 +25,6 @@ repos:
       - id: black-jupyter
         language_version: python3
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
-    hooks:
-    -   id: flake8
-        language_version: python3
-
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
@@ -41,3 +35,9 @@ repos:
     hooks:
     -   id: pyupgrade
         args: ['--py38-plus']
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.5
+    hooks:
+      - id: ruff
+        args: ["--fix"]  # try to fix what is possible
