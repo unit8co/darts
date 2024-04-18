@@ -1,6 +1,3 @@
-black[jupyter]==24.3.0
-ruff==0.3.5
 pre-commit
 pytest-cov
-pyupgrade==v3.15.0
 testfixtures
