@@ -884,9 +884,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             not length_ok or len(train_dataset) == 0,  # mind the order
             "The train dataset does not contain even one training sample. "
             + "This is likely due to the provided training series being too short. "
-            + "This model expect series of length at least {}.".format(
-                self.min_train_series_length
-            ),
+            + f"This model expect series of length at least {self.min_train_series_length}.",
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
@@ -1012,10 +1010,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # Check existing model has input/output dims matching what's provided in the training set.
             raise_if_not(
                 len(train_sample) == len(self.train_sample),
-                "The size of the training set samples (tuples) does not match what the model has been "
-                "previously trained on. Trained on tuples of length {}, received tuples of length {}.".format(
-                    len(self.train_sample), len(train_sample)
-                ),
+                "The size of the training set samples (tuples) does not match what the model has been"
+                f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
+                f" received tuples of length {len(train_sample)}.",
             )
             same_dims = tuple(
                 s.shape[1] if s is not None else None for s in train_sample

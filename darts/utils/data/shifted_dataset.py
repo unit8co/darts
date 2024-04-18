@@ -585,7 +585,7 @@ class GenericShiftedDataset(TrainingDataset):
             n_samples_in_ts >= 1,
             "The dataset contains some time series that are too short to contain "
             "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
-            "({}-th series)".format(target_idx),
+            f"({target_idx}-th series)",
         )
 
         # determine the index at the end of the output chunk

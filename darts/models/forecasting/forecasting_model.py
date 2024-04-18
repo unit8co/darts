@@ -175,9 +175,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if not len(series) >= self.min_train_series_length:
             raise_log(
                 ValueError(
-                    "Train series only contains {} elements but {} model requires at least {} entries".format(
-                        len(series), str(self), self.min_train_series_length
-                    )
+                    f"Train series only contains {len(series)} elements"
+                    f" but {str(self)} model requires at least {self.min_train_series_length} entries"
                 ),
                 logger=logger,
             )
