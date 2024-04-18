@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 - Improvements to linting via updated pre-commit configurations: [#2324](https://github.com/unit8co/darts/pull/2324) by [Jirka Borovec](https://github.com/borda).
+- Improvements to unified linting by switch `isort` to Ruff's rule I. [#2339](https://github.com/unit8co/darts/pull/2339) by [Jirka Borovec](https://github.com/borda)
 - Improvements to CI, running lint locally via pre-commit instead of particular tools. [#2327](https://github.com/unit8co/darts/pull/2327) by [Jirka Borovec](https://github.com/borda)
 
 
