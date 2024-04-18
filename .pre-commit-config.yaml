@@ -20,14 +20,13 @@ repos:
       - id: check-toml
       - id: detect-private-key
 
-  - repo: https://github.com/psf/black
-    rev: 24.3.0
-    hooks:
-      - id: black-jupyter
-        language_version: python3
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.3.5
     hooks:
+      # try to fix what is possible
       - id: ruff
-        args: ["--fix"]  # try to fix what is possible
+        args: ["--fix"]
+      # perform formatting updates
+      - id: ruff-format
+      # validate if all is fine with preview mode
+      - id: ruff
