@@ -38,9 +38,7 @@ class TestCreateLaggedPredictionData:
     #
 
     @staticmethod
-    def create_multivariate_linear_timeseries(
-        n_components: int, **kwargs
-    ) -> TimeSeries:
+    def create_multivariate_linear_timeseries(n_components: int, **kwargs) -> TimeSeries:
         """
         Helper function that creates a `linear_timeseries` with a specified number of
         components. To help distinguish each component from one another, `i` is added on
@@ -86,15 +84,9 @@ class TestCreateLaggedPredictionData:
             is_target_or_past = i < 2
             if lags_specified:
                 if is_target_or_past:
-                    times_i = (
-                        TestCreateLaggedPredictionData.get_feature_times_target_or_past(
-                            series_i, lags_i
-                        )
-                    )
+                    times_i = TestCreateLaggedPredictionData.get_feature_times_target_or_past(series_i, lags_i)
                 else:
-                    times_i = TestCreateLaggedPredictionData.get_feature_times_future(
-                        series_i, lags_i
-                    )
+                    times_i = TestCreateLaggedPredictionData.get_feature_times_future(series_i, lags_i)
             else:
                 times_i = None
             if times_i is not None:
@@ -138,9 +130,7 @@ class TestCreateLaggedPredictionData:
         """
         times = series.time_index
         min_lag = -max(lags)
-        times = times.union(
-            [times[-1] + i * series.freq for i in range(1, min_lag + 1)]
-        )
+        times = times.union([times[-1] + i * series.freq for i in range(1, min_lag + 1)])
         max_lag = -min(lags)
         times = times[max_lag:]
         return times
@@ -195,20 +185,13 @@ class TestCreateLaggedPredictionData:
         # Case 1:
         if (min_lag > 0) and (max_lag > 0):
             # Can create features for times extending after the end of `future_covariates`:
-            times = times.union(
-                [times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)]
-            )
+            times = times.union([times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)])
             # Can't create features for first `max_lag` times in series:
             times = times[max_lag:]
         # Case 2:
         elif (min_lag <= 0) and (max_lag <= 0):
             # Can create features for times before the start of `future_covariates`:
-            times = times.union(
-                [
-                    times[0] - i * future_covariates.freq
-                    for i in range(1, abs(max_lag) + 1)
-                ]
-            )
+            times = times.union([times[0] - i * future_covariates.freq for i in range(1, abs(max_lag) + 1)])
             # Can't create features for last `abs(min_lag)` times in series:
             times = times[:min_lag] if min_lag != 0 else times
         # Case 3:
@@ -229,9 +212,7 @@ class TestCreateLaggedPredictionData:
         return times
 
     @staticmethod
-    def construct_X_block(
-        series: TimeSeries, feature_times: pd.Index, lags: Optional[Sequence[int]]
-    ) -> np.array:
+    def construct_X_block(series: TimeSeries, feature_times: pd.Index, lags: Optional[Sequence[int]]) -> np.array:
         """
         Helper function that creates the lagged features 'block' of a specific
         `series` (i.e. either `target_series`, `past_covariates`, or `future_covariates`);
@@ -280,9 +261,7 @@ class TestCreateLaggedPredictionData:
                         step=series.freq,
                     )
                 else:
-                    series_times = pd.date_range(
-                        start=series_times[0], end=feature_times[-1], freq=series.freq
-                    )
+                    series_times = pd.date_range(start=series_times[0], end=feature_times[-1], freq=series.freq)
             elif add_to_start:
                 num_prepended = (series_times[0] - feature_times[0]) // series.freq
                 if is_range_idx:
@@ -293,9 +272,7 @@ class TestCreateLaggedPredictionData:
                         step=series.freq,
                     )
                 else:
-                    series_times = pd.date_range(
-                        start=feature_times[0], end=series_times[-1], freq=series.freq
-                    )
+                    series_times = pd.date_range(start=feature_times[0], end=series_times[-1], freq=series.freq)
             else:
                 num_prepended = 0
             array_vals = series.all_values(copy=False)[:, :, 0]
@@ -638,9 +615,7 @@ class TestCreateLaggedPredictionData:
         "config",
         itertools.product(["datetime", "integer"], [False, True]),
     )
-    def test_lagged_prediction_data_single_lag_single_component_same_series(
-        self, config
-    ):
+    def test_lagged_prediction_data_single_lag_single_component_same_series(self, config):
         """
         Tests that `create_lagged_prediction_data` correctly produces `X` and `times`
         when all the `series` inputs are identical, and all the `lags` inputs consist
@@ -664,9 +639,7 @@ class TestCreateLaggedPredictionData:
         expected_X_past = series.all_values(copy=False)[:-5, :, 0]
         # Offset `3:-2` by `+2` lag -> gives `5:None`:
         expected_X_future = series.all_values(copy=False)[5:, :, 0]
-        expected_X = np.concatenate(
-            [expected_X_target, expected_X_past, expected_X_future], axis=1
-        )
+        expected_X = np.concatenate([expected_X_target, expected_X_past, expected_X_future], axis=1)
         X, times = create_lagged_prediction_data(
             target_series=series,
             past_covariates=series,
@@ -731,13 +704,11 @@ class TestCreateLaggedPredictionData:
         # Only want to check very last generated observation:
         max_samples_per_ts = 1
         # Expect `X` to be constructed from the very last values of each series:
-        expected_X = np.concatenate(
-            [
-                target.all_values(copy=False)[-1, :, 0],
-                past.all_values(copy=False)[-1, :, 0],
-                future.all_values(copy=False)[-1, :, 0],
-            ]
-        ).reshape(1, -1)
+        expected_X = np.concatenate([
+            target.all_values(copy=False)[-1, :, 0],
+            past.all_values(copy=False)[-1, :, 0],
+            future.all_values(copy=False)[-1, :, 0],
+        ]).reshape(1, -1)
         # Check correctness for both 'moving window' method
         # and 'time intersection' method:
         X, times = create_lagged_prediction_data(
@@ -768,9 +739,7 @@ class TestCreateLaggedPredictionData:
         if series_type == "integer":
             target = linear_timeseries(start=0, length=1, start_value=0, end_value=1)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1)
 
         expected_X = np.zeros((1, 1, 1))
         # Prediction time extend beyond end of series:
@@ -808,12 +777,8 @@ class TestCreateLaggedPredictionData:
             target = linear_timeseries(start=0, length=1, start_value=0, end_value=1)
             future = linear_timeseries(start=1, length=1, start_value=1, end_value=2)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1
-            )
-            future = linear_timeseries(
-                start=pd.Timestamp("1/2/2000"), length=1, start_value=1, end_value=2
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1)
+            future = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=1, start_value=1, end_value=2)
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
         expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
         # Check correctness for 'moving windows' and 'time intersection' methods, as
@@ -852,12 +817,8 @@ class TestCreateLaggedPredictionData:
             target = linear_timeseries(start=0, length=1, start_value=0, end_value=1)
             future = linear_timeseries(start=2, length=1, start_value=1, end_value=2)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1
-            )
-            future = linear_timeseries(
-                start=pd.Timestamp("1/3/2000"), length=1, start_value=1, end_value=2
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1)
+            future = linear_timeseries(start=pd.Timestamp("1/3/2000"), length=1, start_value=1, end_value=2)
         # X comprises of first value of `target` (i.e. 0) and only value in `future`:
         expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
         # Check correctness for 'moving windows' and 'time intersection' methods, as
@@ -972,10 +933,7 @@ class TestCreateLaggedPredictionData:
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
-            assert (
-                "Specified series do not share any common times for which features can be created."
-                == str(err.value)
-            )
+            assert "Specified series do not share any common times for which features can be created." == str(err.value)
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
                     target_series=series_1,
@@ -984,10 +942,7 @@ class TestCreateLaggedPredictionData:
                     lags_past_covariates=lags,
                     uses_static_covariates=False,
                 )
-            assert (
-                "Specified series do not share any common times for which features can be created."
-                == str(err.value)
-            )
+            assert "Specified series do not share any common times for which features can be created." == str(err.value)
 
     def test_lagged_prediction_data_no_specified_series_lags_pairs_error(self):
         """
@@ -1027,9 +982,8 @@ class TestCreateLaggedPredictionData:
                     use_moving_windows=use_moving_windows,
                     uses_static_covariates=False,
                 )
-            assert (
-                "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
-                == str(err.value)
+            assert "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`." == str(
+                err.value
             )
 
     def test_lagged_prediction_data_series_too_short_error(self):
@@ -1087,9 +1041,7 @@ class TestCreateLaggedPredictionData:
                     uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
-            assert (
-                "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
-            ) == str(err.value)
+            assert ("`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0.") == str(err.value)
             # Test invalid `lags_past_covariates` values:
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
@@ -1184,8 +1136,7 @@ class TestCreateLaggedPredictionData:
                 assert len(w) == 1
                 assert issubclass(w[0].category, UserWarning)
                 assert str(w[0].message) == (
-                    "`target_series` was specified without accompanying "
-                    "`lags` and, thus, will be ignored."
+                    "`target_series` was specified without accompanying " "`lags` and, thus, will be ignored."
                 )
             # Specify `target_series` but not `lags` - this *should* throw
             # a warning when creating prediction data:
@@ -1200,6 +1151,5 @@ class TestCreateLaggedPredictionData:
                 assert len(w) == 1
                 assert issubclass(w[0].category, UserWarning)
                 assert str(w[0].message) == (
-                    "`lags` was specified without accompanying "
-                    "`target_series` and, thus, will be ignored."
+                    "`lags` was specified without accompanying " "`target_series` and, thus, will be ignored."
                 )

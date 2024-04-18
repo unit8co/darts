@@ -66,11 +66,7 @@ class QuantileDetector(FittableDetector):
         )
 
         def _prep_quantile(q):
-            return (
-                q.tolist()
-                if isinstance(q, np.ndarray)
-                else [q] if not isinstance(q, Sequence) else q
-            )
+            return q.tolist() if isinstance(q, np.ndarray) else [q] if not isinstance(q, Sequence) else q
 
         low = _prep_quantile(low_quantile)
         high = _prep_quantile(high_quantile)
@@ -98,8 +94,7 @@ class QuantileDetector(FittableDetector):
         )
 
         raise_if(
-            all([lo is None for lo in self.low_quantile])
-            and all([hi is None for hi in self.high_quantile]),
+            all([lo is None for lo in self.low_quantile]) and all([hi is None for hi in self.high_quantile]),
             "All provided quantile values are None.",
         )
 
@@ -114,11 +109,9 @@ class QuantileDetector(FittableDetector):
         )
 
     def _fit_core(self, list_series: Sequence[TimeSeries]) -> None:
-
         # if len(low) > 1 and len(high) > 1, then check it matches input width:
         raise_if(
-            len(self.low_quantile) > 1
-            and len(self.low_quantile) != list_series[0].width,
+            len(self.low_quantile) > 1 and len(self.low_quantile) != list_series[0].width,
             "The number of components of input must be equal to the number"
             + " of values given for `high_quantile` or/and `low_quantile`. Found number of "
             + f"components equal to {list_series[0].width} and expected {len(self.low_quantile)}.",
@@ -126,20 +119,14 @@ class QuantileDetector(FittableDetector):
 
         # otherwise, make them the right length
         self.low_quantile = (
-            self.low_quantile * list_series[0].width
-            if len(self.low_quantile) == 1
-            else self.low_quantile
+            self.low_quantile * list_series[0].width if len(self.low_quantile) == 1 else self.low_quantile
         )
         self.high_quantile = (
-            self.high_quantile * list_series[0].width
-            if len(self.high_quantile) == 1
-            else self.high_quantile
+            self.high_quantile * list_series[0].width if len(self.high_quantile) == 1 else self.high_quantile
         )
 
         # concatenate everything along time axis
-        np_series = np.concatenate(
-            [series.all_values(copy=False) for series in list_series], axis=0
-        )
+        np_series = np.concatenate([series.all_values(copy=False) for series in list_series], axis=0)
 
         # move sample dimension to position 1
         np_series = np.moveaxis(np_series, 2, 1)
@@ -159,9 +146,7 @@ class QuantileDetector(FittableDetector):
             for i, hi in enumerate(self.high_quantile)
         ]
 
-        self.detector = ThresholdDetector(
-            low_threshold=self.low_threshold, high_threshold=self.high_threshold
-        )
+        self.detector = ThresholdDetector(low_threshold=self.low_threshold, high_threshold=self.high_threshold)
 
         return self
 

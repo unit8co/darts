@@ -111,7 +111,6 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         self.darts_kf = KalmanFilter(dim_x, kf)
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-
         super()._fit(series, future_covariates)
         if self.kf is None:
             self.darts_kf.fit(series=series, covariates=future_covariates)
@@ -142,10 +141,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
-
-        super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
-        )
+        super()._predict(n, series, historic_future_covariates, future_covariates, num_samples)
         time_index = self._generate_new_dates(n, input_series=series)
         placeholder_vals = np.zeros((n, self.training_series.width)) * np.nan
         series_future = TimeSeries.from_times_and_values(
@@ -160,9 +156,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         if historic_future_covariates is not None:
             future_covariates = historic_future_covariates.append(future_covariates)
 
-        filtered_series = self.darts_kf.filter(
-            series=series, covariates=future_covariates, num_samples=num_samples
-        )
+        filtered_series = self.darts_kf.filter(series=series, covariates=future_covariates, num_samples=num_samples)
 
         return filtered_series[-n:]
 

@@ -10,15 +10,9 @@ from darts.utils.ts_utils import retain_period_common_to_all
 
 class TestUtils:
     def test_retain_period_common_to_all(self):
-        seriesA = TimeSeries.from_times_and_values(
-            pd.date_range("20000101", "20000110"), range(10)
-        )
-        seriesB = TimeSeries.from_times_and_values(
-            pd.date_range("20000103", "20000108"), range(6)
-        )
-        seriesC = TimeSeries.from_times_and_values(
-            pd.date_range("20000104", "20000112"), range(9)
-        )
+        seriesA = TimeSeries.from_times_and_values(pd.date_range("20000101", "20000110"), range(10))
+        seriesB = TimeSeries.from_times_and_values(pd.date_range("20000103", "20000108"), range(6))
+        seriesC = TimeSeries.from_times_and_values(pd.date_range("20000104", "20000112"), range(9))
         seriesC = seriesC.stack(seriesC)
 
         common_series_list = retain_period_common_to_all([seriesA, seriesB, seriesC])

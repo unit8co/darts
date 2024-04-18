@@ -158,11 +158,7 @@ class _TFTModule(PLMixedCovariatesModule):
         # continuous variable processing
         self.prescalers_linear = {
             name: nn.Linear(
-                (
-                    1
-                    if name not in self.numeric_static_variables
-                    else self.num_static_components
-                ),
+                (1 if name not in self.numeric_static_variables else self.num_static_components),
                 self.hidden_continuous_size,
             )
             for name in self.reals
@@ -170,22 +166,14 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # static (categorical and numerical) variables
         static_input_sizes = {
-            name: self.input_embeddings.output_size[name]
-            for name in self.categorical_static_variables
+            name: self.input_embeddings.output_size[name] for name in self.categorical_static_variables
         }
-        static_input_sizes.update(
-            {
-                name: self.hidden_continuous_size
-                for name in self.numeric_static_variables
-            }
-        )
+        static_input_sizes.update({name: self.hidden_continuous_size for name in self.numeric_static_variables})
 
         self.static_covariates_vsn = _VariableSelectionNetwork(
             input_sizes=static_input_sizes,
             hidden_size=self.hidden_size,
-            input_embedding_flags={
-                name: True for name in self.categorical_static_variables
-            },
+            input_embedding_flags={name: True for name in self.categorical_static_variables},
             dropout=self.dropout,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
@@ -194,13 +182,9 @@ class _TFTModule(PLMixedCovariatesModule):
         )
 
         # variable selection for encoder and decoder
-        encoder_input_sizes = {
-            name: self.hidden_continuous_size for name in self.encoder_variables
-        }
+        encoder_input_sizes = {name: self.hidden_continuous_size for name in self.encoder_variables}
 
-        decoder_input_sizes = {
-            name: self.hidden_continuous_size for name in self.decoder_variables
-        }
+        decoder_input_sizes = {name: self.hidden_continuous_size for name in self.decoder_variables}
 
         self.encoder_vsn = _VariableSelectionNetwork(
             input_sizes=encoder_input_sizes,
@@ -279,9 +263,7 @@ class _TFTModule(PLMixedCovariatesModule):
         )
 
         # post lstm GateAddNorm
-        self.post_lstm_gan = _GateAddNorm(
-            input_size=self.hidden_size, dropout=dropout, layer_norm=self.layer_norm
-        )
+        self.post_lstm_gan = _GateAddNorm(input_size=self.hidden_size, dropout=dropout, layer_norm=self.layer_norm)
 
         # static enrichment and processing past LSTM
         self.static_enrichment_grn = _GatedResidualNetwork(
@@ -299,9 +281,7 @@ class _TFTModule(PLMixedCovariatesModule):
             n_head=self.num_attention_heads,
             dropout=self.dropout,
         )
-        self.post_attn_gan = _GateAddNorm(
-            self.hidden_size, dropout=self.dropout, layer_norm=self.layer_norm
-        )
+        self.post_attn_gan = _GateAddNorm(self.hidden_size, dropout=self.dropout, layer_norm=self.layer_norm)
 
         if self.feed_forward == "GatedResidualNetwork":
             self.feed_forward_block = _GatedResidualNetwork(
@@ -323,9 +303,7 @@ class _TFTModule(PLMixedCovariatesModule):
             )
 
         # output processing -> no dropout at this late stage
-        self.pre_output_gan = _GateAddNorm(
-            self.hidden_size, dropout=None, layer_norm=self.layer_norm
-        )
+        self.pre_output_gan = _GateAddNorm(self.hidden_size, dropout=None, layer_norm=self.layer_norm)
 
         self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
@@ -394,9 +372,7 @@ class _TFTModule(PLMixedCovariatesModule):
         """
         Returns scaled time index relative to prediction point.
         """
-        index = torch.arange(
-            encoder_length + decoder_length, dtype=dtype, device=device
-        )
+        index = torch.arange(encoder_length + decoder_length, dtype=dtype, device=device)
         prediction_index = encoder_length - 1
         index[:encoder_length] = index[:encoder_length] / prediction_index
         index[encoder_length:] = index[encoder_length:] / prediction_index
@@ -427,9 +403,7 @@ class _TFTModule(PLMixedCovariatesModule):
         """
         if full_attention:
             # attend to entire past and future input
-            decoder_mask = torch.zeros(
-                (decoder_length, decoder_length), dtype=torch.bool, device=device
-            )
+            decoder_mask = torch.zeros((decoder_length, decoder_length), dtype=torch.bool, device=device)
         else:
             # attend only to past steps relative to forecasting step in the future
             # indices to which is attended
@@ -439,9 +413,7 @@ class _TFTModule(PLMixedCovariatesModule):
             # do not attend to steps to self or after prediction
             decoder_mask = attend_step >= predict_step
         # attend to all past input
-        encoder_mask = torch.zeros(
-            batch_size, encoder_length, dtype=torch.bool, device=device
-        )
+        encoder_mask = torch.zeros(batch_size, encoder_length, dtype=torch.bool, device=device)
         # combine masks along attended time - first encoder and then decoder
 
         mask = torch.cat(
@@ -454,9 +426,7 @@ class _TFTModule(PLMixedCovariatesModule):
         return mask
 
     @io_processor
-    def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]) -> torch.Tensor:
         """TFT model forward pass.
 
         Parameters
@@ -501,29 +471,19 @@ class _TFTModule(PLMixedCovariatesModule):
 
         if self.add_relative_index:
             x_cont_past = torch.cat(
-                [
-                    ts[:, :encoder_length, :]
-                    for ts in [x_cont_past, self.relative_index]
-                    if ts is not None
-                ],
+                [ts[:, :encoder_length, :] for ts in [x_cont_past, self.relative_index] if ts is not None],
                 dim=dim_variable,
             )
             x_cont_future = torch.cat(
-                [
-                    ts[:, -decoder_length:, :]
-                    for ts in [x_cont_future, self.relative_index]
-                    if ts is not None
-                ],
+                [ts[:, -decoder_length:, :] for ts in [x_cont_future, self.relative_index] if ts is not None],
                 dim=dim_variable,
             )
 
         input_vectors_past = {
-            name: x_cont_past[..., idx].unsqueeze(-1)
-            for idx, name in enumerate(self.encoder_variables)
+            name: x_cont_past[..., idx].unsqueeze(-1) for idx, name in enumerate(self.encoder_variables)
         }
         input_vectors_future = {
-            name: x_cont_future[..., idx].unsqueeze(-1)
-            for idx, name in enumerate(self.decoder_variables)
+            name: x_cont_future[..., idx].unsqueeze(-1) for idx, name in enumerate(self.decoder_variables)
         }
 
         # Embedding and variable selection
@@ -543,16 +503,12 @@ class _TFTModule(PLMixedCovariatesModule):
             else:
                 static_embedding = {}
             # add numerical static covariates
-            static_embedding.update(
-                {
-                    name: x_static[:, :, idx]
-                    for idx, name in enumerate(self.static_variables)
-                    if name in self.numeric_static_variables
-                }
-            )
-            static_embedding, static_covariate_var = self.static_covariates_vsn(
-                static_embedding
-            )
+            static_embedding.update({
+                name: x_static[:, :, idx]
+                for idx, name in enumerate(self.static_variables)
+                if name in self.numeric_static_variables
+            })
+            static_embedding, static_covariate_var = self.static_covariates_vsn(static_embedding)
         else:
             static_embedding = torch.zeros(
                 (x_cont_past.shape[0], self.hidden_size),
@@ -565,17 +521,13 @@ class _TFTModule(PLMixedCovariatesModule):
             context=self.static_context_grn(static_embedding), time_steps=time_steps
         )
 
-        embeddings_varying_encoder = {
-            name: input_vectors_past[name] for name in self.encoder_variables
-        }
+        embeddings_varying_encoder = {name: input_vectors_past[name] for name in self.encoder_variables}
         embeddings_varying_encoder, encoder_sparse_weights = self.encoder_vsn(
             x=embeddings_varying_encoder,
             context=static_context_expanded[:, :encoder_length],
         )
 
-        embeddings_varying_decoder = {
-            name: input_vectors_future[name] for name in self.decoder_variables
-        }
+        embeddings_varying_decoder = {name: input_vectors_future[name] for name in self.decoder_variables}
         embeddings_varying_decoder, decoder_sparse_weights = self.decoder_vsn(
             x=embeddings_varying_decoder,
             context=static_context_expanded[:, encoder_length:],
@@ -584,30 +536,20 @@ class _TFTModule(PLMixedCovariatesModule):
         # LSTM
         # calculate initial state
         input_hidden = (
-            self.static_context_hidden_encoder_grn(static_embedding)
-            .expand(self.lstm_layers, -1, -1)
-            .contiguous()
+            self.static_context_hidden_encoder_grn(static_embedding).expand(self.lstm_layers, -1, -1).contiguous()
         )
         input_cell = (
-            self.static_context_cell_encoder_grn(static_embedding)
-            .expand(self.lstm_layers, -1, -1)
-            .contiguous()
+            self.static_context_cell_encoder_grn(static_embedding).expand(self.lstm_layers, -1, -1).contiguous()
         )
 
         # run local lstm encoder
-        encoder_out, (hidden, cell) = self.lstm_encoder(
-            input=embeddings_varying_encoder, hx=(input_hidden, input_cell)
-        )
+        encoder_out, (hidden, cell) = self.lstm_encoder(input=embeddings_varying_encoder, hx=(input_hidden, input_cell))
 
         # run local lstm decoder
-        decoder_out, _ = self.lstm_decoder(
-            input=embeddings_varying_decoder, hx=(hidden, cell)
-        )
+        decoder_out, _ = self.lstm_decoder(input=embeddings_varying_decoder, hx=(hidden, cell))
 
         lstm_layer = torch.cat([encoder_out, decoder_out], dim=dim_time)
-        input_embeddings = torch.cat(
-            [embeddings_varying_encoder, embeddings_varying_decoder], dim=dim_time
-        )
+        input_embeddings = torch.cat([embeddings_varying_encoder, embeddings_varying_decoder], dim=dim_time)
 
         # post lstm GateAddNorm
         lstm_out = self.post_lstm_gan(x=lstm_layer, skip=input_embeddings)
@@ -616,9 +558,7 @@ class _TFTModule(PLMixedCovariatesModule):
         static_context_enriched = self.static_context_enrichment(static_embedding)
         attn_input = self.static_enrichment_grn(
             x=lstm_out,
-            context=self.expand_static_context(
-                context=static_context_enriched, time_steps=time_steps
-            ),
+            context=self.expand_static_context(context=static_context_enriched, time_steps=time_steps),
         )
 
         # multi-head attention
@@ -646,9 +586,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # generate output for n_targets and loss_size elements for loss evaluation
         out = self.output_layer(out)
-        out = out.view(
-            batch_size, self.output_chunk_length, self.n_targets, self.loss_size
-        )
+        out = out.view(batch_size, self.output_chunk_length, self.n_targets, self.loss_size)
         self._attn_out_weights = attn_out_weights
         self._static_covariate_var = static_covariate_var
         self._encoder_sparse_weights = encoder_sparse_weights
@@ -669,9 +607,7 @@ class TFTModel(MixedCovariatesTorchModel):
         feed_forward: str = "GatedResidualNetwork",
         dropout: float = 0.1,
         hidden_continuous_size: int = 8,
-        categorical_embedding_sizes: Optional[
-            Dict[str, Union[int, Tuple[int, int]]]
-        ] = None,
+        categorical_embedding_sizes: Optional[Dict[str, Union[int, Tuple[int, int]]]] = None,
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
@@ -959,9 +895,7 @@ class TFTModel(MixedCovariatesTorchModel):
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
         self.categorical_embedding_sizes = (
-            categorical_embedding_sizes
-            if categorical_embedding_sizes is not None
-            else {}
+            categorical_embedding_sizes if categorical_embedding_sizes is not None else {}
         )
         self.add_relative_index = add_relative_index
         self.output_dim: Optional[Tuple[int, int]] = None
@@ -1054,9 +988,7 @@ class TFTModel(MixedCovariatesTorchModel):
         variables_meta = {
             "input": {
                 type_name: [f"{var_name}_{i}" for i in range(tensor.shape[1])]
-                for type_name, var_name, tensor in zip(
-                    type_names, variable_names, tensors
-                )
+                for type_name, var_name, tensor in zip(type_names, variable_names, tensors)
                 if tensor is not None
             },
             "model_config": {},
@@ -1084,18 +1016,12 @@ class TFTModel(MixedCovariatesTorchModel):
                     time_varying_decoder_input += vars_meta
                     reals_input += vars_meta
                 elif input_var in ["static_covariate"]:
-                    if (
-                        self.static_covariates is None
-                    ):  # when training with fit_from_dataset
-                        static_cols = pd.Index(
-                            [i for i in range(static_covariates.shape[1])]
-                        )
+                    if self.static_covariates is None:  # when training with fit_from_dataset
+                        static_cols = pd.Index([i for i in range(static_covariates.shape[1])])
                     else:
                         static_cols = self.static_covariates.columns
                     numeric_mask = ~static_cols.isin(self.categorical_embedding_sizes)
-                    for idx, (static_var, col_name, is_numeric) in enumerate(
-                        zip(vars_meta, static_cols, numeric_mask)
-                    ):
+                    for idx, (static_var, col_name, is_numeric) in enumerate(zip(vars_meta, static_cols, numeric_mask)):
                         static_input.append(static_var)
                         if is_numeric:
                             static_input_numeric.append(static_var)
@@ -1117,28 +1043,14 @@ class TFTModel(MixedCovariatesTorchModel):
                             categorical_input.append(static_var)
 
         variables_meta["model_config"]["reals_input"] = list(dict.fromkeys(reals_input))
-        variables_meta["model_config"]["categorical_input"] = list(
-            dict.fromkeys(categorical_input)
-        )
-        variables_meta["model_config"]["time_varying_encoder_input"] = list(
-            dict.fromkeys(time_varying_encoder_input)
-        )
-        variables_meta["model_config"]["time_varying_decoder_input"] = list(
-            dict.fromkeys(time_varying_decoder_input)
-        )
-        variables_meta["model_config"]["static_input"] = list(
-            dict.fromkeys(static_input)
-        )
-        variables_meta["model_config"]["static_input_numeric"] = list(
-            dict.fromkeys(static_input_numeric)
-        )
-        variables_meta["model_config"]["static_input_categorical"] = list(
-            dict.fromkeys(static_input_categorical)
-        )
+        variables_meta["model_config"]["categorical_input"] = list(dict.fromkeys(categorical_input))
+        variables_meta["model_config"]["time_varying_encoder_input"] = list(dict.fromkeys(time_varying_encoder_input))
+        variables_meta["model_config"]["time_varying_decoder_input"] = list(dict.fromkeys(time_varying_decoder_input))
+        variables_meta["model_config"]["static_input"] = list(dict.fromkeys(static_input))
+        variables_meta["model_config"]["static_input_numeric"] = list(dict.fromkeys(static_input_numeric))
+        variables_meta["model_config"]["static_input_categorical"] = list(dict.fromkeys(static_input_categorical))
 
-        n_static_components = (
-            len(static_covariates) if static_covariates is not None else 0
-        )
+        n_static_components = len(static_covariates) if static_covariates is not None else 0
 
         self.categorical_embedding_sizes = categorical_embedding_sizes
 
@@ -1166,7 +1078,6 @@ class TFTModel(MixedCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> MixedCovariatesSequentialDataset:
-
         raise_if(
             future_covariates is None and not self.add_relative_index,
             "TFTModel requires future covariates. The model applies multi-head attention queries on future "

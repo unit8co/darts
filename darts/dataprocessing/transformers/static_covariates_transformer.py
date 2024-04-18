@@ -109,12 +109,8 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         comp3               0.5  1.0
         """
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
-        self.transformer_num = (
-            MinMaxScaler() if transformer_num is None else transformer_num
-        )
-        self.transformer_cat = (
-            OrdinalEncoder() if transformer_cat is None else transformer_cat
-        )
+        self.transformer_num = MinMaxScaler() if transformer_num is None else transformer_num
+        self.transformer_cat = OrdinalEncoder() if transformer_cat is None else transformer_cat
 
         for transformer, transformer_name in zip(
             [self.transformer_num, self.transformer_cat],
@@ -149,9 +145,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     #
 
     @staticmethod
-    def ts_fit(
-        series: Sequence[TimeSeries], params: Dict[str, Dict[str, Any]], *args, **kwargs
-    ):
+    def ts_fit(series: Sequence[TimeSeries], params: Dict[str, Dict[str, Any]], *args, **kwargs):
         """
         Collates static covariates of all provided `TimeSeries` and fits the following parameters:
             1. `transformer_num`, the fitted numerical static covariate transformer.
@@ -175,13 +169,9 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         # Collate static covariates of all `series`:
         stat_covs = pd.concat([s.static_covariates for s in series], axis=0)
 
-        cols_num, cols_cat = StaticCovariatesTransformer._infer_static_cov_dtypes(
-            stat_covs, cols_num, cols_cat
-        )
+        cols_num, cols_cat = StaticCovariatesTransformer._infer_static_cov_dtypes(stat_covs, cols_num, cols_cat)
 
-        mask_num, mask_cat = StaticCovariatesTransformer._create_component_masks(
-            stat_covs, cols_num, cols_cat
-        )
+        mask_num, mask_cat = StaticCovariatesTransformer._create_component_masks(stat_covs, cols_num, cols_cat)
 
         # Fit numerical and categorical static covariate transformers:
         stat_covs = stat_covs.to_numpy(copy=False)
@@ -193,16 +183,12 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         (
             cat_mapping,
             inv_cat_mapping,
-        ) = StaticCovariatesTransformer._create_category_mappings(
-            stat_covs, transformer_cat, mask_cat, cols_cat
-        )
+        ) = StaticCovariatesTransformer._create_category_mappings(stat_covs, transformer_cat, mask_cat, cols_cat)
 
         (
             inv_mask_num,
             inv_mask_cat,
-        ) = StaticCovariatesTransformer._create_inv_component_masks(
-            mask_num, mask_cat, cat_mapping, cols_cat
-        )
+        ) = StaticCovariatesTransformer._create_inv_component_masks(mask_num, mask_cat, cat_mapping, cols_cat)
 
         # Store masks and category mappings for untransformed and transformed static covariates:
         mask_num_dict = {"transform": mask_num, "inverse_transform": inv_mask_num}
@@ -212,10 +198,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             "inverse_transform": inv_cat_mapping,
         }
         # Count number of categorical features in untransformed and transformed static covariates:
-        n_cat_cols = {
-            method: len(col_map_cat_dict[method])
-            for method in ("transform", "inverse_transform")
-        }
+        n_cat_cols = {method: len(col_map_cat_dict[method]) for method in ("transform", "inverse_transform")}
 
         return {
             "transformer_num": transformer_num,
@@ -237,14 +220,10 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         of names of categorical/ordinal static covariates.
         """
         if cols_num is None:
-            mask_num = stat_covs.columns.isin(
-                stat_covs.select_dtypes(include=np.number).columns
-            )
+            mask_num = stat_covs.columns.isin(stat_covs.select_dtypes(include=np.number).columns)
             cols_num = stat_covs.columns[mask_num]
         if cols_cat is None:
-            mask_cat = stat_covs.columns.isin(
-                stat_covs.select_dtypes(exclude=np.number).columns
-            )
+            mask_cat = stat_covs.columns.isin(stat_covs.select_dtypes(exclude=np.number).columns)
             cols_cat = stat_covs.columns[mask_cat]
         return cols_num, cols_cat
 
@@ -286,14 +265,10 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         """
         if mask_cat.any():
             # check how many features the transformer generates
-            n_cat_out = transformer_cat.transform(
-                np.expand_dims(untransformed_stat_covs[0, mask_cat], 0)
-            ).shape[-1]
+            n_cat_out = transformer_cat.transform(np.expand_dims(untransformed_stat_covs[0, mask_cat], 0)).shape[-1]
             # transformer generates same number of features -> make a 1-1 column map
             if n_cat_out == sum(mask_cat):
-                col_map_cat = inv_col_map_cat = OrderedDict(
-                    {col: [col] for col in cols_cat}
-                )
+                col_map_cat = inv_col_map_cat = OrderedDict({col: [col] for col in cols_cat})
             # transformer generates more features (i.e. OneHotEncoder) -> create a 1-many column map
             else:
                 col_map_cat = OrderedDict()
@@ -356,20 +331,12 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     #
 
     @staticmethod
-    def ts_transform(
-        series: TimeSeries, params: Dict[str, Any], *args, **kwargs
-    ) -> TimeSeries:
-        return StaticCovariatesTransformer._transform_static_covs(
-            series, params["fitted"], method="transform"
-        )
+    def ts_transform(series: TimeSeries, params: Dict[str, Any], *args, **kwargs) -> TimeSeries:
+        return StaticCovariatesTransformer._transform_static_covs(series, params["fitted"], method="transform")
 
     @staticmethod
-    def ts_inverse_transform(
-        series: TimeSeries, params: Dict[str, Any], *args, **kwargs
-    ) -> TimeSeries:
-        return StaticCovariatesTransformer._transform_static_covs(
-            series, params["fitted"], method="inverse_transform"
-        )
+    def ts_inverse_transform(series: TimeSeries, params: Dict[str, Any], *args, **kwargs) -> TimeSeries:
+        return StaticCovariatesTransformer._transform_static_covs(series, params["fitted"], method="inverse_transform")
 
     @staticmethod
     def _transform_static_covs(
@@ -390,9 +357,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         col_map_cat = fitted_params["col_map_cat"][method]
         n_cat_cols = fitted_params["n_cat_cols"][method]
 
-        vals_num, vals_cat = StaticCovariatesTransformer._extract_static_covs(
-            series, mask_num, mask_cat
-        )
+        vals_num, vals_cat = StaticCovariatesTransformer._extract_static_covs(series, mask_num, mask_cat)
 
         # Transform static covs:
         tr_out_num, tr_out_cat = None, None
@@ -449,9 +414,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         data = {}
         idx_num, idx_cat = 0, 0
         static_cov_columns = []
-        for col, is_num, is_cat in zip(
-            series.static_covariates.columns, mask_num, mask_cat
-        ):
+        for col, is_num, is_cat in zip(series.static_covariates.columns, mask_num, mask_cat):
             if is_num:  # numeric scaled column
                 data[col] = vals_num[:, idx_num]
                 static_cov_columns.append(col)

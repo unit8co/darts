@@ -76,9 +76,7 @@ class TimeBatchNorm2d(nn.BatchNorm2d):
         # `x` has shape (batch_size, time, features)
         if x.ndim != 3:
             raise_log(
-                ValueError(
-                    f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."
-                ),
+                ValueError(f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."),
                 logger=logger,
             )
         # apply 2D batch norm over reshape input_data `(batch_size, 1, timepoints, features)`
@@ -128,26 +126,14 @@ class _FeatureMixing(nn.Module):
         """
         super().__init__()
 
-        self.projection = (
-            nn.Linear(input_dim, output_dim)
-            if input_dim != output_dim
-            else nn.Identity()
-        )
-        self.norm_before = (
-            norm_type((sequence_length, input_dim))
-            if normalize_before
-            else nn.Identity()
-        )
+        self.projection = nn.Linear(input_dim, output_dim) if input_dim != output_dim else nn.Identity()
+        self.norm_before = norm_type((sequence_length, input_dim)) if normalize_before else nn.Identity()
         self.fc1 = nn.Linear(input_dim, ff_size)
         self.activation = activation
         self.dropout1 = MonteCarloDropout(dropout)
         self.fc2 = nn.Linear(ff_size, output_dim)
         self.dropout2 = MonteCarloDropout(dropout)
-        self.norm_after = (
-            norm_type((sequence_length, output_dim))
-            if not normalize_before
-            else nn.Identity()
-        )
+        self.norm_after = norm_type((sequence_length, output_dim)) if not normalize_before else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_proj = self.projection(x)
@@ -197,19 +183,11 @@ class _TimeMixing(nn.Module):
         """
         super().__init__()
         self.normalize_before = normalize_before
-        self.norm_before = (
-            norm_type((sequence_length, input_dim))
-            if normalize_before
-            else nn.Identity()
-        )
+        self.norm_before = norm_type((sequence_length, input_dim)) if normalize_before else nn.Identity()
         self.activation = activation
         self.dropout = MonteCarloDropout(dropout)
         self.fc1 = nn.Linear(sequence_length, sequence_length)
-        self.norm_after = (
-            norm_type((sequence_length, input_dim))
-            if not normalize_before
-            else nn.Identity()
-        )
+        self.norm_after = norm_type((sequence_length, input_dim)) if not normalize_before else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # permute the feature dim with the time dim
@@ -301,9 +279,7 @@ class _ConditionalMixerLayer(nn.Module):
             norm_type=norm_type,
         )
 
-    def forward(
-        self, x: torch.Tensor, x_static: Optional[torch.Tensor]
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_static: Optional[torch.Tensor]) -> torch.Tensor:
         if self.feature_mixing_static is not None:
             x_static_mixed = self.feature_mixing_static(x_static)
             x = torch.cat([x, x_static_mixed], dim=-1)
@@ -372,9 +348,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
 
         if activation not in ACTIVATIONS:
             raise_log(
-                ValueError(
-                    f"Invalid `activation={activation}`. Must be on of {ACTIVATIONS}."
-                ),
+                ValueError(f"Invalid `activation={activation}`. Must be on of {ACTIVATIONS}."),
                 logger=logger,
             )
         activation = getattr(nn, activation)()
@@ -382,9 +356,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         if isinstance(norm_type, str):
             if norm_type not in NORMS:
                 raise_log(
-                    ValueError(
-                        f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."
-                    ),
+                    ValueError(f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."),
                     logger=logger,
                 )
             if norm_type == "TimeBatchNorm2d":
@@ -801,14 +773,8 @@ class TSMixerModel(MixedCovariatesTorchModel):
         input_dim = past_target.shape[1]
         output_dim = future_target.shape[1]
 
-        static_cov_dim = (
-            static_covariates.shape[0] * static_covariates.shape[1]
-            if static_covariates is not None
-            else 0
-        )
-        future_cov_dim = (
-            future_covariates.shape[1] if future_covariates is not None else 0
-        )
+        static_cov_dim = static_covariates.shape[0] * static_covariates.shape[1] if static_covariates is not None else 0
+        future_cov_dim = future_covariates.shape[1] if future_covariates is not None else 0
         past_cov_dim = past_covariates.shape[1] if past_covariates is not None else 0
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

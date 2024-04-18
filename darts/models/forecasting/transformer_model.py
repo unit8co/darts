@@ -53,11 +53,7 @@ def _generate_coder(
         One of Darts' Position-wise Feed-Forward Network variants `from darts.models.components.glu_variants`
     """
 
-    ffn = (
-        dict(ffn=ffn_cls(d_model=d_model, d_ff=dim_ff, dropout=dropout))
-        if ffn_cls
-        else dict()
-    )
+    ffn = dict(ffn=ffn_cls(d_model=d_model, d_ff=dim_ff, dropout=dropout)) if ffn_cls else dict()
     layer = layer_cls(
         **ffn,
         dropout=dropout,
@@ -104,9 +100,7 @@ class _PositionalEncoding(nn.Module):
 
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
-        )
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0).transpose(0, 1)
@@ -190,9 +184,7 @@ class _TransformerModule(PLPastCovariatesModule):
         self.target_length = self.output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
-        self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, self.input_chunk_length
-        )
+        self.positional_encoding = _PositionalEncoding(d_model, dropout, self.input_chunk_length)
 
         if isinstance(norm_type, str):
             try:
@@ -208,8 +200,7 @@ class _TransformerModule(PLPastCovariatesModule):
         if activation in GLU_FFN:
             raise_if(
                 custom_encoder is not None or custom_decoder is not None,
-                "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
-                f"{GLU_FFN}",
+                "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from " f"{GLU_FFN}",
                 logger=logger,
             )
             # use glu variant feed-forward layers
@@ -281,9 +272,7 @@ class _TransformerModule(PLPastCovariatesModule):
             custom_decoder=custom_decoder,
         )
 
-        self.decoder = nn.Linear(
-            d_model, self.target_length * self.target_size * self.nr_params
-        )
+        self.decoder = nn.Linear(d_model, self.target_length * self.target_size * self.nr_params)
 
     def _create_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
@@ -317,9 +306,7 @@ class _TransformerModule(PLPastCovariatesModule):
         # from (1, batch_size, output_chunk_length * output_size)
         # to (batch_size, output_chunk_length, output_size, nr_params)
         predictions = out[0, :, :]
-        predictions = predictions.view(
-            -1, self.target_length, self.target_size, self.nr_params
-        )
+        predictions = predictions.view(-1, self.target_length, self.target_size, self.nr_params)
 
         return predictions
 
@@ -604,9 +591,7 @@ class TransformerModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

@@ -128,17 +128,10 @@ def eval_accuracy_from_scores(
         )
 
     sol = []
-    for idx, (s_anomalies, s_score) in enumerate(
-        zip(list_actual_anomalies, list_anomaly_scores)
-    ):
-
+    for idx, (s_anomalies, s_score) in enumerate(zip(list_actual_anomalies, list_anomaly_scores)):
         _assert_binary(s_anomalies, "actual_anomalies")
 
-        sol.append(
-            _eval_accuracy_from_data(
-                s_anomalies, s_score, list_window[idx], metric_fn, metric
-            )
-        )
+        sol.append(_eval_accuracy_from_data(s_anomalies, s_score, list_window[idx], metric_fn, metric))
 
     if len(sol) == 1 and not isinstance(anomaly_score, Sequence):
         return sol[0]
@@ -200,8 +193,7 @@ def eval_accuracy_from_binary_prediction(
 
     raise_if_not(
         metric in {"recall", "precision", "f1", "accuracy"},
-        "Argument `metric` must be one of 'recall', 'precision', "
-        "'f1' and 'accuracy'.",
+        "Argument `metric` must be one of 'recall', 'precision', " "'f1' and 'accuracy'.",
     )
 
     if metric == "recall":
@@ -235,18 +227,11 @@ def eval_accuracy_from_binary_prediction(
         )
 
     sol = []
-    for idx, (s_anomalies, s_pred) in enumerate(
-        zip(list_actual_anomalies, list_binary_pred_anomalies)
-    ):
-
+    for idx, (s_anomalies, s_pred) in enumerate(zip(list_actual_anomalies, list_binary_pred_anomalies)):
         _assert_binary(s_pred, "pred_anomalies")
         _assert_binary(s_anomalies, "actual_anomalies")
 
-        sol.append(
-            _eval_accuracy_from_data(
-                s_anomalies, s_pred, list_window[idx], metric_fn, metric
-            )
-        )
+        sol.append(_eval_accuracy_from_data(s_anomalies, s_pred, list_window[idx], metric_fn, metric))
 
     if len(sol) == 1 and not isinstance(binary_pred_anomalies, Sequence):
         return sol[0]
@@ -304,10 +289,7 @@ def _eval_accuracy_from_data(
     s_data, s_anomalies = _intersect(s_data, s_anomalies)
 
     if metric_name == "AUC_ROC" or metric_name == "AUC_PR":
-
-        nr_anomalies_per_component = (
-            s_anomalies.sum(axis=0).values(copy=False).flatten()
-        )
+        nr_anomalies_per_component = s_anomalies.sum(axis=0).values(copy=False).flatten()
 
         raise_if(
             nr_anomalies_per_component.min() == 0,
@@ -317,9 +299,7 @@ def _eval_accuracy_from_data(
         raise_if(
             nr_anomalies_per_component.max() == len(s_anomalies),
             f"`actual_anomalies` only contains anomalies. {metric_name} cannot be computed."
-            + ["", f" Consider decreasing the window size (window={window})"][
-                window > 1
-            ],
+            + ["", f" Consider decreasing the window size (window={window})"][window > 1],
         )
 
     # TODO: could we vectorize this?
@@ -402,8 +382,7 @@ def _sanity_check_two_series(
     # check if the two inputs time series have the same number of components
     raise_if_not(
         series_1.width == series_2.width,
-        "Series must have the same number of components,"
-        + f" found {series_1.width} and {series_2.width}.",
+        "Series must have the same number of components," + f" found {series_1.width} and {series_2.width}.",
     )
 
     # check if the time intersection between the two inputs time series is not empty
@@ -578,7 +557,6 @@ def show_anomalies_from_scores(
         )
 
     if anomaly_scores is not None:
-
         if isinstance(anomaly_scores, Sequence):
             for idx, s in enumerate(anomaly_scores):
                 raise_if_not(
@@ -593,7 +571,6 @@ def show_anomalies_from_scores(
             anomaly_scores = [anomaly_scores]
 
         if names_of_scorers is not None:
-
             if isinstance(names_of_scorers, str):
                 names_of_scorers = [names_of_scorers]
             elif isinstance(names_of_scorers, Sequence):
@@ -622,9 +599,7 @@ def show_anomalies_from_scores(
                     f"Every window must be of type int, found {type(w)} at index {idx}.",
                 )
         else:
-            raise ValueError(
-                f"Input `window` must be of type int or Sequence, found {type(window)}."
-            )
+            raise ValueError(f"Input `window` must be of type int or Sequence, found {type(window)}.")
 
         raise_if_not(
             all([w > 0 for w in window]),
@@ -648,19 +623,13 @@ def show_anomalies_from_scores(
         nbr_plots = nbr_plots + len(set(window))
     else:
         if window is not None:
-            logger.warning(
-                "The parameter `window` is given, but the input `anomaly_scores` is None."
-            )
+            logger.warning("The parameter `window` is given, but the input `anomaly_scores` is None.")
 
         if names_of_scorers is not None:
-            logger.warning(
-                "The parameter `names_of_scorers` is given, but the input `anomaly_scores` is None."
-            )
+            logger.warning("The parameter `names_of_scorers` is given, but the input `anomaly_scores` is None.")
 
         if metric is not None:
-            logger.warning(
-                "The parameter `metric` is given, but the input `anomaly_scores` is None."
-            )
+            logger.warning("The parameter `metric` is given, but the input `anomaly_scores` is None.")
 
     fig, axs = plt.subplots(
         nbr_plots,
@@ -675,7 +644,6 @@ def show_anomalies_from_scores(
     _plot_series(series=series, ax_id=axs[index_ax][0], linewidth=0.5, label_name="")
 
     if model_output is not None:
-
         _plot_series(
             series=model_output,
             ax_id=axs[index_ax][0],
@@ -691,18 +659,15 @@ def show_anomalies_from_scores(
     axs[index_ax][0].legend(loc="upper center", bbox_to_anchor=(0.5, 1.1), ncol=2)
 
     if anomaly_scores is not None:
-
         dict_input = {}
 
         for idx, (score, w) in enumerate(zip(anomaly_scores, window)):
-
             dict_input[idx] = {"series_score": score, "window": w, "name_id": idx}
 
         current_window = window[0]
         index_ax = index_ax + 1
 
         for elem in sorted(dict_input.items(), key=lambda x: x[1]["window"]):
-
             idx = elem[1]["name_id"]
             w = elem[1]["window"]
 
@@ -735,15 +700,12 @@ def show_anomalies_from_scores(
                 label_name=label,
             )
 
-            axs[index_ax][0].legend(
-                loc="upper center", bbox_to_anchor=(0.5, 1.19), ncol=2
-            )
+            axs[index_ax][0].legend(loc="upper center", bbox_to_anchor=(0.5, 1.19), ncol=2)
             axs[index_ax][0].set_title(f"Window: {str(w)}", loc="left")
             axs[index_ax][0].set_title("")
             axs[index_ax][0].set_xlabel("")
 
     if actual_anomalies is not None:
-
         _plot_series(
             series=actual_anomalies,
             ax_id=axs[index_ax + 1][0],
@@ -756,9 +718,7 @@ def show_anomalies_from_scores(
         axs[index_ax + 1][0].set_ylim([-0.1, 1.1])
         axs[index_ax + 1][0].set_yticks([0, 1])
         axs[index_ax + 1][0].set_yticklabels(["no", "yes"])
-        axs[index_ax + 1][0].legend(
-            loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=2
-        )
+        axs[index_ax + 1][0].legend(loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=2)
     else:
         axs[index_ax][0].set_xlabel("timestamp")
 
@@ -801,6 +761,4 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
         central_series.plot(ax=ax_id, linewidth=linewidth, label=label_to_use, **kwargs)
 
         if comp.sample.size > 1:
-            ax_id.fill_between(
-                series.time_index, low_series, high_series, alpha=0.25, **kwargs
-            )
+            ax_id.fill_between(series.time_index, low_series, high_series, alpha=0.25, **kwargs)

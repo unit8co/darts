@@ -18,9 +18,7 @@ logger = get_logger(__name__)
 class TestCovariatesIndexGenerator:
     n_target = 24
     target_time = tg.linear_timeseries(length=n_target, freq="MS")
-    cov_time_train = tg.datetime_attribute_timeseries(
-        target_time, attribute="month", cyclic=True
-    )
+    cov_time_train = tg.datetime_attribute_timeseries(target_time, attribute="month", cyclic=True)
     cov_time_train_short = cov_time_train[1:]
 
     target_int = tg.linear_timeseries(length=n_target, start=2)
@@ -77,13 +75,9 @@ class TestCovariatesIndexGenerator:
         # pd.DatetimeIndex
         idx, _ = ig.generate_train_idx(self.target_time, self.cov_time_train)
         assert isinstance(idx, pd.DatetimeIndex)
-        idx, _ = ig.generate_inference_idx(
-            self.n_short, self.target_time, self.cov_time_inf_short
-        )
+        idx, _ = ig.generate_inference_idx(self.n_short, self.target_time, self.cov_time_inf_short)
         assert isinstance(idx, pd.DatetimeIndex)
-        idx, _ = ig.generate_train_inference_idx(
-            self.n_short, self.target_time, self.cov_time_inf_short
-        )
+        idx, _ = ig.generate_train_inference_idx(self.n_short, self.target_time, self.cov_time_inf_short)
         assert isinstance(idx, pd.DatetimeIndex)
         idx, _ = ig.generate_train_idx(self.target_time, None)
         assert isinstance(idx, pd.DatetimeIndex)
@@ -91,13 +85,9 @@ class TestCovariatesIndexGenerator:
         # pd.RangeIndex
         idx, _ = ig.generate_train_idx(self.target_int, self.cov_int_train)
         assert isinstance(idx, pd.RangeIndex)
-        idx, _ = ig.generate_inference_idx(
-            self.n_short, self.target_int, self.cov_int_inf_short
-        )
+        idx, _ = ig.generate_inference_idx(self.n_short, self.target_int, self.cov_int_inf_short)
         assert isinstance(idx, pd.RangeIndex)
-        idx, _ = ig.generate_train_inference_idx(
-            self.n_short, self.target_int, self.cov_int_inf_short
-        )
+        idx, _ = ig.generate_train_inference_idx(self.n_short, self.target_int, self.cov_int_inf_short)
         assert isinstance(idx, pd.RangeIndex)
         idx, _ = ig.generate_train_idx(self.target_int, None)
         assert isinstance(idx, pd.RangeIndex)
@@ -118,11 +108,7 @@ class TestCovariatesIndexGenerator:
         idx, _ = ig.generate_train_idx(self.target_time, None)
         assert idx[0] == self.target_time.start_time()
         if isinstance(ig, PastCovariatesIndexGenerator):
-            assert (
-                idx[-1]
-                == self.target_time.end_time()
-                - self.output_chunk_length * self.target_time.freq
-            )
+            assert idx[-1] == self.target_time.end_time() - self.output_chunk_length * self.target_time.freq
         else:
             assert idx[-1] == self.target_time.end_time()
 
@@ -137,11 +123,7 @@ class TestCovariatesIndexGenerator:
         idx, _ = ig.generate_train_idx(self.target_int, None)
         assert idx[0] == self.target_int.start_time()
         if isinstance(ig, PastCovariatesIndexGenerator):
-            assert (
-                idx[-1]
-                == self.target_int.end_time()
-                - self.output_chunk_length * self.target_int.freq
-            )
+            assert idx[-1] == self.target_int.end_time() - self.output_chunk_length * self.target_int.freq
         else:
             assert idx[-1] == self.target_int.end_time()
 
@@ -174,10 +156,7 @@ class TestCovariatesIndexGenerator:
         idx, _ = ig.generate_inference_idx(self.n_long, self.target_time, None)
         if is_past:
             n_out = self.input_chunk_length + self.n_long - self.output_chunk_length
-            last_idx = (
-                self.target_time.end_time()
-                + (self.n_long - self.output_chunk_length) * self.target_time.freq
-            )
+            last_idx = self.target_time.end_time() + (self.n_long - self.output_chunk_length) * self.target_time.freq
         else:
             n_out = self.input_chunk_length + self.n_long
             last_idx = self.cov_time_inf_long.end_time()
@@ -185,21 +164,13 @@ class TestCovariatesIndexGenerator:
         assert len(idx) == n_out
         assert idx[-1] == last_idx
 
-        idx, _ = ig.generate_inference_idx(
-            self.n_short, self.target_time, self.cov_time_inf_short
-        )
+        idx, _ = ig.generate_inference_idx(self.n_short, self.target_time, self.cov_time_inf_short)
         assert idx.equals(self.cov_time_inf_short.time_index)
-        idx, _ = ig.generate_inference_idx(
-            self.n_long, self.target_time, self.cov_time_inf_long
-        )
+        idx, _ = ig.generate_inference_idx(self.n_long, self.target_time, self.cov_time_inf_long)
         assert idx.equals(self.cov_time_inf_long.time_index)
-        idx, _ = ig.generate_inference_idx(
-            self.n_short, self.target_int, self.cov_int_inf_short
-        )
+        idx, _ = ig.generate_inference_idx(self.n_short, self.target_int, self.cov_int_inf_short)
         assert idx.equals(self.cov_int_inf_short.time_index)
-        idx, _ = ig.generate_inference_idx(
-            self.n_long, self.target_int, self.cov_int_inf_long
-        )
+        idx, _ = ig.generate_inference_idx(self.n_long, self.target_int, self.cov_int_inf_long)
         assert idx.equals(self.cov_int_inf_long.time_index)
 
     def helper_test_index_generator_creation(self, ig_cls, is_past=False):
@@ -233,9 +204,7 @@ class TestCovariatesIndexGenerator:
 
     def test_past_index_generator_creation(self):
         # test parameter scenarios
-        self.helper_test_index_generator_creation(
-            ig_cls=PastCovariatesIndexGenerator, is_past=True
-        )
+        self.helper_test_index_generator_creation(ig_cls=PastCovariatesIndexGenerator, is_past=True)
 
         # ==> test failures
         # one lag is >= 0 (not possible for past covariates)
@@ -282,9 +251,7 @@ class TestCovariatesIndexGenerator:
 
     def test_future_index_generator_creation(self):
         # test parameter scenarios
-        self.helper_test_index_generator_creation(
-            ig_cls=FutureCovariatesIndexGenerator, is_past=False
-        )
+        self.helper_test_index_generator_creation(ig_cls=FutureCovariatesIndexGenerator, is_past=False)
 
         # future covariates index generator (ig) can technically be used like a past covariates ig
         min_lag, max_lag = -2, -1
@@ -327,9 +294,7 @@ class TestCovariatesIndexGenerator:
         assert ig.shift_end == max_lag + 1
 
     def test_past_index_generator(self):
-        ig = PastCovariatesIndexGenerator(
-            self.input_chunk_length, self.output_chunk_length
-        )
+        ig = PastCovariatesIndexGenerator(self.input_chunk_length, self.output_chunk_length)
         self.helper_test_index_types(ig)
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=True)
@@ -339,9 +304,7 @@ class TestCovariatesIndexGenerator:
         ocl = self.output_chunk_length
         target = self.target_time
 
-        def test_routine_train(
-            self, icl, ocl, min_lag, max_lag, start_expected, end_expected
-        ):
+        def test_routine_train(self, icl, ocl, min_lag, max_lag, start_expected, end_expected):
             idxg = PastCovariatesIndexGenerator(
                 icl,
                 ocl,
@@ -363,9 +326,7 @@ class TestCovariatesIndexGenerator:
             assert idx[-1] == pd.Timestamp(end_expected)
             assert target_end == target.end_time()
             # check case 0: we give covariates, index will always be the covariate time index
-            idx, target_end = idxg.generate_inference_idx(
-                n, target, self.cov_time_inf_short
-            )
+            idx, target_end = idxg.generate_inference_idx(n, target, self.cov_time_inf_short)
             assert idx.equals(self.cov_time_inf_short.time_index)
             assert target_end == target.end_time()
 
@@ -375,9 +336,7 @@ class TestCovariatesIndexGenerator:
             assert idx[-1] == pd.Timestamp(end_expected)
             assert target_end == target.end_time()
             # check case 0: we give covariates, index will always be the covariate time index
-            idx, target_end = idxg.generate_train_inference_idx(
-                n, target, self.cov_time_inf_short
-            )
+            idx, target_end = idxg.generate_train_inference_idx(n, target, self.cov_time_inf_short)
             assert idx.equals(self.cov_time_inf_short.time_index)
             assert target_end == target.end_time()
 
@@ -388,9 +347,7 @@ class TestCovariatesIndexGenerator:
         max_lag = -1
         expected_start_train = "2000-01-01"
         expected_end_train = "2001-06-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         self.helper_test_index_types(ig)
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=True)
@@ -411,9 +368,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -11, -1
         expected_start_train = "2000-02-01"
         expected_end_train = "2001-06-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         # check inference for n <= ocl
         expected_start_inf = "2001-02-01"
         expected_end_inf = "2001-12-01"
@@ -430,9 +385,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -13, -1
         expected_start_train = "1999-12-01"
         expected_end_train = "2001-06-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         # check inference for n <= ocl
         expected_start_inf = "2000-12-01"
         expected_end_inf = "2001-12-01"
@@ -449,9 +402,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -13, -2
         expected_start_train = "1999-12-01"
         expected_end_train = "2001-05-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         # check inference for n <= ocl
         expected_start_inf = "2000-12-01"
         expected_end_inf = "2001-11-01"
@@ -464,9 +415,7 @@ class TestCovariatesIndexGenerator:
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2001-12-01")
 
     def test_future_index_generator(self):
-        ig = FutureCovariatesIndexGenerator(
-            self.input_chunk_length, self.output_chunk_length
-        )
+        ig = FutureCovariatesIndexGenerator(self.input_chunk_length, self.output_chunk_length)
         self.helper_test_index_types(ig)
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=False)
@@ -476,9 +425,7 @@ class TestCovariatesIndexGenerator:
         ocl = self.output_chunk_length
         target = self.target_time
 
-        def test_routine_train(
-            self, icl, ocl, min_lag, max_lag, start_expected, end_expected
-        ):
+        def test_routine_train(self, icl, ocl, min_lag, max_lag, start_expected, end_expected):
             idxg = FutureCovariatesIndexGenerator(
                 icl,
                 ocl,
@@ -500,9 +447,7 @@ class TestCovariatesIndexGenerator:
             assert idx[-1] == pd.Timestamp(end_expected)
             assert target_end == target.end_time()
             # check case 0: we give covariates, index will always be the covariate time index
-            idx, target_end = idxg.generate_inference_idx(
-                n, target, self.cov_time_inf_short
-            )
+            idx, target_end = idxg.generate_inference_idx(n, target, self.cov_time_inf_short)
             assert idx.equals(self.cov_time_inf_short.time_index)
             assert target_end == target.end_time()
 
@@ -512,9 +457,7 @@ class TestCovariatesIndexGenerator:
             assert idx[-1] == pd.Timestamp(end_expected)
             assert target_end == target.end_time()
             # check case 0: we give covariates, index will always be the covariate time index
-            idx, target_end = idxg.generate_train_inference_idx(
-                n, target, self.cov_time_inf_short
-            )
+            idx, target_end = idxg.generate_train_inference_idx(n, target, self.cov_time_inf_short)
             assert idx.equals(self.cov_time_inf_short.time_index)
             assert target_end == target.end_time()
 
@@ -525,9 +468,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -11, -1
         expected_start_train = "2000-02-01"
         expected_end_train = "2001-06-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         # check inference for n <= ocl
         expected_start_inf = "2001-02-01"
         expected_end_inf = "2001-12-01"
@@ -544,9 +485,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -13, -1
         expected_start_train = "1999-12-01"
         expected_end_train = "2001-06-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         # check inference for n <= ocl
         expected_start_inf = "2000-12-01"
         expected_end_inf = "2001-12-01"
@@ -563,9 +502,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -13, -2
         expected_start_train = "1999-12-01"
         expected_end_train = "2001-05-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         # check inference for n <= ocl
         expected_start_inf = "2000-12-01"
         expected_end_inf = "2001-11-01"
@@ -584,9 +521,7 @@ class TestCovariatesIndexGenerator:
         max_lag = 5  # (ocl - 1)
         expected_start_train = "2000-01-01"
         expected_end_train = "2001-12-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         self.helper_test_index_types(ig)
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=False)
@@ -606,9 +541,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -12, 0
         expected_start_train = "2000-01-01"
         expected_end_train = "2001-07-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         expected_start_inf = "2001-01-01"
         expected_end_inf = "2002-01-01"
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
@@ -624,9 +557,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -12, 17
         expected_start_train = "2000-01-01"
         expected_end_train = "2002-12-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         expected_start_inf = "2001-01-01"
         expected_end_inf = "2003-06-01"
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
@@ -642,9 +573,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = 0, 2
         expected_start_train = "2001-01-01"
         expected_end_train = "2001-09-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         expected_start_inf = "2002-01-01"
         expected_end_inf = "2002-03-01"
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
@@ -660,9 +589,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = 0, 17
         expected_start_train = "2001-01-01"
         expected_end_train = "2002-12-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         expected_start_inf = "2002-01-01"
         expected_end_inf = "2003-06-01"
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
@@ -677,9 +604,7 @@ class TestCovariatesIndexGenerator:
         min_lag, max_lag = -13, 17
         expected_start_train = "1999-12-01"
         expected_end_train = "2002-12-01"
-        ig = test_routine_train(
-            self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train
-        )
+        ig = test_routine_train(self, icl, ocl, min_lag, max_lag, expected_start_train, expected_end_train)
         expected_start_inf = "2000-12-01"
         expected_end_inf = "2003-06-01"
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
@@ -707,7 +632,5 @@ class TestCovariatesIndexGenerator:
         assert idx[0] == target.end_time() + 1 * freq
         assert idx[-1] == target.end_time() + n * freq
 
-        idx, _ = idxg.generate_inference_idx(
-            n=n, target=target, covariates=self.cov_int_inf_short
-        )
+        idx, _ = idxg.generate_inference_idx(n=n, target=target, covariates=self.cov_int_inf_short)
         assert idx.equals(self.cov_int_inf_short.time_index)

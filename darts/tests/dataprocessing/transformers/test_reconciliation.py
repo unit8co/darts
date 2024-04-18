@@ -18,9 +18,7 @@ class TestReconciliation:
     """ test case with a more intricate hierarchy """
     LENGTH = 200
     total_series = (
-        tg.sine_timeseries(value_frequency=0.03, length=LENGTH)
-        + 1
-        + tg.gaussian_timeseries(length=LENGTH) * 0.2
+        tg.sine_timeseries(value_frequency=0.03, length=LENGTH) + 1 + tg.gaussian_timeseries(length=LENGTH) * 0.2
     )
     bottom_1 = total_series / 3 + tg.gaussian_timeseries(length=LENGTH) * 0.01
     bottom_2 = 2 * total_series / 3 + tg.gaussian_timeseries(length=LENGTH) * 0.01
@@ -134,19 +132,17 @@ class TestReconciliation:
     def test_summation_matrix(self):
         np.testing.assert_equal(
             _get_summation_matrix(self.series_complex),
-            np.array(
-                [
-                    [1, 1, 1, 1],
-                    [1, 1, 0, 0],
-                    [0, 0, 1, 1],
-                    [1, 0, 1, 0],
-                    [0, 1, 0, 1],
-                    [1, 0, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 0, 1, 0],
-                    [0, 0, 0, 1],
-                ]
-            ),
+            np.array([
+                [1, 1, 1, 1],
+                [1, 1, 0, 0],
+                [0, 0, 1, 1],
+                [1, 0, 1, 0],
+                [0, 1, 0, 1],
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ]),
         )
 
     def test_hierarchy_preserved_after_predict(self):
@@ -175,16 +171,10 @@ class TestReconciliation:
     def test_reconcilliation_is_order_independent(self):
         dates = date_range("2020-01-01", "2020-12-31", freq="D")
         nr_dates = len(dates)
-        t1 = TimeSeries.from_times_and_values(
-            dates, 2 * np.ones(nr_dates), columns=["T1"]
-        )
-        t2 = TimeSeries.from_times_and_values(
-            dates, 5 * np.ones(nr_dates), columns=["T2"]
-        )
+        t1 = TimeSeries.from_times_and_values(dates, 2 * np.ones(nr_dates), columns=["T1"])
+        t2 = TimeSeries.from_times_and_values(dates, 5 * np.ones(nr_dates), columns=["T2"])
         t3 = TimeSeries.from_times_and_values(dates, np.ones(nr_dates), columns=["T3"])
-        tsum = TimeSeries.from_times_and_values(
-            dates, 9 * np.ones(nr_dates), columns=["T_sum"]
-        )
+        tsum = TimeSeries.from_times_and_values(dates, 9 * np.ones(nr_dates), columns=["T_sum"])
         ts_1 = concatenate([t1, t2, t3, tsum], axis="component")
         ts_2 = concatenate([tsum, t1, t2, t3], axis="component")
 

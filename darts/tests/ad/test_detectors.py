@@ -13,7 +13,6 @@ list_FittableDetector = [QuantileDetector(low_quantile=0.2)]
 
 
 class TestADDetectors:
-
     np.random.seed(42)
 
     # univariate series
@@ -34,15 +33,12 @@ class TestADDetectors:
     mts_test = TimeSeries.from_times_and_values(mts_train._time_index, np_mts_test)
 
     np_mts_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
-    mts_anomalies = TimeSeries.from_times_and_values(
-        mts_train._time_index, np_mts_anomalies
-    )
+    mts_anomalies = TimeSeries.from_times_and_values(mts_train._time_index, np_mts_anomalies)
 
     np_probabilistic = np.random.choice(a=[0, 1], p=[0.5, 0.5], size=[100, 1, 5])
     probabilistic = TimeSeries.from_values(np_probabilistic)
 
     def test_DetectNonFittableDetector(self):
-
         detector = ThresholdDetector(low_threshold=0.2)
 
         # Check return types
@@ -86,7 +82,6 @@ class TestADDetectors:
             detector.detect(self.probabilistic)
 
     def test_eval_accuracy(self):
-
         detector = ThresholdDetector(low_threshold=0.2)
 
         # Check return types
@@ -97,23 +92,17 @@ class TestADDetectors:
         assert isinstance(detector.eval_accuracy(self.anomalies, [self.test]), Sequence)
 
         # Check if return type is Sequence when input is a multivariate series
-        assert isinstance(
-            detector.eval_accuracy(self.mts_anomalies, self.mts_test), Sequence
-        )
+        assert isinstance(detector.eval_accuracy(self.mts_anomalies, self.mts_test), Sequence)
 
         # Check if return type is Sequence when input is a multivariate series
-        assert isinstance(
-            detector.eval_accuracy(self.mts_anomalies, [self.mts_test]), Sequence
-        )
+        assert isinstance(detector.eval_accuracy(self.mts_anomalies, [self.mts_test]), Sequence)
 
         with pytest.raises(ValueError):
             # Input cannot be probabilistic
             detector.eval_accuracy(self.anomalies, self.probabilistic)
 
     def test_FittableDetector(self):
-
         for detector in list_FittableDetector:
-
             # Need to call fit() before calling detect()
             with pytest.raises(ValueError):
                 detector.detect(self.test)
@@ -152,7 +141,6 @@ class TestADDetectors:
                 detector2.detect(self.train)
 
     def test_QuantileDetector(self):
-
         # Need to have at least one parameter (low, high) not None
         with pytest.raises(ValueError):
             QuantileDetector()
@@ -313,35 +301,13 @@ class TestADDetectors:
         assert binary_detection.sum(axis=0).all_values().flatten()[0] == 42
 
         # detector must have an accuracy of 0.57 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="accuracy")
-                - 0.57
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="accuracy") - 0.57) < 1e-05
         # detector must have an recall of 0.4 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="recall") - 0.4
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="recall") - 0.4) < 1e-05
         # detector must have an f1 of 0.08510 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="f1") - 0.08510
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="f1") - 0.08510) < 1e-05
         # detector must have an precision of 0.04761 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="precision")
-                - 0.04761
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="precision") - 0.04761) < 1e-05
 
         # multivariate test
         detector_1param = QuantileDetector(low_quantile=0.05, high_quantile=0.95)
@@ -351,47 +317,17 @@ class TestADDetectors:
         # if two values are given for low and high, and a series of width 2 is given, then the results must
         # be the same as a detector that was given only one value for low and high.
         # (will duplicate the value for each component)
-        detector_2param = QuantileDetector(
-            low_quantile=[0.05, 0.05], high_quantile=[0.95, 0.95]
-        )
+        detector_2param = QuantileDetector(low_quantile=[0.05, 0.05], high_quantile=[0.95, 0.95])
         detector_2param.fit(self.mts_train)
         binary_detection_2param = detector_2param.detect(self.mts_test)
         assert binary_detection == binary_detection_2param
 
         # width of output must be equal to 2 (same dimension as input)
         assert binary_detection.width == 2
-        assert (
-            len(
-                detector_1param.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="accuracy"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(
-                detector_1param.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="recall"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(
-                detector_1param.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="f1"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(
-                detector_1param.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="precision"
-                )
-            )
-            == 2
-        )
+        assert len(detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")) == 2
+        assert len(detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")) == 2
+        assert len(detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")) == 2
+        assert len(detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")) == 2
 
         abs_low_ = detector_1param.low_threshold
         abs_high_ = detector_1param.high_threshold
@@ -415,75 +351,41 @@ class TestADDetectors:
         # detector_1param must found 38 anomalies on the second component of the series 'test'
         assert binary_detection["1"].sum(axis=0).all_values().flatten()[0] == 38
 
-        acc = detector_1param.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="accuracy"
-        )
+        acc = detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")
         # detector_1param must have an accuracy of 0.58 on the first component of the series 'mts_test'
         assert abs(acc[0] - 0.58) < 1e-05
         # detector_1param must have an accuracy of 0.58 on the second component of the series 'mts_test'
         assert abs(acc[1] - 0.58) < 1e-05
 
-        precision = detector_1param.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="precision"
-        )
+        precision = detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")
         # detector_1param must have an precision of 0.08108 on the first component of the series 'mts_test'
         assert abs(precision[0] - 0.08108) < 1e-05
         # detector_1param must have an precision of 0.07894 on the second component of the series 'mts_test'
         assert abs(precision[1] - 0.07894) < 1e-05
 
-        recall = detector_1param.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="recall"
-        )
+        recall = detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")
         # detector_1param must have an recall of 0.2727 on the first component of the series 'mts_test'
         assert abs(recall[0] - 0.27272) < 1e-05
         # detector_1param must have an recall of 0.3 on the second component of the series 'mts_test'
         assert abs(recall[1] - 0.3) < 1e-05
 
-        f1 = detector_1param.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="f1"
-        )
+        f1 = detector_1param.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")
         # detector_1param must have an f1 of 0.125 on the first component of the series 'mts_test'
         assert abs(f1[0] - 0.125) < 1e-05
         # detector_1param must have an f1 of 0.125 on the second component of the series 'mts_test'
         assert abs(f1[1] - 0.125) < 1e-05
 
         # exemple multivariate with Nones
-        detector = QuantileDetector(
-            low_quantile=[0.05, None], high_quantile=[None, 0.95]
-        )
+        detector = QuantileDetector(low_quantile=[0.05, None], high_quantile=[None, 0.95])
         detector.fit(self.mts_train)
         binary_detection = detector.detect(self.mts_test)
 
         # width of output must be equal to 2 (same dimension as input)
         assert binary_detection.width == 2
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="accuracy"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="recall"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1"))
-            == 2
-        )
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="precision"
-                )
-            )
-            == 2
-        )
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")) == 2
 
         # TODO: we should improve these tests to introduce some correlation
         # between actual and detected anomalies...
@@ -495,21 +397,15 @@ class TestADDetectors:
         # detector must found 19 anomalies on the second component of the series 'test'
         assert binary_detection["1"].sum(axis=0).all_values().flatten()[0] == 19
 
-        acc = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="accuracy"
-        )
+        acc = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")
         assert abs(acc[0] - 0.69) < 1e-05
         assert abs(acc[1] - 0.75) < 1e-05
 
-        precision = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="precision"
-        )
+        precision = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")
         assert abs(precision[0] - 0.0) < 1e-05
         assert abs(precision[1] - 0.10526) < 1e-05
 
-        recall = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="recall"
-        )
+        recall = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")
         assert abs(recall[0] - 0.0) < 1e-05
         assert abs(recall[1] - 0.2) < 1e-05
 
@@ -518,7 +414,6 @@ class TestADDetectors:
         assert abs(f1[1] - 0.13793) < 1e-05
 
     def test_ThresholdDetector(self):
-
         # Parameters
         # Need to have at least one parameter (low, high) not None
         with pytest.raises(ValueError):
@@ -561,9 +456,7 @@ class TestADDetectors:
         with pytest.raises(ValueError):
             detector.detect([self.train, self.mts_train])
 
-        detector = ThresholdDetector(
-            low_threshold=[0.1, 0.2], high_threshold=[0.8, 0.9]
-        )
+        detector = ThresholdDetector(low_threshold=[0.1, 0.2], high_threshold=[0.8, 0.9])
         with pytest.raises(ValueError):
             detector.detect(self.train)
         with pytest.raises(ValueError):
@@ -603,35 +496,13 @@ class TestADDetectors:
         # detector must found 58 anomalies in the series 'test'
         assert binary_detection.sum(axis=0).all_values().flatten()[0] == 58
         # detector must have an accuracy of 0.41 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="accuracy")
-                - 0.41
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="accuracy") - 0.41) < 1e-05
         # detector must have an recall of 0.4 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="recall") - 0.4
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="recall") - 0.4) < 1e-05
         # detector must have an f1 of 0.06349 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="f1") - 0.06349
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="f1") - 0.06349) < 1e-05
         # detector must have an precision of 0.03448 for the series 'test'
-        assert (
-            abs(
-                detector.eval_accuracy(self.anomalies, self.test, metric="precision")
-                - 0.03448
-            )
-            < 1e-05
-        )
+        assert abs(detector.eval_accuracy(self.anomalies, self.test, metric="precision") - 0.03448) < 1e-05
 
         # multivariate test
         detector = ThresholdDetector(low_threshold=4.8, high_threshold=10.5)
@@ -640,67 +511,35 @@ class TestADDetectors:
         # if two values are given for low and high, and a series of width 2 is given,
         # then the results must be the same as a detector that was given only one value
         # for low and high. (will duplicate the value for each width)
-        detector_2param = ThresholdDetector(
-            low_threshold=[4.8, 4.8], high_threshold=[10.5, 10.5]
-        )
+        detector_2param = ThresholdDetector(low_threshold=[4.8, 4.8], high_threshold=[10.5, 10.5])
         binary_detection_2param = detector_2param.detect(self.mts_test)
         assert binary_detection == binary_detection_2param
 
         # width of output must be equal to 2 (same dimension as input)
         assert binary_detection.width == 2
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="accuracy"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="recall"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1"))
-            == 2
-        )
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="precision"
-                )
-            )
-            == 2
-        )
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")) == 2
 
         # detector must found 28 anomalies on the first width of the series 'test'
         assert binary_detection["0"].sum(axis=0).all_values().flatten()[0] == 28
         # detector must found 52 anomalies on the second width of the series 'test'
         assert binary_detection["1"].sum(axis=0).all_values().flatten()[0] == 52
 
-        acc = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="accuracy"
-        )
+        acc = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")
         # detector must have an accuracy of 0.71 on the first width of the series 'mts_test'
         assert abs(acc[0] - 0.71) < 1e-05
         # detector must have an accuracy of 0.48 on the second width of the series 'mts_test'
         assert abs(acc[1] - 0.48) < 1e-05
 
-        precision = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="precision"
-        )
+        precision = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")
         # detector must have an precision of 0.17857 on the first width of the series 'mts_test'
         assert abs(precision[0] - 0.17857) < 1e-05
         # detector must have an precision of 0.09615 on the second width of the series 'mts_test'
         assert abs(precision[1] - 0.09615) < 1e-05
 
-        recall = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="recall"
-        )
+        recall = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")
         # detector must have an recall of 0.45454 on the first width of the series 'mts_test'
         assert abs(recall[0] - 0.45454) < 1e-05
         # detector must have an recall of 0.5 on the second width of the series 'mts_test'
@@ -718,59 +557,29 @@ class TestADDetectors:
 
         # width of output must be equal to 2 (same dimension as input)
         assert binary_detection.width == 2
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="accuracy"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="recall"
-                )
-            )
-            == 2
-        )
-        assert (
-            len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1"))
-            == 2
-        )
-        assert (
-            len(
-                detector.eval_accuracy(
-                    self.mts_anomalies, self.mts_test, metric="precision"
-                )
-            )
-            == 2
-        )
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")) == 2
+        assert len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")) == 2
 
         # detector must found 48 anomalies on the first width of the series 'test'
         assert binary_detection["0"].sum(axis=0).all_values().flatten()[0] == 48
         # detector must found 43 anomalies on the second width of the series 'test'
         assert binary_detection["1"].sum(axis=0).all_values().flatten()[0] == 43
 
-        acc = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="accuracy"
-        )
+        acc = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="accuracy")
         # detector must have an accuracy of 0.51 on the first width of the series 'mts_test'
         assert abs(acc[0] - 0.51) < 1e-05
         # detector must have an accuracy of 0.57 on the second width of the series 'mts_test'
         assert abs(acc[1] - 0.57) < 1e-05
 
-        precision = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="precision"
-        )
+        precision = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="precision")
         # detector must have an precision of 0.10416 and  on the first width of the series 'mts_test'
         assert abs(precision[0] - 0.10416) < 1e-05
         # detector must have an precision of 0.11627 on the second width of the series 'mts_test'
         assert abs(precision[1] - 0.11627) < 1e-05
 
-        recall = detector.eval_accuracy(
-            self.mts_anomalies, self.mts_test, metric="recall"
-        )
+        recall = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="recall")
         # detector must have an recall of 0.45454 on the first width of the series 'mts_test'
         assert abs(recall[0] - 0.45454) < 1e-05
         # detector must have an recall of 0.5 on the second width of the series 'mts_test'
@@ -783,7 +592,6 @@ class TestADDetectors:
         assert abs(f1[1] - 0.18867) < 1e-05
 
     def test_fit_detect(self):
-
         detector1 = QuantileDetector(low_quantile=0.05, high_quantile=0.95)
         detector1.fit(self.train)
         prediction1 = detector1.detect(self.train)

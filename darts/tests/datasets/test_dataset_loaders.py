@@ -147,30 +147,22 @@ class TestDatasetLoader:
     def test_hash(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             wrong_hash_dataset.load()
-        assert not os.path.exists(
-            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
-        )
+        assert not os.path.exists(os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name))
 
     def test_uri(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             wrong_url_dataset.load()
-        assert not os.path.exists(
-            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
-        )
+        assert not os.path.exists(os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name))
 
     def test_zip_uri(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             wrong_zip_url_dataset.load()
-        assert not os.path.exists(
-            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
-        )
+        assert not os.path.exists(os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name))
 
     def test_pre_process_fn(self, tmp_dir_dataset):
         with pytest.raises(DatasetLoadingException):
             no_pre_process_fn_dataset.load()
-        assert not os.path.exists(
-            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
-        )
+        assert not os.path.exists(os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name))
 
     def test_multi_series_dataset(self):
         # processing _to_multi_series takes a long time. Test function with 5 cols.

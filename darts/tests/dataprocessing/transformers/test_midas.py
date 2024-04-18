@@ -42,9 +42,7 @@ class TestMIDAS:
         columns=["values_midas_0", "values_midas_1", "values_midas_2"],
     )
 
-    quarterly_not_complete_values = np.array(
-        [[np.nan, np.nan, 3], [4, 5, 6], [7, 8, np.nan]]
-    )
+    quarterly_not_complete_values = np.array([[np.nan, np.nan, 3], [4, 5, 6], [7, 8, np.nan]])
     quarterly_not_complete_ts = TimeSeries.from_times_and_values(
         times=quarterly_times,
         values=quarterly_not_complete_values,
@@ -78,30 +76,19 @@ class TestMIDAS:
         """
         # monthly series with missing values
         midas = MIDAS(low_freq="QS", strip=False)
-        quarterly_not_complete_ts_midas = midas.fit_transform(
-            self.monthly_not_complete_ts
-        )
+        quarterly_not_complete_ts_midas = midas.fit_transform(self.monthly_not_complete_ts)
         assert quarterly_not_complete_ts_midas == self.quarterly_not_complete_ts
 
-        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
-            quarterly_not_complete_ts_midas
-        )
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(quarterly_not_complete_ts_midas)
         assert self.monthly_not_complete_ts == inversed_quarterly_not_complete_ts_midas
 
         # when strip=True we only get 1 one quarter with all 3 months
         midas = MIDAS(low_freq="QS", strip=True)
-        quarterly_not_complete_ts_midas = midas.fit_transform(
-            self.monthly_not_complete_ts
-        )
+        quarterly_not_complete_ts_midas = midas.fit_transform(self.monthly_not_complete_ts)
         assert quarterly_not_complete_ts_midas == self.quarterly_not_complete_ts[1:2]
 
-        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
-            quarterly_not_complete_ts_midas
-        )
-        assert (
-            self.monthly_not_complete_ts[1:4]
-            == inversed_quarterly_not_complete_ts_midas
-        )
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(quarterly_not_complete_ts_midas)
+        assert self.monthly_not_complete_ts[1:4] == inversed_quarterly_not_complete_ts_midas
 
     def test_probabilistic_complete_monthly_to_quarterly(self):
         """
@@ -110,9 +97,7 @@ class TestMIDAS:
 
         # generate probabilistic monthly series
         all_vals_monthly = self.monthly_ts.all_values(copy=False)
-        prob_values_monthly = np.concatenate(
-            [all_vals_monthly + i * 0.01 for i in range(3)], axis=2
-        )
+        prob_values_monthly = np.concatenate([all_vals_monthly + i * 0.01 for i in range(3)], axis=2)
         ts_prob_monthly = TimeSeries.from_times_and_values(
             times=self.monthly_ts.time_index,
             values=prob_values_monthly,
@@ -120,9 +105,7 @@ class TestMIDAS:
         )
         # generate probabilistic quarterly series
         all_vals_quarterly = self.quarterly_ts.all_values(copy=False)
-        prob_values_quarterly = np.concatenate(
-            [all_vals_quarterly + i * 0.01 for i in range(3)], axis=2
-        )
+        prob_values_quarterly = np.concatenate([all_vals_quarterly + i * 0.01 for i in range(3)], axis=2)
         ts_prob_quarterly = TimeSeries.from_times_and_values(
             times=self.quarterly_ts.time_index,
             values=prob_values_quarterly,
@@ -144,9 +127,7 @@ class TestMIDAS:
         """
         # generate probabilistic monthly series
         all_vals_monthly = self.monthly_not_complete_ts.all_values(copy=False)
-        prob_values_monthly = np.concatenate(
-            [all_vals_monthly + i * 0.01 for i in range(3)], axis=2
-        )
+        prob_values_monthly = np.concatenate([all_vals_monthly + i * 0.01 for i in range(3)], axis=2)
         ts_prob_monthly = TimeSeries.from_times_and_values(
             times=self.monthly_not_complete_ts.time_index,
             values=prob_values_monthly,
@@ -154,9 +135,7 @@ class TestMIDAS:
         )
         # generate probabilistic quarterly series
         all_vals_quarterly = self.quarterly_not_complete_ts.all_values(copy=False)
-        prob_values_quarterly = np.concatenate(
-            [all_vals_quarterly + i * 0.01 for i in range(3)], axis=2
-        )
+        prob_values_quarterly = np.concatenate([all_vals_quarterly + i * 0.01 for i in range(3)], axis=2)
         ts_prob_quarterly = TimeSeries.from_times_and_values(
             times=self.quarterly_not_complete_ts.time_index,
             values=prob_values_quarterly,
@@ -168,9 +147,7 @@ class TestMIDAS:
         quarterly_not_complete_ts_midas = midas.fit_transform(ts_prob_monthly)
         assert quarterly_not_complete_ts_midas == ts_prob_quarterly
 
-        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
-            quarterly_not_complete_ts_midas
-        )
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(quarterly_not_complete_ts_midas)
         assert inversed_quarterly_not_complete_ts_midas == ts_prob_monthly
 
         # when strip=True we only get 1 one quarter with all 3 months
@@ -178,9 +155,7 @@ class TestMIDAS:
         quarterly_not_complete_ts_midas = midas.fit_transform(ts_prob_monthly)
         assert quarterly_not_complete_ts_midas == ts_prob_quarterly[1:2]
 
-        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
-            quarterly_not_complete_ts_midas
-        )
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(quarterly_not_complete_ts_midas)
         assert ts_prob_monthly[1:4] == inversed_quarterly_not_complete_ts_midas
 
     def test_multivariate_monthly_to_quarterly(self):
@@ -198,9 +173,7 @@ class TestMIDAS:
         # component components are alternating
         expected_quarterly_ts = TimeSeries.from_times_and_values(
             times=self.quarterly_ts.time_index,
-            values=np.array(
-                [[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]
-            ),
+            values=np.array([[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]),
             columns=[
                 "values_midas_0",
                 "other_midas_0",
@@ -215,9 +188,7 @@ class TestMIDAS:
         multivar_quarterly_ts_midas = midas_1.fit_transform(stacked_monthly_ts)
         assert multivar_quarterly_ts_midas == expected_quarterly_ts
 
-        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(
-            multivar_quarterly_ts_midas
-        )
+        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(multivar_quarterly_ts_midas)
         assert stacked_monthly_ts == multivar_inversed_quarterly_ts_midas
 
     def test_probabilistic_multivariate_monthly_to_quarterly(self):
@@ -233,9 +204,7 @@ class TestMIDAS:
         )
         # generate probabilistic monthly series
         all_vals_monthly = monthly_ts.all_values(copy=False)
-        prob_values_monthly = np.concatenate(
-            [all_vals_monthly + i * 0.01 for i in range(3)], axis=2
-        )
+        prob_values_monthly = np.concatenate([all_vals_monthly + i * 0.01 for i in range(3)], axis=2)
         ts_prob_monthly = TimeSeries.from_times_and_values(
             times=monthly_ts.time_index,
             values=prob_values_monthly,
@@ -245,9 +214,7 @@ class TestMIDAS:
         # component components are alternating
         quarterly_ts = TimeSeries.from_times_and_values(
             times=self.quarterly_ts.time_index,
-            values=np.array(
-                [[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]
-            ),
+            values=np.array([[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]),
             columns=[
                 "values_midas_0",
                 "other_midas_0",
@@ -259,9 +226,7 @@ class TestMIDAS:
         )
         # generate probabilistic quarterly series
         all_vals_quarterly = quarterly_ts.all_values(copy=False)
-        prob_values_quarterly = np.concatenate(
-            [all_vals_quarterly + i * 0.01 for i in range(3)], axis=2
-        )
+        prob_values_quarterly = np.concatenate([all_vals_quarterly + i * 0.01 for i in range(3)], axis=2)
         ts_prob_quarterly = TimeSeries.from_times_and_values(
             times=quarterly_ts.time_index,
             values=prob_values_quarterly,
@@ -272,9 +237,7 @@ class TestMIDAS:
         multivar_quarterly_ts_midas = midas_1.fit_transform(ts_prob_monthly)
         assert multivar_quarterly_ts_midas == ts_prob_quarterly
 
-        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(
-            multivar_quarterly_ts_midas
-        )
+        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(multivar_quarterly_ts_midas)
         assert ts_prob_monthly == multivar_inversed_quarterly_ts_midas
 
     def test_ts_with_missing_data(self):
@@ -292,13 +255,11 @@ class TestMIDAS:
         # components are interleaved
         expected_quarterly_ts = TimeSeries.from_times_and_values(
             times=self.quarterly_ts.time_index,
-            values=np.array(
-                [
-                    [1, 10, 2, 11, 3, 12],
-                    [4, np.nan, 5, np.nan, 6, 15],
-                    [7, 16, 8, 17, 9, 18],
-                ]
-            ),
+            values=np.array([
+                [1, 10, 2, 11, 3, 12],
+                [4, np.nan, 5, np.nan, 6, 15],
+                [7, 16, 8, 17, 9, 18],
+            ]),
             columns=[
                 "values_midas_0",
                 "other_midas_0",
@@ -313,9 +274,7 @@ class TestMIDAS:
         multivar_quarterly_ts_midas = midas_1.fit_transform(stacked_monthly_ts_missing)
         assert multivar_quarterly_ts_midas == expected_quarterly_ts
 
-        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(
-            multivar_quarterly_ts_midas
-        )
+        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(multivar_quarterly_ts_midas)
         assert stacked_monthly_ts_missing == multivar_inversed_quarterly_ts_midas
 
     def test_from_second_to_minute(self):
@@ -325,14 +284,10 @@ class TestMIDAS:
 
         second_times = pd.date_range(start="01-2020", periods=120, freq="S")
         second_values = np.arange(1, len(second_times) + 1)
-        second_ts = TimeSeries.from_times_and_values(
-            times=second_times, values=second_values, columns=["values"]
-        )
+        second_ts = TimeSeries.from_times_and_values(times=second_times, values=second_values, columns=["values"])
 
         minute_times = pd.date_range(start="01-2020", periods=2, freq="T")
-        minute_values = np.array(
-            [[i for i in range(1, 61)], [i for i in range(61, 121)]]
-        )
+        minute_values = np.array([[i for i in range(1, 61)], [i for i in range(61, 121)]])
         minute_ts = TimeSeries.from_times_and_values(
             times=minute_times,
             values=minute_values,
@@ -373,16 +328,12 @@ class TestMIDAS:
         """
         daily_times = pd.date_range(start="01-2020", end="09-30-2020", freq="D")
         daily_values = np.arange(1, len(daily_times) + 1)
-        daily_ts = TimeSeries.from_times_and_values(
-            times=daily_times, values=daily_values, columns=["values"]
-        )
+        daily_ts = TimeSeries.from_times_and_values(times=daily_times, values=daily_values, columns=["values"])
 
         midas = MIDAS(low_freq=freq_month_end)
         with pytest.raises(ValueError) as msg:
             midas.fit_transform(daily_ts)
-        assert str(msg.value).startswith(
-            "The frequency of the input series should be an exact multiple"
-        )
+        assert str(msg.value).startswith("The frequency of the input series should be an exact multiple")
 
     def test_inverse_transform_prediction(self):
         """
@@ -477,9 +428,7 @@ class TestMIDAS:
         midas_yearly = MIDAS(low_freq="YS", strip=False)
         list_yearly_ts = midas_yearly.fit_transform(ts_to_transform)
         # 12 months in a year, original ts contains only 9 values, the missing data are nan
-        np.testing.assert_array_almost_equal(
-            list_yearly_ts[0].values()[:, :9], self.monthly_ts.values().T
-        )
+        np.testing.assert_array_almost_equal(list_yearly_ts[0].values()[:, :9], self.monthly_ts.values().T)
         assert np.isnan(list_yearly_ts[0].values()[:, 9:]).sum() == 3
         # 4 quarters in a year
         np.testing.assert_array_almost_equal(
@@ -497,17 +446,12 @@ class TestMIDAS:
             quarterly_multivariate_ts.values().reshape(3, 8),
         )
 
-        assert (
-            quarterly_multivariate_ts
-            == midas_yearly.inverse_transform(list_yearly_ts)[1]
-        )
+        assert quarterly_multivariate_ts == midas_yearly.inverse_transform(list_yearly_ts)[1]
 
     def test_ts_with_static_covariates(self):
         # univarite ts, same number of static covariates as components
         global_static_covs = pd.Series(data=[0, 1], index=["static_0", "static_1"])
-        monthly_with_static_covs = self.monthly_ts.with_static_covariates(
-            global_static_covs
-        )
+        monthly_with_static_covs = self.monthly_ts.with_static_covariates(global_static_covs)
 
         # multivariate ts, different number of static covariates than components
         components_static_covs = pd.DataFrame(
@@ -538,38 +482,24 @@ class TestMIDAS:
         # univariate, no static covariates
         quartely_no_static = midas_with_static_covs.fit_transform(self.monthly_ts)
         assert quartely_no_static.static_covariates is None
-        inv_quartely_no_static = midas_with_static_covs.inverse_transform(
-            quartely_no_static
-        )
+        inv_quartely_no_static = midas_with_static_covs.inverse_transform(quartely_no_static)
         assert inv_quartely_no_static.static_covariates is None
 
         # univariate, with static covariates
-        expected_static_covs = pd.concat(
-            [monthly_with_static_covs.static_covariates] * 3
-        )
+        expected_static_covs = pd.concat([monthly_with_static_covs.static_covariates] * 3)
         expected_static_covs.index = [
             "values_midas_0",
             "values_midas_1",
             "values_midas_2",
         ]
-        quartely_univ_dropped_static = midas_with_static_covs.fit_transform(
-            monthly_with_static_covs
-        )
-        assert quartely_univ_dropped_static.static_covariates.equals(
-            expected_static_covs
-        )
+        quartely_univ_dropped_static = midas_with_static_covs.fit_transform(monthly_with_static_covs)
+        assert quartely_univ_dropped_static.static_covariates.equals(expected_static_covs)
 
-        inv_quartely_univ_dropped_static = midas_with_static_covs.inverse_transform(
-            quartely_univ_dropped_static
-        )
-        assert inv_quartely_univ_dropped_static.static_covariates.equals(
-            monthly_with_static_covs.static_covariates
-        )
+        inv_quartely_univ_dropped_static = midas_with_static_covs.inverse_transform(quartely_univ_dropped_static)
+        assert inv_quartely_univ_dropped_static.static_covariates.equals(monthly_with_static_covs.static_covariates)
 
         # testing multivariate, with static covariates
-        expected_static_covs = pd.concat(
-            [monthly_multivar_with_static_covs.static_covariates] * 3
-        )
+        expected_static_covs = pd.concat([monthly_multivar_with_static_covs.static_covariates] * 3)
         expected_static_covs.index = [
             "0_midas_0",
             "1_midas_0",
@@ -578,16 +508,10 @@ class TestMIDAS:
             "0_midas_2",
             "1_midas_2",
         ]
-        quartely_multiv_dropped_static = midas_with_static_covs.fit_transform(
-            monthly_multivar_with_static_covs
-        )
-        assert quartely_multiv_dropped_static.static_covariates.equals(
-            expected_static_covs
-        )
+        quartely_multiv_dropped_static = midas_with_static_covs.fit_transform(monthly_multivar_with_static_covs)
+        assert quartely_multiv_dropped_static.static_covariates.equals(expected_static_covs)
 
-        inv_quartely_multiv_dropped_static = midas_with_static_covs.inverse_transform(
-            quartely_multiv_dropped_static
-        )
+        inv_quartely_multiv_dropped_static = midas_with_static_covs.inverse_transform(quartely_multiv_dropped_static)
         assert inv_quartely_multiv_dropped_static.static_covariates.equals(
             monthly_multivar_with_static_covs.static_covariates
         )
@@ -616,14 +540,10 @@ class TestMIDAS:
         first_row_exp = np.empty(6)
         first_row_exp.fill(np.nan)
         first_row_exp = np.concatenate([first_row_exp, ts[0].values().flatten()])
-        np.testing.assert_array_equal(
-            ts_saturday_anchor[0].values().flatten(), first_row_exp
-        )
+        np.testing.assert_array_equal(ts_saturday_anchor[0].values().flatten(), first_row_exp)
 
         # last row should be completely filled
-        np.testing.assert_array_equal(
-            ts_saturday_anchor[-1].values().flatten(), ts[-7:].values().flatten()
-        )
+        np.testing.assert_array_equal(ts_saturday_anchor[-1].values().flatten(), ts[-7:].values().flatten())
 
         # inverse transform
         ts_inv_saturday_anchor = midas_sat.inverse_transform(ts_saturday_anchor)
@@ -651,13 +571,9 @@ class TestMIDAS:
         assert ts_monday_anchor.freq == "W-MON"
         assert len(ts_monday_anchor) == 4
         # incomplete low frequency period
-        assert (
-            ts_monday_anchor[0].values().flatten()[-3:] == ts[:3].values().flatten()
-        ).all()
+        assert (ts_monday_anchor[0].values().flatten()[-3:] == ts[:3].values().flatten()).all()
         # complete low frequency period
-        assert (
-            ts_monday_anchor[1].values().flatten() == ts[3:10].values().flatten()
-        ).all()
+        assert (ts_monday_anchor[1].values().flatten() == ts[3:10].values().flatten()).all()
 
         # reverse transform
         ts_inv_monday_anchor = midas_mon.inverse_transform(ts_monday_anchor)
@@ -671,6 +587,4 @@ class TestMIDAS:
         assert ts_monday_anchor.freq == "W-MON"
         assert len(ts_monday_anchor) == 2
         # first complete low frequency period
-        assert (
-            ts_monday_anchor[0].values().flatten() == ts[3:10].values().flatten()
-        ).all()
+        assert (ts_monday_anchor[0].values().flatten() == ts[3:10].values().flatten()).all()

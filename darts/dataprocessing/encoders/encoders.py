@@ -226,9 +226,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         self.attribute = attribute
         self.tz = tz
 
-    def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
-    ) -> TimeSeries:
+    def _encode(self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype) -> TimeSeries:
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
         super()._encode(index, target_end, dtype)
         return datetime_attribute_timeseries(
@@ -390,9 +388,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         self.attribute = attribute
         self.tz = tz
 
-    def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
-    ) -> TimeSeries:
+    def _encode(self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype) -> TimeSeries:
         """Encode `index` as a scalar."""
         super()._encode(index, target_end, dtype)
         return datetime_attribute_timeseries(
@@ -545,9 +541,7 @@ class IntegerIndexEncoder(SingleEncoder):
 
         self.attribute = attribute
 
-    def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
-    ) -> TimeSeries:
+    def _encode(self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype) -> TimeSeries:
         """Adds integer index value (position) to the provided `index`.
         For attribute=='relative', the reference point/index is the prediction/forecast index of the target series.
         """
@@ -558,13 +552,9 @@ class IntegerIndexEncoder(SingleEncoder):
         if idx_larger_end:
             idx_larger_end -= 1
         if index[0] > target_end:
-            idx_diff = (
-                len(generate_index(start=target_end, end=index[0], freq=freq)) - 1
-            )
+            idx_diff = len(generate_index(start=target_end, end=index[0], freq=freq)) - 1
         elif index[-1] < target_end:
-            idx_diff = (
-                -len(generate_index(start=index[-1], end=target_end, freq=freq)) + 1
-            )
+            idx_diff = -len(generate_index(start=index[-1], end=target_end, freq=freq)) + 1
         else:
             idx_diff = 0
         return TimeSeries.from_times_and_values(
@@ -714,9 +704,7 @@ class CallableIndexEncoder(SingleEncoder):
 
         self.attribute = attribute
 
-    def _encode(
-        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
-    ) -> TimeSeries:
+    def _encode(self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype) -> TimeSeries:
         """Apply the user-defined callable to encode the index"""
         super()._encode(index, target_end, dtype)
 
@@ -971,9 +959,7 @@ class SequentialEncoder(Encoder):
         future_covariates: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]:
         """Returns encoded index for all past and/or future covariates for training.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1034,9 +1020,7 @@ class SequentialEncoder(Encoder):
         future_covariates: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1086,9 +1070,7 @@ class SequentialEncoder(Encoder):
         future_covariates: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]:
         """Returns encoded index for all past and/or future covariates for training and inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -1207,9 +1189,7 @@ class SequentialEncoder(Encoder):
         if covariates is None:
             covariates = [None] * len(target)
         else:
-            covariates = (
-                [covariates] if isinstance(covariates, TimeSeries) else covariates
-            )
+            covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
         for ts, covs in zip(target, covariates):
             # drop encoder components if they are in input covariates
@@ -1219,16 +1199,12 @@ class SequentialEncoder(Encoder):
             )
             encoded = concatenate(
                 [
-                    getattr(enc, encode_method)(
-                        target=ts, covariates=covs, merge_covariates=False, n=n
-                    )
+                    getattr(enc, encode_method)(target=ts, covariates=covs, merge_covariates=False, n=n)
                     for enc in encoders
                 ],
                 axis=DIMS[1],
             )
-            encoded_sequence.append(
-                self._merge_covariates(encoded=encoded, covariates=covs)
-            )
+            encoded_sequence.append(self._merge_covariates(encoded=encoded, covariates=covs))
 
         if transformer is not None:
             encoded_sequence = transformer.transform(encoded_sequence)
@@ -1285,12 +1261,8 @@ class SequentialEncoder(Encoder):
         `SequentialEncoder.future_encoders`.
         """
         # by default, _[past/future]_encoders are empty lists
-        past_enc_n_compoments = sum(
-            past_enc.encoding_n_components for past_enc in self.past_encoders
-        )
-        future_enc_n_compoments = sum(
-            future_enc.encoding_n_components for future_enc in self.future_encoders
-        )
+        past_enc_n_compoments = sum(past_enc.encoding_n_components for past_enc in self.past_encoders)
+        future_enc_n_compoments = sum(future_enc.encoding_n_components for future_enc in self.future_encoders)
         return past_enc_n_compoments, future_enc_n_compoments
 
     @property
@@ -1379,13 +1351,9 @@ class SequentialEncoder(Encoder):
             transform_future_mask,
         ) = self._process_input_transformer(params)
         if transform_past_mask:
-            self._past_transformer = SequentialEncoderTransformer(
-                copy.deepcopy(transformer), transform_past_mask
-            )
+            self._past_transformer = SequentialEncoderTransformer(copy.deepcopy(transformer), transform_past_mask)
         if transform_future_mask:
-            self._future_transformer = SequentialEncoderTransformer(
-                copy.deepcopy(transformer), transform_future_mask
-            )
+            self._future_transformer = SequentialEncoderTransformer(copy.deepcopy(transformer), transform_future_mask)
 
     def _process_input_encoders(self, params: Dict) -> Tuple[List, List]:
         """Processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
@@ -1419,11 +1387,7 @@ class SequentialEncoder(Encoder):
             return [], []
 
         # check input for invalid encoder types
-        invalid_encoders = [
-            enc
-            for enc in params
-            if enc not in ENCODER_KEYS + TZ_KEYS + TRANSFORMER_KEYS
-        ]
+        invalid_encoders = [enc for enc in params if enc not in ENCODER_KEYS + TZ_KEYS + TRANSFORMER_KEYS]
         raise_if(
             len(invalid_encoders) > 0,
             f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
@@ -1436,9 +1400,7 @@ class SequentialEncoder(Encoder):
         # check input for invalid temporal types
         invalid_time_params = list()
         for encoder, t_types in encoders.items():
-            invalid_time_params += [
-                t_type for t_type in t_types.keys() if t_type not in VALID_TIME_PARAMS
-            ]
+            invalid_time_params += [t_type for t_type in t_types.keys() if t_type not in VALID_TIME_PARAMS]
 
         raise_if(
             len(invalid_time_params) > 0,
@@ -1494,9 +1456,7 @@ class SequentialEncoder(Encoder):
         future_encoders = future_encoders if self.takes_future_covariates else []
         return past_encoders, future_encoders
 
-    def _process_input_transformer(
-        self, params: Dict
-    ) -> Tuple[Optional[FittableDataTransformer], List, List]:
+    def _process_input_transformer(self, params: Dict) -> Tuple[Optional[FittableDataTransformer], List, List]:
         """Processes input params used at model creation and returns tuple of one transformer object and two masks
         that specify which past / future encoders accept being transformed.
 
@@ -1521,16 +1481,8 @@ class SequentialEncoder(Encoder):
             logger,
         )
 
-        transform_past_mask = [
-            transform
-            for enc in self.past_encoders
-            for transform in enc.accept_transformer
-        ]
-        transform_future_mask = [
-            transform
-            for enc in self.future_encoders
-            for transform in enc.accept_transformer
-        ]
+        transform_past_mask = [transform for enc in self.past_encoders for transform in enc.accept_transformer]
+        transform_future_mask = [transform for enc in self.future_encoders for transform in enc.accept_transformer]
         return transformer, transform_past_mask, transform_future_mask
 
     @staticmethod
@@ -1550,6 +1502,6 @@ class SequentialEncoder(Encoder):
 
     @property
     def requires_fit(self) -> bool:
-        return any(
-            [enc.requires_fit for cov_enc in self.encoders for enc in cov_enc]
-        ) or any([tf is not None for tf in self.transformers()])
+        return any([enc.requires_fit for cov_enc in self.encoders for enc in cov_enc]) or any([
+            tf is not None for tf in self.transformers()
+        ])

@@ -15,13 +15,10 @@ list_NonFittableAggregator = [
     AndAggregator(),
 ]
 
-list_FittableAggregator = [
-    EnsembleSklearnAggregator(model=GradientBoostingClassifier())
-]
+list_FittableAggregator = [EnsembleSklearnAggregator(model=GradientBoostingClassifier())]
 
 
 class TestADAggregators:
-
     np.random.seed(42)
 
     # univariate series
@@ -29,9 +26,7 @@ class TestADAggregators:
     train = TimeSeries.from_values(np_train)
 
     np_real_anomalies = np.random.choice(a=[0, 1], size=100, p=[0.5, 0.5])
-    real_anomalies = TimeSeries.from_times_and_values(
-        train._time_index, np_real_anomalies
-    )
+    real_anomalies = TimeSeries.from_times_and_values(train._time_index, np_real_anomalies)
 
     # multivariate series
     np_mts_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
@@ -44,9 +39,7 @@ class TestADAggregators:
     mts_anomalies2 = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
 
     np_anomalies_w3 = np.random.choice(a=[0, 1], size=[100, 3], p=[0.5, 0.5])
-    mts_anomalies3 = TimeSeries.from_times_and_values(
-        train._time_index, np_anomalies_w3
-    )
+    mts_anomalies3 = TimeSeries.from_times_and_values(train._time_index, np_anomalies_w3)
 
     np_probabilistic = np.random.choice(a=[0, 1], p=[0.5, 0.5], size=[100, 2, 5])
     mts_probabilistic = TimeSeries.from_values(np_probabilistic)
@@ -66,15 +59,10 @@ class TestADAggregators:
         columns=["component 1", "component 2"],
     )
 
-    np_real_anomalies_3w = [
-        elem[0] if elem[2] == 1 else elem[1] for elem in np_anomalies_w3
-    ]
-    real_anomalies_3w = TimeSeries.from_times_and_values(
-        train._time_index, np_real_anomalies_3w
-    )
+    np_real_anomalies_3w = [elem[0] if elem[2] == 1 else elem[1] for elem in np_anomalies_w3]
+    real_anomalies_3w = TimeSeries.from_times_and_values(train._time_index, np_real_anomalies_3w)
 
     def test_DetectNonFittableAggregator(self):
-
         aggregator = OrAggregator()
 
         # Check return types
@@ -106,7 +94,6 @@ class TestADAggregators:
         )
 
     def test_eval_accuracy(self):
-
         aggregator = AndAggregator()
 
         # Check return types
@@ -142,14 +129,10 @@ class TestADAggregators:
 
         # window parameter must be smaller than the length of the input (len = 100)
         with pytest.raises(ValueError):
-            aggregator.eval_accuracy(
-                self.real_anomalies, self.mts_anomalies1, window=101
-            )
+            aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1, window=101)
 
     def test_NonFittableAggregator(self):
-
         for aggregator in list_NonFittableAggregator:
-
             # name must be of type str
             assert isinstance(aggregator.__str__(), str)
 
@@ -192,9 +175,7 @@ class TestADAggregators:
             ), len([self.mts_anomalies1, self.mts_anomalies2])
 
     def test_FittableAggregator(self):
-
         for aggregator in list_FittableAggregator:
-
             # name must be of type str
             assert isinstance(aggregator.__str__(), str)
 
@@ -298,23 +279,15 @@ class TestADAggregators:
                     [self.mts_anomalies1, self.mts_anomalies1],
                 )
             with pytest.raises(ValueError):
-                aggregator.fit(
-                    [self.real_anomalies, 1], [self.mts_anomalies1, self.mts_anomalies1]
-                )
+                aggregator.fit([self.real_anomalies, 1], [self.mts_anomalies1, self.mts_anomalies1])
 
             # nbr of anomalies must match nbr of input series
             with pytest.raises(ValueError):
-                aggregator.fit(
-                    [self.real_anomalies, self.real_anomalies], self.mts_anomalies1
-                )
+                aggregator.fit([self.real_anomalies, self.real_anomalies], self.mts_anomalies1)
             with pytest.raises(ValueError):
-                aggregator.fit(
-                    [self.real_anomalies, self.real_anomalies], [self.mts_anomalies1]
-                )
+                aggregator.fit([self.real_anomalies, self.real_anomalies], [self.mts_anomalies1])
             with pytest.raises(ValueError):
-                aggregator.fit(
-                    [self.real_anomalies], [self.mts_anomalies1, self.mts_anomalies1]
-                )
+                aggregator.fit([self.real_anomalies], [self.mts_anomalies1, self.mts_anomalies1])
 
             # case1: fit
             aggregator.fit(self.real_anomalies, self.mts_anomalies1)
@@ -366,7 +339,6 @@ class TestADAggregators:
             ), len([self.mts_anomalies1, self.mts_anomalies2])
 
     def test_OrAggregator(self):
-
         aggregator = OrAggregator()
 
         # simple case
@@ -436,13 +408,7 @@ class TestADAggregators:
 
         # single series case (random example)
         # aggregator must found 67 anomalies in the input mts_anomalies1
-        assert (
-            aggregator.predict(self.mts_anomalies1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0]
-            == 67
-        )
+        assert aggregator.predict(self.mts_anomalies1).sum(axis=0).all_values().flatten()[0] == 67
 
         # aggregator must have an accuracy of 0.56 for the input mts_anomalies1
         assert (
@@ -458,24 +424,10 @@ class TestADAggregators:
         )
         # aggregator must have an recall of 0.72549 for the input mts_anomalies1
         assert (
-            abs(
-                aggregator.eval_accuracy(
-                    self.real_anomalies, self.mts_anomalies1, metric="recall"
-                )
-                - 0.72549
-            )
-            < 1e-05
+            abs(aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1, metric="recall") - 0.72549) < 1e-05
         )
         # aggregator must have an f1 of 0.62711 for the input mts_anomalies1
-        assert (
-            abs(
-                aggregator.eval_accuracy(
-                    self.real_anomalies, self.mts_anomalies1, metric="f1"
-                )
-                - 0.62711
-            )
-            < 1e-05
-        )
+        assert abs(aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1, metric="f1") - 0.62711) < 1e-05
         # aggregator must have an precision of 0.55223 for the input mts_anomalies1
         assert (
             abs(
@@ -548,7 +500,6 @@ class TestADAggregators:
         )
 
     def test_AndAggregator(self):
-
         aggregator = AndAggregator()
 
         # simple case
@@ -618,13 +569,7 @@ class TestADAggregators:
 
         # single series case (random example)
         # aggregator must found 27 anomalies in the input mts_anomalies1
-        assert (
-            aggregator.predict(self.mts_anomalies1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0]
-            == 27
-        )
+        assert aggregator.predict(self.mts_anomalies1).sum(axis=0).all_values().flatten()[0] == 27
 
         # aggregator must have an accuracy of 0.44 for the input mts_anomalies1
         assert (
@@ -640,24 +585,10 @@ class TestADAggregators:
         )
         # aggregator must have an recall of 0.21568 for the input mts_anomalies1
         assert (
-            abs(
-                aggregator.eval_accuracy(
-                    self.real_anomalies, self.mts_anomalies1, metric="recall"
-                )
-                - 0.21568
-            )
-            < 1e-05
+            abs(aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1, metric="recall") - 0.21568) < 1e-05
         )
         # aggregator must have an f1 of 0.28205 for the input mts_anomalies1
-        assert (
-            abs(
-                aggregator.eval_accuracy(
-                    self.real_anomalies, self.mts_anomalies1, metric="f1"
-                )
-                - 0.28205
-            )
-            < 1e-05
-        )
+        assert abs(aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1, metric="f1") - 0.28205) < 1e-05
         # aggregator must have an precision of 0.40740 for the input mts_anomalies1
         assert (
             abs(
@@ -730,7 +661,6 @@ class TestADAggregators:
         )
 
     def test_EnsembleSklearn(self):
-
         # Need to input an EnsembleSklearn model
         with pytest.raises(ValueError):
             EnsembleSklearnAggregator(model=MovingAverageFilter(window=10))
@@ -741,9 +671,7 @@ class TestADAggregators:
         # - component 2 when component 3 is 0
         # must have a high accuracy (here 0.92)
         aggregator = EnsembleSklearnAggregator(
-            model=GradientBoostingClassifier(
-                n_estimators=50, learning_rate=1.0, max_depth=1
-            )
+            model=GradientBoostingClassifier(n_estimators=50, learning_rate=1.0, max_depth=1)
         )
         aggregator.fit(self.real_anomalies_3w, self.mts_anomalies3)
 
@@ -773,20 +701,12 @@ class TestADAggregators:
 
         # single series case (random example)
         aggregator = EnsembleSklearnAggregator(
-            model=GradientBoostingClassifier(
-                n_estimators=50, learning_rate=1.0, max_depth=1
-            )
+            model=GradientBoostingClassifier(n_estimators=50, learning_rate=1.0, max_depth=1)
         )
         aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
         # aggregator must found 100 anomalies in the input mts_anomalies1
-        assert (
-            aggregator.predict(self.mts_anomalies1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0]
-            == 100
-        )
+        assert aggregator.predict(self.mts_anomalies1).sum(axis=0).all_values().flatten()[0] == 100
 
         # aggregator must have an accuracy of 0.51 for the input mts_anomalies1
         assert (
@@ -801,25 +721,9 @@ class TestADAggregators:
             < 1e-05
         )
         # aggregator must have an recall 1.0 for the input mts_anomalies1
-        assert (
-            abs(
-                aggregator.eval_accuracy(
-                    self.real_anomalies, self.mts_anomalies1, metric="recall"
-                )
-                - 1.0
-            )
-            < 1e-05
-        )
+        assert abs(aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1, metric="recall") - 1.0) < 1e-05
         # aggregator must have an f1 of 0.67549 for the input mts_anomalies1
-        assert (
-            abs(
-                aggregator.eval_accuracy(
-                    self.real_anomalies, self.mts_anomalies1, metric="f1"
-                )
-                - 0.67549
-            )
-            < 1e-05
-        )
+        assert abs(aggregator.eval_accuracy(self.real_anomalies, self.mts_anomalies1, metric="f1") - 0.67549) < 1e-05
         # aggregator must have an precision of 0.51 for the input mts_anomalies1
         assert (
             abs(

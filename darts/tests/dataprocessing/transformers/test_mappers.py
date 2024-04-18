@@ -27,9 +27,7 @@ class TestMappers:
     plus_ten_invertible = InvertibleMapper(func.__func__, inverse_func.__func__)
 
     subtract_month = Mapper(ts_func.__func__)
-    subtract_month_invertible = InvertibleMapper(
-        ts_func.__func__, inverse_ts_func.__func__
-    )
+    subtract_month_invertible = InvertibleMapper(ts_func.__func__, inverse_ts_func.__func__)
 
     lin_series = linear_timeseries(
         start_value=1,
@@ -38,18 +36,11 @@ class TestMappers:
         start=pd.Timestamp("2000-01-01"),
         end_value=12,
     )  # noqa: E501
-    zeroes = constant_timeseries(
-        value=0.0, length=12, freq="MS", start=pd.Timestamp("2000-01-01")
-    )
-    tens = constant_timeseries(
-        value=10.0, length=12, freq="MS", start=pd.Timestamp("2000-01-01")
-    )
-    twenties = constant_timeseries(
-        value=20.0, length=12, freq="MS", start=pd.Timestamp("2000-01-01")
-    )
+    zeroes = constant_timeseries(value=0.0, length=12, freq="MS", start=pd.Timestamp("2000-01-01"))
+    tens = constant_timeseries(value=10.0, length=12, freq="MS", start=pd.Timestamp("2000-01-01"))
+    twenties = constant_timeseries(value=20.0, length=12, freq="MS", start=pd.Timestamp("2000-01-01"))
 
     def test_mapper(self):
-
         test_cases = [
             (self.zeroes, self.tens),
             ([self.zeroes, self.tens], [self.tens, self.twenties]),
@@ -68,7 +59,6 @@ class TestMappers:
             assert back == data
 
     def test_mapper_with_timestamp(self):
-
         test_cases = [
             (self.lin_series, self.zeroes),
             ([self.lin_series, self.lin_series], [self.zeroes, self.zeroes]),
@@ -88,7 +78,6 @@ class TestMappers:
             assert transformed == expected_output
 
     def test_invertible_mapper_with_timestamp(self):
-
         test_cases = [(self.lin_series), ([self.lin_series, self.lin_series])]
 
         for data in test_cases:
@@ -104,6 +93,4 @@ class TestMappers:
         tr = imapper.transform(series)
         inv_tr = imapper.inverse_transform(tr)
 
-        np.testing.assert_almost_equal(
-            series.all_values(copy=False), inv_tr.all_values(copy=False)
-        )
+        np.testing.assert_almost_equal(series.all_values(copy=False), inv_tr.all_values(copy=False))

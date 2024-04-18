@@ -90,15 +90,11 @@ class TestCreateLaggedTrainingData:
         )
         # Intersect `times` with `past_covariates` feature times if past covariates to be added to `X`:
         if lags_past is not None:
-            past_times = TestCreateLaggedTrainingData.get_feature_times_past(
-                past, lags_past
-            )
+            past_times = TestCreateLaggedTrainingData.get_feature_times_past(past, lags_past)
             times = times.intersection(past_times)
         # Intersect `times` with `future_covariates` feature times if future covariates to be added to `X`:
         if lags_future is not None:
-            future_times = TestCreateLaggedTrainingData.get_feature_times_future(
-                future, lags_future
-            )
+            future_times = TestCreateLaggedTrainingData.get_feature_times_future(future, lags_future)
             times = times.intersection(future_times)
         # Take most recent `max_samples_per_ts` samples if requested:
         if (max_samples_per_ts is not None) and (len(times) > max_samples_per_ts):
@@ -160,9 +156,7 @@ class TestCreateLaggedTrainingData:
         times = past_covariates.time_index
         min_lag = -max(past_covariates_lags)
         # Add times after end of series for which we can create features:
-        times = times.union(
-            [times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)]
-        )
+        times = times.union([times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)])
         max_lag = -min(past_covariates_lags)
         times = times[max_lag:]
         return times
@@ -217,20 +211,13 @@ class TestCreateLaggedTrainingData:
         # Case 1:
         if (min_lag > 0) and (max_lag > 0):
             # Can create features for times extending after the end of `future_covariates`:
-            times = times.union(
-                [times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)]
-            )
+            times = times.union([times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)])
             # Can't create features for first `max_lag` times in series:
             times = times[max_lag:]
         # Case 2:
         elif (min_lag <= 0) and (max_lag <= 0):
             # Can create features for times before the start of `future_covariates`:
-            times = times.union(
-                [
-                    times[0] - i * future_covariates.freq
-                    for i in range(1, abs(max_lag) + 1)
-                ]
-            )
+            times = times.union([times[0] - i * future_covariates.freq for i in range(1, abs(max_lag) + 1)])
             # Can't create features for last `abs(min_lag)` times in series:
             times = times[:min_lag] if min_lag != 0 else times
         # Case 3:
@@ -251,9 +238,7 @@ class TestCreateLaggedTrainingData:
         return times
 
     @staticmethod
-    def construct_X_block(
-        series: TimeSeries, feature_times: pd.Index, lags: Optional[Sequence[int]]
-    ) -> np.array:
+    def construct_X_block(series: TimeSeries, feature_times: pd.Index, lags: Optional[Sequence[int]]) -> np.array:
         """
         Helper function that creates the lagged features 'block' of a specific
         `series` (i.e. either `target_series`, `past_covariates`, or `future_covariates`);
@@ -302,9 +287,7 @@ class TestCreateLaggedTrainingData:
                         step=series.freq,
                     )
                 else:
-                    series_times = pd.date_range(
-                        start=series_times[0], end=feature_times[-1], freq=series.freq
-                    )
+                    series_times = pd.date_range(start=series_times[0], end=feature_times[-1], freq=series.freq)
             elif add_to_start:
                 num_prepended = (series_times[0] - feature_times[0]) // series.freq
                 if is_range_idx:
@@ -315,9 +298,7 @@ class TestCreateLaggedTrainingData:
                         step=series.freq,
                     )
                 else:
-                    series_times = pd.date_range(
-                        start=feature_times[0], end=series_times[-1], freq=series.freq
-                    )
+                    series_times = pd.date_range(start=feature_times[0], end=series_times[-1], freq=series.freq)
             else:
                 num_prepended = 0
             array_vals = series.all_values(copy=False)[:, :, 0]
@@ -417,9 +398,7 @@ class TestCreateLaggedTrainingData:
             elif isinstance(lags_, list):
                 lags_as_dict[name_] = {c_name: lags_ for c_name in single_ts.components}
             else:
-                raise ValueError(
-                    f"Lags should be `None`, a list or a dictionary. Received {type(lags_)}."
-                )
+                raise ValueError(f"Lags should be `None`, a list or a dictionary. Received {type(lags_)}.")
         return lags_as_dict
 
     def helper_create_expected_lagged_data(
@@ -513,16 +492,8 @@ class TestCreateLaggedTrainingData:
             lags_future_ = lags_future
 
         # convert indexes to list of tuples to simplify processing
-        expected_times_x = (
-            expected_times_x
-            if isinstance(expected_times_x, Sequence)
-            else [expected_times_x]
-        )
-        expected_times_y = (
-            expected_times_y
-            if isinstance(expected_times_y, Sequence)
-            else [expected_times_y]
-        )
+        expected_times_x = expected_times_x if isinstance(expected_times_x, Sequence) else [expected_times_x]
+        expected_times_y = expected_times_y if isinstance(expected_times_y, Sequence) else [expected_times_y]
 
         X, y, times, _ = create_lagged_training_data(
             target_series=target,
@@ -562,9 +533,7 @@ class TestCreateLaggedTrainingData:
             assert np.allclose(expected_y, y)
         else:
             # Check the number of observation for each series
-            for x_, exp_time_x, y_, exp_time_y, time in zip(
-                X, expected_times_x, y, expected_times_y, times
-            ):
+            for x_, exp_time_x, y_, exp_time_y, time in zip(X, expected_times_x, y, expected_times_y, times):
                 assert x_.shape[0] == len(time) == len(exp_time_x)
                 assert y_.shape[0] == len(time) == len(exp_time_y)
 
@@ -600,17 +569,13 @@ class TestCreateLaggedTrainingData:
         pd.DataFrame({"dummy": [1]})  # leads to "global" static cov component name
     )
     target_with_static_cov2 = target_with_static_cov.with_static_covariates(
-        pd.DataFrame(
-            {"dummy": [i for i in range(n_comp)]}
-        )  # leads to sharing target component names
+        pd.DataFrame({"dummy": [i for i in range(n_comp)]})  # leads to sharing target component names
     )
     target_with_static_cov3 = target_with_static_cov.with_static_covariates(
-        pd.DataFrame(
-            {
-                "dummy": [i for i in range(n_comp)],
-                "dummy1": [i for i in range(n_comp)],
-            }
-        )  # leads to sharing target component names
+        pd.DataFrame({
+            "dummy": [i for i in range(n_comp)],
+            "dummy1": [i for i in range(n_comp)],
+        })  # leads to sharing target component names
     )
 
     past = helper_create_multivariate_linear_timeseries(
@@ -740,19 +705,17 @@ class TestCreateLaggedTrainingData:
             if all(lags_is_none):
                 continue
 
-            expected_X, expected_y, expected_times = (
-                self.helper_create_expected_lagged_data(
-                    target,
-                    past,
-                    future,
-                    lags,
-                    lags_past,
-                    lags_future,
-                    output_chunk_length,
-                    output_chunk_shift,
-                    multi_models,
-                    max_samples_per_ts,
-                )
+            expected_X, expected_y, expected_times = self.helper_create_expected_lagged_data(
+                target,
+                past,
+                future,
+                lags,
+                lags_past,
+                lags_future,
+                output_chunk_length,
+                output_chunk_shift,
+                multi_models,
+                max_samples_per_ts,
             )
 
             kwargs = {
@@ -860,19 +823,17 @@ class TestCreateLaggedTrainingData:
             if all(lags_is_none):
                 continue
 
-            expected_X, expected_y, expected_times = (
-                self.helper_create_expected_lagged_data(
-                    target,
-                    past,
-                    future,
-                    lags,
-                    lags_past,
-                    lags_future,
-                    output_chunk_length,
-                    output_chunk_shift,
-                    multi_models,
-                    max_samples_per_ts,
-                )
+            expected_X, expected_y, expected_times = self.helper_create_expected_lagged_data(
+                target,
+                past,
+                future,
+                lags,
+                lags_past,
+                lags_future,
+                output_chunk_length,
+                output_chunk_shift,
+                multi_models,
+                max_samples_per_ts,
             )
 
             kwargs = {
@@ -899,9 +860,7 @@ class TestCreateLaggedTrainingData:
 
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "series_type",
@@ -1058,18 +1017,12 @@ class TestCreateLaggedTrainingData:
             :,
         ]
         # Offset `3:-2` by `-1` lag:
-        expected_X_target = series.all_values(copy=False)[
-            2 : 2 + len(expected_times_x), :, 0
-        ]
+        expected_X_target = series.all_values(copy=False)[2 : 2 + len(expected_times_x), :, 0]
         # Offset `3:-2` by `-3` lag -> gives `0:-5`:
         expected_X_past = series.all_values(copy=False)[: len(expected_times_x), :, 0]
         # Offset `3:-2` by `+2` lag -> gives `5:None`:
-        expected_X_future = series.all_values(copy=False)[
-            5 : 5 + len(expected_times_x), :, 0
-        ]
-        expected_X = np.concatenate(
-            [expected_X_target, expected_X_past, expected_X_future], axis=1
-        )[:, :, np.newaxis]
+        expected_X_future = series.all_values(copy=False)[5 : 5 + len(expected_times_x), :, 0]
+        expected_X = np.concatenate([expected_X_target, expected_X_past, expected_X_future], axis=1)[:, :, np.newaxis]
 
         kwargs = {
             "expected_X": expected_X,
@@ -1098,9 +1051,7 @@ class TestCreateLaggedTrainingData:
         else:
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "config",
@@ -1123,15 +1074,9 @@ class TestCreateLaggedTrainingData:
         """
         output_chunk_shift, use_moving_windows, (series_type, freq) = config
         if series_type == "integer":
-            target = linear_timeseries(
-                start=0, length=10, start_value=1, end_value=2, freq=freq
-            )
-            past = linear_timeseries(
-                start=0, length=8, start_value=2, end_value=3, freq=freq
-            )
-            future = linear_timeseries(
-                start=0, length=6, start_value=3, end_value=4, freq=freq
-            )
+            target = linear_timeseries(start=0, length=10, start_value=1, end_value=2, freq=freq)
+            past = linear_timeseries(start=0, length=8, start_value=2, end_value=3, freq=freq)
+            future = linear_timeseries(start=0, length=6, start_value=3, end_value=4, freq=freq)
         else:
             target = linear_timeseries(
                 start=pd.Timestamp("1/1/2000"),
@@ -1164,13 +1109,11 @@ class TestCreateLaggedTrainingData:
         # Expect `X` to be constructed from second-to-last value of `target` (i.e.
         # the value immediately prior to the label), and the very last values of
         # `past` and `future`:
-        expected_X = np.concatenate(
-            [
-                target.all_values(copy=False)[-2 - output_chunk_shift, :, 0],
-                past.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
-                future.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
-            ]
-        ).reshape(1, -1, 1)
+        expected_X = np.concatenate([
+            target.all_values(copy=False)[-2 - output_chunk_shift, :, 0],
+            past.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
+            future.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
+        ]).reshape(1, -1, 1)
         # Label is very last value of `target`:
         expected_y = target.all_values(copy=False)[-1:, :, :]
 
@@ -1209,15 +1152,11 @@ class TestCreateLaggedTrainingData:
         else:
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
-        ),
+        itertools.product([0, 1, 3], [False, True], ["datetime", "integer"], [False, True]),
     )
     def test_lagged_training_data_single_point(self, config):
         """
@@ -1228,9 +1167,7 @@ class TestCreateLaggedTrainingData:
         # Can only create feature using first value of series (i.e. `0`)
         # and can only create label using last value of series (i.e. `1`)
         if series_type == "integer":
-            target = linear_timeseries(
-                start=0, length=2 + output_chunk_shift, start_value=0, end_value=1
-            )
+            target = linear_timeseries(start=0, length=2 + output_chunk_shift, start_value=0, end_value=1)
         else:
             target = linear_timeseries(
                 start=pd.Timestamp("1/1/2000"),
@@ -1277,15 +1214,11 @@ class TestCreateLaggedTrainingData:
         else:
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
-        ),
+        itertools.product([0, 1, 3], [False, True], ["datetime", "integer"], [False, True]),
     )
     def test_lagged_training_data_zero_lags(self, config):
         """
@@ -1302,9 +1235,7 @@ class TestCreateLaggedTrainingData:
         output_chunk_shift, use_moving_windows, series_type, multi_models = config
 
         if series_type == "integer":
-            target = linear_timeseries(
-                start=0, length=2 + output_chunk_shift, start_value=0, end_value=1
-            )
+            target = linear_timeseries(start=0, length=2 + output_chunk_shift, start_value=0, end_value=1)
             future = linear_timeseries(
                 start=target.end_time() - output_chunk_shift * target.freq,
                 length=1,
@@ -1362,9 +1293,7 @@ class TestCreateLaggedTrainingData:
         else:
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "config",
@@ -1401,12 +1330,8 @@ class TestCreateLaggedTrainingData:
         cov_length = 1 - min(cov_start_shift, 0)
         if series_type == "integer":
             cov_start = 0 + cov_start_shift + cov_lag
-            target = linear_timeseries(
-                start=0, length=target_length, start_value=0, end_value=1
-            )
-            future = linear_timeseries(
-                start=cov_start, length=cov_length, start_value=2, end_value=3
-            )
+            target = linear_timeseries(start=0, length=target_length, start_value=0, end_value=1)
+            future = linear_timeseries(start=cov_start, length=cov_length, start_value=2, end_value=3)
         else:
             freq = pd.tseries.frequencies.to_offset("d")
             cov_start = pd.Timestamp("1/1/2000") + (cov_start_shift + cov_lag) * freq
@@ -1462,9 +1387,7 @@ class TestCreateLaggedTrainingData:
         else:
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "config",
@@ -1500,12 +1423,8 @@ class TestCreateLaggedTrainingData:
         cov_length = 1 - min(cov_start_shift, 0)
         if series_type == "integer":
             cov_start = 0 + cov_start_shift + cov_lag
-            target = linear_timeseries(
-                start=0, length=target_length, start_value=0, end_value=1
-            )
-            past = linear_timeseries(
-                start=cov_start, length=cov_length, start_value=2, end_value=3
-            )
+            target = linear_timeseries(start=0, length=target_length, start_value=0, end_value=1)
+            past = linear_timeseries(start=cov_start, length=cov_length, start_value=2, end_value=3)
         else:
             freq = pd.tseries.frequencies.to_offset("d")
             cov_start = pd.Timestamp("1/1/2000") + (cov_start_shift + cov_lag) * freq
@@ -1561,15 +1480,11 @@ class TestCreateLaggedTrainingData:
         else:
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [0, 1, 3], [False, True], ["datetime", "integer"], [False, True]
-        ),
+        itertools.product([0, 1, 3], [False, True], ["datetime", "integer"], [False, True]),
     )
     def test_lagged_training_data_positive_lags(self, config):
         """
@@ -1587,9 +1502,7 @@ class TestCreateLaggedTrainingData:
         output_chunk_shift, use_moving_windows, series_type, multi_models = config
 
         if series_type == "integer":
-            target = linear_timeseries(
-                start=0, length=2 + output_chunk_shift, start_value=0, end_value=1
-            )
+            target = linear_timeseries(start=0, length=2 + output_chunk_shift, start_value=0, end_value=1)
             future = linear_timeseries(
                 start=target.end_time() - (output_chunk_shift - 1) * target.freq,
                 length=1,
@@ -1646,9 +1559,7 @@ class TestCreateLaggedTrainingData:
         else:
             with pytest.raises(ValueError) as err:
                 self.helper_check_lagged_data(convert_lags_to_dict=True, **kwargs)
-            assert str(err.value).startswith(
-                "`use_moving_windows=False` is not supported when any of the lags"
-            )
+            assert str(err.value).startswith("`use_moving_windows=False` is not supported when any of the lags")
 
     @pytest.mark.parametrize(
         "config",
@@ -1724,38 +1635,19 @@ class TestCreateLaggedTrainingData:
 
         # reorder the features to obtain target_0_lag-4, target_1_lag-4, target_0_lag-1, target_1_lag-1
         X_target = [
-            self.construct_X_block(
-                target["target_0"], feats_times, lags_tg["target_0"][0:1]
-            ),
-            self.construct_X_block(
-                target["target_1"], feats_times, lags_tg["target_1"][0:1]
-            ),
-            self.construct_X_block(
-                target["target_0"], feats_times, lags_tg["target_0"][1:2]
-            ),
-            self.construct_X_block(
-                target["target_1"], feats_times, lags_tg["target_1"][1:2]
-            ),
+            self.construct_X_block(target["target_0"], feats_times, lags_tg["target_0"][0:1]),
+            self.construct_X_block(target["target_1"], feats_times, lags_tg["target_1"][0:1]),
+            self.construct_X_block(target["target_0"], feats_times, lags_tg["target_0"][1:2]),
+            self.construct_X_block(target["target_1"], feats_times, lags_tg["target_1"][1:2]),
         ]
         # single lag for all the components, can be kept as is
-        X_past = [
-            self.construct_X_block(past[name], feats_times, lags_pc)
-            for name in ["past_0", "past_1"]
-        ]
+        X_past = [self.construct_X_block(past[name], feats_times, lags_pc) for name in ["past_0", "past_1"]]
         # reorder the features to obtain future_1_lag-2, future_0_lag-1, future_0_lag0, future_1_lag1
         X_future = [
-            self.construct_X_block(
-                future["future_1"], feats_times, lags_fc["future_1"][0:1]
-            ),
-            self.construct_X_block(
-                future["future_0"], feats_times, lags_fc["future_0"][0:1]
-            ),
-            self.construct_X_block(
-                future["future_0"], feats_times, lags_fc["future_0"][1:2]
-            ),
-            self.construct_X_block(
-                future["future_1"], feats_times, lags_fc["future_1"][1:2]
-            ),
+            self.construct_X_block(future["future_1"], feats_times, lags_fc["future_1"][0:1]),
+            self.construct_X_block(future["future_0"], feats_times, lags_fc["future_0"][0:1]),
+            self.construct_X_block(future["future_0"], feats_times, lags_fc["future_0"][1:2]),
+            self.construct_X_block(future["future_1"], feats_times, lags_fc["future_1"][1:2]),
         ]
         all_X = X_target + X_past + X_future
         expected_X = np.concatenate(all_X, axis=1)[:, :, np.newaxis]
@@ -1804,12 +1696,8 @@ class TestCreateLaggedTrainingData:
         lags = lags_past = lags_future = [-1]
         output_chunk_length = 1
         # Expected solution:
-        expected_X_1 = np.concatenate(
-            3 * [target_1.all_values(copy=False)[:-1, :, :]], axis=1
-        )
-        expected_X_2 = np.concatenate(
-            3 * [target_2.all_values(copy=False)[:-1, :, :]], axis=1
-        )
+        expected_X_1 = np.concatenate(3 * [target_1.all_values(copy=False)[:-1, :, :]], axis=1)
+        expected_X_2 = np.concatenate(3 * [target_2.all_values(copy=False)[:-1, :, :]], axis=1)
         expected_X = np.concatenate([expected_X_1, expected_X_2], axis=0)
         expected_y_1 = target_1.all_values(copy=False)[1:, :, :]
         expected_y_2 = target_2.all_values(copy=False)[1:, :, :]
@@ -1837,20 +1725,12 @@ class TestCreateLaggedTrainingData:
         }
 
         # concatenate=True
-        self.helper_check_lagged_data(
-            convert_lags_to_dict=False, concatenate=True, **kwargs
-        )
-        self.helper_check_lagged_data(
-            convert_lags_to_dict=True, concatenate=True, **kwargs
-        )
+        self.helper_check_lagged_data(convert_lags_to_dict=False, concatenate=True, **kwargs)
+        self.helper_check_lagged_data(convert_lags_to_dict=True, concatenate=True, **kwargs)
 
         # concatenate=False
-        self.helper_check_lagged_data(
-            convert_lags_to_dict=False, concatenate=False, **kwargs
-        )
-        self.helper_check_lagged_data(
-            convert_lags_to_dict=True, concatenate=False, **kwargs
-        )
+        self.helper_check_lagged_data(convert_lags_to_dict=False, concatenate=False, **kwargs)
+        self.helper_check_lagged_data(convert_lags_to_dict=True, concatenate=False, **kwargs)
 
     def test_lagged_training_data_stochastic_series(self):
         """
@@ -1866,9 +1746,7 @@ class TestCreateLaggedTrainingData:
         lags = lags_past = lags_future = [-1]
         output_chunk_length = 1
         # Expected solution:
-        expected_X = np.concatenate(
-            3 * [target.all_values(copy=False)[:-1, :, :]], axis=1
-        )
+        expected_X = np.concatenate(3 * [target.all_values(copy=False)[:-1, :, :]], axis=1)
         expected_y = target.all_values(copy=False)[1:, :, :]
         expected_times = target.time_index[1:]
 
@@ -1891,12 +1769,8 @@ class TestCreateLaggedTrainingData:
             "use_moving_windows": True,
         }
 
-        self.helper_check_lagged_data(
-            convert_lags_to_dict=False, concatenate=True, **kwargs
-        )
-        self.helper_check_lagged_data(
-            convert_lags_to_dict=True, concatenate=True, **kwargs
-        )
+        self.helper_check_lagged_data(convert_lags_to_dict=False, concatenate=True, **kwargs)
+        self.helper_check_lagged_data(convert_lags_to_dict=True, concatenate=True, **kwargs)
 
     def test_lagged_training_data_no_shared_times_error(self):
         """
@@ -1921,10 +1795,7 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-            assert (
-                "Specified series do not share any common times for which features can be created."
-                == str(err.value)
-            )
+            assert "Specified series do not share any common times for which features can be created." == str(err.value)
 
     def test_lagged_training_data_no_specified_series_lags_pairs_error(self):
         """
@@ -2016,9 +1887,8 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-            assert (
-                "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
-                == str(err.value)
+            assert "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`." == str(
+                err.value
             )
 
     def test_lagged_training_data_series_too_short_error(self):
@@ -2090,9 +1960,7 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-            assert (
-                "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
-            ) == str(err.value)
+            assert ("`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0.") == str(err.value)
             # Test invalid `lags_past_covariates` values:
             with pytest.raises(ValueError) as err:
                 create_lagged_training_data(

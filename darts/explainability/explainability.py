@@ -24,12 +24,8 @@ class _ForecastingModelExplainer(ABC):
         self,
         model: ForecastingModel,
         background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        background_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        background_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         requires_background: bool = False,
         requires_covariates_encoding: bool = False,
         check_component_names: bool = False,
@@ -71,9 +67,7 @@ class _ForecastingModelExplainer(ABC):
         """
         if not model._fit_called:
             raise_log(
-                ValueError(
-                    f"The model must be fitted before instantiating a {self.__class__.__name__}."
-                ),
+                ValueError(f"The model must be fitted before instantiating a {self.__class__.__name__}."),
                 logger,
             )
         self.model = model
@@ -112,12 +106,8 @@ class _ForecastingModelExplainer(ABC):
     def explain(
         self,
         foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        foreground_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
     ) -> _ExplainabilityResult:
@@ -151,12 +141,8 @@ class _ForecastingModelExplainer(ABC):
     def _process_foreground(
         self,
         foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        foreground_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         return process_input(
             model=self.model,
@@ -178,7 +164,6 @@ class _ForecastingModelExplainer(ABC):
         horizons: Optional[Union[int, Sequence[int]]],
         target_components: Optional[Union[str, Sequence[str]]],
     ) -> Tuple[Sequence[int], Sequence[str]]:
-
         return process_horizons_and_targets(
             horizons=horizons,
             fallback_horizon=self.n,

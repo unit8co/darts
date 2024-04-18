@@ -20,9 +20,7 @@ class TestExponentialSmoothing:
             ("B", 5),
         ],
     )
-    def test_seasonality_inference(
-        self, freq_string: str, expected_seasonal_periods: int
-    ):
+    def test_seasonality_inference(self, freq_string: str, expected_seasonal_periods: int):
         series = tg.sine_timeseries(length=200, freq=freq_string)
         model = ExponentialSmoothing()
         model.fit(series)
@@ -60,9 +58,7 @@ class TestExponentialSmoothing:
             constructor_kwargs["initial_seasonal"],
         )
         for param_name in ["initial_level", "initial_trend"]:
-            assert (
-                model.model.model.params[param_name] == constructor_kwargs[param_name]
-            )
+            assert model.model.model.params[param_name] == constructor_kwargs[param_name]
 
     def test_fit_kwargs(self):
         """Using kwargs to pass additional parameters to the fit()"""

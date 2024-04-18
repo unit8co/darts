@@ -26,9 +26,7 @@ class TestTimeSeriesGeneration:
 
         def test_routine(start, end=None, length=None):
             # testing for constant value
-            constant_ts = constant_timeseries(
-                start=start, end=end, value=value, length=length
-            )
+            constant_ts = constant_timeseries(start=start, end=end, value=value, length=length)
             value_set = set(constant_ts.values().flatten())
             assert len(value_set) == 1
             assert len(constant_ts) == length_assert
@@ -37,13 +35,10 @@ class TestTimeSeriesGeneration:
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_linear_timeseries(self):
-
         # testing parameters
         start_value = 5
         end_value = 12
@@ -76,13 +71,10 @@ class TestTimeSeriesGeneration:
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_sine_timeseries(self):
-
         # testing parameters
         value_amplitude = 5
         value_y_offset = -3
@@ -104,13 +96,10 @@ class TestTimeSeriesGeneration:
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_gaussian_timeseries(self):
-
         # testing for correct length
         def test_routine(start, end=None, length=None):
             gaussian_ts = gaussian_timeseries(start=start, end=end, length=length)
@@ -120,13 +109,10 @@ class TestTimeSeriesGeneration:
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_random_walk_timeseries(self):
-
         # testing for correct length
         def test_routine(start, end=None, length=None):
             random_walk_ts = random_walk_timeseries(start=start, end=end, length=length)
@@ -136,21 +122,13 @@ class TestTimeSeriesGeneration:
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_holidays_timeseries(self):
-        time_index_1 = pd.date_range(
-            periods=365 * 3, freq="D", start=pd.Timestamp("2012-01-01")
-        )
-        time_index_2 = pd.date_range(
-            periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24")
-        )
-        time_index_3 = pd.date_range(
-            periods=10, freq="Y", start=pd.Timestamp("1950-01-01")
-        ) + pd.Timedelta(days=1)
+        time_index_1 = pd.date_range(periods=365 * 3, freq="D", start=pd.Timestamp("2012-01-01"))
+        time_index_2 = pd.date_range(periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24"))
+        time_index_3 = pd.date_range(periods=10, freq="Y", start=pd.Timestamp("1950-01-01")) + pd.Timedelta(days=1)
 
         # testing we have at least one holiday flag in each year
         def test_routine(
@@ -159,9 +137,7 @@ class TestTimeSeriesGeneration:
             until: Union[int, pd.Timestamp, str] = 0,
             add_length=0,
         ):
-            ts = holidays_timeseries(
-                time_index, country_code, until=until, add_length=add_length
-            )
+            ts = holidays_timeseries(time_index, country_code, until=until, add_length=add_length)
             assert all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values)
 
         for time_index in [time_index_1, time_index_2, time_index_3]:
@@ -192,9 +168,7 @@ class TestTimeSeriesGeneration:
 
         # test holiday with and without time zone, 1st of August is national holiday in Switzerland
         # time zone naive (e.g. in UTC)
-        idx = generate_index(
-            start=pd.Timestamp("2000-07-31 22:00:00"), length=3, freq="h"
-        )
+        idx = generate_index(start=pd.Timestamp("2000-07-31 22:00:00"), length=3, freq="h")
         ts = holidays_timeseries(idx, country_code="CH")
         np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([0, 0, 1]))
 
@@ -224,7 +198,6 @@ class TestTimeSeriesGeneration:
 
         for length in [1, 2, 5, 50]:
             for start in [0, 1, 9]:
-
                 # test pd.RangeIndex with varying step sizes
                 for step in [1, 2, 4]:
                     expected_start = start
@@ -319,28 +292,20 @@ class TestTimeSeriesGeneration:
     def test_autoregressive_timeseries(self):
         # testing for correct length
         def test_length(start, end=None, length=None):
-            autoregressive_ts = autoregressive_timeseries(
-                coef=[-1, 1.618], start=start, end=end, length=length
-            )
+            autoregressive_ts = autoregressive_timeseries(coef=[-1, 1.618], start=start, end=end, length=length)
             assert len(autoregressive_ts) == length_assert
 
         # testing for correct calculation
         def test_calculation(coef):
-            autoregressive_values = autoregressive_timeseries(
-                coef=coef, length=100
-            ).values()
+            autoregressive_values = autoregressive_timeseries(coef=coef, length=100).values()
             for idx, val in enumerate(autoregressive_values[len(coef) :]):
-                assert val == np.dot(
-                    coef, autoregressive_values[idx : idx + len(coef)].ravel()
-                )
+                assert val == np.dot(coef, autoregressive_values[idx : idx + len(coef)].ravel())
 
         for length_assert in [1, 2, 5, 10, 100]:
             test_length(start=0, length=length_assert)
             test_length(start=0, end=length_assert - 1)
             test_length(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_length(start=pd.Timestamp("2000-01-01"), end=end_date)
 
         for coef_assert in [[-1], [-1, 1.618], [1, 2, 3], list(range(10))]:
@@ -360,25 +325,17 @@ class TestTimeSeriesGeneration:
         idx = generate_index(start=pd.Timestamp("2000-01-01"), length=48, freq="h")
         # no pd.DatetimeIndex
         with pytest.raises(ValueError) as err:
-            self.helper_routine(
-                pd.RangeIndex(start=0, stop=len(idx)), "h", vals_exp=np.arange(len(idx))
-            )
-        assert str(err.value).startswith(
-            "`time_index` must be a pandas `DatetimeIndex`"
-        )
+            self.helper_routine(pd.RangeIndex(start=0, stop=len(idx)), "h", vals_exp=np.arange(len(idx)))
+        assert str(err.value).startswith("`time_index` must be a pandas `DatetimeIndex`")
 
         # invalid attribute
         with pytest.raises(ValueError) as err:
             self.helper_routine(idx, "h", vals_exp=np.arange(len(idx)))
-        assert str(err.value).startswith(
-            "attribute `h` needs to be an attribute of pd.DatetimeIndex."
-        )
+        assert str(err.value).startswith("attribute `h` needs to be an attribute of pd.DatetimeIndex.")
 
         # no time zone aware index
         with pytest.raises(ValueError) as err:
-            self.helper_routine(
-                idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx))
-            )
+            self.helper_routine(idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx)))
         assert "`time_index` must be time zone naive." == str(err.value)
 
     def test_datetime_attribute_timeseries(self):
@@ -436,15 +393,11 @@ class TestTimeSeriesGeneration:
         ) = config
         start_timestamp = "2001-01-01 00:00:00"
 
-        idx = generate_index(
-            start=pd.Timestamp(start_timestamp), length=1, freq=base_freq
-        )
+        idx = generate_index(start=pd.Timestamp(start_timestamp), length=1, freq=base_freq)
 
         # default encoding should be 0
         vals_exp = np.zeros((1, 1))
-        self.helper_routine(
-            idx, attribute_freq, vals_exp=vals_exp, one_hot=False, cyclic=False
-        )
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, one_hot=False, cyclic=False)
 
         # one-hot encoding must be 1 in the first column
         vals_exp = np.zeros((1, period))
@@ -522,9 +475,7 @@ class TestTimeSeriesGeneration:
     @pytest.mark.parametrize("config", [("h", "hour", 24), ("M", "month", 12)])
     def test_datetime_attribute_timeseries_cyclic(self, config):
         base_freq, attribute_freq, period = config
-        idx = generate_index(
-            start=pd.Timestamp("2000-01-01"), length=2 * period, freq=base_freq
-        )
+        idx = generate_index(start=pd.Timestamp("2000-01-01"), length=2 * period, freq=base_freq)
 
         freq = 2 * np.pi / period
         vals_dta = [i for i in range(period)] * 2
@@ -541,17 +492,13 @@ class TestTimeSeriesGeneration:
         sin_vals = np.sin(freq * vals)[:, None]
         cos_vals = np.cos(freq * vals)[:, None]
         vals_exp = np.concatenate([sin_vals, cos_vals], axis=1)
-        self.helper_routine(
-            idx, attribute_freq, vals_exp=vals_exp, tz="CET", cyclic=True
-        )
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, tz="CET", cyclic=True)
 
     def test_datetime_attribute_timeseries_leap_years(self):
         """Check that the additional day of leap years is properly handled"""
         days_leap_year = 366
         # 2000 is a leap year, contains 366 days
-        index = pd.date_range(
-            start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-12-31"), freq="D"
-        )
+        index = pd.date_range(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-12-31"), freq="D")
         assert len(index) == days_leap_year
         vals_exp = np.arange(days_leap_year)
         self.helper_routine(index, "day_of_year", vals_exp=vals_exp)
@@ -566,14 +513,10 @@ class TestTimeSeriesGeneration:
         # mask the missing dates
         vals_exp[:, :30] = 0
         vals_exp[:, 73:] = 0
-        self.helper_routine(
-            index_partial, "day_of_year", vals_exp=vals_exp, one_hot=True
-        )
+        self.helper_routine(index_partial, "day_of_year", vals_exp=vals_exp, one_hot=True)
 
         # index containing both a regular year and leap year, for a total of 731 days
-        index_long = pd.date_range(
-            start=pd.Timestamp("1999-01-01"), end=pd.Timestamp("2000-12-31"), freq="D"
-        )
+        index_long = pd.date_range(start=pd.Timestamp("1999-01-01"), end=pd.Timestamp("2000-12-31"), freq="D")
         assert len(index_long) == 731
         # leap year encoding is a diagonal matrix
         leap_year_oh = np.eye(days_leap_year)
@@ -612,18 +555,12 @@ class TestTimeSeriesGeneration:
         # and 53th week properly excluded from the encoding
         vals_exp = np.eye(weeks_special_year - 1)[: len(index_weeks)]
         assert vals_exp.shape[1] == weeks_special_year - 1
-        self.helper_routine(
-            index_weeks, "week_of_year", vals_exp=vals_exp, one_hot=True
-        )
+        self.helper_routine(index_weeks, "week_of_year", vals_exp=vals_exp, one_hot=True)
 
         # extending the time index with the days missing from the incomplete first week
-        index_weeks_ext = pd.date_range(
-            start=start_date, end=end_date + pd.Timedelta(days=6 - week_shift), freq="W"
-        )
+        index_weeks_ext = pd.date_range(start=start_date, end=end_date + pd.Timedelta(days=6 - week_shift), freq="W")
         assert len(index_weeks_ext) == weeks_special_year
         # the 53th week is properly appearing in the encoding
         vals_exp = np.eye(weeks_special_year)
         assert vals_exp.shape[1] == weeks_special_year
-        self.helper_routine(
-            index_weeks_ext, "week_of_year", vals_exp=vals_exp, one_hot=True
-        )
+        self.helper_routine(index_weeks_ext, "week_of_year", vals_exp=vals_exp, one_hot=True)

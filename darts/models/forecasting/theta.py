@@ -114,9 +114,7 @@ class Theta(LocalForecastingModel):
             self.season_period = self.seasonality_period
         if self.season_period is None:
             max_lag = len(ts) // 2
-            self.is_seasonal, self.season_period = check_seasonality(
-                ts, self.season_period, max_lag=max_lag
-            )
+            self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
@@ -125,9 +123,7 @@ class Theta(LocalForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(
-                ts, self.season_period, model=self.season_mode
-            )
+            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.season_mode)
             new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
 
         # SES part of the decomposition.
@@ -145,9 +141,7 @@ class Theta(LocalForecastingModel):
 
         self.alpha = self.model.params["smoothing_level"]
         if self.alpha == 0.0:
-            self.model = hw.SimpleExpSmoothing(new_ts.values(copy=False)).fit(
-                initial_level=ALPHA_START
-            )
+            self.model = hw.SimpleExpSmoothing(new_ts.values(copy=False)).fit(initial_level=ALPHA_START)
             self.alpha = self.model.params["smoothing_level"]
 
         return self
@@ -165,19 +159,13 @@ class Theta(LocalForecastingModel):
         forecast = self.model.forecast(n)
 
         # Forecast of the Linear Regression part.
-        drift = self.coef * np.array(
-            [
-                i + (1 - (1 - self.alpha) ** self.length) / self.alpha
-                for i in range(0, n)
-            ]
-        )
+        drift = self.coef * np.array([i + (1 - (1 - self.alpha) ** self.length) / self.alpha for i in range(0, n)])
 
         # Combining the two forecasts
         forecast += drift
 
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
-
             replicated_seasonality = np.tile(
                 self.seasonality.pd_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
@@ -195,11 +183,7 @@ class Theta(LocalForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        if (
-            self.season_mode != SeasonalityMode.NONE
-            and self.seasonality_period
-            and self.seasonality_period > 1
-        ):
+        if self.season_mode != SeasonalityMode.NONE and self.seasonality_period and self.seasonality_period > 1:
             return 2 * self.seasonality_period
         else:
             return 3
@@ -335,29 +319,21 @@ class FourTheta(LocalForecastingModel):
             self.season_period = self.seasonality_period
         if self.season_period is None:
             max_lag = len(series) // 2
-            self.is_seasonal, self.season_period = check_seasonality(
-                series, self.season_period, max_lag=max_lag
-            )
+            self.is_seasonal, self.season_period = check_seasonality(series, self.season_period, max_lag=max_lag)
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(
-                new_ts, self.season_period, model=self.season_mode
-            )
-            new_ts = remove_from_series(
-                new_ts, self.seasonality, model=self.season_mode
-            )
+            _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period, model=self.season_mode)
+            new_ts = remove_from_series(new_ts, self.seasonality, model=self.season_mode)
 
         ts_values = new_ts.univariate_values()
         if (ts_values <= 0).any():
             self.model_mode = ModelMode.ADDITIVE
             self.trend_mode = TrendMode.LINEAR
-            logger.warning(
-                "Time series has negative values. Fallback to additive and linear model"
-            )
+            logger.warning("Time series has negative values. Fallback to additive and linear model")
 
         # Drift part of the decomposition
         if self.trend_mode is TrendMode.LINEAR:
@@ -427,7 +403,6 @@ class FourTheta(LocalForecastingModel):
 
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
-
             replicated_seasonality = np.tile(
                 self.seasonality.pd_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
@@ -517,11 +492,7 @@ class FourTheta(LocalForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        if (
-            self.season_mode != SeasonalityMode.NONE
-            and self.seasonality_period
-            and self.seasonality_period > 1
-        ):
+        if self.season_mode != SeasonalityMode.NONE and self.seasonality_period and self.seasonality_period > 1:
             return 2 * self.seasonality_period
         else:
             return 3

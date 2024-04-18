@@ -9,12 +9,9 @@ from darts.tests.test_timeseries import TestTimeSeries
 
 
 class TestTimeSeriesMultivariate:
-
     times1 = pd.date_range("20130101", "20130110")
     times2 = pd.date_range("20130206", "20130215")
-    dataframe1 = pd.DataFrame(
-        {"0": range(10), "1": range(5, 15), "2": range(10, 20)}, index=times1
-    )
+    dataframe1 = pd.DataFrame({"0": range(10), "1": range(5, 15), "2": range(10, 20)}, index=times1)
     dataframe2 = pd.DataFrame(
         {"0": np.arange(1, 11), "1": np.arange(1, 11) * 3, "2": np.arange(1, 11) * 5},
         index=times1,
@@ -93,14 +90,10 @@ class TestTimeSeriesMultivariate:
     def test_drop(self):
         TestTimeSeries.helper_test_drop(self, self.series1)
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(["D", "2D", 1, 2], [False, True])
-    )
+    @pytest.mark.parametrize("config", itertools.product(["D", "2D", 1, 2], [False, True]))
     def test_intersect(self, config):
         freq, mixed_freq = config
-        TestTimeSeries.helper_test_intersect(
-            self, freq, mixed_freq, is_univariate=False
-        )
+        TestTimeSeries.helper_test_intersect(self, freq, mixed_freq, is_univariate=False)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)
@@ -159,33 +152,21 @@ class TestTimeSeriesMultivariate:
         with pytest.raises(IndexError):
             self.series1.univariate_component(3)
         seriesA = self.series1.univariate_component(1)
-        assert seriesA == TimeSeries.from_times_and_values(
-            self.times1, range(5, 15), columns=["1"]
-        )
-        seriesB = (
-            self.series1.univariate_component(0)
-            .stack(seriesA)
-            .stack(self.series1.univariate_component(2))
-        )
+        assert seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15), columns=["1"])
+        seriesB = self.series1.univariate_component(0).stack(seriesA).stack(self.series1.univariate_component(2))
         assert self.series1 == seriesB
 
     def test_add_datetime_attribute(self):
         """datetime_attributes are 0-indexed (shift is applied when necessary)"""
         seriesA = self.series1.add_datetime_attribute("day")
         assert seriesA.width == self.series1.width + 1
-        assert set(
-            seriesA.pd_dataframe().iloc[:, seriesA.width - 1].values.flatten()
-        ) == set(range(0, 10))
+        assert set(seriesA.pd_dataframe().iloc[:, seriesA.width - 1].values.flatten()) == set(range(0, 10))
         seriesB = self.series3.add_datetime_attribute("day", True)
         assert seriesB.width == self.series3.width + 31
-        assert set(
-            seriesB.pd_dataframe().iloc[:, self.series3.width :].values.flatten()
-        ) == {0, 1}
+        assert set(seriesB.pd_dataframe().iloc[:, self.series3.width :].values.flatten()) == {0, 1}
         seriesC = self.series1.add_datetime_attribute("month", True)
         assert seriesC.width == self.series1.width + 12
-        seriesD = TimeSeries.from_times_and_values(
-            pd.date_range("20130206", "20130430"), range(84)
-        )
+        seriesD = TimeSeries.from_times_and_values(pd.date_range("20130206", "20130430"), range(84))
         seriesD = seriesD.add_datetime_attribute("month", True)
         assert seriesD.width == 13
         assert sum(seriesD.values().flatten()) == sum(range(84)) + 84
@@ -195,9 +176,7 @@ class TestTimeSeriesMultivariate:
         # test cyclic
         times_month = pd.date_range("20130101", "20140610")
 
-        seriesE = TimeSeries.from_times_and_values(
-            times_month, np.repeat(0.1, len(times_month))
-        )
+        seriesE = TimeSeries.from_times_and_values(times_month, np.repeat(0.1, len(times_month)))
         seriesF = seriesE.add_datetime_attribute("day", cyclic=True)
 
         values_sin = seriesF.values()[:, 1]
@@ -273,21 +252,11 @@ class TestTimeSeriesMultivariate:
         assert gaps1_any.empty
 
         gaps4_all = self.series4.gaps(mode="all")
-        assert (
-            gaps4_all["gap_start"] == pd.DatetimeIndex([pd.Timestamp("20130208")])
-        ).all()
-        assert (
-            gaps4_all["gap_end"] == pd.DatetimeIndex([pd.Timestamp("20130208")])
-        ).all()
+        assert (gaps4_all["gap_start"] == pd.DatetimeIndex([pd.Timestamp("20130208")])).all()
+        assert (gaps4_all["gap_end"] == pd.DatetimeIndex([pd.Timestamp("20130208")])).all()
         assert gaps4_all["gap_size"].values.tolist() == [1]
 
         gaps4_any = self.series4.gaps(mode="any")
-        assert (
-            gaps4_any["gap_start"]
-            == pd.DatetimeIndex([pd.Timestamp("20130208"), pd.Timestamp("20130211")])
-        ).all()
-        assert (
-            gaps4_any["gap_end"]
-            == pd.DatetimeIndex([pd.Timestamp("20130208"), pd.Timestamp("20130214")])
-        ).all()
+        assert (gaps4_any["gap_start"] == pd.DatetimeIndex([pd.Timestamp("20130208"), pd.Timestamp("20130211")])).all()
+        assert (gaps4_any["gap_end"] == pd.DatetimeIndex([pd.Timestamp("20130208"), pd.Timestamp("20130214")])).all()
         assert gaps4_any["gap_size"].values.tolist() == [1, 4]

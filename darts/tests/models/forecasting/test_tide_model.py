@@ -179,7 +179,6 @@ class TestTiDEModel:
         ts_time_index = tg.sine_timeseries(length=2, freq="h")
 
         for enable_rin in [True, False]:
-
             # test with past_covariates timeseries
             model = TiDEModel(
                 input_chunk_length=1,
@@ -212,9 +211,7 @@ class TestTiDEModel:
             )
 
     def test_static_covariates_support(self):
-        target_multi = concatenate(
-            [tg.sine_timeseries(length=10, freq="h")] * 2, axis=1
-        )
+        target_multi = concatenate([tg.sine_timeseries(length=10, freq="h")] * 2, axis=1)
 
         target_multi = target_multi.with_static_covariates(
             pd.DataFrame(
@@ -235,22 +232,16 @@ class TestTiDEModel:
         )
         model.fit(target_multi, verbose=False)
 
-        assert model.model.static_cov_dim == np.prod(
-            target_multi.static_covariates.values.shape
-        )
+        assert model.model.static_cov_dim == np.prod(target_multi.static_covariates.values.shape)
 
         # raise an error when trained with static covariates of wrong dimensionality
-        target_multi = target_multi.with_static_covariates(
-            pd.concat([target_multi.static_covariates] * 2, axis=1)
-        )
+        target_multi = target_multi.with_static_covariates(pd.concat([target_multi.static_covariates] * 2, axis=1))
         with pytest.raises(ValueError):
             model.predict(n=1, series=target_multi, verbose=False)
 
         # raise an error when trained with static covariates and trying to predict without
         with pytest.raises(ValueError):
-            model.predict(
-                n=1, series=target_multi.with_static_covariates(None), verbose=False
-            )
+            model.predict(n=1, series=target_multi.with_static_covariates(None), verbose=False)
 
         # with `use_static_covariates=False`, we can predict without static covs
         model = TiDEModel(

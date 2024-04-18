@@ -28,9 +28,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     def __init__(
         self,
         name: str = "BoxCox",
-        lmbda: Optional[
-            Union[float, Sequence[float], Sequence[Sequence[float]]]
-        ] = None,
+        lmbda: Optional[Union[float, Sequence[float], Sequence[Sequence[float]]]] = None,
         optim_method: Literal["mle", "pearsonr"] = "mle",
         global_fit: bool = False,
         n_jobs: int = 1,
@@ -107,8 +105,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         .. [1] https://otexts.com/fpp2/transformations.html#mathematical-transformations
         """
         raise_if(
-            not isinstance(optim_method, str)
-            or optim_method not in ["mle", "pearsonr"],
+            not isinstance(optim_method, str) or optim_method not in ["mle", "pearsonr"],
             "optim_method parameter must be either 'mle' or 'pearsonr'",
             logger,
         )
@@ -132,10 +129,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_fit(
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        params: Mapping[str, Any],
-        *args,
-        **kwargs
+        series: Union[TimeSeries, Sequence[TimeSeries]], params: Mapping[str, Any], *args, **kwargs
     ) -> Union[Sequence[float], pd.Series]:
         lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
@@ -161,31 +155,19 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         return lmbda
 
     @staticmethod
-    def ts_transform(
-        series: TimeSeries, params: Mapping[str, Any], **kwargs
-    ) -> TimeSeries:
-
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
         lmbda = params["fitted"]
 
         vals = BoxCox.stack_samples(series)
-        transformed_vals = np.stack(
-            [boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series.width)], axis=1
-        )
+        transformed_vals = np.stack([boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series.width)], axis=1)
         transformed_vals = BoxCox.unstack_samples(transformed_vals, series=series)
         return series.with_values(transformed_vals)
 
     @staticmethod
-    def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Any], **kwargs
-    ) -> TimeSeries:
-
+    def ts_inverse_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
         lmbda = params["fitted"]
 
         vals = BoxCox.stack_samples(series)
-        inv_transformed_vals = np.stack(
-            [inv_boxcox(vals[:, i], lmbda[i]) for i in range(series.width)], axis=1
-        )
-        inv_transformed_vals = BoxCox.unstack_samples(
-            inv_transformed_vals, series=series
-        )
+        inv_transformed_vals = np.stack([inv_boxcox(vals[:, i], lmbda[i]) for i in range(series.width)], axis=1)
+        inv_transformed_vals = BoxCox.unstack_samples(inv_transformed_vals, series=series)
         return series.with_values(inv_transformed_vals)

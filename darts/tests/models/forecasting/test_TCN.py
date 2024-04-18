@@ -58,9 +58,7 @@ class TestTCNModel:
 
     def test_performance(self):
         # test TCN performance on dummy time series
-        ts = tg.sine_timeseries(length=100) + tg.linear_timeseries(
-            length=100, end_value=2
-        )
+        ts = tg.sine_timeseries(length=100) + tg.linear_timeseries(length=100, end_value=2)
         train, test = ts[:90], ts[90:]
         model = TCNModel(
             input_chunk_length=12,
@@ -86,7 +84,6 @@ class TestTCNModel:
                 if dilation_base > kernel_size:
                     continue
                 for input_chunk_length in input_chunk_lengths:
-
                     # create model with all weights set to one
                     model = TCNModel(
                         input_chunk_length=input_chunk_length,
@@ -103,14 +100,10 @@ class TestTCNModel:
 
                     for res_block in model.model.res_blocks:
                         res_block.conv1.weight = torch.nn.Parameter(
-                            torch.ones(
-                                res_block.conv1.weight.shape, dtype=torch.float64
-                            )
+                            torch.ones(res_block.conv1.weight.shape, dtype=torch.float64)
                         )
                         res_block.conv2.weight = torch.nn.Parameter(
-                            torch.ones(
-                                res_block.conv2.weight.shape, dtype=torch.float64
-                            )
+                            torch.ones(res_block.conv2.weight.shape, dtype=torch.float64)
                         )
 
                     model.model.eval()
@@ -118,17 +111,13 @@ class TestTCNModel:
                     # also disable MC Dropout:
                     model.model.set_mc_dropout(False)
 
-                    input_tensor = torch.zeros(
-                        [1, input_chunk_length, 1], dtype=torch.float64
-                    )
+                    input_tensor = torch.zeros([1, input_chunk_length, 1], dtype=torch.float64)
                     zero_output = model.model.forward((input_tensor, None))[0, -1, 0]
 
                     # test for full coverage
                     for i in range(input_chunk_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = model.model.forward((input_tensor, None))[
-                            0, -1, 0
-                        ]
+                        curr_output = model.model.forward((input_tensor, None))[0, -1, 0]
                         assert zero_output != curr_output
                         input_tensor[0, i, 0] = 0
 
@@ -149,14 +138,10 @@ class TestTCNModel:
 
                     for res_block in model_2.model.res_blocks:
                         res_block.conv1.weight = torch.nn.Parameter(
-                            torch.ones(
-                                res_block.conv1.weight.shape, dtype=torch.float64
-                            )
+                            torch.ones(res_block.conv1.weight.shape, dtype=torch.float64)
                         )
                         res_block.conv2.weight = torch.nn.Parameter(
-                            torch.ones(
-                                res_block.conv2.weight.shape, dtype=torch.float64
-                            )
+                            torch.ones(res_block.conv2.weight.shape, dtype=torch.float64)
                         )
 
                     model_2.model.eval()
@@ -164,9 +149,7 @@ class TestTCNModel:
                     # also disable MC Dropout:
                     model_2.model.set_mc_dropout(False)
 
-                    input_tensor = torch.zeros(
-                        [1, input_chunk_length, 1], dtype=torch.float64
-                    )
+                    input_tensor = torch.zeros([1, input_chunk_length, 1], dtype=torch.float64)
                     zero_output = model_2.model.forward((input_tensor, None))[0, -1, 0]
 
                     # test for incomplete coverage
@@ -175,9 +158,7 @@ class TestTCNModel:
                         continue
                     for i in range(input_chunk_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = model_2.model.forward((input_tensor, None))[
-                            0, -1, 0
-                        ]
+                        curr_output = model_2.model.forward((input_tensor, None))[0, -1, 0]
                         if zero_output == curr_output:
                             uncovered_input_found = True
                             break
@@ -185,9 +166,7 @@ class TestTCNModel:
                     assert uncovered_input_found
 
     def helper_test_pred_length(self, pytorch_model, series):
-        model = pytorch_model(
-            input_chunk_length=12, output_chunk_length=3, n_epochs=1, **tfm_kwargs
-        )
+        model = pytorch_model(input_chunk_length=12, output_chunk_length=3, n_epochs=1, **tfm_kwargs)
         model.fit(series)
         pred = model.predict(7)
         assert len(pred) == 7

@@ -19,7 +19,6 @@ class AnomalyModel(ABC):
     """Base class for all anomaly models."""
 
     def __init__(self, model, scorer):
-
         self.scorers = _to_list(scorer)
 
         raise_if_not(
@@ -48,15 +47,11 @@ class AnomalyModel(ABC):
             )
 
     @abstractmethod
-    def fit(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
 
     @abstractmethod
-    def score(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def score(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
 
     @abstractmethod

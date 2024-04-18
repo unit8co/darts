@@ -173,9 +173,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
     @staticmethod
     @abstractmethod
-    def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Any]
-    ) -> TimeSeries:
+    def ts_inverse_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
         """The function that will be applied to each series when :func:`inverse_transform` is called.
 
         The function must take as first argument a ``TimeSeries`` object and, as a second argument, a
@@ -333,10 +331,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
                 transformer_selector += [idx] * len(series_list)
 
         if self._mask_components:
-            data = [
-                self.apply_component_mask(ts, component_mask, return_ts=True)
-                for ts in data
-            ]
+            data = [self.apply_component_mask(ts, component_mask, return_ts=True) for ts in data]
         else:
             kwargs["component_mask"] = component_mask
 
@@ -358,9 +353,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         if self._mask_components:
             unmasked = []
             for ts, transformed_ts in zip(input_series, transformed_data):
-                unmasked.append(
-                    self.unapply_component_mask(ts, transformed_ts, component_mask)
-                )
+                unmasked.append(self.unapply_component_mask(ts, transformed_ts, component_mask))
             transformed_data = unmasked
 
         if called_with_single_series:
@@ -369,7 +362,4 @@ class InvertibleDataTransformer(BaseDataTransformer):
             return transformed_data
         else:
             cum_len = np.cumsum([0] + [len(s_) for s_ in series])
-            return [
-                transformed_data[cum_len[i] : cum_len[i + 1]]
-                for i in range(len(cum_len) - 1)
-            ]
+            return [transformed_data[cum_len[i] : cum_len[i + 1]] for i in range(len(cum_len) - 1)]

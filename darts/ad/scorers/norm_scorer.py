@@ -65,7 +65,6 @@ class NormScorer(NonFittableAnomalyScorer):
         actual_series: TimeSeries,
         pred_series: TimeSeries,
     ) -> TimeSeries:
-
         self._assert_deterministic(actual_series, "actual_series")
         self._assert_deterministic(pred_series, "pred_series")
 
@@ -77,6 +76,4 @@ class NormScorer(NonFittableAnomalyScorer):
         else:
             diff_np = diff.all_values(copy=False)
 
-            return TimeSeries.from_times_and_values(
-                diff.time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1)
-            )
+            return TimeSeries.from_times_and_values(diff.time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1))

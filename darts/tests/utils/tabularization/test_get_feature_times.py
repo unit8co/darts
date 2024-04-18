@@ -87,17 +87,13 @@ class TestGetFeatureTimes:
         times = past_covariates.time_index
         min_lag = -max(past_covariates_lags)
         # Add times after end of series for which we can create features:
-        times = times.union(
-            [times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)]
-        )
+        times = times.union([times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)])
         max_lag = -min(past_covariates_lags)
         times = times[max_lag:]
         return times
 
     @staticmethod
-    def get_feature_times_target_prediction(
-        target_series: TimeSeries, lags: Sequence[int]
-    ):
+    def get_feature_times_target_prediction(target_series: TimeSeries, lags: Sequence[int]):
         """
         Helper function that returns all the times within `target_series` that can be used to
         create features for prediction.
@@ -158,20 +154,13 @@ class TestGetFeatureTimes:
         # Case 1:
         if (min_lag > 0) and (max_lag > 0):
             # Can create features for times extending after the end of `future_covariates`:
-            times = times.union(
-                [times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)]
-            )
+            times = times.union([times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)])
             # Can't create features for first `max_lag` times in series:
             times = times[max_lag:]
         # Case 2:
         elif (min_lag <= 0) and (max_lag <= 0):
             # Can create features for times before the start of `future_covariates`:
-            times = times.union(
-                [
-                    times[0] - i * future_covariates.freq
-                    for i in range(1, abs(max_lag) + 1)
-                ]
-            )
+            times = times.union([times[0] - i * future_covariates.freq for i in range(1, abs(max_lag) + 1)])
             # Can't create features for last `abs(min_lag)` times in series:
             times = times[:min_lag] if min_lag != 0 else times
         # Case 3:
@@ -229,15 +218,9 @@ class TestGetFeatureTimes:
             past = linear_timeseries(start=2, length=25, freq=2)
             future = linear_timeseries(start=3, length=30, freq=3)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=20, freq="1d"
-            )
-            past = linear_timeseries(
-                start=pd.Timestamp("1/2/2000"), length=25, freq="2d"
-            )
-            future = linear_timeseries(
-                start=pd.Timestamp("1/3/2000"), length=30, freq="3d"
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=20, freq="1d")
+            past = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=25, freq="2d")
+            future = linear_timeseries(start=pd.Timestamp("1/3/2000"), length=30, freq="3d")
         for lags, lags_past, lags_future, ocl in product(
             self.target_lag_combos,
             self.lags_past_combos,
@@ -288,15 +271,9 @@ class TestGetFeatureTimes:
             past = linear_timeseries(start=2, length=25, freq=2)
             future = linear_timeseries(start=3, length=30, freq=3)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=20, freq="1d"
-            )
-            past = linear_timeseries(
-                start=pd.Timestamp("1/2/2000"), length=25, freq="2d"
-            )
-            future = linear_timeseries(
-                start=pd.Timestamp("1/3/2000"), length=30, freq="3d"
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=20, freq="1d")
+            past = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=25, freq="2d")
+            future = linear_timeseries(start=pd.Timestamp("1/3/2000"), length=30, freq="3d")
 
         for lags, lags_past, lags_future in product(
             self.target_lag_combos, self.lags_past_combos, self.lags_future_combos
@@ -340,9 +317,7 @@ class TestGetFeatureTimes:
         if series_type == "integer":
             target = linear_timeseries(start=0, length=20, freq=2)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=20, freq="2d"
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=20, freq="2d")
         # Test multiple `output_chunk_length` values:
         for ocl in (1, 2, 3, 4, 5):
             feature_times = _get_feature_times(
@@ -352,9 +327,7 @@ class TestGetFeatureTimes:
                 is_training=True,
                 output_chunk_shift=output_chunk_shift,
             )
-            assert feature_times[0][-1] == target.end_time() - target.freq * (
-                ocl + output_chunk_shift - 1
-            )
+            assert feature_times[0][-1] == target.end_time() - target.freq * (ocl + output_chunk_shift - 1)
 
     @pytest.mark.parametrize(
         "config",
@@ -374,9 +347,7 @@ class TestGetFeatureTimes:
         if series_type == "integer":
             target = linear_timeseries(start=0, length=20, freq=2)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=20, freq="2d"
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=20, freq="2d")
         # Expect same behaviour when training and predicting:
         for is_training in (False, True):
             for max_lags in (-1, -2, -3, -4, -5):
@@ -386,9 +357,7 @@ class TestGetFeatureTimes:
                     is_training=is_training,
                     output_chunk_shift=output_chunk_shift,
                 )
-                assert feature_times[0][0] == target.start_time() + target.freq * abs(
-                    max_lags
-                )
+                assert feature_times[0][0] == target.start_time() + target.freq * abs(max_lags)
 
     @pytest.mark.parametrize(
         "config",
@@ -408,16 +377,10 @@ class TestGetFeatureTimes:
             future = linear_timeseries(start=2, length=1, freq=2)
             exp_start_target, exp_start_future = 1, 6
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=2 + output_chunk_shift, freq="d"
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=2 + output_chunk_shift, freq="d")
             # Can only create feature for "1/6/2000" (`-2` lags behind is "1/2/2000"):
-            future = linear_timeseries(
-                start=pd.Timestamp("1/2/2000"), length=1, freq="2d"
-            )
-            exp_start_target, exp_start_future = pd.Timestamp("1/2/2000"), pd.Timestamp(
-                "1/6/2000"
-            )
+            future = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=1, freq="2d")
+            exp_start_target, exp_start_future = pd.Timestamp("1/2/2000"), pd.Timestamp("1/6/2000")
 
         lags = [-1]
         feature_times = _get_feature_times(
@@ -465,16 +428,10 @@ class TestGetFeatureTimes:
 
         else:
             # Can only create feature for "1/2/2000" (`-1` lag behind is time "1/1/2000"):
-            target = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=1, freq="d"
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=1, freq="d")
             # Can only create feature for "1/6/2000" (`-2` lag behind is time "1/2/2000"):
-            future = linear_timeseries(
-                start=pd.Timestamp("1/2/2000"), length=1, freq="2d"
-            )
-            exp_start_target, exp_start_future = pd.Timestamp("1/2/2000"), pd.Timestamp(
-                "1/6/2000"
-            )
+            future = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=1, freq="2d")
+            exp_start_target, exp_start_future = pd.Timestamp("1/2/2000"), pd.Timestamp("1/6/2000")
 
         lags = [-1]
         feature_times = _get_feature_times(
@@ -517,15 +474,9 @@ class TestGetFeatureTimes:
             past = linear_timeseries(start=2, length=1, freq=2)
             future = linear_timeseries(start=3, length=1, freq=1)
         else:
-            target = linear_timeseries(
-                start=pd.Timestamp("1/10/2000"), length=1, freq="3d"
-            )
-            past = linear_timeseries(
-                start=pd.Timestamp("1/2/2000"), length=1, freq="2d"
-            )
-            future = linear_timeseries(
-                start=pd.Timestamp("1/3/2000"), length=1, freq="1d"
-            )
+            target = linear_timeseries(start=pd.Timestamp("1/10/2000"), length=1, freq="3d")
+            past = linear_timeseries(start=pd.Timestamp("1/2/2000"), length=1, freq="2d")
+            future = linear_timeseries(start=pd.Timestamp("1/3/2000"), length=1, freq="1d")
         lags = lags_past = lags_future_1 = [-4]
         feature_times = _get_feature_times(
             target_series=target,
@@ -542,9 +493,7 @@ class TestGetFeatureTimes:
         assert len(feature_times[1]) == 1
         assert feature_times[1][0] == past.start_time() - lags_past[0] * past.freq
         assert len(feature_times[2]) == 1
-        assert (
-            feature_times[2][0] == future.start_time() - lags_future_1[0] * future.freq
-        )
+        assert feature_times[2][0] == future.start_time() - lags_future_1[0] * future.freq
         # Feature time occurs before start of series:
         lags_future_2 = [4]
         feature_times = _get_feature_times(
@@ -554,9 +503,7 @@ class TestGetFeatureTimes:
             output_chunk_shift=output_chunk_shift,
         )
         assert len(feature_times[2]) == 1
-        assert (
-            feature_times[2][0] == future.start_time() - lags_future_2[0] * future.freq
-        )
+        assert feature_times[2][0] == future.start_time() - lags_future_2[0] * future.freq
 
     @pytest.mark.parametrize(
         "config",
@@ -575,9 +522,7 @@ class TestGetFeatureTimes:
         if series_type == "integer":
             future = linear_timeseries(start=0, length=10, freq=2)
         else:
-            future = linear_timeseries(
-                start=pd.Timestamp("1/1/2000"), length=10, freq="2d"
-            )
+            future = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=10, freq="2d")
         # Case 1 - Zero lag:
         lags_future = [0]
         feature_times = _get_feature_times(
@@ -633,9 +578,7 @@ class TestGetFeatureTimes:
         expected_future = future.append_values(3 * [0]).time_index[3:]
 
         # Specify only target, without past and future:
-        feature_times = _get_feature_times(
-            target_series=target, lags=lags, is_training=False
-        )
+        feature_times = _get_feature_times(target_series=target, lags=lags, is_training=False)
         assert expected_target.equals(feature_times[0])
         assert feature_times[1] is None
         assert feature_times[2] is None
@@ -852,18 +795,12 @@ class TestGetFeatureTimes:
         output_chunk_length = 1
         # Don't specify `target_series`:
         with pytest.raises(ValueError) as err:
-            _get_feature_times(
-                output_chunk_length=output_chunk_length, is_training=True
-            )
-        assert ("Must specify `target_series` when `is_training = True`.") == str(
-            err.value
-        )
+            _get_feature_times(output_chunk_length=output_chunk_length, is_training=True)
+        assert ("Must specify `target_series` when `is_training = True`.") == str(err.value)
         # Don't specify neither `target_series` nor `output_chunk_length`
         with pytest.raises(ValueError) as err:
             _get_feature_times(is_training=True)
-        assert ("Must specify `target_series` when `is_training = True`.") == str(
-            err.value
-        )
+        assert ("Must specify `target_series` when `is_training = True`.") == str(err.value)
 
     def test_feature_times_no_lags_specified_error(self):
         """
@@ -873,9 +810,8 @@ class TestGetFeatureTimes:
         target = linear_timeseries(start=1, length=20, freq=1)
         with pytest.raises(ValueError) as err:
             _get_feature_times(target_series=target, is_training=False)
-        assert (
-            "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
-            == str(err.value)
+        assert "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`." == str(
+            err.value
         )
 
     def test_feature_times_series_too_short_error(self):
@@ -930,14 +866,10 @@ class TestGetFeatureTimes:
         # `lags` not <= -1:
         with pytest.raises(ValueError) as err:
             _get_feature_times(target_series=series, lags=[0], is_training=False)
-        assert (
-            "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
-        ) == str(err.value)
+        assert ("`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0.") == str(err.value)
         # `lags_past_covariates` not <= -1:
         with pytest.raises(ValueError) as err:
-            _get_feature_times(
-                past_covariates=series, lags_past_covariates=[0], is_training=False
-            )
+            _get_feature_times(past_covariates=series, lags_past_covariates=[0], is_training=False)
         assert (
             "`lags_past_covariates` must be a `Sequence` or `Dict` containing only `int` values less than 0."
         ) == str(err.value)

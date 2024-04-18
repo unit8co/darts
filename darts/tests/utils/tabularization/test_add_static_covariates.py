@@ -12,12 +12,8 @@ class TestAddStaticToLaggedData:
     series = linear_timeseries(length=6)
     series = series.stack(series)
     series_stcov_single = series.with_static_covariates(pd.DataFrame({"a": [0.0]}))
-    series_stcov_multi = series.with_static_covariates(
-        pd.DataFrame({"a": [0.0], "b": [1.0]})
-    )
-    series_stcov_multivar = series.with_static_covariates(
-        pd.DataFrame({"a": [0.0, 1.0], "b": [10.0, 20.0]})
-    )
+    series_stcov_multi = series.with_static_covariates(pd.DataFrame({"a": [0.0], "b": [1.0]}))
+    series_stcov_multivar = series.with_static_covariates(pd.DataFrame({"a": [0.0, 1.0], "b": [10.0, 20.0]}))
     features = np.empty(shape=(len(series), 2))
 
     def test_add_static_covs_train(self):
@@ -103,9 +99,7 @@ class TestAddStaticToLaggedData:
         )
         assert [features_.shape == expected_shape for features_ in features]
         assert last_shape == self.series_stcov_multivar.static_covariates.shape
-        assert np.all(
-            features[0][:, -sum(last_shape) :] == np.array([0.0, 1.0, 10.0, 20.0])
-        )
+        assert np.all(features[0][:, -sum(last_shape) :] == np.array([0.0, 1.0, 10.0, 20.0]))
 
     def test_add_static_covs_predict(self):
         # predicting when `last_shape` other than `None`
@@ -181,6 +175,4 @@ class TestAddStaticToLaggedData:
         )
         assert [features_.shape == expected_shape for features_ in features]
         assert last_shape == self.series_stcov_multivar.static_covariates.shape
-        assert np.all(
-            features[0][:, -sum(last_shape) :] == np.array([0.0, 1.0, 10.0, 20.0])
-        )
+        assert np.all(features[0][:, -sum(last_shape) :] == np.array([0.0, 1.0, 10.0, 20.0]))

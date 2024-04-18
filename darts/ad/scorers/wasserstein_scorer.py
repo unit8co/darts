@@ -126,9 +126,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         )
         self.component_wise = component_wise
 
-        super().__init__(
-            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
-        )
+        super().__init__(univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn)
 
     def __str__(self):
         return "WassersteinScorer"
@@ -137,9 +135,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         self,
         list_series: Sequence[TimeSeries],
     ):
-        self.training_data = np.concatenate(
-            [s.all_values(copy=False) for s in list_series]
-        ).squeeze(-1)
+        self.training_data = np.concatenate([s.all_values(copy=False) for s in list_series]).squeeze(-1)
 
         if not self.component_wise:
             self.training_data = self.training_data.flatten()
@@ -158,23 +154,17 @@ class WassersteinScorer(FittableAnomalyScorer):
         if not self.component_wise:
             np_anomaly_score = [
                 wasserstein_distance(self.training_data, window_samples)
-                for window_samples in sliding_window_view(
-                    np_series, window_shape=self.window, axis=0
-                )
+                for window_samples in sliding_window_view(np_series, window_shape=self.window, axis=0)
                 .transpose(0, 3, 1, 2)
                 .reshape(-1, self.window * series.width)
             ]
 
-            return TimeSeries.from_times_and_values(
-                series.time_index[self.window - 1 :], np_anomaly_score
-            )
+            return TimeSeries.from_times_and_values(series.time_index[self.window - 1 :], np_anomaly_score)
 
         else:
             for component_idx in range(self.width_trained_on):
                 score = [
-                    wasserstein_distance(
-                        self.training_data[component_idx, :], window_samples
-                    )
+                    wasserstein_distance(self.training_data[component_idx, :], window_samples)
                     for window_samples in sliding_window_view(
                         np_series[:, component_idx],
                         window_shape=self.window,
@@ -186,6 +176,4 @@ class WassersteinScorer(FittableAnomalyScorer):
 
                 np_anomaly_score.append(score)
 
-            return TimeSeries.from_times_and_values(
-                series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
-            )
+            return TimeSeries.from_times_and_values(series.time_index[self.window - 1 :], list(zip(*np_anomaly_score)))

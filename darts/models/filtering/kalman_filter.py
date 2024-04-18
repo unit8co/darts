@@ -131,9 +131,7 @@ class KalmanFilter(FilteringModel, ABC):
             num_block_rows=num_block_rows,
         )
         nfoursid.subspace_identification()
-        state_space_identified, covariance_matrix = nfoursid.system_identification(
-            rank=self.dim_x
-        )
+        state_space_identified, covariance_matrix = nfoursid.system_identification(rank=self.dim_x)
 
         self.kf = Kalman(state_space_identified, covariance_matrix)
 
@@ -169,14 +167,12 @@ class KalmanFilter(FilteringModel, ABC):
 
         raise_if(
             self.kf is None,
-            "The Kalman filter has not been fitted yet. Call `fit()` first "
-            "or provide Kalman filter in constructor.",
+            "The Kalman filter has not been fitted yet. Call `fit()` first " "or provide Kalman filter in constructor.",
         )
 
         raise_if_not(
             series.width == self.dim_y,
-            "The provided TimeSeries dimensionality does not match "
-            "the output dimensionality of the Kalman filter.",
+            "The provided TimeSeries dimensionality does not match " "the output dimensionality of the Kalman filter.",
         )
 
         raise_if(
@@ -233,11 +229,7 @@ class KalmanFilter(FilteringModel, ABC):
             else:
                 # The measurement covariance matrix is given by the sum of the covariance matrix of the
                 # state estimate (transformed by C) and the covariance matrix of the measurement noise.
-                cov_matrix = (
-                    kf.state_space.c @ kf.p_filtereds[-1] @ kf.state_space.c.T + kf.r
-                )
-                sampled_outputs[i, :, :] = np.random.multivariate_normal(
-                    mean_vec, cov_matrix, size=num_samples
-                ).T
+                cov_matrix = kf.state_space.c @ kf.p_filtereds[-1] @ kf.state_space.c.T + kf.r
+                sampled_outputs[i, :, :] = np.random.multivariate_normal(mean_vec, cov_matrix, size=num_samples).T
 
         return series.with_values(sampled_outputs)

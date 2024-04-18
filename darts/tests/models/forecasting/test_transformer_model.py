@@ -78,9 +78,7 @@ class TestTransformerModel:
         np.testing.assert_array_equal(pred1.values(), pred2.values())
 
         # Another random model should not
-        model3 = TransformerModel(
-            input_chunk_length=1, output_chunk_length=1, n_epochs=1, **tfm_kwargs
-        )
+        model3 = TransformerModel(input_chunk_length=1, output_chunk_length=1, n_epochs=1, **tfm_kwargs)
         model3.fit(self.series)
         pred3 = model3.predict(n=6)
         assert not np.array_equal(pred1.values(), pred3.values())
@@ -95,9 +93,7 @@ class TestTransformerModel:
         assert len(pred4) == 6
 
     def helper_test_pred_length(self, pytorch_model, series):
-        model = pytorch_model(
-            input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
-        )
+        model = pytorch_model(input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs)
         model.fit(series)
         pred = model.predict(7)
         assert len(pred) == 7
@@ -130,12 +126,8 @@ class TestTransformerModel:
             **tfm_kwargs,
         )
         model2.fit(self.series, epochs=1)
-        assert isinstance(
-            model2.model.transformer.encoder.layers[0], nn.TransformerEncoderLayer
-        )
-        assert isinstance(
-            model2.model.transformer.decoder.layers[0], nn.TransformerDecoderLayer
-        )
+        assert isinstance(model2.model.transformer.encoder.layers[0], nn.TransformerEncoderLayer)
+        assert isinstance(model2.model.transformer.decoder.layers[0], nn.TransformerDecoderLayer)
 
         # glue variant FFN uses our custom _FeedForwardEncoderLayer
         model3 = TransformerModel(

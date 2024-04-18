@@ -73,9 +73,7 @@ class _GlobalNaiveModule(PLMixedCovariatesModule, ABC):
         super().__init__(*args, **kwargs)
 
     @io_processor
-    def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]) -> torch.Tensor:
         """Naive model forward pass.
 
         Parameters
@@ -219,9 +217,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         )
 
     @abstractmethod
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> _GlobalNaiveModule:
         pass
 
     def _verify_predict_sample(self, predict_sample: Tuple):
@@ -282,9 +278,7 @@ class _NoCovariatesMixin:
 
 
 class _GlobalNaiveAggregateModule(_GlobalNaiveModule):
-    def __init__(
-        self, agg_fn: Callable[[torch.Tensor, int], torch.Tensor], *args, **kwargs
-    ):
+    def __init__(self, agg_fn: Callable[[torch.Tensor, int], torch.Tensor], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agg_fn = agg_fn
 
@@ -426,9 +420,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
         x = torch.ones((batch_size, 4, n_targets))
         try:
             agg = agg_fn(x, dim=1)
-            assert isinstance(
-                agg, torch.Tensor
-            ), "`agg_fn` output must be a torch Tensor."
+            assert isinstance(agg, torch.Tensor), "`agg_fn` output must be a torch Tensor."
             assert agg.shape == (
                 batch_size,
                 n_targets,
@@ -443,9 +435,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
             )
         self.agg_fn = agg_fn
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> _GlobalNaiveModule:
         return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
 
 
@@ -543,9 +533,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> _GlobalNaiveModule:
         return _GlobalNaiveSeasonalModule(**self.pl_module_params)
 
 
@@ -656,7 +644,5 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> _GlobalNaiveModule:
         return _GlobalNaiveDrift(**self.pl_module_params)

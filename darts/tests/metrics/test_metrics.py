@@ -24,11 +24,7 @@ def metric_residuals(y_true, y_pred, **kwargs):
 def metric_smape(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
-    return (
-        100.0
-        / len(y_true)
-        * np.sum(2 * np.abs(y_pred - y_true) / (np.abs(y_true) + np.abs(y_pred)))
-    )
+    return 100.0 / len(y_true) * np.sum(2 * np.abs(y_pred - y_true) / (np.abs(y_true) + np.abs(y_pred)))
 
 
 def metric_ope(y_true, y_pred, **kwargs):
@@ -40,29 +36,19 @@ def metric_ope(y_true, y_pred, **kwargs):
 def metric_cov(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
-    return (
-        100.0
-        * sklearn.metrics.mean_squared_error(y_true, y_pred, squared=False)
-        / np.mean(y_true)
-    )
+    return 100.0 * sklearn.metrics.mean_squared_error(y_true, y_pred, squared=False) / np.mean(y_true)
 
 
 def metric_marre(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
-    return (
-        100.0
-        / len(y_true)
-        * np.sum(np.abs((y_true - y_pred) / (np.max(y_true) - np.min(y_true))))
-    )
+    return 100.0 / len(y_true) * np.sum(np.abs((y_true - y_pred) / (np.max(y_true) - np.min(y_true))))
 
 
 def metric_rmsle(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
-    return np.sqrt(
-        1 / len(y_true) * np.sum((np.log(y_true + 1) - np.log(y_pred + 1)) ** 2)
-    )
+    return np.sqrt(1 / len(y_true) * np.sum((np.log(y_true + 1) - np.log(y_pred + 1)) ** 2))
 
 
 class TestMetrics:
@@ -71,13 +57,9 @@ class TestMetrics:
         np.sin(np.pi * np.arange(31) / 4) + 1,
         index=pd.date_range("20121201", "20121231"),
     )
-    pd_train_not_periodic = pd.Series(
-        range(31), index=pd.date_range("20121201", "20121231")
-    )
+    pd_train_not_periodic = pd.Series(range(31), index=pd.date_range("20121201", "20121231"))
     pd_series1 = pd.Series(range(10), index=pd.date_range("20130101", "20130110"))
-    pd_series2 = pd.Series(
-        np.random.rand(10) * 10 + 1, index=pd.date_range("20130101", "20130110")
-    )
+    pd_series2 = pd.Series(np.random.rand(10) * 10 + 1, index=pd.date_range("20130101", "20130110"))
     pd_series3 = pd.Series(
         np.sin(np.pi * np.arange(20) / 4) + 1,
         index=pd.date_range("20130101", "20130120"),
@@ -91,12 +73,8 @@ class TestMetrics:
     series3: TimeSeries = TimeSeries.from_series(pd_series3)
     series12: TimeSeries = series1.stack(series2)
     series21: TimeSeries = series2.stack(series1)
-    series1b = TimeSeries.from_times_and_values(
-        pd.date_range("20130111", "20130120"), series1.values()
-    )
-    series2b = TimeSeries.from_times_and_values(
-        pd.date_range("20130111", "20130120"), series2.values()
-    )
+    series1b = TimeSeries.from_times_and_values(pd.date_range("20130111", "20130120"), series1.values())
+    series2b = TimeSeries.from_times_and_values(pd.date_range("20130111", "20130120"), series2.values())
     series12_mean = (series1 + series2) / 2
     series11_stochastic = TimeSeries.from_times_and_values(
         series1.time_index, np.stack([series1.values(), series1.values()], axis=2)
@@ -183,9 +161,7 @@ class TestMetrics:
 
         # y pred
         y_p_mv = (
-            self.series12
-            if not is_probabilistic
-            else self.series12_stochastic.stack(self.series12_stochastic)
+            self.series12 if not is_probabilistic else self.series12_stochastic.stack(self.series12_stochastic)
         ) + 1
         y_p_uv = y_p_mv.univariate_component(0)
         y_p_multi_mv = [y_p_mv] * 2
@@ -209,9 +185,7 @@ class TestMetrics:
 
         # SINGLE UNIVARIATE SERIES
         # no reduction
-        res = metric(
-            y_t_uv, y_p_uv, **kwargs_uv, series_reduction=None, component_reduction=None
-        )
+        res = metric(y_t_uv, y_p_uv, **kwargs_uv, series_reduction=None, component_reduction=None)
         assert isinstance(res, float)
         # series reduction
         res = metric(
@@ -283,9 +257,7 @@ class TestMetrics:
 
         # SINGLE MULTIVARIATE SERIES
         # no reduction
-        res = metric(
-            y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None
-        )
+        res = metric(y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None)
         assert isinstance(res, np.ndarray)
         assert res.shape == (2,)
         # series reduction
@@ -472,9 +444,7 @@ class TestMetrics:
 
         # y pred
         y_p_mv = (
-            self.series12
-            if not is_probabilistic
-            else self.series12_stochastic.stack(self.series12_stochastic)
+            self.series12 if not is_probabilistic else self.series12_stochastic.stack(self.series12_stochastic)
         ) + 1
         y_p_uv = y_p_mv.univariate_component(0)
         y_p_multi_mv = [y_p_mv] * 2
@@ -498,9 +468,7 @@ class TestMetrics:
 
         # SINGLE UNIVARIATE SERIES
         # no reduction
-        res = metric(
-            y_t_uv, y_p_uv, **kwargs_uv, series_reduction=None, component_reduction=None
-        )
+        res = metric(y_t_uv, y_p_uv, **kwargs_uv, series_reduction=None, component_reduction=None)
         assert isinstance(res, np.ndarray) and res.shape == (len(y_p_uv),)
         # series reduction
         res = metric(
@@ -573,9 +541,7 @@ class TestMetrics:
 
         # SINGLE MULTIVARIATE SERIES
         # no reduction
-        res = metric(
-            y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None
-        )
+        res = metric(y_t_mv, y_p_mv, **kwargs_mv, series_reduction=None, component_reduction=None)
         assert isinstance(res, np.ndarray) and res.shape == (len(y_t_mv), 2)
         # series reduction
         res = metric(
@@ -772,11 +738,7 @@ class TestMetrics:
         y_t = self.series12 + 1
 
         # y pred
-        y_p = (
-            self.series12
-            if not is_probabilistic
-            else self.series12_stochastic.stack(self.series12_stochastic)
-        ) + 1
+        y_p = (self.series12 if not is_probabilistic else self.series12_stochastic.stack(self.series12_stochastic)) + 1
 
         # insample
         kwargs = {}
@@ -798,9 +760,7 @@ class TestMetrics:
             _ = metric(y_t, y_p, **kwargs, **{red_param: lambda x: np.nanmean(x)})
         assert str(err.value).endswith("Must have a parameter called `axis`.")
         # with axis it works
-        _ = metric(
-            y_t, y_p, **kwargs, **{red_param: lambda x, axis: np.nanmean(x, axis)}
-        )
+        _ = metric(y_t, y_p, **kwargs, **{red_param: lambda x, axis: np.nanmean(x, axis)})
 
         # invalid output type: list
         with pytest.raises(ValueError) as err:
@@ -810,23 +770,17 @@ class TestMetrics:
                 **kwargs,
                 **{red_param: lambda x, axis: np.nanmean(x, axis).tolist()},
             )
-        assert str(err.value).endswith(
-            "Expected type `np.ndarray`, received type=`<class 'list'>`."
-        )
+        assert str(err.value).endswith("Expected type `np.ndarray`, received type=`<class 'list'>`.")
 
         # invalid output type: reduced to float
         with pytest.raises(ValueError) as err:
             _ = metric(y_t, y_p, **kwargs, **{red_param: lambda x, axis: x[0, 0]})
-        assert str(err.value).endswith(
-            "Expected type `np.ndarray`, received type=`<class 'numpy.float64'>`."
-        )
+        assert str(err.value).endswith("Expected type `np.ndarray`, received type=`<class 'numpy.float64'>`.")
 
         # invalid output shape: did not reduce correctly
         with pytest.raises(ValueError) as err:
             _ = metric(y_t, y_p, **kwargs, **{red_param: lambda x, axis: x[:2, :2]})
-        assert str(err.value).startswith(
-            f"Invalid `{red_param}` function output shape:"
-        )
+        assert str(err.value).startswith(f"Invalid `{red_param}` function output shape:")
 
     @pytest.mark.parametrize(
         "config",
@@ -866,9 +820,7 @@ class TestMetrics:
         metric, score_exp, is_probabilistic, kwargs = config
         params = inspect.signature(metric).parameters
         y_true = self.series1 + 1
-        y_pred = (
-            self.series1 + 1 if not is_probabilistic else self.series11_stochastic + 1
-        )
+        y_pred = self.series1 + 1 if not is_probabilistic else self.series11_stochastic + 1
         if "insample" in params:
             assert metric(y_true, y_pred, self.series_train + 1, **kwargs) == score_exp
         else:
@@ -878,9 +830,7 @@ class TestMetrics:
         from sklearn.metrics import r2_score
 
         assert metrics.r2_score(self.series1, self.series0) == 0
-        assert metrics.r2_score(self.series1, self.series2) == r2_score(
-            self.series1.values(), self.series2.values()
-        )
+        assert metrics.r2_score(self.series1, self.series2) == r2_score(self.series1.values(), self.series2.values())
 
         self.helper_test_multivariate_duplication_equality(metrics.r2_score)
         self.helper_test_multiple_ts_duplication_equality(metrics.r2_score)
@@ -992,12 +942,8 @@ class TestMetrics:
         self.helper_test_non_aggregate(metric, is_aggregate, val_exp=-1.0)
 
     def test_coefficient_of_variation(self):
-        self.helper_test_multivariate_duplication_equality(
-            metrics.coefficient_of_variation
-        )
-        self.helper_test_multiple_ts_duplication_equality(
-            metrics.coefficient_of_variation
-        )
+        self.helper_test_multivariate_duplication_equality(metrics.coefficient_of_variation)
+        self.helper_test_multiple_ts_duplication_equality(metrics.coefficient_of_variation)
         self.helper_test_nan(metrics.coefficient_of_variation)
 
     @pytest.mark.parametrize(
@@ -1043,7 +989,6 @@ class TestMetrics:
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
         for s1, s2 in test_cases:
-
             # multivariate, series as args
             np.testing.assert_array_almost_equal(
                 metric(s1.stack(s1), s2.stack(s2), insample.stack(insample), **kwargs),
@@ -1074,9 +1019,7 @@ class TestMetrics:
 
             # checking with n_jobs and verbose
             np.testing.assert_array_almost_equal(
-                metric(
-                    [s1] * 5, pred_series=[s2] * 5, insample=[insample] * 5, **kwargs
-                ),
+                metric([s1] * 5, pred_series=[s2] * 5, insample=[insample] * 5, **kwargs),
                 metric(
                     [s1] * 5,
                     [s2] * 5,
@@ -1094,21 +1037,15 @@ class TestMetrics:
         # fails if `insample` ends more than one time step before start of `pred_series`
         with pytest.raises(ValueError) as err:
             metric(self.series1, self.series2, insample[:-1], m=1)
-        assert str(err.value).startswith(
-            "The `insample` series must start before the `pred_series`"
-        )
+        assert str(err.value).startswith("The `insample` series must start before the `pred_series`")
         # fails if `insample` starts at the beginning of `pred_series`
         with pytest.raises(ValueError) as err:
             metric(self.series1, self.series2, self.series2, m=1)
-        assert str(err.value).startswith(
-            "The `insample` series must start before the `pred_series`"
-        )
+        assert str(err.value).startswith("The `insample` series must start before the `pred_series`")
         # fails if `insample` starts after the beginning of `pred_series`
         with pytest.raises(ValueError) as err:
             metric(self.series1, self.series2, self.series2[1:], m=1)
-        assert str(err.value).startswith(
-            "The `insample` series must start before the `pred_series`"
-        )
+        assert str(err.value).startswith("The `insample` series must start before the `pred_series`")
         # multi-ts, second series is not a TimeSeries
         with pytest.raises(ValueError):
             metric([self.series1] * 2, self.series2, [insample] * 2)
@@ -1130,29 +1067,19 @@ class TestMetrics:
             metrics.qr(self.series1, self.series1)
 
         # general univariate, multivariate and multi-ts tests
-        self.helper_test_multivariate_duplication_equality(
-            metrics.qr, is_stochastic=True
-        )
-        self.helper_test_multiple_ts_duplication_equality(
-            metrics.qr, is_stochastic=True
-        )
+        self.helper_test_multivariate_duplication_equality(metrics.qr, is_stochastic=True)
+        self.helper_test_multiple_ts_duplication_equality(metrics.qr, is_stochastic=True)
         self.helper_test_nan(metrics.qr, is_stochastic=True)
 
         # test perfect predictions -> risk = 0
         for q in [0.25, 0.5]:
-            np.testing.assert_array_almost_equal(
-                metrics.qr(self.series1, self.series11_stochastic, q=q), 0.0
-            )
-        np.testing.assert_array_almost_equal(
-            metrics.qr(self.series12_mean, self.series12_stochastic, q=0.5), 0.0
-        )
+            np.testing.assert_array_almost_equal(metrics.qr(self.series1, self.series11_stochastic, q=q), 0.0)
+        np.testing.assert_array_almost_equal(metrics.qr(self.series12_mean, self.series12_stochastic, q=0.5), 0.0)
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
         s1 = self.series1
         s2 = self.series1 * 2
-        s12_stochastic = TimeSeries.from_times_and_values(
-            s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
-        )
+        s12_stochastic = TimeSeries.from_times_and_values(s1.time_index, np.stack([s1.values(), s2.values()], axis=2))
         np.testing.assert_array_almost_equal(metrics.qr(s1, s12_stochastic, q=0.0), 0.0)
         np.testing.assert_array_almost_equal(metrics.qr(s2, s12_stochastic, q=1.0), 0.0)
 
@@ -1170,52 +1097,28 @@ class TestMetrics:
             metric(self.series1, self.series1, **kwargs)
 
         # general univariate, multivariate and multi-ts tests
-        self.helper_test_multivariate_duplication_equality(
-            metric, is_stochastic=True, **kwargs
-        )
-        self.helper_test_multiple_ts_duplication_equality(
-            metric, is_stochastic=True, **kwargs
-        )
+        self.helper_test_multivariate_duplication_equality(metric, is_stochastic=True, **kwargs)
+        self.helper_test_multiple_ts_duplication_equality(metric, is_stochastic=True, **kwargs)
         self.helper_test_nan(metric, is_stochastic=True, **kwargs)
 
         # test perfect predictions -> risk = 0
         for q in [0.25, 0.5]:
-            np.testing.assert_array_almost_equal(
-                metric(self.series1, self.series11_stochastic, q=q, **kwargs), 0.0
-            )
+            np.testing.assert_array_almost_equal(metric(self.series1, self.series11_stochastic, q=q, **kwargs), 0.0)
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
         s1 = self.series1
         s2 = self.series1 * 2
-        s12_stochastic = TimeSeries.from_times_and_values(
-            s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
-        )
-        np.testing.assert_array_almost_equal(
-            metric(s1, s12_stochastic, q=1.0, **kwargs), 0.0
-        )
-        np.testing.assert_array_almost_equal(
-            metric(s2, s12_stochastic, q=0.0, **kwargs), 0.0
-        )
+        s12_stochastic = TimeSeries.from_times_and_values(s1.time_index, np.stack([s1.values(), s2.values()], axis=2))
+        np.testing.assert_array_almost_equal(metric(s1, s12_stochastic, q=1.0, **kwargs), 0.0)
+        np.testing.assert_array_almost_equal(metric(s2, s12_stochastic, q=0.0, **kwargs), 0.0)
 
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
         series11 = self.series1.stack(self.series1)
-        assert (
-            metrics.r2_score(series11, series00, True, component_reduction=np.mean) == 0
-        )
+        assert metrics.r2_score(series11, series00, True, component_reduction=np.mean) == 0
         assert metrics.r2_score(series11, series00, component_reduction=np.mean) == 0
-        assert (
-            metrics.r2_score(
-                series11, pred_series=series00, component_reduction=np.mean
-            )
-            == 0
-        )
-        assert (
-            metrics.r2_score(
-                series00, actual_series=series11, component_reduction=np.mean
-            )
-            == 0
-        )
+        assert metrics.r2_score(series11, pred_series=series00, component_reduction=np.mean) == 0
+        assert metrics.r2_score(series00, actual_series=series11, component_reduction=np.mean) == 0
         assert (
             metrics.r2_score(
                 True,
@@ -1225,18 +1128,8 @@ class TestMetrics:
             )
             == 0
         )
-        assert (
-            metrics.r2_score(
-                series00, True, component_reduction=np.mean, actual_series=series11
-            )
-            == 0
-        )
-        assert (
-            metrics.r2_score(
-                series11, True, component_reduction=np.mean, pred_series=series00
-            )
-            == 0
-        )
+        assert metrics.r2_score(series00, True, component_reduction=np.mean, actual_series=series11) == 0
+        assert metrics.r2_score(series11, True, component_reduction=np.mean, pred_series=series00) == 0
 
         # should fail if kwargs are passed as args, because of the "*"
         with pytest.raises(TypeError):
@@ -1403,13 +1296,11 @@ class TestMetrics:
         metric, scores_exp, q_param, kwargs = config
         np.random.seed(0)
         x = np.random.normal(loc=0.0, scale=1.0, size=10000)
-        y = np.array(
-            [
-                [0.0, 10.0],
-                [1.0, 11.0],
-                [2.0, 12.0],
-            ]
-        ).reshape(3, 2, 1)
+        y = np.array([
+            [0.0, 10.0],
+            [1.0, 11.0],
+            [2.0, 12.0],
+        ]).reshape(3, 2, 1)
 
         y_true = [TimeSeries.from_values(y)] * 2
         y_pred = [TimeSeries.from_values(y + x)] * 2
@@ -1458,9 +1349,7 @@ class TestMetrics:
             s11 = s1.stack(s1)
             s22 = s2.stack(s2)
             # default intra
-            np.testing.assert_array_almost_equal(
-                metric(s1, s2, **kwargs), metric(s11, s22, **kwargs)
-            )
+            np.testing.assert_array_almost_equal(metric(s1, s2, **kwargs), metric(s11, s22, **kwargs))
             # custom intra
             np.testing.assert_array_almost_equal(
                 metric(
@@ -1521,9 +1410,7 @@ class TestMetrics:
             # multivariate + multi-TS
             s11 = [s1.stack(s1)] * 2
             s22 = [s2.stack(s2)] * 2
-            non_nan_metric = metric(
-                [s[:9] + 1 for s in s11], [s[:9] for s in s22], **kwargs
-            )
+            non_nan_metric = metric([s[:9] + 1 for s in s11], [s[:9] for s in s22], **kwargs)
             nan_s11 = s11.copy()
             for s in nan_s11:
                 s._xa.values[-1, :, :] = np.nan

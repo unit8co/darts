@@ -322,9 +322,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
             )
         else:
-            return super()._predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
+            return super()._predict_and_sample(x, num_samples, predict_likelihood_parameters, **kwargs)
 
     @property
     def supports_probabilistic_prediction(self) -> bool:

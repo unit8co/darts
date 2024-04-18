@@ -26,7 +26,6 @@ class ExponentialNLLScorer(NLLScorer):
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
-
         # This is the ML estimate for 1/lambda, which is what scipy expects as scale.
         mu = np.mean(probabilistic_estimations, axis=1)
 

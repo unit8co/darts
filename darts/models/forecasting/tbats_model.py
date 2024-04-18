@@ -51,9 +51,7 @@ def _seasonality_from_freq(series: TimeSeries):
         return [7]
     elif freq == "W":
         return [52]
-    elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(
-        ("M", "BM", "BS", "CBM", "SM")
-    ):
+    elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(("M", "BM", "BS", "CBM", "SM")):
         return [12]  # month
     elif freq in ["Q", "BQ", "REQ"] or freq.startswith(("Q", "BQ", "REQ")):
         return [4]  # quarter
@@ -89,9 +87,7 @@ def _compute_samples(model, predictions, n_samples):
         f_running = f_running @ F
     variance_multiplier = np.cumsum(c * c)
 
-    base_variance_boxcox = np.sum(model.resid_boxcox * model.resid_boxcox) / len(
-        model.y
-    )
+    base_variance_boxcox = np.sum(model.resid_boxcox * model.resid_boxcox) / len(model.y)
     variance_boxcox = base_variance_boxcox * variance_multiplier
     std_boxcox = np.sqrt(variance_boxcox)
 

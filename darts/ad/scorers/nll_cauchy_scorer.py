@@ -26,8 +26,5 @@ class CauchyNLLScorer(NLLScorer):
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
-
         params = np.apply_along_axis(cauchy.fit, axis=1, arr=probabilistic_estimations)
-        return -cauchy.logpdf(
-            deterministic_values, loc=params[:, 0], scale=params[:, 1]
-        )
+        return -cauchy.logpdf(deterministic_values, loc=params[:, 0], scale=params[:, 1])

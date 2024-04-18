@@ -45,16 +45,12 @@ class TestTsUtils:
         # unknown sequence type
         with pytest.raises(ValueError) as err:
             _ = get_series_seq_type([[[ts]]])
-        assert str(err.value).startswith(
-            "input series must be of type `TimeSeries`, `Sequence[TimeSeries]`"
-        )
+        assert str(err.value).startswith("input series must be of type `TimeSeries`, `Sequence[TimeSeries]`")
 
         # sequence with elements different from `TimeSeries`
         with pytest.raises(ValueError) as err:
             _ = get_series_seq_type([[0.0, 1.0, 2]])
-        assert str(err.value).startswith(
-            "input series must be of type `TimeSeries`, `Sequence[TimeSeries]`"
-        )
+        assert str(err.value).startswith("input series must be of type `TimeSeries`, `Sequence[TimeSeries]`")
 
     def test_series2seq(self):
         ts = linear_timeseries(length=3)

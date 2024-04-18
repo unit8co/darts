@@ -26,6 +26,5 @@ class PoissonNLLScorer(NLLScorer):
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
-
         mu = np.mean(probabilistic_estimations, axis=1)
         return -poisson.logpmf(deterministic_values, mu=mu)

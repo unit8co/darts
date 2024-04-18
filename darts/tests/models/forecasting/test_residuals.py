@@ -14,7 +14,6 @@ logger = get_logger(__name__)
 
 
 class TestResiduals:
-
     np.random.seed(42)
 
     @pytest.mark.parametrize(
@@ -103,9 +102,7 @@ class TestResiduals:
         # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
         scores_exp = []
         for i in range(n_forecasts):
-            scores_exp.append(
-                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
-            )
+            scores_exp.append(np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1))
 
         model = NaiveDrift()
 
@@ -165,9 +162,7 @@ class TestResiduals:
         # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
         scores_exp = []
         for i in range(len(hfc)):
-            scores_exp.append(
-                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
-            )
+            scores_exp.append(np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1))
 
         model = NaiveDrift()
 
@@ -179,9 +174,7 @@ class TestResiduals:
                 metric=metric,
                 last_points_only=False,
             )
-        error_msg = (
-            "Expected `historical_forecasts` of type `Sequence[Sequence[TimeSeries]]`"
-        )
+        error_msg = "Expected `historical_forecasts` of type `Sequence[Sequence[TimeSeries]]`"
         assert str(err.value).startswith(error_msg)
 
         for vals_only in [False, True]:
@@ -225,9 +218,7 @@ class TestResiduals:
         # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
         scores_exp = []
         for i in range(len(hfc)):
-            scores_exp.append(
-                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
-            )
+            scores_exp.append(np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1))
 
         model = NaiveDrift()
 
@@ -285,9 +276,7 @@ class TestResiduals:
         # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
         scores_exp = []
         for i in range(len(hfc)):
-            scores_exp.append(
-                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
-            )
+            scores_exp.append(np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1))
         # repeat following `hfc`
         scores_exp = [[scores_exp[0]], [scores_exp[1]] * 2]
 
@@ -332,9 +321,7 @@ class TestResiduals:
                 metric=metrics.mape,
                 last_points_only=True,
             )
-        assert str(err.value).endswith(
-            "got an unexpected keyword argument 'time_reduction'"
-        )
+        assert str(err.value).endswith("got an unexpected keyword argument 'time_reduction'")
 
     def test_forecasting_residuals_nocov_output(self):
         model = NaiveSeasonal(K=1)
@@ -342,21 +329,15 @@ class TestResiduals:
         # test zero residuals
         constant_ts = ct(length=20)
         residuals = model.residuals(constant_ts)
-        np.testing.assert_almost_equal(
-            residuals.univariate_values(), np.zeros(len(residuals))
-        )
+        np.testing.assert_almost_equal(residuals.univariate_values(), np.zeros(len(residuals)))
         residuals_vals = model.residuals(constant_ts, values_only=True)
         np.testing.assert_almost_equal(residuals.all_values(), residuals_vals)
 
         # test constant, positive residuals
         linear_ts = lt(length=20)
         residuals = model.residuals(linear_ts)
-        np.testing.assert_almost_equal(
-            np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1)
-        )
-        np.testing.assert_array_less(
-            np.zeros(len(residuals)), residuals.univariate_values()
-        )
+        np.testing.assert_almost_equal(np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1))
+        np.testing.assert_array_less(np.zeros(len(residuals)), residuals.univariate_values())
         residuals_vals = model.residuals(linear_ts, values_only=True)
         np.testing.assert_almost_equal(residuals.all_values(), residuals_vals)
 
@@ -372,9 +353,7 @@ class TestResiduals:
             comps_fcov=1,
         )  # outputs Sequences[TimeSeries] and not TimeSeries
 
-        model = LinearRegressionModel(
-            lags=1, lags_past_covariates=1, lags_future_covariates=(1, 1)
-        )
+        model = LinearRegressionModel(lags=1, lags_past_covariates=1, lags_future_covariates=(1, 1))
         model.fit(
             series,
             past_covariates=past_covariates,
@@ -398,10 +377,7 @@ class TestResiduals:
             future_covariates=future_covariates,
             values_only=True,
         )
-        assert (
-            isinstance(res_vals_direct, list)
-            and len(res_vals_direct) == len(series) == 1
-        )
+        assert isinstance(res_vals_direct, list) and len(res_vals_direct) == len(series) == 1
         np.testing.assert_almost_equal(res_vals_direct[0], res_vals)
 
         # with precomputed historical forecasts
@@ -447,9 +423,7 @@ class TestResiduals:
         past_covariates = ct(value=0.2, length=10)
         future_covariates = ct(value=0.1, length=10)
 
-        model = LinearRegressionModel(
-            lags=1, lags_past_covariates=1, lags_future_covariates=(1, 1)
-        )
+        model = LinearRegressionModel(lags=1, lags_past_covariates=1, lags_future_covariates=(1, 1))
         model.fit(
             series,
             past_covariates=past_covariates,

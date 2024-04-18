@@ -47,13 +47,9 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
     @wraps(func)
     def wrapper_multi_ts_support(*args, **kwargs):
-        actual_series = (
-            kwargs["actual_series"] if "actual_series" in kwargs else args[0]
-        )
+        actual_series = kwargs["actual_series"] if "actual_series" in kwargs else args[0]
         pred_series = (
-            kwargs["pred_series"]
-            if "pred_series" in kwargs
-            else args[0] if "actual_series" in kwargs else args[1]
+            kwargs["pred_series"] if "pred_series" in kwargs else args[0] if "actual_series" in kwargs else args[1]
         )
 
         params = signature(func).parameters
@@ -100,9 +96,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 ),
                 logger=logger,
             )
-        num_series_in_args = int("actual_series" not in kwargs) + int(
-            "pred_series" not in kwargs
-        )
+        num_series_in_args = int("actual_series" not in kwargs) + int("pred_series" not in kwargs)
         input_series = (actual_series, pred_series)
 
         kwargs.pop("actual_series", 0)
@@ -112,9 +106,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         if "insample" in params:
             insample = kwargs.get("insample")
             if insample is None:
-                insample = args[
-                    2 - ("actual_series" in kwargs) - ("pred_series" in kwargs)
-                ]
+                insample = args[2 - ("actual_series" in kwargs) - ("pred_series" in kwargs)]
 
             insample = [insample] if not isinstance(insample, Sequence) else insample
             if len(actual_series) != len(insample):
@@ -245,9 +237,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     return wrapper_multivariate_support
 
 
-def _get_values(
-    vals: np.ndarray, stochastic_quantile: Optional[float] = 0.5
-) -> np.ndarray:
+def _get_values(vals: np.ndarray, stochastic_quantile: Optional[float] = 0.5) -> np.ndarray:
     """
     Returns a deterministic or probabilistic numpy array from the values of a time series.
     For stochastic input values, return either all sample values with (stochastic_quantile=None) or the quantile sample
@@ -319,9 +309,7 @@ def _get_values_or_raise(
 
         if not len(vals_a_common) == len(vals_b_common):
             raise_log(
-                ValueError(
-                    "The two time series must have at least a partially overlapping time index."
-                ),
+                ValueError("The two time series must have at least a partially overlapping time index."),
                 logger=logger,
             )
 
@@ -329,12 +317,7 @@ def _get_values_or_raise(
     else:
         # for `insample` series we extract only values up until before start of `pred_series`
         # find how many steps `insample` overlaps into `series_b`
-        end = (
-            n_steps_between(
-                end=series_b.start_time(), start=series_a.end_time(), freq=series_a.freq
-            )
-            - 1
-        )
+        end = n_steps_between(end=series_b.start_time(), start=series_a.end_time(), freq=series_a.freq) - 1
         if end > 0 or abs(end) >= len(series_a):
             raise_log(
                 ValueError(
@@ -356,20 +339,12 @@ def _get_values_or_raise(
         isnan_mask = np.logical_or(np.isnan(vals_a_det), np.isnan(vals_b_det))
         isnan_mask_pred = isnan_mask
     else:
-        isnan_mask = np.logical_or(
-            np.isnan(vals_a_det), np.isnan(vals_b_det).any(axis=2)
-        )
-        isnan_mask_pred = np.repeat(
-            np.expand_dims(isnan_mask, axis=-1), vals_b_det.shape[2], axis=2
-        )
-    return np.where(isnan_mask, np.nan, vals_a_det), np.where(
-        isnan_mask_pred, np.nan, vals_b_det
-    )
+        isnan_mask = np.logical_or(np.isnan(vals_a_det), np.isnan(vals_b_det).any(axis=2))
+        isnan_mask_pred = np.repeat(np.expand_dims(isnan_mask, axis=-1), vals_b_det.shape[2], axis=2)
+    return np.where(isnan_mask, np.nan, vals_a_det), np.where(isnan_mask_pred, np.nan, vals_b_det)
 
 
-def _get_wrapped_metric(
-    func: Callable[..., METRIC_OUTPUT_TYPE]
-) -> Callable[..., METRIC_OUTPUT_TYPE]:
+def _get_wrapped_metric(func: Callable[..., METRIC_OUTPUT_TYPE]) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and
     `multivariate_support`. It significantly decreases process time compared to calling `func` directly.
     Only use this to compute a pre-defined metric within the scope of another metric.
@@ -377,9 +352,7 @@ def _get_wrapped_metric(
     return func.__wrapped__.__wrapped__
 
 
-def _get_reduction(
-    kwargs, params, red_name, axis, sanity_check: bool = True
-) -> Optional[Callable[..., np.ndarray]]:
+def _get_reduction(kwargs, params, red_name, axis, sanity_check: bool = True) -> Optional[Callable[..., np.ndarray]]:
     """Returns the reduction function either from user kwargs or metric default.
     Optionally performs sanity checks for presence of `axis` parameter, and correct output type and
     reduced shape."""
@@ -394,9 +367,7 @@ def _get_reduction(
         red_params = inspect.signature(red_fn).parameters
         if "axis" not in red_params:
             raise_log(
-                ValueError(
-                    f"Invalid `{red_name}` function: Must have a parameter called `axis`."
-                ),
+                ValueError(f"Invalid `{red_name}` function: Must have a parameter called `axis`."),
                 logger=logger,
             )
         # verify `red_fn` reduces to array with correct shape
@@ -439,9 +410,7 @@ def _get_error_scale(
         )
 
     # `x_t` are the true `y` values before the start of `y_pred`
-    x_t, _ = _get_values_or_raise(
-        insample, pred_series, intersect=False, remove_nan_union=False, is_insample=True
-    )
+    x_t, _ = _get_values_or_raise(insample, pred_series, intersect=False, remove_nan_union=False, is_insample=True)
     diff = x_t[m:] - x_t[:-m]
     if metric == "mae":
         scale = np.nanmean(np.abs(diff), axis=TIME_AX)
@@ -451,9 +420,7 @@ def _get_error_scale(
         scale = np.sqrt(np.nanmean(np.power(diff, 2), axis=TIME_AX))
     else:
         raise_log(
-            ValueError(
-                f"unknown `metric={metric}`. Must be one of ('mae', 'mse', 'rmse')."
-            ),
+            ValueError(f"unknown `metric={metric}`. Must be one of ('mae', 'mse', 'rmse')."),
             logger=logger,
         )
 
@@ -539,9 +506,7 @@ def err(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=False)
     return y_true - y_pred
 
 
@@ -703,9 +668,7 @@ def ae(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=False)
     return np.abs(y_true - y_pred)
 
 
@@ -1084,9 +1047,7 @@ def se(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=False)
     return (y_true - y_pred) ** 2
 
 
@@ -1639,9 +1600,7 @@ def sle(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=False)
     y_true, y_pred = np.log(y_true + 1), np.log(y_pred + 1)
     return (y_true - y_pred) ** 2
 
@@ -1811,14 +1770,10 @@ def ape(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=False
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=False)
     if not (y_true != 0).all():
         raise_log(
-            ValueError(
-                "`actual_series` must be strictly positive to compute the MAPE."
-            ),
+            ValueError("`actual_series` must be strictly positive to compute the MAPE."),
             logger=logger,
         )
     return 100.0 * np.abs((y_true - y_pred) / y_true)
@@ -1995,14 +1950,10 @@ def sape(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     if not np.logical_or(y_true != 0, y_pred != 0).all():
         raise_log(
-            ValueError(
-                "`actual_series` must be strictly positive to compute the sMAPE."
-            ),
+            ValueError("`actual_series` must be strictly positive to compute the sMAPE."),
             logger=logger,
         )
     return 200.0 * np.abs(y_true - y_pred) / (np.abs(y_true) + np.abs(y_pred))
@@ -2169,17 +2120,11 @@ def ope(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
-    y_true_sum, y_pred_sum = np.nansum(y_true, axis=TIME_AX), np.nansum(
-        y_pred, axis=TIME_AX
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
+    y_true_sum, y_pred_sum = np.nansum(y_true, axis=TIME_AX), np.nansum(y_pred, axis=TIME_AX)
     if not (y_true_sum > 0).all():
         raise_log(
-            ValueError(
-                "The series of actual value cannot sum to zero when computing OPE."
-            ),
+            ValueError("The series of actual value cannot sum to zero when computing OPE."),
             logger=logger,
         )
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.0
@@ -2267,15 +2212,12 @@ def arre(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     y_max, y_min = np.nanmax(y_true, axis=TIME_AX), np.nanmin(y_true, axis=TIME_AX)
     if not (y_max > y_min).all():
         raise_log(
             ValueError(
-                "The difference between the max and min values must "
-                "be strictly positive to compute the MARRE."
+                "The difference between the max and min values must " "be strictly positive to compute the MARRE."
             ),
             logger=logger,
         )
@@ -2437,9 +2379,7 @@ def r2_score(
     ----------
     .. [1] https://en.wikipedia.org/wiki/Coefficient_of_determination
     """
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     ss_errors = np.nansum((y_true - y_pred) ** 2, axis=TIME_AX)
     y_hat = np.nanmean(y_true, axis=TIME_AX)
     ss_tot = np.nansum((y_true - y_hat) ** 2, axis=TIME_AX)
@@ -2516,15 +2456,9 @@ def coefficient_of_variation(
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     # not calling rmse as y_true and y_pred are np.ndarray
-    return (
-        100
-        * np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX))
-        / np.nanmean(y_true, axis=TIME_AX)
-    )
+    return 100 * np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX)) / np.nanmean(y_true, axis=TIME_AX)
 
 
 # Dynamic Time Warping
@@ -2685,9 +2619,7 @@ def qr(
     """
     if not pred_series.is_stochastic:
         raise_log(
-            ValueError(
-                "quantile risk (qr) should only be computed for stochastic predicted TimeSeries."
-            ),
+            ValueError("quantile risk (qr) should only be computed for stochastic predicted TimeSeries."),
             logger=logger,
         )
 
@@ -2699,12 +2631,8 @@ def qr(
         remove_nan_union=True,
     )
     z_true = np.nansum(z_true, axis=TIME_AX)
-    z_hat = np.nansum(
-        z_hat, axis=TIME_AX
-    )  # aggregate all individual sample realizations
-    z_hat_rho = np.quantile(
-        z_hat, q=q, axis=1
-    )  # get the quantile from aggregated samples
+    z_hat = np.nansum(z_hat, axis=TIME_AX)  # aggregate all individual sample realizations
+    z_hat_rho = np.quantile(z_hat, q=q, axis=1)  # get the quantile from aggregated samples
 
     # quantile loss
     errors = z_true - z_hat_rho
@@ -2799,10 +2727,7 @@ def ql(
     """
     if not pred_series.is_stochastic:
         raise_log(
-            ValueError(
-                "quantile/pinball loss (ql) should only be computed for "
-                "stochastic predicted TimeSeries."
-            ),
+            ValueError("quantile/pinball loss (ql) should only be computed for " "stochastic predicted TimeSeries."),
             logger=logger,
         )
 

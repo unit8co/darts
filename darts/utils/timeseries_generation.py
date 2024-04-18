@@ -74,9 +74,7 @@ def constant_timeseries(
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.full(len(index), value, dtype=dtype)
 
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
-    )
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def linear_timeseries(
@@ -130,9 +128,7 @@ def linear_timeseries(
 
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.linspace(start_value, end_value, len(index), dtype=dtype)
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
-    )
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def sine_timeseries(
@@ -191,15 +187,11 @@ def sine_timeseries(
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.array(range(len(index)), dtype=dtype)
     f = np.vectorize(
-        lambda x: value_amplitude
-        * math.sin(2 * math.pi * value_frequency * x + value_phase)
-        + value_y_offset
+        lambda x: value_amplitude * math.sin(2 * math.pi * value_frequency * x + value_phase) + value_y_offset
     )
     values = f(values)
 
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
-    )
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def gaussian_timeseries(
@@ -258,24 +250,20 @@ def gaussian_timeseries(
     if isinstance(mean, np.ndarray):
         raise_if_not(
             mean.shape == (length,),
-            "If a vector of means is provided, "
-            "it requires the same length as the TimeSeries.",
+            "If a vector of means is provided, " "it requires the same length as the TimeSeries.",
             logger,
         )
     if isinstance(std, np.ndarray):
         raise_if_not(
             std.shape == (length, length),
-            "If a matrix of standard deviations is provided, "
-            "its shape has to match the length of the TimeSeries.",
+            "If a matrix of standard deviations is provided, " "its shape has to match the length of the TimeSeries.",
             logger,
         )
 
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.random.normal(mean, std, size=len(index)).astype(dtype)
 
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
-    )
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def random_walk_timeseries(
@@ -328,9 +316,7 @@ def random_walk_timeseries(
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
 
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
-    )
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def autoregressive_timeseries(
@@ -397,9 +383,7 @@ def autoregressive_timeseries(
         # calculate next time step as dot product of coefs with previous len(coef) time steps
         values[i] = np.dot(values[i - len(coef) : i], coef)
 
-    return TimeSeries.from_times_and_values(
-        index, values[len(coef) :], freq=freq, columns=pd.Index([column_name])
-    )
+    return TimeSeries.from_times_and_values(index, values[len(coef) :], freq=freq, columns=pd.Index([column_name]))
 
 
 def _extend_time_index_until(
@@ -407,7 +391,6 @@ def _extend_time_index_until(
     until: Optional[Union[int, str, pd.Timestamp]],
     add_length: int,
 ) -> pd.DatetimeIndex:
-
     if not add_length and not until:
         return time_index
 
@@ -419,17 +402,14 @@ def _extend_time_index_until(
     if add_length:
         raise_if_not(
             add_length >= 0,
-            f"Expected add_length, by which to extend the time series by, "
-            f"to be positive, got {add_length}",
+            f"Expected add_length, by which to extend the time series by, " f"to be positive, got {add_length}",
         )
 
         try:
             end += add_length * freq
         except pd.errors.OutOfBoundsDatetime:
             raise_log(
-                ValueError(
-                    f"the add operation between {end} and {add_length * freq} will overflow"
-                ),
+                ValueError(f"the add operation between {end} and {add_length * freq} will overflow"),
                 logger,
             )
     else:
@@ -446,8 +426,7 @@ def _extend_time_index_until(
         else:
             raise_if_not(
                 isinstance(until, int),
-                "Expected integer for TimeSeries, indexed by RangeIndex, "
-                f"for parameter until, got {type(end)}",
+                "Expected integer for TimeSeries, indexed by RangeIndex, " f"for parameter until, got {type(end)}",
                 logger,
             )
 
@@ -524,14 +503,10 @@ def holidays_timeseries(
     )
 
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
-    country_holidays = holidays.country_holidays(
-        country_code, prov=prov, state=state, years=scope
-    )
+    country_holidays = holidays.country_holidays(country_code, prov=prov, state=state, years=scope)
     index_series = pd.Series(time_index, index=time_index)
     values = index_series.apply(lambda x: x in country_holidays).astype(dtype)
-    return TimeSeries.from_times_and_values(
-        time_index_ts, values, columns=pd.Index([column_name])
-    )
+    return TimeSeries.from_times_and_values(time_index_ts, values, columns=pd.Index([column_name]))
 
 
 def datetime_attribute_timeseries(
@@ -599,8 +574,7 @@ def datetime_attribute_timeseries(
     )
 
     raise_if_not(
-        hasattr(pd.DatetimeIndex, attribute)
-        or (attribute in ["week", "weekofyear", "week_of_year"]),
+        hasattr(pd.DatetimeIndex, attribute) or (attribute in ["week", "weekofyear", "week_of_year"]),
         f"attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. "
         "See all available attributes in "
         "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex",
@@ -631,12 +605,7 @@ def datetime_attribute_timeseries(
     if attribute not in ["week", "weekofyear", "week_of_year"]:
         values = getattr(time_index, attribute)
     else:
-        values = (
-            time_index.isocalendar()
-            .set_index("week")
-            .index.astype("int64")
-            .rename("time")
-        )
+        values = time_index.isocalendar().set_index("week").index.astype("int64").rename("time")
 
     # shift 1-indexed datetime attributes
     if attribute in ONE_INDEXED_FREQS:
@@ -658,9 +627,7 @@ def datetime_attribute_timeseries(
             for first_day in [pd.Timestamp(f"{year}-01-01") for year in years]
         )
         # check if time index actually include the additional week
-        additional_week_in_index = time_index[-1] - time_index[0] + pd.Timedelta(
-            days=1
-        ) >= pd.Timedelta(days=365)
+        additional_week_in_index = time_index[-1] - time_index[0] + pd.Timedelta(days=1) >= pd.Timedelta(days=365)
 
         if additional_week_year and additional_week_in_index:
             num_values_dict[attribute] += 1
@@ -683,9 +650,7 @@ def datetime_attribute_timeseries(
         values_df = values_df[attribute_range]
 
         if with_columns is None:
-            with_columns = [
-                attribute + "_" + str(column_name) for column_name in values_df.columns
-            ]
+            with_columns = [attribute + "_" + str(column_name) for column_name in values_df.columns]
 
         raise_if_not(
             len(with_columns) == len(values_df.columns),
@@ -713,12 +678,10 @@ def datetime_attribute_timeseries(
                 "The first string for the sine component name, the second for the cosine component name.",
                 logger=logger,
             )
-            values_df = pd.DataFrame(
-                {
-                    with_columns[0]: np.sin(freq * values),
-                    with_columns[1]: np.cos(freq * values),
-                }
-            )
+            values_df = pd.DataFrame({
+                with_columns[0]: np.sin(freq * values),
+                with_columns[1]: np.cos(freq * values),
+            })
         else:
             if with_columns is None:
                 with_columns = attribute
@@ -765,22 +728,14 @@ def _build_forecast_series(
     TimeSeries
         New TimeSeries instance starting after the input series
     """
-    time_index_length = (
-        len(points_preds)
-        if isinstance(points_preds, np.ndarray)
-        else len(points_preds[0])
-    )
+    time_index_length = len(points_preds) if isinstance(points_preds, np.ndarray) else len(points_preds[0])
 
     time_index = _generate_new_dates(
         time_index_length,
         input_series=input_series,
         start=pred_start,
     )
-    values = (
-        points_preds
-        if isinstance(points_preds, np.ndarray)
-        else np.stack(points_preds, axis=2)
-    )
+    values = points_preds if isinstance(points_preds, np.ndarray) else np.stack(points_preds, axis=2)
 
     return TimeSeries.from_times_and_values(
         time_index,
@@ -801,9 +756,7 @@ def _generate_new_dates(
     if start is None:
         last = input_series.end_time()
         start = last + input_series.freq
-    return generate_index(
-        start=start, freq=input_series.freq, length=n, name=input_series.time_dim
-    )
+    return generate_index(start=start, freq=input_series.freq, length=n, name=input_series.time_dim)
 
 
 def _process_time_index(

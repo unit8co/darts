@@ -115,9 +115,7 @@ class Detector(ABC):
                 "Input `anomaly_score` must be deterministic (number of samples equal to 1).",
             )
 
-        return eval_accuracy_from_binary_prediction(
-            actual_anomalies, self.detect(anomaly_score), window, metric
-        )
+        return eval_accuracy_from_binary_prediction(actual_anomalies, self.detect(anomaly_score), window, metric)
 
 
 class FittableDetector(Detector):
@@ -200,9 +198,7 @@ class FittableDetector(Detector):
         self._fit_called = True
         return self._fit_core(list_series)
 
-    def fit_detect(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def fit_detect(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Trains the detector and detects anomalies on the same series.
 
         Parameters

@@ -37,14 +37,10 @@ def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: in
 
     freq = ts_target.freq
 
-    return idx + _index_diff(
-        self=ts_target.end_time(), other=ts_covariate.end_time(), freq=freq
-    )
+    return idx + _index_diff(self=ts_target.end_time(), other=ts_covariate.end_time(), freq=freq)
 
 
-def _index_diff(
-    self: Union[pd.Timestamp, int], other: Union[pd.Timestamp, int], freq: pd.offsets
-):
+def _index_diff(self: Union[pd.Timestamp, int], other: Union[pd.Timestamp, int], freq: pd.offsets):
     """Returns the difference between two indexes `other` and `self` (`other` - `self`) of frequency `freq`."""
     if isinstance(freq, int):
         return int(other - self)

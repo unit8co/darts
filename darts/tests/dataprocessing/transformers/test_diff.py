@@ -12,9 +12,7 @@ from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
 class TestDiff:
-    sine_series = [
-        5 * sine_timeseries(length=50, value_frequency=f) for f in (0.05, 0.1, 0.15)
-    ]
+    sine_series = [5 * sine_timeseries(length=50, value_frequency=f) for f in (0.05, 0.1, 0.15)]
     sine_series = darts_concat(
         sine_series,
         axis=1,
@@ -49,9 +47,7 @@ class TestDiff:
         if to_compare is not None:
             series1 = series1.drop_columns(series1.columns[~to_compare])
             series2 = series2.drop_columns(series2.columns[~to_compare])
-        np.testing.assert_allclose(
-            series1.all_values(), series2.all_values(), atol=1e-8, equal_nan=equal_nan
-        )
+        np.testing.assert_allclose(series1.all_values(), series2.all_values(), atol=1e-8, equal_nan=equal_nan)
         assert series1.time_index.equals(series2.time_index)
 
     def test_diff_quad_series(self):
@@ -69,9 +65,7 @@ class TestDiff:
             expected_transform = lin_series.drop_before(0)
             if not dropna:
                 expected_transform = expected_transform.prepend_values([np.nan])
-            self.assert_series_equal(
-                expected_transform, transformed_series, equal_nan=(not dropna)
-            )
+            self.assert_series_equal(expected_transform, transformed_series, equal_nan=(not dropna))
             self.assert_series_equal(
                 series1=quad_series,
                 series2=diff.inverse_transform(transformed_series),
@@ -134,9 +128,7 @@ class TestDiff:
         ]
         for lags, dropna, mask in test_cases:
             diff = Diff(lags=lags, dropna=dropna)
-            transformed = diff.fit_transform(
-                [self.sine_series, self.sine_series], component_mask=mask
-            )
+            transformed = diff.fit_transform([self.sine_series, self.sine_series], component_mask=mask)
             if mask is not None:
                 # Masked components should be undifferenced:
                 self.assert_series_equal(
@@ -226,11 +218,7 @@ class TestDiff:
             series2_diffed = series2.diff(n=1, periods=1, dropna=dropna)
             with pytest.raises(ValueError) as e:
                 diff.inverse_transform(series2_diffed)
-            expected_start = (
-                series1.start_time()
-                if (not dropna)
-                else series1.start_time() + series1.freq
-            )
+            expected_start = series1.start_time() if (not dropna) else series1.start_time() + series1.freq
             assert (
                 f"Expected series to begin at time {expected_start}; "
                 f"instead, it begins at time {series2_diffed.start_time()}."
@@ -267,23 +255,19 @@ class TestDiff:
         series = TimeSeries.from_times_and_values(values=vals, times=dates)
         diff = Diff(lags=1, dropna=True)
         diff.fit(series)
-        series_rm_comp = TimeSeries.from_times_and_values(
-            values=vals[:, 1:, :], times=dates
-        )
+        series_rm_comp = TimeSeries.from_times_and_values(values=vals[:, 1:, :], times=dates)
         with pytest.raises(ValueError) as e:
             diff.inverse_transform(series_rm_comp.diff(n=1, periods=1, dropna=True))
         assert (
             f"Expected series to have {series.n_components} components; "
-            f"instead, it has {series.n_components-1}." == str(e.value)
+            f"instead, it has {series.n_components - 1}." == str(e.value)
         )
-        series_rm_samp = TimeSeries.from_times_and_values(
-            values=vals[:, :, 1:], times=dates
-        )
+        series_rm_samp = TimeSeries.from_times_and_values(values=vals[:, :, 1:], times=dates)
         with pytest.raises(ValueError) as e:
             diff.inverse_transform(series_rm_samp.diff(n=1, periods=1, dropna=True))
         assert (
             f"Expected series to have {series.n_samples} samples; "
-            f"instead, it has {series.n_samples-1}." == str(e.value)
+            f"instead, it has {series.n_samples - 1}." == str(e.value)
         )
 
     def test_diff_multiple_calls_to_fit(self):

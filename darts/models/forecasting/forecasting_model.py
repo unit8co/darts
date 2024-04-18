@@ -84,13 +84,7 @@ class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
         # 1) get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
-        all_params = OrderedDict(
-            [
-                (p.name, p.default)
-                for p in sig.parameters.values()
-                if not p.name == "self"
-            ]
-        )
+        all_params = OrderedDict([(p.name, p.default) for p in sig.parameters.values() if not p.name == "self"])
 
         # 2) fill params with positional args
         for param, arg in zip(all_params, args):
@@ -143,9 +137,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if "add_encoders" not in kwargs:
             raise_log(
-                NotImplementedError(
-                    "Model subclass must pass the `add_encoders` parameter to base class."
-                ),
+                NotImplementedError("Model subclass must pass the `add_encoders` parameter to base class."),
                 logger=logger,
             )
 
@@ -356,9 +348,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if not self.supports_probabilistic_prediction and num_samples > 1:
             raise_log(
-                ValueError(
-                    "`num_samples > 1` is only supported for probabilistic models."
-                ),
+                ValueError("`num_samples > 1` is only supported for probabilistic models."),
                 logger,
             )
 
@@ -530,9 +520,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Generates `n` new dates after the end of the specified series
         """
-        input_series = (
-            input_series if input_series is not None else self.training_series
-        )
+        input_series = input_series if input_series is not None else self.training_series
         return _generate_new_dates(n=n, input_series=input_series)
 
     def _build_forecast_series(
@@ -568,9 +556,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         TimeSeries
             New TimeSeries instance starting after the input series
         """
-        input_series = (
-            input_series if input_series is not None else self.training_series
-        )
+        input_series = input_series if input_series is not None else self.training_series
         return _build_forecast_series(
             points_preds,
             input_series,
@@ -804,9 +790,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError("If not None, train_length needs to be positive."),
                 logger,
             )
-        elif (
-            train_length is not None
-        ) and train_length < model._training_sample_time_index_length + (
+        elif (train_length is not None) and train_length < model._training_sample_time_index_length + (
             model.min_train_samples - 1
         ):
             raise_log(
@@ -824,9 +808,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
 
-            def retrain_func(
-                counter, pred_time, train_series, past_covariates, future_covariates
-            ):
+            def retrain_func(counter, pred_time, train_series, past_covariates, future_covariates):
                 return counter % int(retrain) == 0 if retrain else False
 
         elif isinstance(retrain, Callable):
@@ -864,9 +846,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             retrain_func = None
             raise_log(
-                ValueError(
-                    "`retrain` argument must be either `bool`, positive `int` or `Callable` (returning `bool`)"
-                ),
+                ValueError("`retrain` argument must be either `bool`, positive `int` or `Callable` (returning `bool`)"),
                 logger,
             )
 
@@ -926,8 +906,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             future_covariates_ = future_covariates[idx] if future_covariates else None
 
             # predictable time indexes (assuming model is already trained)
-            historical_forecasts_time_index_predict = (
-                _get_historical_forecast_predict_index(
+            historical_forecasts_time_index_predict = _get_historical_forecast_predict_index(
+                model,
+                series_,
+                idx,
+                past_covariates_,
+                future_covariates_,
+                forecast_horizon,
+                overlap_end,
+            )
+
+            if retrain:
+                # trainable time indexes (considering lags and available covariates)
+                historical_forecasts_time_index_train = _get_historical_forecast_train_index(
                     model,
                     series_,
                     idx,
@@ -936,27 +927,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     forecast_horizon,
                     overlap_end,
                 )
-            )
-
-            if retrain:
-                # trainable time indexes (considering lags and available covariates)
-                historical_forecasts_time_index_train = (
-                    _get_historical_forecast_train_index(
-                        model,
-                        series_,
-                        idx,
-                        past_covariates_,
-                        future_covariates_,
-                        forecast_horizon,
-                        overlap_end,
-                    )
-                )
 
                 # We need the first value timestamp to be used in order to properly shift the series
                 # Look at both past and future, since the target lags must be taken in consideration
                 min_timestamp_series = (
-                    historical_forecasts_time_index_train[0]
-                    - model._training_sample_time_index_length * series_.freq
+                    historical_forecasts_time_index_train[0] - model._training_sample_time_index_length * series_.freq
                 )
 
                 # based on `retrain`, historical_forecasts_time_index is based either on train or predict
@@ -976,9 +951,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 # we are only predicting: start of the series does not have to change
                 min_timestamp_series = series_.time_index[0]
-                historical_forecasts_time_index = (
-                    historical_forecasts_time_index_predict
-                )
+                historical_forecasts_time_index = historical_forecasts_time_index_predict
                 train_length_ = None
 
             # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
@@ -1005,9 +978,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop
-                iterator = _build_tqdm_iterator(
-                    historical_forecasts_time_index[::stride], verbose
-                )
+                iterator = _build_tqdm_iterator(historical_forecasts_time_index[::stride], verbose)
             else:
                 iterator = historical_forecasts_time_index[::stride]
 
@@ -1125,21 +1096,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             freq=series_.freq * stride,
                         ),
                         np.array(last_points_values),
-                        columns=(
-                            forecast_components
-                            if forecast_components is not None
-                            else series_.columns
-                        ),
-                        static_covariates=(
-                            series_.static_covariates
-                            if not predict_likelihood_parameters
-                            else None
-                        ),
-                        hierarchy=(
-                            series_.hierarchy
-                            if not predict_likelihood_parameters
-                            else None
-                        ),
+                        columns=(forecast_components if forecast_components is not None else series_.columns),
+                        static_covariates=(series_.static_covariates if not predict_likelihood_parameters else None),
+                        hierarchy=(series_.hierarchy if not predict_likelihood_parameters else None),
                     )
                 )
             else:
@@ -1152,9 +1111,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        historical_forecasts: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-        ] = None,
+        historical_forecasts: Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]] = None,
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
@@ -1387,9 +1344,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # we must wrap each fc in a list if `last_points_only=True`
         nested = last_points_only and forecast_seq_type == SeriesType.SEQ
-        historical_forecasts = series2seq(
-            historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
-        )
+        historical_forecasts = series2seq(historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested)
 
         # check that the number of series-specific forecasts corresponds to the
         # number of series in `series`
@@ -1399,13 +1354,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 f"(n={len(historical_forecasts)}) and the number of  `TimeSeries` in `series` "
                 f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
             )
-            expected_seq_type = (
-                series_seq_type if last_points_only else series_seq_type + 1
-            )
+            expected_seq_type = series_seq_type if last_points_only else series_seq_type + 1
             if expected_seq_type == SeriesType.SINGLE:
-                error_msg += (
-                    f"a single `historical_forecasts` of type {expected_seq_type}."
-                )
+                error_msg += f"a single `historical_forecasts` of type {expected_seq_type}."
             else:
                 error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."
             raise_log(
@@ -1472,9 +1423,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 errors_series = errors_series.T
 
             backtest_list.append(errors_series)
-        return (
-            backtest_list if series_seq_type > SeriesType.SINGLE else backtest_list[0]
-        )
+        return backtest_list if series_seq_type > SeriesType.SINGLE else backtest_list[0]
 
     @classmethod
     def gridsearch(
@@ -1626,29 +1575,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             and metric score for the best hyper-parameters.
         """
         raise_if_not(
-            (forecast_horizon is not None)
-            + (val_series is not None)
-            + use_fitted_values
-            == 1,
+            (forecast_horizon is not None) + (val_series is not None) + use_fitted_values == 1,
             "Please pass exactly one of the arguments 'forecast_horizon', "
             "'val_target_series' or 'use_fitted_values'.",
             logger,
         )
 
         if not isinstance(parameters, dict):
-            raise_log(
-                ValueError(
-                    f"`parameters` should be a dictionary, received a: {type(parameters)}."
-                )
-            )
+            raise_log(ValueError(f"`parameters` should be a dictionary, received a: {type(parameters)}."))
 
-        if not all(
-            isinstance(params, (list, np.ndarray)) for params in parameters.values()
-        ):
+        if not all(isinstance(params, (list, np.ndarray)) for params in parameters.values()):
             raise_log(
-                ValueError(
-                    "Every value in the `parameters` dictionary should be a list or a np.ndarray."
-                ),
+                ValueError("Every value in the `parameters` dictionary should be a list or a np.ndarray."),
                 logger,
             )
 
@@ -1679,24 +1617,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_random_samples is not None:
-            params_cross_product = model_class._sample_params(
-                params_cross_product, n_random_samples
-            )
+            params_cross_product = model_class._sample_params(params_cross_product, n_random_samples)
 
         # iterate through all combinations of the provided parameters and choose the best one
-        iterator = _build_tqdm_iterator(
-            zip(params_cross_product), verbose, total=len(params_cross_product)
-        )
+        iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
 
         def _evaluate_combination(param_combination) -> float:
-            param_combination_dict = dict(
-                list(zip(parameters.keys(), param_combination))
-            )
+            param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             if param_combination_dict.get("model_name", None):
                 current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
-                param_combination_dict["model_name"] = (
-                    f"{current_time}_{param_combination_dict['model_name']}"
-                )
+                param_combination_dict["model_name"] = f"{current_time}_{param_combination_dict['model_name']}"
 
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
@@ -1706,9 +1636,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates=future_covariates,
                     **fit_kwargs,
                 )
-                fitted_values = TimeSeries.from_times_and_values(
-                    series.time_index, model.fitted_values
-                )
+                fitted_values = TimeSeries.from_times_and_values(series.time_index, model.fitted_values)
                 error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(
@@ -1748,15 +1676,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             return float(error)
 
-        errors: List[float] = _parallel_apply(
-            iterator, _evaluate_combination, n_jobs, {}, {}
-        )
+        errors: List[float] = _parallel_apply(iterator, _evaluate_combination, n_jobs, {}, {})
 
         min_error = min(errors)
 
-        best_param_combination = dict(
-            list(zip(parameters.keys(), params_cross_product[errors.index(min_error)]))
-        )
+        best_param_combination = dict(list(zip(parameters.keys(), params_cross_product[errors.index(min_error)])))
 
         logger.info("Chosen parameters: " + str(best_param_combination))
 
@@ -1767,9 +1691,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        historical_forecasts: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-        ] = None,
+        historical_forecasts: Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]] = None,
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
@@ -2002,11 +1924,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if series_seq_type == SeriesType.SINGLE:
             return residuals_out[0][0] if last_points_only else residuals_out[0]
 
-        return (
-            [res for res_list in residuals_out for res in res_list]
-            if last_points_only
-            else residuals_out
-        )
+        return [res for res_list in residuals_out for res in res_list] if last_points_only else residuals_out
 
     def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
@@ -2038,9 +1956,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]:
         """Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
         past, and future covariates series with the original and encoded covariates stacked together. The encodings are
         generated by the encoders defined at model creation with parameter `add_encoders`. Pass the same `series`,
@@ -2079,9 +1995,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]:
         """Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
         covariates series with the original and encoded covariates stacked together. The encodings are generated by the
         encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
@@ -2125,9 +2039,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]:
         """Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
         covariates series with the original and encoded covariates stacked together. The encodings are generated by the
         encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
@@ -2215,17 +2127,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def model_params(self) -> dict:
-        return (
-            self._model_params if hasattr(self, "_model_params") else self._model_call
-        )
+        return self._model_params if hasattr(self, "_model_params") else self._model_call
 
     @classmethod
     def _default_save_path(cls) -> str:
         return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
-    def save(
-        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
-    ) -> None:
+    def save(self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs) -> None:
         """
         Saves the model under a given path or file handle.
 
@@ -2308,18 +2216,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _assert_univariate(self, series: TimeSeries):
         if not series.is_univariate:
             raise_log(
-                ValueError(
-                    f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
-                ),
+                ValueError(f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"),
                 logger=logger,
             )
 
     def _assert_multivariate(self, series: TimeSeries):
         if series.is_univariate:
             raise_log(
-                ValueError(
-                    f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
-                ),
+                ValueError(f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"),
                 logger=logger,
             )
 
@@ -2365,20 +2269,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """Get parameter key : default_value pairs for the estimator"""
         init_signature = inspect.signature(cls.__init__)
         # Consider the constructor parameters excluding 'self'
-        return {
-            p.name: p.default
-            for p in init_signature.parameters.values()
-            if p.name != "self"
-        }
+        return {p.name: p.default for p in init_signature.parameters.values() if p.name != "self"}
 
     def _verify_static_covariates(self, static_covariates: Optional[pd.DataFrame]):
         """
         Verify that all static covariates are numeric.
         """
         if static_covariates is not None:
-            numeric_mask = static_covariates.columns.isin(
-                static_covariates.select_dtypes(include=np.number)
-            )
+            numeric_mask = static_covariates.columns.isin(static_covariates.select_dtypes(include=np.number))
             if sum(~numeric_mask):
                 raise_log(
                     ValueError(
@@ -2632,9 +2530,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """
         super().predict(n, num_samples)
         if predict_likelihood_parameters:
-            self._sanity_check_predict_likelihood_parameters(
-                n, self.output_chunk_length, num_samples
-            )
+            self._sanity_check_predict_likelihood_parameters(n, self.output_chunk_length, num_samples)
 
         if self.uses_past_covariates and past_covariates is None:
             raise_log(
@@ -2650,10 +2546,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                     "have to be provided to `predict()`."
                 )
             )
-        if (
-            self.uses_static_covariates
-            and get_single_series(series).static_covariates is None
-        ):
+        if self.uses_static_covariates and get_single_series(series).static_covariates is None:
             raise_log(
                 ValueError(
                     "The model has been trained with static covariates. Some matching static covariates "
@@ -2849,18 +2742,10 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             )
 
             # we raise an error here already to avoid getting error from empty TimeSeries creation
-            raise_if_not(
-                future_covariates.end_time() >= start, invalid_time_span_error, logger
-            )
+            raise_if_not(future_covariates.end_time() >= start, invalid_time_span_error, logger)
 
-            offset = (
-                n - 1
-                if isinstance(future_covariates.time_index, pd.DatetimeIndex)
-                else n
-            )
-            future_covariates = future_covariates.slice(
-                start, start + offset * self.training_series.freq
-            )
+            offset = n - 1 if isinstance(future_covariates.time_index, pd.DatetimeIndex) else n
+            future_covariates = future_covariates.slice(start, start + offset * self.training_series.freq)
 
             raise_if_not(
                 len(future_covariates) == n,
@@ -2868,9 +2753,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 logger,
             )
 
-        return self._predict(
-            n, future_covariates=future_covariates, num_samples=num_samples, **kwargs
-        )
+        return self._predict(n, future_covariates=future_covariates, num_samples=num_samples, **kwargs)
 
     @abstractmethod
     def _predict(
@@ -2940,9 +2823,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         return -self.min_train_series_length, -1, None, None, 0, 0, 0, None
 
 
-class TransferableFutureCovariatesLocalForecastingModel(
-    FutureCovariatesLocalForecastingModel, ABC
-):
+class TransferableFutureCovariatesLocalForecastingModel(FutureCovariatesLocalForecastingModel, ABC):
     """The base class for transferable future covariates "local" forecasting models, handling single uni- or
     multivariate target and optional future covariates time series. Additionally, at prediction time, it can be
     applied to new data unrelated to the original series used for fitting the model.
@@ -3027,9 +2908,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
             # in case future covariates have more values on the left end side that we don't need
             if not series.has_same_time_as(historic_future_covariates):
-                historic_future_covariates = historic_future_covariates.slice_intersect(
-                    series
-                )
+                historic_future_covariates = historic_future_covariates.slice_intersect(series)
 
         # FutureCovariatesLocalForecastingModel performs some checks on self.training_series. We temporary replace
         # that with the new ts
@@ -3058,9 +2937,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
+    ) -> Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]:
         raise_if(
             self.encoders is None or not self.encoders.encoding_available,
             "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "

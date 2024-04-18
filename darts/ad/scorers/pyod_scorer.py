@@ -108,52 +108,41 @@ class PyODScorer(FittableAnomalyScorer):
         )
         self.component_wise = component_wise
 
-        super().__init__(
-            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
-        )
+        super().__init__(univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn)
 
     def __str__(self):
         return "PyODScorer (model {})".format(self.model.__str__().split("(")[0])
 
     def _fit_core(self, list_series: Sequence[TimeSeries]):
-
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
         # TODO: can we factorize code in common bteween PyODScorer and KMeansScorer?
 
         if not self.component_wise:
             self.model.fit(
-                np.concatenate(
-                    [
-                        sliding_window_view(ar, window_shape=self.window, axis=0)
-                        .transpose(0, 3, 1, 2)
-                        .reshape(-1, self.window * len(ar[0]))
-                        for ar in list_np_series
-                    ]
-                )
+                np.concatenate([
+                    sliding_window_view(ar, window_shape=self.window, axis=0)
+                    .transpose(0, 3, 1, 2)
+                    .reshape(-1, self.window * len(ar[0]))
+                    for ar in list_np_series
+                ])
             )
         else:
             models = []
             for component_idx in range(self.width_trained_on):
-
                 model_width = self.model
                 model_width.fit(
-                    np.concatenate(
-                        [
-                            sliding_window_view(
-                                ar[:, component_idx], window_shape=self.window, axis=0
-                            )
-                            .transpose(0, 2, 1)
-                            .reshape(-1, self.window)
-                            for ar in list_np_series
-                        ]
-                    )
+                    np.concatenate([
+                        sliding_window_view(ar[:, component_idx], window_shape=self.window, axis=0)
+                        .transpose(0, 2, 1)
+                        .reshape(-1, self.window)
+                        for ar in list_np_series
+                    ])
                 )
                 models.append(model_width)
             self.models = models
 
     def _score_core(self, series: TimeSeries) -> TimeSeries:
-
         raise_if_not(
             self.width_trained_on == series.width,
             "Input must have the same number of components as the data used for training"
@@ -166,7 +155,6 @@ class PyODScorer(FittableAnomalyScorer):
         np_anomaly_score = []
 
         if not self.component_wise:
-
             np_anomaly_score.append(
                 self.model.decision_function(
                     sliding_window_view(np_series, window_shape=self.window, axis=0)
@@ -175,7 +163,6 @@ class PyODScorer(FittableAnomalyScorer):
                 )
             )
         else:
-
             for component_idx in range(self.width_trained_on):
                 score = self.models[component_idx].decision_function(
                     sliding_window_view(
@@ -189,6 +176,4 @@ class PyODScorer(FittableAnomalyScorer):
 
                 np_anomaly_score.append(score)
 
-        return TimeSeries.from_times_and_values(
-            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
-        )
+        return TimeSeries.from_times_and_values(series.time_index[self.window - 1 :], list(zip(*np_anomaly_score)))

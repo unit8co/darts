@@ -92,9 +92,7 @@ class RINorm(nn.Module):
         calc_dims = tuple(range(1, x.ndim - 1))
 
         self.mean = torch.mean(x, dim=calc_dims, keepdim=True).detach()
-        self.stdev = torch.sqrt(
-            torch.var(x, dim=calc_dims, keepdim=True, unbiased=False) + self.eps
-        ).detach()
+        self.stdev = torch.sqrt(torch.var(x, dim=calc_dims, keepdim=True, unbiased=False) + self.eps).detach()
 
         x = x - self.mean
         x = x / self.stdev
@@ -109,10 +107,7 @@ class RINorm(nn.Module):
         # (batch_size, output_chunk_length, n_targets, nr_params). we ha
         if self.affine:
             x = x - self.affine_bias.view(self.affine_bias.shape + (1,))
-            x = x / (
-                self.affine_weight.view(self.affine_weight.shape + (1,))
-                + self.eps * self.eps
-            )
+            x = x / (self.affine_weight.view(self.affine_weight.shape + (1,)) + self.eps * self.eps)
         x = x * self.stdev.view(self.stdev.shape + (1,))
         x = x + self.mean.view(self.mean.shape + (1,))
         return x

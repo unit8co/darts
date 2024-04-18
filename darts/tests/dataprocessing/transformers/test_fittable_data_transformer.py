@@ -74,9 +74,7 @@ class TestLocalFittableDataTransformer:
             return scale, translation
 
         @staticmethod
-        def ts_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
-        ) -> TimeSeries:
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
             """
             Implements the transform `scale * series + translation`.
 
@@ -104,16 +102,10 @@ class TestLocalFittableDataTransformer:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = (
-                    TestLocalFittableDataTransformer.DataTransformerMock.stack_samples(
-                        vals
-                    )
-                )
+                vals = TestLocalFittableDataTransformer.DataTransformerMock.stack_samples(vals)
             vals = scale * vals + translation
             if stack_samples:
-                vals = TestLocalFittableDataTransformer.DataTransformerMock.unstack_samples(
-                    vals, series=series
-                )
+                vals = TestLocalFittableDataTransformer.DataTransformerMock.unstack_samples(vals, series=series)
 
             if not mask_components and ("component_mask" in kwargs):
                 vals = TestLocalFittableDataTransformer.DataTransformerMock.unapply_component_mask(
@@ -151,21 +143,15 @@ class TestLocalFittableDataTransformer:
 
         # Don't have different params for different jobs:
         mock = self.DataTransformerMock(scale=2, translation=10, parallel_params=False)
-        (transformed_1, transformed_2) = mock.fit_transform(
-            (test_input_1, test_input_2)
-        )
+        (transformed_1, transformed_2) = mock.fit_transform((test_input_1, test_input_2))
         # 2 * 1 + 10 = 12
         assert transformed_1 == constant_timeseries(value=12, length=10)
         # 2 * 2 + 10 = 14
         assert transformed_2 == constant_timeseries(value=14, length=11)
 
         # Have different `scale` param for different jobs:
-        mock = self.DataTransformerMock(
-            scale=(2, 3), translation=10, parallel_params=["_scale"]
-        )
-        (transformed_1, transformed_2) = mock.fit_transform(
-            (test_input_1, test_input_2)
-        )
+        mock = self.DataTransformerMock(scale=(2, 3), translation=10, parallel_params=["_scale"])
+        (transformed_1, transformed_2) = mock.fit_transform((test_input_1, test_input_2))
         # 2 * 1 + 10 = 12
         assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 10 = 16
@@ -184,9 +170,7 @@ class TestLocalFittableDataTransformer:
             mask_components=(False, False),
             parallel_params=True,
         )
-        (transformed_1, transformed_2) = mock.fit_transform(
-            (test_input_1, test_input_2)
-        )
+        (transformed_1, transformed_2) = mock.fit_transform((test_input_1, test_input_2))
         # 2 * 1 + 10 = 12
         assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 11 = 17
@@ -226,9 +210,7 @@ class TestLocalFittableDataTransformer:
         implemented when considering multi-sample timeseries.
         """
         test_input = constant_timeseries(value=1, length=10)
-        test_input = test_input.concatenate(
-            constant_timeseries(value=2, length=10), axis="sample"
-        )
+        test_input = test_input.concatenate(constant_timeseries(value=2, length=10), axis="sample")
 
         mock = self.DataTransformerMock(scale=2, translation=10, stack_samples=True)
         transformed = mock.fit_transform(test_input)
@@ -236,9 +218,7 @@ class TestLocalFittableDataTransformer:
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         # 2 * 2 + 10 = 14
-        expected = expected.concatenate(
-            constant_timeseries(value=14, length=10), axis="sample"
-        )
+        expected = expected.concatenate(constant_timeseries(value=14, length=10), axis="sample")
         assert transformed == expected
 
     def test_input_transformed_masking(self):
@@ -253,15 +233,11 @@ class TestLocalFittableDataTransformer:
         # Second component should be untransformed:
         scale = 2
         translation = 10
-        expected = np.stack(
-            [12 * np.ones((4, 5)), np.ones((4, 5)), 12 * np.ones((4, 5))], axis=1
-        )
+        expected = np.stack([12 * np.ones((4, 5)), np.ones((4, 5)), 12 * np.ones((4, 5))], axis=1)
         expected = TimeSeries.from_values(expected)
 
         # Automatically apply component mask:
-        mock = self.DataTransformerMock(
-            scale=scale, translation=translation, mask_components=True
-        )
+        mock = self.DataTransformerMock(scale=scale, translation=translation, mask_components=True)
         transformed = mock.fit_transform(test_input, component_mask=mask)
         assert transformed == expected
 
@@ -300,11 +276,7 @@ class TestGlobalFittableDataTransformer:
             super().__init__(name="DataTransformerMock", global_fit=global_fit)
 
         @staticmethod
-        def ts_fit(
-            series: Union[TimeSeries, Sequence[TimeSeries]],
-            params: Mapping[str, Any],
-            **kwargs
-        ):
+        def ts_fit(series: Union[TimeSeries, Sequence[TimeSeries]], params: Mapping[str, Any], **kwargs):
             """
             'Fits' transform by computing time-average of each sample and
             component in `series`.
@@ -320,9 +292,7 @@ class TestGlobalFittableDataTransformer:
             return np.mean(vals, axis=0)
 
         @staticmethod
-        def ts_transform(
-            series: TimeSeries, params: Mapping[str, Any], **kwargs
-        ) -> TimeSeries:
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
             """
             Implements the transform `series - mean`.
             """
@@ -342,17 +312,13 @@ class TestGlobalFittableDataTransformer:
 
         # Local fitting - subtracting mean of each series from itself should return
         # zero-valued series:
-        transformed_1, transformed_2 = self.DataTransformerMock(
-            global_fit=False
-        ).fit_transform([series_1, series_2])
+        transformed_1, transformed_2 = self.DataTransformerMock(global_fit=False).fit_transform([series_1, series_2])
         assert transformed_1 == TimeSeries.from_values(np.zeros((3, 2, 1)))
         assert transformed_2 == TimeSeries.from_values(np.zeros((3, 2, 1)))
 
         # Global fitting - mean of `series_1` and `series_2` should be `1.5`, so
         # `series_1` values should be transformed to `-0.5` and `series_2` values
         # should be transformed to `1.5`:
-        transformed_1, transformed_2 = self.DataTransformerMock(
-            global_fit=True
-        ).fit_transform([series_1, series_2])
+        transformed_1, transformed_2 = self.DataTransformerMock(global_fit=True).fit_transform([series_1, series_2])
         assert transformed_1 == TimeSeries.from_values(-0.5 * np.ones((3, 2, 1)))
         assert transformed_2 == TimeSeries.from_values(0.5 * np.ones((3, 2, 1)))

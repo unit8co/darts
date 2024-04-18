@@ -54,7 +54,6 @@ class _ResidualBlock(nn.Module):
             self.layer_norm = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         # residual connection
         x = self.dense(x) + self.skip(x)
 
@@ -231,9 +230,7 @@ class _TideModule(PLMixedCovariatesModule):
             # add decoder output layer
             _ResidualBlock(
                 input_dim=hidden_size,
-                output_dim=decoder_output_dim
-                * self.output_chunk_length
-                * self.nr_params,
+                output_dim=decoder_output_dim * self.output_chunk_length * self.nr_params,
                 hidden_size=hidden_size,
                 use_layer_norm=use_layer_norm,
                 dropout=dropout,
@@ -254,14 +251,10 @@ class _TideModule(PLMixedCovariatesModule):
             dropout=dropout,
         )
 
-        self.lookback_skip = nn.Linear(
-            self.input_chunk_length, self.output_chunk_length * self.nr_params
-        )
+        self.lookback_skip = nn.Linear(self.input_chunk_length, self.output_chunk_length * self.nr_params)
 
     @io_processor
-    def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]) -> torch.Tensor:
         """TiDE model forward pass.
         Parameters
         ----------
@@ -297,9 +290,7 @@ class _TideModule(PLMixedCovariatesModule):
             )
             if self.temporal_width_future:
                 # project input features across all input and output time steps
-                x_dynamic_future_covariates = self.future_cov_projection(
-                    x_dynamic_future_covariates
-                )
+                x_dynamic_future_covariates = self.future_cov_projection(x_dynamic_future_covariates)
         else:
             x_dynamic_future_covariates = None
 
@@ -313,9 +304,7 @@ class _TideModule(PLMixedCovariatesModule):
             ]
             if self.temporal_width_past:
                 # project input features across all input time steps
-                x_dynamic_past_covariates = self.past_cov_projection(
-                    x_dynamic_past_covariates
-                )
+                x_dynamic_past_covariates = self.past_cov_projection(x_dynamic_past_covariates)
         else:
             x_dynamic_past_covariates = None
 
@@ -339,11 +328,7 @@ class _TideModule(PLMixedCovariatesModule):
         # stack and temporally decode with future covariate last output steps
         temporal_decoder_input = [
             decoded,
-            (
-                x_dynamic_future_covariates[:, -self.output_chunk_length :, :]
-                if self.future_cov_dim > 0
-                else None
-            ),
+            (x_dynamic_future_covariates[:, -self.output_chunk_length :, :] if self.future_cov_dim > 0 else None),
         ]
         temporal_decoder_input = [t for t in temporal_decoder_input if t is not None]
 
@@ -356,9 +341,7 @@ class _TideModule(PLMixedCovariatesModule):
         skip = self.lookback_skip(x_lookback.transpose(1, 2)).transpose(1, 2)
 
         # add skip connection
-        y = temporal_decoded + skip.reshape_as(
-            temporal_decoded
-        )  # skip.view(temporal_decoded.shape)
+        y = temporal_decoded + skip.reshape_as(temporal_decoded)  # skip.view(temporal_decoded.shape)
 
         y = y.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
         return y
@@ -611,9 +594,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         """
         if temporal_width_past < 0 or temporal_width_future < 0:
             raise_log(
-                ValueError(
-                    "`temporal_width_past` and `temporal_width_future` must be >= 0."
-                ),
+                ValueError("`temporal_width_past` and `temporal_width_future` must be >= 0."),
                 logger=logger,
             )
         super().__init__(**self._extract_torch_model_params(**self.model_params))
@@ -634,9 +615,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.use_layer_norm = use_layer_norm
         self.dropout = dropout
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> torch.nn.Module:
+    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> torch.nn.Module:
         (
             past_target,
             past_covariates,
@@ -650,23 +629,13 @@ class TiDEModel(MixedCovariatesTorchModel):
         input_dim = (
             past_target.shape[1]
             + (past_covariates.shape[1] if past_covariates is not None else 0)
-            + (
-                historic_future_covariates.shape[1]
-                if historic_future_covariates is not None
-                else 0
-            )
+            + (historic_future_covariates.shape[1] if historic_future_covariates is not None else 0)
         )
 
         output_dim = future_target.shape[1]
 
-        future_cov_dim = (
-            future_covariates.shape[1] if future_covariates is not None else 0
-        )
-        static_cov_dim = (
-            static_covariates.shape[0] * static_covariates.shape[1]
-            if static_covariates is not None
-            else 0
-        )
+        future_cov_dim = future_covariates.shape[1] if future_covariates is not None else 0
+        static_cov_dim = static_covariates.shape[0] * static_covariates.shape[1] if static_covariates is not None else 0
 
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

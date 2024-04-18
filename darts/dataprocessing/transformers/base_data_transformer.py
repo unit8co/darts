@@ -322,10 +322,7 @@ class BaseDataTransformer(ABC):
             transformer_selector = range(len(series))
 
         if self._mask_components:
-            data = [
-                self.apply_component_mask(ts, component_mask, return_ts=True)
-                for ts in data
-            ]
+            data = [self.apply_component_mask(ts, component_mask, return_ts=True) for ts in data]
         else:
             kwargs["component_mask"] = component_mask
 
@@ -336,25 +333,17 @@ class BaseDataTransformer(ABC):
             total=len(data),
         )
 
-        transformed_data = _parallel_apply(
-            input_iterator, self.__class__.ts_transform, self._n_jobs, args, kwargs
-        )
+        transformed_data = _parallel_apply(input_iterator, self.__class__.ts_transform, self._n_jobs, args, kwargs)
 
         if self._mask_components:
             unmasked = []
             for ts, transformed_ts in zip(input_series, transformed_data):
-                unmasked.append(
-                    self.unapply_component_mask(ts, transformed_ts, component_mask)
-                )
+                unmasked.append(self.unapply_component_mask(ts, transformed_ts, component_mask))
             transformed_data = unmasked
 
-        return (
-            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
-        )
+        return transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
 
-    def _get_params(
-        self, transformer_selector: Iterable
-    ) -> Generator[Mapping[str, Any], None, None]:
+    def _get_params(self, transformer_selector: Iterable) -> Generator[Mapping[str, Any], None, None]:
         """
         Creates generator of dictionaries containing fixed parameter values
         (i.e. attributes defined in the child-most class). Those fixed parameters
@@ -376,9 +365,7 @@ class BaseDataTransformer(ABC):
                 yield params
             return None
 
-        return params_generator(
-            transformer_selector, self._fixed_params, self._parallel_params
-        )
+        return params_generator(transformer_selector, self._fixed_params, self._parallel_params)
 
     def _check_fixed_params(self, transformer_selector: Iterable) -> None:
         """
@@ -435,20 +422,14 @@ class BaseDataTransformer(ABC):
         if component_mask is None:
             masked = series.copy() if return_ts else series.all_values()
         else:
-            if not (
-                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
-            ):
+            if not (isinstance(component_mask, np.ndarray) and component_mask.dtype == bool):
                 raise_log(
-                    ValueError(
-                        f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}."
-                    ),
+                    ValueError(f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}."),
                     logger=logger,
                 )
             if not series.width == len(component_mask):
                 raise_log(
-                    ValueError(
-                        "mismatch between number of components in `series` and length of `component_mask`"
-                    ),
+                    ValueError("mismatch between number of components in `series` and length of `component_mask`"),
                     logger=logger,
                 )
             masked = series.all_values(copy=False)[:, component_mask, :]
@@ -456,9 +437,7 @@ class BaseDataTransformer(ABC):
                 # Remove masked components from coords:
                 coords = dict(series._xa.coords)
                 coords["component"] = coords["component"][component_mask]
-                new_xa = xr.DataArray(
-                    masked, dims=series._xa.dims, coords=coords, attrs=series._xa.attrs
-                )
+                new_xa = xr.DataArray(masked, dims=series._xa.dims, coords=coords, attrs=series._xa.attrs)
                 masked = TimeSeries(new_xa)
         return masked
 
@@ -492,20 +471,14 @@ class BaseDataTransformer(ABC):
         if component_mask is None:
             unmasked = vals
         else:
-            if not (
-                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
-            ):
+            if not (isinstance(component_mask, np.ndarray) and component_mask.dtype == bool):
                 raise_log(
-                    ValueError(
-                        "If `component_mask` is given, must be a boolean np.ndarray`"
-                    ),
+                    ValueError("If `component_mask` is given, must be a boolean np.ndarray`"),
                     logger=logger,
                 )
             if not series.width == len(component_mask):
                 raise_log(
-                    ValueError(
-                        "mismatch between number of components in `series` and length of `component_mask`"
-                    ),
+                    ValueError("mismatch between number of components in `series` and length of `component_mask`"),
                     logger=logger,
                 )
             unmasked = series.all_values()
@@ -591,9 +564,7 @@ class BaseDataTransformer(ABC):
         else:
             if all(x is None for x in [n_timesteps, n_samples]):
                 raise_log(
-                    ValueError(
-                        "Must specify either `n_timesteps`, `n_samples`, or `series`."
-                    ),
+                    ValueError("Must specify either `n_timesteps`, `n_samples`, or `series`."),
                     logger=logger,
                 )
         n_components = vals.shape[-1]

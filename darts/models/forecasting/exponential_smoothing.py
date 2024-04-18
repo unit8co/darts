@@ -25,7 +25,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
         kwargs: Optional[Dict[str, Any]] = None,
-        **fit_kwargs
+        **fit_kwargs,
     ):
         """Exponential Smoothing
 
@@ -109,9 +109,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         # if the model was initially created with `self.seasonal_periods=None`, make sure that
         # the model will try to automatically infer the index, otherwise it should use the
         # provided `seasonal_periods` value
-        seasonal_periods_param = (
-            None if self.infer_seasonal_periods else self.seasonal_periods
-        )
+        seasonal_periods_param = None if self.infer_seasonal_periods else self.seasonal_periods
 
         # set the seasonal periods parameter to a default value if it was not provided explicitly
         # and if it cannot be inferred due to the lack of a datetime index
@@ -126,7 +124,7 @@ class ExponentialSmoothing(LocalForecastingModel):
             seasonal_periods=seasonal_periods_param,
             freq=series.freq if series.has_datetime_index else None,
             dates=series.time_index if series.has_datetime_index else None,
-            **self.constructor_kwargs
+            **self.constructor_kwargs,
         )
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
@@ -148,9 +146,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         if num_samples == 1:
             forecast = self.model.forecast(n)
         else:
-            forecast = np.expand_dims(
-                self.model.simulate(n, repetitions=num_samples), axis=1
-            )
+            forecast = np.expand_dims(self.model.simulate(n, repetitions=num_samples), axis=1)
 
         return self._build_forecast_series(forecast)
 

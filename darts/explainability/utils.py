@@ -17,9 +17,7 @@ def process_input(
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     fallback_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     fallback_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    fallback_future_covariates: Optional[
-        Union[TimeSeries, Sequence[TimeSeries]]
-    ] = None,
+    fallback_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     check_component_names: bool = False,
     requires_input: bool = True,
     requires_covariates_encoding: bool = False,
@@ -68,18 +66,12 @@ def process_input(
     """
     if input_type not in ["background", "foreground"]:
         raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
+            ValueError(f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."),
             logger,
         )
 
     # if any input is given, treat it as if the input was required
-    if (
-        series is not None
-        or past_covariates is not None
-        or future_covariates is not None
-    ):
+    if series is not None or past_covariates is not None or future_covariates is not None:
         requires_input = True
 
     # if `series` was not passed, use the fallback input
@@ -153,10 +145,7 @@ def process_input(
             if not drop_cols.empty and len(drop_cols) == cov.n_components:
                 past_covariates = None
             elif not drop_cols.empty:
-                past_covariates = [
-                    cov[cov.components.drop(drop_cols).tolist()]
-                    for cov in past_covariates
-                ]
+                past_covariates = [cov[cov.components.drop(drop_cols).tolist()] for cov in past_covariates]
         if future_covariates is not None and model.encoders.future_encoders:
             cov = future_covariates[0]
             encoded = model.encoders.future_components
@@ -164,10 +153,7 @@ def process_input(
             if not drop_cols.empty and len(drop_cols) == cov.n_components:
                 future_covariates = None
             elif not drop_cols.empty:
-                future_covariates = [
-                    cov[cov.components.drop(drop_cols).tolist()]
-                    for cov in future_covariates
-                ]
+                future_covariates = [cov[cov.components.drop(drop_cols).tolist()] for cov in future_covariates]
     return (
         series,
         past_covariates,
@@ -207,9 +193,7 @@ def process_horizons_and_targets(
             target_components = [target_components]
         if check_component_names and fallback_target_components is not None:
             invalid_components = [
-                target_name
-                for target_name in target_components
-                if target_name not in fallback_target_components
+                target_name for target_name in target_components if target_name not in fallback_target_components
             ]
             raise_if(
                 len(invalid_components) > 0,
@@ -262,17 +246,9 @@ def get_component_names(
 
     # covariates
     static_covariates = series[idx].static_covariates
-    sc_components = (
-        static_covariates.columns.tolist() if static_covariates is not None else []
-    )
-    pc_components = (
-        past_covariates[idx].components.tolist() if past_covariates is not None else []
-    )
-    fc_components = (
-        future_covariates[idx].components.tolist()
-        if future_covariates is not None
-        else []
-    )
+    sc_components = static_covariates.columns.tolist() if static_covariates is not None else []
+    pc_components = past_covariates[idx].components.tolist() if past_covariates is not None else []
+    fc_components = future_covariates[idx].components.tolist() if future_covariates is not None else []
 
     # set to None if not available
     sc_components = sc_components if sc_components else None
@@ -304,9 +280,7 @@ def _check_valid_input(
 
     if input_type not in ["background", "foreground"]:
         raise_log(
-            ValueError(
-                f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."
-            ),
+            ValueError(f"Unknown `input_type='{input_type}'`. Must be one of ['background', 'foreground']."),
             logger,
         )
     if past_covariates is not None:
@@ -342,23 +316,19 @@ def _check_valid_input(
     # for explained features.
     for idx in range(len(series)):
         raise_if_not(
-            all(
-                [
-                    series[idx].columns.to_list() == target_components,
-                    (
-                        past_covariates[idx].columns.to_list()
-                        == past_covariates_components
-                        if past_covariates is not None
-                        else True
-                    ),
-                    (
-                        future_covariates[idx].columns.to_list()
-                        == future_covariates_components
-                        if future_covariates is not None
-                        else True
-                    ),
-                ]
-            ),
+            all([
+                series[idx].columns.to_list() == target_components,
+                (
+                    past_covariates[idx].columns.to_list() == past_covariates_components
+                    if past_covariates is not None
+                    else True
+                ),
+                (
+                    future_covariates[idx].columns.to_list() == future_covariates_components
+                    if future_covariates is not None
+                    else True
+                ),
+            ]),
             "Columns names must be identical between TimeSeries list components (multi-TimeSeries).",
         )
 

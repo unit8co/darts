@@ -78,9 +78,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
 
     @io_processor
     @abstractmethod
-    def forward(
-        self, x_in: Tuple, h: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x_in: Tuple, h: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         """RNN Module forward.
 
         Parameters
@@ -112,11 +110,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
         model_input = (
-            (
-                torch.cat([past_target, future_covariates], dim=2)
-                if future_covariates is not None
-                else past_target
-            ),
+            (torch.cat([past_target, future_covariates], dim=2) if future_covariates is not None else past_target),
             static_covariates,
         )
         return self(model_input)[0]
@@ -134,9 +128,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         else:
             return output.squeeze(dim=-1), hidden
 
-    def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
-    ) -> torch.Tensor:
+    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to
         obtain the time series forecasts of length n.
@@ -150,9 +142,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
 
         if historic_future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
-            all_covariates = torch.cat(
-                [historic_future_covariates[:, 1:, :], future_covariates], dim=1
-            )
+            all_covariates = torch.cat([historic_future_covariates[:, 1:, :], future_covariates], dim=1)
             cov_past, cov_future = (
                 all_covariates[:, : past_target.shape[1], :],
                 all_covariates[:, past_target.shape[1] :, :],
@@ -163,14 +153,11 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
             cov_future = None
 
         batch_prediction = []
-        out, last_hidden_state = self._produce_predict_output(
-            (input_series, static_covariates)
-        )
+        out, last_hidden_state = self._produce_predict_output((input_series, static_covariates))
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
         while prediction_length < n:
-
             # create new input to model from last prediction and current covariates, if available
             new_input = (
                 torch.cat(
@@ -185,9 +172,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
             )
 
             # feed new input to model, including the last hidden state from the previous iteration
-            out, last_hidden_state = self._produce_predict_output(
-                (new_input, static_covariates), last_hidden_state
-            )
+            out, last_hidden_state = self._produce_predict_output((new_input, static_covariates), last_hidden_state)
 
             # append prediction to batch prediction array, increase counter
             batch_prediction.append(out[:, -1:, :])
@@ -250,9 +235,7 @@ class _RNNModule(CustomRNNModule):
         self.V = nn.Linear(self.hidden_dim, self.target_size * self.nr_params)
 
     @io_processor
-    def forward(
-        self, x_in: Tuple, h: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x_in: Tuple, h: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         x, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
@@ -504,10 +487,7 @@ class RNNModel(DualCovariatesTorchModel):
             [1, False, 0],
         ):
             if model_kwargs.get(kwarg) is not None:
-                logger.warning(
-                    f"ignoring user defined `{kwarg}`. RNNModel uses a fixed "
-                    f"`{kwarg}={default_value}`."
-                )
+                logger.warning(f"ignoring user defined `{kwarg}`. RNNModel uses a fixed " f"`{kwarg}={default_value}`.")
             model_kwargs[kwarg] = default_value
 
         super().__init__(**self._extract_torch_model_params(**model_kwargs))
@@ -535,9 +515,7 @@ class RNNModel(DualCovariatesTorchModel):
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
         # historic_future_covariates and future_covariates have the same width
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
@@ -565,7 +543,6 @@ class RNNModel(DualCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> DualCovariatesShiftedDataset:
-
         return DualCovariatesShiftedDataset(
             target_series=target,
             covariates=future_covariates,

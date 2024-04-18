@@ -61,13 +61,11 @@ def test_timeseries_constructor_error_log():
         except Exception:
             pass
 
-    lc.check(
-        (
-            "darts.timeseries",
-            "ERROR",
-            "ValueError: TimeSeries require DataArray of dimensionality 3 (('time', 'component', 'sample')).",
-        )
-    )
+    lc.check((
+        "darts.timeseries",
+        "ERROR",
+        "ValueError: TimeSeries require DataArray of dimensionality 3 (('time', 'component', 'sample')).",
+    ))
 
 
 def test_timeseries_split_error_log():
@@ -82,13 +80,11 @@ def test_timeseries_split_error_log():
         except Exception:
             pass
 
-    lc.check(
-        (
-            "darts.timeseries",
-            "ERROR",
-            "ValueError: Timestamp must be between 2000-01-01 00:00:00 and 2000-01-03 00:00:00",
-        )
-    )
+    lc.check((
+        "darts.timeseries",
+        "ERROR",
+        "ValueError: Timestamp must be between 2000-01-01 00:00:00 and 2000-01-03 00:00:00",
+    ))
 
 
 def test_time_log():
@@ -105,9 +101,4 @@ def test_time_log():
         _my_timed_fn()
 
     logged_message = lc.records[-1].getMessage()
-    assert (
-        re.fullmatch(
-            "_my_timed_fn function ran for [0-9]+ milliseconds", logged_message
-        )
-        is not None
-    )
+    assert re.fullmatch("_my_timed_fn function ran for [0-9]+ milliseconds", logged_message) is not None

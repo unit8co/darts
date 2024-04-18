@@ -262,29 +262,16 @@ class FittableDataTransformer(BaseDataTransformer):
             transformer_selector = range(len(series))
 
         if self._mask_components:
-            data = [
-                self.apply_component_mask(ts, component_mask, return_ts=True)
-                for ts in data
-            ]
+            data = [self.apply_component_mask(ts, component_mask, return_ts=True) for ts in data]
         else:
             kwargs["component_mask"] = component_mask
 
-        params_iterator = self._get_params(
-            transformer_selector=transformer_selector, calling_fit=True
-        )
-        fit_iterator = (
-            zip(data, params_iterator)
-            if not self._global_fit
-            else zip([data], params_iterator)
-        )
+        params_iterator = self._get_params(transformer_selector=transformer_selector, calling_fit=True)
+        fit_iterator = zip(data, params_iterator) if not self._global_fit else zip([data], params_iterator)
         n_jobs = len(data) if not self._global_fit else 1
-        input_iterator = _build_tqdm_iterator(
-            fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs
-        )
+        input_iterator = _build_tqdm_iterator(fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs)
 
-        self._fitted_params = _parallel_apply(
-            input_iterator, self.__class__.ts_fit, self._n_jobs, args, kwargs
-        )
+        self._fitted_params = _parallel_apply(input_iterator, self.__class__.ts_fit, self._n_jobs, args, kwargs)
 
         return self
 
@@ -314,9 +301,9 @@ class FittableDataTransformer(BaseDataTransformer):
         Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
-        return self.fit(
+        return self.fit(series, *args, component_mask=component_mask, **kwargs).transform(
             series, *args, component_mask=component_mask, **kwargs
-        ).transform(series, *args, component_mask=component_mask, **kwargs)
+        )
 
     def _get_params(
         self, transformer_selector: Iterable, calling_fit: bool = False
@@ -349,16 +336,12 @@ class FittableDataTransformer(BaseDataTransformer):
                 if fixed_params_copy:
                     params["fixed"] = fixed_params_copy
                 if fitted_params:
-                    params["fitted"] = (
-                        fitted_params[0] if global_fit else fitted_params[i]
-                    )
+                    params["fitted"] = fitted_params[0] if global_fit else fitted_params[i]
                 if not params:
                     params = None
                 yield params
 
-        transformer_selector_ = (
-            transformer_selector if not (calling_fit and self._global_fit) else [0]
-        )
+        transformer_selector_ = transformer_selector if not (calling_fit and self._global_fit) else [0]
 
         return params_generator(
             transformer_selector_,
@@ -368,9 +351,7 @@ class FittableDataTransformer(BaseDataTransformer):
             self._global_fit,
         )
 
-    def _get_fitted_params(
-        self, transformer_selector: Iterable, calling_fit: bool
-    ) -> Sequence[Any]:
+    def _get_fitted_params(self, transformer_selector: Iterable, calling_fit: bool) -> Sequence[Any]:
         """
         Returns `self._fitted_params` if `calling_fit = False`, otherwise returns an empty
         tuple. If `calling_fit = False`, also checks that `self._fitted_params`, which is a
@@ -379,9 +360,7 @@ class FittableDataTransformer(BaseDataTransformer):
         if not calling_fit:
             if not self._fit_called:
                 raise_log(
-                    ValueError(
-                        "Must call `fit` before calling `transform`/`inverse_transform`."
-                    ),
+                    ValueError("Must call `fit` before calling `transform`/`inverse_transform`."),
                     logger=logger,
                 )
             fitted_params = self._fitted_params

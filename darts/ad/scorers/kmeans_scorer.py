@@ -114,9 +114,7 @@ class KMeansScorer(FittableAnomalyScorer):
         if "n_init" not in self.kmeans_kwargs:
             self.kmeans_kwargs["n_init"] = 10
 
-        super().__init__(
-            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
-        )
+        super().__init__(univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn)
 
     def __str__(self):
         return "k-means Scorer"
@@ -125,7 +123,6 @@ class KMeansScorer(FittableAnomalyScorer):
         self,
         list_series: Sequence[TimeSeries],
     ):
-
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
         if not self.component_wise:
@@ -148,9 +145,7 @@ class KMeansScorer(FittableAnomalyScorer):
                 model.fit(
                     np.concatenate(
                         [
-                            sliding_window_view(
-                                ar[:, component_idx], window_shape=self.window, axis=0
-                            )
+                            sliding_window_view(ar[:, component_idx], window_shape=self.window, axis=0)
                             .transpose(0, 2, 1)
                             .reshape(-1, self.window)
                             for ar in list_np_series
@@ -199,6 +194,4 @@ class KMeansScorer(FittableAnomalyScorer):
 
                 np_anomaly_score.append(score)
 
-        return TimeSeries.from_times_and_values(
-            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
-        )
+        return TimeSeries.from_times_and_values(series.time_index[self.window - 1 :], list(zip(*np_anomaly_score)))

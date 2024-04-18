@@ -17,9 +17,7 @@ logger = get_logger(__name__)
 
 
 class AutoARIMA(FutureCovariatesLocalForecastingModel):
-    def __init__(
-        self, *autoarima_args, add_encoders: Optional[dict] = None, **autoarima_kwargs
-    ):
+    def __init__(self, *autoarima_args, add_encoders: Optional[dict] = None, **autoarima_kwargs):
         """Auto-ARIMA
 
         This implementation is a thin wrapper around `pmdarima AutoARIMA model
@@ -99,9 +97,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
-        self.model.fit(
-            series.values(), X=future_covariates.values() if future_covariates else None
-        )
+        self.model.fit(series.values(), X=future_covariates.values() if future_covariates else None)
         return self
 
     def _predict(
@@ -112,9 +108,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
-        forecast = self.model.predict(
-            n_periods=n, X=future_covariates.values() if future_covariates else None
-        )
+        forecast = self.model.predict(n_periods=n, X=future_covariates.values() if future_covariates else None)
         return self._build_forecast_series(forecast)
 
     @property

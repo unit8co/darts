@@ -107,27 +107,19 @@ class Likelihood(ABC):
         loss = self._nllloss(params_out, target)
 
         prior_params = self._prior_params
-        use_prior = prior_params is not None and any(
-            p is not None for p in prior_params
-        )
+        use_prior = prior_params is not None and any(p is not None for p in prior_params)
         if use_prior:
             out_distr = self._distr_from_params(params_out)
             device = params_out[0].device
             prior_params = tuple(
                 # use model output as "prior" for parameters not specified as prior
-                (
-                    torch.tensor(prior_params[i]).to(device)
-                    if prior_params[i] is not None
-                    else params_out[i]
-                )
+                (torch.tensor(prior_params[i]).to(device) if prior_params[i] is not None else params_out[i])
                 for i in range(len(prior_params))
             )
             prior_distr = self._distr_from_params(prior_params)
 
             # Loss regularization using the prior distribution
-            loss += self.prior_strength * torch.mean(
-                kl_divergence(prior_distr, out_distr)
-            )
+            loss += self.prior_strength * torch.mean(kl_divergence(prior_distr, out_distr))
 
         return loss
 
@@ -155,9 +147,7 @@ class Likelihood(ABC):
         pass
 
     @abstractmethod
-    def _params_from_output(
-        self, model_output: torch.Tensor
-    ) -> Union[Tuple[torch.Tensor, ...], torch.Tensor]:
+    def _params_from_output(self, model_output: torch.Tensor) -> Union[Tuple[torch.Tensor, ...], torch.Tensor]:
         """
         Returns the distribution parameters, obtained from the raw model outputs
         (e.g. applies softplus or sigmoids to get parameters in the expected domains).
@@ -182,9 +172,7 @@ class Likelihood(ABC):
         else:
             # interleave the predicted parameters to group them by input series component
             num_samples, n_times, n_components, n_params = model_output.shape
-            return torch.stack(params, dim=3).reshape(
-                (num_samples, n_times, n_components * n_params)
-            )
+            return torch.stack(params, dim=3).reshape((num_samples, n_times, n_components * n_params))
 
     @abstractmethod
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
@@ -193,14 +181,8 @@ class Likelihood(ABC):
         """
         pass
 
-    def _likelihood_generate_components_names(
-        self, input_series: TimeSeries, parameter_names: List[str]
-    ) -> List[str]:
-        return [
-            f"{tgt_name}_{param_n}"
-            for tgt_name in input_series.components
-            for param_n in parameter_names
-        ]
+    def _likelihood_generate_components_names(self, input_series: TimeSeries, parameter_names: List[str]) -> List[str]:
+        return [f"{tgt_name}_{param_n}" for tgt_name in input_series.components for param_n in parameter_names]
 
     @property
     @abstractmethod
@@ -241,20 +223,12 @@ class Likelihood(ABC):
         cls_name = self.__class__.__name__
         # only display the constructor parameters as user cannot change the other attributes
         init_signature = inspect.signature(self.__class__.__init__)
-        params_string = ", ".join(
-            [
-                f"{str(v)}"
-                for _, v in init_signature.parameters.items()
-                if str(v) != "self"
-            ]
-        )
+        params_string = ", ".join([f"{str(v)}" for _, v in init_signature.parameters.items() if str(v) != "self"])
         return f"{cls_name}({params_string})"
 
 
 class GaussianLikelihood(Likelihood):
-    def __init__(
-        self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0
-    ):
+    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0):
         """
         Univariate Gaussian distribution.
 
@@ -293,9 +267,7 @@ class GaussianLikelihood(Likelihood):
         self.beta_nll = beta_nll
         _check_strict_positive(self.prior_sigma, "sigma")
 
-        self.nllloss = nn.GaussianNLLLoss(
-            reduction="none" if self.beta_nll > 0.0 else "mean", full=True
-        )
+        self.nllloss = nn.GaussianNLLLoss(reduction="none" if self.beta_nll > 0.0 else "mean", full=True)
         self.softplus = nn.Softplus()
 
         super().__init__(prior_strength)
@@ -561,9 +533,7 @@ class BetaLikelihood(Likelihood):
         return alpha, beta
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(
-            input_series, ["alpha", "beta"]
-        )
+        return self._likelihood_generate_components_names(input_series, ["alpha", "beta"])
 
     def simplified_name(self) -> str:
         return "beta"
@@ -625,9 +595,7 @@ class CauchyLikelihood(Likelihood):
         return xzero, gamma
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(
-            input_series, ["xzero", "gamma"]
-        )
+        return self._likelihood_generate_components_names(input_series, ["xzero", "gamma"])
 
     def simplified_name(self) -> str:
         return "cauchy"
@@ -731,9 +699,7 @@ class DirichletLikelihood(Likelihood):
         return 1  # 1 parameter per component
 
     def _params_from_output(self, model_output):
-        alphas = self.softmax(
-            model_output.squeeze(dim=-1)
-        )  # take softmax over components
+        alphas = self.softmax(model_output.squeeze(dim=-1))  # take softmax over components
         return alphas
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
@@ -845,9 +811,7 @@ class GammaLikelihood(Likelihood):
         return alpha, beta
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(
-            input_series, ["alpha", "beta"]
-        )
+        return self._likelihood_generate_components_names(input_series, ["alpha", "beta"])
 
     def simplified_name(self) -> str:
         return "gamma"
@@ -1279,9 +1243,7 @@ class QuantileRegression(Likelihood):
         """Overwrite parent method since QuantileRegression is not a Likelihood per-se and
         parameters must be extracted differently."""
         num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
-        params = model_output.reshape(
-            num_samples, n_timesteps, n_components * n_quantiles
-        )
+        params = model_output.reshape(num_samples, n_timesteps, n_components * n_quantiles)
         return params
 
     @property
@@ -1308,9 +1270,7 @@ class QuantileRegression(Likelihood):
         # test if torch model forward produces correct output and store quantiles tensor
         if self.first:
             raise_if_not(
-                len(model_output.shape) == 4
-                and len(target.shape) == 3
-                and model_output.shape[:2] == target.shape[:2],
+                len(model_output.shape) == 4 and len(target.shape) == 3 and model_output.shape[:2] == target.shape[:2],
                 "mismatch between predicted and target shape",
             )
             raise_if_not(
@@ -1321,9 +1281,7 @@ class QuantileRegression(Likelihood):
             self.first = False
 
         errors = target.unsqueeze(-1) - model_output
-        losses = torch.max(
-            (self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors
-        )
+        losses = torch.max((self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors)
 
         return losses.sum(dim=dim_q).mean()
 
@@ -1337,11 +1295,7 @@ class QuantileRegression(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         """Each component have their own quantiles"""
-        return [
-            f"{tgt_name}_q{quantile:.2f}"
-            for tgt_name in input_series.components
-            for quantile in self.quantiles
-        ]
+        return [f"{tgt_name}_q{quantile:.2f}" for tgt_name in input_series.components for quantile in self.quantiles]
 
     def simplified_name(self) -> str:
         return "quantile"

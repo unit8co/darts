@@ -106,9 +106,7 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.MaxPool1d = MaxPool1d
 
-        raise_if_not(
-            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
-        )
+        raise_if_not(activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}")
         self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
@@ -163,12 +161,8 @@ class _Block(nn.Module):
 
         # Fully connected layer producing forecast/backcast expansion coefficients (waveform generator parameters).
         # The coefficients are emitted for each parameter of the likelihood for the forecast.
-        self.backcast_linear_layer = nn.Linear(
-            in_features=layer_width, out_features=n_theta_backcast
-        )
-        self.forecast_linear_layer = nn.Linear(
-            in_features=layer_width, out_features=nr_params * n_theta_forecast
-        )
+        self.backcast_linear_layer = nn.Linear(in_features=layer_width, out_features=n_theta_backcast)
+        self.forecast_linear_layer = nn.Linear(in_features=layer_width, out_features=nr_params * n_theta_forecast)
 
     def forward(self, x):
         batch_size = x.shape[0]
@@ -192,12 +186,8 @@ class _Block(nn.Module):
         theta_backcast = theta_backcast.unsqueeze(1)
 
         # interpolate both backcast and forecast from the thetas
-        x_hat = F.interpolate(
-            theta_backcast, size=self.input_chunk_length, mode="linear"
-        )
-        y_hat = F.interpolate(
-            theta_forecast, size=self.output_chunk_length, mode="linear"
-        )
+        x_hat = F.interpolate(theta_backcast, size=self.input_chunk_length, mode="linear")
+        y_hat = F.interpolate(theta_forecast, size=self.output_chunk_length, mode="linear")
 
         x_hat = x_hat.squeeze(1)  # remove 2nd dim we added before interpolation
 
@@ -282,9 +272,7 @@ class _Stack(nn.Module):
                 nr_params,
                 pooling_kernel_sizes[i],
                 n_freq_downsample[i],
-                batch_norm=(
-                    batch_norm and i == 0
-                ),  # batch norm only on first block of first stack
+                batch_norm=(batch_norm and i == 0),  # batch norm only on first block of first stack
                 dropout=dropout,
                 activation=activation,
                 MaxPool1d=MaxPool1d,
@@ -404,9 +392,7 @@ class _NHiTSModule(PLPastCovariatesModule):
                 nr_params,
                 pooling_kernel_sizes[i],
                 n_freq_downsample[i],
-                batch_norm=(
-                    batch_norm and i == 0
-                ),  # batch norm only on first block of first stack
+                batch_norm=(batch_norm and i == 0),  # batch norm only on first block of first stack
                 dropout=dropout,
                 activation=activation,
                 MaxPool1d=MaxPool1d,
@@ -454,9 +440,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         # We want to reshape to original format. We also get rid of the covariates and keep only the target dimensions.
         # The covariates are by construction added as extra time series on the right side. So we need to get rid of this
         # right output (keeping only :self.output_dim).
-        y = y.view(
-            y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
-        )[:, :, : self.output_dim, :]
+        y = y.view(y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params)[:, :, : self.output_dim, :]
 
         return y
 
@@ -756,9 +740,7 @@ class NHiTSModel(PastCovariatesTorchModel):
         return True
 
     @staticmethod
-    def _prepare_pooling_downsampling(
-        pooling_kernel_sizes, n_freq_downsample, in_len, out_len, num_blocks, num_stacks
-    ):
+    def _prepare_pooling_downsampling(pooling_kernel_sizes, n_freq_downsample, in_len, out_len, num_blocks, num_stacks):
         def _check_sizes(tup, name):
             raise_if_not(
                 len(tup) == num_stacks,
@@ -773,13 +755,8 @@ class NHiTSModel(PastCovariatesTorchModel):
             # make stacks handle different frequencies
             # go from in_len/2 to 1 in num_stacks steps:
             max_v = max(in_len // 2, 1)
-            pooling_kernel_sizes = tuple(
-                (int(v),) * num_blocks
-                for v in max_v // np.geomspace(1, max_v, num_stacks)
-            )
-            logger.info(
-                f"(N-HiTS): Using automatic kernel pooling size: {pooling_kernel_sizes}."
-            )
+            pooling_kernel_sizes = tuple((int(v),) * num_blocks for v in max_v // np.geomspace(1, max_v, num_stacks))
+            logger.info(f"(N-HiTS): Using automatic kernel pooling size: {pooling_kernel_sizes}.")
         else:
             # check provided pooling format
             _check_sizes(pooling_kernel_sizes, "`pooling_kernel_sizes`")
@@ -787,13 +764,8 @@ class NHiTSModel(PastCovariatesTorchModel):
         if n_freq_downsample is None:
             # go from out_len/2 to 1 in num_stacks steps:
             max_v = max(out_len // 2, 1)
-            n_freq_downsample = tuple(
-                (int(v),) * num_blocks
-                for v in max_v // np.geomspace(1, max_v, num_stacks)
-            )
-            logger.info(
-                f"(N-HiTS):  Using automatic downsampling coefficients: {n_freq_downsample}."
-            )
+            n_freq_downsample = tuple((int(v),) * num_blocks for v in max_v // np.geomspace(1, max_v, num_stacks))
+            logger.info(f"(N-HiTS):  Using automatic downsampling coefficients: {n_freq_downsample}.")
         else:
             # check provided downsample format
             _check_sizes(n_freq_downsample, "`n_freq_downsample`")
@@ -809,9 +781,7 @@ class NHiTSModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

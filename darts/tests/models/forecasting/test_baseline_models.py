@@ -87,9 +87,7 @@ class TestBaselineModels:
     if TORCH_AVAILABLE:
         torch.manual_seed(42)
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(local_models + global_models, [False, True])
-    )
+    @pytest.mark.parametrize("config", itertools.product(local_models + global_models, [False, True]))
     def test_fit_predict(self, config):
         """Tests fit and predict for univariate and multivariate time series."""
         (model_cls, model_kwargs), is_multivariate = config
@@ -183,28 +181,18 @@ class TestBaselineModels:
             return
 
         # equivalent global naive seasonal
-        global_model = GlobalNaiveSeasonal(
-            input_chunk_length=icl, output_chunk_length=1, **tfm_kwargs
-        )
+        global_model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=1, **tfm_kwargs)
         preds = global_model.fit(series).predict(n=icl)
         np.testing.assert_array_almost_equal(preds.values(copy=False), vals_exp)
 
         preds_multi = global_model.predict(n=icl, series=[series, series + 100.0])
-        np.testing.assert_array_almost_equal(
-            preds_multi[0].values(copy=False), vals_exp
-        )
-        np.testing.assert_array_almost_equal(
-            preds_multi[1].values(copy=False), vals_exp + 100.0
-        )
+        np.testing.assert_array_almost_equal(preds_multi[0].values(copy=False), vals_exp)
+        np.testing.assert_array_almost_equal(preds_multi[1].values(copy=False), vals_exp + 100.0)
 
         # global naive seasonal that repeats values `output_chunk_length` times
-        global_model = GlobalNaiveSeasonal(
-            input_chunk_length=icl, output_chunk_length=icl, **tfm_kwargs
-        )
+        global_model = GlobalNaiveSeasonal(input_chunk_length=icl, output_chunk_length=icl, **tfm_kwargs)
         preds = global_model.fit(series).predict(n=icl)
-        np.testing.assert_array_almost_equal(
-            preds.values(copy=False), np.repeat(vals_exp[0:1, :], icl, axis=0)
-        )
+        np.testing.assert_array_almost_equal(preds.values(copy=False), np.repeat(vals_exp[0:1, :], icl, axis=0))
 
         preds_multi = global_model.predict(n=icl, series=[series, series + 100.0])
         np.testing.assert_array_almost_equal(
@@ -233,24 +221,16 @@ class TestBaselineModels:
             return
 
         # identical global naive drift
-        global_model = GlobalNaiveDrift(
-            input_chunk_length=icl, output_chunk_length=icl, **tfm_kwargs
-        )
+        global_model = GlobalNaiveDrift(input_chunk_length=icl, output_chunk_length=icl, **tfm_kwargs)
         preds = global_model.fit(series).predict(n=icl)
         np.testing.assert_array_almost_equal(preds.values(copy=False), vals_exp)
 
         preds_multi = global_model.predict(n=icl, series=[series, series + 100.0])
-        np.testing.assert_array_almost_equal(
-            preds_multi[0].values(copy=False), vals_exp
-        )
-        np.testing.assert_array_almost_equal(
-            preds_multi[1].values(copy=False), vals_exp + 100.0
-        )
+        np.testing.assert_array_almost_equal(preds_multi[0].values(copy=False), vals_exp)
+        np.testing.assert_array_almost_equal(preds_multi[1].values(copy=False), vals_exp + 100.0)
 
         # global naive moving drift
-        global_model = GlobalNaiveDrift(
-            input_chunk_length=icl, output_chunk_length=1, **tfm_kwargs
-        )
+        global_model = GlobalNaiveDrift(input_chunk_length=icl, output_chunk_length=1, **tfm_kwargs)
         preds = global_model.fit(series).predict(n=icl)
 
         # manually compute the moving/autoregressive drift
@@ -267,12 +247,8 @@ class TestBaselineModels:
         np.testing.assert_array_almost_equal(preds_vals, preds_exp)
 
         preds_multi = global_model.predict(n=icl, series=[series, series + 100.0])
-        np.testing.assert_array_almost_equal(
-            preds_multi[0].values(copy=False), preds_exp
-        )
-        np.testing.assert_array_almost_equal(
-            preds_multi[1].values(copy=False), preds_exp + 100.0
-        )
+        np.testing.assert_array_almost_equal(preds_multi[0].values(copy=False), preds_exp)
+        np.testing.assert_array_almost_equal(preds_multi[1].values(copy=False), preds_exp + 100.0)
 
     def test_naive_mean(self):
         # min train series length for global naive models
@@ -280,9 +256,7 @@ class TestBaselineModels:
         series = series.stack(series + 25.0)
 
         # mean repeated n times
-        vals_exp = np.repeat(
-            np.expand_dims(series.values(copy=False).mean(axis=0), 0), icl, axis=0
-        )
+        vals_exp = np.repeat(np.expand_dims(series.values(copy=False).mean(axis=0), 0), icl, axis=0)
 
         # local naive mean
         local_model = NaiveMean()
@@ -300,12 +274,8 @@ class TestBaselineModels:
         np.testing.assert_array_almost_equal(preds.values(copy=False), vals_exp)
 
         preds_multi = global_model.predict(n=icl, series=[series, series + 100.0])
-        np.testing.assert_array_almost_equal(
-            preds_multi[0].values(copy=False), vals_exp
-        )
-        np.testing.assert_array_almost_equal(
-            preds_multi[1].values(copy=False), vals_exp + 100.0
-        )
+        np.testing.assert_array_almost_equal(preds_multi[0].values(copy=False), vals_exp)
+        np.testing.assert_array_almost_equal(preds_multi[1].values(copy=False), vals_exp + 100.0)
 
     def test_naive_moving_average(self):
         # min train series length for global naive models
@@ -320,9 +290,7 @@ class TestBaselineModels:
             if y is None:
                 y_moving = series_vals
             else:
-                y_moving = np.concatenate(
-                    [series_vals[i:], np.concatenate(vals_exp)], axis=0
-                )
+                y_moving = np.concatenate([series_vals[i:], np.concatenate(vals_exp)], axis=0)
             y = np.expand_dims(y_moving.mean(axis=0), 0)
             vals_exp.append(y)
         vals_exp = np.concatenate(vals_exp)
@@ -336,19 +304,13 @@ class TestBaselineModels:
             return
 
         # identical global naive moving average
-        global_model = GlobalNaiveAggregate(
-            input_chunk_length=icl, output_chunk_length=1, agg_fn="mean", **tfm_kwargs
-        )
+        global_model = GlobalNaiveAggregate(input_chunk_length=icl, output_chunk_length=1, agg_fn="mean", **tfm_kwargs)
         preds = global_model.fit(series).predict(n=icl)
         np.testing.assert_array_almost_equal(preds.values(copy=False), vals_exp)
 
         preds_multi = global_model.predict(n=icl, series=[series, series + 100.0])
-        np.testing.assert_array_almost_equal(
-            preds_multi[0].values(copy=False), vals_exp
-        )
-        np.testing.assert_array_almost_equal(
-            preds_multi[1].values(copy=False), vals_exp + 100.0
-        )
+        np.testing.assert_array_almost_equal(preds_multi[0].values(copy=False), vals_exp)
+        np.testing.assert_array_almost_equal(preds_multi[1].values(copy=False), vals_exp + 100.0)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
@@ -376,28 +338,20 @@ class TestBaselineModels:
             if y is None:
                 y_moving = series_vals
             else:
-                y_moving = np.concatenate(
-                    [series_vals[i:], np.concatenate(vals_exp)], axis=0
-                )
+                y_moving = np.concatenate([series_vals[i:], np.concatenate(vals_exp)], axis=0)
 
             y = np.expand_dims(agg_fn_np(y_moving, axis=0), 0)
             vals_exp.append(y)
         vals_exp = np.concatenate(vals_exp)
 
         # identical global naive moving average
-        global_model = GlobalNaiveAggregate(
-            input_chunk_length=icl, output_chunk_length=1, agg_fn=agg_fn, **tfm_kwargs
-        )
+        global_model = GlobalNaiveAggregate(input_chunk_length=icl, output_chunk_length=1, agg_fn=agg_fn, **tfm_kwargs)
         preds = global_model.fit(series).predict(n=icl)
         np.testing.assert_array_almost_equal(preds.values(copy=False), vals_exp)
 
         preds_multi = global_model.predict(n=icl, series=[series, series + 100.0])
-        np.testing.assert_array_almost_equal(
-            preds_multi[0].values(copy=False), vals_exp
-        )
-        np.testing.assert_array_almost_equal(
-            preds_multi[1].values(copy=False), vals_exp + 100.0
-        )
+        np.testing.assert_array_almost_equal(preds_multi[0].values(copy=False), vals_exp)
+        np.testing.assert_array_almost_equal(preds_multi[1].values(copy=False), vals_exp + 100.0)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
@@ -417,10 +371,5 @@ class TestBaselineModels:
         agg_fn, err_msg_content = agg_fn_config
         # identical global naive moving average
         with pytest.raises(ValueError) as err:
-            _ = GlobalNaiveAggregate(
-                input_chunk_length=icl,
-                output_chunk_length=1,
-                agg_fn=agg_fn,
-                **tfm_kwargs
-            )
+            _ = GlobalNaiveAggregate(input_chunk_length=icl, output_chunk_length=1, agg_fn=agg_fn, **tfm_kwargs)
         assert err_msg_content in str(err.value)

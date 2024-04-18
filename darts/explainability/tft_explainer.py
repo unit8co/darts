@@ -53,12 +53,8 @@ class TFTExplainer(_ForecastingModelExplainer):
         self,
         model: TFTModel,
         background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        background_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        background_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        background_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         Explainer class for the `TFTModel`.
@@ -125,12 +121,8 @@ class TFTExplainer(_ForecastingModelExplainer):
     def explain(
         self,
         foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
+        foreground_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
     ) -> TFTExplainabilityResult:
@@ -181,9 +173,7 @@ class TFTExplainer(_ForecastingModelExplainer):
             logger.warning(
                 "`horizons`, and `target_components` are not supported by `TFTExplainer` and will be ignored."
             )
-        super().explain(
-            foreground_series, foreground_past_covariates, foreground_future_covariates
-        )
+        super().explain(foreground_series, foreground_past_covariates, foreground_future_covariates)
         (
             foreground_series,
             foreground_past_covariates,
@@ -206,9 +196,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         )
         # get the weights and the attention head from the trained model for the prediction
         # aggregate over attention heads
-        attention_heads = (
-            self.model.model._attn_out_weights.detach().cpu().numpy().sum(axis=-2)
-        )
+        attention_heads = self.model.model._attn_out_weights.detach().cpu().numpy().sum(axis=-2)
         # get the variable importances (pd.DataFrame with rows corresponding to the number of input series)
         encoder_importance = self._encoder_importance
         decoder_importance = self._decoder_importance
@@ -225,19 +213,13 @@ class TFTExplainer(_ForecastingModelExplainer):
                 times=times,
                 columns=[f"horizon {str(i)}" for i in horizons],
             )
-            results.append(
-                {
-                    "attention": attention,
-                    "encoder_importance": encoder_importance.iloc[idx : idx + 1],
-                    "decoder_importance": decoder_importance.iloc[idx : idx + 1],
-                    "static_covariates_importance": static_covariates_importance.iloc[
-                        idx : idx + 1
-                    ],
-                }
-            )
-        return TFTExplainabilityResult(
-            explanations=results[0] if len(results) == 1 else results
-        )
+            results.append({
+                "attention": attention,
+                "encoder_importance": encoder_importance.iloc[idx : idx + 1],
+                "decoder_importance": decoder_importance.iloc[idx : idx + 1],
+                "static_covariates_importance": static_covariates_importance.iloc[idx : idx + 1],
+            })
+        return TFTExplainabilityResult(explanations=results[0] if len(results) == 1 else results)
 
     def plot_variable_selection(
         self,
@@ -275,16 +257,10 @@ class TFTExplainer(_ForecastingModelExplainer):
             zip(encoder_importance, decoder_importance, static_covariates_importance)
         ):
             # plot the encoder and decoder weights
-            fig, axes = plt.subplots(
-                nrows=3 if uses_static_covariates else 2, sharex=True, figsize=fig_size
-            )
-            self._plot_cov_selection(
-                enc_imp, title="Encoder variable importance", ax=axes[0]
-            )
+            fig, axes = plt.subplots(nrows=3 if uses_static_covariates else 2, sharex=True, figsize=fig_size)
+            self._plot_cov_selection(enc_imp, title="Encoder variable importance", ax=axes[0])
             axes[0].set_xlabel("")
-            self._plot_cov_selection(
-                dec_imp, title="Decoder variable importance", ax=axes[1]
-            )
+            self._plot_cov_selection(dec_imp, title="Decoder variable importance", ax=axes[1])
             if uses_static_covariates:
                 axes[1].set_xlabel("")
                 self._plot_cov_selection(
@@ -343,13 +319,9 @@ class TFTExplainer(_ForecastingModelExplainer):
             if ax is None or not single_series:
                 fig, ax = plt.subplots()
             if show_index_as == "relative":
-                x_ticks = generate_index(
-                    start=-self.model.input_chunk_length, end=self.n - 1
-                )
+                x_ticks = generate_index(start=-self.model.input_chunk_length, end=self.n - 1)
                 attention = TimeSeries.from_times_and_values(
-                    times=generate_index(
-                        start=-self.model.input_chunk_length, end=self.n - 1
-                    ),
+                    times=generate_index(start=-self.model.input_chunk_length, end=self.n - 1),
                     values=attention.values(copy=False),
                     columns=attention.components,
                 )
@@ -359,9 +331,7 @@ class TFTExplainer(_ForecastingModelExplainer):
                 x_label = "Time index"
             else:
                 x_label, x_ticks = None, None
-                raise_log(
-                    ValueError("`show_index_as` must either be 'relative', or 'time'.")
-                )
+                raise_log(ValueError("`show_index_as` must either be 'relative', or 'time'."))
 
             prediction_start_color = "red"
             if plot_type == "all":
@@ -500,10 +470,7 @@ class TFTExplainer(_ForecastingModelExplainer):
             weight = weight.unsqueeze(1)
 
         # transform the encoder/decoder weights to percentages, rounded to n_decimals
-        weights_percentage = (
-            weight.detach().cpu().numpy().mean(axis=1).squeeze(axis=1).round(n_decimals)
-            * 100
-        )
+        weights_percentage = weight.detach().cpu().numpy().mean(axis=1).squeeze(axis=1).round(n_decimals) * 100
         # create a dataframe with the variable names and the weights
         name_mapping = self._name_mapping
         importance = pd.DataFrame(
@@ -534,15 +501,11 @@ class TFTExplainer(_ForecastingModelExplainer):
 
         def map_cols(comps, name, suffix):
             comps = comps if comps is not None else []
-            return {
-                f"{name}_{i}": colname + f"_{suffix}" for i, colname in enumerate(comps)
-            }
+            return {f"{name}_{i}": colname + f"_{suffix}" for i, colname in enumerate(comps)}
 
         return {
             **map_cols(self.target_components, "target", "target"),
-            **map_cols(
-                self.static_covariates_components, "static_covariate", "statcov"
-            ),
+            **map_cols(self.static_covariates_components, "static_covariate", "statcov"),
             **map_cols(self.past_covariates_components, "past_covariate", "pastcov"),
             **map_cols(self.future_covariates_components, "future_covariate", "futcov"),
         }

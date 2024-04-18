@@ -136,11 +136,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.trend = trend
         self.model = None
         if statsmodels_above_0135:
-            self._random_state = (
-                random_state
-                if random_state is None
-                else np.random.RandomState(random_state)
-            )
+            self._random_state = random_state if random_state is None else np.random.RandomState(random_state)
         else:
             self._random_state = None
             np.random.seed(random_state if random_state is not None else 0)
@@ -177,7 +173,6 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
-
         if num_samples > 1 and self.trend:
             logger.warning(
                 "Trends are not well supported yet for getting probabilistic forecasts with ARIMA."
@@ -185,27 +180,19 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 "your model."
             )
 
-        super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
-        )
+        super()._predict(n, series, historic_future_covariates, future_covariates, num_samples)
 
         # updating statsmodels results object state with the new ts and covariates
         if series is not None:
             self.model = self.model.apply(
                 series.values(copy=False),
-                exog=(
-                    historic_future_covariates.values(copy=False)
-                    if historic_future_covariates
-                    else None
-                ),
+                exog=(historic_future_covariates.values(copy=False) if historic_future_covariates else None),
             )
 
         if num_samples == 1:
             forecast = self.model.forecast(
                 steps=n,
-                exog=(
-                    future_covariates.values(copy=False) if future_covariates else None
-                ),
+                exog=(future_covariates.values(copy=False) if future_covariates else None),
             )
         else:
             forecast = self.model.simulate(
@@ -214,9 +201,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 initial_state=self.model.states.predicted[-1, :],
                 random_state=self._random_state,
                 anchor="end",
-                exog=(
-                    future_covariates.values(copy=False) if future_covariates else None
-                ),
+                exog=(future_covariates.values(copy=False) if future_covariates else None),
             )
 
         # restoring statsmodels results object state

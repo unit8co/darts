@@ -26,7 +26,6 @@ class GaussianNLLScorer(NLLScorer):
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
-
         mu = np.mean(probabilistic_estimations, axis=1)
         std = np.std(probabilistic_estimations, axis=1)
         return -norm.logpdf(deterministic_values, loc=mu, scale=std)

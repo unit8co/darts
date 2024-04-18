@@ -249,9 +249,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             try:
                 linprog(c=c, method=self.kwargs["solver"])
             except ValueError as ve:
-                logger.warning(
-                    f"{ve}. Upgrading scipy enables significantly faster solvers"
-                )
+                logger.warning(f"{ve}. Upgrading scipy enables significantly faster solvers")
                 # set solver to slow legacy
                 self.kwargs["solver"] = "interior-point"
 
@@ -300,9 +298,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
             )
         else:
-            return super()._predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
+            return super()._predict_and_sample(x, num_samples, predict_likelihood_parameters, **kwargs)
 
     @property
     def supports_probabilistic_prediction(self) -> bool:

@@ -10,7 +10,6 @@ from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
 class TestBoxCox:
-
     sine_series = sine_timeseries(length=50, value_y_offset=5, value_frequency=0.05)
     lin_series = linear_timeseries(start_value=1, end_value=10, length=50)
     multi_series = sine_series.stack(lin_series)
@@ -56,12 +55,9 @@ class TestBoxCox:
         boxcox = BoxCox()
         transformed = boxcox.fit_transform(self.multi_series)
         back = boxcox.inverse_transform(transformed)
-        pd.testing.assert_frame_equal(
-            self.multi_series.pd_dataframe(), back.pd_dataframe(), check_exact=False
-        )
+        pd.testing.assert_frame_equal(self.multi_series.pd_dataframe(), back.pd_dataframe(), check_exact=False)
 
     def test_boxcox_multi_ts(self):
-
         test_cases = [
             ([[0.2, 0.4], [0.3, 0.6]]),  # full lambda
             (0.4),  # single value
@@ -96,9 +92,7 @@ class TestBoxCox:
         box_cox.fit(self.lin_series)
         lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
-        assert (
-            lambda1 != lambda2
-        ), "Lambdas should change when the transformer is retrained"
+        assert lambda1 != lambda2, "Lambdas should change when the transformer is retrained"
 
     def test_multivariate_stochastic_series(self):
         transformer = BoxCox()
@@ -120,9 +114,5 @@ class TestBoxCox:
         """
         series_combined = self.sine_series.append_values(self.lin_series.all_values())
         local_params = BoxCox(global_fit=False).fit(series_combined)._fitted_params
-        global_params = (
-            BoxCox(global_fit=True)
-            .fit([self.sine_series, self.lin_series])
-            ._fitted_params
-        )
+        global_params = BoxCox(global_fit=True).fit([self.sine_series, self.lin_series])._fitted_params
         assert local_params == global_params

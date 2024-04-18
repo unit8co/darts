@@ -90,9 +90,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -166,9 +164,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -257,7 +253,9 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -362,7 +360,9 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -370,7 +370,6 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         Optional[np.ndarray],
         np.ndarray,
     ]:
-
         past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
         _, historic_future_covariate, future_covariate, _, _ = self.ds_dual[idx]
         return (
@@ -471,7 +470,9 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

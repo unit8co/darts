@@ -44,14 +44,10 @@ def _optimized_historical_forecasts_last_points_only(
     iterator = _build_tqdm_iterator(series, verbose)
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        future_covariates_ = (
-            future_covariates[idx] if future_covariates is not None else None
-        )
+        future_covariates_ = future_covariates[idx] if future_covariates is not None else None
         freq = series_.freq
         forecast_components = (
-            model._likelihood_components_names(series_)
-            if predict_likelihood_parameters
-            else series_.columns
+            model._likelihood_components_names(series_) if predict_likelihood_parameters else series_.columns
         )
 
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
@@ -86,36 +82,18 @@ def _optimized_historical_forecasts_last_points_only(
             shift = model.output_chunk_length - forecast_horizon
 
             hist_fct_tgt_start -= shift * unit
-            hist_fct_pc_start -= (
-                shift * unit if hist_fct_pc_start is not None else hist_fct_pc_start
-            )
-            hist_fct_fc_start -= (
-                shift * unit if hist_fct_fc_start is not None else hist_fct_fc_start
-            )
+            hist_fct_pc_start -= shift * unit if hist_fct_pc_start is not None else hist_fct_pc_start
+            hist_fct_fc_start -= shift * unit if hist_fct_fc_start is not None else hist_fct_fc_start
 
             hist_fct_tgt_end -= shift * unit
-            hist_fct_pc_end -= (
-                shift * unit if hist_fct_pc_end is not None else hist_fct_pc_end
-            )
-            hist_fct_fc_end -= (
-                shift * unit if hist_fct_fc_end is not None else hist_fct_fc_end
-            )
+            hist_fct_pc_end -= shift * unit if hist_fct_pc_end is not None else hist_fct_pc_end
+            hist_fct_fc_end -= shift * unit if hist_fct_fc_end is not None else hist_fct_fc_end
 
         X, times = create_lagged_prediction_data(
-            target_series=(
-                None
-                if model._get_lags("target") is None
-                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
-            ),
-            past_covariates=(
-                None
-                if past_covariates_ is None
-                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
-            ),
+            target_series=(None if model._get_lags("target") is None else series_[hist_fct_tgt_start:hist_fct_tgt_end]),
+            past_covariates=(None if past_covariates_ is None else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]),
             future_covariates=(
-                None
-                if future_covariates_ is None
-                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+                None if future_covariates_ is None else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
             ),
             lags=model._get_lags("target"),
             lags_past_covariates=model._get_lags("past"),
@@ -148,9 +126,7 @@ def _optimized_historical_forecasts_last_points_only(
         if model.multi_models:
             forecast = forecast[
                 :,
-                (forecast_horizon - 1)
-                * len(forecast_components) : (forecast_horizon)
-                * len(forecast_components),
+                (forecast_horizon - 1) * len(forecast_components) : (forecast_horizon) * len(forecast_components),
                 :,
             ]
 
@@ -160,8 +136,7 @@ def _optimized_historical_forecasts_last_points_only(
                     times[0]
                     if stride == 1 and model.output_chunk_length == 1
                     else generate_index(
-                        start=hist_fct_start
-                        + (forecast_horizon + model.output_chunk_shift - 1) * freq,
+                        start=hist_fct_start + (forecast_horizon + model.output_chunk_shift - 1) * freq,
                         length=forecast.shape[0],
                         freq=freq * stride,
                         name=series_.time_index.name,
@@ -201,14 +176,10 @@ def _optimized_historical_forecasts_all_points(
     iterator = _build_tqdm_iterator(series, verbose)
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        future_covariates_ = (
-            future_covariates[idx] if future_covariates is not None else None
-        )
+        future_covariates_ = future_covariates[idx] if future_covariates is not None else None
         freq = series_.freq
         forecast_components = (
-            model._likelihood_components_names(series_)
-            if predict_likelihood_parameters
-            else series_.columns
+            model._likelihood_components_names(series_) if predict_likelihood_parameters else series_.columns
         )
 
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
@@ -246,32 +217,14 @@ def _optimized_historical_forecasts_all_points(
                 shift_start = model.output_chunk_length - 1
 
                 hist_fct_tgt_start -= shift_start * unit
-                hist_fct_pc_start -= (
-                    shift_start * unit
-                    if hist_fct_pc_start is not None
-                    else hist_fct_pc_start
-                )
-                hist_fct_fc_start -= (
-                    shift_start * unit
-                    if hist_fct_fc_start is not None
-                    else hist_fct_fc_start
-                )
+                hist_fct_pc_start -= shift_start * unit if hist_fct_pc_start is not None else hist_fct_pc_start
+                hist_fct_fc_start -= shift_start * unit if hist_fct_fc_start is not None else hist_fct_fc_start
 
         X, _ = create_lagged_prediction_data(
-            target_series=(
-                None
-                if model._get_lags("target") is None
-                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
-            ),
-            past_covariates=(
-                None
-                if past_covariates_ is None
-                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
-            ),
+            target_series=(None if model._get_lags("target") is None else series_[hist_fct_tgt_start:hist_fct_tgt_end]),
+            past_covariates=(None if past_covariates_ is None else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]),
             future_covariates=(
-                None
-                if future_covariates_ is None
-                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+                None if future_covariates_ is None else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
             ),
             lags=model._get_lags("target"),
             lags_past_covariates=model._get_lags("past"),
@@ -312,9 +265,7 @@ def _optimized_historical_forecasts_all_points(
             forecast = forecast.reshape(X.shape[0], -1, num_samples)
 
             # forecasts depend on lagged data only, output_chunk_length is reconstitued by applying a sliding window
-            forecast = sliding_window_view(
-                forecast, (forecast_horizon, len(forecast_components), num_samples)
-            )
+            forecast = sliding_window_view(forecast, (forecast_horizon, len(forecast_components), num_samples))
 
             # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
             if forecast_horizon != model.output_chunk_length:
@@ -339,9 +290,7 @@ def _optimized_historical_forecasts_all_points(
         )
 
         forecasts_ = []
-        for idx_ftc, step_fct in enumerate(
-            range(0, forecast.shape[0] * stride, stride)
-        ):
+        for idx_ftc, step_fct in enumerate(range(0, forecast.shape[0] * stride, stride)):
             forecasts_.append(
                 TimeSeries.from_times_and_values(
                     times=new_times[step_fct : step_fct + forecast_horizon],

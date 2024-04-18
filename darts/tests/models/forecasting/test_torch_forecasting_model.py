@@ -94,9 +94,7 @@ class TestTorchForecastingModel:
         model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
         assert model._model_params, model.untrained_model()._model_params
 
-    @patch(
-        "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
-    )
+    @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save")
     def test_suppress_automatic_save(self, patch_save_model, tmpdir_fn):
         model_name = "test_model"
         model1 = RNNModel(
@@ -193,9 +191,7 @@ class TestTorchForecastingModel:
         checkpoint_file_name = "checkpoint_0.pth.tar"
         model_path_manual = os.path.join(checkpoint_path_manual, checkpoint_file_name)
         checkpoint_file_name_cpkt = "checkpoint_0.pth.tar.ckpt"
-        model_path_manual_ckpt = os.path.join(
-            checkpoint_path_manual, checkpoint_file_name_cpkt
-        )
+        model_path_manual_ckpt = os.path.join(checkpoint_path_manual, checkpoint_file_name_cpkt)
 
         # save manually saved model
         model_manual_save.save(model_path_manual)
@@ -224,12 +220,8 @@ class TestTorchForecastingModel:
         checkpoint_file_name_2 = "checkpoint_1.pth.tar"
         checkpoint_file_name_cpkt_2 = checkpoint_file_name_2 + ".ckpt"
 
-        model_path_manual_2 = os.path.join(
-            checkpoint_path_manual, checkpoint_file_name_2
-        )
-        model_path_manual_ckpt_2 = os.path.join(
-            checkpoint_path_manual, checkpoint_file_name_cpkt_2
-        )
+        model_path_manual_2 = os.path.join(checkpoint_path_manual, checkpoint_file_name_2)
+        model_path_manual_ckpt_2 = os.path.join(checkpoint_path_manual, checkpoint_file_name_cpkt_2)
         model_auto_save2 = RNNModel.load_from_checkpoint(
             model_name=auto_name,
             work_dir=tmpdir_fn,
@@ -356,9 +348,7 @@ class TestTorchForecastingModel:
         assert model_auto_save.predict(n=4) != model_auto_save_other.predict(n=4)
 
         # model with undeclared encoders
-        model_no_enc = self.helper_create_DLinearModel(
-            work_dir=tmpdir_fn, model_name="no_encoder", add_encoders=None
-        )
+        model_no_enc = self.helper_create_DLinearModel(work_dir=tmpdir_fn, model_name="no_encoder", add_encoders=None)
         # weights were trained with encoders, new model must be instantiated with encoders
         with pytest.raises(ValueError):
             model_no_enc.load_weights_from_checkpoint(
@@ -376,16 +366,10 @@ class TestTorchForecastingModel:
             load_encoders=True,
             map_location="cpu",
         )
-        self.helper_equality_encoders(
-            model_auto_save.add_encoders, model_no_enc.add_encoders
-        )
-        self.helper_equality_encoders_transfo(
-            model_auto_save.add_encoders, model_no_enc.add_encoders
-        )
+        self.helper_equality_encoders(model_auto_save.add_encoders, model_no_enc.add_encoders)
+        self.helper_equality_encoders_transfo(model_auto_save.add_encoders, model_no_enc.add_encoders)
         # cannot directly verify equality between encoders, using predict as proxy
-        assert model_auto_save.predict(n=4) == model_no_enc.predict(
-            n=4, series=self.series
-        )
+        assert model_auto_save.predict(n=4) == model_no_enc.predict(n=4, series=self.series)
 
         # model with identical encoders (fittable)
         model_same_enc_noload = self.helper_create_DLinearModel(
@@ -412,9 +396,7 @@ class TestTorchForecastingModel:
             load_encoders=True,
             map_location="cpu",
         )
-        assert model_manual_save.predict(n=4) == model_same_enc_load.predict(
-            n=4, series=self.series
-        )
+        assert model_manual_save.predict(n=4) == model_same_enc_load.predict(n=4, series=self.series)
 
         # model with different encoders (fittable)
         model_other_enc_load = self.helper_create_DLinearModel(
@@ -441,12 +423,8 @@ class TestTorchForecastingModel:
             load_encoders=False,
             map_location="cpu",
         )
-        self.helper_equality_encoders(
-            model_other_enc_noload.add_encoders, encoders_other_past
-        )
-        self.helper_equality_encoders_transfo(
-            model_other_enc_noload.add_encoders, encoders_other_past
-        )
+        self.helper_equality_encoders(model_other_enc_noload.add_encoders, encoders_other_past)
+        self.helper_equality_encoders_transfo(model_other_enc_noload.add_encoders, encoders_other_past)
         # new encoders were instantiated
         assert isinstance(model_other_enc_noload.encoders, SequentialEncoder)
         # since fit() was not called, new fittable encoders were not trained
@@ -469,12 +447,8 @@ class TestTorchForecastingModel:
             map_location="cpu",
         )
 
-        self.helper_equality_encoders(
-            model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
-        )
-        self.helper_equality_encoders_transfo(
-            model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
-        )
+        self.helper_equality_encoders(model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler)
+        self.helper_equality_encoders_transfo(model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler)
         # predict() can be called directly since new encoders don't contain scaler
         model_new_enc_noscaler_noload.predict(n=4, series=self.series)
 
@@ -603,9 +577,7 @@ class TestTorchForecastingModel:
             likelihood=GaussianLikelihood(prior_mu=0.5),
         )
         model_manual_same_likelihood.load_weights(model_path_manual, map_location="cpu")
-        preds_manual_from_weights = model_manual_same_likelihood.predict(
-            n=4, series=self.series
-        )
+        preds_manual_from_weights = model_manual_same_likelihood.predict(n=4, series=self.series)
 
         model_auto_same_likelihood = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn,
@@ -615,9 +587,7 @@ class TestTorchForecastingModel:
         model_auto_same_likelihood.load_weights_from_checkpoint(
             auto_name, work_dir=tmpdir_fn, best=False, map_location="cpu"
         )
-        preds_auto_from_weights = model_auto_same_likelihood.predict(
-            n=4, series=self.series
-        )
+        preds_auto_from_weights = model_auto_same_likelihood.predict(n=4, series=self.series)
         # check that weights from checkpoint give identical predictions as weights from manual save
         assert preds_manual_from_weights == preds_auto_from_weights
         # model with explicitely no likelihood
@@ -632,8 +602,7 @@ class TestTorchForecastingModel:
                 map_location="cpu",
             )
         assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "incorrect"
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n" "incorrect"
         )
 
         # model with missing likelihood (as if user forgot them)
@@ -658,8 +627,7 @@ class TestTorchForecastingModel:
                 map_location="cpu",
             )
         assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "missing"
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n" "missing"
         )
 
         # model with a different likelihood
@@ -671,8 +639,7 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError) as error_msg:
             model_other_likelihood.load_weights(model_path_manual, map_location="cpu")
         assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "incorrect"
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n" "incorrect"
         )
 
         # model with the same likelihood but different parameters
@@ -682,12 +649,9 @@ class TestTorchForecastingModel:
             likelihood=GaussianLikelihood(),
         )
         with pytest.raises(ValueError) as error_msg:
-            model_same_likelihood_other_prior.load_weights(
-                model_path_manual, map_location="cpu"
-            )
+            model_same_likelihood_other_prior.load_weights(model_path_manual, map_location="cpu")
         assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "incorrect"
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n" "incorrect"
         )
 
     def test_load_weights_params_check(self, tmpdir_fn):
@@ -698,16 +662,12 @@ class TestTorchForecastingModel:
         model_name = "params_check"
         ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
         # barebone model
-        model = DLinearModel(
-            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
-        )
+        model = DLinearModel(input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs)
         model.fit(self.series[:10])
         model.save(ckpt_path)
 
         # identical model
-        loading_model = DLinearModel(
-            input_chunk_length=4, output_chunk_length=1, **tfm_kwargs
-        )
+        loading_model = DLinearModel(input_chunk_length=4, output_chunk_length=1, **tfm_kwargs)
         loading_model.load_weights(ckpt_path)
 
         # different optimizer
@@ -720,9 +680,7 @@ class TestTorchForecastingModel:
         loading_model.load_weights(ckpt_path)
 
         model_summary_kwargs = {
-            "pl_trainer_kwargs": dict(
-                {"enable_model_sumamry": False}, **tfm_kwargs["pl_trainer_kwargs"]
-            )
+            "pl_trainer_kwargs": dict({"enable_model_sumamry": False}, **tfm_kwargs["pl_trainer_kwargs"])
         }
         # different pl_trainer_kwargs
         loading_model = DLinearModel(
@@ -733,14 +691,11 @@ class TestTorchForecastingModel:
         loading_model.load_weights(ckpt_path)
 
         # different input_chunk_length (tfm parameter)
-        loading_model = DLinearModel(
-            input_chunk_length=4 + 1, output_chunk_length=1, **tfm_kwargs
-        )
+        loading_model = DLinearModel(input_chunk_length=4 + 1, output_chunk_length=1, **tfm_kwargs)
         with pytest.raises(ValueError) as error_msg:
             loading_model.load_weights(ckpt_path)
         assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "incorrect"
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n" "incorrect"
         )
 
         # different kernel size (cls specific parameter)
@@ -753,8 +708,7 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError) as error_msg:
             loading_model.load_weights(ckpt_path)
         assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "incorrect"
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n" "incorrect"
         )
 
     def test_create_instance_new_model_no_name_set(self, tmpdir_fn):
@@ -774,12 +728,8 @@ class TestTorchForecastingModel:
         )
         # no exception is raised
 
-    @patch(
-        "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
-    )
-    def test_create_instance_existing_model_with_name_force(
-        self, patch_reset_model, tmpdir_fn
-    ):
+    @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model")
+    def test_create_instance_existing_model_with_name_force(self, patch_reset_model, tmpdir_fn):
         model_name = "test_model"
         RNNModel(
             12,
@@ -805,12 +755,8 @@ class TestTorchForecastingModel:
         )
         patch_reset_model.assert_not_called()
 
-    @patch(
-        "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
-    )
-    def test_create_instance_existing_model_with_name_force_fit_with_reset(
-        self, patch_reset_model, tmpdir_fn
-    ):
+    @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model")
+    def test_create_instance_existing_model_with_name_force_fit_with_reset(self, patch_reset_model, tmpdir_fn):
         model_name = "test_model"
         model1 = RNNModel(
             12,
@@ -1115,9 +1061,7 @@ class TestTorchForecastingModel:
         )
         model.fit(self.series)
 
-        loaded_model = RNNModel.load_from_checkpoint(
-            model_name, tmpdir_fn, best=False, map_location="cpu"
-        )
+        loaded_model = RNNModel.load_from_checkpoint(model_name, tmpdir_fn, best=False, map_location="cpu")
         # custom loss function should be properly restored from ckpt
         assert isinstance(loaded_model.model.criterion, torch.nn.L1Loss)
 
@@ -1161,7 +1105,6 @@ class TestTorchForecastingModel:
         assert len(loaded_model.model.train_metrics) == 1
 
     def test_optimizers(self):
-
         optimizers = [
             (torch.optim.Adam, {"lr": 0.001}),
             (torch.optim.SGD, {"lr": 0.001}),
@@ -1223,9 +1166,7 @@ class TestTorchForecastingModel:
 
     def test_metrics(self):
         metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection(
-            [MeanAbsolutePercentageError(), MeanAbsoluteError()]
-        )
+        metric_collection = MetricCollection([MeanAbsolutePercentageError(), MeanAbsoluteError()])
 
         model_kwargs = {
             "logger": DummyLogger(),
@@ -1270,9 +1211,7 @@ class TestTorchForecastingModel:
 
     def test_metrics_w_likelihood(self):
         metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection(
-            [MeanAbsolutePercentageError(), MeanAbsoluteError()]
-        )
+        metric_collection = MetricCollection([MeanAbsolutePercentageError(), MeanAbsoluteError()])
         model_kwargs = {
             "logger": DummyLogger(),
             "log_every_n_steps": 1,
@@ -1368,9 +1307,7 @@ class TestTorchForecastingModel:
                 **tfm_kwargs,
             )
             model.fit(train_series)
-            scores[lr_name] = mape(
-                val_series, model.predict(len(val_series), series=train_series)
-            )
+            scores[lr_name] = mape(val_series, model.predict(len(val_series), series=train_series))
         assert scores["worst"] > scores["suggested"]
 
     def test_encoders(self, tmpdir_fn):
@@ -1382,9 +1319,7 @@ class TestTorchForecastingModel:
 
         model = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn,
-            add_encoders={
-                "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-            },
+            add_encoders={"datetime_attribute": {"past": ["hour"], "future": ["month"]}},
         )
         model.fit(series)
         for n in ns:
@@ -1398,9 +1333,7 @@ class TestTorchForecastingModel:
 
         model = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn,
-            add_encoders={
-                "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-            },
+            add_encoders={"datetime_attribute": {"past": ["hour"], "future": ["month"]}},
         )
         for n in ns:
             model.fit(series, past_covariates=pc)
@@ -1413,9 +1346,7 @@ class TestTorchForecastingModel:
 
         model = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn,
-            add_encoders={
-                "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-            },
+            add_encoders={"datetime_attribute": {"past": ["hour"], "future": ["month"]}},
         )
         for n in ns:
             model.fit(series, future_covariates=fc)
@@ -1428,9 +1359,7 @@ class TestTorchForecastingModel:
 
         model = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn,
-            add_encoders={
-                "datetime_attribute": {"past": ["hour"], "future": ["month"]}
-            },
+            add_encoders={"datetime_attribute": {"past": ["hour"], "future": ["month"]}},
         )
         for n in ns:
             model.fit(series, past_covariates=pc, future_covariates=fc)
@@ -1479,12 +1408,7 @@ class TestTorchForecastingModel:
             @staticmethod
             def _check_dropout_activity(pl_module, expected_active: bool):
                 dropouts = pl_module._get_mc_dropout_modules()
-                assert all(
-                    [
-                        dropout.mc_dropout_enabled is expected_active
-                        for dropout in dropouts
-                    ]
-                )
+                assert all([dropout.mc_dropout_enabled is expected_active for dropout in dropouts])
 
             def on_train_batch_start(self, *args, **kwargs) -> None:
                 self._check_dropout_activity(args[1], expected_active=True)
@@ -1493,22 +1417,16 @@ class TestTorchForecastingModel:
                 self._check_dropout_activity(args[1], expected_active=False)
 
             def on_predict_batch_start(self, *args, **kwargs) -> None:
-                self._check_dropout_activity(
-                    args[1], expected_active=self.use_mc_dropout
-                )
+                self._check_dropout_activity(args[1], expected_active=self.use_mc_dropout)
 
         series = self.series[:20]
         pl_trainer_kwargs = copy.deepcopy(tfm_kwargs)
-        pl_trainer_kwargs["pl_trainer_kwargs"]["callbacks"] = [
-            CheckMCDropout(activate_mc_dropout=use_mc_dropout)
-        ]
+        pl_trainer_kwargs["pl_trainer_kwargs"]["callbacks"] = [CheckMCDropout(activate_mc_dropout=use_mc_dropout)]
         model = TiDEModel(10, 10, dropout=0.1, random_state=42, **pl_trainer_kwargs)
         model.fit(series, val_series=series, epochs=1)
 
         num_samples = 1 if not use_mc_dropout else 10
-        preds = model.predict(
-            n=10, series=series, mc_dropout=use_mc_dropout, num_samples=num_samples
-        )
+        preds = model.predict(n=10, series=series, mc_dropout=use_mc_dropout, num_samples=num_samples)
         assert preds.n_samples == num_samples
 
     @pytest.mark.parametrize("use_mc_dropout", [False, True])
@@ -1568,9 +1486,7 @@ class TestTorchForecastingModel:
         (model_cls, add_params), shift = config
         icl = 8
         ocl = 7
-        series = tg.gaussian_timeseries(
-            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
-        )
+        series = tg.gaussian_timeseries(length=28, start=pd.Timestamp("2000-01-01"), freq="d")
 
         model = self.helper_create_torch_model(model_cls, icl, ocl, shift, **add_params)
         model.fit(series)
@@ -1611,18 +1527,14 @@ class TestTorchForecastingModel:
         if not cov_support:
             return
 
-        add_encoders = {
-            "datetime_attribute": {cov: ["dayofweek"] for cov in cov_support}
-        }
+        add_encoders = {"datetime_attribute": {cov: ["dayofweek"] for cov in cov_support}}
         model_enc_shift = self.helper_create_torch_model(
             model_cls, icl, ocl, shift, add_encoders=add_encoders, **add_params
         )
         model_enc_shift.fit(series)
 
         # model trained with identical covariates
-        model_fc_shift = self.helper_create_torch_model(
-            model_cls, icl, ocl, shift, **add_params
-        )
+        model_fc_shift = self.helper_create_torch_model(model_cls, icl, ocl, shift, **add_params)
 
         model_fc_shift.fit(series, **covs)
 
@@ -1659,22 +1571,16 @@ class TestTorchForecastingModel:
         )
         assert len(hist_fc_opt) == 1
         assert hist_fc_opt[0].time_index.equals(pred_last_hist_fc.time_index)
-        np.testing.assert_array_almost_equal(
-            hist_fc_opt[0].values(copy=False), pred_last_hist_fc.values(copy=False)
-        )
+        np.testing.assert_array_almost_equal(hist_fc_opt[0].values(copy=False), pred_last_hist_fc.values(copy=False))
 
         # covs too short
         for cov_name in cov_support:
             with pytest.raises(ValueError) as err:
-                add_covs = {
-                    cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
-                }
+                add_covs = {cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]}
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
             assert f"provided {cov_name} covariates at dataset index" in str(err.value)
 
-    def helper_equality_encoders(
-        self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
-    ):
+    def helper_equality_encoders(self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]):
         if first_encoders is None:
             first_encoders = {}
         if second_encoders is None:
@@ -1683,17 +1589,12 @@ class TestTorchForecastingModel:
             k: v for k, v in second_encoders.items() if k != "transformer"
         }
 
-    def helper_equality_encoders_transfo(
-        self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
-    ):
+    def helper_equality_encoders_transfo(self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]):
         if first_encoders is None:
             first_encoders = {}
         if second_encoders is None:
             second_encoders = {}
-        assert (
-            first_encoders.get("transformer", None).__class__
-            == second_encoders.get("transformer", None).__class__
-        )
+        assert first_encoders.get("transformer", None).__class__ == second_encoders.get("transformer", None).__class__
 
     def helper_create_RNNModel(self, model_name: str, tmpdir_fn):
         return RNNModel(

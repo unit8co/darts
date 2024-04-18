@@ -199,9 +199,7 @@ class TestGlobalForecastingModels:
     static_covariates = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
 
     # real timeseries for functionality tests
-    ts_passengers = (
-        AirPassengersDataset().load().with_static_covariates(static_covariates)
-    )
+    ts_passengers = AirPassengersDataset().load().with_static_covariates(static_covariates)
     scaler = Scaler()
     ts_passengers = scaler.fit_transform(ts_passengers)
     ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]
@@ -228,9 +226,7 @@ class TestGlobalForecastingModels:
     split_ratio = 0.6
     sine_1_ts = tg.sine_timeseries(length=ts_length)
     sine_2_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.05)
-    sine_3_ts = tg.sine_timeseries(
-        length=ts_length, value_frequency=0.003, value_amplitude=5
-    )
+    sine_3_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.003, value_amplitude=5)
     linear_ts = tg.linear_timeseries(length=ts_length, start_value=3, end_value=8)
 
     covariates = sine_3_ts.stack(sine_2_ts).stack(linear_ts)
@@ -240,9 +236,7 @@ class TestGlobalForecastingModels:
     target_past, target_future = target.split_after(split_ratio)
 
     # various ts with different static covariates representations
-    ts_w_static_cov = tg.linear_timeseries(length=80).with_static_covariates(
-        pd.Series([1, 2])
-    )
+    ts_w_static_cov = tg.linear_timeseries(length=80).with_static_covariates(pd.Series([1, 2]))
     ts_shared_static_cov = ts_w_static_cov.stack(tg.sine_timeseries(length=80))
     ts_comps_static_cov = ts_shared_static_cov.with_static_covariates(
         pd.DataFrame([[0, 1], [2, 3]], columns=["st1", "st2"])
@@ -252,9 +246,7 @@ class TestGlobalForecastingModels:
     def test_save_model_parameters(self, config):
         # model creation parameters were saved before. check if re-created model has same params as original
         model_cls, kwargs, err = config
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
         assert model._model_params, model.untrained_model()._model_params
 
     @pytest.mark.parametrize(
@@ -296,16 +288,7 @@ class TestGlobalForecastingModels:
         model.save(model_path_str)
 
         assert os.path.exists(full_model_path_str)
-        assert (
-            len(
-                [
-                    p
-                    for p in os.listdir(tmpdir_module)
-                    if p.startswith(type(model).__name__)
-                ]
-            )
-            == 4
-        )
+        assert len([p for p in os.listdir(tmpdir_module) if p.startswith(type(model).__name__)]) == 4
 
         # test load
         loaded_model = type(model).load(model_path_str)
@@ -326,10 +309,7 @@ class TestGlobalForecastingModels:
         model.fit(self.ts_pass_train)
         pred = model.predict(n=36)
         mape_err = mape(self.ts_pass_val, pred)
-        assert mape_err < err, (
-            f"Model {model_cls} produces errors too high (one time "
-            f"series). Error = {mape_err}"
-        )
+        assert mape_err < err, f"Model {model_cls} produces errors too high (one time " f"series). Error = {mape_err}"
         assert pred.static_covariates.equals(self.ts_passengers.static_covariates)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
@@ -348,22 +328,16 @@ class TestGlobalForecastingModels:
         pred = model.predict(n=36, series=self.ts_pass_train)
         mape_err = mape(self.ts_pass_val, pred)
         assert mape_err < err, (
-            f"Model {model_cls} produces errors too high (several time "
-            f"series). Error = {mape_err}"
+            f"Model {model_cls} produces errors too high (several time " f"series). Error = {mape_err}"
         )
 
         # check prediction for several time series
-        pred_list = model.predict(
-            n=36, series=[self.ts_pass_train, self.ts_pass_train_1]
-        )
-        assert (
-            len(pred_list) == 2
-        ), f"Model {model_cls} did not return a list of prediction"
+        pred_list = model.predict(n=36, series=[self.ts_pass_train, self.ts_pass_train_1])
+        assert len(pred_list) == 2, f"Model {model_cls} did not return a list of prediction"
         for pred in pred_list:
             mape_err = mape(self.ts_pass_val, pred)
             assert mape_err < err, (
-                f"Model {model_cls} produces errors too high (several time series 2). "
-                f"Error = {mape_err}"
+                f"Model {model_cls} produces errors too high (several time series 2). " f"Error = {mape_err}"
             )
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
@@ -450,16 +424,13 @@ class TestGlobalForecastingModels:
         pred = model.predict(n=12, series=self.ts_pass_train, **cov_kwargs_notrain)
         mape_err = mape(self.ts_pass_val, pred)
         assert mape_err < err, (
-            f"Model {model_cls} produces errors too high (several time "
-            f"series with covariates). Error = {mape_err}"
+            f"Model {model_cls} produces errors too high (several time " f"series with covariates). Error = {mape_err}"
         )
 
         # when model is fit using 1 training and 1 covariate series, time series args are optional
         if model.supports_probabilistic_prediction:
             return
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
         model.fit(series=self.ts_pass_train, **cov_kwargs_train)
         if is_past:
             # with past covariates from train we can predict up until output_chunk_length
@@ -552,9 +523,7 @@ class TestGlobalForecastingModels:
         # must provide mandatory future_covariates to TFTModel
         model.fit(
             series=ts,
-            future_covariates=(
-                self.sine_1_ts if model.supports_future_covariates else None
-            ),
+            future_covariates=(self.sine_1_ts if model.supports_future_covariates else None),
         )
         pred = model.predict(OUT_LEN)
         assert pred.static_covariates.equals(ts.static_covariates)
@@ -606,9 +575,7 @@ class TestGlobalForecastingModels:
         unsupported_type = "unsupported_type"
         # just need to test this with one model
         model_cls, kwargs, err = models_cls_kwargs_errs[0]
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
         model.fit([self.ts_pass_train, self.ts_pass_train_1])
 
         with pytest.raises(ValueError):
@@ -618,9 +585,7 @@ class TestGlobalForecastingModels:
     def test_prediction_with_different_n(self, config):
         # test model predictions for n < out_len, n == out_len and n > out_len
         model_cls, kwargs, err = config
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
         assert isinstance(
             model,
             (
@@ -648,17 +613,13 @@ class TestGlobalForecastingModels:
 
         # test prediction for n < out_len, n == out_len and n > out_len
         for n in [OUT_LEN - 1, OUT_LEN, 2 * OUT_LEN - 1]:
-            pred = model.predict(
-                n=n, past_covariates=past_covs, future_covariates=future_covs
-            )
+            pred = model.predict(n=n, past_covariates=past_covs, future_covariates=future_covs)
             assert len(pred) == n
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_same_result_with_different_n_jobs(self, config):
         model_cls, kwargs, err = config
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
 
         multiple_ts = [self.ts_pass_train] * 10
 
@@ -675,40 +636,26 @@ class TestGlobalForecastingModels:
         if random_state is not None:
             model._random_instance = random_state
 
-        pred2 = model.predict(
-            n=36, series=multiple_ts, n_jobs=-1
-        )  # assuming > 1 core available in the machine
-        assert (
-            pred1 == pred2
-        ), "Model {} produces different predictions with different number of jobs"
+        pred2 = model.predict(n=36, series=multiple_ts, n_jobs=-1)  # assuming > 1 core available in the machine
+        assert pred1 == pred2, "Model {} produces different predictions with different number of jobs"
 
-    @patch(
-        "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
-    )
+    @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer")
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_fit_with_constr_epochs(self, init_trainer, config):
         model_cls, kwargs, err = config
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
         if not model._requires_training:
             return
         multiple_ts = [self.ts_pass_train] * 10
         model.fit(multiple_ts)
 
-        init_trainer.assert_called_with(
-            max_epochs=kwargs["n_epochs"], trainer_params=ANY
-        )
+        init_trainer.assert_called_with(max_epochs=kwargs["n_epochs"], trainer_params=ANY)
 
-    @patch(
-        "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
-    )
+    @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer")
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_fit_with_fit_epochs(self, init_trainer, config):
         model_cls, kwargs, err = config
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
         multiple_ts = [self.ts_pass_train] * 10
         epochs = 3
 
@@ -720,15 +667,11 @@ class TestGlobalForecastingModels:
         model.fit(multiple_ts, epochs=epochs)
         init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
-    @patch(
-        "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
-    )
+    @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer")
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_fit_from_dataset_with_epochs(self, init_trainer, config):
         model_cls, kwargs, err = config
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
         multiple_ts = [self.ts_pass_train] * 10
         train_dataset = model._build_train_dataset(
             multiple_ts,
@@ -748,9 +691,7 @@ class TestGlobalForecastingModels:
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_predit_after_fit_from_dataset(self, config):
         model_cls, kwargs, _ = config
-        model = model_cls(
-            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
-        )
+        model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
 
         multiple_ts = [self.ts_pass_train] * 2
         train_dataset = model._build_train_dataset(

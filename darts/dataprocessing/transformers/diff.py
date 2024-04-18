@@ -113,9 +113,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         self._dropna = dropna
         # Don't automatically apply `component_mask` - need to throw error when `dropna = True`
         # and `component_mask` is specified:
-        super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, mask_components=False
-        )
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, mask_components=False)
 
     @staticmethod
     def ts_fit(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> Any:
@@ -145,9 +143,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         return start_vals, component_mask, series.start_time(), series.freq
 
     @staticmethod
-    def ts_transform(
-        series: TimeSeries, params: Mapping[str, Any], **kwargs
-    ) -> TimeSeries:
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         component_mask = Diff._get_component_mask(kwargs, dropna)
         diffed = Diff.apply_component_mask(series, component_mask, return_ts=True)
@@ -168,10 +164,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         start_vals, fit_component_mask, start_time, freq = params["fitted"]
         raise_if_not(
             series.freq == freq,
-            (
-                f"Series is of frequency {series.freq}, but "
-                f"transform was fitted to data of frequency {freq}."
-            ),
+            (f"Series is of frequency {series.freq}, but " f"transform was fitted to data of frequency {freq}."),
             logger,
         )
         # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
@@ -187,10 +180,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         component_mask = Diff._get_component_mask(kwargs, dropna)
         raise_if_not(
             np.all(fit_component_mask == component_mask),
-            (
-                "Provided `component_mask` does not match "
-                "`component_mask` specified when `fit` was called."
-            ),
+            ("Provided `component_mask` does not match " "`component_mask` specified when `fit` was called."),
             logger,
         )
         if dropna:
@@ -200,18 +190,12 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
         raise_if_not(
             vals.shape[1] == start_vals.shape[1],
-            (
-                f"Expected series to have {start_vals.shape[1]} components; "
-                f"instead, it has {vals.shape[1]}."
-            ),
+            (f"Expected series to have {start_vals.shape[1]} components; " f"instead, it has {vals.shape[1]}."),
             logger,
         )
         raise_if_not(
             vals.shape[2] == start_vals.shape[2],
-            (
-                f"Expected series to have {start_vals.shape[2]} samples; "
-                f"instead, it has {vals.shape[2]}."
-            ),
+            (f"Expected series to have {start_vals.shape[2]} samples; " f"instead, it has {vals.shape[2]}."),
             logger,
         )
         cutoff = sum(lags)

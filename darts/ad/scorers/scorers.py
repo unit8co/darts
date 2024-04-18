@@ -6,7 +6,6 @@ Scorers Base Classes
 #     - add stride for Scorers like Kmeans and Wasserstein
 #     - add option to normalize the windows for kmeans? capture only the form and not the values.
 
-
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
@@ -31,7 +30,6 @@ class AnomalyScorer(ABC):
     """Base class for all anomaly scorers"""
 
     def __init__(self, univariate_scorer: bool, window: int) -> None:
-
         raise_if_not(
             type(window) is int,  # noqa: E721
             f"Parameter `window` must be an integer, found type {type(window)}.",
@@ -156,9 +154,7 @@ class AnomalyScorer(ABC):
 
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
 
-        return eval_accuracy_from_scores(
-            actual_anomalies, anomaly_score, self.window, metric
-        )
+        return eval_accuracy_from_scores(actual_anomalies, anomaly_score, self.window, metric)
 
     @abstractmethod
     def score_from_prediction(self, actual_series: Any, pred_series: Any) -> Any:
@@ -290,9 +286,7 @@ class NonFittableAnomalyScorer(AnomalyScorer):
         Union[TimeSeries, Sequence[TimeSeries]]
             (Sequence of) anomaly score time series
         """
-        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
-            pred_series
-        )
+        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(pred_series)
         _assert_same_length(list_actual_series, list_pred_series)
 
         anomaly_scores = []
@@ -378,9 +372,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score(series)
 
-        return eval_accuracy_from_scores(
-            actual_anomalies, anomaly_score, self.window, metric
-        )
+        return eval_accuracy_from_scores(actual_anomalies, anomaly_score, self.window, metric)
 
     def score(
         self,
@@ -410,9 +402,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         for s in list_series:
             _assert_timeseries(s)
             self._check_window_size(s)
-            anomaly_scores.append(
-                self._score_core(self._assert_deterministic(s, "series"))
-            )
+            anomaly_scores.append(self._score_core(self._assert_deterministic(s, "series")))
 
         if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
             return anomaly_scores[0]
@@ -468,8 +458,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         raise_if_not(
             isinstance(series, TimeSeries),
-            "``show_anomalies`` expects an input of type TimeSeries,"
-            + f" found type {type(series)} for `series`.",
+            "``show_anomalies`` expects an input of type TimeSeries," + f" found type {type(series)} for `series`.",
         )
 
         anomaly_score = self.score(series)
@@ -521,9 +510,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         self.check_if_fit_called()
 
-        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
-            pred_series
-        )
+        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(pred_series)
         _assert_same_length(list_actual_series, list_pred_series)
 
         anomaly_scores = []
@@ -614,9 +601,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self
             Fitted Scorer.
         """
-        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
-            pred_series
-        )
+        list_actual_series, list_pred_series = _to_list(actual_series), _to_list(pred_series)
         _assert_same_length(list_actual_series, list_pred_series)
 
         list_fit_series = []
@@ -664,9 +649,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             return series_1 - series_2
         else:
             # found an non-existent diff_fn
-            raise ValueError(
-                f"Metric should be 'diff' or 'abs_diff', found {self.diff_fn}"
-            )
+            raise ValueError(f"Metric should be 'diff' or 'abs_diff', found {self.diff_fn}")
 
 
 class NLLScorer(NonFittableAnomalyScorer):
@@ -714,9 +697,7 @@ class NLLScorer(NonFittableAnomalyScorer):
                 )
             )
 
-        anomaly_scores = TimeSeries.from_times_and_values(
-            pred_series.time_index, list(zip(*np_anomaly_scores))
-        )
+        anomaly_scores = TimeSeries.from_times_and_values(pred_series.time_index, list(zip(*np_anomaly_scores)))
 
         def _window_adjustment_series(series: TimeSeries) -> TimeSeries:
             """Slides a window of size self.window along the input series, and replaces the value of

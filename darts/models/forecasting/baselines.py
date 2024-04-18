@@ -336,12 +336,8 @@ class NaiveEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=(
-                        past_covariates if model.supports_past_covariates else None
-                    ),
-                    future_covariates=(
-                        future_covariates if model.supports_future_covariates else None
-                    ),
+                    past_covariates=(past_covariates if model.supports_past_covariates else None),
+                    future_covariates=(future_covariates if model.supports_future_covariates else None),
                 )
 
         return self
@@ -355,8 +351,7 @@ class NaiveEnsembleModel(EnsembleModel):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Average the `forecasting_models` predictions, component-wise"""
         raise_if(
-            predict_likelihood_parameters
-            and not self.supports_likelihood_parameter_prediction,
+            predict_likelihood_parameters and not self.supports_likelihood_parameter_prediction,
             "`predict_likelihood_parameters=True` is supported only if all the `forecasting_models` "
             "are probabilistic and fitting the same likelihood.",
             logger,
@@ -364,11 +359,7 @@ class NaiveEnsembleModel(EnsembleModel):
 
         if isinstance(predictions, Sequence):
             return [
-                (
-                    self._target_average(p, ts)
-                    if not predict_likelihood_parameters
-                    else self._params_average(p, ts)
-                )
+                (self._target_average(p, ts) if not predict_likelihood_parameters else self._params_average(p, ts))
                 for p, ts in zip(predictions, series)
             ]
         else:
@@ -383,9 +374,7 @@ class NaiveEnsembleModel(EnsembleModel):
         n_forecasting_models = len(self.forecasting_models)
         n_components = series.n_components
         prediction_values = prediction.all_values(copy=False)
-        target_values = np.zeros(
-            (prediction.n_timesteps, n_components, prediction.n_samples)
-        )
+        target_values = np.zeros((prediction.n_timesteps, n_components, prediction.n_samples))
         for idx_target in range(n_components):
             target_values[:, idx_target] = prediction_values[
                 :,
@@ -417,9 +406,7 @@ class NaiveEnsembleModel(EnsembleModel):
         n_components = series.n_components
         # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
         prediction_values = prediction.values(copy=False)
-        params_values = np.zeros(
-            (prediction.n_timesteps, likelihood_n_params * n_components)
-        )
+        params_values = np.zeros((prediction.n_timesteps, likelihood_n_params * n_components))
         for idx_param in range(likelihood_n_params * n_components):
             params_values[:, idx_param] = prediction_values[
                 :,

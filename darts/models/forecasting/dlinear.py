@@ -129,9 +129,7 @@ class _DLinearModule(PLMixedCovariatesModule):
         def _create_linear_layer(in_dim, out_dim):
             layer = nn.Linear(in_dim, out_dim)
             if self.const_init:
-                layer.weight = nn.Parameter(
-                    (1.0 / in_dim) * torch.ones(layer.weight.shape)
-                )
+                layer.weight = nn.Parameter((1.0 / in_dim) * torch.ones(layer.weight.shape))
             return layer
 
         if self.shared_weights:
@@ -146,18 +144,12 @@ class _DLinearModule(PLMixedCovariatesModule):
 
         if self.future_cov_dim != 0:
             # future covariates layer acts on time steps independently
-            self.linear_fut_cov = _create_linear_layer(
-                self.future_cov_dim, self.output_dim * self.nr_params
-            )
+            self.linear_fut_cov = _create_linear_layer(self.future_cov_dim, self.output_dim * self.nr_params)
         if self.static_cov_dim != 0:
-            self.linear_static_cov = _create_linear_layer(
-                self.static_cov_dim, layer_out_dim
-            )
+            self.linear_static_cov = _create_linear_layer(self.static_cov_dim, layer_out_dim)
 
     @io_processor
-    def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ):
+    def forward(self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]):
         """
         x_in
             comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
@@ -192,12 +184,8 @@ class _DLinearModule(PLMixedCovariatesModule):
             # (in_len * in_dim) => (out_len * out_dim * out_nr_params)
             seasonal_output = self.linear_seasonal(res.view(batch, -1))
             trend_output = self.linear_trend(trend.view(batch, -1))
-            seasonal_output = seasonal_output.view(
-                batch, self.output_chunk_length, self.output_dim * self.nr_params
-            )
-            trend_output = trend_output.view(
-                batch, self.output_chunk_length, self.output_dim * self.nr_params
-            )
+            seasonal_output = seasonal_output.view(batch, self.output_chunk_length, self.output_dim * self.nr_params)
+            trend_output = trend_output.view(batch, self.output_chunk_length, self.output_dim * self.nr_params)
 
             x = seasonal_output + trend_output
 
@@ -212,15 +200,11 @@ class _DLinearModule(PLMixedCovariatesModule):
                 )
 
                 fut_cov_output = self.linear_fut_cov(x_future)
-                x = x + fut_cov_output.view(
-                    batch, self.output_chunk_length, self.output_dim * self.nr_params
-                )
+                x = x + fut_cov_output.view(batch, self.output_chunk_length, self.output_dim * self.nr_params)
 
             if self.static_cov_dim != 0:
                 static_cov_output = self.linear_static_cov(x_static.reshape(batch, -1))
-                x = x + static_cov_output.view(
-                    batch, self.output_chunk_length, self.output_dim * self.nr_params
-                )
+                x = x + static_cov_output.view(batch, self.output_chunk_length, self.output_dim * self.nr_params)
 
             # extract nr_params
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
@@ -469,16 +453,13 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.const_init = const_init
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> torch.nn.Module:
+    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> torch.nn.Module:
         # samples are made of
         # (past_target, past_covariates, historic_future_covariates,
         #  future_covariates, static_covariates, future_target)
 
         raise_if(
-            self.shared_weights
-            and (train_sample[1] is not None or train_sample[2] is not None),
+            self.shared_weights and (train_sample[1] is not None or train_sample[2] is not None),
             "Covariates have been provided, but the model has been built with shared_weights=True. "
             "Please set shared_weights=False to use covariates.",
         )
