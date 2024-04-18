@@ -16,7 +16,8 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.utils import get_single_series, n_steps_between, series2seq
+from darts.utils.ts_utils import get_single_series, series2seq
+from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
@@ -275,18 +276,52 @@ def create_lagged_data(
         if seq_ts is not None
     ]
     seq_ts_lens = set(seq_ts_lens)
-    raise_if(
-        len(seq_ts_lens) > 1,
-        "Must specify the same number of `TimeSeries` for each series input.",
+    if len(seq_ts_lens) > 1:
+        raise_log(
+            ValueError(
+                "Must specify the same number of `TimeSeries` for each series input."
+            ),
+            logger,
+        )
+    lags_passed_as_dict = any(
+        isinstance(lags_, dict)
+        for lags_ in [lags, lags_past_covariates, lags_future_covariates]
     )
+    if (not use_moving_windows) and lags_passed_as_dict:
+        raise_log(
+            ValueError(
+                "`use_moving_windows=False` is not supported when any of the lags is provided as a dictionary. "
+                f"Received: {[lags, lags_past_covariates, lags_future_covariates]}."
+            ),
+            logger,
+        )
+
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
+
+    # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
+    lags_extract, lags_order = _get_lagged_indices(
+        lags,
+        lags_past_covariates,
+        lags_future_covariates,
+    )
     X, y, times = [], [], []
     for i in range(max(seq_ts_lens)):
         target_i = target_series[i] if target_series else None
         past_i = past_covariates[i] if past_covariates else None
         future_i = future_covariates[i] if future_covariates else None
-        if use_moving_windows and _all_equal_freq(target_i, past_i, future_i):
+        series_equal_freq = _all_equal_freq(target_i, past_i, future_i)
+        # component-wise lags extraction is not support with times intersection at the moment
+        if use_moving_windows and lags_passed_as_dict and (not series_equal_freq):
+            raise_log(
+                ValueError(
+                    f"Cannot create tabularized data for the {i}th series because target and covariates don't have "
+                    "the same frequency and some of the lags are provided as a dictionary. Either resample the "
+                    "series or change the lags definition."
+                ),
+                logger,
+            )
+        if use_moving_windows and series_equal_freq:
             X_i, y_i, times_i = _create_lagged_data_by_moving_window(
                 target_i,
                 output_chunk_length,
@@ -296,6 +331,8 @@ def create_lagged_data(
                 lags,
                 lags_past_covariates,
                 lags_future_covariates,
+                lags_extract,
+                lags_order,
                 max_samples_per_ts,
                 multi_models,
                 check_inputs,
@@ -714,9 +751,9 @@ def create_lagged_component_names(
     For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),
     each `lagged_*` has the following structure (grouped by lags):
         comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
-    For `*_lags={'comp0':[-2, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
-    specific lags), each `lagged_*` has the following structure (grouped by components):
-        comp0_*_lag-2 | comp0_*_lag-1 | comp1_*_lag_-5 | comp1_*_lag-3
+    For `*_lags={'comp0':[-3, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
+    specific lags), each `lagged_*` has the following structure (sorted by lags, then by components):
+        comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
 
     and for static covariates (2 static covariates acting on 2 target components):
         cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
@@ -775,10 +812,32 @@ def create_lagged_component_names(
 
         components = get_single_series(variate).components.tolist()
         if isinstance(variate_lags, dict):
+            if "default_lags" in variate_lags:
+                raise_log(
+                    ValueError(
+                        "All the lags must be explicitly defined, 'default_lags' is not allowed in the "
+                        "lags dictionary."
+                    ),
+                    logger,
+                )
+
+            # combine all the lags and sort them in ascending order across all the components
+            comp_lags_reordered = np.concatenate(
+                [
+                    np.array(variate_lags[comp_name], dtype=int)
+                    for comp_name in components
+                ]
+            ).argsort()
+            tmp_lagged_feats_names = []
             for name in components:
-                lagged_feature_names += [
+                tmp_lagged_feats_names += [
                     f"{name}_{variate_type}_lag{lag}" for lag in variate_lags[name]
                 ]
+
+            # adding feats names reordered across components
+            lagged_feature_names += [
+                tmp_lagged_feats_names[idx] for idx in comp_lags_reordered
+            ]
         else:
             lagged_feature_names += [
                 f"{name}_{variate_type}_lag{lag}"
@@ -810,6 +869,44 @@ def create_lagged_component_names(
     return lagged_feature_names, label_feature_names
 
 
+def _get_lagged_indices(
+    lags,
+    lags_past_covariates,
+    lags_future_covariates,
+):
+    """Computes and returns:
+
+    - the lagged feature indices for extraction from windows
+    - the reordered indices to apply after the window extraction (in case of component specific lags)
+
+    Assumes that all input series share identical component order.
+    """
+    lags_extract = []
+    lags_order = []
+    for lags_i in [lags, lags_past_covariates, lags_future_covariates]:
+        if lags_i is None:
+            lags_extract.append(None)
+            lags_order.append(None)
+            continue
+
+        # Within each window, the `-1` indexed value (i.e. the value at the very end of
+        # the window) corresponds to time `t - min_lag_i`. The negative index of the time
+        # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
+        if isinstance(lags_i, list):
+            lags_extract_i = np.array(lags_i, dtype=int)
+            # Feats are already grouped by lags and ordered
+            lags_order_i = slice(None)
+        else:
+            # Assume keys are in the same order as the series components
+            # Lags are grouped by component, extracted from the same window
+            lags_extract_i = [np.array(c_lags, dtype=int) for c_lags in lags_i.values()]
+            # Sort the lags across the components in ascending order
+            lags_order_i = np.concatenate(lags_extract_i).argsort()
+        lags_extract.append(lags_extract_i)
+        lags_order.append(lags_order_i)
+    return lags_extract, lags_order
+
+
 def _create_lagged_data_by_moving_window(
     target_series: Optional[TimeSeries],
     output_chunk_length: int,
@@ -819,6 +916,8 @@ def _create_lagged_data_by_moving_window(
     lags: Optional[Union[Sequence[int], Dict[str, List[int]]]],
     lags_past_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]],
     lags_future_covariates: Optional[Union[Sequence[int], Dict[str, List[int]]]],
+    lags_extract: List[Optional[np.ndarray]],
+    lags_order: List[Optional[np.ndarray]],
     max_samples_per_ts: Optional[int],
     multi_models: bool,
     check_inputs: bool,
@@ -836,6 +935,8 @@ def _create_lagged_data_by_moving_window(
     and `t + output_chunk_length - 1` from the target series. In both cases, the extracted
     windows can then be reshaped into the correct shape. This approach can only be used if
     we *can* assume that the specified series are all of the same frequency.
+
+    Assumes that all the lags are sorted in ascending order.
     """
     feature_times, min_lags, max_lags = _get_feature_times(
         target_series,
@@ -879,10 +980,11 @@ def _create_lagged_data_by_moving_window(
     X = []
     start_time_idx = None
     target_start_time_idx = None
-    for i, (series_i, lags_i, min_lag_i, max_lag_i) in enumerate(
+    for i, (series_i, lags_extract_i, lags_order_i, min_lag_i, max_lag_i) in enumerate(
         zip(
             [target_series, past_covariates, future_covariates],
-            [lags, lags_past_covariates, lags_future_covariates],
+            lags_extract,
+            lags_order,
             min_lags,
             max_lags,
         )
@@ -935,19 +1037,16 @@ def _create_lagged_data_by_moving_window(
             windows = strided_moving_window(
                 x=vals, window_len=window_len, stride=1, axis=0, check_inputs=False
             )
+
             # Within each window, the `-1` indexed value (i.e. the value at the very end of
             # the window) corresponds to time `t - min_lag_i`. The negative index of the time
             # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
-            if isinstance(lags_i, list):
-                lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
-            else:
-                # Lags are grouped by component, extracted from the same window
-                lags_to_extract = [
-                    np.array(comp_lags, dtype=int) + min_lag_i - 1
-                    for comp_lags in lags_i.values()
-                ]
-            lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
-            X.append(lagged_vals)
+            # extract lagged values
+            lagged_vals = _extract_lagged_vals_from_windows(
+                windows, lags_extract_i, lags_shift=min_lag_i - 1
+            )
+            # extract and append the reordered lagged values
+            X.append(lagged_vals[:, lags_order_i])
         # Cache `start_time_idx` for label creation:
         if is_target_series:
             target_start_time_idx = start_time_idx
@@ -986,6 +1085,7 @@ def _create_lagged_data_by_moving_window(
 def _extract_lagged_vals_from_windows(
     windows: np.ndarray,
     lags_to_extract: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
+    lags_shift: int = 0,
 ) -> np.ndarray:
     """
     Helper function called by `_create_lagged_data_by_moving_window` that
@@ -1010,7 +1110,7 @@ def _extract_lagged_vals_from_windows(
     if isinstance(lags_to_extract, list):
         # iterate over the components-specific lags
         comp_windows = [
-            windows[:, i, :, comp_lags_to_extract]
+            windows[:, i, :, comp_lags_to_extract + lags_shift]
             for i, comp_lags_to_extract in enumerate(lags_to_extract)
         ]
         # windows.shape = (sum(lags_len) across components, num_windows, num_samples):
@@ -1018,7 +1118,7 @@ def _extract_lagged_vals_from_windows(
         lagged_vals = np.moveaxis(windows, (1, 0, 2), (0, 1, 2))
     else:
         if lags_to_extract is not None:
-            windows = windows[:, :, :, lags_to_extract]
+            windows = windows[:, :, :, lags_to_extract + lags_shift]
         # windows.shape = (num_windows, window_len, num_components, num_samples):
         windows = np.moveaxis(windows, (0, 3, 1, 2), (0, 1, 2, 3))
         # lagged_vals.shape = (num_windows, num_components*window_len, num_samples):
@@ -1145,6 +1245,120 @@ def _create_lagged_data_by_intersecting_times(
     else:
         y = None
     return X, y, shared_times
+
+
+def _create_lagged_data_autoregression(
+    target_series: Union[TimeSeries, Sequence[TimeSeries]],
+    t_pred: int,
+    shift: int,
+    last_step_shift: int,
+    series_matrix: np.ndarray,
+    covariate_matrices: Dict[str, np.ndarray],
+    lags: Dict[str, List[int]],
+    component_lags: Dict[str, Dict[str, List[int]]],
+    relative_cov_lags: Dict[str, np.ndarray],
+    uses_static_covariates: bool,
+    last_static_covariates_shape: Optional[Tuple[int, int]],
+    num_samples: int,
+) -> np.ndarray:
+    """Extract lagged data from target, past covariates and future covariates for auto-regression
+    with RegressionModels.
+    """
+    series_length = len(target_series)
+    X = []
+    for series_type in ["target", "past", "future"]:
+        if series_type not in lags:
+            continue
+
+        # extract series specific data
+        values_matrix = (
+            series_matrix
+            if series_type == "target"
+            else covariate_matrices[series_type]
+        )
+
+        if series_type not in component_lags:
+            # for global lags over all components, directly extract lagged values from the data
+            if series_type == "target":
+                relative_lags = [
+                    lag - (shift + last_step_shift) for lag in lags[series_type]
+                ]
+            else:
+                relative_lags = relative_cov_lags[series_type] + t_pred
+
+            lagged_data = values_matrix[:, relative_lags].reshape(
+                series_length * num_samples, -1
+            )
+        else:
+            # for component-specific lags, sort by lags and components and then extract
+            tmp_X = _extract_component_lags_autoregression(
+                series_type=series_type,
+                values_matrix=values_matrix,
+                shift=shift,
+                last_step_shift=last_step_shift,
+                t_pred=t_pred,
+                lags=lags,
+                component_lags=component_lags,
+            )
+            lagged_data = tmp_X.reshape(series_length * num_samples, -1)
+        X.append(lagged_data)
+    # concatenate retrieved lags
+    X = np.concatenate(X, axis=1)
+
+    if not uses_static_covariates:
+        return X
+
+    # Need to split up `X` into three equally-sized sub-blocks
+    # corresponding to each timeseries in `series`, so that
+    # static covariates can be added to each block; valid since
+    # each block contains same number of observations:
+    X = np.split(X, series_length, axis=0)
+    X, _ = add_static_covariates_to_lagged_data(
+        features=X,
+        target_series=target_series,
+        uses_static_covariates=uses_static_covariates,
+        last_shape=last_static_covariates_shape,
+    )
+
+    # concatenate retrieved lags
+    return np.concatenate(X, axis=0)
+
+
+def _extract_component_lags_autoregression(
+    series_type: str,
+    values_matrix: np.ndarray,
+    shift: int,
+    last_step_shift: int,
+    t_pred: int,
+    lags: Dict[str, List[int]],
+    component_lags: Dict[str, Dict[str, List[int]]],
+) -> np.ndarray:
+    """Extract, concatenate and reorder component-wise lags to obtain a feature order
+    identical to tabularization.
+    """
+    # prepare index to reorder features by lags across components
+    comp_lags_reordered = np.concatenate(
+        [comp_lags for comp_lags in component_lags[series_type].values()]
+    ).argsort()
+
+    # convert relative lags to absolute
+    if series_type == "target":
+        lags_shift = -shift - last_step_shift
+    else:
+        lags_shift = -lags[series_type][0] + t_pred
+
+    # extract features
+    tmp_X = [
+        values_matrix[
+            :,
+            [lag + lags_shift for lag in comp_lags],
+            comp_i,
+        ]
+        for comp_i, comp_lags in enumerate(component_lags[series_type].values())
+    ]
+
+    # concatenate on features dimension and reorder
+    return np.concatenate(tmp_X, axis=1)[:, comp_lags_reordered]
 
 
 # For convenience, define following types for `_get_feature_times`:

@@ -275,7 +275,7 @@ class _BoundedDetectorMixin:
 
         raise_if(
             lower_bound is None and upper_bound is None,
-            f"`{lower_bound_name} and `{upper_bound_name}` cannot be both `None`.",
+            f"`{lower_bound_name} and `{upper_bound_name}` cannot both be `None`.",
             logger,
         )
 
@@ -318,8 +318,8 @@ class _BoundedDetectorMixin:
         raise_if_not(
             all(
                 [
-                    l is None or h is None or l <= h
-                    for (l, h) in zip(lower_bound, upper_bound)
+                    lb is None or ub is None or lb <= ub
+                    for (lb, ub) in zip(lower_bound, upper_bound)
                 ]
             ),
             f"All values in `{lower_bound_name}` must be lower or equal"

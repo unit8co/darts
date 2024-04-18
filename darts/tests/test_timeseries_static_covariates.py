@@ -8,7 +8,8 @@ import pytest
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, STATIC_COV_TAG
-from darts.utils.timeseries_generation import generate_index, linear_timeseries
+from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import generate_index
 
 
 def setup_test_case():
@@ -213,6 +214,16 @@ class TestTimeSeriesStaticCovariate:
         assert len(ts_groups7) == self.n_groups * 2
         for ts in ts_groups7:
             assert ts.static_covariates is None
+
+        ts_groups7_parallel = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+            n_jobs=-1,
+        )
+        assert ts_groups7_parallel == ts_groups7
 
     def test_from_group_dataframe_invalid_drop_cols(self):
         # drop col is not part of `group_cols`

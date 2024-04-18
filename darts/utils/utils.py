@@ -6,16 +6,14 @@ Additional util functions
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
 
 import pandas as pd
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
-from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log
-from darts.utils.timeseries_generation import generate_index
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 
 try:
     from IPython import get_ipython
@@ -41,39 +39,6 @@ class ModelMode(Enum):
     MULTIPLICATIVE = "multiplicative"
     ADDITIVE = "additive"
     NONE = None
-
-
-# TODO: we do not check the time index here
-def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
-    """
-    Trims all series in the provided list, if necessary, so that the returned time series have
-    a common span (corresponding to largest time sub-interval common to all series).
-
-    Parameters
-    ----------
-    series
-        The list of series to consider.
-
-    Raises
-    ------
-    ValueError
-        If no common time sub-interval exists
-
-    Returns
-    -------
-    List[TimeSeries]
-        A list of series, where each series have the same span
-    """
-
-    last_first = max(map(lambda s: s.start_time(), series))
-    first_last = min(map(lambda s: s.end_time(), series))
-
-    if last_first >= first_last:
-        raise_log(
-            ValueError("The provided time series must have nonzero overlap"), logger
-        )
-
-    return list(map(lambda s: s.slice(last_first, first_last), series))
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
@@ -236,43 +201,6 @@ def _check_quantiles(quantiles):
     )
 
 
-def series2seq(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
-) -> Optional[Sequence[TimeSeries]]:
-    """If `ts` is a single TimeSeries, return it as a list of a single TimeSeries.
-
-    Parameters
-    ----------
-    ts
-        None, a single TimeSeries, or a sequence of TimeSeries
-
-    Returns
-    -------
-        `ts` if `ts` is not a TimeSeries, else `[ts]`
-
-    """
-    return [ts] if isinstance(ts, TimeSeries) else ts
-
-
-def seq2series(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
-) -> Optional[TimeSeries]:
-    """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
-
-    Parameters
-    ----------
-    ts
-        None, a single TimeSeries, or a sequence of TimeSeries
-
-    Returns
-    -------
-        `ts` if `ts` if is not a single element TimeSeries sequence, else `ts[0]`
-
-    """
-
-    return ts[0] if isinstance(ts, Sequence) and len(ts) == 1 else ts
-
-
 def slice_index(
     index: Union[pd.RangeIndex, pd.DatetimeIndex],
     start: Union[int, pd.Timestamp],
@@ -377,28 +305,6 @@ def drop_after_index(
     return slice_index(index, index[0], split_point)
 
 
-def get_single_series(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
-) -> Optional[TimeSeries]:
-    """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
-    `ts` is a Sequence of TimeSeries. Otherwise, returns `None`.
-
-    Parameters
-    ----------
-    ts
-        None, a single TimeSeries, or a sequence of TimeSeries.
-
-    Returns
-    -------
-        `ts` if  `ts` is a TimeSeries, `ts[0]` if `ts` is a Sequence of TimeSeries. Otherwise, returns `None`
-
-    """
-    if isinstance(ts, TimeSeries) or ts is None:
-        return ts
-    else:
-        return ts[0]
-
-
 def n_steps_between(
     end: Union[pd.Timestamp, int],
     start: Union[pd.Timestamp, int],
@@ -468,3 +374,71 @@ def n_steps_between(
         # Create a temporary DatetimeIndex to extract the actual start index.
         n_steps = (end.to_period(period_alias) - start.to_period(period_alias)).n
     return n_steps
+
+
+def generate_index(
+    start: Optional[Union[pd.Timestamp, int]] = None,
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: Union[str, int, pd.DateOffset] = None,
+    name: str = None,
+) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+    """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
+    or a pandas RangeIndex. The index starts at
+
+    Parameters
+    ----------
+    start
+        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
+        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
+    length
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
+    freq
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
+    name
+        Optionally, an index name.
+    """
+    constructors = [
+        arg_name
+        for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
+        if arg is not None
+    ]
+    raise_if(
+        len(constructors) != 2,
+        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
+        f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
+        f"`start` to None.",
+        logger,
+    )
+    raise_if(
+        end is not None and start is not None and type(start) is not type(end),
+        "index generation with `start` and `end` requires equal object types of `start` and `end`",
+        logger,
+    )
+
+    if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
+        index = pd.date_range(
+            start=start,
+            end=end,
+            periods=length,
+            freq="D" if freq is None else freq,
+            name=name,
+        )
+    else:  # int
+        step = 1 if freq is None else freq
+        index = pd.RangeIndex(
+            start=start if start is not None else end - step * length + step,
+            stop=end + step if end is not None else start + step * length,
+            step=step,
+            name=name,
+        )
+    return index

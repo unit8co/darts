@@ -120,7 +120,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         self
             Fitted model
         """
-
         super().fit(series=series, allow_model_training=allow_model_training)
 
         # interrupt training if nothing to fit
@@ -306,7 +305,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                   and inner sequence is over the scorers.
         """
         raise_if_not(
-            type(return_model_prediction) is bool,
+            type(return_model_prediction) is bool,  # noqa: E721
             f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
 

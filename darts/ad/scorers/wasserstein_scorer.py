@@ -112,7 +112,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
         #     only one sample
         #     - check if there is an equivalent Wasserstein distance for d-D distributions (currently only accepts 1D)
 
-        if type(window) is int:
+        if type(window) is int:  # noqa: E721
             if window > 0 and window < 10:
                 logger.warning(
                     f"The `window` parameter WassersteinScorer is smaller than 10 (w={window})."
@@ -125,7 +125,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
                 )
 
         raise_if_not(
-            type(component_wise) is bool,
+            type(component_wise) is bool,  # noqa: E721
             f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
             logger,
         )

@@ -24,7 +24,8 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_if_not
-from darts.utils.utils import _build_tqdm_iterator, _parallel_apply, series2seq
+from darts.utils.ts_utils import series2seq
+from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
 
@@ -37,7 +38,7 @@ class AnomalyScorer(ABC):
     ) -> None:
 
         raise_if_not(
-            type(window) is int,
+            type(window) is int,  # noqa: E721
             f"Parameter `window` must be an integer, found type {type(window)}.",
         )
 
@@ -331,7 +332,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             raise ValueError(f"Metric should be 'diff' or 'abs_diff', found {diff_fn}")
 
         raise_if_not(
-            type(window_agg) is bool,
+            type(window_agg) is bool,  # noqa: E721
             f"Parameter `window_agg` must be Boolean, found type: {type(window_agg)}.",
         )
         self.window_agg = window_agg

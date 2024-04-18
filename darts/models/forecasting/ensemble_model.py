@@ -12,7 +12,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries, concatenate
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -402,6 +402,7 @@ class EnsembleModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
             max_lag = None
@@ -413,7 +414,7 @@ class EnsembleModel(GlobalForecastingModel):
                     max_lag = aggregator(max_lag, curr_lag)
             return max_lag
 
-        lag_aggregators = (min, max, min, max, min, max, max)
+        lag_aggregators = (min, max, min, max, min, max, max, max)
         return tuple(
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         )

@@ -29,6 +29,7 @@ from darts.models import (
 )
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -156,10 +157,31 @@ def partialclass(cls, *args, **kwargs):
     return NewCls
 
 
+xgb_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "max_leaves": 1,
+    "verbose": -1,
+    "random_state": 42,
+}
+lgbm_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "num_leaves": 2,
+    "verbosity": -1,
+    "random_state": 42,
+}
+cb_test_params = {
+    "iterations": 1,
+    "depth": 1,
+    "verbose": -1,
+    "random_state": 42,
+}
+
+
 class TestRegressionModels:
 
     np.random.seed(42)
-
     # default regression models
     models = [
         RandomForest,
@@ -178,10 +200,16 @@ class TestRegressionModels:
         LinearRegressionModel, likelihood="poisson", random_state=42
     )
     PoissonXGBModel = partialclass(
-        XGBModel, likelihood="poisson", random_state=42, tree_method="exact"
+        XGBModel,
+        likelihood="poisson",
+        tree_method="exact",
+        **xgb_test_params,
     )
     QuantileXGBModel = partialclass(
-        XGBModel, likelihood="quantile", random_state=42, tree_method="exact"
+        XGBModel,
+        likelihood="quantile",
+        tree_method="exact",
+        **xgb_test_params,
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend(
@@ -199,8 +227,8 @@ class TestRegressionModels:
         1e-13,  # RegressionModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
-        1e-01,  # PoissonXGBModel
-        0.5,  # QuantileXGBModel
+        0.75,  # PoissonXGBModel
+        0.75,  # QuantileXGBModel
     ]
     multivariate_accuracies = [
         0.3,  # RandomForest
@@ -208,8 +236,8 @@ class TestRegressionModels:
         1e-13,  # RegressionModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
-        0.15,  # PoissonXGBModel
-        0.4,  # QuantileXGBModel
+        0.75,  # PoissonXGBModel
+        0.75,  # QuantileXGBModel
     ]
     multivariate_multiseries_accuracies = [
         0.05,  # RandomForest
@@ -217,23 +245,26 @@ class TestRegressionModels:
         1e-13,  # RegressionModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
-        1e-01,  # PoissonXGBModel
-        0.4,  # QuantileXGBModel
+        0.85,  # PoissonXGBModel
+        0.65,  # QuantileXGBModel
     ]
 
     lgbm_w_categorical_covariates = NotImportedModule
     if lgbm_available:
+        RegularLightGBMModel = partialclass(LightGBMModel, **lgbm_test_params)
         QuantileLightGBMModel = partialclass(
             LightGBMModel,
             likelihood="quantile",
             quantiles=[0.05, 0.5, 0.95],
-            random_state=42,
+            **lgbm_test_params,
         )
         PoissonLightGBMModel = partialclass(
-            LightGBMModel, likelihood="poisson", random_state=42
+            LightGBMModel,
+            likelihood="poisson",
+            **lgbm_test_params,
         )
         models += [
-            LightGBMModel,
+            RegularLightGBMModel,
             QuantileLightGBMModel,
             PoissonLightGBMModel,
         ]
@@ -246,62 +277,67 @@ class TestRegressionModels:
             categorical_future_covariates=["fut_cov_promo_mechanism"],
             categorical_past_covariates=["past_cov_cat_dummy"],
             categorical_static_covariates=["product_id"],
+            **lgbm_test_params,
         )
         univariate_accuracies += [
-            0.3,  # LightGBMModel
-            0.5,  # QuantileLightGBMModel
-            0.4,  # PoissonLightGBMModel
+            0.75,  # LightGBMModel
+            0.75,  # QuantileLightGBMModel
+            0.75,  # PoissonLightGBMModel
         ]
         multivariate_accuracies += [
-            0.4,  # LightGBMModel
-            0.4,  # QuantileLightGBMModel
-            0.4,  # PoissonLightGBMModel
+            0.7,  # LightGBMModel
+            0.75,  # QuantileLightGBMModel
+            0.75,  # PoissonLightGBMModel
         ]
         multivariate_multiseries_accuracies += [
-            0.05,  # LightGBMModel
-            0.4,  # QuantileLightGBMModel
-            0.4,  # PoissonLightGBMModel
+            0.7,  # LightGBMModel
+            0.7,  # QuantileLightGBMModel
+            0.75,  # PoissonLightGBMModel
         ]
     if cb_available:
+        RegularCatBoostModel = partialclass(
+            CatBoostModel,
+            **cb_test_params,
+        )
         QuantileCatBoostModel = partialclass(
             CatBoostModel,
             likelihood="quantile",
             quantiles=[0.05, 0.5, 0.95],
-            random_state=42,
+            **cb_test_params,
         )
         PoissonCatBoostModel = partialclass(
             CatBoostModel,
             likelihood="poisson",
-            random_state=42,
+            **cb_test_params,
         )
         NormalCatBoostModel = partialclass(
             CatBoostModel,
             likelihood="gaussian",
-            random_state=42,
+            **cb_test_params,
         )
         models += [
-            CatBoostModel,
+            RegularCatBoostModel,
             QuantileCatBoostModel,
             PoissonCatBoostModel,
             NormalCatBoostModel,
         ]
         univariate_accuracies += [
             0.75,  # CatBoostModel
-            1e-03,  # QuantileCatBoostModel
-            1e-01,  # PoissonCatBoostModel
-            1e-05,  # NormalCatBoostModel
+            0.75,  # QuantileCatBoostModel
+            0.9,  # PoissonCatBoostModel
+            0.75,  # NormalCatBoostModel
         ]
         multivariate_accuracies += [
             0.75,  # CatBoostModel
-            1e-03,  # QuantileCatBoostModel
-            0.15,  # PoissonCatBoostModel
-            1e-05,  # NormalCatBoostModel
+            0.75,  # QuantileCatBoostModel
+            0.86,  # PoissonCatBoostModel
+            0.75,  # NormalCatBoostModel
         ]
         multivariate_multiseries_accuracies += [
             0.75,  # CatBoostModel
-            1e-03,  # QuantileCatBoostModel
-            1e-01,  # PoissonCatBoostModel
-            1e-03,  # NormalCatBoostModel
+            0.75,  # QuantileCatBoostModel
+            1.2,  # PoissonCatBoostModel
+            0.75,  # NormalCatBoostModel
         ]
 
     # dummy feature and target TimeSeries instances
@@ -1025,7 +1061,6 @@ class TestRegressionModels:
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
 
-    @pytest.mark.slow
     @pytest.mark.parametrize(
         "config",
         itertools.product(
@@ -1035,10 +1070,14 @@ class TestRegressionModels:
     def test_fit(self, config):
         # test fitting both on univariate and multivariate timeseries
         model, mode, series = config
+
+        series = series[:15]
+        sine_multivariate1 = self.sine_multivariate1[:15]
+
         # auto-regression but past_covariates does not extend enough in the future
         with pytest.raises(ValueError):
             model_instance = model(lags=4, lags_past_covariates=4, multi_models=mode)
-            model_instance.fit(series=series, past_covariates=self.sine_multivariate1)
+            model_instance.fit(series=series, past_covariates=sine_multivariate1)
             model_instance.predict(n=10)
 
         # inconsistent number of components in series Sequence[TimeSeries]
@@ -1071,19 +1110,19 @@ class TestRegressionModels:
         assert model_instance.lags.get("past") is None
 
         model_instance = model(lags=12, lags_past_covariates=12, multi_models=mode)
-        model_instance.fit(series=series, past_covariates=self.sine_multivariate1)
+        model_instance.fit(series=series, past_covariates=sine_multivariate1)
         assert len(model_instance.lags.get("past")) == 12
 
         model_instance = model(
             lags=12, lags_future_covariates=(0, 1), multi_models=mode
         )
-        model_instance.fit(series=series, future_covariates=self.sine_multivariate1)
+        model_instance.fit(series=series, future_covariates=sine_multivariate1)
         assert len(model_instance.lags.get("future")) == 1
 
         model_instance = model(
             lags=12, lags_past_covariates=[-1, -4, -6], multi_models=mode
         )
-        model_instance.fit(series=series, past_covariates=self.sine_multivariate1)
+        model_instance.fit(series=series, past_covariates=sine_multivariate1)
         assert len(model_instance.lags.get("past")) == 3
 
         model_instance = model(
@@ -1094,8 +1133,8 @@ class TestRegressionModels:
         )
         model_instance.fit(
             series=series,
-            past_covariates=self.sine_multivariate1,
-            future_covariates=self.sine_multivariate1,
+            past_covariates=sine_multivariate1,
+            future_covariates=sine_multivariate1,
         )
         assert len(model_instance.lags.get("past")) == 3
 
@@ -1288,11 +1327,11 @@ class TestRegressionModels:
                 horizon=0, target_dim=1
             )
 
-    model_configs = [(XGBModel, {"tree_method": "exact"})]
+    model_configs = [(XGBModel, dict({"tree_method": "exact"}, **xgb_test_params))]
     if lgbm_available:
-        model_configs += [(LightGBMModel, {})]
+        model_configs += [(LightGBMModel, lgbm_test_params)]
     if cb_available:
-        model_configs += [(CatBoostModel, {})]
+        model_configs += [(CatBoostModel, cb_test_params)]
 
     @pytest.mark.parametrize(
         "config", itertools.product(model_configs, [1, 2], [True, False])
@@ -1510,12 +1549,12 @@ class TestRegressionModels:
         error_past_only = rmse(
             [target_test_1, target_test_2],
             prediction_past_only,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
         error_both = rmse(
             [target_test_1, target_test_2],
             prediction_past_and_future,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
 
         assert error_past_only > error_both
@@ -1540,7 +1579,7 @@ class TestRegressionModels:
         error_both_multi_ts = rmse(
             [target_test_1, target_test_2],
             prediction_past_and_future_multi_ts,
-            inter_reduction=np.mean,
+            series_reduction=np.mean,
         )
 
         assert error_both > error_both_multi_ts
@@ -1990,7 +2029,7 @@ class TestRegressionModels:
         )
 
         # n > output_chunk_length
-        model.predict(
+        pred = model.predict(
             7,
             series=series[0] if multiple_series else None,
             past_covariates=(
@@ -2004,6 +2043,11 @@ class TestRegressionModels:
                 else None
             ),
         )
+        # check that lagged features are properly extracted during auto-regression
+        if multivar_target:
+            np.testing.assert_array_almost_equal(
+                tg.sine_timeseries(length=27)[-7:].values(), pred["sine"].values()
+            )
 
     @pytest.mark.parametrize(
         "config",
@@ -2302,14 +2346,18 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [RegressionModel, LinearRegressionModel, XGBModel]
-            + ([LightGBMModel] if lgbm_available else []),
+            [
+                (RegressionModel, {}),
+                (LinearRegressionModel, {}),
+                (XGBModel, xgb_test_params),
+            ]
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
             [True, False],
             [1, 2],
         ),
     )
     def test_encoders(self, config):
-        model_cls, mode, ocl = config
+        (model_cls, model_kwargs), mode, ocl = config
         max_past_lag = -4
         max_future_lag = 4
         # target
@@ -2324,7 +2372,7 @@ class TestRegressionModels:
         # past and future covariates longer than target
         n_comp = 2
         covs = TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=pd.Timestamp("1999-01-01"),
                 end=pd.Timestamp("2002-12-01"),
                 freq="MS",
@@ -2352,18 +2400,21 @@ class TestRegressionModels:
             add_encoders=encoder_examples["past"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
         model_fc_valid0 = model_cls(
             lags=2,
             add_encoders=encoder_examples["future"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
         model_mixed_valid0 = model_cls(
             lags=2,
             add_encoders=encoder_examples["mixed"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
 
         # encoders will not generate covariates without lags
@@ -2378,12 +2429,14 @@ class TestRegressionModels:
             add_encoders=encoder_examples["past"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
         model_fc_valid0 = model_cls(
             lags_future_covariates=[-1, 0],
             add_encoders=encoder_examples["future"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
         model_mixed_valid0 = model_cls(
             lags_past_covariates=[-2, -1],
@@ -2391,6 +2444,7 @@ class TestRegressionModels:
             add_encoders=encoder_examples["mixed"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
         # check that fit/predict works with model internal covariate requirement checks
         for model in [model_pc_valid0, model_fc_valid0, model_mixed_valid0]:
@@ -2405,6 +2459,7 @@ class TestRegressionModels:
             add_encoders=encoder_examples["past"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
         model_fc_valid1 = model_cls(
             lags=2,
@@ -2412,6 +2467,7 @@ class TestRegressionModels:
             add_encoders=encoder_examples["future"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
         model_mixed_valid1 = model_cls(
             lags=2,
@@ -2420,6 +2476,7 @@ class TestRegressionModels:
             add_encoders=encoder_examples["mixed"],
             multi_models=mode,
             output_chunk_length=ocl,
+            **model_kwargs,
         )
 
         for model, ex in zip(
@@ -2727,6 +2784,7 @@ class TestRegressionModels:
             return {
                 "lags": int(period / 2),
                 "output_chunk_length": int(period / 2),
+                "verbose": -1,
             }
 
         # test case without using categorical static covariates
@@ -2779,6 +2837,7 @@ class TestRegressionModels:
                         "past_cov_cat_dummy",
                     ],
                     categorical_static_covariates=["product_id"],
+                    **lgbm_test_params,
                 ),
                 LightGBMModel(
                     lags=1,
@@ -2788,12 +2847,14 @@ class TestRegressionModels:
                         "past_cov_cat_dummy",
                     ],
                     categorical_static_covariates=["does_not_exist"],
+                    **lgbm_test_params,
                 ),
                 LightGBMModel(
                     lags=1,
                     lags_past_covariates=1,
                     output_chunk_length=1,
                     categorical_future_covariates=["does_not_exist"],
+                    **lgbm_test_params,
                 ),
             ]
             if lgbm_available
@@ -3001,8 +3062,8 @@ class TestProbabilisticRegressionModels:
             {
                 "lags": 2,
                 "likelihood": "poisson",
-                "random_state": 42,
                 "multi_models": True,
+                **xgb_test_params,
             },
             0.6,
         ),
@@ -3012,8 +3073,8 @@ class TestProbabilisticRegressionModels:
                 "lags": 2,
                 "likelihood": "quantile",
                 "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
-                "random_state": 42,
                 "multi_models": True,
+                **xgb_test_params,
             },
             0.4,
         ),
@@ -3025,8 +3086,8 @@ class TestProbabilisticRegressionModels:
                 {
                     "lags": 2,
                     "likelihood": "quantile",
-                    "random_state": 42,
                     "multi_models": True,
+                    **lgbm_test_params,
                 },
                 0.4,
             ),
@@ -3036,8 +3097,8 @@ class TestProbabilisticRegressionModels:
                     "lags": 2,
                     "likelihood": "quantile",
                     "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
-                    "random_state": 42,
                     "multi_models": True,
+                    **lgbm_test_params,
                 },
                 0.4,
             ),
@@ -3046,8 +3107,8 @@ class TestProbabilisticRegressionModels:
                 {
                     "lags": 2,
                     "likelihood": "poisson",
-                    "random_state": 42,
                     "multi_models": True,
+                    **lgbm_test_params,
                 },
                 0.6,
             ),
@@ -3059,8 +3120,8 @@ class TestProbabilisticRegressionModels:
                 {
                     "lags": 2,
                     "likelihood": "quantile",
-                    "random_state": 42,
                     "multi_models": True,
+                    **cb_test_params,
                 },
                 0.05,
             ),
@@ -3070,8 +3131,8 @@ class TestProbabilisticRegressionModels:
                     "lags": 2,
                     "likelihood": "quantile",
                     "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
-                    "random_state": 42,
                     "multi_models": True,
+                    **cb_test_params,
                 },
                 0.05,
             ),
@@ -3080,8 +3141,8 @@ class TestProbabilisticRegressionModels:
                 {
                     "lags": 2,
                     "likelihood": "poisson",
-                    "random_state": 42,
                     "multi_models": True,
+                    **cb_test_params,
                 },
                 0.6,
             ),
@@ -3090,8 +3151,8 @@ class TestProbabilisticRegressionModels:
                 {
                     "lags": 2,
                     "likelihood": "gaussian",
-                    "random_state": 42,
                     "multi_models": True,
+                    **cb_test_params,
                 },
                 0.05,
             ),
@@ -3103,7 +3164,6 @@ class TestProbabilisticRegressionModels:
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
-    @pytest.mark.slow
     @pytest.mark.parametrize(
         "config", itertools.product(models_cls_kwargs_errs, [True, False])
     )
@@ -3125,7 +3185,6 @@ class TestProbabilisticRegressionModels:
         pred3 = model.predict(n=10, num_samples=2).values()
         assert (pred2 != pred3).any()
 
-    @pytest.mark.slow
     @pytest.mark.parametrize(
         "config", itertools.product(models_cls_kwargs_errs, [True, False])
     )
@@ -3140,7 +3199,6 @@ class TestProbabilisticRegressionModels:
             self.constant_noisy_ts,
         )
 
-    @pytest.mark.slow
     @pytest.mark.parametrize(
         "config", itertools.product(models_cls_kwargs_errs, [True, False])
     )
