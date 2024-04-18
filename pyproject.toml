@@ -16,10 +16,6 @@ markers = [
 ]
 
 
-[tool.isort]
-profile = "black"
-
-
 [tool.ruff]
 target-version = "py38"
 line-length = 120
@@ -32,7 +28,7 @@ select = [
     "E",
     "W", # see: https://pypi.org/project/pycodestyle
     "F", # see: https://pypi.org/project/pyflakes
-#    "I", #see: https://pypi.org/project/isort/
+    "I", #see: https://pypi.org/project/isort/
 #    "UP", # see: https://docs.astral.sh/ruff/rules/#pyupgrade-up
 #    "D", # see: https://pypi.org/project/pydocstyle
 ]
