@@ -455,7 +455,7 @@ class TestAnomalyDetectionAggregator:
             aggregator.predict([self.mts_anomalies1, self.mts_anomalies1])
         assert (
             str(err.value)
-            == f"The Aggregator {aggregator.__str__()} has not been fitted yet. Call `fit()` first."
+            == "The `Aggregator` has not been fitted yet. Call `Aggregator.fit()` first."
         )
 
         # Check if _fit_called is False before calling fit

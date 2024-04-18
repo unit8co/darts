@@ -4,19 +4,29 @@ Detector Base Classes
 
 # TODO:
 #     - check error message and add name of variable in the message error
-#     - rethink the positionning of fun _check_param()
 #     - add possibility to input a list of param rather than only one number
 #     - add more complex detectors
 #         - create an ensemble fittable detector
 
+import sys
 from abc import ABC, abstractmethod
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
 from darts import TimeSeries
-from darts.ad.utils import eval_metric_from_binary_prediction
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.ad.utils import (
+    _assert_fit_called,
+    _check_input,
+    eval_metric_from_binary_prediction,
+)
+from darts.logging import get_logger, raise_log
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -25,50 +35,42 @@ class Detector(ABC):
     """Base class for all detectors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        pass
+        self.width_trained_on: Optional[int] = None
 
     def detect(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
+        name: str = "series",
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Detect anomalies on given time series.
 
         Parameters
         ----------
         series
-            series on which to detect anomalies.
+            The (sequence of) series on which to detect anomalies.
+        name
+            The name of `series`.
 
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
-            binary prediciton (1 if considered as an anomaly, 0 if not)
+            binary prediction (1 if considered as an anomaly, 0 if not)
         """
-
-        list_series = [series] if not isinstance(series, Sequence) else series
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all series in `series` must be of type TimeSeries.",
-            logger,
+        called_with_single_series = isinstance(series, TimeSeries)
+        series = _check_input(
+            series,
+            name=name,
+            width_expected=self.width_trained_on,
+            check_binary=False,
+            check_multivariate=False,
         )
-
-        raise_if_not(
-            all([s.is_deterministic for s in list_series]),
-            "all series in `series` must be deterministic (number of samples equal to 1).",
-            logger,
-        )
-
         detected_series = []
-        for s in list_series:
-            detected_series.append(self._detect_core(s))
-
-        if len(detected_series) == 1 and not isinstance(series, Sequence):
-            return detected_series[0]
-        else:
-            return detected_series
+        for s in series:
+            detected_series.append(self._detect_core(s, name=name))
+        return detected_series[0] if called_with_single_series else detected_series
 
     @abstractmethod
-    def _detect_core(self, input: Any) -> Any:
+    def _detect_core(self, series: TimeSeries, name: str = "series") -> TimeSeries:
         pass
 
     def eval_metric(
@@ -83,55 +85,30 @@ class Detector(ABC):
         Parameters
         ----------
         actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
+            The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
         anomaly_score
-            Series indicating how anomoulous each window of size w is.
+            The (sequence of) series indicating how anomalous each window of size w is.
         window
-            Integer value indicating the number of past samples each point represents
-            in the anomaly_score.
+            Integer value indicating the number of past samples each point represents in the `anomaly_score`.
         metric
-            Metric function to use. Must be one of "recall", "precision",
-            "f1", and "accuracy".
-            Default: "recall"
+            The name of the scoring function to use. Must be one of "recall", "precision", "f1", and "accuracy".
+             Default: "recall"
 
         Returns
         -------
         Union[float, Sequence[float], Sequence[Sequence[float]]]
             Metric results for each anomaly score
         """
-
-        if isinstance(anomaly_score, Sequence):
-            raise_if_not(
-                all([isinstance(s, TimeSeries) for s in anomaly_score]),
-                "all series in `anomaly_score` must be of type TimeSeries.",
-                logger,
-            )
-
-            raise_if_not(
-                all([s.is_deterministic for s in anomaly_score]),
-                "all series in `anomaly_score` must be deterministic (number of samples equal to 1).",
-                logger,
-            )
-        else:
-            raise_if_not(
-                isinstance(anomaly_score, TimeSeries),
-                f"Input `anomaly_score` must be of type TimeSeries, found {type(anomaly_score)}.",
-                logger,
-            )
-
-            raise_if_not(
-                anomaly_score.is_deterministic,
-                "Input `anomaly_score` must be deterministic (number of samples equal to 1).",
-                logger,
-            )
-
         return eval_metric_from_binary_prediction(
-            actual_anomalies, self.detect(anomaly_score), window, metric
+            actual_series=actual_anomalies,
+            pred_series=self.detect(anomaly_score),
+            window=window,
+            metric=metric,
         )
 
 
 class FittableDetector(Detector):
-    """Base class of Detectors that need training."""
+    """Base class of Detectors that require training."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -140,80 +117,40 @@ class FittableDetector(Detector):
     def detect(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
+        name: str = "series",
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Detect anomalies on given time series.
-
-        Parameters
-        ----------
-        series
-            series on which to detect anomalies.
-
-        Returns
-        -------
-        Union[TimeSeries, Sequence[TimeSeries]]
-            binary prediciton (1 if considered as an anomaly, 0 if not)
-        """
-
-        list_series = [series] if not isinstance(series, Sequence) else series
-
-        raise_if_not(
-            self._fit_called,
-            "The Detector has not been fitted yet. Call `fit()` first.",
-            logger,
-        )
-
-        raise_if_not(
-            all([self.width_trained_on == s.width for s in list_series]),
-            "all series in `series` must have the same number of components as the data "
-            + "used for training the detector model, number of components in training: "
-            + f" {self.width_trained_on}.",
-            logger,
-        )
-
-        return super().detect(series)
+        _assert_fit_called(self._fit_called, name="Detector")
+        return super().detect(series, name=name)
 
     @abstractmethod
-    def _fit_core(self, input: Any) -> Any:
+    def _fit_core(self, series: Sequence[TimeSeries]) -> None:
         pass
 
-    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> None:
+    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Self:
         """Trains the detector on the given time series.
 
         Parameters
         ----------
         series
-            Time series to be used to train the detector.
+            Time (sequence of) series to be used to train the detector.
 
         Returns
         -------
         self
             Fitted Detector.
         """
-
-        list_series = [series] if not isinstance(series, Sequence) else series
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all series in `series` must be of type TimeSeries.",
-            logger,
+        width = series2seq(series)[0].width
+        series = _check_input(
+            series,
+            name="series",
+            width_expected=width,
+            check_binary=False,
+            check_multivariate=False,
         )
-
-        raise_if_not(
-            all([s.is_deterministic for s in list_series]),
-            "all series in `series` must be deterministic (number of samples equal to 1).",
-            logger,
-        )
-
-        self.width_trained_on = list_series[0].width
-
-        raise_if_not(
-            all([s.width == self.width_trained_on for s in list_series]),
-            "all series in `series` must have the same number of components.",
-            logger,
-        )
-
+        self.width_trained_on = width
+        self._fit_core(series)
         self._fit_called = True
-        return self._fit_core(list_series)
+        return self
 
     def fit_detect(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
@@ -231,10 +168,10 @@ class FittableDetector(Detector):
             Binary prediciton (1 if considered as an anomaly, 0 if not)
         """
         self.fit(series)
-        return self.detect(series)
+        return self.detect(series, name="series")
 
 
-class _BoundedDetectorMixin:
+class _BoundedDetectorMixin(ABC):
     """
     A class containing functions supporting bounds-based detection, to be used as a mixin for some
     `Detector` subclasses.
@@ -272,12 +209,13 @@ class _BoundedDetectorMixin:
         upper_bound
             Upper bounds, as a list of values (at least one not None value)
         """
-
-        raise_if(
-            lower_bound is None and upper_bound is None,
-            f"`{lower_bound_name} and `{upper_bound_name}` cannot both be `None`.",
-            logger,
-        )
+        if lower_bound is None and upper_bound is None:
+            raise_log(
+                ValueError(
+                    f"`{lower_bound_name} and `{upper_bound_name}` cannot both be `None`."
+                ),
+                logger=logger,
+            )
 
         def _prep_boundaries(boundaries) -> List[Optional[float]]:
             """Convert boundaries to List"""
@@ -293,12 +231,13 @@ class _BoundedDetectorMixin:
         lower_bound = _prep_boundaries(lower_bound)
         upper_bound = _prep_boundaries(upper_bound)
 
-        raise_if(
-            all([lo is None for lo in lower_bound])
-            and all([hi is None for hi in upper_bound]),
-            "All provided upper and lower bounds values are None.",
-            logger,
-        )
+        if all([lo is None for lo in lower_bound]) and all(
+            [hi is None for hi in upper_bound]
+        ):
+            raise_log(
+                ValueError("All provided upper and lower bounds values are None."),
+                logger=logger,
+            )
 
         # match the lengths of the boundaries
         lower_bound = (
@@ -308,23 +247,41 @@ class _BoundedDetectorMixin:
             upper_bound * len(lower_bound) if len(upper_bound) == 1 else upper_bound
         )
 
-        raise_if_not(
-            len(lower_bound) == len(upper_bound),
-            f"Parameters `{lower_bound_name}` and `{upper_bound_name}` must be of the same length,"
-            f" found `{lower_bound_name}`: {len(lower_bound)} and `{upper_bound_name}`: {len(upper_bound)}.",
-            logger,
-        )
-
-        raise_if_not(
-            all(
-                [
-                    lb is None or ub is None or lb <= ub
-                    for (lb, ub) in zip(lower_bound, upper_bound)
-                ]
-            ),
-            f"All values in `{lower_bound_name}` must be lower or equal"
-            f"to their corresponding value in `{upper_bound_name}`.",
-            logger,
-        )
-
+        if not len(lower_bound) == len(upper_bound):
+            raise_log(
+                ValueError(
+                    f"Parameters `{lower_bound_name}` and `{upper_bound_name}` "
+                    f"must be of the same length `n`, found "
+                    f"`{lower_bound_name}`: n={len(lower_bound)} and "
+                    f"`{upper_bound_name}`: n={len(upper_bound)}."
+                ),
+                logger=logger,
+            )
+        if not all(
+            [
+                lb is None or ub is None or lb <= ub
+                for (lb, ub) in zip(lower_bound, upper_bound)
+            ]
+        ):
+            raise_log(
+                ValueError(
+                    f"All values in `{lower_bound_name}` must be lower or equal"
+                    f"to their corresponding value in `{upper_bound_name}`."
+                ),
+                logger=logger,
+            )
         return lower_bound, upper_bound
+
+    @staticmethod
+    def _expand_threshold(series: TimeSeries, threshold: List[float]) -> List[float]:
+        return threshold * series[0].width if len(threshold) == 1 else threshold
+
+    @property
+    @abstractmethod
+    def low_threshold(self):
+        pass
+
+    @property
+    @abstractmethod
+    def high_threshold(self):
+        pass

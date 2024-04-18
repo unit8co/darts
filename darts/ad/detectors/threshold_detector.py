@@ -12,7 +12,7 @@ from typing import Sequence, Union
 import numpy as np
 
 from darts.ad.detectors.detectors import Detector, _BoundedDetectorMixin
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
@@ -42,51 +42,39 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
         Parameters
         ----------
         low_threshold
-            (Sequence of) lower bounds.
-            If a sequence, must match the dimensionality of the series
-            this detector is applied to.
+            (Sequence of) lower bounds. If a sequence, must match the dimensionality of the series this
+            detector is applied to.
         high_threshold
-            (Sequence of) upper bounds.
-            If a sequence, must match the dimensionality of the series
-            this detector is applied to.
+            (Sequence of) upper bounds. If a sequence, must match the dimensionality of the series this
+            detector is applied to.
         """
         super().__init__()
-
         low_threshold, high_threshold = self._prepare_boundaries(
             lower_bound=low_threshold,
             upper_bound=high_threshold,
             lower_bound_name="low_threshold",
             upper_bound_name="high_threshold",
         )
-        self.low_threshold = low_threshold
-        self.high_threshold = high_threshold
+        self._low_threshold = low_threshold
+        self._high_threshold = high_threshold
 
-    def _detect_core(self, series: TimeSeries) -> TimeSeries:
-        raise_if_not(
-            series.is_deterministic, "This detector only works on deterministic series."
-        )
-
-        raise_if(
-            len(self.low_threshold) > 1 and len(self.low_threshold) != series.width,
-            "The number of components of input must be equal to the number"
-            + " of threshold values. Found number of "
-            + f"components equal to {series.width} and expected {len(self.low_threshold)}.",
-        )
+    def _detect_core(self, series: TimeSeries, name: str = "series") -> TimeSeries:
+        if len(self.low_threshold) > 1 and len(self.low_threshold) != series.width:
+            raise_log(
+                ValueError(
+                    f"The number of components for each series in `{name}` must be "
+                    f"equal to the number of threshold values. Found number of "
+                    f"components equal to {series.width} and expected {len(self.low_threshold)}."
+                ),
+                logger=logger,
+            )
 
         # if length is 1, tile it to series width:
-        low_threshold = (
-            self.low_threshold * series.width
-            if len(self.low_threshold) == 1
-            else self.low_threshold
-        )
-        high_threshold = (
-            self.high_threshold * series.width
-            if len(self.high_threshold) == 1
-            else self.high_threshold
-        )
+        low_threshold = self._expand_threshold(series[0], self.low_threshold)
+        high_threshold = self._expand_threshold(series[0], self.high_threshold)
 
         # (time, components)
-        np_series = series.all_values(copy=False).squeeze(-1)
+        np_series = series.values(copy=False)
 
         def _detect_fn(x, lo, hi):
             # x of shape (time,) for 1 component
@@ -102,5 +90,12 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
                 low_threshold[component_idx],
                 high_threshold[component_idx],
             )
+        return series.with_values(np.expand_dims(detected, -1))
 
-        return TimeSeries.from_times_and_values(series.time_index, detected)
+    @property
+    def low_threshold(self):
+        return self._low_threshold
+
+    @property
+    def high_threshold(self):
+        return self._high_threshold

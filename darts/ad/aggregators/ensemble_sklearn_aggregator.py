@@ -34,23 +34,17 @@ class EnsembleSklearnAggregator(FittableAggregator):
         )
 
     def _fit_core(
-        self,
-        actual_anomalies: Sequence[TimeSeries],
-        series: Sequence[TimeSeries],
+        self, actual_series: Sequence[TimeSeries], pred_series: Sequence[TimeSeries]
     ):
-
         X = np.concatenate(
-            [s.values(copy=False) for s in series],
+            [s.values(copy=False) for s in pred_series],
             axis=0,
         )
-
         y = np.concatenate(
-            [s.values(copy=False).flatten() for s in actual_anomalies],
+            [s.values(copy=False).flatten() for s in actual_series],
             axis=0,
         )
-
         self.model.fit(y=y, X=X)
-        return self
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
         # assume that parallelization occurs at sklearn model level

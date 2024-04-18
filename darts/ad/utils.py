@@ -12,7 +12,7 @@ Common functions used throughout the Anomaly Detection module.
 #     - add an option to visualize: "by window", "unique", "together"
 #     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 
-from typing import Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,7 +59,7 @@ def eval_metric_from_scores(
         If a list of integers, the length must match the number of series in `anomaly_score`.
         If an integer, the value will be used for every series in `anomaly_score` and `actual_anomalies`.
     metric
-        Optionally, the name of the scoring function to use. Must be one of "AUC_ROC" (Area Under the
+        The name of the scoring function to use. Must be one of "AUC_ROC" (Area Under the
         Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
         Default: "AUC_ROC"
 
@@ -114,8 +114,8 @@ def eval_metric_from_binary_prediction(
         If a list of integers, the length must match the number of series in `anomaly_score`.
         If an integer, the value will be used for every series in `anomaly_score` and `actual_series`.
     metric
-        Optionally, the name of the scoring function to use. Must be one of "recall", "precision",
-        "f1", and "accuracy". Default: "recall"
+        The name of the scoring function to use. Must be one of "recall", "precision", "f1", and "accuracy".
+         Default: "recall"
 
     Returns
     -------
@@ -213,16 +213,16 @@ def _eval_metric(
 
     _assert_same_length(actual_series, pred_series)
 
-    actual_name = "`actual_series`" if pred_is_binary else "`actual_anomalies`"
-    pred_name = "`pred_series`" if pred_is_binary else "`anomaly_score`"
+    actual_name = "actual_series" if pred_is_binary else "actual_anomalies"
+    pred_name = "pred_series" if pred_is_binary else "anomaly_score"
     if len(window) == 1:
         window = window * len(actual_series)
     else:
         if len(window) != len(actual_series):
             raise_log(
                 ValueError(
-                    f"The list of windows must be the same length as the list of {pred_name} and "
-                    f"{actual_name}. There must be one window value for each series. "
+                    f"The list of windows must be the same length as the list of `{pred_name}` and "
+                    f"`{actual_name}`. There must be one window value for each series. "
                     f"Found length {len(window)}, expected {len(actual_series)}."
                 ),
                 logger=logger,
@@ -230,12 +230,11 @@ def _eval_metric(
 
     sol = []
     for s_anomalies, s_pred, s_window in zip(actual_series, pred_series, window):
+        _assert_timeseries(s_pred, name=pred_name)
+        _assert_timeseries(s_anomalies, name=actual_name)
         _assert_binary(s_anomalies, actual_name)
         if pred_is_binary:
             _assert_binary(s_pred, pred_name)
-
-        _assert_timeseries(s_pred, "Prediction series input")
-        _assert_timeseries(s_anomalies, "actual_anomalies input")
 
         # if s_window > 1, the anomalies will be adjusted so that it can be compared timewise with s_pred
         s_anomalies = _max_pooling(s_anomalies, s_window)
@@ -252,7 +251,7 @@ def _eval_metric(
             if nr_anomalies_per_component.min() == 0:
                 raise_log(
                     ValueError(
-                        f"{actual_name} does not contain anomalies. {metric} cannot be computed."
+                        f"`{actual_name}` does not contain anomalies. {metric} cannot be computed."
                     ),
                     logger=logger,
                 )
@@ -264,7 +263,7 @@ def _eval_metric(
                 )
                 raise_log(
                     ValueError(
-                        f"{actual_name} only contains anomalies. {metric} cannot be computed."
+                        f"`{actual_name}` only contains anomalies. {metric} cannot be computed."
                         + add_txt
                     ),
                     logger=logger,
@@ -538,32 +537,31 @@ def _intersect(
     return new_series_1, series_2.slice_intersect(series_1)
 
 
-def _assert_binary(series: TimeSeries, name_series: str):
+def _assert_binary(series: TimeSeries, name: str):
     """Checks if series is a binary timeseries (1 and 0)"
 
     Parameters
     ----------
     series
         series to check for.
-    name_series
+    name
         name of the series.
     """
 
     vals = series.values(copy=False)
     if not np.array_equal(vals, vals.astype(bool)):
         raise_log(
-            ValueError(f"Input series {name_series} must have binary values only."),
+            ValueError(f"Input series `{name}` must have binary values only."),
             logger=logger,
         )
 
 
-def _assert_timeseries(series: TimeSeries, message: str = None):
+def _assert_timeseries(series: TimeSeries, name: str = "series"):
     """Checks if given input is of type Darts TimeSeries"""
     if not isinstance(series, TimeSeries):
         raise_log(
             ValueError(
-                f"{message if message is not None else 'Series input'} "
-                f"must be a `TimeSeries`. Received {type(series)}."
+                f"all series in `{name}` must be `TimeSeries`. Received {type(series)}."
             ),
             logger=logger,
         )
@@ -712,3 +710,72 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
             ax_id.fill_between(
                 series.time_index, low_series, high_series, alpha=0.25, **kwargs
             )
+
+
+def _check_input(
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    name: str,
+    width_expected: Optional[int],
+    check_binary: bool,
+    check_multivariate: bool,
+):
+    """
+    Input `series` checks used for Aggregators, Detectors, ...
+
+    - `series` must be (sequence of) series where each series must:
+        * be deterministic
+        * have width `width_expected` if it is not `None`
+        * be binary if `check_binary=True`
+        * be multivariate if `check_multivariate=True`
+
+    Parameters
+    ----------
+    series
+        A (sequence of) multivariate series.
+    name
+        The name of the series.
+    width_expected
+        Optionally, the expected number of components/width of each series.
+    check_multivariate
+        Whether to check if all series are multivariate.
+    """
+    series = series2seq(series)
+    for s in series:
+        if not isinstance(s, TimeSeries):
+            raise_log(
+                ValueError(f"all series in `{name}` must be of type TimeSeries."),
+                logger=logger,
+            )
+        if not s.is_deterministic:
+            raise_log(
+                ValueError(
+                    f"all series in `{name}` must be deterministic (number of samples=1)."
+                ),
+                logger=logger,
+            )
+        if check_binary:
+            _assert_binary(s, name=name)
+        if check_multivariate and s.width <= 1:
+            raise_log(
+                ValueError(f"all series in `{name}` must be multivariate (width>1)."),
+                logger=logger,
+            )
+        if width_expected is not None and s.width != width_expected:
+            raise_log(
+                ValueError(
+                    f"all series in `{name}` must have `{width_expected}` component(s) (width={width_expected})."
+                ),
+                logger=logger,
+            )
+    return series
+
+
+def _assert_fit_called(fit_called: bool, name: str):
+    """Checks that `fit_called` is `True`."""
+    if not fit_called:
+        raise_log(
+            ValueError(
+                f"The `{name}` has not been fitted yet. Call `{name}.fit()` first."
+            ),
+            logger=logger,
+        )
