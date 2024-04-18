@@ -90,13 +90,13 @@ Let's have a look at some examples of past, future, and static covariates:
     -   daily average **forecasted** temperatures (known in the future)
     -   day of week, month, year, ...
 - `static_covariates`: time independent/constant/static `target` characteristics
-    -   categorical: 
+    -   categorical:
         - location of `target` (country, city, .. name)
         - `target` identifier: (product ID, store ID, ...)
     -   numerical:
         - population of `target`'s country/market area (assuming it stays constant over the forecasting horizon)
         - average temperature of `target`'s region (assuming it stays constant over the forecasting horizon)
- 
+
 
 Temporal attributes are powerful because they are known in advance and can help models capture trends and / or seasonal patterns of the `target` series.
 Static attributes are powerful when working with multiple `targets` (either multiple `TimeSeries`, or multivariate series containing multiple dimensions each). The time independent information can help models identify the nature/environment of the underlying series and improve forecasts across different `targets`.
@@ -148,8 +148,8 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
 | [NHiTSModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel)                                                                                                                                                 | ✅               |                   |                   |
 | [TCNModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tcn_model.html#darts.models.forecasting.tcn_model.TCNModel)                                                                                                                                             | ✅               |                   |                   |
 | [TransformerModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel)                                                                                                             | ✅               |                   |                   |
-| [TFTModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel)                                                                                                                                             | ✅               |         ✅         |         ✅         | 
-| [DLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel)                                                                                                                                         | ✅               |         ✅         |         ✅         | 
+| [TFTModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel)                                                                                                                                             | ✅               |         ✅         |         ✅         |
+| [DLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel)                                                                                                                                         | ✅               |         ✅         |         ✅         |
 | [NLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel)                                                                                                                                         | ✅               |         ✅         |         ✅         |
 | [TiDEModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel)                                                                                                                                         | ✅               |         ✅         |         ✅         |
 | [TSMixerModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tsmixer_model.html#darts.models.forecasting.tsmixer_model.TSMixerModel)                                                                                                                             | ✅               |         ✅         |         ✅         |

@@ -11,7 +11,7 @@ from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -41,13 +41,11 @@ class AnomalyModel(ABC):
         if self.univariate_scoring:
             raise_if_not(
                 all([s.width == 1 for s in actual_anomalies]),
-                "Anomaly model contains scorer {} that will return".format(
-                    [s.__str__() for s in self.scorers if s.univariate_scorer]
-                )
-                + " a univariate anomaly score series (width=1). Found a"
-                + " multivariate `actual_anomalies`. The evaluation of the"
-                + " accuracy cannot be computed. If applicable, think about"
-                + " setting the scorer parameter `componenet_wise` to True.",
+                f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.univariate_scorer]}"
+                f" that will return a univariate anomaly score series (width=1)."
+                f" Found a multivariate `actual_anomalies`. The evaluation of the"
+                " accuracy cannot be computed. If applicable, think about"
+                " setting the scorer parameter `componenet_wise` to True.",
             )
 
     @abstractmethod
@@ -57,7 +55,7 @@ class AnomalyModel(ABC):
         allow_model_training: bool,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         raise_if_not(
-            type(allow_model_training) is bool,
+            type(allow_model_training) is bool,  # noqa: E721
             f"`allow_filter_training` must be Boolean, found type: {type(allow_model_training)}.",
         )
 

@@ -27,7 +27,7 @@ from sklearn.metrics import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 

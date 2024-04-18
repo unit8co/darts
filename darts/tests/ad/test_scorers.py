@@ -8,18 +8,21 @@ from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
 from darts import TimeSeries
-from darts.ad.scorers import CauchyNLLScorer
-from darts.ad.scorers import DifferenceScorer as Difference
 from darts.ad.scorers import (
+    CauchyNLLScorer,
     ExponentialNLLScorer,
+    FittableAnomalyScorer,
     GammaNLLScorer,
     GaussianNLLScorer,
     KMeansScorer,
     LaplaceNLLScorer,
+    PoissonNLLScorer,
+    PyODScorer,
+    WassersteinScorer,
 )
+from darts.ad.scorers import DifferenceScorer as Difference
 from darts.ad.scorers import NormScorer as Norm
-from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
-from darts.ad.scorers.scorers import FittableAnomalyScorer, NLLScorer
+from darts.ad.scorers.scorers import NLLScorer
 from darts.models import MovingAverageFilter
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -359,12 +362,11 @@ class TestAnomalyDetectionScorer:
         "scorer", [Norm(component_wise=False), KMeansScorer(component_wise=False)]
     )
     def test_eval_metric_from_prediction(self, scorer):
-
         if isinstance(scorer, FittableAnomalyScorer):
             scorer.fit(self.train)
 
         # name must be of type str
-        assert type(scorer.__str__()) == str
+        assert isinstance(scorer.__str__(), str)
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with pytest.raises(ValueError):

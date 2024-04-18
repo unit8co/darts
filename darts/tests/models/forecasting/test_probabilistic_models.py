@@ -431,11 +431,11 @@ class TestProbabilisticModels:
             avgs_orig, avgs_pred = _get_avgs(series), _get_avgs(pred)
             assert abs(avgs_orig[0] - avgs_pred[0]) < diff1, (
                 "The difference between the mean forecast and the mean series is larger "
-                "than expected on component 0 for distribution {}".format(lkl)
+                f"than expected on component 0 for distribution {lkl}"
             )
             assert abs(avgs_orig[1] - avgs_pred[1]) < diff2, (
                 "The difference between the mean forecast and the mean series is larger "
-                "than expected on component 1 for distribution {}".format(lkl)
+                f"than expected on component 1 for distribution {lkl}"
             )
 
         @pytest.mark.parametrize(

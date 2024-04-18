@@ -278,9 +278,7 @@ def remove_from_series(
     else:
         raise_log(
             ValueError(
-                "Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}".format(
-                    model
-                )
+                f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}"
             )
         )
     return new_ts

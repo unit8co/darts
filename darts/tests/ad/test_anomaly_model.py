@@ -7,9 +7,10 @@ import pytest
 from pyod.models.knn import KNN
 
 from darts import TimeSeries
-from darts.ad import CauchyNLLScorer
-from darts.ad import DifferenceScorer as Difference
 from darts.ad import (
+    AndAggregator,  # noqa: F401
+    CauchyNLLScorer,
+    EnsembleSklearnAggregator,  # noqa: F401
     ExponentialNLLScorer,
     FilteringAnomalyModel,
     ForecastingAnomalyModel,
@@ -17,9 +18,15 @@ from darts.ad import (
     GaussianNLLScorer,
     KMeansScorer,
     LaplaceNLLScorer,
+    OrAggregator,  # noqa: F401
+    PoissonNLLScorer,
+    PyODScorer,
+    QuantileDetector,  # noqa: F401
+    ThresholdDetector,  # noqa: F401
+    WassersteinScorer,
 )
+from darts.ad import DifferenceScorer as Difference
 from darts.ad import NormScorer as Norm
-from darts.ad import PoissonNLLScorer, PyODScorer, WassersteinScorer
 from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverageFilter, NaiveSeasonal, RegressionModel
 

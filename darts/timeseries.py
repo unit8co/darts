@@ -135,9 +135,7 @@ class TimeSeries:
             # The first dimension represents the time and may be named differently.
             raise_log(
                 ValueError(
-                    "The last two dimensions of the DataArray must be named {}".format(
-                        DIMS[-2:]
-                    )
+                    f"The last two dimensions of the DataArray must be named {DIMS[-2:]}"
                 ),
                 logger,
             )
@@ -428,9 +426,7 @@ class TimeSeries:
                         name_to_occurence[clist[i]] += 1
 
                         if name_to_occurence[clist[i]] > 1:
-                            clist[i] = clist[i] + "_{}".format(
-                                name_to_occurence[clist[i]] - 1
-                            )
+                            clist[i] = clist[i] + f"_{name_to_occurence[clist[i]] - 1}"
 
                     has_duplicate = len(set(clist)) != len(clist)
 
@@ -1503,9 +1499,7 @@ class TimeSeries:
 
         raise_if_not(
             is_inside,
-            "Timestamp must be between {} and {}".format(
-                self.start_time(), self.end_time()
-            ),
+            f"Timestamp must be between {self.start_time()} and {self.end_time()}",
             logger,
         )
 
@@ -2680,8 +2674,8 @@ class TimeSeries:
         except pd.errors.OutOfBoundsDatetime:
             raise_log(
                 OverflowError(
-                    "the add operation between {} and {} will "
-                    "overflow".format(n * self.freq, self.time_index[-1])
+                    f"the add operation between {n * self.freq} and {self.time_index[-1]} will "
+                    "overflow"
                 ),
                 logger,
             )
@@ -2960,9 +2954,7 @@ class TimeSeries:
         raise_if_not(
             values.shape[:2] == self._xa.values.shape[:2],
             "The new values must have the same shape (time, components) as the present series. "
-            "Received: {}, expected: {}".format(
-                values.shape[:2], self._xa.values.shape[:2]
-            ),
+            f"Received: {values.shape[:2]}, expected: {self._xa.values.shape[:2]}",
         )
 
         new_xa = xr.DataArray(
@@ -4799,9 +4791,7 @@ class TimeSeries:
             known_dims = (self._time_dim,) + DIMS[1:]
             raise_if_not(
                 axis in known_dims,
-                "`axis` must be a known dimension of this series: {}".format(
-                    known_dims
-                ),
+                f"`axis` must be a known dimension of this series: {known_dims}",
             )
             return axis
 
@@ -4815,9 +4805,7 @@ class TimeSeries:
             known_dims = (self._time_dim,) + DIMS[1:]
             raise_if_not(
                 axis in known_dims,
-                "`axis` must be a known dimension of this series: {}".format(
-                    known_dims
-                ),
+                f"`axis` must be a known dimension of this series: {known_dims}",
             )
             return known_dims.index(axis)
 
@@ -4843,9 +4831,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for + or add(): '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    f"unsupported operand type(s) for + or add(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
@@ -4864,9 +4850,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for - or sub(): '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    f"unsupported operand type(s) for - or sub(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
@@ -4885,9 +4869,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for * or mul(): '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    f"unsupported operand type(s) for * or mul(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
@@ -4907,9 +4889,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for ** or pow(): '{}' and '{}'.".format(
-                        type(self).__name__, type(n).__name__
-                    )
+                    f"unsupported operand type(s) for ** or pow(): '{type(self).__name__}' and '{type(n).__name__}'."
                 ),
                 logger,
             )
@@ -4932,9 +4912,8 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for / or truediv(): '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    "unsupported operand type(s) for / or truediv():"
+                    f" '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
@@ -4968,9 +4947,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for < : '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
@@ -4989,9 +4966,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for < : '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
@@ -5010,9 +4985,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for < : '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
@@ -5031,9 +5004,7 @@ class TimeSeries:
         else:
             raise_log(
                 TypeError(
-                    "unsupported operand type(s) for < : '{}' and '{}'.".format(
-                        type(self).__name__, type(other).__name__
-                    )
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )

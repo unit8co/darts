@@ -48,8 +48,8 @@ def _get_summation_matrix(series: TimeSeries):
     n = len(components_seq)
     S = np.zeros((n, m))
 
-    components_indexes = {c: i for i, c in enumerate(components_seq)}
-    leaves_indexes = {l: i for i, l in enumerate(leaves_seq)}
+    components_indexes = {comp: i for i, comp in enumerate(components_seq)}
+    leaves_indexes = {leaf: i for i, leaf in enumerate(leaves_seq)}
 
     def increment(cur_node, leaf_idx):
         """
@@ -87,7 +87,7 @@ class BottomUpReconciliator(BaseDataTransformer):
     def get_projection_matrix(series):
         leaves_seq = list(series.bottom_level_components)
         n, m = series.n_components, len(leaves_seq)
-        leaves_indexes = {l: i for i, l in enumerate(leaves_seq)}
+        leaves_indexes = {leaf: i for i, leaf in enumerate(leaves_seq)}
         G = np.zeros((m, n))
         for i, c in enumerate(series.components):
             if c in leaves_indexes:
