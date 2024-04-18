@@ -26,11 +26,6 @@ repos:
       - id: black-jupyter
         language_version: python3
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      -  id: isort
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.3.5
     hooks:
