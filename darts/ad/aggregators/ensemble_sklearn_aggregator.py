@@ -40,12 +40,12 @@ class EnsembleSklearnAggregator(FittableAggregator):
     ):
 
         X = np.concatenate(
-            [s.all_values(copy=False).reshape(len(s), -1) for s in series],
+            [s.values(copy=False) for s in series],
             axis=0,
         )
 
         y = np.concatenate(
-            [s.all_values(copy=False).reshape(len(s)) for s in actual_anomalies],
+            [s.values(copy=False).flatten() for s in actual_anomalies],
             axis=0,
         )
 
@@ -57,7 +57,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         return [
             TimeSeries.from_times_and_values(
                 s.time_index,
-                self.model.predict((s).all_values(copy=False).reshape(len(s), -1)),
+                self.model.predict(s.values(copy=False)),
             )
             for s in series
         ]

@@ -11,7 +11,7 @@ Anomaly aggregators base classes
 #   the anomaly alarm came from)
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
 from darts import TimeSeries
 from darts.ad.utils import (
@@ -19,12 +19,17 @@ from darts.ad.utils import (
     eval_metric_from_binary_prediction,
     series2seq,
 )
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
 
 class Aggregator(ABC):
+    """Base class for Aggregators."""
+
+    def __init__(self):
+        self.width_trained_on: Optional[int] = None
+
     @abstractmethod
     def __str__(self):
         """returns the name of the aggregator"""
@@ -57,52 +62,80 @@ class Aggregator(ABC):
         Parameters
         ----------
         series
-            The (sequence of) multivariate binary series to aggregate
+            The (sequence of) multivariate binary series to aggregate.
 
         Returns
         -------
         TimeSeries
-            (Sequence of) aggregated results
+            (Sequence of) aggregated results.
         """
-        list_series = self._check_input(series)
-
+        list_series = self._check_input(
+            series,
+            name="series",
+            width_expected=self.width_trained_on,
+            check_multivariate=True,
+        )
         if isinstance(series, TimeSeries):
             return self._predict_core(list_series)[0]
         else:
             return self._predict_core(list_series)
 
-    def _check_input(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
+    @staticmethod
+    def _check_input(
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        name: str,
+        width_expected: Optional[int],
+        check_multivariate: bool,
+    ):
         """
         Checks for input if:
             - it is a (sequence of) multivariate series (width>1)
             - (sequence of) series must be:
                 * a deterministic TimeSeries
                 * binary (only values equal to 0 or 1)
+                * must have width `width_expected` if it is not `None`.
+
+        Parameters
+        ----------
+        series
+            A (sequence of) multivariate series.
+        name
+            The name of the series.
+        width_expected
+            Optionally, the expected number of components/width of each series.
+        check_multivariate
+            Whether to check if all series are multivariate.
         """
 
         list_series = series2seq(series)
         for s in list_series:
             if not isinstance(s, TimeSeries):
                 raise_log(
-                    ValueError(
-                        "all series in `actual_series` must be of type TimeSeries."
-                    ),
+                    ValueError(f"all series in `{name}` must be of type TimeSeries."),
                     logger=logger,
                 )
             if not s.is_deterministic:
                 raise_log(
                     ValueError(
-                        "all series in `actual_series` must be deterministic (number of samples=1)."
+                        f"all series in `{name}` must be deterministic (number of samples=1)."
                     ),
                     logger=logger,
                 )
-            if not s.width > 1:
+            if check_multivariate and s.width <= 1:
                 raise_log(
                     ValueError(
-                        "all series in `actual_series` must be multivariate (width>1)."
+                        f"all series in `{name}` must be multivariate (width>1)."
                     ),
                     logger=logger,
                 )
+            if width_expected is not None and s.width != width_expected:
+                raise_log(
+                    ValueError(
+                        f"all series in `{name}` must have `{width_expected}` component(s) (width={width_expected})."
+                    ),
+                    logger=logger,
+                )
+
             _assert_binary(s, name_series="`series`")
         return list_series
 
@@ -119,23 +152,22 @@ class Aggregator(ABC):
         Parameters
         ----------
         actual_series
-            The (sequence of) ground truth anomaly labels (1 if it is an anomaly and 0 if not)
+            The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).
         pred_series
-            The (sequence of) multivariate binary series (predicted labels) to aggregate
+            The (sequence of) multivariate binary series (predicted labels) to aggregate.
         window
             (Sequence of) integer value indicating the number of past samples each point
             represents in the (sequence of) series. The parameter will be used by the
             function ``_window_adjustment_anomalies()`` in darts.ad.utils to transform
             actual_series.
         metric
-            Metric function to use. Must be one of "recall", "precision",
-            "f1", and "accuracy".
-            Default: "recall"
+            Metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
+            Default: "recall".
 
         Returns
         -------
         Union[float, Sequence[float]]
-            (Sequence of) score for the (sequence of) series
+            (Sequence of) score for the (sequence of) series.
         """
         preds = self.predict(pred_series)
         return eval_metric_from_binary_prediction(
@@ -144,20 +176,23 @@ class Aggregator(ABC):
 
 
 class FittableAggregator(Aggregator):
-    "Base class of Aggregators that do need training."
+    """Base class for Aggregators that require training."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
-        # indicates if the Aggregator has been trained yet
+        # flag whether Aggregator was fitted
         self._fit_called = False
 
     def _assert_fit_called(self):
         """Checks if the Aggregator has been fitted before calling its `score()` function."""
 
-        raise_if_not(
-            self._fit_called,
-            f"The Aggregator {self.__str__()} has not been fitted yet. Call `fit()` first.",
-        )
+        if not self._fit_called:
+            raise_log(
+                ValueError(
+                    f"The Aggregator {self.__str__()} has not been fitted yet. Call `fit()` first."
+                ),
+                logger=logger,
+            )
 
     @abstractmethod
     def _fit_core(
@@ -168,9 +203,9 @@ class FittableAggregator(Aggregator):
         Parameters
         ----------
         actual_series
-            The sequence of ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+            The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).
         pred_series
-            The sequence of multivariate binary series
+            The (sequence of) multivariate binary series (predicted labels) to aggregate.
 
         Returns
         -------
@@ -191,86 +226,49 @@ class FittableAggregator(Aggregator):
         Parameters
         ----------
         actual_series
-            The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+            The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).
         pred_series
-            The (sequence of) multivariate binary series
+            The (sequence of) multivariate binary series (predicted labels) to aggregate.
         """
-        list_pred_series = self._check_input(pred_series)
-        self.width_trained_on = list_pred_series[0].width
-
-        raise_if_not(
-            all([s.width == self.width_trained_on for s in list_pred_series]),
-            "all series in `pred_series` must have the same number of components.",
+        pred_width = series2seq(pred_series)[0].width
+        pred_series = self._check_input(
+            pred_series,
+            name="pred_series",
+            width_expected=pred_width,
+            check_multivariate=True,
         )
+        self.width_trained_on = pred_width
 
-        list_actual_series = series2seq(actual_series)
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_actual_series]),
-            "all series in `actual_series` must be of type TimeSeries.",
+        actual_series = self._check_input(
+            actual_series,
+            name="actual_series",
+            width_expected=1,
+            check_multivariate=False,
         )
-
-        raise_if_not(
-            all([s.is_deterministic for s in list_actual_series]),
-            "all series in `actual_series` must be deterministic (width=1).",
-        )
-
-        raise_if_not(
-            all([s.width == 1 for s in list_actual_series]),
-            "all series in `actual_series` must be univariate (width=1).",
-        )
-
-        raise_if_not(
-            len(list_actual_series) == len(list_pred_series),
-            "`actual_series` and `pred_series` must contain the same number of series.",
-        )
-
+        if len(actual_series) != len(pred_series):
+            raise_log(
+                ValueError(
+                    "`actual_series` and `pred_series` must contain the same number of series."
+                ),
+                logger=logger,
+            )
         same_intersection = list(
             zip(
                 *[
                     [anomalies.slice_intersect(series), series.slice_intersect(series)]
-                    for (anomalies, series) in zip(list_actual_series, list_pred_series)
+                    for (anomalies, series) in zip(actual_series, pred_series)
                 ]
             )
         )
-        list_actual_series = list(same_intersection[0])
-        list_pred_series = list(same_intersection[1])
+        actual_series = list(same_intersection[0])
+        pred_series = list(same_intersection[1])
 
-        ret = self._fit_core(list_actual_series, list_pred_series)
+        ret = self._fit_core(actual_series, pred_series)
         self._fit_called = True
         return ret
 
     def predict(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Aggregates the (sequence of) multivariate binary series given as
-        input into a (sequence of) univariate binary series.
-
-        Parameters
-        ----------
-        series
-            The (sequence of) multivariate binary series to aggregate
-
-        Returns
-        -------
-        TimeSeries
-            (Sequence of) aggregated results
-        """
-
         self._assert_fit_called()
-        list_series = series2seq(series)
-
-        raise_if_not(
-            all(
-                [
-                    s.width == self.width_trained_on
-                    for s in list_series
-                    if isinstance(s, TimeSeries)
-                ]
-            ),
-            "all series in `series` must have the same number of components as the data"
-            + " used for training the detector model, number of components in training:"
-            + f" {self.width_trained_on}.",
-        )
-
         return super().predict(series=series)

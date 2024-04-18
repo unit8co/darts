@@ -16,7 +16,6 @@ from darts.utils.utils import _parallel_apply
 class AndAggregator(Aggregator):
     def __init__(self, n_jobs: int = 1) -> None:
         super().__init__()
-
         self._n_jobs = n_jobs
 
     def __str__(self) -> str:

@@ -19,7 +19,7 @@ on time series.
   used to produce anomaly scores with the ``score()`` method.
 
 * `Anomaly Detectors <https://unit8co.github.io/darts/generated_api/darts.ad.detectors.html>`_:
-  transform raw time series (such as anaomly scores) into binary anomaly time series.
+  transform raw time series (such as anomaly scores) into binary anomaly time series.
 
 * `Anomaly Aggregators <https://unit8co.github.io/darts/generated_api/darts.ad.aggregators.html>`_:
   combine multiple binary anomaly time series (in the form of multivariate time series)

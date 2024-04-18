@@ -280,15 +280,15 @@ class TestAnomalyDetectionAggregator:
         assert str(err.value) == expected_msg
 
         # input a (sequence of) probabilistic series
-        with pytest.raises(ValueError) as err:
+        with pytest.raises(ValueError):
             aggregator.predict(self.mts_probabilistic)
-        with pytest.raises(ValueError) as err:
+        with pytest.raises(ValueError):
             aggregator.predict([self.mts_anomalies1, self.mts_probabilistic])
 
         # input an element that is not a series
-        with pytest.raises(ValueError) as err:
+        with pytest.raises(ValueError):
             aggregator.predict([self.mts_anomalies1, "random"])
-        with pytest.raises(ValueError) as err:
+        with pytest.raises(ValueError):
             aggregator.predict([self.mts_anomalies1, 1])
 
     @pytest.mark.parametrize("config", list_NonFittableAggregator)
@@ -440,7 +440,7 @@ class TestAnomalyDetectionAggregator:
 
     @pytest.mark.parametrize("config", list_FittableAggregator)
     def test_FittableAggregator_fit_predict(self, config):
-        """Check that consecutive calls to fit() and predict() work as intented"""
+        """Check that consecutive calls to fit() and predict() work as intended"""
         aggregator_cls, cls_kwargs, _ = config
         aggregator = aggregator_cls(**cls_kwargs)
 
