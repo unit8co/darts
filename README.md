@@ -19,8 +19,8 @@ on time series. It contains a variety of models, from classics such as ARIMA to
 deep neural networks. The forecasting models can all be used in the same way,
 using `fit()` and `predict()` functions, similar to scikit-learn.
 The library also makes it easy to backtest models,
-combine the predictions of several models, and take external data into account. 
-Darts supports both univariate and multivariate time series and models. 
+combine the predictions of several models, and take external data into account.
+Darts supports both univariate and multivariate time series and models.
 The ML-based models can be trained on potentially large datasets containing multiple time
 series, and some of the models offer a rich support for probabilistic forecasting.
 
@@ -59,7 +59,7 @@ Once your environment is set up you can install darts using pip:
 
     pip install darts
 
-For more details you can refer to our 
+For more details you can refer to our
 [installation instructions](https://github.com/unit8co/darts/blob/master/INSTALL.md).
 
 ## Example Usage
@@ -166,7 +166,7 @@ series.plot()
 * **Multivariate Support:** `TimeSeries` can be multivariate - i.e., contain multiple time-varying
   dimensions instead of a single scalar value. Many models can consume and produce multivariate series.
 
-* **Multiple series training (global models):** All machine learning based models (incl. all neural networks) 
+* **Multiple series training (global models):** All machine learning based models (incl. all neural networks)
   support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.
 
 * **Probabilistic Support:** `TimeSeries` objects can (optionally) represent stochastic
@@ -174,7 +174,7 @@ series.plot()
   flavours of probabilistic forecasting (such as estimating parametric distributions or quantiles).
   Some anomaly detection scorers are also able to exploit these predictive distributions.
 
-* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known 
+* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known
   covariate (external data) time series as inputs for producing forecasts.
 
 * **Static Covariates support:** In addition to time-dependent data, `TimeSeries` can also contain
@@ -262,7 +262,7 @@ on bringing more models and features.
 
 
 ## Community & Contact
-Anyone is welcome to join our [Gitter room](https://gitter.im/u8darts/darts) to ask questions, make proposals, 
+Anyone is welcome to join our [Gitter room](https://gitter.im/u8darts/darts) to ask questions, make proposals,
 discuss use-cases, and more. If you spot a bug or have suggestions, GitHub issues are also welcome.
 
 If what you want to tell us is not suitable for Gitter or Github,

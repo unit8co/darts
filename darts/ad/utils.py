@@ -27,7 +27,7 @@ from sklearn.metrics import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -552,7 +552,7 @@ def _assert_binary(series: TimeSeries, name_series: str):
     vals = series.values(copy=False)
     if not np.array_equal(vals, vals.astype(bool)):
         raise_log(
-            ValueError(f"Input series {name_series} must be a binary time series."),
+            ValueError(f"Input series {name_series} must have binary values only."),
             logger=logger,
         )
 

@@ -67,6 +67,7 @@ models_cls_kwargs_errs = [
         RNNModel,
         {
             "model": "RNN",
+            "training_length": IN_LEN + OUT_LEN,
             "hidden_dim": 10,
             "batch_size": 32,
             "n_epochs": 10,
@@ -77,7 +78,7 @@ models_cls_kwargs_errs = [
     (
         RNNModel,
         {
-            "training_length": 12,
+            "training_length": IN_LEN + OUT_LEN,
             "n_epochs": 10,
             "likelihood": GaussianLikelihood(),
             "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
@@ -325,10 +326,9 @@ class TestGlobalForecastingModels:
         model.fit(self.ts_pass_train)
         pred = model.predict(n=36)
         mape_err = mape(self.ts_pass_val, pred)
-        assert (
-            mape_err < err
-        ), "Model {} produces errors too high (one time " "series). Error = {}".format(
-            model_cls, mape_err
+        assert mape_err < err, (
+            f"Model {model_cls} produces errors too high (one time "
+            f"series). Error = {mape_err}"
         )
         assert pred.static_covariates.equals(self.ts_passengers.static_covariates)
 
@@ -348,8 +348,8 @@ class TestGlobalForecastingModels:
         pred = model.predict(n=36, series=self.ts_pass_train)
         mape_err = mape(self.ts_pass_val, pred)
         assert mape_err < err, (
-            "Model {} produces errors too high (several time "
-            "series). Error = {}".format(model_cls, mape_err)
+            f"Model {model_cls} produces errors too high (several time "
+            f"series). Error = {mape_err}"
         )
 
         # check prediction for several time series
@@ -362,8 +362,8 @@ class TestGlobalForecastingModels:
         for pred in pred_list:
             mape_err = mape(self.ts_pass_val, pred)
             assert mape_err < err, (
-                "Model {} produces errors too high (several time series 2). "
-                "Error = {}".format(model_cls, mape_err)
+                f"Model {model_cls} produces errors too high (several time series 2). "
+                f"Error = {mape_err}"
             )
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
@@ -450,8 +450,8 @@ class TestGlobalForecastingModels:
         pred = model.predict(n=12, series=self.ts_pass_train, **cov_kwargs_notrain)
         mape_err = mape(self.ts_pass_val, pred)
         assert mape_err < err, (
-            "Model {} produces errors too high (several time "
-            "series with covariates). Error = {}".format(model_cls, mape_err)
+            f"Model {model_cls} produces errors too high (several time "
+            f"series with covariates). Error = {mape_err}"
         )
 
         # when model is fit using 1 training and 1 covariate series, time series args are optional
