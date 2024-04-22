@@ -286,7 +286,12 @@ class AnomalyScorer(ABC):
         list_actual_series, list_pred_series = series2seq(actual_series), series2seq(
             pred_series
         )
-        _assert_same_length(list_actual_series, list_pred_series)
+        _assert_same_length(
+            list_actual_series,
+            list_pred_series,
+            "actual_series",
+            "pred_series",
+        )
 
         anomaly_scores = []
 
@@ -579,7 +584,9 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_actual_series, list_pred_series = series2seq(actual_series), series2seq(
             pred_series
         )
-        _assert_same_length(list_actual_series, list_pred_series)
+        _assert_same_length(
+            list_actual_series, list_pred_series, "actual_series", "pred_series"
+        )
 
         anomaly_scores = []
         for s1, s2 in zip(list_actual_series, list_pred_series):
@@ -672,7 +679,12 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_actual_series, list_pred_series = series2seq(actual_series), series2seq(
             pred_series
         )
-        _assert_same_length(list_actual_series, list_pred_series)
+        _assert_same_length(
+            list_actual_series,
+            list_pred_series,
+            "actual_series",
+            "pred_series",
+        )
 
         list_fit_series = []
         for s1, s2 in zip(list_actual_series, list_pred_series):

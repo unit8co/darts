@@ -2165,7 +2165,6 @@ class TimeSeries:
         after
             If the provided pandas Timestamp is not in the time series index, whether to return the index of the
             next timestamp or the index of the previous one.
-
         """
         point_index = -1
         if isinstance(point, float):

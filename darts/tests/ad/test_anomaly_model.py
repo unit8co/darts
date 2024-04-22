@@ -163,12 +163,6 @@ class TestAnomalyDetectionModel:
         if fit_model:
             anomaly_model.fit(self.train, allow_model_training=True)
 
-        # parameter return_model_prediction must be bool
-        with pytest.raises(ValueError):
-            anomaly_model.score(self.test, return_model_prediction=1)
-        with pytest.raises(ValueError):
-            anomaly_model.score(self.test, return_model_prediction="True")
-
         # if return_model_prediction set to true, output must be tuple
         assert isinstance(
             anomaly_model.score(self.test, return_model_prediction=True), Tuple
@@ -184,9 +178,8 @@ class TestAnomalyDetectionModel:
     def test_FitFilteringAnomalyModelInput(self, anomaly_model_config):
         am_cls, am_kwargs = anomaly_model_config
         anomaly_model = am_cls(**am_kwargs)
-        # filter must be fittable if allow_model_training is set to True
-        with pytest.raises(ValueError):
-            anomaly_model.fit(self.train, allow_model_training=True)
+        # `allow_model_training=True` has no effect if filter model has no `fit()` method
+        anomaly_model.fit(self.train, allow_model_training=True)
 
         # input 'series' must be a series or Sequence of series
         with pytest.raises(ValueError):
@@ -197,12 +190,6 @@ class TestAnomalyDetectionModel:
             anomaly_model.fit("str", allow_model_training=True)
         with pytest.raises(ValueError):
             anomaly_model.fit([1, 2, 3], allow_model_training=True)
-
-        # allow_model_training must be a bool
-        with pytest.raises(ValueError):
-            anomaly_model.fit(self.train, allow_model_training=1)
-        with pytest.raises(ValueError):
-            anomaly_model.fit(self.train, allow_model_training="True")
 
     @pytest.mark.parametrize("anomaly_model_config", forecasting_am)
     def test_FitForecastingAnomalyModelInput(self, anomaly_model_config):
@@ -1404,8 +1391,10 @@ class TestAnomalyDetectionModel:
         # must input only one series
         with pytest.raises(ValueError) as err:
             visualization_function(series=[self.train, self.train])
-        assert str(err.value) == "`series` must be a single `TimeSeries`."
-
+        assert (
+            str(err.value)
+            == "`series` must be single `TimeSeries` or a sequence of `TimeSeries` of length `1`."
+        )
         # input must be a series
         with pytest.raises(ValueError):
             visualization_function(series=[1, 2, 4])

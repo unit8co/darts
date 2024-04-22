@@ -2,20 +2,24 @@
 Anomaly models base classes
 """
 
+import sys
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, Sequence, Union
 
-import pandas as pd
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import (
+    _assert_same_length,
     _check_input,
     eval_metric_from_scores,
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -25,7 +29,6 @@ class AnomalyModel(ABC):
 
     def __init__(self, model, scorer):
         self.scorers = [scorer] if not isinstance(scorer, Sequence) else scorer
-
         if not all([isinstance(s, AnomalyScorer) for s in self.scorers]):
             raise_log(
                 ValueError(
@@ -33,19 +36,134 @@ class AnomalyModel(ABC):
                 ),
                 logger=logger,
             )
-
         self.scorers_are_trainable = any(s.trainable for s in self.scorers)
         self.univariate_scoring = any(s.univariate_scorer for s in self.scorers)
-
         self.model = model
 
-    def _check_univariate(self, actual_anomalies):
-        """Checks if `actual_anomalies` contains only univariate series, which
-        is required if any of the scorers returns a univariate score.
+    def fit(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        allow_model_training: bool,
+        **kwargs,
+    ) -> Self:
+        """Fit the underlying forecasting/filtering model (if applicable) and the fittable scorers."""
+        # interrupt training if nothing to fit
+        if not allow_model_training and not self.scorers_are_trainable:
+            return self
+
+        # check input series and covert to sequences
+        series, kwargs = self._process_input_series(series, **kwargs)
+        self._fit_core(
+            series=series, allow_model_training=allow_model_training, **kwargs
+        )
+        return self
+
+    @abstractmethod
+    def score(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        return_model_prediction: bool = False,
+        **kwargs,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Compute anomaly score(s) for the given series.
+
+        Predicts the given target time series with the forecasting model, and applies the scorer(s)
+        on the prediction and the target input time series.
+
+        Parameters
+        ----------
+        series
+            The (sequence of) series to score on.
+        return_model_prediction
+            Whether to return the forecasting/filtering model prediction along with the anomaly scores.
+        **kwargs
+            Additional parameters passed to `AnomalyModel._predict_series()`
+
+        Returns
+        -------
+        TimeSeries
+            A single `TimeSeries` for a single `series` with a single anomaly scorers.
+        Sequence[TimeSeries]
+            A sequence of `TimeSeries` for:
+
+            - a single `series` with multiple anomaly scorers.
+            - a sequence of `series` with a single anomaly scorer.
+        Sequence[Sequence[TimeSeries]]
+            A sequence of sequences of `TimeSeries` for a sequence of `series` and multiple anomaly scorers.
+            The outer sequence is over the series, and inner sequence is over the scorers.
+        """
+        called_with_single_series = isinstance(series, TimeSeries)
+        # check input series and covert to sequences
+        series, kwargs = self._process_input_series(series, **kwargs)
+        # predict / filter `series`
+        pred = self._predict_series(series=series, **kwargs)
+
+        scores = list(
+            zip(*[sc.score_from_prediction(series, pred) for sc in self.scorers])
+        )
+
+        if called_with_single_series:
+            scores = scores[0]
+            if len(scores) == 1:
+                # there's only one scorer
+                scores = scores[0]
+            pred = pred[0]
+
+        if return_model_prediction:
+            return scores, pred
+
+        return scores
+
+    def eval_metric(
+        self,
+        actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        metric: str = "AUC_ROC",
+        **kwargs,
+    ) -> Union[
+        Dict[str, float],
+        Dict[str, Sequence[float]],
+        Sequence[Dict[str, float]],
+        Sequence[Dict[str, Sequence[float]]],
+    ]:
+        """Compute the accuracy of the anomaly scores computed by the model.
+
+        Predicts the `series` with the underlying forecasting/filtering model, and applies the scorer(s) on the
+        predicted time series and the given target time series. Returns the score(s) of an agnostic threshold metric,
+        based on the anomaly score given by the scorer(s).
+
+        Parameters
+        ----------
+        actual_anomalies
+            The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
+        series
+            The (sequence of) series to predict anomalies on.
+        metric
+            The name of the scoring function to use. Must be one of "AUC_ROC" (Area Under the
+            Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
+            Default: "AUC_ROC"
+        **kwargs
+            Additional parameters passed to the ``score()`` method.
+
+        Returns
+        -------
+        Dict[str, float]
+            A dictionary with the resulting metrics for single univariate `series`, with keys representing the
+            anomaly scorer(s), and values representing the metric values.
+        Dict[str, Sequence[float]]
+            Same as for `Dict[str, float]` but for multivariate `series`, and anomaly scorers that treat series
+            components/columns independently (by nature of the scorer or if `component_wise=True`).
+        Sequence[Dict[str, float]]
+            Same as for `Dict[str, float]` but for a sequence of univariate series.
+        Sequence[Dict[str, Sequence[float]]]
+            Same as for `Dict[str, float]` but for a sequence of multivariate series.
         """
 
-        if self.univariate_scoring:
-            if not all([s.width == 1 for s in actual_anomalies]):
+        def _check_univariate(s: TimeSeries):
+            """Checks if `actual_anomalies` contains only univariate series, which
+            is required if any of the scorers returns a univariate score.
+            """
+            if self.univariate_scoring and not s.width == 1:
                 raise_log(
                     ValueError(
                         f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.univariate_scorer]} "
@@ -56,192 +174,26 @@ class AnomalyModel(ABC):
                     logger=logger,
                 )
 
-    @abstractmethod
-    def fit(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        allow_model_training: bool,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        _check_input(
+        called_with_single_series = isinstance(series, TimeSeries)
+        # deterministic `series`
+        series = _check_input(
             series,
             name="series",
-            width_expected=None,
-            check_deterministic=False,
-            check_binary=False,
-            check_multivariate=False,
+            check_deterministic=True,
         )
-
-    def _fit_scorers(
-        self, list_series: Sequence[TimeSeries], list_pred: Sequence[TimeSeries]
-    ):
-        """Train the fittable scorers using model forecasts"""
-        for scorer in self.scorers:
-            if hasattr(scorer, "fit"):
-                scorer.fit_from_prediction(list_series, list_pred)
-
-    @abstractmethod
-    def score(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        pass
-
-    @abstractmethod
-    def eval_metric(
-        self,
-        actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        pass
-
-    def show_anomalies(
-        self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
-        forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
-        num_samples: int = 1,
-        actual_anomalies: TimeSeries = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        title: str = None,
-        metric: str = None,
-        **score_kwargs,
-    ):
-        """Plot the results of the anomaly model.
-
-        Computes the score on the given series input and shows the different anomaly scores with respect to time.
-
-        The plot will be composed of the following:
-
-        - the series itself with the output of the forecasting model.
-        - the anomaly score for each scorer. The scorers with different windows will be separated.
-        - the actual anomalies, if given.
-
-        It is possible to:
-
-        - add a title to the figure with the parameter `title`
-        - give personalized names for the scorers with `names_of_scorers`
-        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
-            if the actual anomalies are provided.
-
-        Parameters
-        ----------
-        series
-            The series to visualize anomalies from.
-        past_covariates
-            An optional past-observed covariate series or sequence of series. This applies only if the model
-            supports past covariates.
-        future_covariates
-            An optional future-known covariate series or sequence of series. This applies only if the model
-            supports future covariates.
-        forecast_horizon
-            The forecast horizon for the predictions.
-        start
-            The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
-            directly.
-        num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
-        actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        names_of_scorers
-            Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
-        title
-            Title of the figure
-        metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-            Default: "AUC_ROC"
-        score_kwargs
-            parameters for the `.score()` function
-        """
-        if not isinstance(series, TimeSeries):
-            raise_log(
-                ValueError("`series` must be a single `TimeSeries`."),
-                logger=logger,
-            )
-
-        if not isinstance(series, TimeSeries):
-            raise_log(
-                ValueError(
-                    f"`show_anomalies` expects an input of type TimeSeries, found type: {type(series)}."
-                ),
-                logger=logger,
-            )
-
-        # at the moment, only forecasting_am support these
-        if hasattr(self, "filter"):
-            score_opt_kwargs = {}
-        else:
-            score_opt_kwargs = {
-                "past_covariates": past_covariates,
-                "future_covariates": future_covariates,
-                "forecast_horizon": forecast_horizon,
-                "start": start,
-                "num_samples": num_samples,
-            }
-
-        anomaly_scores, model_output = self.score(
-            series, return_model_prediction=True, **score_kwargs, **score_opt_kwargs
+        # deterministic, binary anomalies, (possibly univariate)
+        actual_anomalies = _check_input(
+            actual_anomalies,
+            name="actual_anomalies",
+            check_deterministic=True,
+            check_binary=True,
+            extra_checks=_check_univariate,
         )
+        _assert_same_length(series, actual_anomalies, "series", "actual_anomalies")
 
-        return self._show_anomalies(
-            series,
-            model_output=model_output,
-            anomaly_scores=anomaly_scores,
-            names_of_scorers=names_of_scorers,
-            actual_anomalies=actual_anomalies,
-            title=title,
-            metric=metric,
-        )
+        anomaly_scores = self.score(series=series, **kwargs)
 
-    def _show_anomalies(
-        self,
-        series: TimeSeries,
-        model_output: TimeSeries = None,
-        anomaly_scores: Union[TimeSeries, Sequence[TimeSeries]] = None,
-        names_of_scorers: Union[str, Sequence[str]] = None,
-        actual_anomalies: TimeSeries = None,
-        title: str = None,
-        metric: str = None,
-    ):
-        """Internal function that plots the results of the anomaly model.
-        Called by the function show_anomalies().
-        """
-
-        if title is None:
-            title = f"Anomaly results ({self.model.__class__.__name__})"
-
-        if names_of_scorers is None:
-            names_of_scorers = [s.__str__() for s in self.scorers]
-
-        list_window = [s.window for s in self.scorers]
-
-        return show_anomalies_from_scores(
-            series,
-            model_output=model_output,
-            anomaly_scores=anomaly_scores,
-            window=list_window,
-            names_of_scorers=names_of_scorers,
-            actual_anomalies=actual_anomalies,
-            title=title,
-            metric=metric,
-        )
-
-    def _eval_metric_from_scores(
-        self,
-        list_actual_anomalies: Sequence[TimeSeries],
-        list_anomaly_scores: Sequence[TimeSeries],
-        metric: str,
-    ) -> Union[Sequence[Dict[str, float]], Sequence[Dict[str, Sequence[float]]]]:
-        """Internal function that computes the metric over the anomaly scores
-        computed by the model. Called by the function eval_metric().
-        """
+        # compute metric for anomaly scores
         windows = [s.window for s in self.scorers]
 
         # create a list of unique names for each scorer that
@@ -262,7 +214,7 @@ class AnomalyModel(ABC):
             name_scorers.append(name)
 
         acc = []
-        for anomalies, scores in zip(list_actual_anomalies, list_anomaly_scores):
+        for anomalies, scores in zip(actual_anomalies, anomaly_scores):
             acc.append(
                 eval_metric_from_scores(
                     actual_anomalies=anomalies,
@@ -271,5 +223,116 @@ class AnomalyModel(ABC):
                     metric=metric,
                 )
             )
+        acc_anomaly_scores = [
+            dict(zip(name_scorers, scorer_values)) for scorer_values in acc
+        ]
 
-        return [dict(zip(name_scorers, scorer_values)) for scorer_values in acc]
+        return (
+            acc_anomaly_scores[0] if called_with_single_series else acc_anomaly_scores
+        )
+
+    def show_anomalies(
+        self,
+        series: TimeSeries,
+        predict_kwargs: Dict,
+        actual_anomalies: TimeSeries = None,
+        names_of_scorers: Union[str, Sequence[str]] = None,
+        title: str = None,
+        metric: str = None,
+        **score_kwargs,
+    ):
+        """Plot the results of the anomaly model.
+
+        Computes the score on the given series input and shows the different anomaly scores with respect to time.
+
+        The plot will be composed of the following:
+
+        - the series itself with the output of the forecasting model.
+        - the anomaly score for each scorer. The scorers with different windows will be separated.
+        - the actual anomalies, if given.
+
+        It is possible to:
+
+        - add a title to the figure with the parameter `title`
+        - give personalized names for the scorers with `names_of_scorers`
+        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies are provided.
+
+        Parameters
+        ----------
+        series
+            The series to visualize anomalies from.
+        predict_kwargs
+            Additional parameters passed to `AnomalyModel._predict_series()`.
+        actual_anomalies
+            The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
+        names_of_scorers
+            Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
+        title
+            Title of the figure.
+        metric
+            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR". Default: "AUC_ROC".
+        score_kwargs
+            parameters for the ``score()`` method.
+        """
+        _ = _check_input(series, name="series", num_series_expected=1)
+        anomaly_scores, model_output = self.score(
+            series, return_model_prediction=True, **predict_kwargs, **score_kwargs
+        )
+
+        if title is None:
+            title = f"Anomaly results ({self.model.__class__.__name__})"
+
+        if names_of_scorers is None:
+            names_of_scorers = [s.__str__() for s in self.scorers]
+
+        list_window = [s.window for s in self.scorers]
+
+        return show_anomalies_from_scores(
+            series,
+            model_output=model_output,
+            anomaly_scores=anomaly_scores,
+            window=list_window,
+            names_of_scorers=names_of_scorers,
+            actual_anomalies=actual_anomalies,
+            title=title,
+            metric=metric,
+        )
+
+    @abstractmethod
+    def _fit_core(
+        self,
+        series: Sequence[TimeSeries],
+        allow_model_training: bool,
+        **kwargs,
+    ):
+        """Abstract method to implement the model and scorer training."""
+        pass
+
+    def _fit_scorers(
+        self, list_series: Sequence[TimeSeries], list_pred: Sequence[TimeSeries]
+    ):
+        """Train the fittable scorers using model forecasts"""
+        for scorer in self.scorers:
+            if scorer.trainable:
+                scorer.fit_from_prediction(list_series, list_pred)
+
+    @abstractmethod
+    def _predict_series(
+        self, series: Sequence[TimeSeries], **kwargs
+    ) -> Sequence[TimeSeries]:
+        """Abstract method to implement the generation of predictions for the input `series`."""
+        pass
+
+    @staticmethod
+    def _process_input_series(
+        series: Union[TimeSeries, Sequence[TimeSeries]], **kwargs
+    ):
+        """Checks input series and coverts series and covariates in `kwargs` to sequences."""
+        series = _check_input(series, name="series")
+        for cov_name in ["past_covariates", "future_covariates"]:
+            cov = kwargs.pop(cov_name, None)
+            if cov is not None:
+                cov = _check_input(cov, name=cov_name)
+                _assert_same_length(series, cov, "series", cov_name)
+                kwargs[cov_name] = cov
+        return series, kwargs

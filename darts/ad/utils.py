@@ -12,7 +12,7 @@ Common functions used throughout the Anomaly Detection module.
 #     - add an option to visualize: "by window", "unique", "together"
 #     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 
-from typing import Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -50,7 +50,7 @@ def eval_metric_from_scores(
     Parameters
     ----------
     actual_anomalies
-        The (sequence of) ground truth anomaly series (`1` if it is an anomaly and `0` if not).
+        The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
     anomaly_score
         The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.
     window
@@ -211,7 +211,12 @@ def _eval_metric(
     if len(actual_series) == 1 and len(pred_series) > 1:
         actual_series = actual_series * len(pred_series)
 
-    _assert_same_length(actual_series, pred_series)
+    _assert_same_length(
+        actual_series,
+        pred_series,
+        "actual_series",
+        "pred_series",
+    )
 
     actual_name = "actual_series" if pred_is_binary else "actual_anomalies"
     pred_name = "pred_series" if pred_is_binary else "anomaly_score"
@@ -334,11 +339,11 @@ def show_anomalies_from_scores(
         Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
         Only effective when `anomaly_scores` is not `None`. Default: "AUC_ROC"
     """
-    if not isinstance(series, TimeSeries):
-        raise_log(
-            ValueError("`series` must be a single `TimeSeries`."),
-            logger=logger,
-        )
+    series = _check_input(
+        series,
+        name="series",
+        num_series_expected=1,
+    )[0]
 
     if title is None and anomaly_scores is not None:
         title = "Anomaly results"
@@ -660,13 +665,17 @@ def _max_pooling(series: TimeSeries, window: int) -> TimeSeries:
 def _assert_same_length(
     list_series_1: Sequence[TimeSeries],
     list_series_2: Sequence[TimeSeries],
+    name_series_1: str,
+    name_series_2: str,
 ):
     """Checks if the two sequences contain the same number of TimeSeries."""
+
     if len(list_series_1) != len(list_series_2):
         raise_log(
             ValueError(
-                f"Sequences of series must be of the same length, "
-                f"found length: {len(list_series_1)} and {len(list_series_2)}."
+                f"Number of `{name_series_2}` must match the number of given "
+                f"`{name_series_1}`, found length {len(list_series_2)} and "
+                f"expected {len(list_series_1)}."
             ),
             logger=logger,
         )
@@ -715,19 +724,23 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
 def _check_input(
     series: Union[TimeSeries, Sequence[TimeSeries]],
     name: str,
-    width_expected: Optional[int],
-    check_deterministic: bool,
-    check_binary: bool,
-    check_multivariate: bool,
+    width_expected: Optional[int] = None,
+    check_deterministic: bool = False,
+    check_binary: bool = False,
+    check_multivariate: bool = False,
+    num_series_expected: Optional[int] = None,
+    extra_checks: Optional[Callable] = None,
 ):
     """
     Input `series` checks used for Aggregators, Detectors, ...
 
-    - `series` must be (sequence of) series where each series must:
+    - `series` must be (sequence of) series with length (`num_series_expected`) where each series must:
         * have width `width_expected` if it is not `None`
         * be deterministic if `check_deterministic=True`
         * be binary if `check_binary=True`
         * be multivariate if `check_multivariate=True`
+
+    By default, all checks except the `TimeSeries` check are disabled.
 
     Parameters
     ----------
@@ -741,10 +754,19 @@ def _check_input(
         Whether to check if all series are multivariate.
     """
     series = series2seq(series)
+    if num_series_expected is not None and len(series) != num_series_expected:
+        if num_series_expected == 1:
+            err_txt = f"`{name}` must be single `TimeSeries` or a sequence of `TimeSeries` of length `1`."
+        else:
+            err_txt = f"`{name}` must be a sequence of `TimeSeries` of length `{num_series_expected}`."
+        raise_log(
+            ValueError(err_txt),
+            logger=logger,
+        )
     for s in series:
         if not isinstance(s, TimeSeries):
             raise_log(
-                ValueError(f"all series in `{name}` must be of type TimeSeries."),
+                ValueError(f"all series in `{name}` must be of type `TimeSeries`."),
                 logger=logger,
             )
         if check_deterministic and not s.is_deterministic:
