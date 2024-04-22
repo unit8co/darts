@@ -64,7 +64,7 @@ class FilteringAnomalyModel(AnomalyModel):
     ):
         """Fit the underlying filtering model (if applicable) and the fittable scorers, if any.
 
-        Train the filter (if not already fitted and `allow_filter_training` is set to True)
+        Train the filter (if not already fitted and `allow_model_training` is set to True)
         and the scorer(s) on the given time series.
 
         The filter model will be applied to the given series, and the results will be used
@@ -114,14 +114,14 @@ class FilteringAnomalyModel(AnomalyModel):
             else:
                 raise_log(
                     ValueError(
-                        "`allow_filter_training` was set to True, but the filter"
+                        "`allow_model_training` was set to True, but the filter"
                         + f" {self.model.__class__.__name__} has no fit() method."
                     ),
                     logger,
                 )
         else:
             # TODO: check if Kalman is fitted or not
-            # if not raise error "fit filter before, or set `allow_filter_training` to TRUE"
+            # if not raise error "fit filter before, or set `allow_model_training` to TRUE"
             pass
 
         if self.scorers_are_trainable:

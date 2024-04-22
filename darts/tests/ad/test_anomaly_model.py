@@ -184,7 +184,7 @@ class TestAnomalyDetectionModel:
     def test_FitFilteringAnomalyModelInput(self, anomaly_model_config):
         am_cls, am_kwargs = anomaly_model_config
         anomaly_model = am_cls(**am_kwargs)
-        # filter must be fittable if allow_filter_training is set to True
+        # filter must be fittable if allow_model_training is set to True
         with pytest.raises(ValueError):
             anomaly_model.fit(self.train, allow_model_training=True)
 
@@ -218,12 +218,6 @@ class TestAnomalyDetectionModel:
             anomaly_model.fit("str", allow_model_training=True)
         with pytest.raises(ValueError):
             anomaly_model.fit([1, 2, 3], allow_model_training=True)
-
-        # allow_model_training must be a bool
-        with pytest.raises(ValueError):
-            anomaly_model.fit(self.train, allow_model_training=1)
-        with pytest.raises(ValueError):
-            anomaly_model.fit(self.train, allow_model_training="True")
 
         # 'allow_model_training' must be set to True if forecasting model is not fitted
         if anomaly_model.scorers_are_trainable:

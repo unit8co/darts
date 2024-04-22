@@ -84,6 +84,7 @@ class Aggregator(ABC):
             series,
             name=name,
             width_expected=self.width_trained_on,
+            check_deterministic=True,
             check_binary=True,
             check_multivariate=True,
         )
@@ -169,6 +170,7 @@ class FittableAggregator(Aggregator):
             pred_series,
             name="pred_series",
             width_expected=pred_width,
+            check_deterministic=True,
             check_binary=True,
             check_multivariate=True,
         )
@@ -178,6 +180,7 @@ class FittableAggregator(Aggregator):
             actual_series,
             name="actual_series",
             width_expected=1,
+            check_deterministic=True,
             check_binary=True,
             check_multivariate=False,
         )

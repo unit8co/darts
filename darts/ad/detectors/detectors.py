@@ -61,6 +61,7 @@ class Detector(ABC):
             series,
             name=name,
             width_expected=self.width_trained_on,
+            check_deterministic=True,
             check_binary=False,
             check_multivariate=False,
         )
@@ -144,6 +145,7 @@ class FittableDetector(Detector):
             series,
             name="series",
             width_expected=width,
+            check_deterministic=True,
             check_binary=False,
             check_multivariate=False,
         )

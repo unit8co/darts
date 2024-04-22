@@ -8,8 +8,12 @@ from typing import Dict, Optional, Sequence, Union
 import pandas as pd
 
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.ad.utils import (
+    _check_input,
+    eval_metric_from_scores,
+    show_anomalies_from_scores,
+)
+from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.ts_utils import series2seq
 
@@ -20,13 +24,15 @@ class AnomalyModel(ABC):
     """Base class for all anomaly models."""
 
     def __init__(self, model, scorer):
-
         self.scorers = [scorer] if not isinstance(scorer, Sequence) else scorer
 
-        raise_if_not(
-            all([isinstance(s, AnomalyScorer) for s in self.scorers]),
-            "all scorers must be of instance darts.ad.scorers.AnomalyScorer.",
-        )
+        if not all([isinstance(s, AnomalyScorer) for s in self.scorers]):
+            raise_log(
+                ValueError(
+                    "all scorers must be of instance darts.ad.scorers.AnomalyScorer."
+                ),
+                logger=logger,
+            )
 
         self.scorers_are_trainable = any(s.trainable for s in self.scorers)
         self.univariate_scoring = any(s.univariate_scorer for s in self.scorers)
@@ -39,14 +45,16 @@ class AnomalyModel(ABC):
         """
 
         if self.univariate_scoring:
-            raise_if_not(
-                all([s.width == 1 for s in actual_anomalies]),
-                f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.univariate_scorer]}"
-                f" that will return a univariate anomaly score series (width=1)."
-                f" Found a multivariate `actual_anomalies`. The evaluation of the"
-                " accuracy cannot be computed. If applicable, think about"
-                " setting the scorer parameter `componenet_wise` to True.",
-            )
+            if not all([s.width == 1 for s in actual_anomalies]):
+                raise_log(
+                    ValueError(
+                        f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.univariate_scorer]} "
+                        f"that will return a univariate anomaly score series (width=1). Found a multivariate "
+                        f"`actual_anomalies`. The evaluation of the accuracy cannot be computed. If applicable, "
+                        f"think about setting the scorer parameter `componenet_wise` to True."
+                    ),
+                    logger=logger,
+                )
 
     @abstractmethod
     def fit(
@@ -54,14 +62,13 @@ class AnomalyModel(ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         allow_model_training: bool,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        raise_if_not(
-            type(allow_model_training) is bool,  # noqa: E721
-            f"`allow_filter_training` must be Boolean, found type: {type(allow_model_training)}.",
-        )
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in series2seq(series)]),
-            "all input `series` must be of type Timeseries.",
+        _check_input(
+            series,
+            name="series",
+            width_expected=None,
+            check_deterministic=False,
+            check_binary=False,
+            check_multivariate=False,
         )
 
     def _fit_scorers(
@@ -159,10 +166,13 @@ class AnomalyModel(ABC):
                 logger=logger,
             )
 
-        raise_if_not(
-            isinstance(series, TimeSeries),
-            f"`show_anomalies` expects an input of type TimeSeries, found type: {type(series)}.",
-        )
+        if not isinstance(series, TimeSeries):
+            raise_log(
+                ValueError(
+                    f"`show_anomalies` expects an input of type TimeSeries, found type: {type(series)}."
+                ),
+                logger=logger,
+            )
 
         # at the moment, only forecasting_am support these
         if hasattr(self, "filter"):

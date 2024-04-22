@@ -716,6 +716,7 @@ def _check_input(
     series: Union[TimeSeries, Sequence[TimeSeries]],
     name: str,
     width_expected: Optional[int],
+    check_deterministic: bool,
     check_binary: bool,
     check_multivariate: bool,
 ):
@@ -723,8 +724,8 @@ def _check_input(
     Input `series` checks used for Aggregators, Detectors, ...
 
     - `series` must be (sequence of) series where each series must:
-        * be deterministic
         * have width `width_expected` if it is not `None`
+        * be deterministic if `check_deterministic=True`
         * be binary if `check_binary=True`
         * be multivariate if `check_multivariate=True`
 
@@ -746,7 +747,7 @@ def _check_input(
                 ValueError(f"all series in `{name}` must be of type TimeSeries."),
                 logger=logger,
             )
-        if not s.is_deterministic:
+        if check_deterministic and not s.is_deterministic:
             raise_log(
                 ValueError(
                     f"all series in `{name}` must be deterministic (number of samples=1)."
