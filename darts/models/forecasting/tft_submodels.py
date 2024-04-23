@@ -59,13 +59,17 @@ class _TimeDistributedEmbeddingBag(nn.EmbeddingBag):
             return super().forward(x)
 
         # Squash samples and timesteps into a single axis
-        x_reshape = x.contiguous().view(-1, x.size(-1))  # (samples * timesteps, input_size)
+        x_reshape = x.contiguous().view(
+            -1, x.size(-1)
+        )  # (samples * timesteps, input_size)
 
         y = super().forward(x_reshape)
 
         # We have to reshape Y
         if self.batch_first:
-            y = y.contiguous().view(x.size(0), -1, y.size(-1))  # (samples, timesteps, output_size)
+            y = y.contiguous().view(
+                x.size(0), -1, y.size(-1)
+            )  # (samples, timesteps, output_size)
         else:
             y = y.view(-1, x.size(1), y.size(-1))  # (timesteps, samples, output_size)
         return y
@@ -94,7 +98,9 @@ class _MultiEmbedding(nn.Module):
         self.embedding_sizes = embedding_sizes
         self.variable_names = variable_names
 
-        self.embeddings = nn.ModuleDict({name: nn.Embedding(*embedding_sizes[name]) for name in variable_names})
+        self.embeddings = nn.ModuleDict({
+            name: nn.Embedding(*embedding_sizes[name]) for name in variable_names
+        })
 
     @property
     def input_size(self) -> int:
@@ -117,11 +123,16 @@ class _MultiEmbedding(nn.Module):
             dictionary of category names to embeddings of shape batch x (optional) time x embedding_size if
             ``embedding_size`` is given as dictionary.
         """
-        return {name: self.embeddings[name](x[..., i]) for i, name in enumerate(self.variable_names)}
+        return {
+            name: self.embeddings[name](x[..., i])
+            for i, name in enumerate(self.variable_names)
+        }
 
 
 class _TimeDistributedInterpolation(nn.Module):
-    def __init__(self, output_size: int, batch_first: bool = False, trainable: bool = False):
+    def __init__(
+        self, output_size: int, batch_first: bool = False, trainable: bool = False
+    ):
         super().__init__()
         self.output_size = output_size
         self.batch_first = batch_first
@@ -131,7 +142,9 @@ class _TimeDistributedInterpolation(nn.Module):
             self.gate = nn.Sigmoid()
 
     def interpolate(self, x):
-        upsampled = F.interpolate(x.unsqueeze(1), self.output_size, mode="linear", align_corners=True).squeeze(1)
+        upsampled = F.interpolate(
+            x.unsqueeze(1), self.output_size, mode="linear", align_corners=True
+        ).squeeze(1)
         if self.trainable:
             upsampled = upsampled * self.gate(self.mask.unsqueeze(0)) * 2.0
         return upsampled
@@ -141,13 +154,17 @@ class _TimeDistributedInterpolation(nn.Module):
             return self.interpolate(x)
 
         # Squash samples and timesteps into a single axis
-        x_reshape = x.contiguous().view(-1, x.size(-1))  # (samples * timesteps, input_size)
+        x_reshape = x.contiguous().view(
+            -1, x.size(-1)
+        )  # (samples * timesteps, input_size)
 
         y = self.interpolate(x_reshape)
 
         # We have to reshape Y
         if self.batch_first:
-            y = y.contiguous().view(x.size(0), -1, y.size(-1))  # (samples, timesteps, output_size)
+            y = y.contiguous().view(
+                x.size(0), -1, y.size(-1)
+            )  # (samples, timesteps, output_size)
         else:
             y = y.view(-1, x.size(1), y.size(-1))  # (timesteps, samples, output_size)
 
@@ -199,7 +216,9 @@ class _ResampleNorm(nn.Module):
         self.output_size = output_size or input_size
 
         if self.input_size != self.output_size:
-            self.resample = _TimeDistributedInterpolation(self.output_size, batch_first=True, trainable=False)
+            self.resample = _TimeDistributedInterpolation(
+                self.output_size, batch_first=True, trainable=False
+            )
 
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
@@ -232,7 +251,9 @@ class _AddNorm(nn.Module):
         self.skip_size = skip_size or input_size
 
         if self.input_size != self.skip_size:
-            self.resample = _TimeDistributedInterpolation(self.input_size, batch_first=True, trainable=False)
+            self.resample = _TimeDistributedInterpolation(
+                self.input_size, batch_first=True, trainable=False
+            )
 
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.input_size, dtype=torch.float))
@@ -267,7 +288,9 @@ class _GateAddNorm(nn.Module):
         self.skip_size = skip_size or self.hidden_size
         self.dropout = dropout
 
-        self.glu = _GatedLinearUnit(self.input_size, hidden_size=self.hidden_size, dropout=self.dropout)
+        self.glu = _GatedLinearUnit(
+            self.input_size, hidden_size=self.hidden_size, dropout=self.dropout
+        )
         self.add_norm = _AddNorm(
             self.hidden_size,
             skip_size=self.skip_size,
@@ -306,7 +329,9 @@ class _GatedResidualNetwork(nn.Module):
             residual_size = self.output_size
 
         if self.output_size != residual_size:
-            self.resample_norm = _ResampleNorm(residual_size, self.output_size, norm=layer_norm)
+            self.resample_norm = _ResampleNorm(
+                residual_size, self.output_size, norm=layer_norm
+            )
 
         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
         self.elu = nn.ELU()
@@ -330,7 +355,9 @@ class _GatedResidualNetwork(nn.Module):
             if "bias" in name:
                 torch.nn.init.zeros_(p)
             elif "fc1" in name or "fc2" in name:
-                torch.nn.init.kaiming_normal_(p, a=0, mode="fan_in", nonlinearity="leaky_relu")
+                torch.nn.init.kaiming_normal_(
+                    p, a=0, mode="fan_in", nonlinearity="leaky_relu"
+                )
             elif "context" in name:
                 torch.nn.init.xavier_uniform_(p)
 
@@ -368,8 +395,12 @@ class _VariableSelectionNetwork(nn.Module):
         """
         super().__init__()
 
-        input_embedding_flags = input_embedding_flags if input_embedding_flags is not None else {}
-        single_variable_grns = single_variable_grns if single_variable_grns is not None else {}
+        input_embedding_flags = (
+            input_embedding_flags if input_embedding_flags is not None else {}
+        )
+        single_variable_grns = (
+            single_variable_grns if single_variable_grns is not None else {}
+        )
         prescalers = prescalers if prescalers is not None else {}
 
         self.hidden_size = hidden_size
@@ -424,7 +455,10 @@ class _VariableSelectionNetwork(nn.Module):
 
     @property
     def input_size_total(self):
-        return sum(size if name in self.input_embedding_flags else size for name, size in self.input_sizes.items())
+        return sum(
+            size if name in self.input_embedding_flags else size
+            for name, size in self.input_sizes.items()
+        )
 
     @property
     def num_inputs(self):
@@ -456,11 +490,17 @@ class _VariableSelectionNetwork(nn.Module):
             variable_embedding = x[name]
             if name in self.prescalers:
                 variable_embedding = self.prescalers[name](variable_embedding)
-            outputs = self.single_variable_grns[name](variable_embedding)  # fast forward if only one variable
+            outputs = self.single_variable_grns[name](
+                variable_embedding
+            )  # fast forward if only one variable
             if outputs.ndim == 3:  # -> batch size, time, hidden size, n_variables
-                sparse_weights = torch.ones(outputs.size(0), outputs.size(1), 1, 1, device=outputs.device)  #
+                sparse_weights = torch.ones(
+                    outputs.size(0), outputs.size(1), 1, 1, device=outputs.device
+                )  #
             else:  # ndim == 2 -> batch size, hidden size, n_variables
-                sparse_weights = torch.ones(outputs.size(0), 1, 1, device=outputs.device)
+                sparse_weights = torch.ones(
+                    outputs.size(0), 1, 1, device=outputs.device
+                )
         return outputs, sparse_weights
 
 
@@ -501,8 +541,12 @@ class _InterpretableMultiHeadAttention(nn.Module):
         self.dropout = MonteCarloDropout(p=dropout)
 
         self.v_layer = nn.Linear(self.d_model, self.d_v)
-        self.q_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)])
-        self.k_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)])
+        self.q_layers = nn.ModuleList([
+            nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)
+        ])
+        self.k_layers = nn.ModuleList([
+            nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)
+        ])
         self.attention = _ScaledDotProductAttention()
         self.w_h = nn.Linear(self.d_v, self.d_model, bias=False)
 

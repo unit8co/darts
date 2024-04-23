@@ -541,7 +541,9 @@ class ElectricityDataset(DatasetLoaderCSV):
         """
 
         ts_list = []  # list of timeseries
-        for label in _build_tqdm_iterator(series, verbose=True, total=len(series.columns)):
+        for label in _build_tqdm_iterator(
+            series, verbose=True, total=len(series.columns)
+        ):
             srs = series[label]
 
             # filter column down to the period of recording
@@ -638,7 +640,9 @@ class UberTLCDataset(DatasetLoaderCSV):
         """
 
         ts_list = []  # list of timeseries
-        for label in _build_tqdm_iterator(series, verbose=True, total=len(series.columns)):
+        for label in _build_tqdm_iterator(
+            series, verbose=True, total=len(series.columns)
+        ):
             srs = series[label]
 
             # filter column down to the period of recording
@@ -867,9 +871,14 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
             """Restrict the time axis and add the weather data"""
             df = pd.read_csv(dataset_path, index_col=0)
             # convert time index
-            df.index = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True)).tz_localize(None)
+            df.index = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True)).tz_localize(
+                None
+            )
             # extract pre-determined period
-            df = df.loc[(pd.Timestamp("2015-01-01") <= df.index) & (df.index <= pd.Timestamp("2022-08-31"))]
+            df = df.loc[
+                (pd.Timestamp("2015-01-01") <= df.index)
+                & (df.index <= pd.Timestamp("2022-08-31"))
+            ]
             # download and preprocess the weather information
             df_weather = self._download_weather_data()
             # add weather data as additional features
@@ -881,7 +890,9 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
 
             # round Electricity cols to 4 decimals, other columns to 2 decimals
             cols_precise = ["Value_NE5", "Value_NE7"]
-            df = df.round(decimals={col: (4 if col in cols_precise else 2) for col in df.columns})
+            df = df.round(
+                decimals={col: (4 if col in cols_precise else 2) for col in df.columns}
+            )
 
             # export the dataset
             df.index.name = "Timestamp"
@@ -918,6 +929,11 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
         df["param_name"] = df["Parameter"] + " [" + df["Einheit"] + "]"
         df = df.pivot(index="Datum", columns="param_name", values="Wert")
         # convert time index to from CET to UTC and extract the required time range
-        df.index = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True)).tz_localize(None)
-        df = df.loc[(pd.Timestamp("2015-01-01") <= df.index) & (df.index <= pd.Timestamp("2022-08-31"))]
+        df.index = pd.DatetimeIndex(pd.to_datetime(df.index, utc=True)).tz_localize(
+            None
+        )
+        df = df.loc[
+            (pd.Timestamp("2015-01-01") <= df.index)
+            & (df.index <= pd.Timestamp("2022-08-31"))
+        ]
         return df

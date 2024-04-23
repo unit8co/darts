@@ -101,4 +101,9 @@ def test_time_log():
         _my_timed_fn()
 
     logged_message = lc.records[-1].getMessage()
-    assert re.fullmatch("_my_timed_fn function ran for [0-9]+ milliseconds", logged_message) is not None
+    assert (
+        re.fullmatch(
+            "_my_timed_fn function ran for [0-9]+ milliseconds", logged_message
+        )
+        is not None
+    )

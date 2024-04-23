@@ -57,7 +57,9 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
             comps_available = explained_components[0].keys()
             if not all(comp.keys() == comps_available for comp in explained_components):
                 raise_log(
-                    ValueError("When giving a list of explained component dicts, the dict keys must match."),
+                    ValueError(
+                        "When giving a list of explained component dicts, the dict keys must match."
+                    ),
                     logger=logger,
                 )
         else:
@@ -214,16 +216,22 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 self.available_components = list(self.explained_forecasts[h_0].keys())
             else:
                 raise_log(
-                    ValueError("The explained_forecasts dictionary must have all integer keys."),
+                    ValueError(
+                        "The explained_forecasts dictionary must have all integer keys."
+                    ),
                     logger,
                 )
         else:
             raise_log(
-                ValueError("The explained_forecasts must be a dictionary or a list of dictionaries."),
+                ValueError(
+                    "The explained_forecasts must be a dictionary or a list of dictionaries."
+                ),
                 logger,
             )
 
-    def get_explanation(self, horizon: int, component: Optional[str] = None) -> Union[TimeSeries, List[TimeSeries]]:
+    def get_explanation(
+        self, horizon: int, component: Optional[str] = None
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         """
         Returns one or several `TimeSeries` representing the explanations
         for a given horizon and component.
@@ -236,7 +244,9 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             The component for which to return the explanation. Does not
             need to be specified for univariate series.
         """
-        return self._query_explainability_result(self.explained_forecasts, horizon, component)
+        return self._query_explainability_result(
+            self.explained_forecasts, horizon, component
+        )
 
     def _query_explainability_result(
         self,
@@ -258,7 +268,9 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             The component for which to return the content of the attribute. Does not
             need to be specified for univariate series.
         """
-        component = self._validate_input_for_querying_explainability_result(horizon, component)
+        component = self._validate_input_for_querying_explainability_result(
+            horizon, component
+        )
 
         if isinstance(attr, list):
             return [attr[i][horizon][component] for i in range(len(attr))]
@@ -272,7 +284,9 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 logger,
             )
 
-    def _validate_input_for_querying_explainability_result(self, horizon: int, component: Optional[str] = None) -> str:
+    def _validate_input_for_querying_explainability_result(
+        self, horizon: int, component: Optional[str] = None
+    ) -> str:
         """
         Helper that validates the input parameters of a method that queries the `HorizonBasedExplainabilityResult`.
 
@@ -352,7 +366,9 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
 
-    def get_feature_values(self, horizon: int, component: Optional[str] = None) -> Union[TimeSeries, List[TimeSeries]]:
+    def get_feature_values(
+        self, horizon: int, component: Optional[str] = None
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         """
         Returns one or several `TimeSeries` representing the feature values
         for a given horizon and component.
@@ -365,7 +381,9 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
             The component for which to return the feature values. Does not
             need to be specified for univariate series.
         """
-        return self._query_explainability_result(self.feature_values, horizon, component)
+        return self._query_explainability_result(
+            self.feature_values, horizon, component
+        )
 
     def get_shap_explanation_object(
         self, horizon: int, component: Optional[str] = None
@@ -381,7 +399,9 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
             The component for which to return the `shap.Explanation` object. Does not
             need to be specified for univariate series.
         """
-        return self._query_explainability_result(self.shap_explanation_object, horizon, component)
+        return self._query_explainability_result(
+            self.shap_explanation_object, horizon, component
+        )
 
 
 class TFTExplainabilityResult(ComponentBasedExplainabilityResult):

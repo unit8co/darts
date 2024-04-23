@@ -109,7 +109,9 @@ class ExponentialSmoothing(LocalForecastingModel):
         # if the model was initially created with `self.seasonal_periods=None`, make sure that
         # the model will try to automatically infer the index, otherwise it should use the
         # provided `seasonal_periods` value
-        seasonal_periods_param = None if self.infer_seasonal_periods else self.seasonal_periods
+        seasonal_periods_param = (
+            None if self.infer_seasonal_periods else self.seasonal_periods
+        )
 
         # set the seasonal periods parameter to a default value if it was not provided explicitly
         # and if it cannot be inferred due to the lack of a datetime index
@@ -146,7 +148,9 @@ class ExponentialSmoothing(LocalForecastingModel):
         if num_samples == 1:
             forecast = self.model.forecast(n)
         else:
-            forecast = np.expand_dims(self.model.simulate(n, repetitions=num_samples), axis=1)
+            forecast = np.expand_dims(
+                self.model.simulate(n, repetitions=num_samples), axis=1
+            )
 
         return self._build_forecast_series(forecast)
 

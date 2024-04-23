@@ -59,7 +59,13 @@ class ThresholdDetector(Detector):
         )
 
         def _prep_thresholds(q):
-            return q.tolist() if isinstance(q, np.ndarray) else [q] if not isinstance(q, Sequence) else q
+            return (
+                q.tolist()
+                if isinstance(q, np.ndarray)
+                else [q]
+                if not isinstance(q, Sequence)
+                else q
+            )
 
         low = _prep_thresholds(low_threshold)
         high = _prep_thresholds(high_threshold)
@@ -77,7 +83,8 @@ class ThresholdDetector(Detector):
         )
 
         raise_if(
-            all([lo is None for lo in self.low_threshold]) and all([hi is None for hi in self.high_threshold]),
+            all([lo is None for lo in self.low_threshold])
+            and all([hi is None for hi in self.high_threshold]),
             "All provided threshold values are None.",
         )
 
@@ -92,7 +99,9 @@ class ThresholdDetector(Detector):
         )
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
-        raise_if_not(series.is_deterministic, "This detector only works on deterministic series.")
+        raise_if_not(
+            series.is_deterministic, "This detector only works on deterministic series."
+        )
 
         raise_if(
             len(self.low_threshold) > 1 and len(self.low_threshold) != series.width,
@@ -102,15 +111,25 @@ class ThresholdDetector(Detector):
         )
 
         # if length is 1, tile it to series width:
-        low_threshold = self.low_threshold * series.width if len(self.low_threshold) == 1 else self.low_threshold
-        high_threshold = self.high_threshold * series.width if len(self.high_threshold) == 1 else self.high_threshold
+        low_threshold = (
+            self.low_threshold * series.width
+            if len(self.low_threshold) == 1
+            else self.low_threshold
+        )
+        high_threshold = (
+            self.high_threshold * series.width
+            if len(self.high_threshold) == 1
+            else self.high_threshold
+        )
 
         # (time, components)
         np_series = series.all_values(copy=False).squeeze(-1)
 
         def _detect_fn(x, lo, hi):
             # x of shape (time,) for 1 component
-            return (x < (np.NINF if lo is None else lo)) | (x > (np.Inf if hi is None else hi))
+            return (x < (np.NINF if lo is None else lo)) | (
+                x > (np.Inf if hi is None else hi)
+            )
 
         detected = np.zeros_like(np_series, dtype=int)
 

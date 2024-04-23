@@ -82,5 +82,7 @@ class MissingValuesFiller(BaseDataTransformer):
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
+    ) -> TimeSeries:
         return fill_missing_values(series, params["fixed"]["_fill"], **kwargs)

@@ -155,7 +155,9 @@ class _BlockRNNModule(CustomBlockRNNModule):
         # to the output of desired length
         last = self.hidden_dim
         feats = []
-        for feature in self.num_layers_out_fc + [self.out_len * self.target_size * self.nr_params]:
+        for feature in self.num_layers_out_fc + [
+            self.out_len * self.target_size * self.nr_params
+        ]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -174,7 +176,9 @@ class _BlockRNNModule(CustomBlockRNNModule):
             hidden = hidden[0]
         predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
-        predictions = predictions.view(batch_size, self.out_len, self.target_size, self.nr_params)
+        predictions = predictions.view(
+            batch_size, self.out_len, self.target_size, self.nr_params
+        )
 
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
@@ -415,7 +419,9 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:
-            if not inspect.isclass(model) or not issubclass(model, CustomBlockRNNModule):
+            if not inspect.isclass(model) or not issubclass(
+                model, CustomBlockRNNModule
+            ):
                 raise_log(
                     ValueError(
                         "`model` is not a valid RNN model. Please specify 'RNN', 'LSTM', 'GRU', or give a subclass "
@@ -436,7 +442,9 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        input_dim = train_sample[0].shape[1] + (
+            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        )
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

@@ -105,7 +105,9 @@ def raise_if(
     raise_if_not(not condition, message, logger)
 
 
-def raise_log(exception: Exception, logger: logging.Logger = get_logger("main_logger")) -> NoReturn:
+def raise_log(
+    exception: Exception, logger: logging.Logger = get_logger("main_logger")
+) -> NoReturn:
     """
     Can be used to replace "raise" when throwing an exception to ensure the logging
     of the exception. After logging it, the exception is raised.
@@ -212,9 +214,13 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
 
 
 def suppress_lightning_warnings(suppress_all: bool = False):
-    warnings.filterwarnings("ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*")
+    warnings.filterwarnings(
+        "ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*"
+    )
     if suppress_all:
-        warnings.filterwarnings("ignore", ".*does not have many workers which may be a bottleneck.*")
+        warnings.filterwarnings(
+            "ignore", ".*does not have many workers which may be a bottleneck.*"
+        )
         warnings.filterwarnings(
             "ignore",
             ".*Trying to infer the `batch_size` from an ambiguous collection.*",

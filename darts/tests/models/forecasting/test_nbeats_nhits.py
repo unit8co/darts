@@ -109,7 +109,9 @@ class TestNbeatsNhitsModel:
             )
             model.fit(series_multivariate, past_covariates=series_covariates)
 
-            res = model.predict(n=3, series=series_multivariate, past_covariates=series_covariates).values()
+            res = model.predict(
+                n=3, series=series_multivariate, past_covariates=series_covariates
+            ).values()
 
             assert len(res) == 3
             assert abs(np.average(res)) < 5

@@ -120,7 +120,9 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         if regression_model is None:
-            regression_model = LinearRegressionModel(lags=None, lags_future_covariates=[0], fit_intercept=False)
+            regression_model = LinearRegressionModel(
+                lags=None, lags_future_covariates=[0], fit_intercept=False
+            )
         elif isinstance(regression_model, RegressionModel):
             raise_if_not(
                 regression_model.multi_models,
@@ -130,7 +132,9 @@ class RegressionEnsembleModel(EnsembleModel):
             regression_model = regression_model
         else:
             # scikit-learn like model
-            regression_model = RegressionModel(lags_future_covariates=[0], model=regression_model)
+            regression_model = RegressionModel(
+                lags_future_covariates=[0], model=regression_model
+            )
 
         # check lags of the regression model
         raise_if_not(
@@ -143,7 +147,8 @@ class RegressionEnsembleModel(EnsembleModel):
         self.regression_model: RegressionModel = regression_model
 
         raise_if(
-            regression_train_n_points == -1 and not (self.all_trained and (not train_forecasting_models)),
+            regression_train_n_points == -1
+            and not (self.all_trained and (not train_forecasting_models)),
             "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
             "all `forecasting_models` are already fitted.",
             logger,
@@ -209,11 +214,17 @@ class RegressionEnsembleModel(EnsembleModel):
 
             tmp_pred = model.historical_forecasts(
                 series=series,
-                past_covariates=(past_covariates if model.supports_past_covariates else None),
-                future_covariates=(future_covariates if model.supports_future_covariates else None),
+                past_covariates=(
+                    past_covariates if model.supports_past_covariates else None
+                ),
+                future_covariates=(
+                    future_covariates if model.supports_future_covariates else None
+                ),
                 forecast_horizon=model.output_chunk_length,
                 stride=model.output_chunk_length,
-                num_samples=(num_samples if model.supports_probabilistic_prediction else 1),
+                num_samples=(
+                    num_samples if model.supports_probabilistic_prediction else 1
+                ),
                 start=-start_hist_forecasts,
                 start_format="position",
                 retrain=False,
@@ -229,12 +240,16 @@ class RegressionEnsembleModel(EnsembleModel):
             if missing_steps:
                 # add the missing steps at beginning by taking the first values of precomputed predictions
                 # get the model's direct (uni/multivariate) predictions
-                pred_cols = model_predict_cols[m_idx * n_components : (m_idx + 1) * n_components]
+                pred_cols = model_predict_cols[
+                    m_idx * n_components : (m_idx + 1) * n_components
+                ]
                 hfc_cols = tmp_pred[0].columns.tolist()
                 tmp_pred = [
                     concatenate(
                         [
-                            preds_dir[:missing_steps][pred_cols].with_columns_renamed(pred_cols, hfc_cols),
+                            preds_dir[:missing_steps][pred_cols].with_columns_renamed(
+                                pred_cols, hfc_cols
+                            ),
                             preds_hfc,
                         ],
                         axis=0,
@@ -251,9 +266,15 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
-            predictions = [self._predictions_reduction(prediction) for prediction in predictions]
+            predictions = [
+                self._predictions_reduction(prediction) for prediction in predictions
+            ]
 
-        return self._stack_ts_seq(predictions) if is_single_series else self._stack_ts_multiseq(predictions)
+        return (
+            self._stack_ts_seq(predictions)
+            if is_single_series
+            else self._stack_ts_multiseq(predictions)
+        )
 
     def fit(
         self,
@@ -279,7 +300,9 @@ class RegressionEnsembleModel(EnsembleModel):
             Optionally, a series or sequence of series specifying future-known covariates passed to the
             forecasting models
         """
-        super().fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
+        super().fit(
+            series, past_covariates=past_covariates, future_covariates=future_covariates
+        )
 
         # spare train_n_points points to serve as regression target
         is_single_series = isinstance(series, TimeSeries)
@@ -327,7 +350,9 @@ class RegressionEnsembleModel(EnsembleModel):
             if is_single_series:
                 train_n_points_too_big = len(series) <= self.train_n_points
             else:
-                train_n_points_too_big = any([len(s) <= self.train_n_points for s in series])
+                train_n_points_too_big = any([
+                    len(s) <= self.train_n_points for s in series
+                ])
 
         raise_if(
             train_n_points_too_big,
@@ -340,15 +365,21 @@ class RegressionEnsembleModel(EnsembleModel):
             forecast_training = series[: -self.train_n_points]
             regression_target = series[-self.train_n_points :]
         else:
-            forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
+            forecast_training, regression_target = self._split_multi_ts_sequence(
+                self.train_n_points, series
+            )
 
         if self.train_forecasting_models:
             for model in self.forecasting_models:
                 # maximize covariate usage
                 model._fit_wrapper(
                     series=forecast_training,
-                    past_covariates=(past_covariates if model.supports_past_covariates else None),
-                    future_covariates=(future_covariates if model.supports_future_covariates else None),
+                    past_covariates=(
+                        past_covariates if model.supports_past_covariates else None
+                    ),
+                    future_covariates=(
+                        future_covariates if model.supports_future_covariates else None
+                    ),
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
@@ -372,7 +403,9 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         # train the regression model on the individual models' predictions
-        self.regression_model.fit(series=regression_target, future_covariates=predictions)
+        self.regression_model.fit(
+            series=regression_target, future_covariates=predictions
+        )
 
         # prepare the forecasting models for further predicting by fitting them with the entire data
         if self.train_forecasting_models:
@@ -383,8 +416,12 @@ class RegressionEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=(past_covariates if model.supports_past_covariates else None),
-                    future_covariates=(future_covariates if model.supports_future_covariates else None),
+                    past_covariates=(
+                        past_covariates if model.supports_past_covariates else None
+                    ),
+                    future_covariates=(
+                        future_covariates if model.supports_future_covariates else None
+                    ),
                 )
         return self
 
@@ -443,7 +480,10 @@ class RegressionEnsembleModel(EnsembleModel):
 
     @property
     def supports_multivariate(self) -> bool:
-        return super().supports_multivariate and self.regression_model.supports_multivariate
+        return (
+            super().supports_multivariate
+            and self.regression_model.supports_multivariate
+        )
 
     @property
     def supports_probabilistic_prediction(self) -> bool:

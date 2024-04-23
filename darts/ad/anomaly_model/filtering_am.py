@@ -190,7 +190,9 @@ class FilteringAnomalyModel(AnomalyModel):
 
             series = series[0]
 
-        anomaly_scores, model_output = self.score(series, return_model_prediction=True, **score_kwargs)
+        anomaly_scores, model_output = self.score(
+            series, return_model_prediction=True, **score_kwargs
+        )
 
         return self._show_anomalies(
             series,
@@ -251,7 +253,11 @@ class FilteringAnomalyModel(AnomalyModel):
         # TODO: vectorize this call later on if we have any filtering models allowing this
         list_pred = [self.filter.filter(s, **filter_kwargs) for s in list_series]
 
-        scores = list(zip(*[sc.score_from_prediction(list_series, list_pred) for sc in self.scorers]))
+        scores = list(
+            zip(*[
+                sc.score_from_prediction(list_series, list_pred) for sc in self.scorers
+            ])
+        )
 
         if len(scores) == 1 and not isinstance(series, Sequence):
             # there's only one series
@@ -308,7 +314,10 @@ class FilteringAnomalyModel(AnomalyModel):
             (by nature of the scorer or if its component_wise is set to True), the values of the dictionary
             will be a Sequence containing the score for each dimension.
         """
-        list_series, list_actual_anomalies = _to_list(series), _to_list(actual_anomalies)
+        list_series, list_actual_anomalies = (
+            _to_list(series),
+            _to_list(actual_anomalies),
+        )
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),

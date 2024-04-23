@@ -66,8 +66,12 @@ class ShapExplainer(_ForecastingModelExplainer):
         self,
         model: RegressionModel,
         background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        background_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        background_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        background_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
         background_num_samples: Optional[int] = None,
         shap_method: Optional[str] = None,
         **kwargs,
@@ -131,7 +135,9 @@ class ShapExplainer(_ForecastingModelExplainer):
 
         if not issubclass(type(model), RegressionModel):
             raise_log(
-                ValueError("Invalid `model` type. Currently, only models of type `RegressionModel` are supported."),
+                ValueError(
+                    "Invalid `model` type. Currently, only models of type `RegressionModel` are supported."
+                ),
                 logger,
             )
 
@@ -157,7 +163,9 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         if model.supports_probabilistic_prediction:
-            logger.warning("The model is probabilistic, but num_samples=1 will be used for explainability.")
+            logger.warning(
+                "The model is probabilistic, but num_samples=1 will be used for explainability."
+            )
 
         if shap_method is not None:
             shap_method = shap_method.upper()
@@ -190,8 +198,12 @@ class ShapExplainer(_ForecastingModelExplainer):
     def explain(
         self,
         foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        foreground_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
     ) -> ShapExplainabilityResult:
@@ -274,7 +286,9 @@ class ShapExplainer(_ForecastingModelExplainer):
         This series has length 3, as the model can explain 5-3+1 forecasts
         (timestamp indexes 4, 5, and 6)
         """
-        super().explain(foreground_series, foreground_past_covariates, foreground_future_covariates)
+        super().explain(
+            foreground_series, foreground_past_covariates, foreground_future_covariates
+        )
         (
             foreground_series,
             foreground_past_covariates,
@@ -313,7 +327,9 @@ class ShapExplainer(_ForecastingModelExplainer):
                 train=False,
             )
 
-            shap_ = self.explainers.shap_explanations(foreground_X, horizons, target_names)
+            shap_ = self.explainers.shap_explanations(
+                foreground_X, horizons, target_names
+            )
 
             shap_values_dict = {}
             feature_values_dict = {}
@@ -347,7 +363,9 @@ class ShapExplainer(_ForecastingModelExplainer):
             feature_values_list = feature_values_list[0]
             shap_explanation_object_list = shap_explanation_object_list[0]
 
-        return ShapExplainabilityResult(shap_values_list, feature_values_list, shap_explanation_object_list)
+        return ShapExplainabilityResult(
+            shap_values_list, feature_values_list, shap_explanation_object_list
+        )
 
     def summary_plot(
         self,
@@ -384,14 +402,20 @@ class ShapExplainer(_ForecastingModelExplainer):
             the horizons and components.
         """
 
-        horizons, target_components = self._process_horizons_and_targets(horizons, target_components)
+        horizons, target_components = self._process_horizons_and_targets(
+            horizons, target_components
+        )
 
         if num_samples:
-            foreground_X_sampled = shap.utils.sample(self.explainers.background_X, num_samples)
+            foreground_X_sampled = shap.utils.sample(
+                self.explainers.background_X, num_samples
+            )
         else:
             foreground_X_sampled = self.explainers.background_X
 
-        shaps_ = self.explainers.shap_explanations(foreground_X_sampled, horizons, target_components)
+        shaps_ = self.explainers.shap_explanations(
+            foreground_X_sampled, horizons, target_components
+        )
 
         for t in target_components:
             for h in horizons:
@@ -471,7 +495,9 @@ class ShapExplainer(_ForecastingModelExplainer):
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
 
-        shap_ = self.explainers.shap_explanations(foreground_X, [horizon], [target_component])
+        shap_ = self.explainers.shap_explanations(
+            foreground_X, [horizon], [target_component]
+        )
 
         return shap.force_plot(
             base_value=shap_[horizon][target_component],
@@ -548,7 +574,9 @@ class _RegressionShapExplainers:
     ):
         self.model = model
         self.target_dim = self.model.input_dim["target"]
-        self.is_multioutputregressor = isinstance(self.model.model, MultiOutputRegressor)
+        self.is_multioutputregressor = isinstance(
+            self.model.model, MultiOutputRegressor
+        )
 
         self.target_components = target_components
         self.past_covariates_components = past_covariates_components
@@ -634,7 +662,11 @@ class _RegressionShapExplainers:
                     if t not in target_components:
                         continue
                     if not self.single_output:
-                        tmp_t = shap.Explanation(shap_explanation_tmp.values[:, :, self.target_dim * (h - 1) + t_idx])
+                        tmp_t = shap.Explanation(
+                            shap_explanation_tmp.values[
+                                :, :, self.target_dim * (h - 1) + t_idx
+                            ]
+                        )
                         tmp_t.data = shap_explanation_tmp.data
                         tmp_t.base_values = shap_explanation_tmp.base_values[
                             :, self.target_dim * (h - 1) + t_idx
@@ -673,11 +705,17 @@ class _RegressionShapExplainers:
             else:
                 explainer = shap.TreeExplainer(model_sklearn, **kwargs)
         elif shap_method == _ShapMethod.PERMUTATION:
-            explainer = shap.PermutationExplainer(model_sklearn.predict, background_X, **kwargs)
+            explainer = shap.PermutationExplainer(
+                model_sklearn.predict, background_X, **kwargs
+            )
         elif shap_method == _ShapMethod.PARTITION:
-            explainer = shap.PermutationExplainer(model_sklearn.predict, background_X, **kwargs)
+            explainer = shap.PermutationExplainer(
+                model_sklearn.predict, background_X, **kwargs
+            )
         elif shap_method == _ShapMethod.KERNEL:
-            explainer = shap.KernelExplainer(model_sklearn.predict, background_X, keep_index=True, **kwargs)
+            explainer = shap.KernelExplainer(
+                model_sklearn.predict, background_X, keep_index=True, **kwargs
+            )
         elif shap_method == _ShapMethod.LINEAR:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
         elif shap_method == _ShapMethod.DEEP:
@@ -685,7 +723,10 @@ class _RegressionShapExplainers:
         elif shap_method == _ShapMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
         else:
-            raise ValueError("shap_method must be one of the following: " + ", ".join([e.value for e in _ShapMethod]))
+            raise ValueError(
+                "shap_method must be one of the following: "
+                + ", ".join([e.value for e in _ShapMethod])
+            )
 
         logger.info("The shap method used is of type: " + str(type(explainer)))
 
@@ -714,10 +755,14 @@ class _RegressionShapExplainers:
         X, indexes = create_lagged_prediction_data(
             target_series=target_series if lags_list else None,
             past_covariates=past_covariates if lags_past_covariates_list else None,
-            future_covariates=(future_covariates if lags_future_covariates_list else None),
+            future_covariates=(
+                future_covariates if lags_future_covariates_list else None
+            ),
             lags=lags_list,
             lags_past_covariates=lags_past_covariates_list if past_covariates else None,
-            lags_future_covariates=(lags_future_covariates_list if future_covariates else None),
+            lags_future_covariates=(
+                lags_future_covariates_list if future_covariates else None
+            ),
             uses_static_covariates=self.model.uses_static_covariates,
             last_static_covariates_shape=self.model._static_covariates_shape,
         )
@@ -728,7 +773,9 @@ class _RegressionShapExplainers:
             X = pd.DataFrame(X)
             if len(X) <= MIN_BACKGROUND_SAMPLE:
                 raise_log(
-                    ValueError("The number of samples in the background dataset is too small to compute shap values.")
+                    ValueError(
+                        "The number of samples in the background dataset is too small to compute shap values."
+                    )
                 )
         else:
             X = pd.DataFrame(X, index=indexes[0])
@@ -738,6 +785,9 @@ class _RegressionShapExplainers:
 
         # rename output columns to the matching lagged features names
         X = X.rename(
-            columns={name: self.model.lagged_feature_names[idx] for idx, name in enumerate(X.columns.to_list())}
+            columns={
+                name: self.model.lagged_feature_names[idx]
+                for idx, name in enumerate(X.columns.to_list())
+            }
         )
         return X

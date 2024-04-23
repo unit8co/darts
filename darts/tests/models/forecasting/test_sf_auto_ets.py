@@ -15,7 +15,9 @@ class TestStatsForecastAutoETS:
     # as future covariates we want a trend
     trend_values = np.arange(start=1, stop=len(ts_passengers) + 1)
     trend_times = ts_passengers.time_index
-    ts_trend = TimeSeries.from_times_and_values(times=trend_times, values=trend_values, columns=["trend"])
+    ts_trend = TimeSeries.from_times_and_values(
+        times=trend_times, values=trend_values, columns=["trend"]
+    )
     ts_trend_train, ts_trend_val = ts_trend.split_after(pd.Timestamp("19570101"))
 
     def test_fit_on_residuals(self):
@@ -25,7 +27,9 @@ class TestStatsForecastAutoETS:
         model.fit(series=self.ts_pass_train, future_covariates=self.ts_trend_train)
 
         # create the residuals from the linear regression
-        fitted_values_linreg = model._linreg.model.predict(X=self.ts_trend_train.values(copy=False))
+        fitted_values_linreg = model._linreg.model.predict(
+            X=self.ts_trend_train.values(copy=False)
+        )
         fitted_values_linreg_ts = TimeSeries.from_times_and_values(
             times=self.ts_pass_train.time_index, values=fitted_values_linreg
         )

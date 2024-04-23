@@ -74,7 +74,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output_chunk_shift: int = 0,
         train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-        torch_metrics: Optional[Union[torchmetrics.Metric, torchmetrics.MetricCollection]] = None,
+        torch_metrics: Optional[
+            Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+        ] = None,
         likelihood: Optional[Likelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
@@ -164,13 +166,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
         self.train_sample_shape = train_sample_shape
-        self.n_targets = train_sample_shape[0][1] if train_sample_shape is not None else 1
+        self.n_targets = (
+            train_sample_shape[0][1] if train_sample_shape is not None else 1
+        )
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
         self.optimizer_kwargs = dict() if optimizer_kwargs is None else optimizer_kwargs
         self.lr_scheduler_cls = lr_scheduler_cls
-        self.lr_scheduler_kwargs = dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
+        self.lr_scheduler_kwargs = (
+            dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
+        )
 
         # convert torch_metrics to torchmetrics.MetricCollection
         torch_metrics = self.configure_torch_metrics(torch_metrics)
@@ -207,7 +213,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
         output = self._produce_train_output(train_batch[:-1])
-        target = train_batch[-1]  # By convention target is always the last element returned by datasets
+        target = train_batch[
+            -1
+        ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
         self.log(
             "train_loss",
@@ -242,7 +250,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # deactivate, monte carlo dropout for any downstream task
         self.set_mc_dropout(active=False)
 
-    def predict_step(self, batch: Tuple, batch_idx: int, dataloader_idx: Optional[int] = None) -> Sequence[TimeSeries]:
+    def predict_step(
+        self, batch: Tuple, batch_idx: int, dataloader_idx: Optional[int] = None
+    ) -> Sequence[TimeSeries]:
         """performs the prediction step
 
         batch
@@ -266,7 +276,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # number of times the input tensor should be tiled to produce predictions for multiple samples
         # this variable is larger than 1 only if the batch_size is at least twice as large as the number
         # of individual time series being predicted in current batch (`num_series`)
-        batch_sample_size = min(max(self.pred_batch_size // num_series, 1), self.pred_num_samples)
+        batch_sample_size = min(
+            max(self.pred_batch_size // num_series, 1), self.pred_num_samples
+        )
 
         # counts number of produced prediction samples for every series to be predicted in current batch
         sample_count = 0
@@ -279,11 +291,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 batch_sample_size = self.pred_num_samples - sample_count
 
             # stack multiple copies of the tensors to produce probabilistic forecasts
-            input_data_tuple_samples = self._sample_tiling(input_data_tuple, batch_sample_size)
+            input_data_tuple_samples = self._sample_tiling(
+                input_data_tuple, batch_sample_size
+            )
 
             # get predictions for 1 whole batch (can include predictions of multiple series
             # and for multiple samples if a probabilistic forecast is produced)
-            batch_prediction = self._get_batch_prediction(self.pred_n, input_data_tuple_samples, self.pred_roll_size)
+            batch_prediction = self._get_batch_prediction(
+                self.pred_n, input_data_tuple_samples, self.pred_roll_size
+            )
 
             # reshape from 3d tensor (num_series x batch_sample_size, ...)
             # into 4d tensor (batch_sample_size, num_series, ...), where dim 0 represents the samples
@@ -317,7 +333,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 with_hierarchy=False if self.predict_likelihood_parameters else True,
                 pred_start=pred_start,
             )
-            for batch_idx, (input_series, pred_start) in enumerate(zip(batch_input_series, batch_pred_starts))
+            for batch_idx, (input_series, pred_start) in enumerate(
+                zip(batch_input_series, batch_pred_starts)
+            )
         )
         return ts_forecasts
 
@@ -409,10 +427,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
             }
             # update config with user params
             lr_config_params = {
-                k: (v if k not in lr_sched_kws else lr_sched_kws.pop(k)) for k, v in lr_config_params.items()
+                k: (v if k not in lr_sched_kws else lr_sched_kws.pop(k))
+                for k, v in lr_config_params.items()
             }
 
-            lr_scheduler = _create_from_cls_and_kwargs(self.lr_scheduler_cls, lr_sched_kws)
+            lr_scheduler = _create_from_cls_and_kwargs(
+                self.lr_scheduler_cls, lr_sched_kws
+            )
 
             return [optimizer], dict({"scheduler": lr_scheduler}, **lr_config_params)
         else:
@@ -423,7 +444,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         pass
 
     @abstractmethod
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
         """
         In charge of applying the recurrent logic for non-recurrent models.
         Should be overwritten by recurrent models.
@@ -487,7 +510,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.to_dtype(dtype)
 
         # restoring attributes necessary to resume from training properly
-        if "loss_fn" in checkpoint.keys() and "torch_metrics_train" in checkpoint.keys():
+        if (
+            "loss_fn" in checkpoint.keys()
+            and "torch_metrics_train" in checkpoint.keys()
+        ):
             self.criterion = checkpoint["loss_fn"]
             self.train_metrics = checkpoint["torch_metrics_train"]
             self.val_metrics = checkpoint["torch_metrics_val"]
@@ -567,12 +593,18 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         past_target, past_covariates, static_covariates = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
         inpt = (
-            (torch.cat([past_target, past_covariates], dim=2) if past_covariates is not None else past_target),
+            (
+                torch.cat([past_target, past_covariates], dim=2)
+                if past_covariates is not None
+                else past_target
+            ),
             static_covariates,
         )
         return self(inpt)
 
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
         """
         Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset to forecast
         the next ``n`` target values per target variable.
@@ -596,14 +628,18 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         ) = input_batch
 
         n_targets = past_target.shape[dim_component]
-        n_past_covs = past_covariates.shape[dim_component] if past_covariates is not None else 0
+        n_past_covs = (
+            past_covariates.shape[dim_component] if past_covariates is not None else 0
+        )
 
         input_past = torch.cat(
             [ds for ds in [past_target, past_covariates] if ds is not None],
             dim=dim_component,
         )
 
-        out = self._produce_predict_output(x=(input_past, static_covariates))[:, self.first_prediction_index :, :]
+        out = self._produce_predict_output(x=(input_past, static_covariates))[
+            :, self.first_prediction_index :, :
+        ]
 
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
@@ -613,7 +649,9 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             # this means we may have to truncate the previous prediction and step
             # back the roll size for the last chunk
             if prediction_length + self.output_chunk_length > n:
-                spillover_prediction_length = prediction_length + self.output_chunk_length - n
+                spillover_prediction_length = (
+                    prediction_length + self.output_chunk_length - n
+                )
                 roll_size -= spillover_prediction_length
                 prediction_length -= spillover_prediction_length
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
@@ -639,16 +677,18 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
 
             # update past covariates to include next `roll_size` future past covariates elements
             if n_past_covs and self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = future_past_covariates[
-                    :, left_past:right_past, :
-                ]
+                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
             elif n_past_covs:
-                input_past[:, :, n_targets : n_targets + n_past_covs] = future_past_covariates[
-                    :, left_past:right_past, :
-                ]
+                input_past[:, :, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(x=(input_past, static_covariates))[:, self.first_prediction_index :, :]
+            out = self._produce_predict_output(x=(input_past, static_covariates))[
+                :, self.first_prediction_index :, :
+            ]
 
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length
@@ -660,17 +700,25 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
 
 
 class PLFutureCovariatesModule(PLForecastingModule, ABC):
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
 
 class PLDualCovariatesModule(PLForecastingModule, ABC):
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
-        raise NotImplementedError("TBD: The only DualCovariatesModel is an RNN with a specific implementation.")
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
+        raise NotImplementedError(
+            "TBD: The only DualCovariatesModel is an RNN with a specific implementation."
+        )
 
 
 class PLMixedCovariatesModule(PLForecastingModule, ABC):
-    def _produce_train_output(self, input_batch: Tuple) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _produce_train_output(
+        self, input_batch: Tuple
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Feeds MixedCovariatesTorchModel with input and output chunks of a MixedCovariatesSequentialDataset for
         training.
@@ -682,7 +730,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         """
         return self(self._process_input_batch(input_batch))
 
-    def _process_input_batch(self, input_batch) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def _process_input_batch(
+        self, input_batch
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]:
         """
         Converts output of MixedCovariatesDataset (training dataset) into an input/past- and
         output/future chunk.
@@ -720,7 +770,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         )
         return x_past, future_covariates, static_covariates
 
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
         """
         Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to forecast
         the next ``n`` target values per target variable.
@@ -747,14 +799,24 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         ) = input_batch
 
         n_targets = past_target.shape[dim_component]
-        n_past_covs = past_covariates.shape[dim_component] if past_covariates is not None else 0
-        n_future_covs = future_covariates.shape[dim_component] if future_covariates is not None else 0
+        n_past_covs = (
+            past_covariates.shape[dim_component] if past_covariates is not None else 0
+        )
+        n_future_covs = (
+            future_covariates.shape[dim_component]
+            if future_covariates is not None
+            else 0
+        )
 
         input_past, input_future, input_static = self._process_input_batch((
             past_target,
             past_covariates,
             historic_future_covariates,
-            (future_covariates[:, :roll_size, :] if future_covariates is not None else None),
+            (
+                future_covariates[:, :roll_size, :]
+                if future_covariates is not None
+                else None
+            ),
             static_covariates,
         ))
 
@@ -770,7 +832,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             # this means we may have to truncate the previous prediction and step
             # back the roll size for the last chunk
             if prediction_length + self.output_chunk_length > n:
-                spillover_prediction_length = prediction_length + self.output_chunk_length - n
+                spillover_prediction_length = (
+                    prediction_length + self.output_chunk_length - n
+                )
                 roll_size -= spillover_prediction_length
                 prediction_length -= spillover_prediction_length
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
@@ -796,19 +860,23 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
 
             # update past covariates to include next `roll_size` future past covariates elements
             if n_past_covs and self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = future_past_covariates[
-                    :, left_past:right_past, :
-                ]
+                input_past[:, -roll_size:, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
             elif n_past_covs:
-                input_past[:, :, n_targets : n_targets + n_past_covs] = future_past_covariates[
-                    :, left_past:right_past, :
-                ]
+                input_past[:, :, n_targets : n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
 
             # update historic future covariates to include next `roll_size` future covariates elements
             if n_future_covs and self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, n_targets + n_past_covs :] = future_covariates[:, left_past:right_past, :]
+                input_past[:, -roll_size:, n_targets + n_past_covs :] = (
+                    future_covariates[:, left_past:right_past, :]
+                )
             elif n_future_covs:
-                input_past[:, :, n_targets + n_past_covs :] = future_covariates[:, left_past:right_past, :]
+                input_past[:, :, n_targets + n_past_covs :] = future_covariates[
+                    :, left_past:right_past, :
+                ]
 
             # ==========> FUTURE INPUT <==========
             left_future, right_future = (
@@ -820,9 +888,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 input_future = future_covariates[:, left_future:right_future, :]
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(x=(input_past, input_future, input_static))[
-                :, self.first_prediction_index :, :
-            ]
+            out = self._produce_predict_output(
+                x=(input_past, input_future, input_static)
+            )[:, self.first_prediction_index :, :]
 
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length
@@ -834,5 +902,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
 
 
 class PLSplitCovariatesModule(PLForecastingModule, ABC):
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")

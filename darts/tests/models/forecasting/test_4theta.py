@@ -29,12 +29,17 @@ class TestFourTheta:
             normalization=False,
         )
         model.fit(sine_series)
-        assert model.model_mode is ModelMode.ADDITIVE and model.trend_mode is TrendMode.LINEAR
+        assert (
+            model.model_mode is ModelMode.ADDITIVE
+            and model.trend_mode is TrendMode.LINEAR
+        )
 
     def test_zero_mean(self):
         sine_series = st(length=50)
         with pytest.raises(ValueError):
-            model = FourTheta(model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL)
+            model = FourTheta(
+                model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL
+            )
             model.fit(sine_series)
 
     def test_theta(self):

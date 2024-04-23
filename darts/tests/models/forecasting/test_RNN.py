@@ -59,7 +59,10 @@ class TestRNNModel:
         # too small training length
         with pytest.raises(ValueError) as msg:
             RNNModel(input_chunk_length=2, training_length=1)
-        assert str(msg.value) == "`training_length` (1) must be `>=input_chunk_length` (2)."
+        assert (
+            str(msg.value)
+            == "`training_length` (1) must be `>=input_chunk_length` (2)."
+        )
 
         # training_length >= input_chunk_length works
         model = RNNModel(
@@ -86,7 +89,9 @@ class TestRNNModel:
         assert str(msg.value).startswith("`model` is not a valid RNN model.")
 
         # can create from valid module name
-        model1 = RNNModel(input_chunk_length=1, model="RNN", n_epochs=1, random_state=42, **tfm_kwargs)
+        model1 = RNNModel(
+            input_chunk_length=1, model="RNN", n_epochs=1, random_state=42, **tfm_kwargs
+        )
         model1.fit(self.series)
         preds1 = model1.predict(n=3)
 

@@ -63,7 +63,9 @@ class TestBlockRNNModel:
     def test_creation(self):
         # cannot choose any string
         with pytest.raises(ValueError) as msg:
-            BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?")
+            BlockRNNModel(
+                input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?"
+            )
         assert str(msg.value).startswith("`model` is not a valid RNN model.")
 
         # cannot create from a class instance
@@ -115,7 +117,9 @@ class TestBlockRNNModel:
 
     def test_fit(self, tmpdir_module):
         # Test basic fit()
-        model = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, n_epochs=2, **tfm_kwargs)
+        model = BlockRNNModel(
+            input_chunk_length=1, output_chunk_length=1, n_epochs=2, **tfm_kwargs
+        )
         model.fit(self.series)
 
         # Test fit-save-load cycle
@@ -165,7 +169,9 @@ class TestBlockRNNModel:
         assert len(pred4) == 6
 
     def helper_test_pred_length(self, pytorch_model, series):
-        model = pytorch_model(input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs)
+        model = pytorch_model(
+            input_chunk_length=1, output_chunk_length=3, n_epochs=1, **tfm_kwargs
+        )
         model.fit(series)
         pred = model.predict(7)
         assert len(pred) == 7

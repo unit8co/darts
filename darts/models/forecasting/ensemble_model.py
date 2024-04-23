@@ -62,14 +62,21 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
-        is_local_model = [isinstance(model, LocalForecastingModel) for model in forecasting_models]
-        is_global_model = [isinstance(model, GlobalForecastingModel) for model in forecasting_models]
+        is_local_model = [
+            isinstance(model, LocalForecastingModel) for model in forecasting_models
+        ]
+        is_global_model = [
+            isinstance(model, GlobalForecastingModel) for model in forecasting_models
+        ]
 
         self.is_local_ensemble = all(is_local_model)
         self.is_global_ensemble = all(is_global_model)
 
         raise_if_not(
-            all([local_model or global_model for local_model, global_model in zip(is_local_model, is_global_model)]),
+            all([
+                local_model or global_model
+                for local_model, global_model in zip(is_local_model, is_global_model)
+            ]),
             "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
             "Also, make sure that all `forecasting_models` are instantiated.",
             logger,
@@ -108,7 +115,9 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if(
             train_num_samples is not None
             and train_num_samples > 1
-            and all([not m.supports_probabilistic_prediction for m in forecasting_models]),
+            and all([
+                not m.supports_probabilistic_prediction for m in forecasting_models
+            ]),
             "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
             "contains only deterministic `forecasting_models`.",
             logger,
@@ -149,14 +158,20 @@ class EnsembleModel(GlobalForecastingModel):
         self.show_warnings = show_warnings
 
         if show_warnings:
-            if self.supports_past_covariates and not self._full_past_covariates_support():
+            if (
+                self.supports_past_covariates
+                and not self._full_past_covariates_support()
+            ):
                 logger.warning(
                     "Some `forecasting_models` in the ensemble do not support past covariates, the past covariates "
                     "will be provided only to the models supporting them when calling fit()` or `predict()`. "
                     "To hide these warnings, set `show_warnings=False`."
                 )
 
-            if self.supports_future_covariates and not self._full_future_covariates_support():
+            if (
+                self.supports_future_covariates
+                and not self._full_future_covariates_support()
+            ):
                 logger.warning(
                     "Some `forecasting_models` in the ensemble do not support future covariates, the future covariates"
                     " will be provided only to the models supporting them when calling `fit()` or `predict()`. "
@@ -194,7 +209,9 @@ class EnsembleModel(GlobalForecastingModel):
             error_past_cov = is_single_series != isinstance(past_covariates, TimeSeries)
 
         if future_covariates is not None:
-            error_future_cov = is_single_series != isinstance(future_covariates, TimeSeries)
+            error_future_cov = is_single_series != isinstance(
+                future_covariates, TimeSeries
+            )
 
         raise_if(
             error_past_cov or error_future_cov,
@@ -236,9 +253,15 @@ class EnsembleModel(GlobalForecastingModel):
             model._predict_wrapper(
                 n=n,
                 series=series,
-                past_covariates=(past_covariates if model.supports_past_covariates else None),
-                future_covariates=(future_covariates if model.supports_future_covariates else None),
-                num_samples=(num_samples if model.supports_probabilistic_prediction else 1),
+                past_covariates=(
+                    past_covariates if model.supports_past_covariates else None
+                ),
+                future_covariates=(
+                    future_covariates if model.supports_future_covariates else None
+                ),
+                num_samples=(
+                    num_samples if model.supports_probabilistic_prediction else 1
+                ),
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for model in self.forecasting_models
@@ -246,9 +269,15 @@ class EnsembleModel(GlobalForecastingModel):
 
         # reduce the probabilistics series
         if self.train_samples_reduction is not None and self.train_num_samples > 1:
-            predictions = [self._predictions_reduction(prediction) for prediction in predictions]
+            predictions = [
+                self._predictions_reduction(prediction) for prediction in predictions
+            ]
 
-        return self._stack_ts_seq(predictions) if is_single_series else self._stack_ts_multiseq(predictions)
+        return (
+            self._stack_ts_seq(predictions)
+            if is_single_series
+            else self._stack_ts_multiseq(predictions)
+        )
 
     def predict(
         self,
@@ -345,7 +374,9 @@ class EnsembleModel(GlobalForecastingModel):
         elif self.train_samples_reduction == "mean":
             predictions = [pred.mean(axis=2) for pred in predictions]
         else:
-            predictions = [pred.quantile(self.train_samples_reduction) for pred in predictions]
+            predictions = [
+                pred.quantile(self.train_samples_reduction) for pred in predictions
+            ]
         return predictions[0] if is_single_series else predictions
 
     @property
@@ -380,14 +411,20 @@ class EnsembleModel(GlobalForecastingModel):
             return max_lag
 
         lag_aggregators = (min, max, min, max, min, max, max, max)
-        return tuple(find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators))
+        return tuple(
+            find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
+        )
 
     @property
     def output_chunk_length(self) -> Optional[int]:
         """Return `None` if none of the forecasting models have a `output_chunk_length`,
         otherwise return the smallest output_chunk_length.
         """
-        tmp = [m.output_chunk_length for m in self.forecasting_models if m.output_chunk_length is not None]
+        tmp = [
+            m.output_chunk_length
+            for m in self.forecasting_models
+            if m.output_chunk_length is not None
+        ]
 
         if len(tmp) == 0:
             return None
@@ -396,7 +433,9 @@ class EnsembleModel(GlobalForecastingModel):
 
     @property
     def _models_are_probabilistic(self) -> bool:
-        return all([model.supports_probabilistic_prediction for model in self.forecasting_models])
+        return all([
+            model.supports_probabilistic_prediction for model in self.forecasting_models
+        ])
 
     @property
     def _models_same_likelihood(self) -> bool:
@@ -411,12 +450,16 @@ class EnsembleModel(GlobalForecastingModel):
             # regression model likelihood is a string, torch-based model likelihoods is an object
             likelihood = getattr(m, "likelihood")
             is_obj_lkl = not isinstance(likelihood, str)
-            lkl_simplified_name = likelihood.simplified_name() if is_obj_lkl else likelihood
+            lkl_simplified_name = (
+                likelihood.simplified_name() if is_obj_lkl else likelihood
+            )
             models_likelihood.add(lkl_simplified_name)
 
             # check the quantiles
             if lkl_simplified_name == "quantile":
-                quantiles: List[str] = likelihood.quantiles if is_obj_lkl else m.quantiles
+                quantiles: List[str] = (
+                    likelihood.quantiles if is_obj_lkl else m.quantiles
+                )
                 if tmp_quantiles is None:
                     tmp_quantiles = quantiles
                 elif tmp_quantiles != quantiles:
@@ -430,7 +473,10 @@ class EnsembleModel(GlobalForecastingModel):
         same likelihood.
         """
         return (
-            all([m.supports_likelihood_parameter_prediction for m in self.forecasting_models])
+            all([
+                m.supports_likelihood_parameter_prediction
+                for m in self.forecasting_models
+            ])
             and self._models_same_likelihood
         )
 
@@ -444,11 +490,15 @@ class EnsembleModel(GlobalForecastingModel):
 
     @property
     def supports_past_covariates(self) -> bool:
-        return any([model.supports_past_covariates for model in self.forecasting_models])
+        return any([
+            model.supports_past_covariates for model in self.forecasting_models
+        ])
 
     @property
     def supports_future_covariates(self) -> bool:
-        return any([model.supports_future_covariates for model in self.forecasting_models])
+        return any([
+            model.supports_future_covariates for model in self.forecasting_models
+        ])
 
     @property
     def supports_optimized_historical_forecasts(self) -> bool:
@@ -462,10 +512,14 @@ class EnsembleModel(GlobalForecastingModel):
         return self.is_global_ensemble
 
     def _full_past_covariates_support(self) -> bool:
-        return all([model.supports_past_covariates for model in self.forecasting_models])
+        return all([
+            model.supports_past_covariates for model in self.forecasting_models
+        ])
 
     def _full_future_covariates_support(self) -> bool:
-        return all([model.supports_future_covariates for model in self.forecasting_models])
+        return all([
+            model.supports_future_covariates for model in self.forecasting_models
+        ])
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """

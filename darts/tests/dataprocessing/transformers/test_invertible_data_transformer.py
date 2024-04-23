@@ -50,7 +50,9 @@ class TestInvertibleDataTransformer:
             )
 
         @staticmethod
-        def ts_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
+        def ts_transform(
+            series: TimeSeries, params: Mapping[str, Any], **kwargs
+        ) -> TimeSeries:
             """
             Implements the transform `scale * series + translation`.
 
@@ -79,10 +81,16 @@ class TestInvertibleDataTransformer:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = TestInvertibleDataTransformer.DataTransformerMock.stack_samples(vals)
+                vals = TestInvertibleDataTransformer.DataTransformerMock.stack_samples(
+                    vals
+                )
             vals = scale * vals + translation
             if stack_samples:
-                vals = TestInvertibleDataTransformer.DataTransformerMock.unstack_samples(vals, series=series)
+                vals = (
+                    TestInvertibleDataTransformer.DataTransformerMock.unstack_samples(
+                        vals, series=series
+                    )
+                )
 
             if not mask_components and ("component_mask" in kwargs):
                 vals = TestInvertibleDataTransformer.DataTransformerMock.unapply_component_mask(
@@ -92,7 +100,9 @@ class TestInvertibleDataTransformer:
             return series.with_values(vals)
 
         @staticmethod
-        def ts_inverse_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
+        def ts_inverse_transform(
+            series: TimeSeries, params: Mapping[str, Any], **kwargs
+        ) -> TimeSeries:
             """
             Implements the inverse transform `(series - translation) / scale`.
 
@@ -121,10 +131,16 @@ class TestInvertibleDataTransformer:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = TestInvertibleDataTransformer.DataTransformerMock.stack_samples(vals)
+                vals = TestInvertibleDataTransformer.DataTransformerMock.stack_samples(
+                    vals
+                )
             vals = (vals - translation) / scale
             if stack_samples:
-                vals = TestInvertibleDataTransformer.DataTransformerMock.unstack_samples(vals, series=series)
+                vals = (
+                    TestInvertibleDataTransformer.DataTransformerMock.unstack_samples(
+                        vals, series=series
+                    )
+                )
 
             if not mask_components and ("component_mask" in kwargs):
                 vals = TestInvertibleDataTransformer.DataTransformerMock.unapply_component_mask(
@@ -182,7 +198,9 @@ class TestInvertibleDataTransformer:
         assert inv_1 == test_input_1
 
         # Have different `scale` param for different jobs:
-        mock = self.DataTransformerMock(scale=(2, 3), translation=10, parallel_params=["_scale"])
+        mock = self.DataTransformerMock(
+            scale=(2, 3), translation=10, parallel_params=["_scale"]
+        )
         (transformed_1, transformed_2) = mock.transform((test_input_1, test_input_2))
         # 2 * 1 + 10 = 12
         assert transformed_1 == constant_timeseries(value=12, length=10)
@@ -267,8 +285,15 @@ class TestInvertibleDataTransformer:
         # list of lists of series must get input back
         inv = mock.inverse_transform([[transformed_1], [transformed_2]])
         assert len(inv) == 2
-        assert all(isinstance(series_list, list) and len(series_list) == 1 for series_list in inv)
-        assert all(isinstance(series, TimeSeries) for series_list in inv for series in series_list)
+        assert all(
+            isinstance(series_list, list) and len(series_list) == 1
+            for series_list in inv
+        )
+        assert all(
+            isinstance(series, TimeSeries)
+            for series_list in inv
+            for series in series_list
+        )
         assert inv[0][0] == test_input_1
         assert inv[1][0] == test_input_2
 
@@ -277,7 +302,11 @@ class TestInvertibleDataTransformer:
         assert len(inv) == 2
         assert len(inv[0]) == 2 and len(inv[1]) == 1
         assert all(isinstance(series_list, list) for series_list in inv)
-        assert all(isinstance(series, TimeSeries) for series_list in inv for series in series_list)
+        assert all(
+            isinstance(series, TimeSeries)
+            for series_list in inv
+            for series in series_list
+        )
         assert inv[0][0] == test_input_1
         assert inv[0][1] == test_input_1
         assert inv[1][0] == test_input_2
@@ -287,7 +316,11 @@ class TestInvertibleDataTransformer:
         assert len(inv) == 2
         assert len(inv[0]) == 2 and len(inv[1]) == 1
         assert all(isinstance(series_list, list) for series_list in inv)
-        assert all(isinstance(series, TimeSeries) for series_list in inv for series in series_list)
+        assert all(
+            isinstance(series, TimeSeries)
+            for series_list in inv
+            for series in series_list
+        )
         assert inv[0][0] == test_input_1
         assert inv[0][1] == test_input_1
         assert inv[1][0] == test_input_2
@@ -302,10 +335,21 @@ class TestInvertibleDataTransformer:
         assert inv[1][1] == test_input_2
 
         # more list of lists than used during transform works
-        inv = mock.inverse_transform([[transformed_1], [transformed_2], [transformed_2]])
+        inv = mock.inverse_transform([
+            [transformed_1],
+            [transformed_2],
+            [transformed_2],
+        ])
         assert len(inv) == 3
-        assert all(isinstance(series_list, list) and len(series_list) == 1 for series_list in inv)
-        assert all(isinstance(series, TimeSeries) for series_list in inv for series in series_list)
+        assert all(
+            isinstance(series_list, list) and len(series_list) == 1
+            for series_list in inv
+        )
+        assert all(
+            isinstance(series, TimeSeries)
+            for series_list in inv
+            for series in series_list
+        )
         assert inv[0][0] == test_input_1
         assert inv[1][0] == test_input_2
         assert inv[2][0] == test_input_2
@@ -316,7 +360,9 @@ class TestInvertibleDataTransformer:
         implemented when considering multi-sample timeseries.
         """
         test_input = constant_timeseries(value=1, length=10)
-        test_input = test_input.concatenate(constant_timeseries(value=2, length=10), axis="sample")
+        test_input = test_input.concatenate(
+            constant_timeseries(value=2, length=10), axis="sample"
+        )
 
         mock = self.DataTransformerMock(scale=2, translation=10, stack_samples=True)
         transformed = mock.transform(test_input)
@@ -324,7 +370,9 @@ class TestInvertibleDataTransformer:
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         # 2 * 2 + 10 = 14
-        expected = expected.concatenate(constant_timeseries(value=14, length=10), axis="sample")
+        expected = expected.concatenate(
+            constant_timeseries(value=14, length=10), axis="sample"
+        )
         assert transformed == expected
         # Should get input back:
         inv = mock.inverse_transform(transformed)
@@ -342,11 +390,15 @@ class TestInvertibleDataTransformer:
         # Second component should be untransformed:
         scale = 2
         translation = 10
-        expected = np.stack([12 * np.ones((4, 5)), np.ones((4, 5)), 12 * np.ones((4, 5))], axis=1)
+        expected = np.stack(
+            [12 * np.ones((4, 5)), np.ones((4, 5)), 12 * np.ones((4, 5))], axis=1
+        )
         expected = TimeSeries.from_values(expected)
 
         # Automatically apply component mask:
-        mock = self.DataTransformerMock(scale=scale, translation=translation, mask_components=True)
+        mock = self.DataTransformerMock(
+            scale=scale, translation=translation, mask_components=True
+        )
         transformed = mock.transform(test_input, component_mask=mask)
         assert transformed == expected
         # Should get input back:

@@ -103,7 +103,9 @@ class TestDlinearNlinearModels:
             model.predict(n=2)
 
     def test_shared_weights(self):
-        ts = tg.constant_timeseries(length=50, value=10).stack(tg.gaussian_timeseries(length=50))
+        ts = tg.constant_timeseries(length=50, value=10).stack(
+            tg.gaussian_timeseries(length=50)
+        )
 
         for model_cls in [DLinearModel, NLinearModel]:
             # Test basic fit and predict
@@ -137,17 +139,25 @@ class TestDlinearNlinearModels:
         # test on multiple multivariate series with future and static covariates
 
         def _create_multiv_series(f1, f2, n1, n2, nf1, nf2):
-            bases = [tg.sine_timeseries(length=400, value_frequency=f, value_amplitude=1.0) for f in (f1, f2)]
+            bases = [
+                tg.sine_timeseries(length=400, value_frequency=f, value_amplitude=1.0)
+                for f in (f1, f2)
+            ]
             noises = [tg.gaussian_timeseries(length=400, std=n) for n in (n1, n2)]
             noise_modulators = [
-                tg.sine_timeseries(length=400, value_frequency=nf) + tg.constant_timeseries(length=400, value=1) / 2
+                tg.sine_timeseries(length=400, value_frequency=nf)
+                + tg.constant_timeseries(length=400, value=1) / 2
                 for nf in (nf1, nf2)
             ]
             noises = [noises[i] * noise_modulators[i] for i in range(len(noises))]
 
-            target = concatenate([bases[i] + noises[i] for i in range(len(bases))], axis="component")
+            target = concatenate(
+                [bases[i] + noises[i] for i in range(len(bases))], axis="component"
+            )
 
-            target = target.with_static_covariates(pd.DataFrame([[f1, n1, nf1], [f2, n2, nf2]]))
+            target = target.with_static_covariates(
+                pd.DataFrame([[f1, n1, nf1], [f2, n2, nf2]])
+            )
 
             return target, concatenate(noise_modulators, axis="component")
 
@@ -178,16 +188,28 @@ class TestDlinearNlinearModels:
 
             model.fit(
                 [train1, train2],
-                past_covariates=([past_cov1, past_cov2] if past_cov1 is not None else None),
-                val_past_covariates=([val_past_cov1, val_past_cov2] if val_past_cov1 is not None else None),
-                future_covariates=([fut_cov1, fut_cov2] if fut_cov1 is not None else None),
+                past_covariates=(
+                    [past_cov1, past_cov2] if past_cov1 is not None else None
+                ),
+                val_past_covariates=(
+                    [val_past_cov1, val_past_cov2]
+                    if val_past_cov1 is not None
+                    else None
+                ),
+                future_covariates=(
+                    [fut_cov1, fut_cov2] if fut_cov1 is not None else None
+                ),
                 epochs=10,
             )
 
             pred1, pred2 = model.predict(
                 series=[train1, train2],
-                future_covariates=([fut_cov1, fut_cov2] if fut_cov1 is not None else None),
-                past_covariates=([fut_cov1, fut_cov2] if past_cov1 is not None else None),
+                future_covariates=(
+                    [fut_cov1, fut_cov2] if fut_cov1 is not None else None
+                ),
+                past_covariates=(
+                    [fut_cov1, fut_cov2] if past_cov1 is not None else None
+                ),
                 n=len(val1),
                 num_samples=500 if lkl is not None else 1,
             )
@@ -204,8 +226,12 @@ class TestDlinearNlinearModels:
         val_past_cov1 = val1.copy()
         val_past_cov2 = val2.copy()
 
-        for model, lkl in product([DLinearModel, NLinearModel], [None, GaussianLikelihood()]):
-            e1, e2 = _eval_model(train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl)
+        for model, lkl in product(
+            [DLinearModel, NLinearModel], [None, GaussianLikelihood()]
+        ):
+            e1, e2 = _eval_model(
+                train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
+            )
             assert e1 <= 0.34
             assert e2 <= 0.28
 
@@ -222,7 +248,9 @@ class TestDlinearNlinearModels:
             assert e1 <= 0.32
             assert e2 <= 0.28
 
-            e1, e2 = _eval_model(train1, train2, val1, val2, None, None, cls=model, lkl=lkl)
+            e1, e2 = _eval_model(
+                train1, train2, val1, val2, None, None, cls=model, lkl=lkl
+            )
             assert e1 <= 0.40
             assert e2 <= 0.34
 
@@ -257,7 +285,9 @@ class TestDlinearNlinearModels:
         # can only fit models with past/future covariates when shared_weights=False
         for model in [DLinearModel, NLinearModel]:
             for shared_weights in [True, False]:
-                model_instance = model(5, 5, shared_weights=shared_weights, **tfm_kwargs)
+                model_instance = model(
+                    5, 5, shared_weights=shared_weights, **tfm_kwargs
+                )
                 assert model_instance.supports_past_covariates == (not shared_weights)
                 assert model_instance.supports_future_covariates == (not shared_weights)
                 if shared_weights:
@@ -265,7 +295,9 @@ class TestDlinearNlinearModels:
                         model_instance.fit(series1, future_covariates=fut_cov1)
 
     def test_optional_static_covariates(self):
-        series = tg.sine_timeseries(length=20).with_static_covariates(pd.DataFrame({"a": [1]}))
+        series = tg.sine_timeseries(length=20).with_static_covariates(
+            pd.DataFrame({"a": [1]})
+        )
         for model_cls in [NLinearModel, DLinearModel]:
             # training model with static covs and predicting without will raise an error
             model = model_cls(

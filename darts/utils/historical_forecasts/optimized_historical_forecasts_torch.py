@@ -46,7 +46,9 @@ def _optimized_historical_forecasts(
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        future_covariates_ = future_covariates[idx] if future_covariates is not None else None
+        future_covariates_ = (
+            future_covariates[idx] if future_covariates is not None else None
+        )
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (
             hist_fct_start,
@@ -86,7 +88,11 @@ def _optimized_historical_forecasts(
 
     # TODO: is there a better way to call the super().predict() from TorchForecastingModel, without having to
     #  import it? (avoid circular imports)
-    tfm_cls = [cls for cls in model.__class__.__mro__ if cls.__name__ == "TorchForecastingModel"][0]
+    tfm_cls = [
+        cls
+        for cls in model.__class__.__mro__
+        if cls.__name__ == "TorchForecastingModel"
+    ][0]
     super_predict_params = inspect.signature(super(tfm_cls, model).predict).parameters
     super(tfm_cls, model).predict(
         forecast_horizon,
@@ -131,7 +137,9 @@ def _optimized_historical_forecasts(
                     length=len(preds),
                     freq=preds[0].freq * stride,
                 ),
-                values=np.concatenate([p.all_values(copy=False)[-1:, :, :] for p in preds], axis=0),
+                values=np.concatenate(
+                    [p.all_values(copy=False)[-1:, :, :] for p in preds], axis=0
+                ),
                 columns=preds[0].columns,
                 static_covariates=preds[0].static_covariates,
                 hierarchy=preds[0].hierarchy,

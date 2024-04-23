@@ -194,7 +194,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         last_up_sampled = up_sample(low_freq_df.iloc[-1:], high_freq_period)
 
         # find unique sizes from: first group size + unique sizes of center groups + last group size
-        sizes = np.unique([len(first_up_sampled)] + resampled.size()[1:-1].unique().tolist() + [len(last_up_sampled)])
+        sizes = np.unique(
+            [len(first_up_sampled)]
+            + resampled.size()[1:-1].unique().tolist()
+            + [len(last_up_sampled)]
+        )
 
         # MIDAS requires the high freq to be a round multiple of the low freq -> sizes must be identical
         if not len(sizes) == 1:
@@ -252,7 +256,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             arr_out = np.empty((n_groups, n_cols_out, n_samples))
             arr_out.fill(np.nan)
 
-            arr = np.lib.stride_tricks.sliding_window_view(arr, window_shape=(max_size, n_cols_in, n_samples))
+            arr = np.lib.stride_tricks.sliding_window_view(
+                arr, window_shape=(max_size, n_cols_in, n_samples)
+            )
             arr = arr.reshape((-1, n_cols_out, n_samples))
 
             # the first resampled index might not have all dates from higher freq
@@ -260,7 +266,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             size_group_first = 0 if size_group_first == max_size else size_group_first
             components_group_first = size_group_first * n_cols_in
             if components_group_first and not strip:
-                arr_out[0, n_cols_out - components_group_first :, :] = arr[0, :components_group_first]
+                arr_out[0, n_cols_out - components_group_first :, :] = arr[
+                    0, :components_group_first
+                ]
             center_start_idx = 0 if not size_group_first else 1
 
             # the last resampled index might not have all dates from higher freq
@@ -268,11 +276,15 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             size_group_last = 0 if size_group_last == max_size else size_group_last
             components_group_last = size_group_last * n_cols_in
             if components_group_last and not strip:
-                arr_out[-1, :components_group_last, :] = arr[-1, -components_group_last:]
+                arr_out[-1, :components_group_last, :] = arr[
+                    -1, -components_group_last:
+                ]
 
             # get the center resampled indices
             center_end_idx = None if not size_group_last else -1
-            arr_out[center_start_idx:center_end_idx, :, :] = arr[size_group_first::max_size]
+            arr_out[center_start_idx:center_end_idx, :, :] = arr[
+                size_group_first::max_size
+            ]
 
             # potentially strip first and last groups
             if strip:
@@ -336,10 +348,14 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             shift = 0
             series_values = np.empty((0, n_orig_components, series.n_samples))
         else:
-            series_values = series.all_values(copy=False).reshape(-1, n_orig_components, series.n_samples)
+            series_values = series.all_values(copy=False).reshape(
+                -1, n_orig_components, series.n_samples
+            )
 
             # remove the rows containing only NaNs at the extremities of the array, necessary to adjust the time index
-            first_finite_row, last_finite_row = _finite_rows_boundaries(series_values, how="all")
+            first_finite_row, last_finite_row = _finite_rows_boundaries(
+                series_values, how="all"
+            )
             # adding one to make the end bound inclusive
             series_values = series_values[first_finite_row : last_finite_row + 1]
 
@@ -425,7 +441,10 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         static_covariates = series.static_covariates
         if drop_static_covariates:
             return None
-        elif static_covariates is not None and static_covariates.index.name == "component":
+        elif (
+            static_covariates is not None
+            and static_covariates.index.name == "component"
+        ):
             if inverse_transform:
                 cols_orig = series.n_components // n_midas
                 return static_covariates[:cols_orig]
@@ -448,7 +467,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         Function creating the lower frequency dataframe out of a higher frequency dataframe.
         """
         if not inverse_transform:
-            cols = [f"{col}{feature_sep}{i}" for i in range(n_midas) for col in series.columns]
+            cols = [
+                f"{col}{feature_sep}{i}"
+                for i in range(n_midas)
+                for col in series.columns
+            ]
         else:
             cols_orig = series.n_components // n_midas
             cols = series.components[:cols_orig].str.split(feature_sep).str[0].tolist()

@@ -37,7 +37,9 @@ class TestDataTransformer:
         # test inverse transform
         series1_recovered = transformer2.inverse_transform(series1_tr2)
         series3_recovered = transformer2.inverse_transform(series3_tr2)
-        np.testing.assert_almost_equal(series1_recovered.values().flatten(), self.series1.values().flatten())
+        np.testing.assert_almost_equal(
+            series1_recovered.values().flatten(), self.series1.values().flatten()
+        )
         assert series1_recovered.width == self.series1.width
         assert series3_recovered == series1_recovered[:1]
 
@@ -51,10 +53,22 @@ class TestDataTransformer:
         series_array_tr2 = transformer2.fit_transform(series_array)
 
         for index in range(len(series_array)):
-            assert round(abs(min(series_array_tr1[index].values().flatten()) - 0.0), 7) == 0
-            assert round(abs(max(series_array_tr1[index].values().flatten()) - 2.0), 7) == 0
-            assert round(abs(np.mean(series_array_tr2[index].values().flatten()) - 0.0), 7) == 0
-            assert round(abs(np.std(series_array_tr2[index].values().flatten()) - 1.0), 7) == 0
+            assert (
+                round(abs(min(series_array_tr1[index].values().flatten()) - 0.0), 7)
+                == 0
+            )
+            assert (
+                round(abs(max(series_array_tr1[index].values().flatten()) - 2.0), 7)
+                == 0
+            )
+            assert (
+                round(abs(np.mean(series_array_tr2[index].values().flatten()) - 0.0), 7)
+                == 0
+            )
+            assert (
+                round(abs(np.std(series_array_tr2[index].values().flatten()) - 1.0), 7)
+                == 0
+            )
 
         series_array_rec1 = transformer1.inverse_transform(series_array_tr1)
         series_array_rec2 = transformer2.inverse_transform(series_array_tr2)
@@ -81,12 +95,16 @@ class TestDataTransformer:
 
         # Test that the transform is done per component (i.e max value over each component should be 1 and min 0)
         np.testing.assert_allclose(
-            np.array([ss.all_values(copy=False)[:, i, :].max() for i in range(ss.width)]),
+            np.array([
+                ss.all_values(copy=False)[:, i, :].max() for i in range(ss.width)
+            ]),
             np.array([1.0] * ss.width),
         )
 
         np.testing.assert_allclose(
-            np.array([ss.all_values(copy=False)[:, i, :].min() for i in range(ss.width)]),
+            np.array([
+                ss.all_values(copy=False)[:, i, :].min() for i in range(ss.width)
+            ]),
             np.array([0.0] * ss.width),
         )
 
@@ -123,6 +141,10 @@ class TestDataTransformer:
         sine_series = sine_timeseries(length=50, value_y_offset=5, value_frequency=0.05)
         lin_series = linear_timeseries(start_value=1, end_value=10, length=50)
         series_combined = sine_series.append_values(lin_series.all_values())
-        local_fitted_scaler = Scaler(global_fit=False).fit(series_combined)._fitted_params[0]
-        global_fitted_scaler = Scaler(global_fit=True).fit([sine_series, lin_series])._fitted_params[0]
+        local_fitted_scaler = (
+            Scaler(global_fit=False).fit(series_combined)._fitted_params[0]
+        )
+        global_fitted_scaler = (
+            Scaler(global_fit=True).fit([sine_series, lin_series])._fitted_params[0]
+        )
         assert local_fitted_scaler.get_params() == global_fitted_scaler.get_params()

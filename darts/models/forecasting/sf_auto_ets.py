@@ -20,7 +20,9 @@ from darts.models.forecasting.forecasting_model import (
 
 
 class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
-    def __init__(self, *autoets_args, add_encoders: Optional[dict] = None, **autoets_kwargs):
+    def __init__(
+        self, *autoets_args, add_encoders: Optional[dict] = None, **autoets_kwargs
+    ):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
@@ -102,8 +104,12 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
             # perform OLS and get in-sample residuals
             linreg = LinearRegressionModel(lags_future_covariates=[0])
             linreg.fit(series, future_covariates=future_covariates)
-            fitted_values = linreg.model.predict(X=future_covariates.slice_intersect(series).values(copy=False))
-            fitted_values_ts = TimeSeries.from_times_and_values(times=series.time_index, values=fitted_values)
+            fitted_values = linreg.model.predict(
+                X=future_covariates.slice_intersect(series).values(copy=False)
+            )
+            fitted_values_ts = TimeSeries.from_times_and_values(
+                times=series.time_index, values=fitted_values
+            )
             resids = series - fitted_values_ts
             self._linreg = linreg
             target = resids

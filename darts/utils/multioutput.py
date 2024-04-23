@@ -62,9 +62,14 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
             check_classification_targets(y)
 
         if y.ndim == 1:
-            raise ValueError("y must have at least two dimensions for " "multi-output regression but has only one.")
+            raise ValueError(
+                "y must have at least two dimensions for "
+                "multi-output regression but has only one."
+            )
 
-        if sample_weight is not None and not has_fit_parameter(self.estimator, "sample_weight"):
+        if sample_weight is not None and not has_fit_parameter(
+            self.estimator, "sample_weight"
+        ):
             raise ValueError("Underlying estimator does not support sample weights.")
 
         fit_params_validated = _check_method_params(X, fit_params)
@@ -91,7 +96,9 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
         else:
             # without validation set
             self.estimators_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(_fit_estimator)(self.estimator, X, y[:, i], sample_weight, **fit_params_validated)
+                delayed(_fit_estimator)(
+                    self.estimator, X, y[:, i], sample_weight, **fit_params_validated
+                )
                 for i in range(y.shape[1])
             )
 

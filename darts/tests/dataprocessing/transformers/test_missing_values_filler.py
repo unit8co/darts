@@ -42,4 +42,7 @@ class TestMissingValuesFiller:
     def test_fill_static_covariates_preserved(self):
         const_transformer = MissingValuesFiller(fill=2.0)
         transformed = const_transformer.transform(self.const_series_with_holes)
-        assert self.const_series.static_covariates.values == transformed.static_covariates.values
+        assert (
+            self.const_series.static_covariates.values
+            == transformed.static_covariates.values
+        )

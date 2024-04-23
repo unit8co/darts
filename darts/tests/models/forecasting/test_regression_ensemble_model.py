@@ -39,7 +39,9 @@ except ImportError:
 class TestRegressionEnsembleModels:
     RANDOM_SEED = 111
 
-    sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
+    sine_series = tg.sine_timeseries(
+        value_frequency=(1 / 5), value_y_offset=10, length=50
+    )
     lin_series = tg.linear_timeseries(length=50)
 
     combined = sine_series + lin_series
@@ -68,7 +70,9 @@ class TestRegressionEnsembleModels:
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def get_global_models(self, output_chunk_length=5, input_chunk_length=20, training_length=24):
+    def get_global_models(
+        self, output_chunk_length=5, input_chunk_length=20, training_length=24
+    ):
         return [
             RNNModel(
                 input_chunk_length=input_chunk_length,
@@ -186,7 +190,9 @@ class TestRegressionEnsembleModels:
         # using regression_train_n_point=-1 without pretraining
         if TORCH_AVAILABLE:
             with pytest.raises(ValueError):
-                RegressionEnsembleModel(self.get_global_models(), regression_train_n_points=-1)
+                RegressionEnsembleModel(
+                    self.get_global_models(), regression_train_n_points=-1
+                )
 
         # using regression_train_n_point=-1 with pretraining
         forecasting_models = [
@@ -229,7 +235,9 @@ class TestRegressionEnsembleModels:
         model2.fit(self.combined)
         forecast2 = model2.predict(3)
 
-        assert model1_fitted.training_series.time_index.equals(model2.training_series.time_index)
+        assert model1_fitted.training_series.time_index.equals(
+            model2.training_series.time_index
+        )
         assert forecast1.time_index.equals(forecast2.time_index)
         np.testing.assert_array_almost_equal(forecast1.values(), forecast2.values())
 
@@ -259,7 +267,10 @@ class TestRegressionEnsembleModels:
         ensemble_predict.fit(train)
         pred_predict = ensemble_predict.predict(len(val))
 
-        assert len(ensemble_predict.regression_model.training_series) == regression_train_n_points
+        assert (
+            len(ensemble_predict.regression_model.training_series)
+            == regression_train_n_points
+        )
 
         # using historical forecasts to generate the future covs for the ensemble model
         ensemble_hist_fct = RegressionEnsembleModel(
@@ -273,7 +284,10 @@ class TestRegressionEnsembleModels:
         ensemble_hist_fct.fit(train)
         pred_hist_fct = ensemble_hist_fct.predict(len(val))
 
-        assert len(ensemble_hist_fct.regression_model.training_series) == regression_train_n_points
+        assert (
+            len(ensemble_hist_fct.regression_model.training_series)
+            == regression_train_n_points
+        )
 
         mape_hfc, mape_pred = mape(pred_hist_fct, val), mape(pred_predict, val)
         assert mape_hfc < mape_pred or mape_hfc == pytest.approx(mape_pred)
@@ -304,15 +318,21 @@ class TestRegressionEnsembleModels:
 
         ensemble = RegressionEnsembleModel(
             forecasting_models=[
-                LinearRegressionModel(lags=5, lags_past_covariates=5, output_chunk_length=ocl1),
-                LinearRegressionModel(lags=2, lags_past_covariates=5, output_chunk_length=ocl2),
+                LinearRegressionModel(
+                    lags=5, lags_past_covariates=5, output_chunk_length=ocl1
+                ),
+                LinearRegressionModel(
+                    lags=2, lags_past_covariates=5, output_chunk_length=ocl2
+                ),
             ],
             regression_train_n_points=regression_train_n_points,
             train_using_historical_forecasts=True,
         )
         # covariates have the appropriate length
         ensemble.fit(ts, past_covariates=past_covs)
-        assert len(ensemble.regression_model.training_series) == regression_train_n_points
+        assert (
+            len(ensemble.regression_model.training_series) == regression_train_n_points
+        )
         # since past covariates extend far in the past, they are available for the regression model
 
         # future covariates finishes 5 steps after the target series
@@ -323,8 +343,12 @@ class TestRegressionEnsembleModels:
 
         ensemble = RegressionEnsembleModel(
             forecasting_models=[
-                LinearRegressionModel(lags=2, lags_future_covariates=[1, 2], output_chunk_length=ocl1),
-                LinearRegressionModel(lags=1, lags_future_covariates=[1, 2], output_chunk_length=ocl2),
+                LinearRegressionModel(
+                    lags=2, lags_future_covariates=[1, 2], output_chunk_length=ocl1
+                ),
+                LinearRegressionModel(
+                    lags=1, lags_future_covariates=[1, 2], output_chunk_length=ocl2
+                ),
             ],
             regression_train_n_points=regression_train_n_points,
             train_using_historical_forecasts=True,
@@ -332,7 +356,9 @@ class TestRegressionEnsembleModels:
 
         # covariates have the appropriate length
         ensemble.fit(ts, future_covariates=future_covs)
-        assert len(ensemble.regression_model.training_series) == regression_train_n_points
+        assert (
+            len(ensemble.regression_model.training_series) == regression_train_n_points
+        )
 
         with pytest.raises(ValueError):
             # covariates are too short (ends too early)
@@ -386,13 +412,19 @@ class TestRegressionEnsembleModels:
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
         assert isinstance(preds, TimeSeries)
         # predict a new target series
-        preds = ensemble_model.predict(n=5, series=series_long, past_covariates=series_long)
+        preds = ensemble_model.predict(
+            n=5, series=series_long, past_covariates=series_long
+        )
         assert isinstance(preds, TimeSeries)
         # predict multiple target series
-        preds = ensemble_model.predict(n=5, series=[series_long] * 2, past_covariates=[series_long] * 2)
+        preds = ensemble_model.predict(
+            n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
+        )
         assert isinstance(preds, list) and len(preds) == 2
         # predict single target series in list
-        preds = ensemble_model.predict(n=5, series=[series_long], past_covariates=[series_long])
+        preds = ensemble_model.predict(
+            n=5, series=[series_long], past_covariates=[series_long]
+        )
         assert isinstance(preds, list) and len(preds) == 1
 
         # train with multiple series
@@ -402,19 +434,29 @@ class TestRegressionEnsembleModels:
             # predict without passing series should raise an error
             ensemble_model.predict(n=5, past_covariates=series_long)
         # predict a new target series
-        preds = ensemble_model.predict(n=5, series=series_long, past_covariates=series_long)
+        preds = ensemble_model.predict(
+            n=5, series=series_long, past_covariates=series_long
+        )
         assert isinstance(preds, TimeSeries)
         # predict multiple target series
-        preds = ensemble_model.predict(n=5, series=[series_long] * 2, past_covariates=[series_long] * 2)
+        preds = ensemble_model.predict(
+            n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
+        )
         assert isinstance(preds, list) and len(preds) == 2
         # predict single target series in list
-        preds = ensemble_model.predict(n=5, series=[series_long], past_covariates=[series_long])
+        preds = ensemble_model.predict(
+            n=5, series=[series_long], past_covariates=[series_long]
+        )
         assert isinstance(preds, list) and len(preds) == 1
 
-    def helper_test_models_accuracy(self, model_instance, n, series, past_covariates, min_rmse):
+    def helper_test_models_accuracy(
+        self, model_instance, n, series, past_covariates, min_rmse
+    ):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
         train_series, test_series = train_test_split(series, pd.Timestamp("20010101"))
-        train_past_covariates, _ = train_test_split(past_covariates, pd.Timestamp("20010101"))
+        train_past_covariates, _ = train_test_split(
+            past_covariates, pd.Timestamp("20010101")
+        )
 
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
         prediction = model_instance.predict(n=n, past_covariates=past_covariates)
@@ -503,9 +545,13 @@ class TestRegressionEnsembleModels:
 
     def test_call_backtest_regression_ensemble_local_models(self):
         regr_train_n = 10
-        ensemble = RegressionEnsembleModel([NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n)
+        ensemble = RegressionEnsembleModel(
+            [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
+        )
         ensemble.fit(self.sine_series)
-        assert max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
+        assert (
+            max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
+        )
         # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (
             -10 - regr_train_n,
@@ -571,7 +617,9 @@ class TestRegressionEnsembleModels:
         quantiles = [0.25, 0.5, 0.75]
 
         # probabilistic ensembling model
-        linreg_prob = LinearRegressionModel(quantiles=quantiles, lags_future_covariates=[0], likelihood="quantile")
+        linreg_prob = LinearRegressionModel(
+            quantiles=quantiles, lags_future_covariates=[0], likelihood="quantile"
+        )
 
         # deterministic ensembling model
         linreg_dete = LinearRegressionModel(lags_future_covariates=[0])
@@ -718,8 +766,12 @@ class TestRegressionEnsembleModels:
         with pytest.raises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[
-                    self.get_probabilistic_global_model(lags=[-1, -3], quantiles=quantiles),
-                    self.get_probabilistic_global_model(lags=[-2, -4], quantiles=quantiles),
+                    self.get_probabilistic_global_model(
+                        lags=[-1, -3], quantiles=quantiles
+                    ),
+                    self.get_probabilistic_global_model(
+                        lags=[-2, -4], quantiles=quantiles
+                    ),
                 ],
                 regression_train_n_points=50,
                 regression_train_num_samples=500,
@@ -767,7 +819,10 @@ class TestRegressionEnsembleModels:
         pred_0_5_qt_training = ensemble_model_0_5_quantile.predict(len(val))
 
         assert pred_median_training == pred_0_5_qt_training
-        assert pred_mean_training.all_values().shape == pred_median_training.all_values().shape
+        assert (
+            pred_mean_training.all_values().shape
+            == pred_median_training.all_values().shape
+        )
 
         # deterministic regression model -> deterministic ensemble
         with pytest.raises(ValueError):
@@ -797,8 +852,12 @@ class TestRegressionEnsembleModels:
         quantiles = [0.05, 0.5, 0.95]
         ensemble = RegressionEnsembleModel(
             [
-                self.get_probabilistic_global_model(lags=2, output_chunk_length=2, quantiles=quantiles),
-                self.get_probabilistic_global_model(lags=3, output_chunk_length=3, quantiles=quantiles),
+                self.get_probabilistic_global_model(
+                    lags=2, output_chunk_length=2, quantiles=quantiles
+                ),
+                self.get_probabilistic_global_model(
+                    lags=3, output_chunk_length=3, quantiles=quantiles
+                ),
             ],
             regression_train_n_points=10,
             regression_model=LinearRegressionModel(
@@ -812,9 +871,9 @@ class TestRegressionEnsembleModels:
         pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
 
         assert all(pred_ens.components == ["sine_q0.05", "sine_q0.50", "sine_q0.95"])
-        assert all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()) and all(
-            pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values()
-        )
+        assert all(
+            pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()
+        ) and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
 
     def test_predict_likelihood_parameters_multivariate_regression_ensemble(self):
         quantiles = [0.05, 0.5, 0.95]
@@ -822,8 +881,12 @@ class TestRegressionEnsembleModels:
 
         ensemble = RegressionEnsembleModel(
             [
-                self.get_probabilistic_global_model(lags=2, output_chunk_length=2, quantiles=quantiles),
-                self.get_probabilistic_global_model(lags=3, output_chunk_length=3, quantiles=quantiles),
+                self.get_probabilistic_global_model(
+                    lags=2, output_chunk_length=2, quantiles=quantiles
+                ),
+                self.get_probabilistic_global_model(
+                    lags=3, output_chunk_length=3, quantiles=quantiles
+                ),
             ],
             regression_train_n_points=10,
             regression_model=LinearRegressionModel(
@@ -847,12 +910,12 @@ class TestRegressionEnsembleModels:
                 "linear_q0.95",
             ]
         )
-        assert all(pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()) and all(
-            pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values()
-        )
-        assert all(pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values()) and all(
-            pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values()
-        )
+        assert all(
+            pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()
+        ) and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+        assert all(
+            pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values()
+        ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
 
     def test_wrong_model_creation_params(self):
         """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the
@@ -895,5 +958,7 @@ class TestRegressionEnsembleModels:
         )
 
     @staticmethod
-    def get_deterministic_global_model(lags: Union[int, List[int]], random_state: int = 13) -> LinearRegressionModel:
+    def get_deterministic_global_model(
+        lags: Union[int, List[int]], random_state: int = 13
+    ) -> LinearRegressionModel:
         return LinearRegressionModel(lags=lags, random_state=random_state)

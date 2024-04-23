@@ -50,7 +50,9 @@ class SeriesType(Enum):
             raise_log(ValueError("`other` must be of type `int`."), logger=logger)
         new_val = self.value + other
         if new_val > 2:
-            raise_log(ValueError("Cannot go higher than `SeriesType.SEQ_SEQ`."), logger=logger)
+            raise_log(
+                ValueError("Cannot go higher than `SeriesType.SEQ_SEQ`."), logger=logger
+            )
         return SeriesType(new_val)
 
     def __str__(self):
@@ -58,7 +60,9 @@ class SeriesType(Enum):
 
 
 def series2seq(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]],
+    ts: Optional[
+        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+    ],
     seq_type_out: SeriesType = SeriesType.SEQ,
     nested: bool = False,
 ) -> Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]]:
@@ -89,7 +93,9 @@ def series2seq(
 
     if not isinstance(seq_type_out, SeriesType):
         raise_log(
-            ValueError(f"Invalid parameter `seq_type_out={seq_type_out}`. Must be one of `(0, 1, 2)`"),
+            ValueError(
+                f"Invalid parameter `seq_type_out={seq_type_out}`. Must be one of `(0, 1, 2)`"
+            ),
             logger=logger,
         )
 
@@ -106,7 +112,11 @@ def series2seq(
     elif seq_type_in == SeriesType.SINGLE and seq_type_out == SeriesType.SEQ_SEQ:
         # ts -> [[ts]]
         return [[ts]]
-    elif seq_type_in == SeriesType.SEQ and seq_type_out == SeriesType.SINGLE and n_series == 1:
+    elif (
+        seq_type_in == SeriesType.SEQ
+        and seq_type_out == SeriesType.SINGLE
+        and n_series == 1
+    ):
         # [ts] -> ts
         return ts[0]
     elif seq_type_in == SeriesType.SEQ and seq_type_out == SeriesType.SEQ_SEQ:
@@ -116,10 +126,18 @@ def series2seq(
         else:
             # [ts1, ts2] -> [[ts1], [ts2]]
             return [[ts_] for ts_ in ts]
-    elif seq_type_in == SeriesType.SEQ_SEQ and seq_type_out == SeriesType.SINGLE and n_series == 1:
+    elif (
+        seq_type_in == SeriesType.SEQ_SEQ
+        and seq_type_out == SeriesType.SINGLE
+        and n_series == 1
+    ):
         # [[ts]] -> [ts]
         return ts[0]
-    elif seq_type_in == SeriesType.SEQ_SEQ and seq_type_out == SeriesType.SEQ and n_series == 1:
+    elif (
+        seq_type_in == SeriesType.SEQ_SEQ
+        and seq_type_out == SeriesType.SEQ
+        and n_series == 1
+    ):
         # [[ts1, ts2]] -> [[ts1, ts2]]
         return ts
     else:
@@ -127,7 +145,9 @@ def series2seq(
         return ts
 
 
-def seq2series(ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]) -> Optional[TimeSeries]:
+def seq2series(
+    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+) -> Optional[TimeSeries]:
     """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
 
     Parameters
@@ -144,7 +164,9 @@ def seq2series(ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]) -> Optiona
 
 
 def get_single_series(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]],
+    ts: Optional[
+        Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+    ],
 ) -> Optional[TimeSeries]:
     """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
     `ts` is a `Sequence[TimeSeries]`, and `ts[0][0]` if `ts` is a `Sequence[Sequence[TimeSeries]]`.
@@ -234,6 +256,8 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     first_last = min(map(lambda s: s.end_time(), series))
 
     if last_first >= first_last:
-        raise_log(ValueError("The provided time series must have nonzero overlap"), logger)
+        raise_log(
+            ValueError("The provided time series must have nonzero overlap"), logger
+        )
 
     return list(map(lambda s: s.slice(last_first, first_last), series))

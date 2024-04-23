@@ -55,7 +55,9 @@ class TestBoxCox:
         boxcox = BoxCox()
         transformed = boxcox.fit_transform(self.multi_series)
         back = boxcox.inverse_transform(transformed)
-        pd.testing.assert_frame_equal(self.multi_series.pd_dataframe(), back.pd_dataframe(), check_exact=False)
+        pd.testing.assert_frame_equal(
+            self.multi_series.pd_dataframe(), back.pd_dataframe(), check_exact=False
+        )
 
     def test_boxcox_multi_ts(self):
         test_cases = [
@@ -92,7 +94,9 @@ class TestBoxCox:
         box_cox.fit(self.lin_series)
         lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
-        assert lambda1 != lambda2, "Lambdas should change when the transformer is retrained"
+        assert (
+            lambda1 != lambda2
+        ), "Lambdas should change when the transformer is retrained"
 
     def test_multivariate_stochastic_series(self):
         transformer = BoxCox()
@@ -114,5 +118,9 @@ class TestBoxCox:
         """
         series_combined = self.sine_series.append_values(self.lin_series.all_values())
         local_params = BoxCox(global_fit=False).fit(series_combined)._fitted_params
-        global_params = BoxCox(global_fit=True).fit([self.sine_series, self.lin_series])._fitted_params
+        global_params = (
+            BoxCox(global_fit=True)
+            .fit([self.sine_series, self.lin_series])
+            ._fitted_params
+        )
         assert local_params == global_params

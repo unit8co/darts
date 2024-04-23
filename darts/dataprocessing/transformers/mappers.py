@@ -16,7 +16,9 @@ from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 
-MapperFn = Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]]
+MapperFn = Union[
+    Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]
+]
 
 
 class Mapper(BaseDataTransformer):
@@ -156,9 +158,13 @@ class InvertibleMapper(InvertibleDataTransformer):
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]
+    ) -> TimeSeries:
         return series.map(params["fixed"]["_fn"])
 
     @staticmethod
-    def ts_inverse_transform(series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]) -> TimeSeries:
+    def ts_inverse_transform(
+        series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]
+    ) -> TimeSeries:
         return series.map(params["fixed"]["_inverse_fn"])

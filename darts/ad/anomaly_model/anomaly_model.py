@@ -47,11 +47,15 @@ class AnomalyModel(ABC):
             )
 
     @abstractmethod
-    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def fit(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
 
     @abstractmethod
-    def score(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def score(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
 
     @abstractmethod

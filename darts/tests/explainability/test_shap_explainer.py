@@ -58,7 +58,9 @@ class TestShapExplainer:
     x_2 = np.zeros(N).astype("float32")
     x_3 = np.zeros(N).astype("float32")
 
-    days_past_cov = pd.date_range(date_start, date_start + timedelta(days=N - 2), freq="d")
+    days_past_cov = pd.date_range(
+        date_start, date_start + timedelta(days=N - 2), freq="d"
+    )
 
     past_cov_1 = np.random.normal(0, 1, N - 1).astype("float32")
     past_cov_2 = np.random.normal(0, 1, N - 1).astype("float32")
@@ -84,10 +86,14 @@ class TestShapExplainer:
 
     # Multivariates Ex.2 independants
     for i in range(2, len(x_1)):
-        x_1[i] = K_1 * x_1[i - 1] + K_2 * past_cov_1[i - 2] + K_3 * fut_cov_1[i] + eps_1[i]
+        x_1[i] = (
+            K_1 * x_1[i - 1] + K_2 * past_cov_1[i - 2] + K_3 * fut_cov_1[i] + eps_1[i]
+        )
 
     for i in range(1, len(x_2)):
-        x_2[i] = +K_4 * x_2[i - 1] + K_5 * past_cov_2[i - 1] + K_6 * fut_cov_2[i] + eps_2[i]
+        x_2[i] = (
+            +K_4 * x_2[i - 1] + K_5 * past_cov_2[i - 1] + K_6 * fut_cov_2[i] + eps_2[i]
+        )
 
     for i in range(2, len(x_3)):
         x_3[i] = K_7 * x_1[i - 1] + x_2[i - 2]
@@ -187,15 +193,21 @@ class TestShapExplainer:
 
         # Missing a future covariate if you choose to use a new background
         with pytest.raises(ValueError):
-            ShapExplainer(m, self.target_ts, background_past_covariates=self.past_cov_ts)
+            ShapExplainer(
+                m, self.target_ts, background_past_covariates=self.past_cov_ts
+            )
 
         # Missing a past covariate if you choose to use a new background
         with pytest.raises(ValueError):
-            ShapExplainer(m, self.target_ts, background_future_covariates=self.fut_cov_ts)
+            ShapExplainer(
+                m, self.target_ts, background_future_covariates=self.fut_cov_ts
+            )
 
         # Good type of explainers
         shap_explain = ShapExplainer(m)
-        assert isinstance(shap_explain.explainers.explainers[0][0], shap.explainers.Tree)
+        assert isinstance(
+            shap_explain.explainers.explainers[0][0], shap.explainers.Tree
+        )
 
         # Linear model - also not a MultiOutputRegressor
         m = LinearRegressionModel(
@@ -254,7 +266,9 @@ class TestShapExplainer:
             future_covariates=self.fut_cov_ts,
         )
         shap_explain = ShapExplainer(m)
-        assert isinstance(shap_explain.explainers.explainers[0][0], shap.explainers.Tree)
+        assert isinstance(
+            shap_explain.explainers.explainers[0][0], shap.explainers.Tree
+        )
 
         # Bad choice of shap explainer
         with pytest.raises(ValueError):
@@ -279,7 +293,9 @@ class TestShapExplainer:
         with pytest.raises(ValueError):
             _ = shap_explain.explain(horizons=[1, 5])  # horizon > output_chunk_length
         with pytest.raises(ValueError):
-            _ = shap_explain.explain(horizons=[1, 2], target_components=["test"])  # wrong name
+            _ = shap_explain.explain(
+                horizons=[1, 2], target_components=["test"]
+            )  # wrong name
 
         results = shap_explain.explain()
         with pytest.raises(ValueError):
@@ -398,7 +414,10 @@ class TestShapExplainer:
         results = shap_explain.explain()
 
         # all the features explained are here, in the right order
-        assert [results.get_explanation(i, "price").components.to_list() == components_list for i in range(1, 5)]
+        assert [
+            results.get_explanation(i, "price").components.to_list() == components_list
+            for i in range(1, 5)
+        ]
 
         # No past or future covariates
         m = LinearRegressionModel(
@@ -430,12 +449,16 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         for component in ["power", "price"]:
-            explanation = explanation_results.get_explanation(horizon=1, component=component)
+            explanation = explanation_results.get_explanation(
+                horizon=1, component=component
+            )
 
             # The fut_cov_ts have the same length as the target_ts. Hence, if we pass lags_future_covariates this means
             # that the last prediction can be made max(lags_future_covariates) time periods before the end of the
             # series (in this case 2 time periods).
-            assert explanation.end_time() == self.target_ts.end_time() - relativedelta(days=2)
+            assert explanation.end_time() == self.target_ts.end_time() - relativedelta(
+                days=2
+            )
 
     def test_explain_with_lags_future_covariates_series_extending_into_future(self):
         # Constructing future covariates TimeSeries that extends further into the future than the target series
@@ -462,7 +485,9 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         for component in ["power", "price"]:
-            explanation = explanation_results.get_explanation(horizon=1, component=component)
+            explanation = explanation_results.get_explanation(
+                horizon=1, component=component
+            )
 
             # The fut_cov_ts extends further into the future than the target_ts. Hence, at prediction time we know the
             # values of lagged future covariates and we thus no longer expect the end_time() of the explanation
@@ -496,7 +521,9 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         for component in ["power", "price"]:
-            explanation = explanation_results.get_explanation(horizon=1, component=component)
+            explanation = explanation_results.get_explanation(
+                horizon=1, component=component
+            )
 
             # The covariates series (past and future) start two time periods earlier than the target series. This in
             # combination with the LightGBM configuration (lags=None and 'largest' covariates lags equal to -2) means
@@ -618,7 +645,9 @@ class TestShapExplainer:
         explanation_results = shap_explain.explain()
         df = pd.merge(
             self.target_ts.pd_dataframe(),
-            explanation_results.get_feature_values(horizon=1, component="price").pd_dataframe(),
+            explanation_results.get_feature_values(
+                horizon=1, component="price"
+            ).pd_dataframe(),
             how="left",
             left_index=True,
             right_index=True,
@@ -642,13 +671,19 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
 
-        feature_values = explanation_results.get_feature_values(horizon=1, component="price")
-        comparison = explanation_results.get_shap_explanation_object(horizon=1, component="price").data
+        feature_values = explanation_results.get_feature_values(
+            horizon=1, component="price"
+        )
+        comparison = explanation_results.get_shap_explanation_object(
+            horizon=1, component="price"
+        ).data
 
         assert_array_equal(feature_values.values(), comparison)
         assert (
             feature_values.values().shape
-            == explanation_results.get_explanation(horizon=1, component="price").values().shape
+            == explanation_results.get_explanation(horizon=1, component="price")
+            .values()
+            .shape
         ), "The shape of the feature values should be the same as the shap values"
 
     def test_shap_explanation_object_validity(self):
@@ -668,7 +703,9 @@ class TestShapExplainer:
         explanation_results = shap_explain.explain()
 
         assert isinstance(
-            explanation_results.get_shap_explanation_object(horizon=1, component="power"),
+            explanation_results.get_shap_explanation_object(
+                horizon=1, component="power"
+            ),
             shap.Explanation,
         )
 
@@ -722,7 +759,9 @@ class TestShapExplainer:
 
         # different static covariates dimensions should raise an error
         with pytest.raises(ValueError):
-            shap_explain.explain(ts.with_static_covariates(ts.static_covariates["state"]))
+            shap_explain.explain(
+                ts.with_static_covariates(ts.static_covariates["state"])
+            )
 
         # without static covariates should raise an error
         with pytest.raises(ValueError):
@@ -805,7 +844,9 @@ class TestShapExplainer:
             "power_target_lag-1",
         ]
         expected_df = pd.DataFrame(
-            data=np.stack([np.arange(1, 29), np.arange(3, 31), np.arange(106, 161, 2)], axis=1),
+            data=np.stack(
+                [np.arange(1, 29), np.arange(3, 31), np.arange(106, 161, 2)], axis=1
+            ),
             columns=expected_columns,
         )
 

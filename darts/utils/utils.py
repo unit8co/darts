@@ -126,8 +126,13 @@ def _with_sanity_checks(
                 only_args = all_as_kwargs.copy()
                 only_kwargs = all_as_kwargs.copy()
 
-                for param_name, param in signature(method_to_sanitize).parameters.items():
-                    if param.default == Parameter.empty and param.kind != Parameter.VAR_POSITIONAL:
+                for param_name, param in signature(
+                    method_to_sanitize
+                ).parameters.items():
+                    if (
+                        param.default == Parameter.empty
+                        and param.kind != Parameter.VAR_POSITIONAL
+                    ):
                         only_kwargs.pop(param_name)
                     else:
                         only_args.pop(param_name)
@@ -142,7 +147,9 @@ def _with_sanity_checks(
     return decorator
 
 
-def _parallel_apply(iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs) -> List:
+def _parallel_apply(
+    iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs
+) -> List:
     """
     Utility function that parallelise the execution of a function over an Iterator
 
@@ -165,7 +172,9 @@ def _parallel_apply(iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_arg
 
     """
 
-    returned_data = Parallel(n_jobs=n_jobs)(delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator)
+    returned_data = Parallel(n_jobs=n_jobs)(
+        delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator
+    )
     return returned_data
 
 
@@ -178,13 +187,17 @@ def _check_quantiles(quantiles):
     # we require the median to be present and the quantiles to be symmetric around it,
     # for correctness of sampling.
     median_q = 0.5
-    raise_if_not(median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`")
+    raise_if_not(
+        median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
+    )
     is_centered = [
-        -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6 for left_q, right_q in zip(quantiles, quantiles[::-1])
+        -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
+        for left_q, right_q in zip(quantiles, quantiles[::-1])
     ]
     raise_if_not(
         all(is_centered),
-        "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles " "higher than `q=0.5`",
+        "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
+        "higher than `q=0.5`",
     )
 
 
@@ -218,7 +231,9 @@ def slice_index(
 
     if type(start) is not type(end):
         raise_log(
-            ValueError("start and end values must be of the same type (either both integers or both pd.Timestamps)"),
+            ValueError(
+                "start and end values must be of the same type (either both integers or both pd.Timestamps)"
+            ),
             logger,
         )
 
@@ -327,8 +342,14 @@ def n_steps_between(
     1
     """
     freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
-    valid_int = isinstance(start, int) and isinstance(end, int) and isinstance(freq, int)
-    valid_time = isinstance(start, pd.Timestamp) and isinstance(end, pd.Timestamp) and isinstance(freq, pd.DateOffset)
+    valid_int = (
+        isinstance(start, int) and isinstance(end, int) and isinstance(freq, int)
+    )
+    valid_time = (
+        isinstance(start, pd.Timestamp)
+        and isinstance(end, pd.Timestamp)
+        and isinstance(freq, pd.DateOffset)
+    )
     if not (valid_int or valid_time):
         raise_log(
             ValueError(
@@ -345,7 +366,8 @@ def n_steps_between(
         if period_alias is None:
             raise_log(
                 ValueError(
-                    f"Cannot infer period alias for `freq={freq}`. " f"Is it a valid pandas offset/frequency alias?"
+                    f"Cannot infer period alias for `freq={freq}`. "
+                    f"Is it a valid pandas offset/frequency alias?"
                 ),
                 logger=logger,
             )
@@ -386,7 +408,9 @@ def generate_index(
         Optionally, an index name.
     """
     constructors = [
-        arg_name for arg, arg_name in zip([start, end, length], ["start", "end", "length"]) if arg is not None
+        arg_name
+        for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
+        if arg is not None
     ]
     raise_if(
         len(constructors) != 2,

@@ -93,8 +93,12 @@ class CovariatesIndexGenerator(ABC):
         self.output_chunk_length = output_chunk_length
 
         # check lags validity
-        min_covariates_lag = min(lags_covariates) if lags_covariates is not None else None
-        max_covariates_lag = max(lags_covariates) if lags_covariates is not None else None
+        min_covariates_lag = (
+            min(lags_covariates) if lags_covariates is not None else None
+        )
+        max_covariates_lag = (
+            max(lags_covariates) if lags_covariates is not None else None
+        )
         self._verify_lags(min_covariates_lag, max_covariates_lag)
 
         # from verification min/max lags are guaranteed to either both be None, or both be an integer
@@ -168,10 +172,16 @@ class CovariatesIndexGenerator(ABC):
             specific forecasting model. These requirements are derived from parameters set at
             :class:`CovariatesIndexGenerator` creation.
         """
-        train_idx, target_end = self.generate_train_idx(target=target, covariates=covariates)
-        inference_idx, _ = self.generate_inference_idx(n=n, target=target, covariates=covariates)
+        train_idx, target_end = self.generate_train_idx(
+            target=target, covariates=covariates
+        )
+        inference_idx, _ = self.generate_inference_idx(
+            n=n, target=target, covariates=covariates
+        )
         # generate index end is inclusive, should not be a problem when taking union
-        gap = generate_index(start=train_idx[-1], end=inference_idx[0] - target.freq, freq=target.freq)
+        gap = generate_index(
+            start=train_idx[-1], end=inference_idx[0] - target.freq, freq=target.freq
+        )
         return (
             train_idx.__class__.union(train_idx, gap).union(inference_idx),
             target_end,
@@ -201,10 +211,16 @@ class CovariatesIndexGenerator(ABC):
         )
         # RegressionModel
         is_scenario_b = (
-            input_chunk_length is not None and output_chunk_length is not None and lags_covariates is not None
+            input_chunk_length is not None
+            and output_chunk_length is not None
+            and lags_covariates is not None
         )
         # TorchForecastingModel
-        is_scenario_c = input_chunk_length is not None and output_chunk_length is not None and lags_covariates is None
+        is_scenario_c = (
+            input_chunk_length is not None
+            and output_chunk_length is not None
+            and lags_covariates is None
+        )
 
         if not any([is_scenario_a, is_scenario_b, is_scenario_c]):
             raise_log(
@@ -236,15 +252,21 @@ class CovariatesIndexGenerator(ABC):
             )
         if min_covariates_lag is not None:
             # check that if one of the two is given, both must be integers
-            if not isinstance(min_covariates_lag, int) or not isinstance(max_covariates_lag, int):
+            if not isinstance(min_covariates_lag, int) or not isinstance(
+                max_covariates_lag, int
+            ):
                 raise_log(
-                    ValueError("`min_covariates_lag` and `max_covariates_lag` must be both be integers."),
+                    ValueError(
+                        "`min_covariates_lag` and `max_covariates_lag` must be both be integers."
+                    ),
                     logger=logger,
                 )
             # minimum lag must be less than maximum lag
             if min_covariates_lag > max_covariates_lag:
                 raise_log(
-                    ValueError("`min_covariates_lag` must be smaller than/equal to `max_covariates_lag`."),
+                    ValueError(
+                        "`min_covariates_lag` must be smaller than/equal to `max_covariates_lag`."
+                    ),
                     logger=logger,
                 )
 
@@ -531,7 +553,9 @@ class Encoder(ABC):
         pass
 
     @staticmethod
-    def _merge_covariates(encoded: TimeSeries, covariates: Optional[TimeSeries] = None) -> TimeSeries:
+    def _merge_covariates(
+        encoded: TimeSeries, covariates: Optional[TimeSeries] = None
+    ) -> TimeSeries:
         """If (actual) covariates are given, merge the encoded index with the covariates
 
         Parameters
@@ -544,7 +568,9 @@ class Encoder(ABC):
         return covariates.stack(encoded) if covariates is not None else encoded
 
     @staticmethod
-    def _drop_encoded_components(covariates: Optional[TimeSeries], components: pd.Index) -> Optional[TimeSeries]:
+    def _drop_encoded_components(
+        covariates: Optional[TimeSeries], components: pd.Index
+    ) -> Optional[TimeSeries]:
         """Avoid pitfalls: `encode_train()` or `encode_inference()` can be called multiple times or chained.
         Exclude any encoded components from `covariates` to generate and add the new encodings at a later time.
         """
@@ -556,8 +582,16 @@ class Encoder(ABC):
         if len(duplicate_components) == len(covariates.components):
             covariates = None
         # case 2: covariates also have non-encoded components
-        elif len(duplicate_components) and len(duplicate_components) < len(covariates.components):
-            covariates = covariates[list(covariates.components[~covariates.components.isin(duplicate_components)])]
+        elif len(duplicate_components) and len(duplicate_components) < len(
+            covariates.components
+        ):
+            covariates = covariates[
+                list(
+                    covariates.components[
+                        ~covariates.components.isin(duplicate_components)
+                    ]
+                )
+            ]
         return covariates
 
     @property
@@ -600,7 +634,9 @@ class SingleEncoder(Encoder, ABC):
         self._components = pd.Index([])
 
     @abstractmethod
-    def _encode(self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype) -> TimeSeries:
+    def _encode(
+        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+    ) -> TimeSeries:
         """Single Encoders must implement an _encode() method to encode the index.
 
         Parameters
@@ -642,7 +678,11 @@ class SingleEncoder(Encoder, ABC):
         encoded = self._encode(index, target_end, target.dtype)
 
         # optionally, merge encodings with original `covariates` series
-        encoded = self._merge_covariates(encoded, covariates=covariates) if merge_covariates else encoded
+        encoded = (
+            self._merge_covariates(encoded, covariates=covariates)
+            if merge_covariates
+            else encoded
+        )
 
         # save encoded component names
         if self.components.empty:
@@ -689,11 +729,17 @@ class SingleEncoder(Encoder, ABC):
         covariates = self._drop_encoded_components(covariates, self.components)
 
         # generate index and encodings
-        index, target_end = self.index_generator.generate_inference_idx(n, target, covariates)
+        index, target_end = self.index_generator.generate_inference_idx(
+            n, target, covariates
+        )
         encoded = self._encode(index, target_end, target.dtype)
 
         # optionally, merge encodings with original `covariates` series
-        encoded = self._merge_covariates(encoded, covariates=covariates) if merge_covariates else encoded
+        encoded = (
+            self._merge_covariates(encoded, covariates=covariates)
+            if merge_covariates
+            else encoded
+        )
 
         # optionally, save encoded component names also at inference as some encoders do not have to be trained before
         if self.components.empty:
@@ -731,11 +777,17 @@ class SingleEncoder(Encoder, ABC):
         covariates = self._drop_encoded_components(covariates, self.components)
 
         # generate index and encodings
-        index, target_end = self.index_generator.generate_train_inference_idx(n, target, covariates)
+        index, target_end = self.index_generator.generate_train_inference_idx(
+            n, target, covariates
+        )
         encoded = self._encode(index, target_end, target.dtype)
 
         # optionally, merge encodings with original `covariates` series
-        encoded = self._merge_covariates(encoded, covariates=covariates) if merge_covariates else encoded
+        encoded = (
+            self._merge_covariates(encoded, covariates=covariates)
+            if merge_covariates
+            else encoded
+        )
 
         # save encoded component names
         if self.components.empty:
@@ -792,7 +844,9 @@ class SequentialEncoderTransformer:
     when `transform()` is called for the first time. This ensures proper transformation of train, validation and
     inference dataset covariates. User-supplied covariates are not transformed."""
 
-    def __init__(self, transformer: FittableDataTransformer, transform_mask: List[bool]):
+    def __init__(
+        self, transformer: FittableDataTransformer, transform_mask: List[bool]
+    ):
         """
         Parameters
         ----------
@@ -833,7 +887,10 @@ class SequentialEncoderTransformer:
             self._fit_called = True
 
         if any(self.transform_mask):
-            transformed = [self.transformer.transform(cov, component_mask=self.transform_mask) for cov in covariates]
+            transformed = [
+                self.transformer.transform(cov, component_mask=self.transform_mask)
+                for cov in covariates
+            ]
         else:
             transformed = covariates
         return transformed
@@ -896,7 +953,11 @@ def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> Supported
 
     # if `steps_ahead_start >= 0` or `steps_ahead_end <= 0` we must extract a slice of the target series index
     center_start = steps_ahead_start if steps_ahead_start >= 0 else None
-    center_end = steps_ahead_end if steps_ahead_end is not None and steps_ahead_end <= 0 else None
+    center_end = (
+        steps_ahead_end
+        if steps_ahead_end is not None and steps_ahead_end <= 0
+        else None
+    )
     idx_center = target.time_index[center_start:center_end]
 
     # case 3

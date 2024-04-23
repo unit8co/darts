@@ -121,7 +121,9 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         # for VARIMA we need to process target `series` before calling
         # TransferableFutureCovariatesLocalForecastingModel's fit() method
-        self._last_values = series.last_values()  # needed for back-transformation when d=1
+        self._last_values = (
+            series.last_values()
+        )  # needed for back-transformation when d=1
 
         series = self._differentiate_series(series)
 
@@ -129,7 +131,9 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         return self
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None) -> None:
+    def _fit(
+        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
+    ) -> None:
         super()._fit(series, future_covariates)
 
         self._assert_multivariate(series)
@@ -164,38 +168,52 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         self._last_num_samples = num_samples
 
-        super()._predict(n, series, historic_future_covariates, future_covariates, num_samples)
+        super()._predict(
+            n, series, historic_future_covariates, future_covariates, num_samples
+        )
 
         if series is not None:
             self._training_last_values = self._last_values
             # store new _last_values of the new target series
-            self._last_values = series.last_values()  # needed for back-transformation when d=1
+            self._last_values = (
+                series.last_values()
+            )  # needed for back-transformation when d=1
 
             series = self._differentiate_series(series)
 
             # if the series is differentiated, the new len will be = len - 1, we have to adjust the future covariates
             if historic_future_covariates and self.d > 0:
-                historic_future_covariates = historic_future_covariates.slice_intersect(series)
+                historic_future_covariates = historic_future_covariates.slice_intersect(
+                    series
+                )
 
             # updating statsmodels results object state
 
             self.model = self.model.apply(
                 series.values(copy=False),
-                exog=(historic_future_covariates.values(copy=False) if historic_future_covariates else None),
+                exog=(
+                    historic_future_covariates.values(copy=False)
+                    if historic_future_covariates
+                    else None
+                ),
             )
 
         # forecast before restoring the training state
         if num_samples == 1:
             forecast = self.model.forecast(
                 steps=n,
-                exog=(future_covariates.values(copy=False) if future_covariates else None),
+                exog=(
+                    future_covariates.values(copy=False) if future_covariates else None
+                ),
             )
         else:
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                exog=(future_covariates.values(copy=False) if future_covariates else None),
+                exog=(
+                    future_covariates.values(copy=False) if future_covariates else None
+                ),
             )
 
         forecast = self._invert_transformation(forecast)
@@ -219,7 +237,9 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         if self.d == 0:
             return series_df
         if self._last_num_samples > 1:
-            series_df = np.tile(self._last_values, (self._last_num_samples, 1)).T + series_df.cumsum(axis=0)
+            series_df = np.tile(
+                self._last_values, (self._last_num_samples, 1)
+            ).T + series_df.cumsum(axis=0)
         else:
             series_df = self._last_values + series_df.cumsum(axis=0)
         return series_df

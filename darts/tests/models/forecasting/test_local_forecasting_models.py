@@ -129,7 +129,9 @@ class TestLocalForecastingModels:
     ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
 
-    def retrain_func(counter, pred_time, train_series, past_covariates, future_covariates):
+    def retrain_func(
+        counter, pred_time, train_series, past_covariates, future_covariates
+    ):
         return len(train_series) % 2 == 0
 
     def test_save_model_parameters(self):
@@ -162,7 +164,11 @@ class TestLocalForecastingModels:
             assert os.path.exists(p)
 
         assert (
-            len([p for p in os.listdir(tmpdir_module) if p.startswith(type(model).__name__)])
+            len([
+                p
+                for p in os.listdir(tmpdir_module)
+                if p.startswith(type(model).__name__)
+            ])
             == len(full_model_paths) + 1
         )
 
@@ -215,7 +221,8 @@ class TestLocalForecastingModels:
         prediction = model.predict(len(self.ts_pass_val))
         current_mape = mape(self.ts_pass_val, prediction)
         assert current_mape < max_mape, (
-            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. " f"with a MAPE of {current_mape}"
+            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. "
+            f"with a MAPE of {current_mape}"
         )
 
     @pytest.mark.parametrize("config", multivariate_models)
@@ -227,7 +234,8 @@ class TestLocalForecastingModels:
         prediction = model.predict(len(self.ts_ice_heater_val))
         current_mape = mape(self.ts_ice_heater_val, prediction)
         assert current_mape < max_mape, (
-            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. " f"with a MAPE of {current_mape}"
+            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. "
+            f"with a MAPE of {current_mape}"
         )
 
     def test_multivariate_input(self):
@@ -255,7 +263,9 @@ class TestLocalForecastingModels:
             values=self.ts_gaussian_long.all_values(copy=False),
         )
 
-        for target, future_covariates in zip([target_dt_idx, target_num_idx], [fc_dt_idx, fc_num_idx]):
+        for target, future_covariates in zip(
+            [target_dt_idx, target_num_idx], [fc_dt_idx, fc_num_idx]
+        ):
             if isinstance(target.time_index, pd.RangeIndex):
                 try:
                     # _supports_range_index raises a ValueError if model does not support RangeIndex
@@ -265,7 +275,9 @@ class TestLocalForecastingModels:
 
             # Test models runnability - proper future covariates slicing
             model.fit(target, future_covariates=future_covariates)
-            prediction = model.predict(self.forecasting_horizon, future_covariates=future_covariates)
+            prediction = model.predict(
+                self.forecasting_horizon, future_covariates=future_covariates
+            )
 
             assert len(prediction) == self.forecasting_horizon
 
@@ -295,7 +307,9 @@ class TestLocalForecastingModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(encoder_support_models, [ts_gaussian, None]),  # tuple of (model class, future covs)
+        itertools.product(
+            encoder_support_models, [ts_gaussian, None]
+        ),  # tuple of (model class, future covs)
     )
     def test_encoders_support(self, config):
         # test some models that support encoders, once with user supplied covariates and once without
@@ -311,8 +325,14 @@ class TestLocalForecastingModels:
 
         add_encoders = {"custom": {"future": [extract_dayofweek]}}
 
-        series = target if not isinstance(model_object, VARIMA) else target.stack(target.map(np.log))
-        model_params = {k: vals for k, vals in copy.deepcopy(model_object.model_params).items()}
+        series = (
+            target
+            if not isinstance(model_object, VARIMA)
+            else target.stack(target.map(np.log))
+        )
+        model_params = {
+            k: vals for k, vals in copy.deepcopy(model_object.model_params).items()
+        }
         model_params["add_encoders"] = add_encoders
         model = model_object.__class__(**model_params)
 
@@ -441,12 +461,16 @@ class TestLocalForecastingModels:
         with pytest.raises(ValueError):
             model = model_cls(**kwargs)
             model.fit(series1, future_covariates=exog1)
-            model.predict(n=pred_len, series=series2, future_covariates=exog2[:-pred_len])
+            model.predict(
+                n=pred_len, series=series2, future_covariates=exog2[:-pred_len]
+            )
         # and checking the case with insufficient historic future covariates
         with pytest.raises(ValueError):
             model = model_cls(**kwargs)
             model.fit(series1, future_covariates=exog1)
-            model.predict(n=pred_len, series=series2, future_covariates=exog2[pred_len:])
+            model.predict(
+                n=pred_len, series=series2, future_covariates=exog2[pred_len:]
+            )
 
         # verify that we can still forecast the original training series after predicting a new target series
         model = model_cls(**kwargs)
@@ -568,11 +592,15 @@ class TestLocalForecastingModels:
                 retrain.call_count = 0
                 retrain.side_effect = [True, False] * (len(series) // 2)
 
-            fit_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._fit_wrapper"
+            fit_method_to_patch = (
+                f"darts.models.forecasting.forecasting_model.{model_type}._fit_wrapper"
+            )
             predict_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._predict_wrapper"
 
             with patch(fit_method_to_patch) as patch_fit_method:
-                with patch(predict_method_to_patch, side_effect=series) as patch_predict_method:
+                with patch(
+                    predict_method_to_patch, side_effect=series
+                ) as patch_predict_method:
                     # Set _fit_called attribute to True, otherwise retrain function is never called
                     model._fit_called = True
 
@@ -596,11 +624,15 @@ class TestLocalForecastingModels:
             (ExponentialSmoothing(), "ExponentialSmoothing()"),  # no params changed
             (ARIMA(1, 1, 1), "ARIMA(p=1, q=1)"),  # default value for a param
             (
-                KalmanForecaster(add_encoders={"cyclic": {"past": ["month"]}}),  # data structure param
+                KalmanForecaster(
+                    add_encoders={"cyclic": {"past": ["month"]}}
+                ),  # data structure param
                 "KalmanForecaster(add_encoders={'cyclic': {'past': ['month']}})",
             ),
             (
-                TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True),  # params in wrong order
+                TBATS(
+                    use_trend=True, use_arma_errors=True, use_box_cox=True
+                ),  # params in wrong order
                 "TBATS(use_box_cox=True, use_trend=True)",
             ),
         ],

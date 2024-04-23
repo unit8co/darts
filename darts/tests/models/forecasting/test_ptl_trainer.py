@@ -229,7 +229,9 @@ class TestPTLTrainer:
         assert len(model.trainer_params["callbacks"]) == 3
 
         # first one is our Checkpointer
-        assert isinstance(model.trainer_params["callbacks"][0], pl.callbacks.ModelCheckpoint)
+        assert isinstance(
+            model.trainer_params["callbacks"][0], pl.callbacks.ModelCheckpoint
+        )
 
         # second and third are CounterCallbacks
         for i in range(1, 3):

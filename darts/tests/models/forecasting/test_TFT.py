@@ -171,7 +171,9 @@ class TestTFTModel:
         )
 
     def test_static_covariates_support(self):
-        target_multi = concatenate([tg.sine_timeseries(length=10, freq="h")] * 2, axis=1)
+        target_multi = concatenate(
+            [tg.sine_timeseries(length=10, freq="h")] * 2, axis=1
+        )
 
         target_multi = target_multi.with_static_covariates(
             pd.DataFrame(
@@ -195,7 +197,9 @@ class TestTFTModel:
         )
         model.fit(target_multi, verbose=False)
 
-        assert len(model.model.static_variables) == len(target_multi.static_covariates.columns)
+        assert len(model.model.static_variables) == len(
+            target_multi.static_covariates.columns
+        )
 
         # check model embeddings
         target_embedding = {
@@ -207,20 +211,30 @@ class TestTFTModel:
         }
         assert model.categorical_embedding_sizes == target_embedding
         for cat_var, embedding_dims in target_embedding.items():
-            assert model.model.input_embeddings.embeddings[cat_var].num_embeddings == embedding_dims[0]
-            assert model.model.input_embeddings.embeddings[cat_var].embedding_dim == embedding_dims[1]
+            assert (
+                model.model.input_embeddings.embeddings[cat_var].num_embeddings
+                == embedding_dims[0]
+            )
+            assert (
+                model.model.input_embeddings.embeddings[cat_var].embedding_dim
+                == embedding_dims[1]
+            )
 
         preds = model.predict(n=1, series=target_multi, verbose=False)
         assert preds.static_covariates.equals(target_multi.static_covariates)
 
         # raise an error when trained with static covariates of wrong dimensionality
-        target_multi = target_multi.with_static_covariates(pd.concat([target_multi.static_covariates] * 2, axis=1))
+        target_multi = target_multi.with_static_covariates(
+            pd.concat([target_multi.static_covariates] * 2, axis=1)
+        )
         with pytest.raises(ValueError):
             model.predict(n=1, series=target_multi, verbose=False)
 
         # raise an error when trained with static covariates and trying to predict without
         with pytest.raises(ValueError):
-            model.predict(n=1, series=target_multi.with_static_covariates(None), verbose=False)
+            model.predict(
+                n=1, series=target_multi.with_static_covariates(None), verbose=False
+            )
 
         # with `use_static_covariates=False`, we can predict without static covs
         model = TFTModel(
@@ -260,12 +274,16 @@ class TestTFTModel:
         )
 
         # generate repeating linear curve
-        ts_linear = tg.linear_timeseries(0, 1, length=season_length, start=ts_sine.end_time() + ts_sine.freq)
+        ts_linear = tg.linear_timeseries(
+            0, 1, length=season_length, start=ts_sine.end_time() + ts_sine.freq
+        )
         for i in range(n_repeat - 1):
             start = ts_linear.end_time() + ts_linear.freq
             new_ts = tg.linear_timeseries(0, 1, length=season_length, start=start)
             ts_linear = ts_linear.append(new_ts)
-        ts_linear = TimeSeries.from_times_and_values(times=ts_sine.time_index, values=ts_linear.values())
+        ts_linear = TimeSeries.from_times_and_values(
+            times=ts_sine.time_index, values=ts_linear.values()
+        )
 
         # create multivariate TimeSeries by stacking sine and linear curves
         ts = ts_sine.stack(ts_linear)
@@ -281,16 +299,22 @@ class TestTFTModel:
         ts_scaled = scaler_ts.transform(ts)
 
         # generate long enough covariates (past and future covariates will be the same for simplicity)
-        long_enough_ts = tg.sine_timeseries(value_frequency=1 / season_length, length=1000, freq=ts.freq)
+        long_enough_ts = tg.sine_timeseries(
+            value_frequency=1 / season_length, length=1000, freq=ts.freq
+        )
         covariates = tg.datetime_attribute_timeseries(long_enough_ts, attribute="hour")
         scaler_covs = Scaler()
         covariates_scaled = scaler_covs.fit_transform(covariates)
         return ts_scaled, ts_train_scaled, ts_val_scaled, covariates_scaled
 
-    def helper_test_prediction_shape(self, predict_n, ts, ts_train, ts_val, future_covariates, kwargs_tft):
+    def helper_test_prediction_shape(
+        self, predict_n, ts, ts_train, ts_val, future_covariates, kwargs_tft
+    ):
         """checks whether prediction has same number of variable as input series and
         whether prediction has correct length"""
-        y_hat = self.helper_fit_predict(predict_n, ts_train, ts_val, None, future_covariates, kwargs_tft)
+        y_hat = self.helper_fit_predict(
+            predict_n, ts_train, ts_val, None, future_covariates, kwargs_tft
+        )
 
         y_hat_list = [y_hat] if isinstance(y_hat, TimeSeries) else y_hat
         ts_list = [ts] if isinstance(ts, TimeSeries) else ts
@@ -330,7 +354,9 @@ class TestTFTModel:
         )
 
     @staticmethod
-    def helper_fit_predict(predict_n, ts_train, ts_val, past_covariates, future_covariates, kwargs_tft):
+    def helper_fit_predict(
+        predict_n, ts_train, ts_val, past_covariates, future_covariates, kwargs_tft
+    ):
         """simple helper that returns prediction for the individual test cases"""
         model = TFTModel(**kwargs_tft)
 
@@ -356,7 +382,9 @@ class TestTFTModel:
         if isinstance(y_hat, TimeSeries):
             y_hat = y_hat.quantile_timeseries(0.5) if y_hat.n_samples > 1 else y_hat
         else:
-            y_hat = [ts.quantile_timeseries(0.5) if ts.n_samples > 1 else ts for ts in y_hat]
+            y_hat = [
+                ts.quantile_timeseries(0.5) if ts.n_samples > 1 else ts for ts in y_hat
+            ]
         return y_hat
 
     def test_layer_norm(self):

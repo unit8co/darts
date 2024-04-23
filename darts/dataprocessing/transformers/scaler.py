@@ -106,10 +106,14 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
             )
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transformer = scaler
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=global_fit)
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, global_fit=global_fit
+        )
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
+    ) -> TimeSeries:
         transformer = params["fitted"]
 
         tr_out = transformer.transform(Scaler.stack_samples(series))
@@ -119,7 +123,9 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         return series.with_values(transformed_vals)
 
     @staticmethod
-    def ts_inverse_transform(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> TimeSeries:
+    def ts_inverse_transform(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> TimeSeries:
         transformer = params["fitted"]
 
         tr_out = transformer.inverse_transform(Scaler.stack_samples(series))
@@ -128,7 +134,12 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         return series.with_values(inv_transformed_vals)
 
     @staticmethod
-    def ts_fit(series: Union[TimeSeries, Sequence[TimeSeries]], params: Mapping[str, Any], *args, **kwargs) -> Any:
+    def ts_fit(
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        params: Mapping[str, Any],
+        *args,
+        **kwargs,
+    ) -> Any:
         transformer = deepcopy(params["fixed"]["transformer"])
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
         # otherwise, `series` is a single `TimeSeries`:

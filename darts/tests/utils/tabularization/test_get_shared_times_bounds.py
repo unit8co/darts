@@ -24,8 +24,12 @@ class TestGetSharedTimesBounds:
             series_1 = linear_timeseries(start=1, end=15, freq=3)
             series_2 = linear_timeseries(start=2, end=20, freq=2)
         else:
-            series_1 = linear_timeseries(start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/15/2000"), freq="3d")
-            series_2 = linear_timeseries(start=pd.Timestamp("1/2/2000"), end=pd.Timestamp("1/20/2000"), freq="2d")
+            series_1 = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/15/2000"), freq="3d"
+            )
+            series_2 = linear_timeseries(
+                start=pd.Timestamp("1/2/2000"), end=pd.Timestamp("1/20/2000"), freq="2d"
+            )
         expected_bounds = (series_2.start_time(), series_1.end_time())
         assert get_shared_times_bounds(series_1, series_2) == expected_bounds
 
@@ -54,7 +58,10 @@ class TestGetSharedTimesBounds:
         )
         assert get_shared_times_bounds(series_1.time_index, series_2) == expected_bounds
         assert get_shared_times_bounds(series_1, series_2.time_index) == expected_bounds
-        assert get_shared_times_bounds(series_1.time_index, series_2.time_index) == expected_bounds
+        assert (
+            get_shared_times_bounds(series_1.time_index, series_2.time_index)
+            == expected_bounds
+        )
 
     @pytest.mark.parametrize(
         "series_type",
@@ -72,11 +79,23 @@ class TestGetSharedTimesBounds:
         if series_type == "integer":
             series = linear_timeseries(start=0, length=10, freq=3)
         else:
-            series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=10, freq="3d")
-        subseries = series.copy().drop_after(series.time_index[-1]).drop_before(series.time_index[1])
-        subsubseries = subseries.copy().drop_after(subseries.time_index[-1]).drop_before(subseries.time_index[1])
+            series = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), length=10, freq="3d"
+            )
+        subseries = (
+            series.copy()
+            .drop_after(series.time_index[-1])
+            .drop_before(series.time_index[1])
+        )
+        subsubseries = (
+            subseries.copy()
+            .drop_after(subseries.time_index[-1])
+            .drop_before(subseries.time_index[1])
+        )
         expected_bounds = (subsubseries.start_time(), subsubseries.end_time())
-        assert get_shared_times_bounds(series, subseries, subsubseries) == expected_bounds
+        assert (
+            get_shared_times_bounds(series, subseries, subsubseries) == expected_bounds
+        )
 
     @pytest.mark.parametrize(
         "series_type",
@@ -92,7 +111,9 @@ class TestGetSharedTimesBounds:
         if series_type == "integer":
             series = linear_timeseries(start=0, length=5, freq=1)
         else:
-            series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=5, freq="d")
+            series = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), length=5, freq="d"
+            )
         expected = (series.start_time(), series.end_time())
         assert get_shared_times_bounds(series) == expected
         assert get_shared_times_bounds(series, series) == expected
@@ -136,8 +157,12 @@ class TestGetSharedTimesBounds:
             series_1 = linear_timeseries(start=0, length=3, freq=1)
             series_2 = linear_timeseries(start=series_1.end_time(), length=2, freq=2)
         else:
-            series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=1, freq="d")
-            series_1 = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=3, freq="d")
+            series = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), length=1, freq="d"
+            )
+            series_1 = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), length=3, freq="d"
+            )
             series_2 = linear_timeseries(start=series_1.end_time(), length=2, freq="2d")
         assert get_shared_times_bounds(series, series) == (
             series.start_time(),
@@ -160,10 +185,16 @@ class TestGetSharedTimesBounds:
         # Have `series_2` begin after the end of `series_1`:
         if series_type == "integer":
             series_1 = linear_timeseries(start=0, length=5, freq=1)
-            series_2 = linear_timeseries(start=series_1.end_time() + 1, length=6, freq=2)
+            series_2 = linear_timeseries(
+                start=series_1.end_time() + 1, length=6, freq=2
+            )
         else:
-            series_1 = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=5, freq="d")
-            series_2 = linear_timeseries(start=series_1.end_time() + pd.Timedelta("1d"), length=6, freq="2d")
+            series_1 = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), length=5, freq="d"
+            )
+            series_2 = linear_timeseries(
+                start=series_1.end_time() + pd.Timedelta("1d"), length=6, freq="2d"
+            )
         assert get_shared_times_bounds(series_1, series_2) is None
         assert get_shared_times_bounds(series_2, series_1, series_2) is None
 

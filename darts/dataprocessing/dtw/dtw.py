@@ -24,7 +24,9 @@ DistanceFunc = Callable[[SeriesValue, SeriesValue], float]
 
 
 # CORE ALGORITHM
-def _dtw_cost_matrix(x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window) -> CostMatrix:
+def _dtw_cost_matrix(
+    x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window
+) -> CostMatrix:
     dtw = CostMatrix._from_window(window)
 
     dtw.fill(np.inf)
@@ -115,7 +117,9 @@ def _expand_window(low_res_path: np.ndarray, n: int, m: int, radius: int) -> CRW
     return high_res_grid
 
 
-def _fast_dtw(x: np.ndarray, y: np.ndarray, dist: DistanceFunc, radius: int, depth: int = 0) -> CostMatrix:
+def _fast_dtw(
+    x: np.ndarray, y: np.ndarray, dist: DistanceFunc, radius: int, depth: int = 0
+) -> CostMatrix:
     n = len(x)
     m = len(y)
     min_size = radius + 2
@@ -275,7 +279,9 @@ class DTWAlignment:
             time_index = time_index.rename({time_dim1: time_dim2})
             warped_series2[time_dim2] = time_index
 
-        return TimeSeries.from_xarray(warped_series1), TimeSeries.from_xarray(warped_series2)
+        return TimeSeries.from_xarray(warped_series1), TimeSeries.from_xarray(
+            warped_series2
+        )
 
 
 def dtw(
@@ -327,7 +333,11 @@ def dtw(
     if window is None:
         window = NoWindow()
 
-    if multi_grid_radius == -1 and type(window) is NoWindow and len(series1) * len(series2) > 10**6:
+    if (
+        multi_grid_radius == -1
+        and type(window) is NoWindow
+        and len(series1) * len(series2) > 10**6
+    ):
         logger.warning(
             "Exact evaluation will result in poor performance on large datasets."
             " Consider enabling multi-grid or using a window."

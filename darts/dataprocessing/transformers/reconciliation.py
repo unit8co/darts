@@ -67,7 +67,9 @@ def _get_summation_matrix(series: TimeSeries):
     return S.astype(series.dtype)
 
 
-def _reconcile_from_S_and_G(series: TimeSeries, S: np.ndarray, G: np.ndarray) -> TimeSeries:
+def _reconcile_from_S_and_G(
+    series: TimeSeries, S: np.ndarray, G: np.ndarray
+) -> TimeSeries:
     """
     Returns the TimeSeries linearly reconciled from the projection matrix G and the summation matrix S.
     """
@@ -93,7 +95,9 @@ class BottomUpReconciliator(BaseDataTransformer):
         return G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> TimeSeries:
         S = _get_summation_matrix(series)
         G = BottomUpReconciliator.get_projection_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
@@ -109,12 +113,16 @@ class TopDownReconciliator(FittableDataTransformer):
     """
 
     @staticmethod
-    def ts_fit(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> np.ndarray:
+    def ts_fit(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> np.ndarray:
         G = TopDownReconciliator.get_projection_matrix(series)
         return G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> TimeSeries:
         G = params["fitted"]
         S = _get_summation_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
@@ -124,7 +132,9 @@ class TopDownReconciliator(FittableDataTransformer):
         n, m = series.n_components, len(series.bottom_level_components)
 
         # compute sum of total component
-        sum_total = series[series.top_level_component].all_values(copy=False).flatten().sum()
+        sum_total = (
+            series[series.top_level_component].all_values(copy=False).flatten().sum()
+        )
 
         base_forecasts = series.bottom_level_series
 
@@ -188,13 +198,17 @@ class MinTReconciliator(FittableDataTransformer):
         super().__init__()
 
     @staticmethod
-    def ts_fit(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> np.ndarray:
+    def ts_fit(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> np.ndarray:
         method = params["fixed"]["method"]
         S, G = MinTReconciliator.get_matrices(series, method)
         return S, G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> TimeSeries:
         S, G = params["fitted"]
         return _reconcile_from_S_and_G(series, S, G)
 
@@ -230,7 +244,9 @@ class MinTReconciliator(FittableDataTransformer):
             Wh = np.diag(np.array(quantities))
         elif method == "mint_cov":
             MinTReconciliator._assert_deterministic(series)
-            Wh = np.cov(series.values(copy=False).T)  # + 1e-3 * np.eye(len(series.components))
+            Wh = np.cov(
+                series.values(copy=False).T
+            )  # + 1e-3 * np.eye(len(series.components))
         else:
             raise_if_not(False, f"Unknown method: {method}")
 

@@ -36,9 +36,15 @@ class TestGetSharedTimes:
             series_2 = linear_timeseries(start=3, end=13, freq=2)
             series_3 = linear_timeseries(start=5, end=15, freq=2)
         else:
-            series_1 = linear_timeseries(start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d")
-            series_2 = linear_timeseries(start=pd.Timestamp("1/3/2000"), end=pd.Timestamp("1/13/2000"), freq="2d")
-            series_3 = linear_timeseries(start=pd.Timestamp("1/5/2000"), end=pd.Timestamp("1/15/2000"), freq="2d")
+            series_1 = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
+            )
+            series_2 = linear_timeseries(
+                start=pd.Timestamp("1/3/2000"), end=pd.Timestamp("1/13/2000"), freq="2d"
+            )
+            series_3 = linear_timeseries(
+                start=pd.Timestamp("1/5/2000"), end=pd.Timestamp("1/15/2000"), freq="2d"
+            )
 
         # Intersection of a single time index is just the original time index:
         assert series_1.time_index.equals(get_shared_times(series_1))
@@ -48,20 +54,30 @@ class TestGetSharedTimes:
         # Intersection of two time indices begins at start time of later series
         # and stops at end time of earlier series.
         # Since `series_1` is before `series_2`:
-        expected_12 = linear_timeseries(start=series_2.start_time(), end=series_1.end_time(), freq=series_1.freq)
+        expected_12 = linear_timeseries(
+            start=series_2.start_time(), end=series_1.end_time(), freq=series_1.freq
+        )
         assert expected_12.time_index.equals(get_shared_times(series_1, series_2))
         # Since `series_2` is before `series_3`:
-        expected_23 = linear_timeseries(start=series_3.start_time(), end=series_2.end_time(), freq=series_2.freq)
+        expected_23 = linear_timeseries(
+            start=series_3.start_time(), end=series_2.end_time(), freq=series_2.freq
+        )
         assert expected_23.time_index.equals(get_shared_times(series_2, series_3))
         # Since `series_1` is before `series_3`:
-        expected_13 = linear_timeseries(start=series_3.start_time(), end=series_1.end_time(), freq=series_1.freq)
+        expected_13 = linear_timeseries(
+            start=series_3.start_time(), end=series_1.end_time(), freq=series_1.freq
+        )
         assert expected_13.time_index.equals(get_shared_times(series_1, series_3))
 
         # Intersection of all three time series should begin at start of series_3 (i.e.
         # the last series to begin) and end at the end of series_1 (i.e. the first series
         # to end):
-        expected_123 = linear_timeseries(start=series_3.start_time(), end=series_1.end_time(), freq=series_1.freq)
-        assert expected_123.time_index.equals(get_shared_times(series_1, series_2, series_3))
+        expected_123 = linear_timeseries(
+            start=series_3.start_time(), end=series_1.end_time(), freq=series_1.freq
+        )
+        assert expected_123.time_index.equals(
+            get_shared_times(series_1, series_2, series_3)
+        )
 
     @pytest.mark.parametrize(
         "series_type",
@@ -84,9 +100,15 @@ class TestGetSharedTimes:
             freq_13 = lcm(series_1.freq, series_3.freq)
             freq_123 = lcm(series_1.freq, series_2.freq, series_3.freq)
         else:
-            series_1 = linear_timeseries(start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d")
-            series_2 = linear_timeseries(start=pd.Timestamp("1/3/2000"), end=pd.Timestamp("1/13/2000"), freq="2d")
-            series_3 = linear_timeseries(start=pd.Timestamp("1/5/2000"), end=pd.Timestamp("1/15/2000"), freq="2d")
+            series_1 = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
+            )
+            series_2 = linear_timeseries(
+                start=pd.Timestamp("1/3/2000"), end=pd.Timestamp("1/13/2000"), freq="2d"
+            )
+            series_3 = linear_timeseries(
+                start=pd.Timestamp("1/5/2000"), end=pd.Timestamp("1/15/2000"), freq="2d"
+            )
             freq_12 = f"{lcm(series_1.freq.n, series_2.freq.n)}d"
             freq_23 = f"{lcm(series_2.freq.n, series_3.freq.n)}d"
             freq_13 = f"{lcm(series_1.freq.n, series_3.freq.n)}d"
@@ -145,7 +167,9 @@ class TestGetSharedTimes:
         )
         if expected_123.time_index[-1] > series_1.end_time():
             expected_123 = expected_123.drop_after(expected_123.time_index[-1])
-        assert expected_123.time_index.equals(get_shared_times(series_1, series_2, series_3))
+        assert expected_123.time_index.equals(
+            get_shared_times(series_1, series_2, series_3)
+        )
 
     @pytest.mark.parametrize(
         "series_type",
@@ -158,10 +182,16 @@ class TestGetSharedTimes:
         # Define `series_2` so that it starts after `series_1` ends:
         if series_type == "integer":
             series_1 = linear_timeseries(start=1, end=11, freq=2)
-            series_2 = linear_timeseries(start=series_1.end_time() + 1, length=5, freq=3)
+            series_2 = linear_timeseries(
+                start=series_1.end_time() + 1, length=5, freq=3
+            )
         else:
-            series_1 = linear_timeseries(start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d")
-            series_2 = linear_timeseries(start=series_1.end_time() + pd.Timedelta(1, "d"), length=5, freq="3d")
+            series_1 = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
+            )
+            series_2 = linear_timeseries(
+                start=series_1.end_time() + pd.Timedelta(1, "d"), length=5, freq="3d"
+            )
         assert get_shared_times(series_1, series_2) is None
         assert get_shared_times(series_1, series_1, series_2) is None
         assert get_shared_times(series_1, series_2, series_2) is None
@@ -181,7 +211,9 @@ class TestGetSharedTimes:
             series_1 = linear_timeseries(start=1, end=11, freq=2)
             series_2 = linear_timeseries(start=series_1.end_time(), length=5, freq=3)
         else:
-            series_1 = linear_timeseries(start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d")
+            series_1 = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
+            )
             series_2 = linear_timeseries(start=series_1.end_time(), length=5, freq="3d")
         overlap_val = series_1.end_time()
         assert get_shared_times(series_1, series_2) == overlap_val
@@ -202,7 +234,9 @@ class TestGetSharedTimes:
         if series_type == "integer":
             series = linear_timeseries(start=0, length=5, freq=1)
         else:
-            series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=5, freq="d")
+            series = linear_timeseries(
+                start=pd.Timestamp("1/1/2000"), length=5, freq="d"
+            )
         assert series.time_index.equals(get_shared_times(series))
         assert series.time_index.equals(get_shared_times(series, series))
         assert series.time_index.equals(get_shared_times(series, series, series))
@@ -233,10 +267,14 @@ class TestGetSharedTimes:
         series_1 = linear_timeseries(start=0, end=10, freq=1)
         series_2 = linear_timeseries(start=0, end=20, freq=2)
         # `stop=10+1` since `stop` is exclusive
-        intersection = pd.RangeIndex(start=series_2.start_time(), stop=series_1.end_time() + 1, step=2)
+        intersection = pd.RangeIndex(
+            start=series_2.start_time(), stop=series_1.end_time() + 1, step=2
+        )
         assert intersection.equals(get_shared_times(series_1.time_index, series_2))
         assert intersection.equals(get_shared_times(series_1, series_2.time_index))
-        assert intersection.equals(get_shared_times(series_1.time_index, series_2.time_index))
+        assert intersection.equals(
+            get_shared_times(series_1.time_index, series_2.time_index)
+        )
 
     def test_shared_times_empty_input(self):
         """

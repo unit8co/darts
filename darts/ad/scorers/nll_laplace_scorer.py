@@ -32,6 +32,9 @@ class LaplaceNLLScorer(NLLScorer):
         # ML estimate for the Laplace scale
         # see: https://github.com/scipy/scipy/blob/de80faf9d3480b9dbb9b888568b64499e0e70c19/scipy
         # /stats/_continuous_distns.py#L4846
-        scale = np.sum(np.abs(probabilistic_estimations.T - loc), axis=0).T / probabilistic_estimations.shape[1]
+        scale = (
+            np.sum(np.abs(probabilistic_estimations.T - loc), axis=0).T
+            / probabilistic_estimations.shape[1]
+        )
 
         return -laplace.logpdf(deterministic_values, loc=loc, scale=scale)

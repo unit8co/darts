@@ -19,8 +19,13 @@ class TestClassTrainTestSplit:
 
     def test_parameters_for_axis_1_no_n(self):
         with pytest.raises(AttributeError) as err:
-            train_test_split(make_dataset(1, 10), axis=1, horizon=1, vertical_split_type=MODEL_AWARE)
-        assert str(err.value) == "You need to provide non-zero `horizon` and `input_size` parameters when axis=1"
+            train_test_split(
+                make_dataset(1, 10), axis=1, horizon=1, vertical_split_type=MODEL_AWARE
+            )
+        assert (
+            str(err.value)
+            == "You need to provide non-zero `horizon` and `input_size` parameters when axis=1"
+        )
 
     def test_parameters_for_axis_1_no_horizon(self):
         with pytest.raises(AttributeError) as err:
@@ -30,7 +35,10 @@ class TestClassTrainTestSplit:
                 input_size=1,
                 vertical_split_type=MODEL_AWARE,
             )
-        assert str(err.value) == "You need to provide non-zero `horizon` and `input_size` parameters when axis=1"
+        assert (
+            str(err.value)
+            == "You need to provide non-zero `horizon` and `input_size` parameters when axis=1"
+        )
 
     def test_empty_dataset(self):
         with pytest.raises(AttributeError):
@@ -186,11 +194,15 @@ class TestClassTrainTestSplit:
         train_lengths = [len(ts) for ts in train_set]
         test_lengths = [len(ts) for ts in test_set]
 
-        assert train_lengths == [7, 97, 997] and test_lengths == [
-            4,
-            4,
-            4,
-        ], f"Wrong shapes: training set shape: {train_lengths}; test set shape {test_lengths}"
+        assert (
+            train_lengths == [7, 97, 997]
+            and test_lengths
+            == [
+                4,
+                4,
+                4,
+            ]
+        ), f"Wrong shapes: training set shape: {train_lengths}; test set shape {test_lengths}"
 
     def test_multi_timeseries_variable_ts_length_one_ts_too_small(self):
         data = [
@@ -210,7 +222,9 @@ class TestClassTrainTestSplit:
         assert str(err.value) == "Not enough data to create training and test sets"
 
     def test_simple_vertical_split_sunny_day(self):
-        train_set, test_set = train_test_split(make_dataset(4, 10), axis=1, vertical_split_type=SIMPLE, test_size=0.2)
+        train_set, test_set = train_test_split(
+            make_dataset(4, 10), axis=1, vertical_split_type=SIMPLE, test_size=0.2
+        )
 
         assert verify_shape(train_set, 4, 8) and verify_shape(test_set, 4, 2), (
             f"Wrong shapes: training set shape: ({len(train_set)}, {len(train_set[0])});"
@@ -218,7 +232,9 @@ class TestClassTrainTestSplit:
         )
 
     def test_simple_vertical_split_sunny_day_absolute_split(self):
-        train_set, test_set = train_test_split(make_dataset(4, 10), axis=1, vertical_split_type=SIMPLE, test_size=2)
+        train_set, test_set = train_test_split(
+            make_dataset(4, 10), axis=1, vertical_split_type=SIMPLE, test_size=2
+        )
 
         assert verify_shape(train_set, 4, 8) and verify_shape(test_set, 4, 2), (
             f"Wrong shapes: training set shape: ({len(train_set)}, {len(train_set[0])});"

@@ -27,8 +27,12 @@ class TestStridedMovingWindow:
         # Create a 'dummy input' with linearly increasing values:
         x_shape = (10, 8, 12)
         x = np.arange(np.prod(x_shape)).reshape(*x_shape)
-        for axis, stride, window_len in product(axis_combos, stride_combos, window_len_combos):
-            windows = strided_moving_window(x=x, window_len=window_len, stride=stride, axis=axis)
+        for axis, stride, window_len in product(
+            axis_combos, stride_combos, window_len_combos
+        ):
+            windows = strided_moving_window(
+                x=x, window_len=window_len, stride=stride, axis=axis
+            )
             # Iterate over extracted windows:
             for i in range(windows.shape[axis]):
                 # All of the extract windows are found along the `axis` dimension; shift
@@ -39,7 +43,9 @@ class TestStridedMovingWindow:
                 window_start_idx = i * stride
                 # Window should include next `window_len` values after window start;
                 # shift `axis` to last dimension then extract expected window:
-                expected = np.moveaxis(x, axis, -1)[:, :, window_start_idx : window_start_idx + window_len]
+                expected = np.moveaxis(x, axis, -1)[
+                    :, :, window_start_idx : window_start_idx + window_len
+                ]
                 assert np.allclose(window, expected)
 
     def test_strided_moving_window_invalid_stride_error(self):
@@ -96,4 +102,6 @@ class TestStridedMovingWindow:
         x = np.arange(1)
         with pytest.raises(ValueError) as err:
             strided_moving_window(x, window_len=2, stride=1)
-        assert ("`window_len` must be less than or equal to x.shape[axis].") == str(err.value)
+        assert ("`window_len` must be less than or equal to x.shape[axis].") == str(
+            err.value
+        )

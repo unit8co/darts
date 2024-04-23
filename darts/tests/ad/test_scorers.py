@@ -63,16 +63,22 @@ class TestADAnomalyScorer:
     anomalies = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
 
     np_only_1_anomalies = np.random.choice(a=[0, 1], size=100, p=[0, 1])
-    only_1_anomalies = TimeSeries.from_times_and_values(train._time_index, np_only_1_anomalies)
+    only_1_anomalies = TimeSeries.from_times_and_values(
+        train._time_index, np_only_1_anomalies
+    )
 
     np_only_0_anomalies = np.random.choice(a=[0, 1], size=100, p=[1, 0])
-    only_0_anomalies = TimeSeries.from_times_and_values(train._time_index, np_only_0_anomalies)
+    only_0_anomalies = TimeSeries.from_times_and_values(
+        train._time_index, np_only_0_anomalies
+    )
 
     modified_train = MovingAverageFilter(window=10).filter(train)
     modified_test = MovingAverageFilter(window=10).filter(test)
 
     np_probabilistic = np.random.normal(loc=10, scale=2, size=[100, 1, 20])
-    probabilistic = TimeSeries.from_times_and_values(train._time_index, np_probabilistic)
+    probabilistic = TimeSeries.from_times_and_values(
+        train._time_index, np_probabilistic
+    )
 
     # multivariate series
     np_mts_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
@@ -82,20 +88,28 @@ class TestADAnomalyScorer:
     mts_test = TimeSeries.from_times_and_values(mts_train._time_index, np_mts_test)
 
     np_mts_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
-    mts_anomalies = TimeSeries.from_times_and_values(mts_train._time_index, np_mts_anomalies)
+    mts_anomalies = TimeSeries.from_times_and_values(
+        mts_train._time_index, np_mts_anomalies
+    )
 
     modified_mts_train = MovingAverageFilter(window=10).filter(mts_train)
     modified_mts_test = MovingAverageFilter(window=10).filter(mts_test)
 
-    np_mts_probabilistic = np.random.normal(loc=[[10], [5]], scale=[[1], [1.5]], size=[100, 2, 20])
-    mts_probabilistic = TimeSeries.from_times_and_values(mts_train._time_index, np_mts_probabilistic)
+    np_mts_probabilistic = np.random.normal(
+        loc=[[10], [5]], scale=[[1], [1.5]], size=[100, 2, 20]
+    )
+    mts_probabilistic = TimeSeries.from_times_and_values(
+        mts_train._time_index, np_mts_probabilistic
+    )
 
     def test_ScoreNonFittableAnomalyScorer(self):
         scorer = Norm()
 
         # Check return types for score_from_prediction()
         # Check if return type is float when input is a series
-        assert isinstance(scorer.score_from_prediction(self.test, self.modified_test), TimeSeries)
+        assert isinstance(
+            scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
+        )
 
         # Check if return type is Sequence when input is a Sequence of series
         assert isinstance(
@@ -136,7 +150,9 @@ class TestADAnomalyScorer:
         # Check return types for score_from_prediction()
         scorer.fit_from_prediction(self.train, self.modified_train)
         # Check if return type is float when input is a series
-        assert isinstance(scorer.score_from_prediction(self.test, self.modified_test), TimeSeries)
+        assert isinstance(
+            scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
+        )
 
         # Check if return type is Sequence when input is a Sequence of series
         assert isinstance(
@@ -162,25 +178,33 @@ class TestADAnomalyScorer:
         # Check return types
         # Check if return type is float when input is a series
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.anomalies, self.test, self.modified_test),
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, self.test, self.modified_test
+            ),
             float,
         )
 
         # Check if return type is Sequence when input is a Sequence of series
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.anomalies, [self.test], self.modified_test),
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, [self.test], self.modified_test
+            ),
             Sequence,
         )
 
         # Check if return type is a float when input is a multivariate series and component_wise is set to False
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.anomalies, self.mts_test, self.modified_mts_test),
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, self.mts_test, self.modified_mts_test
+            ),
             float,
         )
 
         # Check if return type is Sequence when input is a multivariate series and component_wise is set to False
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.anomalies, [self.mts_test], self.modified_mts_test),
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, [self.mts_test], self.modified_mts_test
+            ),
             Sequence,
         )
 
@@ -188,25 +212,33 @@ class TestADAnomalyScorer:
         # Check return types
         # Check if return type is float when input is a series
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.anomalies, self.test, self.modified_test),
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, self.test, self.modified_test
+            ),
             float,
         )
 
         # Check if return type is Sequence when input is a Sequence of series
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.anomalies, [self.test], self.modified_test),
+            scorer.eval_accuracy_from_prediction(
+                self.anomalies, [self.test], self.modified_test
+            ),
             Sequence,
         )
 
         # Check if return type is a float when input is a multivariate series and component_wise is set to True
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.mts_anomalies, self.mts_test, self.modified_mts_test),
+            scorer.eval_accuracy_from_prediction(
+                self.mts_anomalies, self.mts_test, self.modified_mts_test
+            ),
             Sequence,
         )
 
         # Check if return type is Sequence when input is a multivariate series and component_wise is set to True
         assert isinstance(
-            scorer.eval_accuracy_from_prediction(self.mts_anomalies, [self.mts_test], self.modified_mts_test),
+            scorer.eval_accuracy_from_prediction(
+                self.mts_anomalies, [self.mts_test], self.modified_mts_test
+            ),
             Sequence,
         )
 
@@ -216,7 +248,9 @@ class TestADAnomalyScorer:
 
         # if component_wise set to False, 'actual_anomalies' must have widths of 1
         with pytest.raises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.mts_anomalies, series=self.test)
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.mts_anomalies, series=self.test
+            )
         with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.mts_anomalies],
@@ -225,11 +259,17 @@ class TestADAnomalyScorer:
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with pytest.raises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.anomalies, series=self.test, metric=1)
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies, series=self.test, metric=1
+            )
         with pytest.raises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.anomalies, series=self.test, metric="auc_roc")
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
+            )
         with pytest.raises(TypeError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"])
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
+            )
 
         # 'actual_anomalies' must be binary
         with pytest.raises(ValueError):
@@ -237,15 +277,21 @@ class TestADAnomalyScorer:
 
         # 'actual_anomalies' must contain anomalies (at least one)
         with pytest.raises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.only_0_anomalies, series=self.test)
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.only_0_anomalies, series=self.test
+            )
 
         # 'actual_anomalies' cannot contain only anomalies
         with pytest.raises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.only_1_anomalies, series=self.test)
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.only_1_anomalies, series=self.test
+            )
 
         # 'actual_anomalies' must match the number of series if length higher than 1
         with pytest.raises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=[self.anomalies, self.anomalies], series=self.test)
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=[self.anomalies, self.anomalies], series=self.test
+            )
         with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies],
@@ -254,7 +300,9 @@ class TestADAnomalyScorer:
 
         # 'actual_anomalies' must have non empty intersection with 'series'
         with pytest.raises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.anomalies[:20], series=self.test[30:])
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies[:20], series=self.test[30:]
+            )
         with pytest.raises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies[:20]],
@@ -354,19 +402,25 @@ class TestADAnomalyScorer:
             with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, "str")
             with pytest.raises(ValueError):
-                scorer.score_from_prediction([self.train, self.train], [self.modified_train, "str"])
+                scorer.score_from_prediction(
+                    [self.train, self.train], [self.modified_train, "str"]
+                )
             # score on sequence with series that have different width
             with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, self.modified_mts_train)
             # input sequences have different length
             with pytest.raises(ValueError):
-                scorer.score_from_prediction([self.train, self.train], [self.modified_train])
+                scorer.score_from_prediction(
+                    [self.train, self.train], [self.modified_train]
+                )
             # two inputs must have a non zero intersection
             with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train[:50], self.train[55:])
             # every pairwise element must have a non zero intersection
             with pytest.raises(ValueError):
-                scorer.score_from_prediction([self.train, self.train[:50]], [self.train, self.train[55:]])
+                scorer.score_from_prediction(
+                    [self.train, self.train[:50]], [self.train, self.train[55:]]
+                )
 
     def test_FittableAnomalyScorer(self):
         for scorer in list_FittableAnomalyScorer:
@@ -400,10 +454,14 @@ class TestADAnomalyScorer:
             with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, "str")
             with pytest.raises(ValueError):
-                scorer.score_from_prediction([self.train, self.train], [self.modified_train, "str"])
+                scorer.score_from_prediction(
+                    [self.train, self.train], [self.modified_train, "str"]
+                )
             # two inputs must have the same length
             with pytest.raises(ValueError):
-                scorer.fit_from_prediction([self.train, self.train], [self.modified_train])
+                scorer.fit_from_prediction(
+                    [self.train, self.train], [self.modified_train]
+                )
             # two inputs must have the same width
             with pytest.raises(ValueError):
                 scorer.fit_from_prediction([self.train], [self.modified_mts_train])
@@ -418,7 +476,9 @@ class TestADAnomalyScorer:
                 scorer.fit_from_prediction(self.train[:50], self.train[55:])
             # every pairwise element must have a non zero intersection
             with pytest.raises(ValueError):
-                scorer.fit_from_prediction([self.train, self.train[:50]], [self.train, self.train[55:]])
+                scorer.fit_from_prediction(
+                    [self.train, self.train[:50]], [self.train, self.train[55:]]
+                )
 
             # checks for fit()
             # input must be Timeseries or sequence of Timeseries
@@ -433,10 +493,14 @@ class TestADAnomalyScorer:
             with pytest.raises(ValueError):
                 scorer.score_from_prediction(self.train, "str")
             with pytest.raises(ValueError):
-                scorer.score_from_prediction([self.train, self.train], [self.modified_train, "str"])
+                scorer.score_from_prediction(
+                    [self.train, self.train], [self.modified_train, "str"]
+                )
             # two inputs must have the same length
             with pytest.raises(ValueError):
-                scorer.score_from_prediction([self.train, self.train], [self.modified_train])
+                scorer.score_from_prediction(
+                    [self.train, self.train], [self.modified_train]
+                )
             # two inputs must have the same width
             with pytest.raises(ValueError):
                 scorer.score_from_prediction([self.train], [self.modified_mts_train])
@@ -451,7 +515,9 @@ class TestADAnomalyScorer:
                 scorer.score_from_prediction(self.train[:50], self.train[55:])
             # every pairwise element must have a non zero intersection
             with pytest.raises(ValueError):
-                scorer.score_from_prediction([self.train, self.train[:50]], [self.train, self.train[55:]])
+                scorer.score_from_prediction(
+                    [self.train, self.train[:50]], [self.train, self.train[55:]]
+                )
 
             # checks for score()
             # input must be Timeseries or sequence of Timeseries
@@ -505,11 +571,17 @@ class TestADAnomalyScorer:
         # if component_wise=False must always return a univariate anomaly score
         scorer = Norm(component_wise=False)
         assert scorer.score_from_prediction(self.test, self.modified_test).width == 1
-        assert scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width == 1
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
+            == 1
+        )
         # if component_wise=True must always return the same width as the input
         scorer = Norm(component_wise=True)
         assert scorer.score_from_prediction(self.test, self.modified_test).width == 1
-        assert scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width == self.mts_test.width
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
+            == self.mts_test.width
+        )
 
         scorer = Norm(component_wise=True)
         # always expects a deterministic input
@@ -519,32 +591,44 @@ class TestADAnomalyScorer:
             scorer.score_from_prediction(self.probabilistic, self.train)
 
         # univariate case (equivalent to abs diff)
-        assert scorer.score_from_prediction(self.test, self.test + 1).sum(axis=0).all_values().flatten()[0] == len(
-            self.test
-        )
-        assert scorer.score_from_prediction(self.test + 1, self.test).sum(axis=0).all_values().flatten()[0] == len(
-            self.test
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case with component_wise set to True (equivalent to abs diff)
         # abs(a - 2a) =  a
-        assert scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"] == self.mts_test["0"]
-        assert scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"] == self.mts_test["1"]
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"]
+            == self.mts_test["0"]
+        )
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"]
+            == self.mts_test["1"]
+        )
         # abs(2a - a) =  a
-        assert scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"] == self.mts_test["0"]
-        assert scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"] == self.mts_test["1"]
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"]
+            == self.mts_test["0"]
+        )
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"]
+            == self.mts_test["1"]
+        )
 
         scorer = Norm(component_wise=False)
 
         # always expects a deterministic input
 
         # univariate case (equivalent to abs diff)
-        assert scorer.score_from_prediction(self.test, self.test + 1).sum(axis=0).all_values().flatten()[0] == len(
-            self.test
-        )
-        assert scorer.score_from_prediction(self.test + 1, self.test).sum(axis=0).all_values().flatten()[0] == len(
-            self.test
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case with component_wise set to False
         # norm(a - a + sqrt(2)) = 2 * len(a) with a being series of dim=2
@@ -571,23 +655,38 @@ class TestADAnomalyScorer:
             scorer.score_from_prediction(self.probabilistic, self.train)
 
         # univariate case
-        assert scorer.score_from_prediction(self.test, self.test + 1).sum(axis=0).all_values().flatten()[0] == -len(
-            self.test
-        )
-        assert scorer.score_from_prediction(self.test + 1, self.test).sum(axis=0).all_values().flatten()[0] == len(
-            self.test
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == -len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case
         # output of score() must be the same width as the width of the input
-        assert scorer.score_from_prediction(self.mts_test, self.mts_test).width == self.mts_test.width
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test).width
+            == self.mts_test.width
+        )
 
         # a - 2a = - a
-        assert scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"] == -self.mts_test["0"]
-        assert scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"] == -self.mts_test["1"]
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"]
+            == -self.mts_test["0"]
+        )
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"]
+            == -self.mts_test["1"]
+        )
         # 2a - a =  a
-        assert scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"] == self.mts_test["0"]
-        assert scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"] == self.mts_test["1"]
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"]
+            == self.mts_test["0"]
+        )
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"]
+            == self.mts_test["1"]
+        )
 
         assert not scorer.is_probabilistic
 
@@ -693,7 +792,9 @@ class TestADAnomalyScorer:
         np.random.seed(42)
 
         np_train_wasserstein = np.abs(np.random.normal(loc=0, scale=0.1, size=100))
-        train_wasserstein = TimeSeries.from_times_and_values(self.train._time_index, np_train_wasserstein)
+        train_wasserstein = TimeSeries.from_times_and_values(
+            self.train._time_index, np_train_wasserstein
+        )
 
         np_test_wasserstein = np.abs(np.random.normal(loc=0, scale=0.1, size=100))
         np_first_anomaly = np.abs(np.random.normal(loc=0, scale=0.25, size=10))
@@ -703,7 +804,9 @@ class TestADAnomalyScorer:
         np_test_wasserstein[10:20] = np_first_anomaly
         np_test_wasserstein[40:45] = np_second_anomaly
         np_test_wasserstein[70:85] = np_third_anomaly
-        test_wasserstein = TimeSeries.from_times_and_values(self.train._time_index, np_test_wasserstein)
+        test_wasserstein = TimeSeries.from_times_and_values(
+            self.train._time_index, np_test_wasserstein
+        )
 
         # create the anomaly series
         np_anomalies = np.zeros(len(test_wasserstein))
@@ -717,14 +820,22 @@ class TestADAnomalyScorer:
         # test model with window of 10
         scorer_10 = WassersteinScorer(window=10)
         scorer_10.fit(train_wasserstein)
-        auc_roc_w10 = scorer_10.eval_accuracy(anomalies_wasserstein, test_wasserstein, metric="AUC_ROC")
-        auc_pr_w10 = scorer_10.eval_accuracy(anomalies_wasserstein, test_wasserstein, metric="AUC_PR")
+        auc_roc_w10 = scorer_10.eval_accuracy(
+            anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
+        )
+        auc_pr_w10 = scorer_10.eval_accuracy(
+            anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
+        )
 
         # test model with window of 20
         scorer_20 = WassersteinScorer(window=20)
         scorer_20.fit(train_wasserstein)
-        auc_roc_w20 = scorer_20.eval_accuracy(anomalies_wasserstein, test_wasserstein, metric="AUC_ROC")
-        auc_pr_w20 = scorer_20.eval_accuracy(anomalies_wasserstein, test_wasserstein, metric="AUC_PR")
+        auc_roc_w20 = scorer_20.eval_accuracy(
+            anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
+        )
+        auc_pr_w20 = scorer_20.eval_accuracy(
+            anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
+        )
 
         assert abs(auc_roc_w10 - 0.80637) < 1e-05
         assert abs(auc_pr_w10 - 0.83390) < 1e-05
@@ -734,13 +845,21 @@ class TestADAnomalyScorer:
     def test_multivariate_componentwise_Wasserstein(self):
         # example multivariate WassersteinScorer component wise (True and False)
         np.random.seed(3)
-        np_mts_train_wasserstein = np.abs(np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2]))
-        mts_train_wasserstein = TimeSeries.from_times_and_values(self.train._time_index, np_mts_train_wasserstein)
+        np_mts_train_wasserstein = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
+        mts_train_wasserstein = TimeSeries.from_times_and_values(
+            self.train._time_index, np_mts_train_wasserstein
+        )
 
-        np_mts_test_wasserstein = np.abs(np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2]))
+        np_mts_test_wasserstein = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
         np_first_anomaly_width1 = np.abs(np.random.normal(loc=0.5, scale=0.4, size=10))
         np_first_anomaly_width2 = np.abs(np.random.normal(loc=0, scale=0.5, size=10))
-        np_first_commmon_anomaly = np.abs(np.random.normal(loc=0.5, scale=0.5, size=[10, 2]))
+        np_first_commmon_anomaly = np.abs(
+            np.random.normal(loc=0.5, scale=0.5, size=[10, 2])
+        )
 
         np_mts_test_wasserstein[5:15, 0] = np_first_anomaly_width1
         np_mts_test_wasserstein[35:45, 1] = np_first_anomaly_width2
@@ -926,8 +1045,12 @@ class TestADAnomalyScorer:
         kmeans_scorer = KMeansScorer(k=2, window=1, component_wise=False)
         kmeans_scorer.fit(KMeans_mts_train)
 
-        metric_AUC_ROC = kmeans_scorer.eval_accuracy(KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_ROC")
-        metric_AUC_PR = kmeans_scorer.eval_accuracy(KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_PR")
+        metric_AUC_ROC = kmeans_scorer.eval_accuracy(
+            KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_ROC"
+        )
+        metric_AUC_PR = kmeans_scorer.eval_accuracy(
+            KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_PR"
+        )
 
         assert metric_AUC_ROC == 1.0
         assert metric_AUC_PR == 1.0
@@ -978,7 +1101,9 @@ class TestADAnomalyScorer:
         anomalies_index = [4, 23, 18, 44, 63, 64, 91]
         np_anomalies = np.zeros(100)
         np_anomalies[anomalies_index] = 1
-        ts_anomalies = TimeSeries.from_times_and_values(ts_test.time_index, np_anomalies, columns=["is_anomaly"])
+        ts_anomalies = TimeSeries.from_times_and_values(
+            ts_test.time_index, np_anomalies, columns=["is_anomaly"]
+        )
 
         kmeans_scorer_w1 = KMeansScorer(k=4, window=1)
         kmeans_scorer_w1.fit(ts_train)
@@ -986,11 +1111,19 @@ class TestADAnomalyScorer:
         kmeans_scorer_w2 = KMeansScorer(k=8, window=2)
         kmeans_scorer_w2.fit(ts_train)
 
-        auc_roc_w1 = kmeans_scorer_w1.eval_accuracy(ts_anomalies, ts_test, metric="AUC_ROC")
-        auc_pr_w1 = kmeans_scorer_w1.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
+        auc_roc_w1 = kmeans_scorer_w1.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
+        )
+        auc_pr_w1 = kmeans_scorer_w1.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_PR"
+        )
 
-        auc_roc_w2 = kmeans_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_ROC")
-        auc_pr_w2 = kmeans_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
+        auc_roc_w2 = kmeans_scorer_w2.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
+        )
+        auc_pr_w2 = kmeans_scorer_w2.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_PR"
+        )
 
         assert abs(auc_roc_w1 - 0.41551) < 1e-05
         assert abs(auc_pr_w1 - 0.064761) < 1e-05
@@ -1001,19 +1134,29 @@ class TestADAnomalyScorer:
         # example multivariate KMeans component wise (True and False)
         np.random.seed(1)
 
-        np_mts_train_kmeans = np.abs(np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2]))
-        mts_train_kmeans = TimeSeries.from_times_and_values(self.train._time_index, np_mts_train_kmeans)
+        np_mts_train_kmeans = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
+        mts_train_kmeans = TimeSeries.from_times_and_values(
+            self.train._time_index, np_mts_train_kmeans
+        )
 
-        np_mts_test_kmeans = np.abs(np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2]))
+        np_mts_test_kmeans = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
         np_first_anomaly_width1 = np.abs(np.random.normal(loc=0.5, scale=0.4, size=10))
         np_first_anomaly_width2 = np.abs(np.random.normal(loc=0, scale=0.5, size=10))
-        np_first_commmon_anomaly = np.abs(np.random.normal(loc=0.5, scale=0.5, size=[10, 2]))
+        np_first_commmon_anomaly = np.abs(
+            np.random.normal(loc=0.5, scale=0.5, size=[10, 2])
+        )
 
         np_mts_test_kmeans[5:15, 0] = np_first_anomaly_width1
         np_mts_test_kmeans[35:45, 1] = np_first_anomaly_width2
         np_mts_test_kmeans[65:75, :] = np_first_commmon_anomaly
 
-        mts_test_kmeans = TimeSeries.from_times_and_values(mts_train_kmeans._time_index, np_mts_test_kmeans)
+        mts_test_kmeans = TimeSeries.from_times_and_values(
+            mts_train_kmeans._time_index, np_mts_test_kmeans
+        )
 
         # create the anomaly series width 1
         np_anomalies_width1 = np.zeros(len(mts_test_kmeans))
@@ -1043,12 +1186,16 @@ class TestADAnomalyScorer:
         # test scorer with component_wise=False
         scorer_w10_cwfalse = KMeansScorer(window=10, component_wise=False, n_init=10)
         scorer_w10_cwfalse.fit(mts_train_kmeans)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC")
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+            anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC"
+        )
 
         # test scorer with component_wise=True
         scorer_w10_cwtrue = KMeansScorer(window=10, component_wise=True, n_init=10)
         scorer_w10_cwtrue.fit(mts_train_kmeans)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC")
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+            anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
+        )
 
         assert abs(auc_roc_cwtrue[0] - 1.0) < 1e-05
         assert abs(auc_roc_cwtrue[1] - 0.97666) < 1e-05
@@ -1192,11 +1339,17 @@ class TestADAnomalyScorer:
             pyod_mts_test.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
-        pyod_scorer = PyODScorer(model=KNN(n_neighbors=10), component_wise=False, window=1)
+        pyod_scorer = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=1
+        )
         pyod_scorer.fit(pyod_mts_train)
 
-        metric_AUC_ROC = pyod_scorer.eval_accuracy(pyod_mts_anomalies, pyod_mts_test, metric="AUC_ROC")
-        metric_AUC_PR = pyod_scorer.eval_accuracy(pyod_mts_anomalies, pyod_mts_test, metric="AUC_PR")
+        metric_AUC_ROC = pyod_scorer.eval_accuracy(
+            pyod_mts_anomalies, pyod_mts_test, metric="AUC_ROC"
+        )
+        metric_AUC_PR = pyod_scorer.eval_accuracy(
+            pyod_mts_anomalies, pyod_mts_test, metric="AUC_PR"
+        )
 
         assert metric_AUC_ROC == 1.0
         assert metric_AUC_PR == 1.0
@@ -1247,18 +1400,28 @@ class TestADAnomalyScorer:
         anomalies_index = [4, 23, 18, 44, 63, 64, 91]
         np_anomalies = np.zeros(100)
         np_anomalies[anomalies_index] = 1
-        ts_anomalies = TimeSeries.from_times_and_values(ts_test.time_index, np_anomalies, columns=["is_anomaly"])
+        ts_anomalies = TimeSeries.from_times_and_values(
+            ts_test.time_index, np_anomalies, columns=["is_anomaly"]
+        )
 
-        pyod_scorer_w1 = PyODScorer(model=KNN(n_neighbors=10), component_wise=False, window=1)
+        pyod_scorer_w1 = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=1
+        )
         pyod_scorer_w1.fit(ts_train)
 
-        pyod_scorer_w2 = PyODScorer(model=KNN(n_neighbors=10), component_wise=False, window=2)
+        pyod_scorer_w2 = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=2
+        )
         pyod_scorer_w2.fit(ts_train)
 
-        auc_roc_w1 = pyod_scorer_w1.eval_accuracy(ts_anomalies, ts_test, metric="AUC_ROC")
+        auc_roc_w1 = pyod_scorer_w1.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
+        )
         auc_pr_w1 = pyod_scorer_w1.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
 
-        auc_roc_w2 = pyod_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_ROC")
+        auc_roc_w2 = pyod_scorer_w2.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
+        )
         auc_pr_w2 = pyod_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
 
         assert abs(auc_roc_w1 - 0.5) < 1e-05
@@ -1271,19 +1434,29 @@ class TestADAnomalyScorer:
 
         np.random.seed(1)
 
-        np_mts_train_PyOD = np.abs(np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2]))
-        mts_train_PyOD = TimeSeries.from_times_and_values(self.train._time_index, np_mts_train_PyOD)
+        np_mts_train_PyOD = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
+        mts_train_PyOD = TimeSeries.from_times_and_values(
+            self.train._time_index, np_mts_train_PyOD
+        )
 
-        np_mts_test_PyOD = np.abs(np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2]))
+        np_mts_test_PyOD = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
         np_first_anomaly_width1 = np.abs(np.random.normal(loc=0.5, scale=0.4, size=10))
         np_first_anomaly_width2 = np.abs(np.random.normal(loc=0, scale=0.5, size=10))
-        np_first_commmon_anomaly = np.abs(np.random.normal(loc=0.5, scale=0.5, size=[10, 2]))
+        np_first_commmon_anomaly = np.abs(
+            np.random.normal(loc=0.5, scale=0.5, size=[10, 2])
+        )
 
         np_mts_test_PyOD[5:15, 0] = np_first_anomaly_width1
         np_mts_test_PyOD[35:45, 1] = np_first_anomaly_width2
         np_mts_test_PyOD[65:75, :] = np_first_commmon_anomaly
 
-        mts_test_PyOD = TimeSeries.from_times_and_values(mts_train_PyOD._time_index, np_mts_test_PyOD)
+        mts_test_PyOD = TimeSeries.from_times_and_values(
+            mts_train_PyOD._time_index, np_mts_test_PyOD
+        )
 
         # create the anomaly series width 1
         np_anomalies_width1 = np.zeros(len(mts_test_PyOD))
@@ -1311,14 +1484,22 @@ class TestADAnomalyScorer:
         )
 
         # test scorer with component_wise=False
-        scorer_w10_cwfalse = PyODScorer(model=KNN(n_neighbors=10), component_wise=False, window=10)
+        scorer_w10_cwfalse = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=10
+        )
         scorer_w10_cwfalse.fit(mts_train_PyOD)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(anomalies_common_PyOD, mts_test_PyOD, metric="AUC_ROC")
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+            anomalies_common_PyOD, mts_test_PyOD, metric="AUC_ROC"
+        )
 
         # test scorer with component_wise=True
-        scorer_w10_cwtrue = PyODScorer(model=KNN(n_neighbors=10), component_wise=True, window=10)
+        scorer_w10_cwtrue = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=True, window=10
+        )
         scorer_w10_cwtrue.fit(mts_train_PyOD)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(anomalies_pyod_per_width, mts_test_PyOD, metric="AUC_ROC")
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+            anomalies_pyod_per_width, mts_test_PyOD, metric="AUC_ROC"
+        )
 
         assert abs(auc_roc_cwfalse - 0.990566) < 1e-05
         assert abs(auc_roc_cwtrue[0] - 1.0) < 1e-05
@@ -1330,7 +1511,9 @@ class TestADAnomalyScorer:
             with pytest.raises(ValueError):
                 s.score_from_prediction(actual_series=self.test, pred_series=self.test)
             with pytest.raises(ValueError):
-                s.score_from_prediction(actual_series=self.probabilistic, pred_series=self.train)
+                s.score_from_prediction(
+                    actual_series=self.probabilistic, pred_series=self.train
+                )
 
     def test_GaussianNLLScorer(self):
         # window parameter
@@ -1349,32 +1532,49 @@ class TestADAnomalyScorer:
         scorer = GaussianNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
         with pytest.raises(ValueError):
-            scorer.score_from_prediction(actual_series=self.test, pred_series=self.probabilistic)  # len(self.test)=100
+            scorer.score_from_prediction(
+                actual_series=self.test, pred_series=self.probabilistic
+            )  # len(self.test)=100
 
         np.random.seed(4)
         scorer = GaussianNLLScorer()
 
         # test 1 univariate (len=1 and window=1)
         gaussian_samples_1 = np.random.normal(loc=0, scale=2, size=10000)
-        distribution_series = TimeSeries.from_values(gaussian_samples_1.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            gaussian_samples_1.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test1 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test1 is the - log likelihood
         assert abs(value_test1 + np.log(norm.pdf(3, loc=0, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         gaussian_samples_2 = np.random.normal(loc=0, scale=2, size=10000)
-        distribution_series = TimeSeries.from_values(gaussian_samples_2.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            gaussian_samples_2.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([-2]))
-        value_test2 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test2 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test2 is the - log likelihood
         assert abs(value_test2 + np.log(norm.pdf(-2, loc=0, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
-            np.array([gaussian_samples_1.reshape(1, -1), gaussian_samples_2.reshape(1, -1)])
+            np.array([
+                gaussian_samples_1.reshape(1, -1),
+                gaussian_samples_2.reshape(1, -1),
+            ])
         )
         actual_series = TimeSeries.from_values(np.array([3, -2]))
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
@@ -1391,7 +1591,9 @@ class TestADAnomalyScorer:
         scorer = GaussianNLLScorer(window=2)
         # check avg of two values
         assert (
-            scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
             == (value_test1 + value_test2) / 2
         )
 
@@ -1401,7 +1603,9 @@ class TestADAnomalyScorer:
             np.array([gaussian_samples_1, gaussian_samples_2]).reshape(1, 2, -1)
         )
         actual_series = TimeSeries.from_values(np.array([3, -2]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(actual_series, distribution_series)
+        value_multivariate = scorer.score_from_prediction(
+            actual_series, distribution_series
+        )
 
         # check length
         assert len(value_multivariate) == 1
@@ -1428,7 +1632,9 @@ class TestADAnomalyScorer:
             ]).reshape(2, 2, -1)
         )
 
-        actual_series = TimeSeries.from_values(np.array([1.5, 2.1, 0.1, 0.001]).reshape(2, -1))
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2.1, 0.1, 0.001]).reshape(2, -1)
+        )
 
         score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
@@ -1441,23 +1647,55 @@ class TestADAnomalyScorer:
         assert score_w2.width == 2
 
         # check values for window=1
-        assert abs(score_w1.all_values().flatten()[0] + np.log(norm.pdf(1.5, loc=0, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[1] + np.log(norm.pdf(2.1, loc=0, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[2] + np.log(norm.pdf(0.1, loc=0, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[3] + np.log(norm.pdf(0.001, loc=0, scale=2))) < 1e-01
+        assert (
+            abs(
+                score_w1.all_values().flatten()[0]
+                + np.log(norm.pdf(1.5, loc=0, scale=2))
+            )
+            < 1e-01
+        )
+        assert (
+            abs(
+                score_w1.all_values().flatten()[1]
+                + np.log(norm.pdf(2.1, loc=0, scale=2))
+            )
+            < 1e-01
+        )
+        assert (
+            abs(
+                score_w1.all_values().flatten()[2]
+                + np.log(norm.pdf(0.1, loc=0, scale=2))
+            )
+            < 1e-01
+        )
+        assert (
+            abs(
+                score_w1.all_values().flatten()[3]
+                + np.log(norm.pdf(0.001, loc=0, scale=2))
+            )
+            < 1e-01
+        )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
         assert (
             abs(
                 score_w2.all_values().flatten()[0]
-                - (-np.log(norm.pdf(1.5, loc=0, scale=2)) - np.log(norm.pdf(0.1, loc=0, scale=2))) / 2
+                - (
+                    -np.log(norm.pdf(1.5, loc=0, scale=2))
+                    - np.log(norm.pdf(0.1, loc=0, scale=2))
+                )
+                / 2
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w2.all_values().flatten()[1]
-                - (-np.log(norm.pdf(2.1, loc=0, scale=2)) - np.log(norm.pdf(0.001, loc=0, scale=2))) / 2
+                - (
+                    -np.log(norm.pdf(2.1, loc=0, scale=2))
+                    - np.log(norm.pdf(0.001, loc=0, scale=2))
+                )
+                / 2
             )
             < 1e-01
         )
@@ -1481,7 +1719,9 @@ class TestADAnomalyScorer:
         scorer = LaplaceNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
         with pytest.raises(ValueError):
-            scorer.score_from_prediction(actual_series=self.test, pred_series=self.probabilistic)  # len(self.test)=100
+            scorer.score_from_prediction(
+                actual_series=self.test, pred_series=self.probabilistic
+            )  # len(self.test)=100
 
         np.random.seed(4)
 
@@ -1489,25 +1729,40 @@ class TestADAnomalyScorer:
 
         # test 1 univariate (len=1 and window=1)
         laplace_samples_1 = np.random.laplace(loc=0, scale=2, size=1000)
-        distribution_series = TimeSeries.from_values(laplace_samples_1.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            laplace_samples_1.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test1 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test1 is the - log likelihood
         assert abs(value_test1 + np.log(laplace.pdf(3, loc=0, scale=2))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         laplace_samples_2 = np.random.laplace(loc=0, scale=2, size=1000)
-        distribution_series = TimeSeries.from_values(laplace_samples_2.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            laplace_samples_2.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([-2]))
-        value_test2 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test2 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test2 is the - log likelihood
         assert abs(value_test2 + np.log(laplace.pdf(-2, loc=0, scale=2))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
-            np.array([laplace_samples_1.reshape(1, -1), laplace_samples_2.reshape(1, -1)])
+            np.array([
+                laplace_samples_1.reshape(1, -1),
+                laplace_samples_2.reshape(1, -1),
+            ])
         )
         actual_series = TimeSeries.from_values(np.array([3, -2]))
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
@@ -1524,15 +1779,21 @@ class TestADAnomalyScorer:
         scorer = LaplaceNLLScorer(window=2)
         # check avg of two values
         assert (
-            scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
             == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
         scorer = LaplaceNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(np.array([laplace_samples_1, laplace_samples_2]).reshape(1, 2, -1))
+        distribution_series = TimeSeries.from_values(
+            np.array([laplace_samples_1, laplace_samples_2]).reshape(1, 2, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3, -2]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(actual_series, distribution_series)
+        value_multivariate = scorer.score_from_prediction(
+            actual_series, distribution_series
+        )
 
         # check length
         assert len(value_multivariate) == 1
@@ -1540,8 +1801,14 @@ class TestADAnomalyScorer:
         assert value_multivariate.width == 2
 
         # check equal value_test1 and value_test2
-        assert round(abs(value_multivariate.all_values().flatten()[0] - value_test1), 7) == 0
-        assert round(abs(value_multivariate.all_values().flatten()[1] - value_test2), 7) == 0
+        assert (
+            round(abs(value_multivariate.all_values().flatten()[0] - value_test1), 7)
+            == 0
+        )
+        assert (
+            round(abs(value_multivariate.all_values().flatten()[1] - value_test2), 7)
+            == 0
+        )
 
         # test window multivariate (n_samples=2, len=2, window=1 and 2)
         scorer_w1 = LaplaceNLLScorer(window=1)
@@ -1559,7 +1826,9 @@ class TestADAnomalyScorer:
             ]).reshape(2, 2, -1)
         )
 
-        actual_series = TimeSeries.from_values(np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1))
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1)
+        )
 
         score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
@@ -1572,23 +1841,55 @@ class TestADAnomalyScorer:
         assert score_w2.width == 2
 
         # check values for window=1
-        assert abs(score_w1.all_values().flatten()[0] + np.log(laplace.pdf(1.5, loc=0, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[1] + np.log(laplace.pdf(2, loc=0, scale=2))) < 0.5
-        assert abs(score_w1.all_values().flatten()[2] + np.log(laplace.pdf(0.1, loc=0, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[3] + np.log(laplace.pdf(0.001, loc=0, scale=2))) < 1e-01
+        assert (
+            abs(
+                score_w1.all_values().flatten()[0]
+                + np.log(laplace.pdf(1.5, loc=0, scale=2))
+            )
+            < 1e-01
+        )
+        assert (
+            abs(
+                score_w1.all_values().flatten()[1]
+                + np.log(laplace.pdf(2, loc=0, scale=2))
+            )
+            < 0.5
+        )
+        assert (
+            abs(
+                score_w1.all_values().flatten()[2]
+                + np.log(laplace.pdf(0.1, loc=0, scale=2))
+            )
+            < 1e-01
+        )
+        assert (
+            abs(
+                score_w1.all_values().flatten()[3]
+                + np.log(laplace.pdf(0.001, loc=0, scale=2))
+            )
+            < 1e-01
+        )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
         assert (
             abs(
                 score_w2.all_values().flatten()[0]
-                - (-np.log(laplace.pdf(1.5, loc=0, scale=2)) - np.log(laplace.pdf(0.1, loc=0, scale=2))) / 2
+                - (
+                    -np.log(laplace.pdf(1.5, loc=0, scale=2))
+                    - np.log(laplace.pdf(0.1, loc=0, scale=2))
+                )
+                / 2
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w2.all_values().flatten()[1]
-                - (-np.log(laplace.pdf(2, loc=0, scale=2)) - np.log(laplace.pdf(0.001, loc=0, scale=2))) / 2
+                - (
+                    -np.log(laplace.pdf(2, loc=0, scale=2))
+                    - np.log(laplace.pdf(0.001, loc=0, scale=2))
+                )
+                / 2
             )
             < 0.5
         )
@@ -1612,25 +1913,39 @@ class TestADAnomalyScorer:
         scorer = ExponentialNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
         with pytest.raises(ValueError):
-            scorer.score_from_prediction(actual_series=self.test, pred_series=self.probabilistic)  # len(self.test)=100
+            scorer.score_from_prediction(
+                actual_series=self.test, pred_series=self.probabilistic
+            )  # len(self.test)=100
 
         np.random.seed(4)
         scorer = ExponentialNLLScorer()
 
         # test 1 univariate (len=1 and window=1)
         exponential_samples_1 = np.random.exponential(scale=2.0, size=1000)
-        distribution_series = TimeSeries.from_values(exponential_samples_1.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            exponential_samples_1.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test1 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test1 is the - log likelihood
         assert abs(value_test1 + np.log(expon.pdf(3, scale=2.0))) < 1e-01
 
         # test 2 univariate (len=1 and window=1)
         exponential_samples_2 = np.random.exponential(scale=2.0, size=1000)
-        distribution_series = TimeSeries.from_values(exponential_samples_2.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            exponential_samples_2.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([10]))
-        value_test2 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test2 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test2 is the - log likelihood
         assert abs(value_test2 + np.log(expon.pdf(10, scale=2))) < 1e-01
@@ -1657,7 +1972,9 @@ class TestADAnomalyScorer:
         scorer = ExponentialNLLScorer(window=2)
         # check avg of two values
         assert (
-            scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
             == (value_test1 + value_test2) / 2
         )
 
@@ -1667,7 +1984,9 @@ class TestADAnomalyScorer:
             np.array([exponential_samples_1, exponential_samples_2]).reshape(1, 2, -1)
         )
         actual_series = TimeSeries.from_values(np.array([3, 10]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(actual_series, distribution_series)
+        value_multivariate = scorer.score_from_prediction(
+            actual_series, distribution_series
+        )
 
         # check length
         assert len(value_multivariate) == 1
@@ -1694,7 +2013,9 @@ class TestADAnomalyScorer:
             ]).reshape(2, 2, -1)
         )
 
-        actual_series = TimeSeries.from_values(np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1))
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1)
+        )
 
         score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
@@ -1707,23 +2028,37 @@ class TestADAnomalyScorer:
         assert score_w2.width == 2
 
         # check values for window=1
-        assert abs(score_w1.all_values().flatten()[0] + np.log(expon.pdf(1.5, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[1] + np.log(expon.pdf(2, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[2] + np.log(expon.pdf(0.1, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[3] + np.log(expon.pdf(0.001, scale=2))) < 1e-01
+        assert (
+            abs(score_w1.all_values().flatten()[0] + np.log(expon.pdf(1.5, scale=2)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[1] + np.log(expon.pdf(2, scale=2)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[2] + np.log(expon.pdf(0.1, scale=2)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[3] + np.log(expon.pdf(0.001, scale=2)))
+            < 1e-01
+        )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
         assert (
             abs(
                 score_w2.all_values().flatten()[0]
-                - (-np.log(expon.pdf(1.5, scale=2)) - np.log(expon.pdf(0.1, scale=2))) / 2
+                - (-np.log(expon.pdf(1.5, scale=2)) - np.log(expon.pdf(0.1, scale=2)))
+                / 2
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w2.all_values().flatten()[1]
-                - (-np.log(expon.pdf(2, scale=2)) - np.log(expon.pdf(0.001, scale=2))) / 2
+                - (-np.log(expon.pdf(2, scale=2)) - np.log(expon.pdf(0.001, scale=2)))
+                / 2
             )
             < 1e-01
         )
@@ -1747,7 +2082,9 @@ class TestADAnomalyScorer:
         scorer = GammaNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
         with pytest.raises(ValueError):
-            scorer.score_from_prediction(actual_series=self.test, pred_series=self.probabilistic)  # len(self.test)=100
+            scorer.score_from_prediction(
+                actual_series=self.test, pred_series=self.probabilistic
+            )  # len(self.test)=100
 
         np.random.seed(4)
         scorer = GammaNLLScorer()
@@ -1756,7 +2093,11 @@ class TestADAnomalyScorer:
         gamma_samples_1 = np.random.gamma(shape=2, scale=2, size=10000)
         distribution_series = TimeSeries.from_values(gamma_samples_1.reshape(1, 1, -1))
         actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test1 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test1 is the - log likelihood
         assert abs(value_test1 + np.log(gamma.pdf(3, 2, scale=2))) < 1e-01
@@ -1765,7 +2106,11 @@ class TestADAnomalyScorer:
         gamma_samples_2 = np.random.gamma(2, scale=2, size=10000)
         distribution_series = TimeSeries.from_values(gamma_samples_2.reshape(1, 1, -1))
         actual_series = TimeSeries.from_values(np.array([10]))
-        value_test2 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test2 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test2 is the - log likelihood
         assert abs(value_test2 + np.log(gamma.pdf(10, 2, scale=2))) < 1e-01
@@ -1789,15 +2134,21 @@ class TestADAnomalyScorer:
         scorer = GammaNLLScorer(window=2)
         # check avg of two values
         assert (
-            scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
             == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
         scorer = GammaNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(np.array([gamma_samples_1, gamma_samples_2]).reshape(1, 2, -1))
+        distribution_series = TimeSeries.from_values(
+            np.array([gamma_samples_1, gamma_samples_2]).reshape(1, 2, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3, 10]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(actual_series, distribution_series)
+        value_multivariate = scorer.score_from_prediction(
+            actual_series, distribution_series
+        )
 
         # check length
         assert len(value_multivariate) == 1
@@ -1816,10 +2167,17 @@ class TestADAnomalyScorer:
         gamma_samples_4 = np.random.gamma(2, scale=2, size=10000)
 
         distribution_series = TimeSeries.from_values(
-            np.array([gamma_samples_1, gamma_samples_2, gamma_samples_3, gamma_samples_4]).reshape(2, 2, -1)
+            np.array([
+                gamma_samples_1,
+                gamma_samples_2,
+                gamma_samples_3,
+                gamma_samples_4,
+            ]).reshape(2, 2, -1)
         )
 
-        actual_series = TimeSeries.from_values(np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1))
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1)
+        )
 
         score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
@@ -1832,23 +2190,43 @@ class TestADAnomalyScorer:
         assert score_w2.width == 2
 
         # check values for window=1
-        assert abs(score_w1.all_values().flatten()[0] + np.log(gamma.pdf(1.5, 2, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[1] + np.log(gamma.pdf(2, 2, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[2] + np.log(gamma.pdf(0.5, 2, scale=2))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[3] + np.log(gamma.pdf(0.9, 2, scale=2))) < 1e-01
+        assert (
+            abs(score_w1.all_values().flatten()[0] + np.log(gamma.pdf(1.5, 2, scale=2)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[1] + np.log(gamma.pdf(2, 2, scale=2)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[2] + np.log(gamma.pdf(0.5, 2, scale=2)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[3] + np.log(gamma.pdf(0.9, 2, scale=2)))
+            < 1e-01
+        )
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
         assert (
             abs(
                 score_w2.all_values().flatten()[0]
-                - (-np.log(gamma.pdf(1.5, 2, scale=2)) - np.log(gamma.pdf(0.5, 2, scale=2))) / 2
+                - (
+                    -np.log(gamma.pdf(1.5, 2, scale=2))
+                    - np.log(gamma.pdf(0.5, 2, scale=2))
+                )
+                / 2
             )
             < 1e-01
         )
         assert (
             abs(
                 score_w2.all_values().flatten()[1]
-                - (-np.log(gamma.pdf(2, 2, scale=2)) - np.log(gamma.pdf(0.9, 2, scale=2))) / 2
+                - (
+                    -np.log(gamma.pdf(2, 2, scale=2))
+                    - np.log(gamma.pdf(0.9, 2, scale=2))
+                )
+                / 2
             )
             < 1e-01
         )
@@ -1872,7 +2250,9 @@ class TestADAnomalyScorer:
         scorer = CauchyNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
         with pytest.raises(ValueError):
-            scorer.score_from_prediction(actual_series=self.test, pred_series=self.probabilistic)  # len(self.test)=100
+            scorer.score_from_prediction(
+                actual_series=self.test, pred_series=self.probabilistic
+            )  # len(self.test)=100
 
         np.random.seed(4)
         scorer = CauchyNLLScorer()
@@ -1881,7 +2261,11 @@ class TestADAnomalyScorer:
         cauchy_samples_1 = np.random.standard_cauchy(size=10000)
         distribution_series = TimeSeries.from_values(cauchy_samples_1.reshape(1, 1, -1))
         actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test1 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test1 is the - log likelihood
         assert abs(value_test1 + np.log(cauchy.pdf(3))) < 1e-01
@@ -1890,7 +2274,11 @@ class TestADAnomalyScorer:
         cauchy_samples_2 = np.random.standard_cauchy(size=10000)
         distribution_series = TimeSeries.from_values(cauchy_samples_2.reshape(1, 1, -1))
         actual_series = TimeSeries.from_values(np.array([-2]))
-        value_test2 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test2 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test2 is the - log likelihood
         assert abs(value_test2 + np.log(cauchy.pdf(-2))) < 1e-01
@@ -1914,15 +2302,21 @@ class TestADAnomalyScorer:
         scorer = CauchyNLLScorer(window=2)
         # check avg of two values
         assert (
-            scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
             == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
         scorer = CauchyNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(np.array([cauchy_samples_1, cauchy_samples_2]).reshape(1, 2, -1))
+        distribution_series = TimeSeries.from_values(
+            np.array([cauchy_samples_1, cauchy_samples_2]).reshape(1, 2, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3, -2]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(actual_series, distribution_series)
+        value_multivariate = scorer.score_from_prediction(
+            actual_series, distribution_series
+        )
 
         # check length
         assert len(value_multivariate) == 1
@@ -1941,10 +2335,17 @@ class TestADAnomalyScorer:
         cauchy_samples_4 = np.random.standard_cauchy(size=10000)
 
         distribution_series = TimeSeries.from_values(
-            np.array([cauchy_samples_1, cauchy_samples_2, cauchy_samples_3, cauchy_samples_4]).reshape(2, 2, -1)
+            np.array([
+                cauchy_samples_1,
+                cauchy_samples_2,
+                cauchy_samples_3,
+                cauchy_samples_4,
+            ]).reshape(2, 2, -1)
         )
 
-        actual_series = TimeSeries.from_values(np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1))
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1)
+        )
 
         score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
         score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
@@ -1964,9 +2365,19 @@ class TestADAnomalyScorer:
 
         # check values for window=2 (must be equal to the mean of the past 2 values)
         assert (
-            abs(score_w2.all_values().flatten()[0] - (-np.log(cauchy.pdf(1.5)) - np.log(cauchy.pdf(0.5))) / 2) < 1e-01
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (-np.log(cauchy.pdf(1.5)) - np.log(cauchy.pdf(0.5))) / 2
+            )
+            < 1e-01
         )
-        assert abs(score_w2.all_values().flatten()[1] - (-np.log(cauchy.pdf(2)) - np.log(cauchy.pdf(0.9))) / 2) < 1e-01
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (-np.log(cauchy.pdf(2)) - np.log(cauchy.pdf(0.9))) / 2
+            )
+            < 1e-01
+        )
 
         assert scorer.is_probabilistic
 
@@ -1987,32 +2398,49 @@ class TestADAnomalyScorer:
         scorer = PoissonNLLScorer(window=101)
         # window must be smaller than the input of score_from_prediction()
         with pytest.raises(ValueError):
-            scorer.score_from_prediction(actual_series=self.test, pred_series=self.probabilistic)  # len(self.test)=100
+            scorer.score_from_prediction(
+                actual_series=self.test, pred_series=self.probabilistic
+            )  # len(self.test)=100
 
         np.random.seed(4)
         scorer = PoissonNLLScorer()
 
         # test 1 univariate (len=1 and window=1)
         poisson_samples_1 = np.random.poisson(size=10000, lam=1)
-        distribution_series = TimeSeries.from_values(poisson_samples_1.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            poisson_samples_1.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test1 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test1 is the - log likelihood
         assert abs(value_test1 + np.log(poisson.pmf(3, mu=1))) < 1e-02
 
         # test 2 univariate (len=1 and window=1)
         poisson_samples_2 = np.random.poisson(size=10000, lam=1)
-        distribution_series = TimeSeries.from_values(poisson_samples_2.reshape(1, 1, -1))
+        distribution_series = TimeSeries.from_values(
+            poisson_samples_2.reshape(1, 1, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([10]))
-        value_test2 = scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+        value_test2 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
 
         # check if value_test2 is the - log likelihood
         assert abs(value_test2 + np.log(poisson.pmf(10, mu=1))) < 1e-01
 
         # test window univariate (len=2 and window=2)
         distribution_series = TimeSeries.from_values(
-            np.array([poisson_samples_1.reshape(1, -1), poisson_samples_2.reshape(1, -1)])
+            np.array([
+                poisson_samples_1.reshape(1, -1),
+                poisson_samples_2.reshape(1, -1),
+            ])
         )
         actual_series = TimeSeries.from_values(np.array([3, 10]))
         value_window = scorer.score_from_prediction(actual_series, distribution_series)
@@ -2029,15 +2457,21 @@ class TestADAnomalyScorer:
         scorer = PoissonNLLScorer(window=2)
         # check avg of two values
         assert (
-            scorer.score_from_prediction(actual_series, distribution_series).all_values().flatten()[0]
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
             == (value_test1 + value_test2) / 2
         )
 
         # test window multivariate (n_samples=2, len=1, window=1)
         scorer = PoissonNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(np.array([poisson_samples_1, poisson_samples_2]).reshape(1, 2, -1))
+        distribution_series = TimeSeries.from_values(
+            np.array([poisson_samples_1, poisson_samples_2]).reshape(1, 2, -1)
+        )
         actual_series = TimeSeries.from_values(np.array([3, 10]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(actual_series, distribution_series)
+        value_multivariate = scorer.score_from_prediction(
+            actual_series, distribution_series
+        )
 
         # check length
         assert len(value_multivariate) == 1
@@ -2077,18 +2511,36 @@ class TestADAnomalyScorer:
         assert score_w2.width == 2
 
         # check values for window=1
-        assert abs(score_w1.all_values().flatten()[0] + np.log(poisson.pmf(1, mu=1))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[1] + np.log(poisson.pmf(2, mu=1))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[2] + np.log(poisson.pmf(3, mu=1))) < 1e-01
-        assert abs(score_w1.all_values().flatten()[3] + np.log(poisson.pmf(4, mu=1))) < 1e-01
-
-        # check values for window=2 (must be equal to the mean of the past 2 values)
         assert (
-            abs(score_w2.all_values().flatten()[0] - (-np.log(poisson.pmf(1, mu=1)) - np.log(poisson.pmf(3, mu=1))) / 2)
+            abs(score_w1.all_values().flatten()[0] + np.log(poisson.pmf(1, mu=1)))
             < 1e-01
         )
         assert (
-            abs(score_w2.all_values().flatten()[1] - (-np.log(poisson.pmf(2, mu=1)) - np.log(poisson.pmf(4, mu=1))) / 2)
+            abs(score_w1.all_values().flatten()[1] + np.log(poisson.pmf(2, mu=1)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[2] + np.log(poisson.pmf(3, mu=1)))
+            < 1e-01
+        )
+        assert (
+            abs(score_w1.all_values().flatten()[3] + np.log(poisson.pmf(4, mu=1)))
+            < 1e-01
+        )
+
+        # check values for window=2 (must be equal to the mean of the past 2 values)
+        assert (
+            abs(
+                score_w2.all_values().flatten()[0]
+                - (-np.log(poisson.pmf(1, mu=1)) - np.log(poisson.pmf(3, mu=1))) / 2
+            )
+            < 1e-01
+        )
+        assert (
+            abs(
+                score_w2.all_values().flatten()[1]
+                - (-np.log(poisson.pmf(2, mu=1)) - np.log(poisson.pmf(4, mu=1))) / 2
+            )
             < 1e-01
         )
 

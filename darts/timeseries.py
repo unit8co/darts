@@ -108,17 +108,23 @@ class TimeSeries:
             )
         if len(xa.shape) != 3:
             raise_log(
-                ValueError(f"TimeSeries require DataArray of dimensionality 3 ({DIMS})."),
+                ValueError(
+                    f"TimeSeries require DataArray of dimensionality 3 ({DIMS})."
+                ),
                 logger,
             )
 
         # Ideally values should be np.float, otherwise certain functionalities like diff()
         # relying on np.nan (which is a float) won't work very properly.
         if not np.issubdtype(xa.values.dtype, np.number):
-            raise_log(ValueError("The time series must contain numeric values only."), logger)
+            raise_log(
+                ValueError("The time series must contain numeric values only."), logger
+            )
 
         val_dtype = xa.values.dtype
-        if not (np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)):
+        if not (
+            np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
+        ):
             logger.warning(
                 "TimeSeries is using a numeric type different from np.float32 or np.float64. "
                 "Not all functionalities may work properly. It is recommended casting your data to floating "
@@ -128,7 +134,9 @@ class TimeSeries:
         if xa.dims[-2:] != DIMS[-2:]:
             # The first dimension represents the time and may be named differently.
             raise_log(
-                ValueError(f"The last two dimensions of the DataArray must be named {DIMS[-2:]}"),
+                ValueError(
+                    f"The last two dimensions of the DataArray must be named {DIMS[-2:]}"
+                ),
                 logger,
             )
 
@@ -136,7 +144,9 @@ class TimeSeries:
         components = xa.get_index(DIMS[1])
         if not len(set(components)) == len(components):
             raise_log(
-                ValueError(f"The components (columns) names must be unique. Provided: {components}"),
+                ValueError(
+                    f"The components (columns) names must be unique. Provided: {components}"
+                ),
                 logger,
             )
 
@@ -195,9 +205,14 @@ class TimeSeries:
 
         # check static covariates
         static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
-        if not (isinstance(static_covariates, (pd.Series, pd.DataFrame)) or static_covariates is None):
+        if not (
+            isinstance(static_covariates, (pd.Series, pd.DataFrame))
+            or static_covariates is None
+        ):
             raise_log(
-                ValueError("`static_covariates` must be either a pandas Series, DataFrame or None"),
+                ValueError(
+                    "`static_covariates` must be either a pandas Series, DataFrame or None"
+                ),
                 logger,
             )
 
@@ -223,16 +238,22 @@ class TimeSeries:
         # prepare static covariates:
         if static_covariates is not None:
             static_covariates.index = (
-                self.components if len(static_covariates) == self.n_components else [DEFAULT_GLOBAL_STATIC_COV_NAME]
+                self.components
+                if len(static_covariates) == self.n_components
+                else [DEFAULT_GLOBAL_STATIC_COV_NAME]
             )
             static_covariates.columns.name = STATIC_COV_TAG
             # convert numerical columns to same dtype as series
             # we get all numerical columns, except those that have right dtype already
-            cols_to_cast = static_covariates.select_dtypes(include=np.number, exclude=self.dtype).columns
+            cols_to_cast = static_covariates.select_dtypes(
+                include=np.number, exclude=self.dtype
+            ).columns
 
             # Calling astype is costly even when there's no change...
             if not cols_to_cast.empty:
-                static_covariates = static_covariates.astype({col: self.dtype for col in cols_to_cast}, copy=False)
+                static_covariates = static_covariates.astype(
+                    {col: self.dtype for col in cols_to_cast}, copy=False
+                )
 
         # handle hierarchy
         hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
@@ -252,18 +273,23 @@ class TimeSeries:
             children = set(hierarchy.keys())
 
             # convert string ancestors to list of strings
-            hierarchy = {k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()}
+            hierarchy = {
+                k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()
+            }
 
             if not all(c in components_set for c in children):
                 raise_log(
-                    ValueError("The keys of the hierarchy must be time series components"),
+                    ValueError(
+                        "The keys of the hierarchy must be time series components"
+                    ),
                     logger,
                 )
             ancestors = set().union(*hierarchy.values())
             if not all(a in components_set for a in ancestors):
                 raise_log(
                     ValueError(
-                        "The values of the hierarchy must only contain component names matching those " "of the series."
+                        "The values of the hierarchy must only contain component names matching those "
+                        "of the series."
                     ),
                     logger,
                 )
@@ -288,7 +314,9 @@ class TimeSeries:
             bottom_level = components_set - ancestors
 
             # maintain the same order as the original components
-            self._bottom_level_components = [c for c in self.components if c in bottom_level]
+            self._bottom_level_components = [
+                c for c in self.components if c in bottom_level
+            ]
 
         # store static covariates and hierarchy in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
@@ -351,13 +379,19 @@ class TimeSeries:
         has_range_index = isinstance(xa_index, pd.RangeIndex)
         has_integer_index = not (has_datetime_index or has_range_index)
 
-        has_frequency = (has_datetime_index and xa_index.freq is not None) or has_range_index
+        has_frequency = (
+            has_datetime_index and xa_index.freq is not None
+        ) or has_range_index
 
         # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
         if fill_missing_dates:
             xa_ = cls._fill_missing_dates(xa, freq=freq)
         # provided index does not have a freq; using the provided freq
-        elif (has_datetime_index or has_integer_index) and freq is not None and not has_frequency:
+        elif (
+            (has_datetime_index or has_integer_index)
+            and freq is not None
+            and not has_frequency
+        ):
             xa_ = cls._restore_xarray_from_frequency(xa, freq=freq)
         # index is an integer index and no freq is provided; try convert it to pd.RangeIndex
         elif has_integer_index and freq is None:
@@ -369,7 +403,9 @@ class TimeSeries:
 
         # clean components (columns) names if needed (if names are not unique, or not strings)
         components = xa_.get_index(DIMS[1])
-        if len(set(components)) != len(components) or any([not isinstance(s, str) for s in components]):
+        if len(set(components)) != len(components) or any([
+            not isinstance(s, str) for s in components
+        ]):
 
             def _clean_component_list(columns) -> List[str]:
                 # return a list of string containing column names
@@ -425,7 +461,9 @@ class TimeSeries:
             )
 
         # We cast the array to float
-        if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(xa_.values.dtype, np.float64):
+        if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(
+            xa_.values.dtype, np.float64
+        ):
             return cls(xa_)
         else:
             return cls(xa_.astype(np.float64))
@@ -649,7 +687,11 @@ class TimeSeries:
                 try:
                     time_index = pd.DatetimeIndex(time_col_vals)
                 except ValueError:
-                    raise_log(AttributeError("'time_col' is of 'object' dtype but doesn't contain valid timestamps"))
+                    raise_log(
+                        AttributeError(
+                            "'time_col' is of 'object' dtype but doesn't contain valid timestamps"
+                        )
+                    )
             elif np.issubdtype(time_col_vals.dtype, np.datetime64):
                 time_index = pd.DatetimeIndex(time_col_vals)
             else:
@@ -661,7 +703,8 @@ class TimeSeries:
             time_index.name = time_col
         else:
             raise_if_not(
-                isinstance(df.index, VALID_INDEX_TYPES) or np.issubdtype(df.index.dtype, np.integer),
+                isinstance(df.index, VALID_INDEX_TYPES)
+                or np.issubdtype(df.index.dtype, np.integer),
                 "If time_col is not specified, the DataFrame must be indexed either with "
                 "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
                 logger,
@@ -784,7 +827,11 @@ class TimeSeries:
 
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
         if drop_group_cols:
-            drop_group_cols = [drop_group_cols] if not isinstance(drop_group_cols, list) else drop_group_cols
+            drop_group_cols = (
+                [drop_group_cols]
+                if not isinstance(drop_group_cols, list)
+                else drop_group_cols
+            )
             invalid_cols = set(drop_group_cols) - set(group_cols)
             if invalid_cols:
                 raise_log(
@@ -794,16 +841,22 @@ class TimeSeries:
                     ),
                     logger=logger,
                 )
-            drop_group_col_idx = [idx for idx, col in enumerate(group_cols) if col in drop_group_cols]
+            drop_group_col_idx = [
+                idx for idx, col in enumerate(group_cols) if col in drop_group_cols
+            ]
         else:
             drop_group_cols = []
             drop_group_col_idx = []
         if static_cols is not None:
-            static_cols = [static_cols] if not isinstance(static_cols, list) else static_cols
+            static_cols = (
+                [static_cols] if not isinstance(static_cols, list) else static_cols
+            )
         else:
             static_cols = []
         static_cov_cols = group_cols + static_cols
-        extract_static_cov_cols = [col for col in static_cov_cols if col not in drop_group_cols]
+        extract_static_cov_cols = [
+            col for col in static_cov_cols if col not in drop_group_cols
+        ]
         extract_time_col = [] if time_col is None else [time_col]
 
         if value_cols is None:
@@ -830,24 +883,34 @@ class TimeSeries:
         def from_group(static_cov_vals, group):
             split = group[extract_value_cols]
 
-            static_cov_vals = (static_cov_vals,) if not isinstance(static_cov_vals, tuple) else static_cov_vals
+            static_cov_vals = (
+                (static_cov_vals,)
+                if not isinstance(static_cov_vals, tuple)
+                else static_cov_vals
+            )
             # optionally, exclude group columns from static covariates
             if drop_group_col_idx:
                 if len(drop_group_col_idx) == len(group_cols):
                     static_cov_vals = tuple()
                 else:
                     static_cov_vals = tuple(
-                        val for idx, val in enumerate(static_cov_vals) if idx not in drop_group_col_idx
+                        val
+                        for idx, val in enumerate(static_cov_vals)
+                        if idx not in drop_group_col_idx
                     )
 
             # check that for each group there is only one unique value per column in `static_cols`
             if static_cols:
-                static_cols_valid = [len(group[col].unique()) == 1 for col in static_cols]
+                static_cols_valid = [
+                    len(group[col].unique()) == 1 for col in static_cols
+                ]
                 if not all(static_cols_valid):
                     # encountered performance issues when evaluating the error message from below in every
                     # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
                     invalid_cols = [
-                        static_col for static_col, is_valid in zip(static_cols, static_cols_valid) if not is_valid
+                        static_col
+                        for static_col, is_valid in zip(static_cols, static_cols_valid)
+                        if not is_valid
                     ]
                     raise_if(
                         True,
@@ -1013,7 +1076,8 @@ class TimeSeries:
             A TimeSeries constructed from the inputs.
         """
         raise_if_not(
-            isinstance(times, VALID_INDEX_TYPES) or np.issubdtype(times.dtype, np.integer),
+            isinstance(times, VALID_INDEX_TYPES)
+            or np.issubdtype(times.dtype, np.integer),
             "the `times` argument must be a RangeIndex, or a DateTimeIndex. Use "
             "TimeSeries.from_values() if you want to use an automatic RangeIndex.",
         )
@@ -1120,7 +1184,9 @@ class TimeSeries:
             A TimeSeries constructed from the inputs.
         """
         time_index = pd.RangeIndex(0, len(values), 1)
-        values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
+        values_ = (
+            np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
+        )
 
         return cls.from_times_and_values(
             times=time_index,
@@ -1189,7 +1255,9 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient="split")
-        return cls.from_dataframe(df, static_covariates=static_covariates, hierarchy=hierarchy)
+        return cls.from_dataframe(
+            df, static_covariates=static_covariates, hierarchy=hierarchy
+        )
 
     @classmethod
     def from_pickle(cls, path: str) -> Self:
@@ -1275,7 +1343,11 @@ class TimeSeries:
 
         The returned series is multivariate if there are multiple bottom components.
         """
-        return self[[c for c in self.components if c in self.bottom_level_components]] if self.has_hierarchy else None
+        return (
+            self[[c for c in self.components if c in self.bottom_level_components]]
+            if self.has_hierarchy
+            else None
+        )
 
     @property
     def n_samples(self) -> int:
@@ -1385,14 +1457,18 @@ class TimeSeries:
     def _assert_univariate(self):
         if not self.is_univariate:
             raise_log(
-                AssertionError("Only univariate TimeSeries instances support this method"),
+                AssertionError(
+                    "Only univariate TimeSeries instances support this method"
+                ),
                 logger,
             )
 
     def _assert_deterministic(self):
         if not self.is_deterministic:
             raise_log(
-                AssertionError("Only deterministic TimeSeries (with 1 sample) instances support this method"),
+                AssertionError(
+                    "Only deterministic TimeSeries (with 1 sample) instances support this method"
+                ),
                 logger,
             )
 
@@ -1400,7 +1476,8 @@ class TimeSeries:
         if not self.is_stochastic:
             raise_log(
                 AssertionError(
-                    "Only non-deterministic TimeSeries (with more than 1 samples) " "instances support this method"
+                    "Only non-deterministic TimeSeries (with more than 1 samples) "
+                    "instances support this method"
                 ),
                 logger,
             )
@@ -1515,7 +1592,8 @@ class TimeSeries:
             comp_name = list(self.components)
             samples = range(self.n_samples)
             df_col_names = [
-                "_s".join((comp_name, str(sample_id))) for comp_name, sample_id in itertools.product(comp_name, samples)
+                "_s".join((comp_name, str(sample_id)))
+                for comp_name, sample_id in itertools.product(comp_name, samples)
             ]
 
             if copy:
@@ -1659,7 +1737,10 @@ class TimeSeries:
             The Pandas DataFrame containing the quantiles for each component.
         """
         return pd.concat(
-            [self.quantile_timeseries(quantile).pd_dataframe() for quantile in quantiles],
+            [
+                self.quantile_timeseries(quantile).pd_dataframe()
+                for quantile in quantiles
+            ],
             axis=1,
         )
 
@@ -1772,7 +1853,8 @@ class TimeSeries:
         """
         raise_if(
             self.is_deterministic and sample != 0,
-            "This series contains one sample only (deterministic)," "so only sample=0 is accepted.",
+            "This series contains one sample only (deterministic),"
+            "so only sample=0 is accepted.",
             logger,
         )
         if copy:
@@ -1864,9 +1946,15 @@ class TimeSeries:
         Optional[numpy.ndarray]
             The static covariate values if the series has static covariates, else `None`.
         """
-        return self.static_covariates.to_numpy(copy=copy) if self.has_static_covariates else self.static_covariates
+        return (
+            self.static_covariates.to_numpy(copy=copy)
+            if self.has_static_covariates
+            else self.static_covariates
+        )
 
-    def head(self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0) -> Self:
+    def head(
+        self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
+    ) -> Self:
         """
         Return a TimeSeries containing the first `size` points.
 
@@ -1891,7 +1979,9 @@ class TimeSeries:
         else:
             return self.__class__(self._xa[{axis_str: range(display_n)}])
 
-    def tail(self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0) -> Self:
+    def tail(
+        self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
+    ) -> Self:
         """
         Return last `size` points of the series.
 
@@ -2002,7 +2092,9 @@ class TimeSeries:
             is_nan_series = df.isna().any(axis=1).astype(int)
         else:
             raise_log(
-                ValueError(f"Keyword mode accepts only 'any' or 'all'. Provided {mode}"),
+                ValueError(
+                    f"Keyword mode accepts only 'any' or 'all'. Provided {mode}"
+                ),
                 logger,
             )
         diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
@@ -2028,7 +2120,9 @@ class TimeSeries:
 
             gap_df["gap_start"] = gap_starts
             gap_df["gap_end"] = gap_ends
-            gap_df["gap_size"] = gap_df.apply(lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1)
+            gap_df["gap_size"] = gap_df.apply(
+                lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
+            )
 
             return gap_df
 
@@ -2045,7 +2139,9 @@ class TimeSeries:
         # the xarray will be copied in the TimeSeries constructor.
         return self.__class__(self._xa)
 
-    def get_index_at_point(self, point: Union[pd.Timestamp, float, int], after=True) -> int:
+    def get_index_at_point(
+        self, point: Union[pd.Timestamp, float, int], after=True
+    ) -> int:
         """
         Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).
 
@@ -2105,16 +2201,22 @@ class TimeSeries:
                 point_index = self._time_index.get_loc(point)
             else:
                 point_index = self._time_index.get_loc(
-                    self._get_first_timestamp_after(point) if after else self._get_last_timestamp_before(point)
+                    self._get_first_timestamp_after(point)
+                    if after
+                    else self._get_last_timestamp_before(point)
                 )
         else:
             raise_log(
-                TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"),
+                TypeError(
+                    "`point` needs to be either `float`, `int` or `pd.Timestamp`"
+                ),
                 logger,
             )
         return point_index
 
-    def get_timestamp_at_point(self, point: Union[pd.Timestamp, float, int]) -> Union[pd.Timestamp, int]:
+    def get_timestamp_at_point(
+        self, point: Union[pd.Timestamp, float, int]
+    ) -> Union[pd.Timestamp, int]:
         """
         Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).
 
@@ -2132,7 +2234,9 @@ class TimeSeries:
         idx = self.get_index_at_point(point)
         return self._time_index[idx]
 
-    def _split_at(self, split_point: Union[pd.Timestamp, float, int], after: bool = True) -> Tuple[Self, Self]:
+    def _split_at(
+        self, split_point: Union[pd.Timestamp, float, int], after: bool = True
+    ) -> Tuple[Self, Self]:
         # Get index with not after in order to avoid moving twice if split_point is not in self
         point_index = self.get_index_at_point(split_point, not after)
         return (
@@ -2140,7 +2244,9 @@ class TimeSeries:
             self[point_index + (1 if after else 0) :],
         )
 
-    def split_after(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple[Self, Self]:
+    def split_after(
+        self, split_point: Union[pd.Timestamp, float, int]
+    ) -> Tuple[Self, Self]:
         """
         Splits the series in two, after a provided `split_point`.
 
@@ -2161,7 +2267,9 @@ class TimeSeries:
         """
         return self._split_at(split_point, after=True)
 
-    def split_before(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple[Self, Self]:
+    def split_before(
+        self, split_point: Union[pd.Timestamp, float, int]
+    ) -> Tuple[Self, Self]:
         """
         Splits the series in two, before a provided `split_point`.
 
@@ -2216,7 +2324,9 @@ class TimeSeries:
         """
         return self[self.get_index_at_point(split_point, after=False) + 1 :]
 
-    def slice(self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]):
+    def slice(
+        self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]
+    ):
         """
         Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`.
         For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,
@@ -2249,9 +2359,13 @@ class TimeSeries:
                 logger,
             )
             if start_ts in self._time_index and end_ts in self._time_index:
-                return self[start_ts:end_ts]  # we assume this is faster than the filtering below
+                return self[
+                    start_ts:end_ts
+                ]  # we assume this is faster than the filtering below
             else:
-                idx = self._time_index[(start_ts <= self._time_index) & (self._time_index <= end_ts)]
+                idx = self._time_index[
+                    (start_ts <= self._time_index) & (self._time_index <= end_ts)
+                ]
                 return self[idx]
         else:
             raise_if(
@@ -2262,7 +2376,9 @@ class TimeSeries:
             )
             # get closest timestamps if either start or end are not in the index
             effective_start_ts = (
-                min(self._time_index, key=lambda t: abs(t - start_ts)) if start_ts not in self._time_index else start_ts
+                min(self._time_index, key=lambda t: abs(t - start_ts))
+                if start_ts not in self._time_index
+                else start_ts
             )
             if effective_start_ts < start_ts:
                 # if the requested start_ts is smaller than the start argument,
@@ -2270,7 +2386,9 @@ class TimeSeries:
                 effective_start_ts += self.freq
 
             effective_end_ts = (
-                min(self._time_index, key=lambda t: abs(t - end_ts)) if end_ts not in self._time_index else end_ts
+                min(self._time_index, key=lambda t: abs(t - end_ts))
+                if end_ts not in self._time_index
+                else end_ts
             )
             if end_ts >= effective_end_ts + self.freq:
                 # if the requested end_ts is further off from the end of the time series,
@@ -2308,7 +2426,9 @@ class TimeSeries:
             point_index = self.get_index_at_point(tss)
             return self[point_index : point_index + n]
         else:
-            raise_log(ValueError("start_ts must be an int or a pandas Timestamp."), logger)
+            raise_log(
+                ValueError("start_ts must be an int or a pandas Timestamp."), logger
+            )
 
     def slice_n_points_before(self, end_ts: Union[pd.Timestamp, int], n: int) -> Self:
         """
@@ -2340,7 +2460,9 @@ class TimeSeries:
             point_index = self.get_index_at_point(tss)
             return self[max(0, point_index - n + 1) : point_index + 1]
         else:
-            raise_log(ValueError("start_ts must be an int or a pandas Timestamp."), logger)
+            raise_log(
+                ValueError("start_ts must be an int or a pandas Timestamp."), logger
+            )
 
     def slice_intersect(self, other: Self) -> Self:
         """
@@ -2398,7 +2520,9 @@ class TimeSeries:
             return vals[self.time_index.isin(other.time_index)]
 
     def _slice_intersect_bounds(self, other: Self) -> Tuple[int, int]:
-        shift_start = n_steps_between(other.start_time(), self.start_time(), freq=self.freq)
+        shift_start = n_steps_between(
+            other.start_time(), self.start_time(), freq=self.freq
+        )
         shift_end = n_steps_between(other.end_time(), self.end_time(), freq=self.freq)
         shift_start = shift_start if shift_start >= 0 else 0
         shift_end = shift_end if shift_end < 0 else None
@@ -2429,7 +2553,9 @@ class TimeSeries:
             logger,
         )
 
-        first_finite_row, last_finite_row = _finite_rows_boundaries(self.values(), how=how)
+        first_finite_row, last_finite_row = _finite_rows_boundaries(
+            self.values(), how=how
+        )
 
         return self.__class__.from_times_and_values(
             times=self.time_index[first_finite_row : last_finite_row + 1],
@@ -2439,7 +2565,9 @@ class TimeSeries:
             hierarchy=self.hierarchy,
         )
 
-    def longest_contiguous_slice(self, max_gap_size: int = 0, mode: str = "all") -> Self:
+    def longest_contiguous_slice(
+        self, max_gap_size: int = 0, mode: str = "all"
+    ) -> Self:
         """
         Return the largest TimeSeries slice of this deterministic series that contains no gaps
         (contiguous all-NaN values) larger than `max_gap_size`.
@@ -2508,7 +2636,9 @@ class TimeSeries:
             have been scaled accordingly.
         """
 
-        raise_if_not((self._xa[0, :, :] != 0).all(), "Cannot rescale with first value 0.", logger)
+        raise_if_not(
+            (self._xa[0, :, :] != 0).all(), "Cannot rescale with first value 0.", logger
+        )
         coef = value_at_first_step / self._xa.isel({self._time_dim: [0]})
         coef = coef.values.reshape((self.n_components, self.n_samples))  # TODO: test
         new_series = coef * self._xa
@@ -2534,14 +2664,19 @@ class TimeSeries:
             A new TimeSeries, with a shifted index.
         """
         if not isinstance(n, (int, np.int64)):
-            logger.warning(f"TimeSeries.shift(): converting n to int from {n} to {int(n)}")
+            logger.warning(
+                f"TimeSeries.shift(): converting n to int from {n} to {int(n)}"
+            )
             n = int(n)
 
         try:
             self._time_index[-1] + n * self.freq
         except pd.errors.OutOfBoundsDatetime:
             raise_log(
-                OverflowError(f"the add operation between {n * self.freq} and {self.time_index[-1]} will " "overflow"),
+                OverflowError(
+                    f"the add operation between {n * self.freq} and {self.time_index[-1]} will "
+                    "overflow"
+                ),
                 logger,
             )
 
@@ -2591,7 +2726,9 @@ class TimeSeries:
                 # In this case the new DataArray will have the same size and filled with NaNs
                 new_xa_ = xa.copy()
                 new_xa_.values[:periods, :, :] = np.nan
-                new_xa_.values[periods:, :, :] = xa.values[periods:, :, :] - xa.values[:-periods, :, :]
+                new_xa_.values[periods:, :, :] = (
+                    xa.values[periods:, :, :] - xa.values[:-periods, :, :]
+                )
             else:
                 # In this case the new DataArray will be shorter
                 new_xa_ = xa[periods:, :, :].copy()
@@ -2695,7 +2832,9 @@ class TimeSeries:
             attrs=self._xa.attrs,
         )
 
-        return self.__class__.from_xarray(new_xa, fill_missing_dates=True, freq=self._freq_str)
+        return self.__class__.from_xarray(
+            new_xa, fill_missing_dates=True, freq=self._freq_str
+        )
 
     def append_values(self, values: np.ndarray) -> Self:
         """
@@ -2773,7 +2912,10 @@ class TimeSeries:
 
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
-                [self.start_time() - i * self._freq for i in reversed(range(1, len(values) + 1))],
+                [
+                    self.start_time() - i * self._freq
+                    for i in reversed(range(1, len(values) + 1))
+                ],
                 freq=self._freq,
             )
         else:
@@ -2824,7 +2966,9 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
-    def with_static_covariates(self, covariates: Optional[Union[pd.Series, pd.DataFrame]]):
+    def with_static_covariates(
+        self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
+    ):
         """Returns a new TimeSeries object with added static covariates.
 
         Static covariates contain data attached to the time series, but which are not varying with time.
@@ -3212,7 +3356,9 @@ class TimeSeries:
                 num_args = 2
             else:
                 raise_log(
-                    ValueError("fn must have either one or two arguments and return a single value"),
+                    ValueError(
+                        "fn must have either one or two arguments and return a single value"
+                    ),
                     logger,
                 )
         else:
@@ -3220,7 +3366,9 @@ class TimeSeries:
                 num_args = len(signature(fn).parameters)
             except ValueError:
                 raise_log(
-                    ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"),
+                    ValueError(
+                        "inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"
+                    ),
                     logger,
                 )
 
@@ -3232,12 +3380,16 @@ class TimeSeries:
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
                 new_vals = np.vstack([
-                    np.expand_dims(fn(self.time_index[i], self._xa[i, :, :]), axis=0) for i in range(self.n_timesteps)
+                    np.expand_dims(fn(self.time_index[i], self._xa[i, :, :]), axis=0)
+                    for i in range(self.n_timesteps)
                 ])
             else:
                 new_vals = np.stack(
                     [
-                        np.column_stack([fn(self.time_index, self._xa[:, i, j]) for j in range(self.n_samples)])
+                        np.column_stack([
+                            fn(self.time_index, self._xa[:, i, j])
+                            for j in range(self.n_samples)
+                        ])
                         for i in range(self.n_components)
                     ],
                     axis=1,
@@ -3455,31 +3607,53 @@ class TimeSeries:
             }
 
             window_mode_expected_args = set(window_mode.__code__.co_varnames)
-            window_mode_available_keys = window_mode_expected_args.intersection(available_keys)
+            window_mode_available_keys = window_mode_expected_args.intersection(
+                available_keys
+            )
 
-            window_mode_available_kwargs = {k: v for k, v in transformation.items() if k in window_mode_available_keys}
+            window_mode_available_kwargs = {
+                k: v
+                for k, v in transformation.items()
+                if k in window_mode_available_keys
+            }
 
             available_keys -= window_mode_available_keys
 
             function_expected_args = set(
                 getattr(
-                    getattr(pd.DataFrame(), window_mode.__name__)(**window_mode_available_kwargs),
+                    getattr(pd.DataFrame(), window_mode.__name__)(
+                        **window_mode_available_kwargs
+                    ),
                     fn,
                 ).__code__.co_varnames
             )
 
-            function_available_keys = function_expected_args.intersection(set(available_keys))
+            function_available_keys = function_expected_args.intersection(
+                set(available_keys)
+            )
 
-            function_available_kwargs = {k: v for k, v in transformation.items() if k in function_available_keys}
+            function_available_kwargs = {
+                k: v for k, v in transformation.items() if k in function_available_keys
+            }
 
             available_keys -= function_available_keys
 
             udf_expected_args = set(udf.__code__.co_varnames) if fn == "apply" else None
-            udf_available_keys = udf_expected_args.intersection(set(available_keys)) if fn == "apply" else None
+            udf_available_keys = (
+                udf_expected_args.intersection(set(available_keys))
+                if fn == "apply"
+                else None
+            )
 
-            udf_kwargs = {k: v for k, v in transformation.items() if k in udf_available_keys} if fn == "apply" else None
+            udf_kwargs = (
+                {k: v for k, v in transformation.items() if k in udf_available_keys}
+                if fn == "apply"
+                else None
+            )
 
-            function_available_kwargs.update({"func": udf, "kwargs": udf_kwargs} if fn == "apply" else {})
+            function_available_kwargs.update(
+                {"func": udf, "kwargs": udf_kwargs} if fn == "apply" else {}
+            )
 
             return (window_mode.__name__, window_mode_available_kwargs), (
                 fn,
@@ -3517,7 +3691,9 @@ class TimeSeries:
         # keep_non_transformed can be changed to False/ignored if the transforms are not partial
         if keep_names and keep_non_transformed:
             raise_log(
-                ValueError("`keep_names = True` and `keep_non_transformed = True` cannot be used together."),
+                ValueError(
+                    "`keep_names = True` and `keep_non_transformed = True` cannot be used together."
+                ),
                 logger,
             )
 
@@ -3565,12 +3741,18 @@ class TimeSeries:
             df_cols = ts_df.columns
 
             if not self.is_deterministic:
-                filter_df_columns = [df_col for df_col in df_cols if re.sub("_s.*$", "", df_col) in comps_to_transform]
+                filter_df_columns = [
+                    df_col
+                    for df_col in df_cols
+                    if re.sub("_s.*$", "", df_col) in comps_to_transform
+                ]
 
             else:
                 filter_df_columns = [df_col for df_col in comps_to_transform]
 
-            (window_mode, window_mode_kwargs), (fn, function_kwargs) = _get_kwargs(transformation, forecasting_safe)
+            (window_mode, window_mode_kwargs), (fn, function_kwargs) = _get_kwargs(
+                transformation, forecasting_safe
+            )
 
             closed = transformation.get("closed", None)
             if not include_current:
@@ -3585,7 +3767,9 @@ class TimeSeries:
                 [
                     resulting_transformations,
                     getattr(
-                        getattr(ts_df[filter_df_columns], window_mode)(**window_mode_kwargs),
+                        getattr(ts_df[filter_df_columns], window_mode)(
+                            **window_mode_kwargs
+                        ),
                         fn,
                     )(**function_kwargs).shift(periods=shifts),
                 ],
@@ -3607,22 +3791,31 @@ class TimeSeries:
             if keep_names:
                 new_columns.extend(comps_to_transform)
             else:
-                names_w_prefix = [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
+                names_w_prefix = [
+                    f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform
+                ]
                 new_columns.extend(names_w_prefix)
                 if convert_hierarchy:
                     comp_names_map.update({
-                        c_name: new_c_name for c_name, new_c_name in zip(comps_to_transform, names_w_prefix)
+                        c_name: new_c_name
+                        for c_name, new_c_name in zip(
+                            comps_to_transform, names_w_prefix
+                        )
                     })
 
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
             # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
             total_na = min_periods + shifts + (closed == "left")
-            added_na.extend([total_na - 1 if min_periods > 0 else total_na for _ in filter_df_columns])
+            added_na.extend([
+                total_na - 1 if min_periods > 0 else total_na for _ in filter_df_columns
+            ])
 
         # keep all original components
         if keep_non_transformed:
-            resulting_transformations = pd.concat([resulting_transformations, ts_df], axis=1)
+            resulting_transformations = pd.concat(
+                [resulting_transformations, ts_df], axis=1
+            )
             new_columns.extend(original_components)
 
         # Treat NaNs that were introduced by the transformations only
@@ -3653,7 +3846,9 @@ class TimeSeries:
         elif treat_na == "dropna":
             # can only drop the NaN rows that are common among the columns
             drop_before_index = original_index[np.min(added_na)]
-            resulting_transformations = resulting_transformations.loc[drop_before_index:]
+            resulting_transformations = resulting_transformations.loc[
+                drop_before_index:
+            ]
 
         # revert dataframe to TimeSeries
         new_index = original_index.__class__(resulting_transformations.index)
@@ -3663,12 +3858,15 @@ class TimeSeries:
                 new_hierarchy = self.hierarchy
             else:
                 new_hierarchy = {
-                    comp_names_map[k]: [comp_names_map[old_name] for old_name in v] for k, v in self.hierarchy.items()
+                    comp_names_map[k]: [comp_names_map[old_name] for old_name in v]
+                    for k, v in self.hierarchy.items()
                 }
 
         transformed_time_series = TimeSeries.from_times_and_values(
             times=new_index,
-            values=resulting_transformations.values.reshape(len(new_index), -1, n_samples),
+            values=resulting_transformations.values.reshape(
+                len(new_index), -1, n_samples
+            ),
             columns=new_columns,
             static_covariates=self.static_covariates,
             hierarchy=new_hierarchy,
@@ -3835,7 +4033,10 @@ class TimeSeries:
         if not isinstance(label, str) and isinstance(label, Sequence):
             raise_if_not(
                 len(label) == self.n_components
-                or (self.n_components > n_components_to_plot and len(label) >= n_components_to_plot),
+                or (
+                    self.n_components > n_components_to_plot
+                    and len(label) >= n_components_to_plot
+                ),
                 "The label argument should have the same length as the number of plotted components "
                 f"({min(self.n_components, n_components_to_plot)}), only {len(label)} labels were provided",
                 logger,
@@ -3892,7 +4093,11 @@ class TimeSeries:
             color_used = p[0].get_color() if default_formatting else None
 
             # Optionally show confidence intervals
-            if comp.sample.size > 1 and low_quantile is not None and high_quantile is not None:
+            if (
+                comp.sample.size > 1
+                and low_quantile is not None
+                and high_quantile is not None
+            ):
                 low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
                 high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
                 if low_series.shape[0] > 1:
@@ -3916,7 +4121,9 @@ class TimeSeries:
         ax.set_title(self._xa.name)
         return ax
 
-    def with_columns_renamed(self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]) -> Self:
+    def with_columns_renamed(
+        self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]
+    ) -> Self:
         """
         Return a new ``TimeSeries`` instance with new columns/components names. It also
         adapts the names in the hierarchy, if any.
@@ -3947,7 +4154,8 @@ class TimeSeries:
 
         raise_if_not(
             len(col_names) == len(col_names_new),
-            "Length of col_names_new list should be" " equal to the length of col_names list.",
+            "Length of col_names_new list should be"
+            " equal to the length of col_names list.",
             logger,
         )
 
@@ -3960,7 +4168,8 @@ class TimeSeries:
         if self.hierarchy is not None:
             hierarchy = {
                 (old2new[key] if key in old2new else key): [
-                    old2new[old] if old in old2new else old for old in self.hierarchy[key]
+                    old2new[old] if old in old2new else old
+                    for old in self.hierarchy[key]
                 ]
                 for key in self.hierarchy
             }
@@ -4046,7 +4255,9 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with median applied to the indicated axis.
         """
-        new_data = np.median(self._xa.values, axis=axis, overwrite_input=False, keepdims=True)
+        new_data = np.median(
+            self._xa.values, axis=axis, overwrite_input=False, keepdims=True
+        )
         new_coords = self._get_agg_coords("components_median", axis)
 
         new_xa = xr.DataArray(
@@ -4175,7 +4386,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = self._xa.values.var(axis=2, ddof=ddof, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def std(self, ddof: int = 1) -> Self:
@@ -4198,7 +4411,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = self._xa.values.std(axis=2, ddof=ddof, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def skew(self, **kwargs) -> Self:
@@ -4220,7 +4435,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = np.expand_dims(skew(self._xa.values, axis=2, **kwargs), axis=2)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def kurtosis(self, **kwargs) -> Self:
@@ -4242,7 +4459,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = np.expand_dims(kurtosis(self._xa.values, axis=2, **kwargs), axis=2)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def quantile(self, quantile: float, **kwargs) -> Self:
@@ -4303,7 +4522,9 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     @classmethod
-    def _fill_missing_dates(cls, xa: xr.DataArray, freq: Optional[Union[str, int]] = None) -> xr.DataArray:
+    def _fill_missing_dates(
+        cls, xa: xr.DataArray, freq: Optional[Union[str, int]] = None
+    ) -> xr.DataArray:
         """Return an xarray DataArray instance with missing dates inserted from an input xarray DataArray.
         The first dimension of the input DataArray `xa` has to be the time dimension.
 
@@ -4343,7 +4564,9 @@ class TimeSeries:
 
         time_dim = xa.dims[0]
         sorted_xa = cls._sort_index(xa, copy=False)
-        time_index: Union[pd.Index, pd.RangeIndex, pd.DatetimeIndex] = sorted_xa.get_index(time_dim)
+        time_index: Union[pd.Index, pd.RangeIndex, pd.DatetimeIndex] = (
+            sorted_xa.get_index(time_dim)
+        )
 
         if isinstance(time_index, pd.DatetimeIndex):
             has_datetime_index = True
@@ -4381,7 +4604,11 @@ class TimeSeries:
     def _sort_index(xa: xr.DataArray, copy: bool = True) -> xr.DataArray:
         """Sorts an xarray by its time dimension index (only if it is not already monotonically increasing)."""
         time_dim = xa.dims[0]
-        return (xa.copy() if copy else xa) if xa.get_index(time_dim).is_monotonic_increasing else xa.sortby(time_dim)
+        return (
+            (xa.copy() if copy else xa)
+            if xa.get_index(time_dim).is_monotonic_increasing
+            else xa.sortby(time_dim)
+        )
 
     @staticmethod
     def _observed_freq_datetime_index(index: pd.DatetimeIndex) -> set:
@@ -4446,7 +4673,9 @@ class TimeSeries:
         )
 
     @classmethod
-    def _restore_xarray_from_frequency(cls, xa: xr.DataArray, freq: Union[str, int]) -> xr.DataArray:
+    def _restore_xarray_from_frequency(
+        cls, xa: xr.DataArray, freq: Union[str, int]
+    ) -> xr.DataArray:
         """Return an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency
         `freq`. `freq` should be the inferred or actual frequency of `xa`. All data from `xa` is maintained in the
         output DataArray at the corresponding dates. Any missing dates from `xa` will be inserted into the returned
@@ -4488,7 +4717,9 @@ class TimeSeries:
             resampled_time_index = resampled_time_index.asfreq(freq)
         else:  # integer index (non RangeIndex) -> resampled to RangeIndex
             has_datetime_index = False
-            resampled_time_index = resampled_time_index.reindex(range(min(time_index), max(time_index) + freq, freq))
+            resampled_time_index = resampled_time_index.reindex(
+                range(min(time_index), max(time_index) + freq, freq)
+            )
         # check if new time index with inferred frequency contains all input data
         contains_all_data = time_index.isin(resampled_time_index.index).all()
 
@@ -4519,11 +4750,16 @@ class TimeSeries:
         # convert to float as for instance integer arrays cannot accept nans
         dtype = (
             xa.dtype
-            if (np.issubdtype(xa.values.dtype, np.float32) or np.issubdtype(xa.values.dtype, np.float64))
+            if (
+                np.issubdtype(xa.values.dtype, np.float32)
+                or np.issubdtype(xa.values.dtype, np.float64)
+            )
             else np.float64
         )
         resampled_xa = xr.DataArray(
-            data=np.empty(shape=((len(resampled_time_index),) + xa.shape[1:]), dtype=dtype),
+            data=np.empty(
+                shape=((len(resampled_time_index),) + xa.shape[1:]), dtype=dtype
+            ),
             dims=xa.dims,
             coords=coords,
             attrs=xa.attrs,
@@ -4550,7 +4786,9 @@ class TimeSeries:
 
     def _get_dim(self, axis: Union[int, str]) -> int:
         if isinstance(axis, int):
-            raise_if_not(0 <= axis <= 2, "If `axis` is an integer it must be between 0 and 2.")
+            raise_if_not(
+                0 <= axis <= 2, "If `axis` is an integer it must be between 0 and 2."
+            )
             return axis
         else:
             known_dims = (self._time_dim,) + DIMS[1:]
@@ -4573,7 +4811,9 @@ class TimeSeries:
 
     def __add__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_attrs(self._xa + other, self.static_covariates, self.hierarchy)
+            xa_ = _xarray_with_attrs(
+                self._xa + other, self.static_covariates, self.hierarchy
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 + s2)
@@ -4590,7 +4830,9 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_attrs(self._xa - other, self.static_covariates, self.hierarchy)
+            xa_ = _xarray_with_attrs(
+                self._xa - other, self.static_covariates, self.hierarchy
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 - s2)
@@ -4607,7 +4849,9 @@ class TimeSeries:
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_attrs(self._xa * other, self.static_covariates, self.hierarchy)
+            xa_ = _xarray_with_attrs(
+                self._xa * other, self.static_covariates, self.hierarchy
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 * s2)
@@ -4625,7 +4869,9 @@ class TimeSeries:
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
             raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
-            xa_ = _xarray_with_attrs(self._xa ** float(n), self.static_covariates, self.hierarchy)
+            xa_ = _xarray_with_attrs(
+                self._xa ** float(n), self.static_covariates, self.hierarchy
+            )
             return self.__class__(xa_)
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(n, lambda s1, s2: s1**s2)  # elementwise power
@@ -4641,7 +4887,9 @@ class TimeSeries:
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-            xa_ = _xarray_with_attrs(self._xa / other, self.static_covariates, self.hierarchy)
+            xa_ = _xarray_with_attrs(
+                self._xa / other, self.static_covariates, self.hierarchy
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             if not (other.all_values(copy=False) != 0).all():
@@ -4676,7 +4924,9 @@ class TimeSeries:
 
     def __lt__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(self._xa < other, self.static_covariates, self.hierarchy)
+            return _xarray_with_attrs(
+                self._xa < other, self.static_covariates, self.hierarchy
+            )
         elif isinstance(other, TimeSeries):
             return _xarray_with_attrs(
                 self._xa < other.data_array(copy=False),
@@ -4685,13 +4935,17 @@ class TimeSeries:
             )
         else:
             raise_log(
-                TypeError(f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."),
+                TypeError(
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
+                ),
                 logger,
             )
 
     def __gt__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(self._xa > other, self.static_covariates, self.hierarchy)
+            return _xarray_with_attrs(
+                self._xa > other, self.static_covariates, self.hierarchy
+            )
         elif isinstance(other, TimeSeries):
             return _xarray_with_attrs(
                 self._xa > other.data_array(copy=False),
@@ -4700,13 +4954,17 @@ class TimeSeries:
             )
         else:
             raise_log(
-                TypeError(f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."),
+                TypeError(
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
+                ),
                 logger,
             )
 
     def __le__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(self._xa <= other, self.static_covariates, self.hierarchy)
+            return _xarray_with_attrs(
+                self._xa <= other, self.static_covariates, self.hierarchy
+            )
         elif isinstance(other, TimeSeries):
             return _xarray_with_attrs(
                 self._xa <= other.data_array(copy=False),
@@ -4715,13 +4973,17 @@ class TimeSeries:
             )
         else:
             raise_log(
-                TypeError(f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."),
+                TypeError(
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
+                ),
                 logger,
             )
 
     def __ge__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(self._xa >= other, self.static_covariates, self.hierarchy)
+            return _xarray_with_attrs(
+                self._xa >= other, self.static_covariates, self.hierarchy
+            )
         elif isinstance(other, TimeSeries):
             return _xarray_with_attrs(
                 self._xa >= other.data_array(copy=False),
@@ -4730,7 +4992,9 @@ class TimeSeries:
             )
         else:
             raise_log(
-                TypeError(f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."),
+                TypeError(
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
+                ),
                 logger,
             )
 
@@ -4741,7 +5005,9 @@ class TimeSeries:
         return self._xa.__repr__().replace("xarray.DataArray", "TimeSeries (DataArray)")
 
     def _repr_html_(self):
-        return self._xa._repr_html_().replace("xarray.DataArray", "TimeSeries (DataArray)")
+        return self._xa._repr_html_().replace(
+            "xarray.DataArray", "TimeSeries (DataArray)"
+        )
 
     def __copy__(self, deep: bool = True):
         return self.copy()
@@ -4800,7 +5066,8 @@ class TimeSeries:
             if self._has_datetime_index:
                 raise_log(
                     ValueError(
-                        "Attempted indexing a series with a RangeIndex, " "but the series uses a DatetimeIndex."
+                        "Attempted indexing a series with a RangeIndex, "
+                        "but the series uses a DatetimeIndex."
                     ),
                     logger,
                 )
@@ -4821,7 +5088,11 @@ class TimeSeries:
             else:
                 return xa_in.get_index(self._time_dim).step
 
-        adapt_covs_on_component = True if self.has_static_covariates and len(self.static_covariates) > 1 else False
+        adapt_covs_on_component = (
+            True
+            if self.has_static_covariates and len(self.static_covariates) > 1
+            else False
+        )
 
         # handle DatetimeIndex and RangeIndex:
         if isinstance(key, pd.DatetimeIndex):
@@ -4864,14 +5135,18 @@ class TimeSeries:
                     None,
                 )
                 return self.__class__(xa_)
-            elif isinstance(key.start, (int, np.int64)) or isinstance(key.stop, (int, np.int64)):
+            elif isinstance(key.start, (int, np.int64)) or isinstance(
+                key.stop, (int, np.int64)
+            ):
                 xa_ = self._xa.isel({self._time_dim: key})
                 if _get_freq(xa_) is None:
                     # indexing discarded the freq; we restore it
                     freq = key.step * self.freq if key.step else self.freq
                     _set_freq_in_xa(xa_, freq)
                 return self.__class__(xa_)
-            elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
+            elif isinstance(key.start, pd.Timestamp) or isinstance(
+                key.stop, pd.Timestamp
+            ):
                 _check_dt()
                 xa_ = self._xa.sel({self._time_dim: key})
                 if _get_freq(xa_) is None:
@@ -4887,7 +5162,11 @@ class TimeSeries:
             # selecting components discards the hierarchy, if any
             xa_ = _xarray_with_attrs(
                 xa_,
-                (xa_.attrs[STATIC_COV_TAG].loc[[key]] if adapt_covs_on_component else xa_.attrs[STATIC_COV_TAG]),
+                (
+                    xa_.attrs[STATIC_COV_TAG].loc[[key]]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG]
+                ),
                 None,
             )
             return self.__class__(xa_)
@@ -4896,7 +5175,9 @@ class TimeSeries:
 
             # restore a RangeIndex if needed:
             time_idx = xa_.get_index(self._time_dim)
-            if pd.api.types.is_integer_dtype(time_idx) and not isinstance(time_idx, pd.RangeIndex):
+            if pd.api.types.is_integer_dtype(time_idx) and not isinstance(
+                time_idx, pd.RangeIndex
+            ):
                 xa_ = xa_.assign_coords({
                     self._time_dim: pd.RangeIndex(
                         start=time_idx[0],
@@ -4922,7 +5203,11 @@ class TimeSeries:
                 xa_ = self._xa.sel({DIMS[1]: key})
                 xa_ = _xarray_with_attrs(
                     xa_,
-                    (xa_.attrs[STATIC_COV_TAG].loc[key] if adapt_covs_on_component else xa_.attrs[STATIC_COV_TAG]),
+                    (
+                        xa_.attrs[STATIC_COV_TAG].loc[key]
+                        if adapt_covs_on_component
+                        else xa_.attrs[STATIC_COV_TAG]
+                    ),
                     None,
                 )
                 return self.__class__(xa_)
@@ -4937,7 +5222,11 @@ class TimeSeries:
                     # We have to restore a RangeIndex. But first we need to
                     # check the list is corresponding to a RangeIndex.
                     min_idx, max_idx = min(key), max(key)
-                    if not key[0] == min_idx and key[-1] == max_idx and max_idx + 1 - min_idx == len(key):
+                    if (
+                        not key[0] == min_idx
+                        and key[-1] == max_idx
+                        and max_idx + 1 - min_idx == len(key)
+                    ):
                         raise_log(
                             ValueError(
                                 "Indexing a TimeSeries with a list requires the list to "
@@ -4996,7 +5285,9 @@ def _concat_static_covs(series: Sequence[TimeSeries]) -> Optional[pd.DataFrame]:
     if not any([ts.has_static_covariates for ts in series]):
         return None
 
-    only_first = series[0].has_static_covariates and not any([ts.has_static_covariates for ts in series[1:]])
+    only_first = series[0].has_static_covariates and not any([
+        ts.has_static_covariates for ts in series[1:]
+    ])
     all_have = all([ts.has_static_covariates for ts in series])
 
     raise_if_not(
@@ -5010,7 +5301,10 @@ def _concat_static_covs(series: Sequence[TimeSeries]) -> Optional[pd.DataFrame]:
 
     raise_if_not(
         all([len(ts.static_covariates) == ts.n_components for ts in series])
-        and all([ts.static_covariates.columns.equals(series[0].static_covariates.columns) for ts in series]),
+        and all([
+            ts.static_covariates.columns.equals(series[0].static_covariates.columns)
+            for ts in series
+        ]),
         "Concatenation of multiple TimeSeries with static covariates requires all `static_covariates` "
         "DataFrames to have identical columns (static variable names), and the number of each TimeSeries' "
         "components must match the number of corresponding static covariate components (the number of rows "
@@ -5018,7 +5312,9 @@ def _concat_static_covs(series: Sequence[TimeSeries]) -> Optional[pd.DataFrame]:
         logger,
     )
 
-    return pd.concat([ts.static_covariates for ts in series if ts.has_static_covariates], axis=0)
+    return pd.concat(
+        [ts.static_covariates for ts in series if ts.has_static_covariates], axis=0
+    )
 
 
 def _concat_hierarchy(series: Sequence[TimeSeries]):
@@ -5129,14 +5425,32 @@ def concatenate(
             )
 
             da_concat = da_concat.assign_coords({time_dim_name: tindex})
-            da_concat = _xarray_with_attrs(da_concat, series[0].static_covariates, series[0].hierarchy)
+            da_concat = _xarray_with_attrs(
+                da_concat, series[0].static_covariates, series[0].hierarchy
+            )
 
     else:
-        time_axes_equal = all(list(map(lambda t: t[0].has_same_time_as(t[1]), zip(series[0:-1], series[1:]))))
-        time_axes_ok = time_axes_equal if not ignore_time_axis else len({len(ts) for ts in series}) == 1
+        time_axes_equal = all(
+            list(
+                map(
+                    lambda t: t[0].has_same_time_as(t[1]), zip(series[0:-1], series[1:])
+                )
+            )
+        )
+        time_axes_ok = (
+            time_axes_equal
+            if not ignore_time_axis
+            else len({len(ts) for ts in series}) == 1
+        )
 
         raise_if_not(
-            (time_axes_ok and ((axis == 1 and sample_axis_equal) or (axis == 2 and component_axis_equal))),
+            (
+                time_axes_ok
+                and (
+                    (axis == 1 and sample_axis_equal)
+                    or (axis == 2 and component_axis_equal)
+                )
+            ),
             "When concatenating along component or sample dimensions, all the series must have the same time "
             "axes (unless `ignore_time_axis` is True), or time axes of same lengths (if `ignore_time_axis` is "
             "True), and all series must have the same number of samples (if concatenating along component "
@@ -5150,9 +5464,13 @@ def concatenate(
         if axis == 1:
             # When concatenating along component dimension, we have to re-create a component index
             # we rely on the factory method of TimeSeries to disambiguate names later on if needed.
-            component_index = pd.Index([c for cl in [ts.components for ts in series] for c in cl])
+            component_index = pd.Index([
+                c for cl in [ts.components for ts in series] for c in cl
+            ])
             static_covariates = (
-                _concat_static_covs(series) if not ignore_static_covariates else series[0].static_covariates
+                _concat_static_covs(series)
+                if not ignore_static_covariates
+                else series[0].static_covariates
             )
             hierarchy = None if drop_hierarchy else _concat_hierarchy(series)
         else:
@@ -5170,7 +5488,9 @@ def concatenate(
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
 
 
-def _finite_rows_boundaries(values: np.ndarray, how: str = "all") -> Tuple[Optional[int], Optional[int]]:
+def _finite_rows_boundaries(
+    values: np.ndarray, how: str = "all"
+) -> Tuple[Optional[int], Optional[int]]:
     """
     Return the indices of the first rows containing finite values starting from the start and the end of the first
     dimension of the ndarray.
@@ -5186,7 +5506,9 @@ def _finite_rows_boundaries(values: np.ndarray, how: str = "all") -> Tuple[Optio
     """
     dims = values.shape
 
-    raise_if(len(dims) > 3, f"Expected 1D to 3D array, received {len(dims)}D array", logger)
+    raise_if(
+        len(dims) > 3, f"Expected 1D to 3D array, received {len(dims)}D array", logger
+    )
 
     finite_rows = ~np.isnan(values)
 
@@ -5200,7 +5522,10 @@ def _finite_rows_boundaries(values: np.ndarray, how: str = "all") -> Tuple[Optio
             finite_rows = finite_rows.any(axis=1)
         else:
             raise_log(
-                ValueError(f"`how` parameter value not recognized, should be either 'all' or 'any', " f"received {how}")
+                ValueError(
+                    f"`how` parameter value not recognized, should be either 'all' or 'any', "
+                    f"received {how}"
+                )
             )
 
     first_finite_row = finite_rows.argmax()

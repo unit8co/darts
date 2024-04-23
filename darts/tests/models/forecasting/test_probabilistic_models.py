@@ -60,7 +60,9 @@ try:
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning("Torch not available. Tests related to torch-based models will be skipped.")
+    logger.warning(
+        "Torch not available. Tests related to torch-based models will be skipped."
+    )
     TORCH_AVAILABLE = False
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
@@ -254,7 +256,9 @@ class TestProbabilisticModels:
         """Test on univariate series"""
         model_cls, model_kwargs, err, _ = config
         model = model_cls(**model_kwargs)
-        self.helper_test_probabilistic_forecast_accuracy(model, err, self.constant_ts, self.constant_noisy_ts)
+        self.helper_test_probabilistic_forecast_accuracy(
+            model, err, self.constant_ts, self.constant_noisy_ts
+        )
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_probabilistic_forecast_accuracy_multivariate(self, config):
@@ -323,26 +327,35 @@ class TestProbabilisticModels:
 
         if likelihood == "quantile":
             lkl["kwargs"]["quantiles"] = [0.05, 0.50, 0.95]
-            lkl["ts"] = TimeSeries.from_values(np.random.normal(loc=0, scale=1, size=(n_times, n_comp, n_samples)))
+            lkl["ts"] = TimeSeries.from_values(
+                np.random.normal(loc=0, scale=1, size=(n_times, n_comp, n_samples))
+            )
             lkl["expected"] = np.array([-1.67, 0, 1.67])
         elif likelihood == "poisson":
-            lkl["ts"] = TimeSeries.from_values(np.random.poisson(lam=4, size=(n_times, n_comp, n_samples)))
+            lkl["ts"] = TimeSeries.from_values(
+                np.random.poisson(lam=4, size=(n_times, n_comp, n_samples))
+            )
             lkl["expected"] = np.array([4])
         elif likelihood == "gaussian":
             if not supports_gaussian:
                 return
 
-            lkl["ts"] = TimeSeries.from_values(np.random.normal(loc=10, scale=3, size=(n_times, n_comp, n_samples)))
+            lkl["ts"] = TimeSeries.from_values(
+                np.random.normal(loc=10, scale=3, size=(n_times, n_comp, n_samples))
+            )
             lkl["expected"] = np.array([10, 3])
         else:
             assert False, f"unknown likelihood {likelihood}"
 
         model = model_cls(lags=3, random_state=seed, **lkl["kwargs"])
         model.fit(lkl["ts"])
-        pred_lkl_params = model.predict(n=1, num_samples=1, predict_likelihood_parameters=True)
+        pred_lkl_params = model.predict(
+            n=1, num_samples=1, predict_likelihood_parameters=True
+        )
         if n_comp == 1:
             assert lkl["expected"].shape == pred_lkl_params.values()[0].shape, (
-                "The shape of the predicted likelihood parameters do not match expectation " "for univariate series."
+                "The shape of the predicted likelihood parameters do not match expectation "
+                "for univariate series."
             )
         else:
             assert (
@@ -350,7 +363,8 @@ class TestProbabilisticModels:
                 len(lkl["expected"]) * n_comp,
                 1,
             ) == pred_lkl_params.all_values().shape, (
-                "The shape of the predicted likelihood parameters do not match expectation " "for multivariate series."
+                "The shape of the predicted likelihood parameters do not match expectation "
+                "for multivariate series."
             )
 
     """ More likelihood tests
@@ -364,8 +378,12 @@ class TestProbabilisticModels:
         vals = real_series.all_values()
 
         real_pos_series = TimeSeries.from_values(np.where(vals > 0, vals, -vals))
-        discrete_pos_series = TimeSeries.from_values(np.random.randint(low=0, high=11, size=(100, 2)))
-        binary_series = TimeSeries.from_values(np.random.randint(low=0, high=2, size=(100, 2)))
+        discrete_pos_series = TimeSeries.from_values(
+            np.random.randint(low=0, high=11, size=(100, 2))
+        )
+        binary_series = TimeSeries.from_values(
+            np.random.randint(low=0, high=2, size=(100, 2))
+        )
         bounded_series = TimeSeries.from_values(np.random.beta(2, 5, size=(100, 2)))
         simplex_series = bounded_series["0"].stack(1.0 - bounded_series["0"])
 
@@ -392,7 +410,9 @@ class TestProbabilisticModels:
         @pytest.mark.parametrize("lkl_config", lkl_series)
         def test_likelihoods_and_resulting_mean_forecasts(self, lkl_config):
             def _get_avgs(series):
-                return np.mean(series.all_values()[:, 0, :]), np.mean(series.all_values()[:, 1, :])
+                return np.mean(series.all_values()[:, 0, :]), np.mean(
+                    series.all_values()[:, 1, :]
+                )
 
             lkl, series, diff1, diff2 = lkl_config
             seed = 142857
@@ -443,7 +463,9 @@ class TestProbabilisticModels:
             ]
             + ([(CauchyLikelihood(), [0, 1])] if not runs_on_m1 else []),
         )
-        def test_predict_likelihood_parameters_univariate_torch_models(self, lkl_config):
+        def test_predict_likelihood_parameters_univariate_torch_models(
+            self, lkl_config
+        ):
             """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
             of the predictions contain the proper elements for univariate input.
             """
@@ -463,9 +485,15 @@ class TestProbabilisticModels:
             n_samples = 1
             # QuantileRegression is not distribution
             if isinstance(lkl, QuantileRegression):
-                values = np.random.normal(loc=0, scale=1, size=(n_times, n_comp, n_samples))
+                values = np.random.normal(
+                    loc=0, scale=1, size=(n_times, n_comp, n_samples)
+                )
             else:
-                values = lkl._distr_from_params(lkl_params).sample((n_times, n_comp, n_samples))
+                values = lkl._distr_from_params(lkl_params).sample((
+                    n_times,
+                    n_comp,
+                    n_samples,
+                ))
 
                 # Dirichlet must be handled sligthly differently since its multivariate
                 if isinstance(lkl, DirichletLikelihood):
@@ -473,7 +501,9 @@ class TestProbabilisticModels:
                     values = torch.squeeze(values, 3)
                     lkl_params = lkl_params[0]
 
-            ts = TimeSeries.from_values(values, columns=[f"dummy_{i}" for i in range(values.shape[1])])
+            ts = TimeSeries.from_values(
+                values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+            )
 
             # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
             models = [
@@ -486,7 +516,9 @@ class TestProbabilisticModels:
             for model in models:
                 # univariate
                 model.fit(ts)
-                pred_lkl_params = model.predict(n=1, num_samples=1, predict_likelihood_parameters=True)
+                pred_lkl_params = model.predict(
+                    n=1, num_samples=1, predict_likelihood_parameters=True
+                )
 
                 # check the dimensions, values require too much training
                 assert pred_lkl_params.values().shape[1] == len(true_lkl_params)
@@ -514,7 +546,9 @@ class TestProbabilisticModels:
                 ),
             ],
         )
-        def test_predict_likelihood_parameters_multivariate_torch_models(self, lkl_config):
+        def test_predict_likelihood_parameters_multivariate_torch_models(
+            self, lkl_config
+        ):
             """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
             of the predictions contain the proper elements for multivariate inputs.
             """
@@ -534,10 +568,18 @@ class TestProbabilisticModels:
             n_comp = 2
             n_samples = 1
             if isinstance(lkl, QuantileRegression):
-                values = np.random.normal(loc=0, scale=1, size=(n_times, n_comp, n_samples))
+                values = np.random.normal(
+                    loc=0, scale=1, size=(n_times, n_comp, n_samples)
+                )
             else:
-                values = lkl._distr_from_params(lkl_params).sample((n_times, n_comp, n_samples))
-            ts = TimeSeries.from_values(values, columns=[f"dummy_{i}" for i in range(values.shape[1])])
+                values = lkl._distr_from_params(lkl_params).sample((
+                    n_times,
+                    n_comp,
+                    n_samples,
+                ))
+            ts = TimeSeries.from_values(
+                values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+            )
 
             # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
             models = [
@@ -548,7 +590,9 @@ class TestProbabilisticModels:
 
             for model in models:
                 model.fit(ts)
-                pred_lkl_params = model.predict(n=1, num_samples=1, predict_likelihood_parameters=True)
+                pred_lkl_params = model.predict(
+                    n=1, num_samples=1, predict_likelihood_parameters=True
+                )
                 # check the dimensions
                 assert pred_lkl_params.values().shape[1] == n_comp * len(lkl_params)
                 # check the component names
@@ -591,9 +635,13 @@ class TestProbabilisticModels:
 
             # build a stochastic series
             target_vals = self.constant_ts.values()
-            stochastic_vals = np.random.normal(loc=target_vals, scale=1.0, size=(len(self.constant_ts), 100))
+            stochastic_vals = np.random.normal(
+                loc=target_vals, scale=1.0, size=(len(self.constant_ts), 100)
+            )
             stochastic_vals = np.expand_dims(stochastic_vals, axis=1)
-            stochastic_series = TimeSeries.from_times_and_values(self.constant_ts.time_index, stochastic_vals)
+            stochastic_series = TimeSeries.from_times_and_values(
+                self.constant_ts.time_index, stochastic_vals
+            )
 
             # A deterministic model forecasting a stochastic series
             # should return stochastic samples

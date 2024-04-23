@@ -55,7 +55,11 @@ class TestProphet:
 
         # invalid keywords
         with pytest.raises(ValueError):
-            Prophet(add_seasonalities=dict(kwargs_mandatory, **{"some_random_keyword": "custom"}))
+            Prophet(
+                add_seasonalities=dict(
+                    kwargs_mandatory, **{"some_random_keyword": "custom"}
+                )
+            )
 
         # invalid value dtypes
         with pytest.raises(ValueError):
@@ -85,15 +89,21 @@ class TestProphet:
             "24T": 60,
         }
 
-        test_cases_fast = {key: test_cases_all[key] for key in ["MS", "D", "H"]}  # monthly, daily, hourly
+        test_cases_fast = {
+            key: test_cases_all[key] for key in ["MS", "D", "H"]
+        }  # monthly, daily, hourly
 
         self.helper_test_freq_coversion(test_cases_all)
         test_cases = test_cases_all if perform_full_test else test_cases_fast
         for i, (freq, period) in enumerate(test_cases.items()):
             if not i:
-                self.helper_test_prophet_model(period=period, freq=freq, compare_all_models=True)
+                self.helper_test_prophet_model(
+                    period=period, freq=freq, compare_all_models=True
+                )
             else:
-                self.helper_test_prophet_model(period=period, freq=freq, compare_all_models=False)
+                self.helper_test_prophet_model(
+                    period=period, freq=freq, compare_all_models=False
+                )
 
     def test_prophet_model_without_stdout_suppression(self):
         model = Prophet(suppress_stdout_stderror=False)
@@ -106,7 +116,10 @@ class TestProphet:
         ts = TimeSeries.from_dataframe(df, time_col="ds", value_cols="y")
         model.fit(ts)
 
-        model._execute_and_suppress_output.assert_not_called(), "Suppression should not be called"
+        (
+            model._execute_and_suppress_output.assert_not_called(),
+            "Suppression should not be called",
+        )
         model.model.fit.assert_called_once(), "Model should still be fitted"
 
     def test_prophet_model_with_stdout_suppression(self):
@@ -120,7 +133,10 @@ class TestProphet:
         ts = TimeSeries.from_dataframe(df, time_col="ds", value_cols="y")
         model.fit(ts)
 
-        model._execute_and_suppress_output.assert_called_once(), "Suppression should be called once"
+        (
+            model._execute_and_suppress_output.assert_called_once(),
+            "Suppression should be called once",
+        )
 
     def test_prophet_model_default_with_prophet_constructor(self):
         from prophet import Prophet as FBProphet
@@ -132,7 +148,9 @@ class TestProphet:
         model = Prophet(growth="logistic", cap=1)
 
         # Create timeseries with logistic function
-        times = generate_index(pd.Timestamp("20200101"), pd.Timestamp("20210101"), freq="D")
+        times = generate_index(
+            pd.Timestamp("20200101"), pd.Timestamp("20210101"), freq="D"
+        )
         values = np.linspace(-10, 10, len(times))
         f = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
         values = f(values)
@@ -149,11 +167,18 @@ class TestProphet:
 
     def helper_test_freq_coversion(self, test_cases):
         for freq, period in test_cases.items():
-            ts_sine = tg.sine_timeseries(value_frequency=1 / period, length=3, freq=freq)
+            ts_sine = tg.sine_timeseries(
+                value_frequency=1 / period, length=3, freq=freq
+            )
             # this should not raise an error if frequency is known
             _ = Prophet._freq_to_days(freq=ts_sine.freq_str)
 
-        assert abs(Prophet._freq_to_days(freq="30S") - 30 * Prophet._freq_to_days(freq="S")) < 10e-9
+        assert (
+            abs(
+                Prophet._freq_to_days(freq="30S") - 30 * Prophet._freq_to_days(freq="S")
+            )
+            < 10e-9
+        )
 
         # check bad frequency string
         with pytest.raises(ValueError):
@@ -169,8 +194,12 @@ class TestProphet:
         With the added custom seasonality and covariate, the model should have a very accurate forecast.
         """
         repetitions = 8
-        ts_sine1 = tg.sine_timeseries(value_frequency=1 / period, length=period * repetitions, freq=freq)
-        ts_sine2 = tg.sine_timeseries(value_frequency=1 / (period * 2), length=period * repetitions, freq=freq)
+        ts_sine1 = tg.sine_timeseries(
+            value_frequency=1 / period, length=period * repetitions, freq=freq
+        )
+        ts_sine2 = tg.sine_timeseries(
+            value_frequency=1 / (period * 2), length=period * repetitions, freq=freq
+        )
         ts_sine = ts_sine1 * ts_sine2
         covariate = ts_sine2
 
@@ -188,7 +217,11 @@ class TestProphet:
             "seasonal_periods": int(2 * period),
             "fourier_order": 4,
         }
-        model = Prophet(add_seasonalities=custom_seasonality, seasonality_mode="additive", **supress_auto_seasonality)
+        model = Prophet(
+            add_seasonalities=custom_seasonality,
+            seasonality_mode="additive",
+            **supress_auto_seasonality,
+        )
 
         model.fit(train, future_covariates=train_cov)
 
@@ -197,9 +230,13 @@ class TestProphet:
         compare_preds = [pred_darts]
 
         if compare_all_models:
-            pred_darts_stochastic = model.predict(n=len(val), num_samples=200, future_covariates=val_cov)
+            pred_darts_stochastic = model.predict(
+                n=len(val), num_samples=200, future_covariates=val_cov
+            )
             pred_raw_df = model.predict_raw(n=len(val), future_covariates=val_cov)
-            pred_raw = TimeSeries.from_dataframe(pred_raw_df[["ds", "yhat"]], time_col="ds")
+            pred_raw = TimeSeries.from_dataframe(
+                pred_raw_df[["ds", "yhat"]], time_col="ds"
+            )
             compare_preds += [
                 pred_darts_stochastic.quantile_timeseries(0.5),
                 pred_raw,
@@ -221,9 +258,15 @@ class TestProphet:
         df["y"] = [i + 10 * (i % 7 == 0) for i in range(duration)]
         df["is_sunday"] = df["ds"].apply(lambda x: int(x.weekday() == 6))
 
-        ts = TimeSeries.from_dataframe(df[:-horizon], time_col="ds", value_cols="y", freq="D")
-        future_covariates = TimeSeries.from_dataframe(df, time_col="ds", value_cols=["is_sunday"], freq="D")
-        expected_result = TimeSeries.from_dataframe(df[-horizon:], time_col="ds", value_cols="y", freq="D")
+        ts = TimeSeries.from_dataframe(
+            df[:-horizon], time_col="ds", value_cols="y", freq="D"
+        )
+        future_covariates = TimeSeries.from_dataframe(
+            df, time_col="ds", value_cols=["is_sunday"], freq="D"
+        )
+        expected_result = TimeSeries.from_dataframe(
+            df[-horizon:], time_col="ds", value_cols="y", freq="D"
+        )
 
         model = Prophet(seasonality_mode="additive")
         model.add_seasonality(
@@ -237,7 +280,9 @@ class TestProphet:
 
         forecast = model.predict(horizon, future_covariates=future_covariates)
 
-        for val_i, pred_i in zip(expected_result.univariate_values(), forecast.univariate_values()):
+        for val_i, pred_i in zip(
+            expected_result.univariate_values(), forecast.univariate_values()
+        ):
             assert abs(val_i - pred_i) < 0.1
 
         invalid_future_covariates = future_covariates.with_values(

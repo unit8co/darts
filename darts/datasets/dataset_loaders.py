@@ -51,7 +51,9 @@ class DatasetLoader(ABC):
 
     _DEFAULT_DIRECTORY = Path(os.path.join(Path.home(), Path(".darts/datasets/")))
 
-    def __init__(self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None):
+    def __init__(
+        self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None
+    ):
         self._metadata: DatasetLoaderMetadata = metadata
         if root_path is None:
             self._root_path: Path = DatasetLoader._DEFAULT_DIRECTORY
@@ -95,13 +97,16 @@ class DatasetLoader(ABC):
         -------
         """
         if not self._is_already_downloaded():
-            raise DatasetLoadingException(f"Checking md5 checksum of a absent file: {self._get_path_dataset()}")
+            raise DatasetLoadingException(
+                f"Checking md5 checksum of a absent file: {self._get_path_dataset()}"
+            )
 
         with open(self._get_path_dataset(), "rb") as f:
             md5_hash = hashlib.md5(f.read()).hexdigest()
             if md5_hash != self._metadata.hash:
                 raise DatasetLoadingException(
-                    f"Expected hash for {self._get_path_dataset()}: {self._metadata.hash}" f", got: {md5_hash}"
+                    f"Expected hash for {self._get_path_dataset()}: {self._metadata.hash}"
+                    f", got: {md5_hash}"
                 )
 
     def _download_dataset(self):
@@ -117,14 +122,18 @@ class DatasetLoader(ABC):
         -------
         """
         if self._metadata.pre_process_zipped_csv_fn:
-            logger.warning("Loading a CSV file does not use the pre_process_zipped_csv_fn")
+            logger.warning(
+                "Loading a CSV file does not use the pre_process_zipped_csv_fn"
+            )
         os.makedirs(self._root_path, exist_ok=True)
         try:
             request = requests.get(self._metadata.uri)
             with open(self._get_path_dataset(), "wb") as f:
                 f.write(request.content)
         except Exception as e:
-            raise DatasetLoadingException("Could not download the dataset. Reason:" + e.__repr__()) from None
+            raise DatasetLoadingException(
+                "Could not download the dataset. Reason:" + e.__repr__()
+            ) from None
 
         if self._metadata.pre_process_csv_fn is not None:
             self._metadata.pre_process_csv_fn(self._get_path_dataset())
@@ -141,12 +150,18 @@ class DatasetLoader(ABC):
                 with tempfile.TemporaryDirectory() as td:
                     with zipfile.ZipFile(tf, "r") as zip_ref:
                         zip_ref.extractall(td)
-                        self._metadata.pre_process_zipped_csv_fn(td, self._get_path_dataset())
+                        self._metadata.pre_process_zipped_csv_fn(
+                            td, self._get_path_dataset()
+                        )
         except Exception as e:
-            raise DatasetLoadingException("Could not download the dataset. Reason:" + e.__repr__()) from None
+            raise DatasetLoadingException(
+                "Could not download the dataset. Reason:" + e.__repr__()
+            ) from None
 
     @abstractmethod
-    def _load_from_disk(self, path_to_file: Path, metadata: DatasetLoaderMetadata) -> TimeSeries:
+    def _load_from_disk(
+        self, path_to_file: Path, metadata: DatasetLoaderMetadata
+    ) -> TimeSeries:
         """
         Given a Path to the file and a DataLoaderMetadata object, return a TimeSeries
         One can assume that the file exists and its MD5 checksum has been verified before this function is called
@@ -181,7 +196,9 @@ class DatasetLoader(ABC):
 
 
 class DatasetLoaderCSV(DatasetLoader):
-    def __init__(self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None):
+    def __init__(
+        self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None
+    ):
         super().__init__(metadata, root_path)
 
     def _load_from_disk(
@@ -190,15 +207,22 @@ class DatasetLoaderCSV(DatasetLoader):
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)
-            series = TimeSeries.from_dataframe(df=df, time_col=metadata.header_time, freq=metadata.freq)
+            series = TimeSeries.from_dataframe(
+                df=df, time_col=metadata.header_time, freq=metadata.freq
+            )
         else:
             df.sort_index(inplace=True)
             series = TimeSeries.from_dataframe(df)
 
-        if self._metadata.multivariate is not None and self._metadata.multivariate is False:
+        if (
+            self._metadata.multivariate is not None
+            and self._metadata.multivariate is False
+        ):
             try:
                 series = self._to_multi_series(series.pd_dataframe())
             except Exception as e:
-                raise DatasetLoadingException("Could not convert to multi-series. Reason:" + e.__repr__()) from None
+                raise DatasetLoadingException(
+                    "Could not convert to multi-series. Reason:" + e.__repr__()
+                ) from None
 
         return series

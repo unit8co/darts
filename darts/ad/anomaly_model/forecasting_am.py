@@ -142,8 +142,12 @@ class ForecastingAnomalyModel(AnomalyModel):
             "all input `series` must be of type Timeseries.",
         )
 
-        list_past_covariates = self._prepare_covariates(past_covariates, list_series, "past")
-        list_future_covariates = self._prepare_covariates(future_covariates, list_series, "future")
+        list_past_covariates = self._prepare_covariates(
+            past_covariates, list_series, "past"
+        )
+        list_future_covariates = self._prepare_covariates(
+            future_covariates, list_series, "future"
+        )
 
         model_fit_kwargs["past_covariates"] = list_past_covariates
         model_fit_kwargs["future_covariates"] = list_future_covariates
@@ -155,7 +159,9 @@ class ForecastingAnomalyModel(AnomalyModel):
         if allow_model_training:
             # the model has not been trained yet
 
-            fit_signature_series = inspect.signature(self.model.fit).parameters["series"].annotation
+            fit_signature_series = (
+                inspect.signature(self.model.fit).parameters["series"].annotation
+            )
 
             # checks if model can be trained on multiple time series or only on a time series
             # TODO: check if model can accept multivariate timeseries, raise error if given and model cannot
@@ -236,7 +242,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             list_covariates = _to_list(covariates)
 
             for covariates in list_covariates:
-                _assert_timeseries(covariates, name_covariates + "_covariates input series")
+                _assert_timeseries(
+                    covariates, name_covariates + "_covariates input series"
+                )
 
             raise_if_not(
                 len(list_covariates) == len(series),
@@ -416,8 +424,12 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         list_series = _to_list(series)
 
-        list_past_covariates = self._prepare_covariates(past_covariates, list_series, "past")
-        list_future_covariates = self._prepare_covariates(future_covariates, list_series, "future")
+        list_past_covariates = self._prepare_covariates(
+            past_covariates, list_series, "past"
+        )
+        list_future_covariates = self._prepare_covariates(
+            future_covariates, list_series, "future"
+        )
 
         # check if the window size of the scorers are lower than the max size allowed
         self._check_window_size(list_series, start)
@@ -441,7 +453,11 @@ class ForecastingAnomalyModel(AnomalyModel):
                 )
             )
 
-        scores = list(zip(*[sc.score_from_prediction(list_series, list_pred) for sc in self.scorers]))
+        scores = list(
+            zip(*[
+                sc.score_from_prediction(list_series, list_pred) for sc in self.scorers
+            ])
+        )
 
         if len(scores) == 1 and not isinstance(series, Sequence):
             # there's only one series
@@ -458,7 +474,9 @@ class ForecastingAnomalyModel(AnomalyModel):
         else:
             return scores
 
-    def _check_window_size(self, series: Sequence[TimeSeries], start: Union[pd.Timestamp, float, int]):
+    def _check_window_size(
+        self, series: Sequence[TimeSeries], start: Union[pd.Timestamp, float, int]
+    ):
         """Checks if the parameters `window` of the scorers are smaller than the maximum window size allowed.
         The maximum size allowed is equal to the output length of the .historical_forecast() applied on `series`.
         It is defined by the parameter `start` and the series’ length.
@@ -475,7 +493,9 @@ class ForecastingAnomalyModel(AnomalyModel):
         max_window = max(scorer.window for scorer in self.scorers)
 
         for s in series:
-            max_possible_window = len(s.drop_before(s.get_timestamp_at_point(start))) + 1
+            max_possible_window = (
+                len(s.drop_before(s.get_timestamp_at_point(start))) + 1
+            )
             raise_if_not(
                 max_window <= max_possible_window,
                 f"Window size {max_window} is greater than the targeted series length {max_possible_window},"

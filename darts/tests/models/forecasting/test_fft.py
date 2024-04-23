@@ -12,15 +12,20 @@ class TestFFT:
 
         for period, relevant_attributes in period_attributes_tuples:
             # test seasonal period with no noise
-            seasonal_ts = tg.sine_timeseries(freq=freq, value_frequency=1 / period, length=length)
+            seasonal_ts = tg.sine_timeseries(
+                freq=freq, value_frequency=1 / period, length=length
+            )
             assert (
                 _find_relevant_timestamp_attributes(seasonal_ts) == relevant_attributes
             ), "failed to recognize season in non-noisy timeseries"
 
             # test seasonal period with no noise
-            seasonal_noisy_ts = seasonal_ts + tg.gaussian_timeseries(freq=freq, length=length)
+            seasonal_noisy_ts = seasonal_ts + tg.gaussian_timeseries(
+                freq=freq, length=length
+            )
             assert (
-                _find_relevant_timestamp_attributes(seasonal_noisy_ts) == relevant_attributes
+                _find_relevant_timestamp_attributes(seasonal_noisy_ts)
+                == relevant_attributes
             ), "failed to recognize season in noisy timeseries"
 
     def test_find_relevant_timestamp_attributes(self):
@@ -30,7 +35,9 @@ class TestFFT:
         self.helper_relevant_attributes("M", 150, [(12, {"month"})])
 
         # daily frequency
-        self.helper_relevant_attributes("D", 1000, [(365, {"month", "day"}), (30, {"day"}), (7, {"weekday"})])
+        self.helper_relevant_attributes(
+            "D", 1000, [(365, {"month", "day"}), (30, {"day"}), (7, {"weekday"})]
+        )
 
         # hourly frequency
         self.helper_relevant_attributes(

@@ -76,4 +76,6 @@ class NormScorer(NonFittableAnomalyScorer):
         else:
             diff_np = diff.all_values(copy=False)
 
-            return TimeSeries.from_times_and_values(diff.time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1))
+            return TimeSeries.from_times_and_values(
+                diff.time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1)
+            )

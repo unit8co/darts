@@ -29,7 +29,9 @@ def missing_values_ratio(series: TimeSeries) -> float:
     return series.pd_dataframe().isnull().sum().mean() / len(series)
 
 
-def fill_missing_values(series: TimeSeries, fill: Union[str, float] = "auto", **interpolate_kwargs) -> TimeSeries:
+def fill_missing_values(
+    series: TimeSeries, fill: Union[str, float] = "auto", **interpolate_kwargs
+) -> TimeSeries:
     """
     Fills missing values in the provided time series
 
@@ -67,7 +69,9 @@ def fill_missing_values(series: TimeSeries, fill: Union[str, float] = "auto", **
     return _const_fill(series, fill)
 
 
-def extract_subseries(series: TimeSeries, min_gap_size: Optional[int] = 1, mode: str = "all") -> List[TimeSeries]:
+def extract_subseries(
+    series: TimeSeries, min_gap_size: Optional[int] = 1, mode: str = "all"
+) -> List[TimeSeries]:
     """
     Partitions the series into a sequence of sub-series by using significant gaps of missing values
 

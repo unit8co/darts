@@ -49,4 +49,6 @@ class MovingAverageFilter(FilteringModel):
             "min_periods": 1,
         }
 
-        return series.window_transform(transforms=transformation, forecasting_safe=False)
+        return series.window_transform(
+            transforms=transformation, forecasting_safe=False
+        )

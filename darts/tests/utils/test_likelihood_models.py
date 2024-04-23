@@ -61,4 +61,7 @@ class TestLikelihoodModel:
     def test_inter_class_equality(self):
         model_combinations = combinations(likelihood_models.keys(), 2)
         for first_model_name, second_model_name in model_combinations:
-            assert likelihood_models[first_model_name][0] != likelihood_models[second_model_name][0]
+            assert (
+                likelihood_models[first_model_name][0]
+                != likelihood_models[second_model_name][0]
+            )

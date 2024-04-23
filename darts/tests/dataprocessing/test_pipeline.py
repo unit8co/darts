@@ -47,7 +47,9 @@ class TestPipeline:
             return series.append_values(constant_timeseries(value=2, length=3).values())
 
         @staticmethod
-        def ts_inverse_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+        def ts_inverse_transform(
+            series: TimeSeries, params: Mapping[str, Any]
+        ) -> TimeSeries:
             return series
 
         def fit(self, data):
@@ -76,7 +78,9 @@ class TestPipeline:
             return series.map(lambda x: x + 10)
 
         @staticmethod
-        def ts_inverse_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+        def ts_inverse_transform(
+            series: TimeSeries, params: Mapping[str, Any]
+        ) -> TimeSeries:
             return series.map(lambda x: x - 10)
 
     class TimesTwoTransformer(InvertibleDataTransformer):
@@ -88,7 +92,9 @@ class TestPipeline:
             return data.map(lambda x: x * 2)
 
         @staticmethod
-        def ts_inverse_transform(data: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+        def ts_inverse_transform(
+            data: TimeSeries, params: Mapping[str, Any]
+        ) -> TimeSeries:
             return data.map(lambda x: x / 2)
 
     def test_transform(self):
@@ -203,7 +209,9 @@ class TestPipeline:
     def test_getitem(self):
         # given
 
-        transformers = [self.PlusTenTransformer(name=f"+10 transformer{i}") for i in range(0, 10)]
+        transformers = [
+            self.PlusTenTransformer(name=f"+10 transformer{i}") for i in range(0, 10)
+        ]
         p = Pipeline(transformers)
 
         # when & then
@@ -222,7 +230,10 @@ class TestPipeline:
         with pytest.raises(ValueError) as err:
             Pipeline(input_list)
 
-        assert str(err.value) == "transformers should be objects deriving from BaseDataTransformer"
+        assert (
+            str(err.value)
+            == "transformers should be objects deriving from BaseDataTransformer"
+        )
 
     def test_raises_on_bad_key(self):
         # given
@@ -287,7 +298,9 @@ class TestPipeline:
             return x + 10
 
         mapper = Mapper(fn=plus_ten, verbose=True)
-        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True)
+        mapper_inv = InvertibleMapper(
+            fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True
+        )
 
         verbose_value = False
         pipeline = Pipeline([mapper, mapper_inv], verbose=verbose_value)
@@ -305,7 +318,9 @@ class TestPipeline:
             return x + 10
 
         mapper = Mapper(fn=plus_ten, n_jobs=1)
-        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2)
+        mapper_inv = InvertibleMapper(
+            fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2
+        )
 
         n_jobs_value = -1
         pipeline = Pipeline([mapper, mapper_inv], n_jobs=n_jobs_value)

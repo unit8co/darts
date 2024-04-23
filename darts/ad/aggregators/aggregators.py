@@ -35,7 +35,9 @@ class Aggregator(ABC):
         pass
 
     @abstractmethod
-    def predict(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def predict(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Aggregates the (sequence of) multivariate binary series given as
         input into a (sequence of) univariate binary series.
 
@@ -78,7 +80,10 @@ class Aggregator(ABC):
         )
 
         raise_if_not(
-            all([np.array_equal(s.values(copy=False), s.values(copy=False).astype(bool)) for s in list_series]),
+            all([
+                np.array_equal(s.values(copy=False), s.values(copy=False).astype(bool))
+                for s in list_series
+            ]),
             "all series in `series` must be binary (only 0 and 1 values).",
         )
 
@@ -140,7 +145,9 @@ class Aggregator(ABC):
 
         preds = self.predict(series)
 
-        return eval_accuracy_from_binary_prediction(list_actual_anomalies, preds, window, metric)
+        return eval_accuracy_from_binary_prediction(
+            list_actual_anomalies, preds, window, metric
+        )
 
 
 class NonFittableAggregator(Aggregator):
@@ -152,7 +159,9 @@ class NonFittableAggregator(Aggregator):
         # indicates if the Aggregator is trainable or not
         self.trainable = False
 
-    def predict(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def predict(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Aggregates the (sequence of) multivariate binary series given as
         input into a (sequence of) univariate binary series.
 
@@ -253,7 +262,9 @@ class FittableAggregator(Aggregator):
         self._fit_called = True
         return ret
 
-    def predict(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def predict(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Aggregates the (sequence of) multivariate binary series given as
         input into a (sequence of) univariate binary series.
 

@@ -90,7 +90,9 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -164,7 +166,9 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 

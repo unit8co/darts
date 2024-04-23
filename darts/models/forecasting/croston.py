@@ -130,7 +130,11 @@ class Croston(FutureCovariatesLocalForecastingModel):
 
         self.model.fit(
             y=series.values(copy=False).flatten(),
-            X=(future_covariates.values(copy=False).flatten() if future_covariates is not None else None),
+            X=(
+                future_covariates.values(copy=False).flatten()
+                if future_covariates is not None
+                else None
+            ),
         )
 
         return self
@@ -145,7 +149,11 @@ class Croston(FutureCovariatesLocalForecastingModel):
         super()._predict(n, future_covariates, num_samples)
         values = self.model.predict(
             h=n,
-            X=(future_covariates.values(copy=False).flatten() if future_covariates is not None else None),
+            X=(
+                future_covariates.values(copy=False).flatten()
+                if future_covariates is not None
+                else None
+            ),
         )["mean"]
         return self._build_forecast_series(values)
 
