@@ -139,7 +139,7 @@ class AnomalyModel(ABC):
         series
             The (sequence of) series to predict anomalies on.
         metric
-            The name of the scoring function to use. Must be one of "AUC_ROC" (Area Under the
+            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         **kwargs
@@ -270,11 +270,13 @@ class AnomalyModel(ABC):
         title
             Title of the figure.
         metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR". Default: "AUC_ROC".
+            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
+            Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
+            Default: "AUC_ROC"
         score_kwargs
             parameters for the ``score()`` method.
         """
-        _ = _check_input(series, name="series", num_series_expected=1)
+        series = _check_input(series, name="series", num_series_expected=1)[0]
         anomaly_scores, model_output = self.score(
             series, return_model_prediction=True, **predict_kwargs, **score_kwargs
         )

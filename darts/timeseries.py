@@ -2489,7 +2489,7 @@ class TimeSeries:
             time_index = self.time_index.intersection(other.time_index)
             return self[time_index]
 
-    def slice_intersect_values(self, other: Self, copy: bool = False) -> Self:
+    def slice_intersect_values(self, other: Self, copy: bool = False) -> np.ndarray:
         """
         Return the sliced values of this series, where the time index has been intersected with the one
         of the `other` series.
@@ -2517,6 +2517,34 @@ class TimeSeries:
             return vals[start:end]
         else:
             return vals[self.time_index.isin(other.time_index)]
+
+    def slice_intersect_time_index(
+        self, other: Self
+    ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+        """
+        Return time index of this series, where the time index has been intersected with the one
+        of the `other` series.
+
+        This method is in general *not* symmetric.
+
+        Parameters
+        ----------
+        other
+            The other time series
+
+        Returns
+        -------
+        Union[pd.DatetimeIndex, pd.RangeIndex]
+            The time index of this series, over the time-span common to both time series.
+        """
+        time_index = self.time_index
+        if other.has_same_time_as(self):
+            return time_index
+        if other.freq == self.freq:
+            start, end = self._slice_intersect_bounds(other)
+            return time_index[start:end]
+        else:
+            return time_index.isin(other.time_index)
 
     def _slice_intersect_bounds(self, other: Self) -> Tuple[int, int]:
         shift_start = n_steps_between(

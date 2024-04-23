@@ -160,7 +160,7 @@ class FilteringAnomalyModel(AnomalyModel):
         series
             The (sequence of) series to predict anomalies on.
         metric
-            The name of the scoring function to use. Must be one of "AUC_ROC" (Area Under the
+            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         **filter_kwargs
@@ -222,7 +222,9 @@ class FilteringAnomalyModel(AnomalyModel):
         title
             Title of the figure.
         metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR". Default: "AUC_ROC".
+            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
+            Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
+            Default: "AUC_ROC"
         score_kwargs
             parameters for the ``score()`` method.
         """

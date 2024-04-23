@@ -59,7 +59,7 @@ def eval_metric_from_scores(
         If a list of integers, the length must match the number of series in `anomaly_score`.
         If an integer, the value will be used for every series in `anomaly_score` and `actual_anomalies`.
     metric
-        The name of the scoring function to use. Must be one of "AUC_ROC" (Area Under the
+        The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
         Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
         Default: "AUC_ROC"
 
@@ -114,7 +114,7 @@ def eval_metric_from_binary_prediction(
         If a list of integers, the length must match the number of series in `anomaly_score`.
         If an integer, the value will be used for every series in `anomaly_score` and `actual_series`.
     metric
-        The name of the scoring function to use. Must be one of "recall", "precision", "f1", and "accuracy".
+        The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
          Default: "recall"
 
     Returns
@@ -244,9 +244,9 @@ def _eval_metric(
         # if s_window > 1, the anomalies will be adjusted so that it can be compared timewise with s_pred
         s_anomalies = _max_pooling(s_anomalies, s_window)
 
-        _sanity_check_two_series(s_pred, s_anomalies)
+        _sanity_check_two_series(s_pred, s_anomalies, pred_name, actual_name)
 
-        s_pred, s_anomalies = _intersect(s_pred, s_anomalies)
+        s_pred, s_anomalies = _intersect(s_pred, s_anomalies, pred_name, actual_name)
 
         if not pred_is_binary:  # `pred_series` is an anomaly score
             nr_anomalies_per_component = (
@@ -518,6 +518,8 @@ def show_anomalies_from_scores(
 def _intersect(
     series_1: TimeSeries,
     series_2: TimeSeries,
+    name_series_1: str,
+    name_series_2: str,
 ) -> Tuple[TimeSeries, TimeSeries]:
     """Returns the sub-series of series_1 and of series_2 that share the same time index.
     (Intersection in time of the two time series)
@@ -536,7 +538,10 @@ def _intersect(
     new_series_1 = series_1.slice_intersect(series_2)
     if len(new_series_1) == 0:
         raise_log(
-            ValueError("Time intersection between the two series must be non empty."),
+            ValueError(
+                f"Time intersection between the series in `{name_series_1}` "
+                f"and `{name_series_2}` must be non empty."
+            ),
             logger=logger,
         )
     return new_series_1, series_2.slice_intersect(series_1)
@@ -575,6 +580,8 @@ def _assert_timeseries(series: TimeSeries, name: str = "series"):
 def _sanity_check_two_series(
     series_1: TimeSeries,
     series_2: TimeSeries,
+    name_series_1: str,
+    name_series_2: str,
 ):
     """Performs sanity check on the two given inputs
 
@@ -591,23 +598,16 @@ def _sanity_check_two_series(
         2nd time series
     """
 
-    _assert_timeseries(series_1)
-    _assert_timeseries(series_2)
+    _assert_timeseries(series_1, name=name_series_1)
+    _assert_timeseries(series_2, name=name_series_2)
 
     # check if the two inputs time series have the same number of components
     if series_1.width != series_2.width:
         raise_log(
             ValueError(
-                f"Series must have the same number of components, "
-                f"found {series_1.width} and {series_2.width}."
+                f"The series from `{name_series_1}` and `{name_series_2}` must have the "
+                f"same number of components, found {series_1.width} and {series_2.width}."
             ),
-            logger=logger,
-        )
-
-    # check if the time intersection between the two inputs time series is not empty
-    if len(series_1.time_index.intersection(series_2.time_index)) == 0:
-        raise_log(
-            ValueError("Series must have a non-empty intersection timestamps."),
             logger=logger,
         )
 
@@ -790,6 +790,8 @@ def _check_input(
                 ),
                 logger=logger,
             )
+        if extra_checks is not None:
+            extra_checks(s)
     return series
 
 

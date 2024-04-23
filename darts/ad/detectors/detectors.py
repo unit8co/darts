@@ -90,7 +90,7 @@ class Detector(ABC):
         window
             Integer value indicating the number of past samples each point represents in the `anomaly_score`.
         metric
-            The name of the scoring function to use. Must be one of "recall", "precision", "f1", and "accuracy".
+            The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
              Default: "recall"
 
         Returns

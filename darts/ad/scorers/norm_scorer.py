@@ -9,7 +9,10 @@ References
 .. [1] https://en.wikipedia.org/wiki/Norm_(mathematics)
 """
 
+from typing import Union
+
 import numpy as np
+import pandas as pd
 
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import raise_if_not
@@ -62,21 +65,15 @@ class NormScorer(AnomalyScorer):
 
     def _score_core_from_prediction(
         self,
-        actual_series: TimeSeries,
-        pred_series: TimeSeries,
+        actual_series: np.ndarray,
+        pred_series: np.ndarray,
+        time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
     ) -> TimeSeries:
-
-        actual_series = self._extract_deterministic(actual_series, "actual_series")
-        pred_series = self._extract_deterministic(pred_series, "pred_series")
-
+        actual_series = self._extract_deterministic2(actual_series, "actual_series")
+        pred_series = self._extract_deterministic2(pred_series, "pred_series")
         diff = actual_series - pred_series
-
         if self.component_wise:
-            return diff.map(lambda x: np.abs(x))
-
+            diff = np.abs(diff)
         else:
-            diff_np = diff.all_values(copy=False)
-
-            return TimeSeries.from_times_and_values(
-                diff.time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1)
-            )
+            diff = np.linalg.norm(diff, ord=self.ord, axis=1)
+        return TimeSeries.from_times_and_values(values=diff, times=time_index)
