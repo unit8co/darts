@@ -36,6 +36,7 @@ ignore = [
     "E203",
     "F401",  # todo: add imports to `__all__`
     "E402",  # todo: use noqa per line
+    "E731",  # Do not assign a `lambda` expression, use a `def`
 ]
 ignore-init-module-imports = true
 unfixable = ["F401"]
@@ -50,3 +51,6 @@ convention = "google"
 [tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120 # E501 reports lines that exceed the length of 100.
