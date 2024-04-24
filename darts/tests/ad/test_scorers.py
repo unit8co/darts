@@ -7,7 +7,7 @@ import sklearn
 from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
-from darts import TimeSeries
+from darts import TimeSeries, metrics
 from darts.ad.scorers import (
     CauchyNLLScorer,
     ExponentialNLLScorer,
@@ -100,7 +100,6 @@ delta = 1e-05
 
 
 class TestAnomalyDetectionScorer:
-
     np.random.seed(42)
 
     # univariate series
@@ -622,7 +621,6 @@ class TestAnomalyDetectionScorer:
             fittable_scorerB2.score_from_prediction(self.test, self.modified_test)
 
     def test_Norm(self):
-
         # Check parameters
         self.check_type_component_wise(Norm)
         self.expects_deterministic_input(Norm)
@@ -702,7 +700,6 @@ class TestAnomalyDetectionScorer:
         assert not scorer.is_probabilistic
 
     def test_Difference(self):
-
         self.expects_deterministic_input(Difference)
 
         scorer = Difference()
@@ -748,7 +745,6 @@ class TestAnomalyDetectionScorer:
 
     @staticmethod
     def helper_check_type_window(scorer, **kwargs):
-
         # window must be int
         with pytest.raises(ValueError):
             scorer(window=True, **kwargs)
@@ -762,7 +758,6 @@ class TestAnomalyDetectionScorer:
             scorer(window=0, **kwargs)
 
     def helper_window_parameter(self, scorer_to_test, **kwargs):
-
         self.helper_check_type_window(scorer_to_test, **kwargs)
 
         if scorer_to_test(**kwargs).trainable:
@@ -787,17 +782,19 @@ class TestAnomalyDetectionScorer:
                 )  # len(self.test)=100
 
     def diff_fn_parameter(self, scorer, **kwargs):
-
-        # must be None, 'diff' or 'abs_diff'
+        # must be one of Darts per time step metrics (e.g. ae, err, ...)None, 'diff' or 'abs_diff'
         with pytest.raises(ValueError):
-            scorer(diff_fn="random", **kwargs)
-        with pytest.raises(ValueError):
-            scorer(diff_fn=1, **kwargs)
-
-        self.check_diff_series(scorer, **kwargs)
+            scorer(diff_fn="abs_diff", **kwargs)
+        # absolute error / absolute difference
+        s_tmp = scorer(diff_fn=metrics.ae, **kwargs)
+        diffs = s_tmp._diff_series([self.train], [self.test])
+        assert diffs == [abs(self.train - self.test)]
+        # error / difference
+        s_tmp = scorer(diff_fn=metrics.err, **kwargs)
+        diffs = s_tmp._diff_series([self.train], [self.test])
+        assert diffs == [self.train - self.test]
 
     def check_type_component_wise(self, scorer, **kwargs):
-
         # component_wise must be bool
         with pytest.raises(ValueError):
             scorer(component_wise=1, **kwargs)
@@ -805,7 +802,6 @@ class TestAnomalyDetectionScorer:
             scorer(component_wise="string", **kwargs)
 
     def component_wise_parameter(self, scorer_to_test, **kwargs):
-
         self.check_type_component_wise(scorer_to_test, **kwargs)
 
         # if component_wise=False must always return a univariate anomaly score
@@ -823,7 +819,6 @@ class TestAnomalyDetectionScorer:
         assert scorer.score(self.mts_test).width == self.mts_test.width
 
     def check_diff_series(self, scorer, **kwargs):
-
         # test _diff_series() directly: parameter must by "abs_diff" or "diff"
         with pytest.raises(ValueError):
             s_tmp = scorer(**kwargs)
@@ -831,7 +826,6 @@ class TestAnomalyDetectionScorer:
             s_tmp._diff_series(self.train, self.test)
 
     def expects_deterministic_input(self, scorer, **kwargs):
-
         scorer = scorer(**kwargs)
         if scorer.trainable:
             scorer.fit(self.train)
@@ -846,7 +840,6 @@ class TestAnomalyDetectionScorer:
         )
 
     def test_WassersteinScorer(self):
-
         # Check parameters and inputs
         self.component_wise_parameter(WassersteinScorer)
         self.helper_window_parameter(WassersteinScorer)
@@ -883,7 +876,6 @@ class TestAnomalyDetectionScorer:
         assert not scorer.is_probabilistic
 
     def test_univariate_Wasserstein(self):
-
         # univariate example
         np.random.seed(42)
 
@@ -939,7 +931,6 @@ class TestAnomalyDetectionScorer:
         assert np.abs(0.93934 - auc_pr_w20) < delta
 
     def test_multivariate_componentwise_Wasserstein(self):
-
         # example multivariate WassersteinScorer component wise (True and False)
         np.random.seed(3)
         np_mts_train_wasserstein = np.abs(
@@ -1014,7 +1005,6 @@ class TestAnomalyDetectionScorer:
         assert np.abs(0.96722 - auc_roc_cwtrue[1]) < delta
 
     def test_kmeansScorer(self):
-
         # Check parameters and inputs
         self.component_wise_parameter(KMeansScorer)
         self.helper_window_parameter(KMeansScorer)
@@ -1023,9 +1013,7 @@ class TestAnomalyDetectionScorer:
         assert not KMeansScorer().is_probabilistic
 
     def test_univariate_kmeans(self):
-
         # univariate example
-
         np.random.seed(40)
 
         # create the train set
@@ -1105,9 +1093,7 @@ class TestAnomalyDetectionScorer:
         assert metric_AUC_PR == 1.0
 
     def test_multivariate_window_kmeans(self):
-
         # multivariate example with different windows
-
         np.random.seed(1)
 
         # create the train set
@@ -1177,7 +1163,6 @@ class TestAnomalyDetectionScorer:
         assert np.abs(0.88584 - auc_pr_w2) < delta
 
     def test_multivariate_componentwise_kmeans(self):
-
         # example multivariate KMeans component wise (True and False)
         np.random.seed(1)
 
@@ -1258,7 +1243,6 @@ class TestAnomalyDetectionScorer:
             assert np.abs(0.99007 - auc_roc_cwfalse) < delta
 
     def test_PyODScorer(self):
-
         # Check parameters and inputs
         self.component_wise_parameter(PyODScorer, model=KNN())
         self.helper_window_parameter(PyODScorer, model=KNN())
@@ -1316,7 +1300,6 @@ class TestAnomalyDetectionScorer:
             PyODScorer(model=MovingAverageFilter(window=10))
 
     def test_univariate_PyODScorer(self):
-
         # univariate test
         np.random.seed(40)
 
@@ -1399,9 +1382,7 @@ class TestAnomalyDetectionScorer:
         assert metric_AUC_PR == 1.0
 
     def test_multivariate_window_PyODScorer(self):
-
         # multivariate example (with different window)
-
         np.random.seed(1)
 
         # create the train set
@@ -1474,9 +1455,7 @@ class TestAnomalyDetectionScorer:
         assert np.abs(0.88584 - auc_pr_w2) < delta
 
     def test_multivariate_componentwise_PyODScorer(self):
-
         # multivariate example with component wise (True and False)
-
         np.random.seed(1)
 
         np_mts_train_PyOD = np.abs(
@@ -1563,7 +1542,6 @@ class TestAnomalyDetectionScorer:
         deterministic_values,
         real_NLL_values,
     ):
-
         NLLscorer_w1 = NLLscorer_to_test(window=1)
         NLLscorer_w2 = NLLscorer_to_test(window=2)
 
@@ -1737,7 +1715,6 @@ class TestAnomalyDetectionScorer:
 
     def test_fun_window_agg(self):
         """Verify that the anomaly score aggregation works as intented"""
-
         # window = 2, alternating anomaly scores
         window = 2
         scorer = KMeansScorer(window=window)

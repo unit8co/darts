@@ -12,8 +12,10 @@ References
 import numpy as np
 from sklearn.cluster import KMeans
 
+from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
 from darts.logging import get_logger, raise_if_not
+from darts.metrics.metrics import METRIC_TYPE
 
 logger = get_logger(__name__)
 
@@ -25,7 +27,7 @@ class KMeansScorer(WindowedAnomalyScorer):
         k: int = 8,
         component_wise: bool = False,
         window_agg: bool = True,
-        diff_fn="abs_diff",
+        diff_fn: METRIC_TYPE = metrics.ae,
         **kwargs,
     ) -> None:
         """
@@ -97,11 +99,10 @@ class KMeansScorer(WindowedAnomalyScorer):
             If False, the anomaly score for each point is the anomaly score of its trailing window.
             Default: True.
         diff_fn
-            Optionally, reduction function to use if two series are given. It will transform the two series into one.
-            This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference
-            between the prediction and the original series).
-            Must be one of "abs_diff" and "diff" (defined in ``_diff_series()``).
-            Default: "abs_diff"
+            The differencing function to use to transform the predicted and actual series into one series.
+            The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
+            :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the
+            difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
         kwargs
             Additional keyword arguments passed to the internal scikit-learn KMeans model(s).
         """

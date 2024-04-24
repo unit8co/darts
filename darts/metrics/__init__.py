@@ -78,3 +78,16 @@ from .metrics import (
     smape,
     sse,
 )
+
+TIME_DEPENDENT_METRICS = {
+    ae,
+    ape,
+    arre,
+    ase,
+    err,
+    ql,
+    sape,
+    se,
+    sle,
+    sse,
+}

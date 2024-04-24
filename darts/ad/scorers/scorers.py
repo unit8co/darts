@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
-from darts import TimeSeries
+from darts import TimeSeries, metrics
 from darts.ad.utils import (
     _assert_same_length,
     _assert_timeseries,
@@ -31,6 +31,7 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_log
+from darts.metrics.metrics import METRIC_TYPE
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 
@@ -43,6 +44,20 @@ class AnomalyScorer(ABC):
     def __init__(
         self, univariate_scorer: bool, window: int, trainable: bool = False
     ) -> None:
+        """
+        Parameters
+        ----------
+        univariate_scorer
+            Whether the scorer is a univariate scorer.
+        window
+            Integer value indicating the size of the window W used by the scorer to transform the series into an
+            anomaly score. A scorer will slice the given series into subsequences of size W and returns a value
+            indicating how anomalous these subset of W values are. A post-processing step will convert this anomaly
+            score into a point-wise anomaly score (see definition of `window_transform`). The window size should be
+            commensurate to the expected durations of the anomalies one is looking for.
+        trainable
+            Whether the scorer is trainable.
+        """
         if type(window) is not int:  # noqa: E721
             raise_log(
                 ValueError(
@@ -92,7 +107,7 @@ class AnomalyScorer(ABC):
         anomaly_scores = []
         for actual, pred in zip(actual_series, pred_series):
             _sanity_check_two_series(actual, pred, actual_name, pred_name)
-            index = actual.slice_intersect_time_index(pred)
+            index = actual.slice_intersect_times(pred, copy=False)
             self._check_window_size(index)
             anomaly_scores.append(
                 self._score_core_from_prediction(
@@ -316,17 +331,42 @@ class FittableAnomalyScorer(AnomalyScorer):
         univariate_scorer: bool,
         window: int,
         window_agg: bool,
-        diff_fn: str = "abs_diff",
+        diff_fn: METRIC_TYPE = metrics.ae,
         n_jobs: int = 1,
     ) -> None:
+        """
+        Parameters
+        ----------
+        univariate_scorer
+            Whether the scorer is a univariate scorer.
+        window
+            Integer value indicating the size of the window W used by the scorer to transform the series into an
+            anomaly score. A scorer will slice the given series into subsequences of size W and returns a value
+            indicating how anomalous these subset of W values are. A post-processing step will convert this anomaly
+            score into a point-wise anomaly score (see definition of `window_transform`). The window size should be
+            commensurate to the expected durations of the anomalies one is looking for.
+        window_agg
+            Whether to transform/aggregate window-wise anomaly scores into a point-wise anomaly scores.
+        diff_fn
+            The differencing function to use to transform the predicted and actual series into one series.
+            The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
+            :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the
+            difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
+        n_jobs
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+            (sequential). Setting the parameter to `-1` means using all the available processors.
+        """
         super().__init__(
             univariate_scorer=univariate_scorer, window=window, trainable=True
         )
-
-        # function used in ._diff_series() to convert 2 time series into 1
-        if diff_fn not in {"abs_diff", "diff"}:
+        if diff_fn not in metrics.TIME_DEPENDENT_METRICS:
+            valid_metrics = [m.__name__ for m in metrics.TIME_DEPENDENT_METRICS]
             raise_log(
-                ValueError(f"`diff_fn` must be 'diff' or 'abs_diff', found {diff_fn}"),
+                ValueError(
+                    f"`diff_fn` must be one of Darts 'per time step' metrics "
+                    f"{valid_metrics}. Found `{diff_fn}`"
+                ),
                 logger=logger,
             )
         self.diff_fn = diff_fn
@@ -374,12 +414,12 @@ class FittableAnomalyScorer(AnomalyScorer):
         actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     ):
-        """Fits the scorer on the two (sequence of) series.
+        """Fits the scorer on the two (sequences of) series.
 
         The function ``diff_fn`` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
-        into one series. By default, ``diff_fn`` will compute the absolute difference (Default: "abs_diff").
-        If `pred_series` and `actual_series` are sequences, ``diff_fn`` will be applied to all pairwise elements
-        of the sequences.
+        into one series. By default, ``diff_fn`` will compute the absolute difference (Default:
+        :func:`~darts.metrics.metrics.ae`). If `pred_series` and `actual_series` are sequences, ``diff_fn`` will be
+        applied to all pairwise elements of the sequences.
 
         The scorer will then be fitted on this (sequence of) series. If a sequence of series is given,
         the scorer will be fitted on the concatenation of the sequence.
@@ -398,23 +438,10 @@ class FittableAnomalyScorer(AnomalyScorer):
         self
             Fitted Scorer.
         """
-        actual_series, pred_series = series2seq(actual_series), series2seq(pred_series)
-        actual_name, pred_name = "actual_series", "pred_series"
-        _assert_same_length(
-            actual_series,
-            pred_series,
-            actual_name,
-            pred_name,
-        )
-
-        list_fit_series = []
-        for actual, pred in zip(actual_series, pred_series):
-            _sanity_check_two_series(actual, pred, actual_name, pred_name)
-            actual = self._extract_deterministic(actual, actual_name)
-            pred = self._extract_deterministic(pred, pred_name)
-            list_fit_series.append(self._diff_series(actual, pred))
-
-        self.fit(list_fit_series)
+        actual_series = _check_input(actual_series, "actual_series")
+        pred_series = _check_input(pred_series, "pred_series")
+        series = self._diff_series(actual_series, pred_series)
+        self.fit(series)
         self._fit_called = True
 
     def score(
@@ -463,7 +490,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         The function ``diff_fn`` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
         into one "difference" series. By default, ``diff_fn`` will compute the absolute difference
-        (Default: "abs_diff").
+        (Default: :func:`~darts.metrics.metrics.ae`).
         If actual_series and pred_series are sequences, ``diff_fn`` will be applied to all pairwise elements
         of the sequences.
 
@@ -484,18 +511,10 @@ class FittableAnomalyScorer(AnomalyScorer):
         """
         self._check_fit_called()
         called_with_single_series = isinstance(actual_series, TimeSeries)
-        actual_series, pred_series = series2seq(actual_series), series2seq(pred_series)
-        actual_name, pred_name = "actual_series", "pred_series"
-        _assert_same_length(actual_series, pred_series, actual_name, pred_name)
-
-        anomaly_scores = []
-        for actual, pred in zip(actual_series, pred_series):
-            _sanity_check_two_series(actual, pred, actual_name, pred_name)
-            actual = self._extract_deterministic(actual, actual_name)
-            pred = self._extract_deterministic(pred, pred_name)
-            diff = self._diff_series(actual, pred)
-            self._check_window_size(diff)
-            anomaly_scores.append(self.score(diff))
+        actual_series = _check_input(actual_series, "actual_series")
+        pred_series = _check_input(pred_series, "pred_series")
+        diff = self._diff_series(actual_series, pred_series)
+        anomaly_scores = self.score(diff)
         return anomaly_scores[0] if called_with_single_series else anomaly_scores
 
     def eval_metric(
@@ -636,41 +655,35 @@ class FittableAnomalyScorer(AnomalyScorer):
     ) -> TimeSeries:
         pass
 
-    def _diff_series(self, series_1: TimeSeries, series_2: TimeSeries) -> TimeSeries:
-        """Applies the ``diff_fn`` to the two time series. Converts two time series into 1.
+    def _diff_series(
+        self,
+        series_1: Sequence[TimeSeries],
+        series_2: Sequence[TimeSeries],
+    ) -> Sequence[TimeSeries]:
+        """Applies the ``diff_fn`` to two sequences of time series. Converts two time series into 1.
 
-        series_1 and series_2 must:
-            - have a non empty time intersection
+        Each series-pair in series_1 and series_2 must:
+            - have a non-empty time intersection
             - be of the same width W
 
         Parameters
         ----------
         series_1
-            1st time series
+            A sequence of time series
         series_2:
-            2nd time series
+            A sequence of other time series to compute ``diff_fn`` on.
 
         Returns
         -------
-        TimeSeries
-            series of width W
+        Sequence[TimeSeries]
+            A sequence of series of width W from the difference between `series_1` and `series_2`.
         """
-        series_1, series_2 = _intersect(
-            series_1, series_2, "actual_series", "pred_series"
-        )
-
-        if self.diff_fn == "abs_diff":
-            return (series_1 - series_2).map(lambda x: np.abs(x))
-        elif self.diff_fn == "diff":
-            return series_1 - series_2
-        else:
-            # found an non-existent diff_fn
-            raise_log(
-                ValueError(
-                    f"Metric should be 'diff' or 'abs_diff', found {self.diff_fn}"
-                ),
-                logger=logger,
-            )
+        series_diffs = self.diff_fn(series_1, series_2, component_reduction=None)
+        out = []
+        for s1, s2, s_diff in zip(series_1, series_2, series_diffs):
+            time_index = s2.slice_intersect_times(s1, copy=False)
+            out.append(s2.with_times_and_values(times=time_index, values=s_diff))
+        return out
 
     def _fun_window_agg(
         self, list_scores: Sequence[TimeSeries], window: int
@@ -720,8 +733,32 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
     """Base class for anomaly scorers that rely on windows to detect anomalies"""
 
     def __init__(
-        self, window: int, univariate_scorer: bool, window_agg: bool, diff_fn: str
+        self,
+        window: int,
+        univariate_scorer: bool,
+        window_agg: bool,
+        diff_fn: METRIC_TYPE = metrics.ae,
     ) -> None:
+        """
+        Parameters
+        ----------
+        window
+            Integer value indicating the size of the window W used by the scorer to transform the series into an
+            anomaly score. A scorer will slice the given series into subsequences of size W and returns a value
+            indicating how anomalous these subset of W values are. A post-processing step will convert this anomaly
+            score into a point-wise anomaly score (see definition of `window_transform`). The window size should be
+            commensurate to the expected durations of the anomalies one is looking for.
+        univariate_scorer
+            Whether the scorer is a univariate scorer.
+        window_agg
+            Whether to transform/aggregate window-wise anomaly scores into a point-wise anomaly scores.
+        diff_fn
+            The differencing function to use to transform the predicted and actual series into one series.
+            The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
+            :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the
+            difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
+        """
+
         super().__init__(
             window=window,
             univariate_scorer=univariate_scorer,
@@ -896,6 +933,16 @@ class NLLScorer(AnomalyScorer):
     """Parent class for all LikelihoodScorer"""
 
     def __init__(self, window) -> None:
+        """
+        Parameters
+        ----------
+        window
+            Integer value indicating the size of the window W used by the scorer to transform the series into an
+            anomaly score. A scorer will slice the given series into subsequences of size W and returns a value
+            indicating how anomalous these subset of W values are. A post-processing step will convert this anomaly
+            score into a point-wise anomaly score (see definition of `window_transform`). The window size should be
+            commensurate to the expected durations of the anomalies one is looking for.
+        """
         super().__init__(univariate_scorer=False, window=window)
 
     @property
