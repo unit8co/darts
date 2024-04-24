@@ -120,7 +120,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             len(target_vals)
             >= (self.lookback + self.max_lh) * self.output_chunk_length,
             "The dataset contains some input/target series that are shorter than "
-            "`(lookback + max_lh) * H` ({}-th series)".format(target_idx),
+            f"`(lookback + max_lh) * H` ({target_idx}-th series)",
         )
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)

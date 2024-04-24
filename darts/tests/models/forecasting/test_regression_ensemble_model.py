@@ -70,17 +70,19 @@ class TestRegressionEnsembleModels:
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def get_global_models(self, output_chunk_length=5):
+    def get_global_models(
+        self, output_chunk_length=5, input_chunk_length=20, training_length=24
+    ):
         return [
             RNNModel(
-                input_chunk_length=20,
-                output_chunk_length=output_chunk_length,
+                input_chunk_length=input_chunk_length,
+                training_length=training_length,
                 n_epochs=1,
                 random_state=42,
                 **tfm_kwargs,
             ),
             BlockRNNModel(
-                input_chunk_length=20,
+                input_chunk_length=input_chunk_length,
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
@@ -559,6 +561,7 @@ class TestRegressionEnsembleModels:
             None,
             None,
             0,
+            None,
         )
         ensemble.backtest(self.sine_series)
 
@@ -574,7 +577,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0)
+        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0, None)
 
         # mix of all the lags
         model3 = RandomForest(
@@ -586,7 +589,29 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0)
+        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0, None)
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_extreme_lags_torch(self):
+        # test RNN case which has the 8th extreme lags element (max_target_lag_train)
+        train_n_points = 10
+        icl = 20
+        ocl = 5
+        training_length = 24
+        model = RegressionEnsembleModel(
+            forecasting_models=self.get_global_models(ocl, icl, training_length),
+            regression_train_n_points=train_n_points,
+        )
+        assert model.extreme_lags == (
+            -icl - train_n_points,
+            ocl - 1,
+            -icl,  # past covs from BlockRNN
+            -1,  # past covs from BlockRNN
+            -icl,  # future covs from RNN
+            0,  # future covs from RNN
+            0,
+            training_length - icl,  # training length from RNN
+        )
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]
@@ -610,7 +635,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert ensemble_allproba._models_are_probabilistic
-        assert ensemble_allproba._is_probabilistic
+        assert ensemble_allproba.supports_probabilistic_prediction
         ensemble_allproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_allproba.predict(5, num_samples=10)
@@ -627,7 +652,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_mixproba._models_are_probabilistic
-        assert ensemble_mixproba._is_probabilistic
+        assert ensemble_mixproba.supports_probabilistic_prediction
         ensemble_mixproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_mixproba.predict(5, num_samples=10)
@@ -647,7 +672,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_mixproba2._models_are_probabilistic
-        assert ensemble_mixproba2._is_probabilistic
+        assert ensemble_mixproba2.supports_probabilistic_prediction
         ensemble_mixproba2.fit(self.ts_random_walk[:100])
         pred = ensemble_mixproba2.predict(5, num_samples=10)
         assert pred.n_samples == 10
@@ -663,7 +688,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_proba_reg._models_are_probabilistic
-        assert ensemble_proba_reg._is_probabilistic
+        assert ensemble_proba_reg.supports_probabilistic_prediction
         ensemble_proba_reg.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_proba_reg.predict(5, num_samples=10)
@@ -680,7 +705,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert ensemble_dete_reg._models_are_probabilistic
-        assert not ensemble_dete_reg._is_probabilistic
+        assert not ensemble_dete_reg.supports_probabilistic_prediction
         ensemble_dete_reg.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_dete_reg.predict(5, num_samples=1)
@@ -699,7 +724,7 @@ class TestRegressionEnsembleModels:
         )
 
         assert not ensemble_alldete._models_are_probabilistic
-        assert not ensemble_alldete._is_probabilistic
+        assert not ensemble_alldete.supports_probabilistic_prediction
         ensemble_alldete.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_alldete.predict(5, num_samples=1)
@@ -737,7 +762,7 @@ class TestRegressionEnsembleModels:
                 regression_train_num_samples=500,
             )
 
-        # must use apprioriate reduction method
+        # must use appropriate reduction method
         with pytest.raises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[

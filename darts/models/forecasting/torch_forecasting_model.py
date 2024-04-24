@@ -89,7 +89,7 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
 )
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
-from darts.utils.utils import get_single_series, seq2series, series2seq
+from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 
 # Check whether we are running pytorch-lightning >= 2.0.0 or not:
 tokens = pl.__version__.split(".")
@@ -884,9 +884,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             not length_ok or len(train_dataset) == 0,  # mind the order
             "The train dataset does not contain even one training sample. "
             + "This is likely due to the provided training series being too short. "
-            + "This model expect series of length at least {}.".format(
-                self.min_train_series_length
-            ),
+            + f"This model expect series of length at least {self.min_train_series_length}.",
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
@@ -1012,10 +1010,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # Check existing model has input/output dims matching what's provided in the training set.
             raise_if_not(
                 len(train_sample) == len(self.train_sample),
-                "The size of the training set samples (tuples) does not match what the model has been "
-                "previously trained on. Trained on tuples of length {}, received tuples of length {}.".format(
-                    len(self.train_sample), len(train_sample)
-                ),
+                "The size of the training set samples (tuples) does not match what the model has been"
+                f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
+                f" received tuples of length {len(train_sample)}.",
             )
             same_dims = tuple(
                 s.shape[1] if s is not None else None for s in train_sample
@@ -1522,6 +1519,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             batch_size=batch_size,
             n_jobs=n_jobs,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            mc_dropout=mc_dropout,
         )
 
         pred_loader = DataLoader(
@@ -1533,9 +1531,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             drop_last=False,
             collate_fn=self._batch_collate_fn,
         )
-
-        # set mc_dropout rate
-        self.model.set_mc_dropout(mc_dropout)
 
         # set up trainer. use user supplied trainer or create a new trainer from scratch
         self.trainer = self._setup_trainer(
@@ -2051,9 +2046,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return (
-            self.model._is_probabilistic
+            self.model.supports_probabilistic_prediction
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )
@@ -2083,9 +2078,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _optimized_historical_forecasts(
         self,
-        series: Optional[Sequence[TimeSeries]],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -2097,20 +2092,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         **kwargs,
-    ) -> Union[
-        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-    ]:
+    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
         datasets for each forecastable index and series.
         """
-        series, past_covariates, future_covariates = _process_historical_forecast_input(
-            model=self,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            forecast_horizon=forecast_horizon,
-            allow_autoregression=True,
+        series, past_covariates, future_covariates, series_seq_type = (
+            _process_historical_forecast_input(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                forecast_horizon=forecast_horizon,
+                allow_autoregression=True,
+            )
         )
         forecasts_list = _optimized_historical_forecasts(
             model=self,
@@ -2129,7 +2124,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             predict_likelihood_parameters=predict_likelihood_parameters,
             **kwargs,
         )
-        return forecasts_list
+        return series2seq(forecasts_list, seq_type_out=series_seq_type)
 
     def _load_encoders(
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
@@ -2496,15 +2491,17 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length if self.uses_past_covariates else None,
-            -1 if self.uses_past_covariates else None,
+            -self.input_chunk_length,
+            -1,
             None,
             None,
             self.output_chunk_shift,
+            None,
         )
 
 
@@ -2585,19 +2582,17 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
-            self.output_chunk_shift if self.uses_future_covariates else None,
-            (
-                self.output_chunk_length - 1 + self.output_chunk_shift
-                if self.uses_future_covariates
-                else None
-            ),
             self.output_chunk_shift,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
+            self.output_chunk_shift,
+            None,
         )
 
 
@@ -2679,19 +2674,17 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             None,
             None,
-            -self.input_chunk_length if self.uses_future_covariates else None,
-            (
-                self.output_chunk_length - 1 + self.output_chunk_shift
-                if self.uses_future_covariates
-                else None
-            ),
+            -self.input_chunk_length,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
+            None,
         )
 
 
@@ -2773,19 +2766,17 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length if self.uses_past_covariates else None,
-            -1 if self.uses_past_covariates else None,
-            -self.input_chunk_length if self.uses_future_covariates else None,
-            (
-                self.output_chunk_length - 1 + self.output_chunk_shift
-                if self.uses_future_covariates
-                else None
-            ),
+            -self.input_chunk_length,
+            -1,
+            -self.input_chunk_length,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
+            None,
         )
 
     def predict(
@@ -2924,17 +2915,15 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
-            -self.input_chunk_length if self.uses_past_covariates else None,
-            -1 if self.uses_past_covariates else None,
-            self.output_chunk_shift if self.uses_future_covariates else None,
-            (
-                self.output_chunk_length - 1 + self.output_chunk_shift
-                if self.uses_future_covariates
-                else None
-            ),
+            -self.input_chunk_length,
+            -1,
             self.output_chunk_shift,
+            self.output_chunk_length - 1 + self.output_chunk_shift,
+            self.output_chunk_shift,
+            None,
         )

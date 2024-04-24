@@ -177,6 +177,16 @@ TiDE model example notebook:
 
    examples/18-TiDE-examples.ipynb
 
+TimeSeries Mixer (TSMixer) Model
+=======================================
+
+TSMixer model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/21-TSMixer-examples.ipynb
+
 Ensemble Models
 =============================
 

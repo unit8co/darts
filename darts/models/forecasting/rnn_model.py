@@ -321,9 +321,9 @@ class RNNModel(DualCovariatesTorchModel):
             Fraction of neurons afected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
-            training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
-            because otherwise during training the RNN is never run for as many iterations as it will during
-            inference. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
+            training. Must have a larger value than `input_chunk_length`, because otherwise during training
+            the RNN is never run for as many iterations as it will during inference. For more information on
+            this parameter, please see `darts.utils.data.ShiftedDataset`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -485,6 +485,13 @@ class RNNModel(DualCovariatesTorchModel):
             `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
+        if training_length < input_chunk_length:
+            raise_log(
+                ValueError(
+                    f"`training_length` ({training_length}) must be `>=input_chunk_length` ({input_chunk_length})."
+                ),
+                logger=logger,
+            )
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
 
@@ -589,4 +596,28 @@ class RNNModel(DualCovariatesTorchModel):
         Taking the max to remain consistent with the length required at predict time, since
         `training_length` can take any value.
         """
-        return max(self.training_length + 1, self.input_chunk_length + 1)
+        return self.training_length + 1
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        int,
+        Optional[int],
+    ]:
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length - 1,
+            None,
+            None,
+            -self.input_chunk_length,
+            self.output_chunk_length - 1,
+            self.output_chunk_shift,
+            self.training_length - self.input_chunk_length,
+        )

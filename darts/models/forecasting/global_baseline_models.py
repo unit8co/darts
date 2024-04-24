@@ -233,12 +233,10 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     def min_train_series_length(self) -> int:
         return self.input_chunk_length
 
-    @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         return False
 
-    @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return False
 
     @property
