@@ -668,7 +668,7 @@ def _reconciliate_historical_time_indices(
     show_warnings: bool,
 ) -> Tuple[TimeIndex, Optional[int]]:
     """Depending on the value of retrain, select which time indices will be used during the historical forecasts."""
-    train_length_ = None
+    train_length_ = model.min_train_series_length
     if isinstance(retrain, Callable):
         # retain the longer time index, anything can happen
         if (
@@ -704,8 +704,6 @@ def _reconciliate_historical_time_indices(
                     f"until the end of the expanding training set. "
                     f"To hide these warnings, set `show_warnings=False`."
                 )
-
-            train_length_ = None
 
     return historical_forecasts_time_index, train_length_
 
