@@ -1686,10 +1686,6 @@ class TestRegressionModels:
 
         np.testing.assert_array_almost_equal(pred.values(), np.array([[1, 0, 0]]).T)
 
-    """
-    
-    """
-
     @pytest.mark.parametrize(
         "config",
         [
