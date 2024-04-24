@@ -622,7 +622,6 @@ class TestAnomalyDetectionScorer:
 
     def test_Norm(self):
         # Check parameters
-        self.check_type_component_wise(Norm)
         self.expects_deterministic_input(Norm)
 
         # if component_wise=False must always return a univariate anomaly score
@@ -794,16 +793,7 @@ class TestAnomalyDetectionScorer:
         diffs = s_tmp._diff_series([self.train], [self.test])
         assert diffs == [self.train - self.test]
 
-    def check_type_component_wise(self, scorer, **kwargs):
-        # component_wise must be bool
-        with pytest.raises(ValueError):
-            scorer(component_wise=1, **kwargs)
-        with pytest.raises(ValueError):
-            scorer(component_wise="string", **kwargs)
-
     def component_wise_parameter(self, scorer_to_test, **kwargs):
-        self.check_type_component_wise(scorer_to_test, **kwargs)
-
         # if component_wise=False must always return a univariate anomaly score
         scorer = scorer_to_test(component_wise=False, **kwargs)
         scorer.fit(self.train)
@@ -1255,11 +1245,6 @@ class TestAnomalyDetectionScorer:
             PyODScorer(model=MovingAverageFilter(window=10))
 
         # component_wise parameter
-        # component_wise must be bool
-        with pytest.raises(ValueError):
-            PyODScorer(model=KNN(), component_wise=1)
-        with pytest.raises(ValueError):
-            PyODScorer(model=KNN(), component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = PyODScorer(model=KNN(), component_wise=False)
         scorer.fit(self.train)

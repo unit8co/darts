@@ -3001,6 +3001,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values and same index, static covariates and hierarchy
         """
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
         values = expand_arr(values, ndim=len(DIMS))
         raise_if_not(
             values.shape[1] == self._xa.values.shape[1],
@@ -3033,6 +3034,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values and same index, static covariates and hierarchy
         """
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
         values = expand_arr(values, ndim=len(DIMS))
         raise_if_not(
             values.shape[:2] == self._xa.values.shape[:2],

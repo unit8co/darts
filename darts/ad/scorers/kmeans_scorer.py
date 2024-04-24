@@ -90,30 +90,23 @@ class KMeansScorer(WindowedAnomalyScorer):
         k
             The number of clusters to form as well as the number of centroids to generate by the KMeans model.
         component_wise
-            Boolean value indicating if the score needs to be computed for each component independently (True)
-            or by concatenating the component in the considered window to compute one score (False).
-            Default: False
+            Boolean value indicating if the score needs to be computed for each component independently (`True`)
+            or by concatenating the component in the considered window to compute one score (`False`).
+            Default: `False`.
         window_agg
             Boolean indicating whether the anomaly score for each time step is computed by
             averaging the anomaly scores for all windows this point is included in.
-            If False, the anomaly score for each point is the anomaly score of its trailing window.
-            Default: True.
+            If `False`, the anomaly score for each point is the anomaly score of its trailing window.
+            Default: `True`.
         diff_fn
             The differencing function to use to transform the predicted and actual series into one series.
             The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
             :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the
             difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
+            By default, uses the absolute difference (:func:`~darts.metrics.metrics.ae`).
         kwargs
             Additional keyword arguments passed to the internal scikit-learn KMeans model(s).
         """
-
-        raise_if_not(
-            type(component_wise) is bool,  # noqa: E721
-            f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
-            logger,
-        )
-        self.component_wise = component_wise
-
         self.kmeans_kwargs = kwargs
         self.kmeans_kwargs["n_clusters"] = k
         # stop warning about default value of "n_init" changing from 10 to "auto" in sklearn 1.4
@@ -125,8 +118,8 @@ class KMeansScorer(WindowedAnomalyScorer):
         super().__init__(
             univariate_scorer=(not component_wise),
             window=window,
-            diff_fn=diff_fn,
             window_agg=window_agg,
+            diff_fn=diff_fn,
         )
 
     def __str__(self):

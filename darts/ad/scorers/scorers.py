@@ -202,9 +202,11 @@ class AnomalyScorer(ABC):
             Default: "AUC_ROC"
         """
         actual_series = _check_input(
-            actual_series, name="series", num_series_expected=1
+            actual_series, name="actual_series", num_series_expected=1
         )[0]
-        pred_series = _check_input(pred_series, name="series", num_series_expected=1)[0]
+        pred_series = _check_input(
+            pred_series, name="pred_series", num_series_expected=1
+        )[0]
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
 
         if title is None:
@@ -352,6 +354,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
             :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the
             difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
+            By default, uses the absolute difference (:func:`~darts.metrics.metrics.ae`).
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -463,23 +466,16 @@ class FittableAnomalyScorer(AnomalyScorer):
         Union[TimeSeries, Sequence[TimeSeries]]
             (Sequence of) anomaly score time series
         """
-
         self._check_fit_called()
 
-        list_series = series2seq(series)
+        called_with_single_series = isinstance(series, TimeSeries)
+        series = _check_input(
+            series, name="series", extra_checks=self._check_window_size
+        )
+        series = [self._extract_deterministic(s, "series") for s in series]
 
-        for s in list_series:
-            _assert_timeseries(s)
-            self._check_window_size(s)
-
-        list_series = [self._extract_deterministic(s, "series") for s in list_series]
-
-        anomaly_scores = self._score_core(list_series)
-
-        if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
-            return anomaly_scores[0]
-        else:
-            return anomaly_scores
+        anomaly_scores = self._score_core(series)
+        return anomaly_scores[0] if called_with_single_series else anomaly_scores
 
     def score_from_prediction(
         self,
@@ -510,9 +506,11 @@ class FittableAnomalyScorer(AnomalyScorer):
             (Sequence of) anomaly score time series
         """
         self._check_fit_called()
+
         called_with_single_series = isinstance(actual_series, TimeSeries)
         actual_series = _check_input(actual_series, "actual_series")
         pred_series = _check_input(pred_series, "pred_series")
+
         diff = self._diff_series(actual_series, pred_series)
         anomaly_scores = self.score(diff)
         return anomaly_scores[0] if called_with_single_series else anomaly_scores
@@ -595,27 +593,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         """
-
-        if isinstance(series, Sequence):
-            if not len(series) == 1:
-                raise_log(
-                    ValueError(
-                        f"``show_anomalies`` expects one series for `series`, found a list "
-                        f"of length {len(series)} as input."
-                    ),
-                    logger=logger,
-                )
-            series = series[0]
-
-        if not isinstance(series, TimeSeries):
-            raise_log(
-                ValueError(
-                    f"``show_anomalies`` expects an input of type TimeSeries, "
-                    f"found type {type(series)} for `series`."
-                ),
-                logger=logger,
-            )
-
+        series = _check_input(series, name="series", num_series_expected=1)[0]
         anomaly_score = self.score(series)
 
         if title is None:
@@ -640,11 +618,13 @@ class FittableAnomalyScorer(AnomalyScorer):
         )
 
     @abstractmethod
-    def _fit_core(self, series: Any) -> Any:
+    def _fit_core(self, series: Sequence[TimeSeries], *args, **kwargs):
         pass
 
     @abstractmethod
-    def _score_core(self, series: Any) -> Any:
+    def _score_core(
+        self, series: Sequence[TimeSeries], *args, **kwargs
+    ) -> Sequence[TimeSeries]:
         pass
 
     def _score_core_from_prediction(
@@ -657,36 +637,36 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def _diff_series(
         self,
-        series_1: Sequence[TimeSeries],
-        series_2: Sequence[TimeSeries],
+        actual_series: Sequence[TimeSeries],
+        pred_series: Sequence[TimeSeries],
     ) -> Sequence[TimeSeries]:
         """Applies the ``diff_fn`` to two sequences of time series. Converts two time series into 1.
 
-        Each series-pair in series_1 and series_2 must:
+        Each series-pair in actual_series and pred_series must:
             - have a non-empty time intersection
             - be of the same width W
 
         Parameters
         ----------
-        series_1
+        actual_series
             A sequence of time series
-        series_2:
-            A sequence of other time series to compute ``diff_fn`` on.
+        pred_series
+            A sequence of predicted time series to compute ``diff_fn`` on.
 
         Returns
         -------
         Sequence[TimeSeries]
-            A sequence of series of width W from the difference between `series_1` and `series_2`.
+            A sequence of series of width W from the difference between `actual_series` and `pred_series`.
         """
-        series_diffs = self.diff_fn(series_1, series_2, component_reduction=None)
+        residuals = self.diff_fn(actual_series, pred_series, component_reduction=None)
         out = []
-        for s1, s2, s_diff in zip(series_1, series_2, series_diffs):
+        for s1, s2, res in zip(actual_series, pred_series, residuals):
             time_index = s2.slice_intersect_times(s1, copy=False)
-            out.append(s2.with_times_and_values(times=time_index, values=s_diff))
+            out.append(s2.with_times_and_values(times=time_index, values=res))
         return out
 
     def _fun_window_agg(
-        self, list_scores: Sequence[TimeSeries], window: int
+        self, scores: Sequence[TimeSeries], window: int
     ) -> Sequence[TimeSeries]:
         """
         Transforms a window-wise anomaly score into a point-wise anomaly score.
@@ -701,22 +681,18 @@ class FittableAnomalyScorer(AnomalyScorer):
         over the anomaly score series. The return anomaly score represents the abnormality
         of each timestamp.
         """
-        list_scores_point_wise = []
-        for score in list_scores:
+        # TODO: can we use window_transform here?
+        scores_point_wise = []
+        for score in scores:
             mean_score = np.empty(score.all_values().shape)
             for idx_point in range(len(score)):
                 # "look ahead window" to account for the "look behind window" of the scorer
                 mean_score[idx_point] = score.all_values(copy=False)[
                     idx_point : idx_point + window
                 ].mean(axis=0)
-
-            score_point_wise = TimeSeries.from_times_and_values(
-                score.time_index, mean_score, columns=score.components
-            )
-
-            list_scores_point_wise.append(score_point_wise)
-
-        return list_scores_point_wise
+            score_point_wise = score.with_times_and_values(score.time_index, mean_score)
+            scores_point_wise.append(score_point_wise)
+        return scores_point_wise
 
     def _check_fit_called(self):
         """Checks if the scorer has been fitted before calling its `score()` function."""
@@ -734,34 +710,35 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
 
     def __init__(
         self,
-        window: int,
         univariate_scorer: bool,
+        window: int,
         window_agg: bool,
-        diff_fn: METRIC_TYPE = metrics.ae,
+        diff_fn: METRIC_TYPE,
     ) -> None:
         """
         Parameters
         ----------
+        univariate_scorer
+            Whether the scorer is a univariate scorer. If `True` and when using multivariate series, the scores are
+            computed on the concatenated components/columns in the considered window to compute one score.
         window
             Integer value indicating the size of the window W used by the scorer to transform the series into an
-            anomaly score. A scorer will slice the given series into subsequences of size W and returns a value
-            indicating how anomalous these subset of W values are. A post-processing step will convert this anomaly
-            score into a point-wise anomaly score (see definition of `window_transform`). The window size should be
+            anomaly score. A scorer slices the given series into subsequences of size W and returns a value
+            indicating how anomalous these subsets of W values are. A post-processing step will convert the anomaly
+            scores into point-wise anomaly scores (see definition of `window_transform`). The window size should be
             commensurate to the expected durations of the anomalies one is looking for.
-        univariate_scorer
-            Whether the scorer is a univariate scorer.
         window_agg
-            Whether to transform/aggregate window-wise anomaly scores into a point-wise anomaly scores.
+            Whether to transform/aggregate window-wise anomaly scores into point-wise anomaly scores.
         diff_fn
             The differencing function to use to transform the predicted and actual series into one series.
             The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
             :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the
             difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
+            By default, uses the absolute difference (:func:`~darts.metrics.metrics.ae`).
         """
-
         super().__init__(
-            window=window,
             univariate_scorer=univariate_scorer,
+            window=window,
             window_agg=window_agg,
             diff_fn=diff_fn,
         )
@@ -771,77 +748,59 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         """Wrapper around model inference method"""
         pass
 
-    def _fit_core(
-        self,
-        list_series: Sequence[TimeSeries],
-        *args,
-        **kwargs,
-    ):
-        """Train one sub-model for each component when self.component_wise=True and series is multivariate"""
-
-        if (not self.component_wise) | (list_series[0].width == 1):
+    def _fit_core(self, series: Sequence[TimeSeries], *args, **kwargs):
+        """Train one sub-model for each component when self.univariate_scorer=False and series is multivariate"""
+        if self.univariate_scorer or series[0].width == 1:
             self.model.fit(
-                self._tabularize_series(
-                    list_series, concatenate=True, component_wise=False
-                )
+                self._tabularize_series(series, concatenate=True, component_wise=False)
             )
-        else:
-            tabular_data = self._tabularize_series(
-                list_series, concatenate=True, component_wise=True
-            )
-            # parallelize fitting of the component-wise models
-            fit_iterator = zip(tabular_data, [None] * len(tabular_data))
-            input_iterator = _build_tqdm_iterator(
-                fit_iterator, verbose=False, desc=None, total=tabular_data.shape[1]
-            )
-            self.model = _parallel_apply(
-                input_iterator,
-                copy.deepcopy(self.model).fit,
-                n_jobs=self._n_jobs,
-                fn_args=args,
-                fn_kwargs=kwargs,
-            )
+            return
+
+        tabular_data = self._tabularize_series(
+            series, concatenate=True, component_wise=True
+        )
+        # parallelize fitting of the component-wise models
+        fit_iterator = zip(tabular_data, [None] * len(tabular_data))
+        input_iterator = _build_tqdm_iterator(
+            fit_iterator, verbose=False, desc=None, total=tabular_data.shape[1]
+        )
+        self.model = _parallel_apply(
+            input_iterator,
+            copy.deepcopy(self.model).fit,
+            n_jobs=self._n_jobs,
+            fn_args=args,
+            fn_kwargs=kwargs,
+        )
 
     def _score_core(
-        self, list_series: Sequence[TimeSeries], *args, **kwargs
+        self, series: Sequence[TimeSeries], *args, **kwargs
     ) -> Sequence[TimeSeries]:
         """Apply the scorer (sub) model scoring method on the series components"""
-        if not all([(self.width_trained_on == series.width) for series in list_series]):
-            raise_log(
-                ValueError(
-                    f"All series in 'series' must have the same number of components as "
-                    f"the data used for training the model, expected "
-                    f"{self.width_trained_on} components."
-                ),
-                logger=logger,
-            )
-        if (not self.component_wise) | (list_series[0].width == 1):
-            list_np_anomaly_score = [
+        _ = _check_input(series, "series", width_expected=self.width_trained_on)
+        if self.univariate_scorer or series[0].width == 1:
+            score_vals = [
                 self._model_score_method(model=self.model, data=tabular_data)
                 for tabular_data in self._tabularize_series(
-                    list_series, concatenate=False, component_wise=False
+                    series, concatenate=False, component_wise=False
                 )
             ]
-            list_anomaly_score = [
+            score_series = [
                 TimeSeries.from_times_and_values(
-                    series.time_index[self.window - 1 :], np_anomaly_score
+                    times=s.time_index[self.window - 1 :], values=np_anomaly_score
                 )
-                for series, np_anomaly_score in zip(list_series, list_np_anomaly_score)
+                for s, np_anomaly_score in zip(series, score_vals)
             ]
-
         else:
             # parallelize scoring of components by the corresponding sub-model
             score_iterator = zip(
                 self.model,
-                self._tabularize_series(
-                    list_series, concatenate=True, component_wise=True
-                ),
+                self._tabularize_series(series, concatenate=True, component_wise=True),
             )
             input_iterator = _build_tqdm_iterator(
                 score_iterator, verbose=False, desc=None, total=len(self.model)
             )
 
-            list_np_anomaly_score = np.array(
+            score_vals = np.array(
                 _parallel_apply(
                     input_iterator,
                     self._model_score_method,
@@ -851,17 +810,15 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
                 )
             )
 
-            list_anomaly_score = self._convert_tabular_to_series(
-                list_series, list_np_anomaly_score
-            )
+            score_series = self._convert_tabular_to_series(series, score_vals)
 
         if self.window > 1 and self.window_agg:
-            return self._fun_window_agg(list_anomaly_score, self.window)
+            return self._fun_window_agg(score_series, self.window)
         else:
-            return list_anomaly_score
+            return score_series
 
     def _tabularize_series(
-        self, list_series: Sequence[TimeSeries], concatenate: bool, component_wise: bool
+        self, series: Sequence[TimeSeries], concatenate: bool, component_wise: bool
     ) -> Union[Sequence[np.ndarray], np.ndarray]:
         """Internal function called by WindowedAnomalyScorer ``fit()`` and ``score()`` functions.
 
@@ -871,20 +828,15 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         the `N` components will be concatenated to create windows of size `W` * `N`. The resulting tabular
         data of each series are concatenated if the parameter `concatenate` is set to True.
         """
-
-        list_np_series = [series.all_values(copy=False) for series in list_series]
-
+        list_np_series = [s.all_values(copy=False) for s in series]
         if component_wise:
-
             tabular_data = [
                 np.stack(
                     sliding_window_view(arr, window_shape=self.window, axis=0), axis=1
                 ).reshape(len(arr[0]), -1, self.window)
                 for arr in list_np_series
             ]
-
         else:
-
             tabular_data = [
                 sliding_window_view(arr, window_shape=self.window, axis=0).reshape(
                     -1, self.window * len(arr[0])
@@ -894,11 +846,10 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
 
         if concatenate:
             return np.concatenate(tabular_data, axis=1 if component_wise else 0)
-
         return tabular_data
 
     def _convert_tabular_to_series(
-        self, list_series: Sequence[TimeSeries], list_np_anomaly_score: np.ndarray
+        self, series: Sequence[TimeSeries], list_np_anomaly_score: np.ndarray
     ) -> Sequence[TimeSeries]:
         """Internal function called by WindowedAnomalyScorer  ``score()`` functions when the parameter
         `component_wise` is set to True and the (sequence of) series has more than 1 component.
@@ -909,23 +860,19 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         model). If a list of series is given, each series will be concatenated by its components. The function
         aims to split the anomaly score at the proper indexes to create an anomaly score for each series.
         """
-        indice = 0
+        list_np_anomaly_score = list_np_anomaly_score.T
         result = []
-        for series in list_series:
+        idx = 0
+        for s in series:
             result.append(
-                TimeSeries.from_times_and_values(
-                    series.time_index[self.window - 1 :],
-                    list(
-                        zip(
-                            *list_np_anomaly_score[
-                                :, indice : indice + len(series) - self.window + 1
-                            ]
-                        )
-                    ),
+                s.with_times_and_values(
+                    times=s._time_index[self.window - 1 :],
+                    values=list_np_anomaly_score[
+                        :, idx : idx + len(s) - self.window + 1
+                    ],
                 )
             )
-            indice += len(series) - self.window + 1
-
+            idx += len(s) - self.window + 1
         return result
 
 

@@ -46,7 +46,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
         functions ``fit()`` and ``score()``, respectively.
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
-        series. If set to True, the model will treat each series dimension independently. If set to False, the model
+        series. If set to `True`, the model will treat each series dimension independently. If set to `False`, the model
         concatenates the dimensions in each windows of length `W` and computes a single score for all dimensions.
 
         **Training with** ``fit()``:
@@ -65,7 +65,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
         In practice, the series or list of series can for instance represent residuals than can be
         considered independent and identically distributed (iid).
 
-        If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
+        If `component_wise` is set to `True`, the algorithm will be applied to each dimension independently. For each
         dimension, a PyOD model will be trained.
 
         **Computing score with** ``score()``:
@@ -75,9 +75,9 @@ class WassersteinScorer(WindowedAnomalyScorer):
 
         For each series, if the series is multivariate of dimension `D`:
 
-        * if `component_wise` is set to False: it returns a univariate series (dimension=1). It represents
+        * if `component_wise` is set to `False`: it returns a univariate series (dimension=1). It represents
           the anomaly score of the entire series in the considered window at each timestamp.
-        * if `component_wise` is set to True: it returns a multivariate series of dimension `D`. Each dimension
+        * if `component_wise` is set to `True`: it returns a multivariate series of dimension `D`. Each dimension
           represents the anomaly score of the corresponding component of the input.
 
         If the series is univariate, it returns a univariate series regardless of the parameter
@@ -93,19 +93,20 @@ class WassersteinScorer(WindowedAnomalyScorer):
             Size of the sliding window that represents the number of samples in the testing distribution to compare
             with the training distribution in the Wasserstein function
         component_wise
-            Boolean value indicating if the score needs to be computed for each component independently (True)
-            or by concatenating the component in the considered window to compute one score (False).
-            Default: False
+            Boolean value indicating if the score needs to be computed for each component independently (`True`)
+            or by concatenating the component in the considered window to compute one score (`False`).
+            Default: `False`.
         window_agg
             Boolean indicating whether the anomaly score for each time step is computed by
             averaging the anomaly scores for all windows this point is included in.
-            If False, the anomaly score for each point is the anomaly score of its trailing window.
-            Default: True.
+            If `False`, the anomaly score for each point is the anomaly score of its trailing window.
+            Default: `True`.
         diff_fn
             The differencing function to use to transform the predicted and actual series into one series.
             The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
             :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the
             difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
+            By default, uses the absolute difference (:func:`~darts.metrics.metrics.ae`).
         """
 
         # TODO:
@@ -124,34 +125,23 @@ class WassersteinScorer(WindowedAnomalyScorer):
                     + " constituted test distribution, the window parameter should be larger"
                     + " than 10."
                 )
-
-        raise_if_not(
-            type(component_wise) is bool,  # noqa: E721
-            f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
-            logger,
-        )
-        self.component_wise = component_wise
-
         super().__init__(
             univariate_scorer=(not component_wise),
             window=window,
-            diff_fn=diff_fn,
             window_agg=window_agg,
+            diff_fn=diff_fn,
         )
 
     def __str__(self):
         return "WassersteinScorer"
 
-    def _fit_core(
-        self,
-        list_series: Sequence[TimeSeries],
-    ):
+    def _fit_core(self, series: Sequence[TimeSeries], *args, **kwargs):
         """The training values are considered as the scorer model"""
-        self.model = np.concatenate(
-            [s.all_values(copy=False) for s in list_series]
-        ).squeeze(-1)
+        self.model = np.concatenate([s.all_values(copy=False) for s in series]).squeeze(
+            -1
+        )
 
-        if (not self.component_wise) | (list_series[0].width == 1):
+        if self.univariate_scorer or series[0].width == 1:
             self.model = self.model.flatten()
 
     def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:
