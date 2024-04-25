@@ -441,6 +441,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             _,
             _,
             _,
+            _,
         ) = self.extreme_lags
 
         if min_past_cov_lag is None or max_past_cov_lag is None:
@@ -463,13 +464,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_future_cov_lag,
             max_future_cov_lag,
             _,
+            _,
         ) = self.extreme_lags
 
         if min_future_cov_lag is None or max_future_cov_lag is None:
             return 0
 
         return (
-            self.min_train_series_length  # includes output_chunk_shift when supported
+            self.min_train_series_length
             - min(0, min_future_cov_lag)
             + max_future_cov_lag
         )
