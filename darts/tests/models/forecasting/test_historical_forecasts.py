@@ -1675,7 +1675,7 @@ class TestHistoricalForecast:
         # `pc_longer` has more than required length
         pc_longer = pc.prepend_values([0.0]).append_values([0.0])
         # `pc_before` starts before and has required times
-        pc_longer_start = pc.prepend_values([0.0])
+        pc_start_before = pc.prepend_values([0.0])
         # `pc_after` has required length but starts one step after `pc`
         pc_start_after = pc[1:].append_values([0.0])
         # `pc_end_before` has required length but end one step before `pc`
@@ -1686,7 +1686,7 @@ class TestHistoricalForecast:
             series=[series] * 4,
             past_covariates=[
                 pc_longer,
-                pc_longer_start,
+                pc_start_before,
                 pc_start_after,
                 pc_end_before,
             ],
@@ -1812,7 +1812,7 @@ class TestHistoricalForecast:
         # `fc_longer` has more than required length
         fc_longer = fc.prepend_values([0.0]).append_values([0.0])
         # `fc_before` starts before and has required times
-        fc_longer_start = fc.prepend_values([0.0])
+        fc_start_before = fc.prepend_values([0.0])
         # `fc_after` has required length but starts one step after `fc`
         fc_start_after = fc[1:].append_values([0.0])
         # `fc_end_before` has required length but end one step before `fc`
@@ -1820,10 +1820,10 @@ class TestHistoricalForecast:
 
         # checks for long enough and shorter covariates
         forecasts = model.historical_forecasts(
-            series=[series],
+            series=[series] * 4,
             future_covariates=[
                 fc_longer,
-                fc_longer_start,
+                fc_start_before,
                 fc_start_after,
                 fc_end_before,
             ],
