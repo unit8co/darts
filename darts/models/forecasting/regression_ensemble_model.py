@@ -469,6 +469,16 @@ class RegressionEnsembleModel(EnsembleModel):
             return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
     @property
+    def min_train_series_length(self) -> int:
+        """Overwritte parent class definition to account for the points necessary to train the regression model."""
+        return super().min_train_series_length + self.train_n_points
+
+    @property
+    def min_train_samples(self) -> int:
+        """This attribute is not well defined for this model architecture, returning the maximum over all models."""
+        return max(super().min_train_samples, self.regression_model.min_train_samples)
+
+    @property
     def output_chunk_length(self) -> int:
         """Return the `output_chunk_length` of the regression model (ensembling layer)"""
         return self.regression_model.output_chunk_length
