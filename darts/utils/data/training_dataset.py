@@ -136,7 +136,7 @@ class TrainingDataset(ABC, Dataset):
             )
 
             if covariate_type is not CovariateType.NONE:
-                # not CovariateType.Future -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
+                # not CovariateType.FUTURE -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
                 start = (
                     future_start
                     if covariate_type is CovariateType.FUTURE
