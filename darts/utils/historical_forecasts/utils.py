@@ -427,15 +427,7 @@ def _get_historical_forecastable_time_index(
         # shift forward by the minimum length requirements of the model
         # shift back by output_chunk_shift so that `start` correspond to the first valid t0,
         # not the first position that is going to be effectively forecasted.
-        shift_tg_start = (
-            model.min_train_series_length - output_chunk_shift + output_lag - output_lag
-        )
-        """
-        start = (
-            series.start_time()
-            + (output_lag - output_chunk_shift - min_target_lag + 1) * series.freq
-        )
-        """
+        shift_tg_start = model.min_train_series_length - output_chunk_shift
     else:
         # enough target length for the first forecasted positions
         shift_tg_start = -min_target_lag
@@ -448,22 +440,12 @@ def _get_historical_forecastable_time_index(
     # possible timesteps based on past covariates index and associated lags
     if (min_past_cov_lag is not None) and (past_covariates is not None):
         if is_training:
-            # max_target_lag - output_chunk_shift + 1 = output_chunk_length
             shift_pc_start = (
-                max_target_lag
-                - output_chunk_shift
-                + 1
+                model.min_train_samples
+                + model.output_chunk_length
                 - min_past_cov_lag
-                + model.min_train_samples
                 - 1
             )
-            """
-            start_pc = (
-                past_covariates.start_time()
-                + (output_lag - output_chunk_shift - min_past_cov_lag + 1)
-                * past_covariates.freq
-            )
-            """
         else:
             # need enough past covariates for the first forecasted position
             shift_pc_start = -min_past_cov_lag
@@ -483,22 +465,12 @@ def _get_historical_forecastable_time_index(
     # possible timesteps based on future covariates index and associated lags
     if (min_future_cov_lag is not None) and (future_covariates is not None):
         if is_training:
-            # max_target_lag - output_chunk_shift + 1 = output_chunk_length
             shift_fc_start = (
-                max_target_lag
+                output_lag
                 - output_chunk_shift
-                + 1
                 - min_future_cov_lag
                 + model.min_train_samples
-                - 1
             )
-            """
-            start_fc = (
-                future_covariates.start_time()
-                + (output_lag - output_chunk_shift - min_future_cov_lag + 1)
-                * future_covariates.freq
-            )
-            """
         else:
             shift_fc_start = -min_future_cov_lag
         start_fc = (
@@ -668,6 +640,7 @@ def _reconciliate_historical_time_indices(
     show_warnings: bool,
 ) -> Tuple[TimeIndex, Optional[int]]:
     """Depending on the value of retrain, select which time indices will be used during the historical forecasts."""
+    # store the default value, strict minimum requirements
     train_length_ = model.min_train_series_length
     if isinstance(retrain, Callable):
         # retain the longer time index, anything can happen
@@ -687,6 +660,7 @@ def _reconciliate_historical_time_indices(
     # compute the maximum forecasts time index assuming that `start=None`
     if retrain or (not model._fit_called):
         if train_length and train_length <= len(series):
+            # overwrite with the valid argument provided by the user
             train_length_ = train_length
             # shift the start when `train_length > model.min_train_series_length`
             step_ahead = max(train_length - model.min_train_series_length, 0)
@@ -704,6 +678,7 @@ def _reconciliate_historical_time_indices(
                     f"until the end of the expanding training set. "
                     f"To hide these warnings, set `show_warnings=False`."
                 )
+            # no need to shift the start since it was already shifted by the min_train_series_length
 
     return historical_forecasts_time_index, train_length_
 

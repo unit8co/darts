@@ -1225,16 +1225,22 @@ class TestRegressionModels:
             ocl,
         )
 
+    regression_model_classes = [
+        XGBModel,
+        LinearRegressionModel,
+        RandomForest,
+    ]
+
+    if lgbm_available:
+        regression_model_classes.append(LightGBMModel)
+
+    if cb_available:
+        regression_model_classes.append(CatBoostModel)
+
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [
-                LightGBMModel if lgbm_available else XGBModel,
-                CatBoostModel if cb_available else XGBModel,
-                XGBModel,
-                LinearRegressionModel,
-                RandomForest,
-            ],
+            regression_model_classes,
             [3, [-5, -3]],
             [1, 5],
             [0, 5],
@@ -1255,7 +1261,7 @@ class TestRegressionModels:
             multi_models=multi_models,
         )
 
-        # min_train_samples is overwritten in LGBM, Catboost and XGB
+        # min_train_samples is overwritten in LGBM and Catboost
         if (lgbm_available and isinstance(model, LightGBMModel)) or (
             cb_available and isinstance(model, CatBoostModel)
         ):

@@ -1029,7 +1029,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
                 train_length_ = None
 
-            # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
+            # based on `start`, historical_forecasts_time_index is shortened
             historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
                 series=series_,
                 series_idx=idx,
@@ -1040,7 +1040,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             # adjust the start of the series depending on whether we train (at some point), or predict only
-            # must be performed after the operation on historical_foreacsts_time_index
+            # must be performed after the operation on historical_forecasts_time_index
             if min_timestamp_series > series_.time_index[0]:
                 series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
 
