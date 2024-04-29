@@ -529,13 +529,8 @@ with mlflow.start_run(nested=True) as run:
 
     # create the model
     model = NBEATSModel(
-        input_chunk_length=24,
-        output_chunk_length=12,
-        n_epochs=500,
-        model_name='NBEATS_MLflow',
-        log_tensorboard=True,
+        **params,
         torch_metrics=torch_metrics,
-        nr_epochs_val_period=1,
         )
 
     # use validation dataset
