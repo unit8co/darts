@@ -10,7 +10,6 @@ from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
 
 import pandas as pd
 from joblib import Parallel, delayed
-from pandas._libs.tslibs.offsets import BusinessMixin
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
@@ -377,11 +376,12 @@ def n_steps_between(
     else:
         period_alias = pd.tseries.frequencies.get_period_alias(freq.name)
         if period_alias is not None:
-            # Create a temporary DatetimeIndex to extract the actual start index.
+            # get the number of base periods ("2MS" has base freq "MS") between the two time steps
             diff = (end.to_period(period_alias) - start.to_period(period_alias)).n
             if abs(diff) != diff:
                 # similar case as with (A)
                 diff += diff % freq.n
+            # floor division by the frequency multiplier ("2MS" has multiplier 2)
             n_steps = diff // freq.n
         else:
             # in the worst case for special frequencies (e.g "C*"), we must generate the index
