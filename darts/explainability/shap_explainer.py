@@ -162,7 +162,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        if model._is_probabilistic:
+        if model.supports_probabilistic_prediction:
             logger.warning(
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )
@@ -624,7 +624,6 @@ class _RegressionShapExplainers:
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
     ) -> Dict[int, Dict[str, shap.Explanation]]:
-
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
         - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
@@ -760,14 +759,14 @@ class _RegressionShapExplainers:
         X, indexes = create_lagged_prediction_data(
             target_series=target_series if lags_list else None,
             past_covariates=past_covariates if lags_past_covariates_list else None,
-            future_covariates=future_covariates
-            if lags_future_covariates_list
-            else None,
+            future_covariates=(
+                future_covariates if lags_future_covariates_list else None
+            ),
             lags=lags_list,
             lags_past_covariates=lags_past_covariates_list if past_covariates else None,
-            lags_future_covariates=lags_future_covariates_list
-            if future_covariates
-            else None,
+            lags_future_covariates=(
+                lags_future_covariates_list if future_covariates else None
+            ),
             uses_static_covariates=self.model.uses_static_covariates,
             last_static_covariates_shape=self.model._static_covariates_shape,
         )

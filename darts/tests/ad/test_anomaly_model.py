@@ -9,14 +9,10 @@ from darts import TimeSeries
 
 # anomaly aggregators
 # import everything in darts.ad (also for testing imports)
-from darts.ad import AndAggregator  # noqa: F401
-from darts.ad import EnsembleSklearnAggregator  # noqa: F401
-from darts.ad import OrAggregator  # noqa: F401
-from darts.ad import QuantileDetector  # noqa: F401
-from darts.ad import ThresholdDetector  # noqa: F401
-from darts.ad import CauchyNLLScorer
-from darts.ad import DifferenceScorer as Difference
 from darts.ad import (
+    AndAggregator,  # noqa: F401
+    CauchyNLLScorer,
+    EnsembleSklearnAggregator,  # noqa: F401
     ExponentialNLLScorer,
     FilteringAnomalyModel,
     ForecastingAnomalyModel,
@@ -25,10 +21,14 @@ from darts.ad import (
     KMeansScorer,
     LaplaceNLLScorer,
     NormScorer,
+    OrAggregator,  # noqa: F401
     PoissonNLLScorer,
     PyODScorer,
+    QuantileDetector,  # noqa: F401
+    ThresholdDetector,  # noqa: F401
     WassersteinScorer,
 )
+from darts.ad import DifferenceScorer as Difference
 from darts.ad.utils import eval_accuracy_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverageFilter, NaiveSeasonal, RegressionModel
 

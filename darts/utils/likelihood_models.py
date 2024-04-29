@@ -57,9 +57,10 @@ from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
 from darts import TimeSeries
+from darts.logging import raise_if_not
 
 # TODO: Table on README listing distribution, possible priors and wiki article
-from darts.utils.utils import _check_quantiles, raise_if_not
+from darts.utils.utils import _check_quantiles
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 
@@ -114,9 +115,11 @@ class Likelihood(ABC):
             device = params_out[0].device
             prior_params = tuple(
                 # use model output as "prior" for parameters not specified as prior
-                torch.tensor(prior_params[i]).to(device)
-                if prior_params[i] is not None
-                else params_out[i]
+                (
+                    torch.tensor(prior_params[i]).to(device)
+                    if prior_params[i] is not None
+                    else params_out[i]
+                )
                 for i in range(len(prior_params))
             )
             prior_distr = self._distr_from_params(prior_params)

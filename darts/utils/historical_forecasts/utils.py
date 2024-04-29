@@ -14,8 +14,8 @@ from numpy.typing import ArrayLike
 
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.timeseries_generation import generate_index
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import get_series_seq_type, series2seq
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -168,8 +168,9 @@ def _historical_forecasts_general_checks(model, series, kwargs):
 
             # check that overlap_end and start together form a valid combination
             overlap_end = n.overlap_end
-            if not overlap_end and not (
-                start + (series_.freq * (n.forecast_horizon - 1)) in series_
+            if (
+                not overlap_end
+                and start + (series_.freq * (n.forecast_horizon - 1)) not in series_
             ):
                 raise_log(
                     ValueError(
@@ -402,18 +403,30 @@ def _get_historical_forecastable_time_index(
         max_past_cov_lag,
         min_future_cov_lag,
         max_future_cov_lag,
+        output_chunk_shift,
+        max_target_lag_train,
     ) = model.extreme_lags
 
     # max_target_lag < 0 are local models which can predict for n (horizon) -> infinity (no auto-regression)
-    is_autoregression = max_target_lag >= 0 and forecast_horizon > max_target_lag + 1
+    is_autoregression = (
+        max_target_lag >= 0
+        and forecast_horizon > max_target_lag - output_chunk_shift + 1
+    )
 
     if min_target_lag is None:
         min_target_lag = 0
 
+    if is_training and max_target_lag_train is not None:
+        # the output lag/window can be different for train and predict modes
+        output_lag = max_target_lag_train
+    else:
+        output_lag = max_target_lag
+
     # longest possible time index for target
     if is_training:
         start = (
-            series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
+            series.start_time()
+            + (output_lag - output_chunk_shift - min_target_lag + 1) * series.freq
         )
     else:
         start = series.start_time() - min_target_lag * series.freq
@@ -426,7 +439,8 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_pc = (
                 past_covariates.start_time()
-                - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
+                + (output_lag - output_chunk_shift - min_past_cov_lag + 1)
+                * past_covariates.freq
             )
         else:
             start_pc = (
@@ -436,7 +450,7 @@ def _get_historical_forecastable_time_index(
         shift_pc_end = max_past_cov_lag
         if is_autoregression:
             # we step back in case of auto-regression
-            shift_pc_end += forecast_horizon - (max_target_lag + 1)
+            shift_pc_end += forecast_horizon - (max_target_lag - output_chunk_shift + 1)
         end_pc = past_covariates.end_time() - shift_pc_end * past_covariates.freq
 
         intersect_ = (
@@ -449,7 +463,8 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_fc = (
                 future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
+                + (output_lag - output_chunk_shift - min_future_cov_lag + 1)
+                * future_covariates.freq
             )
         else:
             start_fc = (
@@ -460,7 +475,7 @@ def _get_historical_forecastable_time_index(
         shift_fc_end = max_future_cov_lag
         if is_autoregression:
             # we step back in case of auto-regression
-            shift_fc_end += forecast_horizon - (max_target_lag + 1)
+            shift_fc_end += forecast_horizon - (max_target_lag - output_chunk_shift + 1)
         end_fc = future_covariates.end_time() - shift_fc_end * future_covariates.freq
 
         intersect_ = (
@@ -468,12 +483,16 @@ def _get_historical_forecastable_time_index(
             min([intersect_[1], end_fc]),
         )
 
-    # overlap_end = True -> predictions must not go beyond end of target series
+    # overlap_end = False -> predictions must not go beyond end of target series
     if (
         not overlap_end
-        and intersect_[1] + (forecast_horizon - 1) * series.freq > series.end_time()
+        and intersect_[1] + (forecast_horizon + output_chunk_shift - 1) * series.freq
+        > series.end_time()
     ):
-        intersect_ = (intersect_[0], end - forecast_horizon * series.freq)
+        intersect_ = (
+            intersect_[0],
+            end - (forecast_horizon + output_chunk_shift) * series.freq,
+        )
 
     # end comes before the start
     if intersect_[1] < intersect_[0]:
@@ -712,6 +731,7 @@ def _get_historical_forecast_boundaries(
     )
 
     # re-adjust the slicing indexes to account for the lags
+    # `max_target_lag_train` is redundant, since optimized hist fc is running in predict mode only
     (
         min_target_lag,
         _,
@@ -719,6 +739,8 @@ def _get_historical_forecast_boundaries(
         max_past_cov_lag,
         min_future_cov_lag,
         max_future_cov_lag,
+        output_chunk_shift,
+        max_target_lag_train,
     ) = model.extreme_lags
 
     # target lags are <= 0
@@ -802,12 +824,17 @@ def _check_optimizable_historical_forecasts_global_models(
 
 def _process_historical_forecast_input(
     model,
-    series: Optional[Sequence[TimeSeries]],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     forecast_horizon: int = 1,
     allow_autoregression: bool = False,
-):
+) -> Union[
+    Sequence[TimeSeries],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
+    int,
+]:
     if not model._fit_called:
         raise_log(
             ValueError("Model has not been fit yet."),
@@ -822,6 +849,10 @@ def _process_historical_forecast_input(
             ),
             logger,
         )
+    series_seq_type = get_series_seq_type(series)
+    series = series2seq(series)
+    past_covariates = series2seq(past_covariates)
+    future_covariates = series2seq(future_covariates)
 
     # manage covariates, usually handled by RegressionModel.predict()
     if past_covariates is None and model.past_covariate_series is not None:
@@ -829,7 +860,8 @@ def _process_historical_forecast_input(
     if future_covariates is None and model.future_covariate_series is not None:
         future_covariates = [model.future_covariate_series] * len(series)
 
-    model._verify_static_covariates(series[0].static_covariates)
+    if model.uses_static_covariates:
+        model._verify_static_covariates(series[0].static_covariates)
 
     if model.encoders.encoding_available:
         past_covariates, future_covariates = model.generate_fit_predict_encodings(
@@ -838,7 +870,7 @@ def _process_historical_forecast_input(
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-    return series, past_covariates, future_covariates
+    return series, past_covariates, future_covariates, series_seq_type
 
 
 def _process_predict_start_points_bounds(

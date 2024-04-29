@@ -125,7 +125,6 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         multiprocessing_start_method: Optional[str] = "spawn",
         random_state: int = 0,
     ):
-
         """
         This is a wrapper around
         `tbats
@@ -249,7 +248,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         return False
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     @property
