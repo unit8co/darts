@@ -2520,10 +2520,13 @@ class TimeSeries:
             return vals[self.time_index.isin(other.time_index)]
 
     def _slice_intersect_bounds(self, other: Self) -> Tuple[int, int]:
+        """Find the start (absolute index) and end (index relative to the end) indices that represent the time
+        intersection from `self` and `other`."""
         shift_start = n_steps_between(
             other.start_time(), self.start_time(), freq=self.freq
         )
-        shift_end = n_steps_between(other.end_time(), self.end_time(), freq=self.freq)
+        shift_end = len(other) - (len(self) - shift_start)
+
         shift_start = shift_start if shift_start >= 0 else 0
         shift_end = shift_end if shift_end < 0 else None
         return shift_start, shift_end
