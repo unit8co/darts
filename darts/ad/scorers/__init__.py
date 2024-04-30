@@ -41,13 +41,13 @@ Most of the scorers have the following main parameters:
   (see definition of `window_transform`). The window size should be commensurate to the expected durations of the
   anomalies one is looking for.
 - `component_wise`:
-  Boolean parameter indicating how the scorer should behave with multivariate series. If set to True, the model will
-  treat each series dimension independently. If set to False, the model will consider the dimensions jointly in the
+  Boolean parameter indicating how the scorer should behave with multivariate series. If set to `True`, the model will
+  treat each series dimension independently. If set to `False`, the model will consider the dimensions jointly in the
   considered `window` W to compute the score.
 - `window_transform`:
   Boolean value that indicates if the scorer needs to post-process its output when the `window` parameter exceeds 1.
-  If set to True, the scores for each point can be assigned by aggregating the anomaly scores for each window the point
-  is included in. It returns a point-wise anomaly score. If set to False, the score is returned without this
+  If set to `True`, the scores for each point can be assigned by aggregating the anomaly scores for each window the
+  point is included in. It returns a point-wise anomaly score. If set to `False`, the score is returned without this
   post-processing step and is a window-wise anomaly score. Default: True
 
 Other useful functions are:

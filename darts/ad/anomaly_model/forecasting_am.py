@@ -438,7 +438,7 @@ class ForecastingAnomalyModel(AnomalyModel):
     ) -> Sequence[TimeSeries]:
         """Compute the historical forecasts that would have been obtained by this model on the `series`.
 
-        `retrain` is set to False if possible (this is not supported by all models). If set to True, it will always
+        `retrain` is set to `False` if possible (this is not supported by all models). If set to `True`, it will always
         re-train the model on the entire available history,
         """
         if not self.model._fit_called:

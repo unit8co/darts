@@ -735,10 +735,10 @@ def _check_input(
     Input `series` checks used for Aggregators, Detectors, ...
 
     - `series` must be (sequence of) series with length (`num_series_expected`) where each series must:
-        * have width `width_expected` if it is not `None`
-        * be deterministic if `check_deterministic=True`
-        * be binary if `check_binary=True`
-        * be multivariate if `check_multivariate=True`
+        - have width `width_expected` if it is not `None`
+        - be deterministic if `check_deterministic=True`
+        - be binary if `check_binary=True`
+        - be multivariate if `check_multivariate=True`
 
     By default, all checks except the `TimeSeries` check are disabled.
 

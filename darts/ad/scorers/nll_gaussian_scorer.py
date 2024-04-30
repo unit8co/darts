@@ -15,6 +15,8 @@ from darts.ad.scorers.scorers import NLLScorer
 
 
 class GaussianNLLScorer(NLLScorer):
+    """NLL Gaussian Scorer"""
+
     def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
@@ -22,11 +24,8 @@ class GaussianNLLScorer(NLLScorer):
         return "GaussianNLLScorer"
 
     def _score_core_nllikelihood(
-        self,
-        deterministic_values: np.ndarray,
-        probabilistic_estimations: np.ndarray,
+        self, actual_vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
-
-        mu = np.mean(probabilistic_estimations, axis=1)
-        std = np.std(probabilistic_estimations, axis=1)
-        return -norm.logpdf(deterministic_values, loc=mu, scale=std)
+        mu = np.mean(pred_vals, axis=1)
+        std = np.std(pred_vals, axis=1)
+        return -norm.logpdf(actual_vals, loc=mu, scale=std)

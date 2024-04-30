@@ -1,5 +1,5 @@
 """
-WassersteinScorer
+Wasserstein Scorer
 -----
 
 Wasserstein Scorer (distance function defined between probability distributions) [1]_.
@@ -18,7 +18,7 @@ from scipy.stats import wasserstein_distance
 
 from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger
 from darts.metrics.metrics import METRIC_TYPE
 from darts.timeseries import TimeSeries
 
@@ -26,6 +26,8 @@ logger = get_logger(__name__)
 
 
 class WassersteinScorer(WindowedAnomalyScorer):
+    """Wasserstein Scorer"""
+
     def __init__(
         self,
         window: int = 10,
@@ -54,8 +56,8 @@ class WassersteinScorer(WindowedAnomalyScorer):
         The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
         into equal size subsequences. The subsequence will be of size `W` * `D`, with:
 
-        * `W` being the size of the window given as a parameter `window`
-        * `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to True)
+        - `W` being the size of the window given as a parameter `window`
+        - `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)
 
         For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given
         of length L, each series will be partitioned into subsequences, and the results will be concatenated into
@@ -75,9 +77,9 @@ class WassersteinScorer(WindowedAnomalyScorer):
 
         For each series, if the series is multivariate of dimension `D`:
 
-        * if `component_wise` is set to `False`: it returns a univariate series (dimension=1). It represents
+        - if `component_wise` is set to `False`: it returns a univariate series (dimension=1). It represents
           the anomaly score of the entire series in the considered window at each timestamp.
-        * if `component_wise` is set to `True`: it returns a multivariate series of dimension `D`. Each dimension
+        - if `component_wise` is set to `True`: it returns a multivariate series of dimension `D`. Each dimension
           represents the anomaly score of the corresponding component of the input.
 
         If the series is univariate, it returns a univariate series regardless of the parameter
@@ -126,7 +128,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
                     + " than 10."
                 )
         super().__init__(
-            univariate_scorer=(not component_wise),
+            is_univariate=(not component_wise),
             window=window,
             window_agg=window_agg,
             diff_fn=diff_fn,
@@ -141,7 +143,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
             -1
         )
 
-        if self.univariate_scorer or series[0].width == 1:
+        if self.is_univariate or series[0].width == 1:
             self.model = self.model.flatten()
 
     def _model_score_method(self, model, data: np.ndarray) -> np.ndarray:

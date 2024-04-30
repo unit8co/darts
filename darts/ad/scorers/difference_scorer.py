@@ -17,21 +17,23 @@ from darts.timeseries import TimeSeries
 
 
 class DifferenceScorer(AnomalyScorer):
+    """Difference Scorer"""
+
     def __init__(self) -> None:
-        super().__init__(univariate_scorer=False, window=1)
+        super().__init__(is_univariate=False, window=1)
 
     def __str__(self):
         return "Difference"
 
     def _score_core_from_prediction(
         self,
-        actual_series: np.ndarray,
-        pred_series: np.ndarray,
+        actual_vals: np.ndarray,
+        pred_vals: np.ndarray,
         time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
     ) -> TimeSeries:
-        actual_series = self._extract_deterministic2(actual_series, "actual_series")
-        pred_series = self._extract_deterministic2(pred_series, "pred_series")
+        actual_vals = self._extract_deterministic_values(actual_vals, "actual_series")
+        pred_vals = self._extract_deterministic_values(pred_vals, "pred_series")
         return TimeSeries.from_times_and_values(
-            values=actual_series - pred_series,
+            values=actual_vals - pred_vals,
             times=time_index,
         )

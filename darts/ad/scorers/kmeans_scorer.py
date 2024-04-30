@@ -14,13 +14,15 @@ from sklearn.cluster import KMeans
 
 from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger
 from darts.metrics.metrics import METRIC_TYPE
 
 logger = get_logger(__name__)
 
 
 class KMeansScorer(WindowedAnomalyScorer):
+    """k-means Scorer"""
+
     def __init__(
         self,
         window: int = 1,
@@ -42,8 +44,8 @@ class KMeansScorer(WindowedAnomalyScorer):
         functions ``fit()`` and ``score()``, respectively.
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
-        series. If set to True, the model will treat each component independently by fitting a different
-        `k`-means model for each dimension. If set to False, the model concatenates the dimensions in
+        series. If set to `True`, the model will treat each component independently by fitting a different
+        `k`-means model for each dimension. If set to `False`, the model concatenates the dimensions in
         each windows of length `W` and computes the score using only one underlying `k`-means model.
 
         **Training with** ``fit()``:
@@ -51,8 +53,8 @@ class KMeansScorer(WindowedAnomalyScorer):
         The input can be a series (univariate or multivariate) or multiple series. The series will be sliced
         into equal size subsequences. The subsequence will be of size `W` * `D`, with:
 
-        * `W` being the size of the window given as a parameter `window`
-        * `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to True)
+        - `W` being the size of the window given as a parameter `window`
+        - `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)
 
         For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given
         of length L, each series will be partitioned into subsequences, and the results will be concatenated into
@@ -61,7 +63,7 @@ class KMeansScorer(WindowedAnomalyScorer):
         The `k`-means model will be fitted on the generated subsequences. The model will find `k` clusters
         in the vector space of dimension equal to the length of the subsequences (`D` * `W`).
 
-        If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
+        If `component_wise` is set to `True`, the algorithm will be applied to each dimension independently. For each
         dimension, a `k`-means model will be trained.
 
         **Computing score with** ``score()``:
@@ -71,9 +73,9 @@ class KMeansScorer(WindowedAnomalyScorer):
 
         For each series, if the series is multivariate of dimension `D`:
 
-        * if `component_wise` is set to False: it returns a univariate series (dimension=1). It represents
+        - if `component_wise` is set to `False`: it returns a univariate series (dimension=1). It represents
           the anomaly score of the entire series in the considered window at each timestamp.
-        * if `component_wise` is set to True: it returns a multivariate series of dimension `D`. Each dimension
+        - if `component_wise` is set to `True`: it returns a multivariate series of dimension `D`. Each dimension
           represents the anomaly score of the corresponding component of the input.
 
         If the series is univariate, it returns a univariate series regardless of the parameter
@@ -116,7 +118,7 @@ class KMeansScorer(WindowedAnomalyScorer):
         self.model = KMeans(**self.kmeans_kwargs)
 
         super().__init__(
-            univariate_scorer=(not component_wise),
+            is_univariate=(not component_wise),
             window=window,
             window_agg=window_agg,
             diff_fn=diff_fn,

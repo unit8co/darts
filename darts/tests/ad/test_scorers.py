@@ -257,14 +257,14 @@ class TestAnomalyDetectionScorer:
             ),
             Sequence,
         )
-        # Check if return type is a float when input is a multivariate series and component_wise is set to False
+        # Check if return type is a float when input is a multivariate series and component_wise is set to `False`
         assert isinstance(
             scorer.eval_metric_from_prediction(
                 self.anomalies, self.mts_test, self.modified_mts_test
             ),
             float,
         )
-        # Check if return type is Sequence when input is a multivariate series and component_wise is set to False
+        # Check if return type is Sequence when input is a multivariate series and component_wise is set to `False`
         assert isinstance(
             scorer.eval_metric_from_prediction(
                 self.anomalies, [self.mts_test], self.modified_mts_test
@@ -273,14 +273,14 @@ class TestAnomalyDetectionScorer:
         )
 
         scorer = Norm(component_wise=True)
-        # Check if return type is a float when input is a multivariate series and component_wise is set to True
+        # Check if return type is a float when input is a multivariate series and component_wise is set to `True`
         assert isinstance(
             scorer.eval_metric_from_prediction(
                 self.mts_anomalies, self.mts_test, self.modified_mts_test
             ),
             Sequence,
         )
-        # Check if return type is Sequence when input is a multivariate series and component_wise is set to True
+        # Check if return type is Sequence when input is a multivariate series and component_wise is set to `True`
         assert isinstance(
             scorer.eval_metric_from_prediction(
                 self.mts_anomalies, [self.mts_test], self.modified_mts_test
@@ -449,7 +449,7 @@ class TestAnomalyDetectionScorer:
     @pytest.mark.parametrize("scorer", list_NonFittableAnomalyScorer)
     def test_NonFittableAnomalyScorer(self, scorer):
         # Check if trainable is False, being a NonFittableAnomalyScorer
-        assert not scorer.trainable
+        assert not scorer.is_trainable
 
         # checks for score_from_prediction()
         # input must be Timeseries or sequence of Timeseries
@@ -759,7 +759,7 @@ class TestAnomalyDetectionScorer:
     def helper_window_parameter(self, scorer_to_test, **kwargs):
         self.helper_check_type_window(scorer_to_test, **kwargs)
 
-        if scorer_to_test(**kwargs).trainable:
+        if scorer_to_test(**kwargs).is_trainable:
             # window must be smaller than the input of score()
             scorer = scorer_to_test(window=len(self.train) + 1, **kwargs)
             with pytest.raises(ValueError):
@@ -817,7 +817,7 @@ class TestAnomalyDetectionScorer:
 
     def expects_deterministic_input(self, scorer, **kwargs):
         scorer = scorer(**kwargs)
-        if scorer.trainable:
+        if scorer.is_trainable:
             scorer.fit(self.train)
             np.testing.assert_warns(scorer.score(self.probabilistic))
 

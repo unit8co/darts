@@ -15,6 +15,8 @@ from darts.ad.scorers.scorers import NLLScorer
 
 
 class PoissonNLLScorer(NLLScorer):
+    """NLL Poisson Scorer"""
+
     def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
@@ -22,10 +24,7 @@ class PoissonNLLScorer(NLLScorer):
         return "PoissonNLLScorer"
 
     def _score_core_nllikelihood(
-        self,
-        deterministic_values: np.ndarray,
-        probabilistic_estimations: np.ndarray,
+        self, actual_vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
-
-        mu = np.mean(probabilistic_estimations, axis=1)
-        return -poisson.logpmf(deterministic_values, mu=mu)
+        mu = np.mean(pred_vals, axis=1)
+        return -poisson.logpmf(actual_vals, mu=mu)

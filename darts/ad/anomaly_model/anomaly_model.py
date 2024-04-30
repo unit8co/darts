@@ -36,8 +36,8 @@ class AnomalyModel(ABC):
                 ),
                 logger=logger,
             )
-        self.scorers_are_trainable = any(s.trainable for s in self.scorers)
-        self.univariate_scoring = any(s.univariate_scorer for s in self.scorers)
+        self.scorers_are_trainable = any(s.is_trainable for s in self.scorers)
+        self.univariate_scoring = any(s.is_univariate for s in self.scorers)
         self.model = model
 
     def fit(
@@ -166,7 +166,7 @@ class AnomalyModel(ABC):
             if self.univariate_scoring and not s.width == 1:
                 raise_log(
                     ValueError(
-                        f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.univariate_scorer]} "
+                        f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.is_univariate]} "
                         f"that will return a univariate anomaly score series (width=1). Found a multivariate "
                         f"`actual_anomalies`. The evaluation of the accuracy cannot be computed. If applicable, "
                         f"think about setting the scorer parameter `componenet_wise` to True."
@@ -315,7 +315,7 @@ class AnomalyModel(ABC):
     ):
         """Train the fittable scorers using model forecasts"""
         for scorer in self.scorers:
-            if scorer.trainable:
+            if scorer.is_trainable:
                 scorer.fit_from_prediction(list_series, list_pred)
 
     @abstractmethod

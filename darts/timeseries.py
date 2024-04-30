@@ -2734,7 +2734,7 @@ class TimeSeries:
             Optionally, periods to shift for calculating difference. For instance, periods=12 computes the
             difference between values at time `t` and times `t-12`.
         dropna
-            Whether to drop the missing values after each differencing steps. If set to False, the corresponding
+            Whether to drop the missing values after each differencing steps. If set to `False`, the corresponding
             first `periods` time steps will be filled with NaNs.
 
         Returns

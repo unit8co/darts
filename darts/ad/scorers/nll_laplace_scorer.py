@@ -15,6 +15,8 @@ from darts.ad.scorers.scorers import NLLScorer
 
 
 class LaplaceNLLScorer(NLLScorer):
+    """NLL Laplace Scorer"""
+
     def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
@@ -22,20 +24,12 @@ class LaplaceNLLScorer(NLLScorer):
         return "LaplaceNLLScorer"
 
     def _score_core_nllikelihood(
-        self,
-        deterministic_values: np.ndarray,
-        probabilistic_estimations: np.ndarray,
+        self, actual_vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
-
         # ML estimate for the Laplace loc
-        loc = np.median(probabilistic_estimations, axis=1)
-
+        loc = np.median(pred_vals, axis=1)
         # ML estimate for the Laplace scale
         # see: https://github.com/scipy/scipy/blob/de80faf9d3480b9dbb9b888568b64499e0e70c19/scipy
         # /stats/_continuous_distns.py#L4846
-        scale = (
-            np.sum(np.abs(probabilistic_estimations.T - loc), axis=0).T
-            / probabilistic_estimations.shape[1]
-        )
-
-        return -laplace.logpdf(deterministic_values, loc=loc, scale=scale)
+        scale = np.sum(np.abs(pred_vals.T - loc), axis=0).T / pred_vals.shape[1]
+        return -laplace.logpdf(actual_vals, loc=loc, scale=scale)

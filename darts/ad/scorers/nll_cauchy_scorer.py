@@ -15,6 +15,8 @@ from darts.ad.scorers.scorers import NLLScorer
 
 
 class CauchyNLLScorer(NLLScorer):
+    """NLL Cauchy Scorer"""
+
     def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
@@ -22,12 +24,7 @@ class CauchyNLLScorer(NLLScorer):
         return "CauchyNLLScorer"
 
     def _score_core_nllikelihood(
-        self,
-        deterministic_values: np.ndarray,
-        probabilistic_estimations: np.ndarray,
+        self, actual_vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
-
-        params = np.apply_along_axis(cauchy.fit, axis=1, arr=probabilistic_estimations)
-        return -cauchy.logpdf(
-            deterministic_values, loc=params[:, 0], scale=params[:, 1]
-        )
+        params = np.apply_along_axis(cauchy.fit, axis=1, arr=pred_vals)
+        return -cauchy.logpdf(actual_vals, loc=params[:, 0], scale=params[:, 1])

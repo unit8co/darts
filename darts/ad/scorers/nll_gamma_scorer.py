@@ -15,6 +15,8 @@ from darts.ad.scorers.scorers import NLLScorer
 
 
 class GammaNLLScorer(NLLScorer):
+    """NLL Gamma Scorer"""
+
     def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
@@ -22,12 +24,9 @@ class GammaNLLScorer(NLLScorer):
         return "GammaNLLScorer"
 
     def _score_core_nllikelihood(
-        self,
-        deterministic_values: np.ndarray,
-        probabilistic_estimations: np.ndarray,
+        self, actual_vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
-
-        params = np.apply_along_axis(gamma.fit, axis=1, arr=probabilistic_estimations)
+        params = np.apply_along_axis(gamma.fit, axis=1, arr=pred_vals)
         return -gamma.logpdf(
-            deterministic_values, a=params[:, 0], loc=params[:, 1], scale=params[:, 2]
+            actual_vals, a=params[:, 0], loc=params[:, 1], scale=params[:, 2]
         )

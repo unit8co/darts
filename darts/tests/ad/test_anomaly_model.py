@@ -149,15 +149,18 @@ class TestAnomalyDetectionModel:
 
     @pytest.mark.parametrize(
         "anomaly_model,fit_model",
-        zip(
-            [
+        [
+            (
                 ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
+                True,
+            ),
+            (
                 FilteringAnomalyModel(
                     model=MovingAverageFilter(window=20), scorer=Norm()
                 ),
-            ],
-            [True, False],
-        ),
+                False,
+            ),
+        ],
     )
     def test_score(self, anomaly_model, fit_model):
         if fit_model:
@@ -334,35 +337,38 @@ class TestAnomalyDetectionModel:
 
     @pytest.mark.parametrize(
         "anomaly_model,fit_kwargs",
-        zip(
-            [
+        [
+            (
                 ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
+                {"series": train, "allow_model_training": True},
+            ),
+            (
                 FilteringAnomalyModel(
                     model=MovingAverageFilter(window=20), scorer=Norm()
                 ),
+                False,
+            ),
+            (
                 ForecastingAnomalyModel(
                     model=RegressionModel(lags=10),
                     scorer=[Norm(), WassersteinScorer(window_agg=False)],
                 ),
+                {"series": train, "allow_model_training": True},
+            ),
+            (
                 FilteringAnomalyModel(
                     model=MovingAverageFilter(window=20),
                     scorer=[Norm(), WassersteinScorer(window_agg=False)],
                 ),
-            ],
-            [
-                {"series": train, "allow_model_training": True},
-                False,
-                {"series": train, "allow_model_training": True},
                 {"series": train},
-            ],
-        ),
+            ),
+        ],
     )
     def test_eval_metric(self, anomaly_model, fit_kwargs):
-
         if fit_kwargs:
             anomaly_model.fit(**fit_kwargs)
 
-        # if the anomaly_model have scorers that have the parameter univariate_scorer set to True,
+        # if the anomaly_model have scorers that have the parameter is_univariate set to True,
         # 'actual_anomalies' must have widths of 1
         if anomaly_model.univariate_scoring:
             with pytest.raises(ValueError):
@@ -482,7 +488,6 @@ class TestAnomalyDetectionModel:
         )
 
     def test_ForecastingAnomalyModelInput(self):
-
         # model input
         # model input must be of type ForecastingModel
         with pytest.raises(ValueError):
@@ -513,7 +518,6 @@ class TestAnomalyDetectionModel:
             )
 
     def test_FilteringAnomalyModelInput(self):
-
         # model input
         # model input must be of type FilteringModel
         with pytest.raises(ValueError):
@@ -545,7 +549,6 @@ class TestAnomalyDetectionModel:
             )
 
     def test_univariate_ForecastingAnomalyModel(self):
-
         np.random.seed(40)
 
         np_train_slope = np.array(range(0, 100, 1))
@@ -659,7 +662,6 @@ class TestAnomalyDetectionModel:
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_univariate_FilteringAnomalyModel(self):
-
         np.random.seed(40)
 
         np_series_train = np.array(range(0, 100, 1)) + np.random.normal(
@@ -782,7 +784,6 @@ class TestAnomalyDetectionModel:
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_univariate_covariate_ForecastingAnomalyModel(self):
-
         np.random.seed(40)
 
         day_week = [0, 1, 2, 3, 4, 5, 6]
@@ -908,7 +909,6 @@ class TestAnomalyDetectionModel:
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_multivariate_FilteringAnomalyModel(self):
-
         np.random.seed(40)
 
         data_1 = np.random.normal(0, 0.1, 100)
@@ -1137,7 +1137,6 @@ class TestAnomalyDetectionModel:
         np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_multivariate_ForecastingAnomalyModel(self):
-
         np.random.seed(40)
 
         data_sin = np.array([np.sin(x) for x in np.arange(0, 20 * np.pi, 0.2)])
@@ -1368,7 +1367,6 @@ class TestAnomalyDetectionModel:
 
     def test_visualization(self):
         # test function show_anomalies() and show_anomalies_from_scores()
-
         forecasting_anomaly_model = ForecastingAnomalyModel(
             model=RegressionModel(lags=10), scorer=Norm()
         )
@@ -1387,7 +1385,6 @@ class TestAnomalyDetectionModel:
         self.show_anomalies_function(visualization_function=show_anomalies_from_scores)
 
     def show_anomalies_function(self, visualization_function):
-
         # must input only one series
         with pytest.raises(ValueError) as err:
             visualization_function(series=[self.train, self.train])
