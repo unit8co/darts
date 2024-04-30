@@ -16,7 +16,6 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-
 from darts.utils.utils import get_single_series, n_steps_between, series2seq
 
 logger = get_logger(__name__)
