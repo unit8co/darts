@@ -38,7 +38,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-12, ubuntu-latest]
+        os: [macos-13, ubuntu-latest]
         python-version: ['3.8', '3.10']
         flavour: ['core', 'torch', 'all']
 
