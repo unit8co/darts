@@ -1,19 +1,16 @@
 import pytest
 
-from darts.logging import get_logger
+from darts.tests.conftest import TORCH_AVAILABLE
 
-logger = get_logger(__name__)
-
-try:
-    import torch
-
-    from darts.models.components import glu_variants
-    from darts.models.components.glu_variants import GLU_FFN
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+
+from darts.models.components import glu_variants
+from darts.models.components.glu_variants import GLU_FFN
 
 
 class TestFFN:

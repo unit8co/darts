@@ -8,16 +8,15 @@ from typing import Optional, Sequence, Tuple, Union
 import numpy as np
 
 from darts import TimeSeries
-
-from .shifted_dataset import GenericShiftedDataset
-from .training_dataset import (
+from darts.utils.data.shifted_dataset import GenericShiftedDataset
+from darts.utils.data.training_dataset import (
     DualCovariatesTrainingDataset,
     FutureCovariatesTrainingDataset,
     MixedCovariatesTrainingDataset,
     PastCovariatesTrainingDataset,
     SplitCovariatesTrainingDataset,
 )
-from .utils import CovariateType
+from darts.utils.data.utils import CovariateType
 
 
 class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):

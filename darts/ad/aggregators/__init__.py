@@ -11,7 +11,15 @@ component represents the detection of a single model, and returns one (or multip
 representing the final detection.
 """
 
-from .aggregators import Aggregator, FittableAggregator
-from .and_aggregator import AndAggregator
-from .ensemble_sklearn_aggregator import EnsembleSklearnAggregator
-from .or_aggregator import OrAggregator
+from darts.ad.aggregators.aggregators import Aggregator, FittableAggregator
+from darts.ad.aggregators.and_aggregator import AndAggregator
+from darts.ad.aggregators.ensemble_sklearn_aggregator import EnsembleSklearnAggregator
+from darts.ad.aggregators.or_aggregator import OrAggregator
+
+__all__ = [
+    "Aggregator",
+    "FittableAggregator",
+    "AndAggregator",
+    "EnsembleSklearnAggregator",
+    "OrAggregator",
+]

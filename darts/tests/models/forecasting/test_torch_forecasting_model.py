@@ -12,73 +12,69 @@ import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 
-logger = get_logger(__name__)
-
-try:
-    import torch
-    from pytorch_lightning.callbacks import Callback
-    from pytorch_lightning.loggers.logger import DummyLogger
-    from pytorch_lightning.tuner.lr_finder import _LRFinder
-    from torchmetrics import (
-        MeanAbsoluteError,
-        MeanAbsolutePercentageError,
-        MetricCollection,
-    )
-
-    from darts.models import (
-        BlockRNNModel,
-        DLinearModel,
-        GlobalNaiveAggregate,
-        GlobalNaiveDrift,
-        GlobalNaiveSeasonal,
-        NBEATSModel,
-        NHiTSModel,
-        NLinearModel,
-        RNNModel,
-        TCNModel,
-        TFTModel,
-        TiDEModel,
-        TransformerModel,
-        TSMixerModel,
-    )
-    from darts.models.components.layer_norm_variants import RINorm
-    from darts.utils.likelihood_models import (
-        GaussianLikelihood,
-        LaplaceLikelihood,
-        Likelihood,
-    )
-
-    kwargs = {
-        "input_chunk_length": 10,
-        "output_chunk_length": 1,
-        "n_epochs": 1,
-        "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
-    }
-    models = [
-        (BlockRNNModel, kwargs),
-        (DLinearModel, kwargs),
-        (NBEATSModel, kwargs),
-        (NHiTSModel, kwargs),
-        (NLinearModel, kwargs),
-        (RNNModel, {"training_length": 10, **kwargs}),
-        (TCNModel, kwargs),
-        (TFTModel, {"add_relative_index": 2, **kwargs}),
-        (TiDEModel, kwargs),
-        (TransformerModel, kwargs),
-        (TSMixerModel, kwargs),
-        (GlobalNaiveSeasonal, kwargs),
-        (GlobalNaiveAggregate, kwargs),
-        (GlobalNaiveDrift, kwargs),
-    ]
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.loggers.logger import DummyLogger
+from pytorch_lightning.tuner.lr_finder import _LRFinder
+from torchmetrics import (
+    MeanAbsoluteError,
+    MeanAbsolutePercentageError,
+    MetricCollection,
+)
+
+from darts.models import (
+    BlockRNNModel,
+    DLinearModel,
+    GlobalNaiveAggregate,
+    GlobalNaiveDrift,
+    GlobalNaiveSeasonal,
+    NBEATSModel,
+    NHiTSModel,
+    NLinearModel,
+    RNNModel,
+    TCNModel,
+    TFTModel,
+    TiDEModel,
+    TransformerModel,
+    TSMixerModel,
+)
+from darts.models.components.layer_norm_variants import RINorm
+from darts.utils.likelihood_models import (
+    GaussianLikelihood,
+    LaplaceLikelihood,
+    Likelihood,
+)
+
+kwargs = {
+    "input_chunk_length": 10,
+    "output_chunk_length": 1,
+    "n_epochs": 1,
+    "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
+}
+models = [
+    (BlockRNNModel, kwargs),
+    (DLinearModel, kwargs),
+    (NBEATSModel, kwargs),
+    (NHiTSModel, kwargs),
+    (NLinearModel, kwargs),
+    (RNNModel, {"training_length": 10, **kwargs}),
+    (TCNModel, kwargs),
+    (TFTModel, {"add_relative_index": 2, **kwargs}),
+    (TiDEModel, kwargs),
+    (TransformerModel, kwargs),
+    (TSMixerModel, kwargs),
+    (GlobalNaiveSeasonal, kwargs),
+    (GlobalNaiveAggregate, kwargs),
+    (GlobalNaiveDrift, kwargs),
+]
 
 
 class TestTorchForecastingModel:

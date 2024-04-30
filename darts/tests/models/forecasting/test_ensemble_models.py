@@ -13,19 +13,14 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
     from darts.utils.likelihood_models import QuantileRegression
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - Some ensemble models tests will be skipped.")
-    TORCH_AVAILABLE = False
 
 
 def _make_ts(start_value=0, n=100):

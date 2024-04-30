@@ -50,10 +50,9 @@ import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.utils import expand_arr, generate_index, n_steps_between
-
-from .logging import get_logger, raise_if, raise_if_not, raise_log
-from .utils import _build_tqdm_iterator, _parallel_apply
 
 try:
     from typing import Literal
@@ -2545,10 +2544,13 @@ class TimeSeries:
             return time_index[time_index.isin(other._time_index)]
 
     def _slice_intersect_bounds(self, other: Self) -> Tuple[int, int]:
+        """Find the start (absolute index) and end (index relative to the end) indices that represent the time
+        intersection from `self` and `other`."""
         shift_start = n_steps_between(
             other.start_time(), self.start_time(), freq=self.freq
         )
-        shift_end = n_steps_between(other.end_time(), self.end_time(), freq=self.freq)
+        shift_end = len(other) - (len(self) - shift_start)
+
         shift_start = shift_start if shift_start >= 0 else 0
         shift_end = shift_end if shift_end < 0 else None
         return shift_start, shift_end
@@ -3258,7 +3260,7 @@ class TimeSeries:
             New TimeSeries instance enhanced by `attribute`.
         """
         self._assert_deterministic()
-        from .utils import timeseries_generation as tg
+        from darts.utils import timeseries_generation as tg
 
         return self.stack(
             tg.datetime_attribute_timeseries(
@@ -3304,7 +3306,7 @@ class TimeSeries:
             A new TimeSeries instance, enhanced with binary holiday component.
         """
         self._assert_deterministic()
-        from .utils import timeseries_generation as tg
+        from darts.utils import timeseries_generation as tg
 
         return self.stack(
             tg.holidays_timeseries(

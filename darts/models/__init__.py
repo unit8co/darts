@@ -58,6 +58,20 @@ except ModuleNotFoundError:
         'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )
+    BlockRNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    DLinearModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    GlobalNaiveAggregate = NotImportedModule(module_name="(Py)Torch", warn=False)
+    GlobalNaiveDrift = NotImportedModule(module_name="(Py)Torch", warn=False)
+    GlobalNaiveSeasonal = NotImportedModule(module_name="(Py)Torch", warn=False)
+    NBEATSModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    NHiTSModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    NLinearModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    RNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TCNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TFTModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TiDEModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TransformerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TSMixerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
@@ -103,3 +117,52 @@ from darts.models.forecasting.baselines import NaiveEnsembleModel
 
 # Ensembling
 from darts.models.forecasting.ensemble_model import EnsembleModel
+
+__all__ = [
+    "LightGBMModel",
+    "ARIMA",
+    "AutoARIMA",
+    "NaiveDrift",
+    "NaiveMean",
+    "NaiveMovingAverage",
+    "NaiveSeasonal",
+    "ExponentialSmoothing",
+    "FFT",
+    "KalmanForecaster",
+    "LinearRegressionModel",
+    "RandomForest",
+    "RegressionEnsembleModel",
+    "RegressionModel",
+    "BATS",
+    "TBATS",
+    "FourTheta",
+    "Theta",
+    "VARIMA",
+    "BlockRNNModel",
+    "DLinearModel",
+    "GlobalNaiveDrift",
+    "GlobalNaiveDrift",
+    "GlobalNaiveSeasonal",
+    "NBEATSModel",
+    "NHiTSModel",
+    "NLinearModel",
+    "RNNModel",
+    "TCNModel",
+    "TFTModel",
+    "TiDEModel",
+    "TransformerModel",
+    "TSMixerModel",
+    "Prophet",
+    "CatBoostModel",
+    "Croston",
+    "StatsForecastAutoARIMA",
+    "StatsForecastAutoCES",
+    "StatsForecastAutoETS",
+    "StatsForecastAutoTheta",
+    "XGBModel",
+    "GaussianProcessFilter",
+    "KalmanFilter",
+    "MovingAverageFilter",
+    "NaiveEnsembleModel",
+    "EnsembleModel",
+]

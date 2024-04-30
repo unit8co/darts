@@ -22,5 +22,10 @@ time series indicating the presence of actual anomalies. Finally, the function :
 used to visualize the predictions (in-sample predictions and anomaly scores) of the anomaly model.
 """
 
-from .filtering_am import FilteringAnomalyModel
-from .forecasting_am import ForecastingAnomalyModel
+from darts.ad.anomaly_model.filtering_am import FilteringAnomalyModel
+from darts.ad.anomaly_model.forecasting_am import ForecastingAnomalyModel
+
+__all__ = [
+    "FilteringAnomalyModel",
+    "ForecastingAnomalyModel",
+]

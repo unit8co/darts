@@ -3,28 +3,24 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
-logger = get_logger(__name__)
-
-try:
-    import torch.nn as nn
-
-    from darts.models.components.transformer import (
-        CustomFeedForwardDecoderLayer,
-        CustomFeedForwardEncoderLayer,
-    )
-    from darts.models.forecasting.transformer_model import (
-        TransformerModel,
-        _TransformerModule,
-    )
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch.nn as nn
+
+from darts.models.components.transformer import (
+    CustomFeedForwardDecoderLayer,
+    CustomFeedForwardEncoderLayer,
+)
+from darts.models.forecasting.transformer_model import (
+    TransformerModel,
+    _TransformerModule,
+)
 
 
 class TestTransformerModel:
