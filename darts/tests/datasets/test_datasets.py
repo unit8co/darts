@@ -5,35 +5,33 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger
+from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils.timeseries_generation import gaussian_timeseries
 
-logger = get_logger(__name__)
-
-try:
-    from darts.utils.data import (  # noqa: F401
-        DualCovariatesInferenceDataset,
-        DualCovariatesSequentialDataset,
-        DualCovariatesShiftedDataset,
-        FutureCovariatesInferenceDataset,
-        FutureCovariatesSequentialDataset,
-        FutureCovariatesShiftedDataset,
-        HorizonBasedDataset,
-        MixedCovariatesInferenceDataset,
-        MixedCovariatesSequentialDataset,
-        MixedCovariatesShiftedDataset,
-        PastCovariatesInferenceDataset,
-        PastCovariatesSequentialDataset,
-        PastCovariatesShiftedDataset,
-        SplitCovariatesInferenceDataset,
-        SplitCovariatesSequentialDataset,
-        SplitCovariatesShiftedDataset,
-    )
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+
+from darts.utils.data import (  # noqa: F401
+    DualCovariatesInferenceDataset,
+    DualCovariatesSequentialDataset,
+    DualCovariatesShiftedDataset,
+    FutureCovariatesInferenceDataset,
+    FutureCovariatesSequentialDataset,
+    FutureCovariatesShiftedDataset,
+    HorizonBasedDataset,
+    MixedCovariatesInferenceDataset,
+    MixedCovariatesSequentialDataset,
+    MixedCovariatesShiftedDataset,
+    PastCovariatesInferenceDataset,
+    PastCovariatesSequentialDataset,
+    PastCovariatesShiftedDataset,
+    SplitCovariatesInferenceDataset,
+    SplitCovariatesSequentialDataset,
+    SplitCovariatesShiftedDataset,
+)
 
 
 class TestDataset:
