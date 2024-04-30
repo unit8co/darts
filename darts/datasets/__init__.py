@@ -5,18 +5,16 @@ Datasets
 A few popular time series datasets
 """
 
-import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List
 
 import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
+from darts.datasets.dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 from darts.logging import get_logger, raise_if_not
 from darts.utils.utils import _build_tqdm_iterator
-
-from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
 """
     Overall usage of this package:

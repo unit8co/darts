@@ -7,7 +7,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.metrics import mape, rmse
 from darts.models import (
     LinearRegressionModel,
@@ -18,22 +17,15 @@ from darts.models import (
     RegressionModel,
     Theta,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
 
-logger = get_logger(__name__)
-
-try:
+if TORCH_AVAILABLE:
     import torch
 
     from darts.models import BlockRNNModel, RNNModel
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not available. Some tests will be skipped.")
-    TORCH_AVAILABLE = False
 
 
 class TestRegressionEnsembleModels:

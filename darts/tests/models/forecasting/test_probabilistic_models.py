@@ -18,12 +18,12 @@ from darts.models import (
     NotImportedModule,
     XGBModel,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     import torch
 
     from darts.models import (
@@ -57,13 +57,6 @@ try:
         QuantileRegression,
         WeibullLikelihood,
     )
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "Torch not available. Tests related to torch-based models will be skipped."
-    )
-    TORCH_AVAILABLE = False
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)

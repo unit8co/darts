@@ -3,20 +3,16 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 
-logger = get_logger(__name__)
-
-try:
-    import torch.nn as nn
-
-    from darts.models.forecasting.rnn_model import CustomRNNModule, RNNModel, _RNNModule
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch.nn as nn
+
+from darts.models.forecasting.rnn_model import CustomRNNModule, RNNModel, _RNNModule
 
 
 class ModuleValid1(_RNNModule):

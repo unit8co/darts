@@ -9,7 +9,6 @@ import darts
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
-from darts.logging import get_logger
 from darts.models import (
     ARIMA,
     AutoARIMA,
@@ -20,10 +19,10 @@ from darts.models import (
     NaiveSeasonal,
     NotImportedModule,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
-try:
+if TORCH_AVAILABLE:
     import torch
 
     from darts.models import (
@@ -41,14 +40,6 @@ try:
         TSMixerModel,
     )
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger = get_logger(__name__)
-    logger.warning(
-        "Torch not installed - will be skipping historical forecasts tests for torch models"
-    )
-    TORCH_AVAILABLE = False
 
 models_reg_no_cov_cls_kwargs = [(LinearRegressionModel, {"lags": 8}, {}, (8, 1))]
 if not isinstance(CatBoostModel, NotImportedModule):

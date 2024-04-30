@@ -13,9 +13,8 @@ from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.utils.data.utils import CovariateType
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
-
-from .utils import CovariateType
 
 logger = get_logger(__name__)
 
