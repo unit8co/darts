@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 **Fixed**
+- Fixed a bug where `n_steps_between` did not work properly with custom business frequencies. This affected metrics computation. [#2357](https://github.com/unit8co/darts/pull/2357) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 - Improvements to linting via updated pre-commit configurations: [#2324](https://github.com/unit8co/darts/pull/2324) by [Jirka Borovec](https://github.com/borda).
