@@ -50,10 +50,9 @@ import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.utils import generate_index, n_steps_between
-
-from .logging import get_logger, raise_if, raise_if_not, raise_log
-from .utils import _build_tqdm_iterator, _parallel_apply
 
 try:
     from typing import Literal
@@ -3173,7 +3172,7 @@ class TimeSeries:
             New TimeSeries instance enhanced by `attribute`.
         """
         self._assert_deterministic()
-        from .utils import timeseries_generation as tg
+        from darts.utils import timeseries_generation as tg
 
         return self.stack(
             tg.datetime_attribute_timeseries(
@@ -3219,7 +3218,7 @@ class TimeSeries:
             A new TimeSeries instance, enhanced with binary holiday component.
         """
         self._assert_deterministic()
-        from .utils import timeseries_generation as tg
+        from darts.utils import timeseries_generation as tg
 
         return self.stack(
             tg.holidays_timeseries(
