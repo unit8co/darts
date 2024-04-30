@@ -9,10 +9,9 @@ from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, 
 import numpy as np
 
 from darts import TimeSeries
+from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
-
-from .base_data_transformer import BaseDataTransformer
 
 logger = get_logger(__name__)
 

@@ -49,7 +49,7 @@ For Dynamic Time Warping (DTW) (aggregated over time):
     - :func:`DTW <darts.metrics.metrics.dtw_metric>`: Dynamic Time Warping Metric
 """
 
-from .metrics import (
+from darts.metrics.metrics import (
     ae,
     ape,
     arre,
@@ -78,3 +78,33 @@ from .metrics import (
     smape,
     sse,
 )
+
+__all__ = [
+    "ae",
+    "ape",
+    "arre",
+    "ase",
+    "coefficient_of_variation",
+    "dtw_metric",
+    "err",
+    "mae",
+    "mape",
+    "marre",
+    "mase",
+    "merr",
+    "mql",
+    "mse",
+    "msse",
+    "ope",
+    "ql",
+    "qr",
+    "r2_score",
+    "rmse",
+    "rmsle",
+    "rmsse",
+    "sape",
+    "se",
+    "sle",
+    "smape",
+    "sse",
+]

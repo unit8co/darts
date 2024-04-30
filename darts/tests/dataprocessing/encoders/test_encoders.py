@@ -29,18 +29,14 @@ from darts.dataprocessing.encoders.encoders import (
 )
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_log
+from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import TFTModel
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - will be skipping Torch models tests")
-    TORCH_AVAILABLE = False
 
 
 class TestEncoder:

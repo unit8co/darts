@@ -23,9 +23,8 @@ from statsmodels.tsa.stattools import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-
-from .missing_values import fill_missing_values
-from .utils import ModelMode, SeasonalityMode
+from darts.utils.missing_values import fill_missing_values
+from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 

@@ -25,5 +25,10 @@ Finally, the function :func:`show_anomalies()` can also be used to visualize the
 (in-sample predictions and anomaly scores) of the anomaly model.
 """
 
-from .filtering_am import FilteringAnomalyModel
-from .forecasting_am import ForecastingAnomalyModel
+from darts.ad.anomaly_model.filtering_am import FilteringAnomalyModel
+from darts.ad.anomaly_model.forecasting_am import ForecastingAnomalyModel
+
+__all__ = [
+    "FilteringAnomalyModel",
+    "ForecastingAnomalyModel",
+]

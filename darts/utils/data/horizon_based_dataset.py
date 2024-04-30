@@ -9,9 +9,8 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
-
-from .training_dataset import PastCovariatesTrainingDataset
-from .utils import CovariateType
+from darts.utils.data.training_dataset import PastCovariatesTrainingDataset
+from darts.utils.data.utils import CovariateType
 
 logger = get_logger(__name__)
 

@@ -19,5 +19,10 @@ to obtain binary predictions. The function ``eval_accuracy()`` returns the accur
 binary ground truth time series indicating the presence of anomalies.
 """
 
-from .quantile_detector import QuantileDetector
-from .threshold_detector import ThresholdDetector
+from darts.ad.detectors.quantile_detector import QuantileDetector
+from darts.ad.detectors.threshold_detector import ThresholdDetector
+
+__all__ = [
+    "QuantileDetector",
+    "ThresholdDetector",
+]
