@@ -5,18 +5,16 @@ Datasets
 A few popular time series datasets
 """
 
-import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List
 
 import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
+from darts.datasets.dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 from darts.logging import get_logger, raise_if_not
 from darts.utils.utils import _build_tqdm_iterator
-
-from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
 """
     Overall usage of this package:
@@ -513,7 +511,8 @@ class ElectricityDataset(DatasetLoaderCSV):
         Parameters
         ----------
         multivariate: bool
-            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+            Default is True.
         """
 
         def pre_proces_fn(extracted_dir, dataset_path):
@@ -584,7 +583,8 @@ class UberTLCDataset(DatasetLoaderCSV):
         sample_freq: str
             The sampling frequency of the data. Can be "hourly" or "daily". Default is "hourly".
         multivariate: bool
-            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+            Default is True.
         """
         valid_sample_freq = ["daily", "hourly"]
         raise_if_not(
@@ -665,15 +665,18 @@ class ILINetDataset(DatasetLoaderCSV):
 
     Components Descriptions:
 
-    * % WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week weighted by state population
-    * % UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week unweighted by state population
+    * % WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week
+        weighted by state population
+    * % UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each
+        week unweighted by state population
     * AGE 0-4: Number of patients between 0 and 4 years of age
     * AGE 25-49: Number of patients between 25 and 49 years of age
     * AGE 25-64: Number of patients between 25 and 64 years of age
     * AGE 5-24: Number of patients between 5 and 24 years of age
     * AGE 50-64: Number of patients between 50 and 64 years of age
     * AGE 65: Number of patients above (>=65) 65 years of age
-    * ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C] or greater) and a cough and/or a sore throat
+    * ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C]
+        or greater) and a cough and/or a sore throat
     * NUM. OF PROVIDERS: Number of outpatient healthcare providers
     * TOTAL PATIENTS: Total number of patients
 
@@ -709,8 +712,9 @@ class ILINetDataset(DatasetLoaderCSV):
 
 class ExchangeRateDataset(DatasetLoaderCSV):
     """
-    The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada, Switzerland, China, Japan, New Zealand,
-    and Singapore, ranging from 1990 to 2016. Unfortunately, there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.
+    The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada,
+    Switzerland, China, Japan, New Zealand, and Singapore, ranging from 1990 to 2016. Unfortunately,
+    there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.
     Source: [1]_
 
     References
@@ -723,7 +727,8 @@ class ExchangeRateDataset(DatasetLoaderCSV):
         Parameters
         ----------
         multivariate: bool
-            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+            Default is True.
         """
         super().__init__(
             metadata=DatasetLoaderMetadata(
@@ -744,8 +749,9 @@ class ExchangeRateDataset(DatasetLoaderCSV):
 
 class TrafficDataset(DatasetLoaderCSV):
     """
-    The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department of Transportation. The data describes
-    the road occupancy rates (between 0 and 1) measured by 862 different sensors on San Francisco Bay area freeways. The raw data is in http://pems.dot.ca.gov.
+    The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department
+    of Transportation. The data describes the road occupancy rates (between 0 and 1) measured by 862 different sensors
+    on San Francisco Bay area freeways. The raw data is in http://pems.dot.ca.gov.
     Source: [1]_
 
     References
@@ -758,7 +764,8 @@ class TrafficDataset(DatasetLoaderCSV):
         Parameters
         ----------
         multivariate: bool
-            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+            Default is True.
         """
         super().__init__(
             metadata=DatasetLoaderMetadata(
@@ -797,7 +804,8 @@ class WeatherDataset(DatasetLoaderCSV):
         Parameters
         ----------
         multivariate: bool
-            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries.
+            Default is True.
         """
         super().__init__(
             metadata=DatasetLoaderMetadata(

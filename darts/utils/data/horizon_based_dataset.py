@@ -9,9 +9,8 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
-
-from .training_dataset import PastCovariatesTrainingDataset
-from .utils import CovariateType
+from darts.utils.data.training_dataset import PastCovariatesTrainingDataset
+from darts.utils.data.utils import CovariateType
 
 logger = get_logger(__name__)
 
@@ -120,7 +119,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             len(target_vals)
             >= (self.lookback + self.max_lh) * self.output_chunk_length,
             "The dataset contains some input/target series that are shorter than "
-            "`(lookback + max_lh) * H` ({}-th series)".format(target_idx),
+            f"`(lookback + max_lh) * H` ({target_idx}-th series)",
         )
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)

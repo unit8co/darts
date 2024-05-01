@@ -13,19 +13,14 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
     from darts.utils.likelihood_models import QuantileRegression
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - Some ensemble models tests will be skipped.")
-    TORCH_AVAILABLE = False
 
 
 def _make_ts(start_value=0, n=100):
@@ -111,6 +106,7 @@ class TestEnsembleModels:
             None,
             None,
             0,
+            None,
         )  # test if default is okay
 
         model1 = LinearRegressionModel(
@@ -123,7 +119,19 @@ class TestEnsembleModels:
         ensemble = NaiveEnsembleModel(
             [model1, model2]
         )  # test if infers extreme lags is okay
-        expected = (-5, 0, -6, -1, 6, 9, 0)
+        expected = (-5, 0, -6, -1, 6, 9, 0, None)
+        assert expected == ensemble.extreme_lags
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_extreme_lags_rnn(self):
+        # RNNModel has the 8th element in `extreme_lags` for the `max_target_lag_train`.
+        # it is given by `training_length - input_chunk_length`.
+        # for the ensemble model we want the max lag of all forecasting models.
+        model1 = RNNModel(input_chunk_length=14, training_length=24)
+        model2 = RNNModel(input_chunk_length=12, training_length=37)
+
+        ensemble = NaiveEnsembleModel([model1, model2])
+        expected = (-14, 0, None, None, -14, 0, 0, 37 - 12)
         assert expected == ensemble.extreme_lags
 
     def test_input_models_local_models(self):
@@ -152,7 +160,7 @@ class TestEnsembleModels:
     def test_call_backtest_naive_ensemble_local_models(self):
         ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
         ensemble.fit(self.series1)
-        assert ensemble.extreme_lags == (-10, -1, None, None, None, None, 0)
+        assert ensemble.extreme_lags == (-10, -1, None, None, None, None, 0, None)
         ensemble.backtest(self.series1)
 
     def test_predict_univariate_ensemble_local_models(self):
@@ -199,7 +207,7 @@ class TestEnsembleModels:
 
         # only probabilistic forecasting models
         naive_ensemble_proba = NaiveEnsembleModel([model_proba_1, model_proba_2])
-        assert naive_ensemble_proba._is_probabilistic
+        assert naive_ensemble_proba.supports_probabilistic_prediction
 
         naive_ensemble_proba.fit(self.series1 + self.series2)
         # by default, only 1 sample

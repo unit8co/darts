@@ -23,9 +23,8 @@ from statsmodels.tsa.stattools import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-
-from .missing_values import fill_missing_values
-from .utils import ModelMode, SeasonalityMode
+from darts.utils.missing_values import fill_missing_values
+from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 
@@ -278,9 +277,7 @@ def remove_from_series(
     else:
         raise_log(
             ValueError(
-                "Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}".format(
-                    model
-                )
+                f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}"
             )
         )
     return new_ts

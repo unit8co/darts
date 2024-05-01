@@ -29,7 +29,7 @@ class _ResidualBlock(nn.Module):
         num_filters: int,
         kernel_size: int,
         dilation_base: int,
-        dropout_fn,
+        dropout: float,
         weight_norm: bool,
         nr_blocks_below: int,
         num_layers: int,
@@ -46,8 +46,8 @@ class _ResidualBlock(nn.Module):
             The size of every kernel in a convolutional layer.
         dilation_base
             The base of the exponent that will determine the dilation on every level.
-        dropout_fn
-            The dropout function to be applied to every convolutional layer.
+        dropout
+            The dropout to be applied to every convolutional layer.
         weight_norm
             Boolean value indicating whether to use weight normalization.
         nr_blocks_below
@@ -77,7 +77,8 @@ class _ResidualBlock(nn.Module):
 
         self.dilation_base = dilation_base
         self.kernel_size = kernel_size
-        self.dropout_fn = dropout_fn
+        self.dropout1 = MonteCarloDropout(dropout)
+        self.dropout2 = MonteCarloDropout(dropout)
         self.num_layers = num_layers
         self.nr_blocks_below = nr_blocks_below
 
@@ -111,14 +112,14 @@ class _ResidualBlock(nn.Module):
             self.kernel_size - 1
         )
         x = F.pad(x, (left_padding, 0))
-        x = self.dropout_fn(F.relu(self.conv1(x)))
+        x = self.dropout1(F.relu(self.conv1(x)))
 
         # second step
         x = F.pad(x, (left_padding, 0))
         x = self.conv2(x)
         if self.nr_blocks_below < self.num_layers - 1:
             x = F.relu(x)
-        x = self.dropout_fn(x)
+        x = self.dropout2(x)
 
         # add residual
         if self.conv1.in_channels != self.conv2.out_channels:
@@ -169,7 +170,8 @@ class _TCNModule(PLPastCovariatesModule):
         dropout
             The dropout rate for every convolutional layer.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -194,7 +196,6 @@ class _TCNModule(PLPastCovariatesModule):
         self.target_size = target_size
         self.nr_params = nr_params
         self.dilation_base = dilation_base
-        self.dropout = MonteCarloDropout(p=dropout)
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
@@ -220,15 +221,15 @@ class _TCNModule(PLPastCovariatesModule):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(
-                num_filters,
-                kernel_size,
-                dilation_base,
-                self.dropout,
-                weight_norm,
-                i,
-                num_layers,
-                self.input_size,
-                target_size * nr_params,
+                num_filters=num_filters,
+                kernel_size=kernel_size,
+                dilation_base=dilation_base,
+                dropout=dropout,
+                weight_norm=weight_norm,
+                nr_blocks_below=i,
+                num_layers=num_layers,
+                input_size=self.input_size,
+                target_size=target_size * nr_params,
             )
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
@@ -284,7 +285,7 @@ class TCNModel(PastCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
@@ -293,7 +294,7 @@ class TCNModel(PastCovariatesTorchModel):
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
-            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters

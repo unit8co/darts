@@ -14,6 +14,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.torch import MonteCarloDropout
 
 MixedCovariatesTrainTensorType = Tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
@@ -40,7 +41,7 @@ class _ResidualBlock(nn.Module):
             nn.Linear(input_dim, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, output_dim),
-            nn.Dropout(dropout),
+            MonteCarloDropout(dropout),
         )
 
         # linear skip connection from input to output of self.dense
@@ -116,7 +117,8 @@ class _TideModule(PLMixedCovariatesModule):
         dropout
             Dropout probability
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -404,7 +406,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
@@ -413,7 +415,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
-            cannot generate auto-regressive predictions (`n > output_chunk_length`).
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         num_encoder_layers
             The number of residual blocks in the encoder.
         num_decoder_layers

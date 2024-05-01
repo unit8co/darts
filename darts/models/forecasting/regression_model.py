@@ -43,7 +43,7 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
-    add_static_covariates_to_lagged_data,
+    _create_lagged_data_autoregression,
     create_lagged_component_names,
     create_lagged_training_data,
 )
@@ -54,12 +54,8 @@ from darts.utils.historical_forecasts import (
     _process_historical_forecast_input,
 )
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import (
-    _check_quantiles,
-    get_single_series,
-    seq2series,
-    series2seq,
-)
+from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
 
@@ -123,7 +119,7 @@ class RegressionModel(GlobalForecastingModel):
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
-            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
@@ -132,7 +128,7 @@ class RegressionModel(GlobalForecastingModel):
             input chunk end). This will create a gap between the input (history of target and past covariates) and
             output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
             step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
-            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
             (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
@@ -453,6 +449,7 @@ class RegressionModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         min_target_lag = self.lags["target"][0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1 + self.output_chunk_shift
@@ -468,6 +465,7 @@ class RegressionModel(GlobalForecastingModel):
             min_future_cov_lag,
             max_future_cov_lag,
             self.output_chunk_shift,
+            None,
         )
 
     @property
@@ -712,8 +710,6 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
-
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_fit_encodings(
@@ -731,6 +727,7 @@ class RegressionModel(GlobalForecastingModel):
             and self.supports_static_covariates
             and self.considers_static_covariates
         ):
+            self._verify_static_covariates(get_single_series(series).static_covariates)
             self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
@@ -928,7 +925,8 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        self._verify_static_covariates(series[0].static_covariates)
+        if self.uses_static_covariates:
+            self._verify_static_covariates(series[0].static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
@@ -1057,83 +1055,25 @@ class RegressionModel(GlobalForecastingModel):
                 last_step_shift = t_pred - (n - step)
                 t_pred = n - step
 
-            np_X = []
-            # retrieve target lags
-            if "target" in self.lags:
-                if predictions:
-                    series_matrix = np.concatenate(
-                        [series_matrix, predictions[-1]], axis=1
-                    )
-                # component-wise lags
-                if "target" in self.component_lags:
-                    tmp_X = [
-                        series_matrix[
-                            :,
-                            [lag - (shift + last_step_shift) for lag in comp_lags],
-                            comp_i,
-                        ]
-                        for comp_i, (comp, comp_lags) in enumerate(
-                            self.component_lags["target"].items()
-                        )
-                    ]
-                    # values are grouped by component
-                    np_X.append(
-                        np.concatenate(tmp_X, axis=1).reshape(
-                            len(series) * num_samples, -1
-                        )
-                    )
-                else:
-                    # values are grouped by lags
-                    np_X.append(
-                        series_matrix[
-                            :,
-                            [
-                                lag - (shift + last_step_shift)
-                                for lag in self.lags["target"]
-                            ],
-                        ].reshape(len(series) * num_samples, -1)
-                    )
-            # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
-            for cov_type in ["past", "future"]:
-                if cov_type in covariate_matrices:
-                    # component-wise lags
-                    if cov_type in self.component_lags:
-                        tmp_X = [
-                            covariate_matrices[cov_type][
-                                :,
-                                np.array(comp_lags) - self.lags[cov_type][0] + t_pred,
-                                comp_i,
-                            ]
-                            for comp_i, (comp, comp_lags) in enumerate(
-                                self.component_lags[cov_type].items()
-                            )
-                        ]
-                        np_X.append(
-                            np.concatenate(tmp_X, axis=1).reshape(
-                                len(series) * num_samples, -1
-                            )
-                        )
-                    else:
-                        np_X.append(
-                            covariate_matrices[cov_type][
-                                :, relative_cov_lags[cov_type] + t_pred
-                            ].reshape(len(series) * num_samples, -1)
-                        )
+            # concatenate previous iteration forecasts
+            if "target" in self.lags and predictions:
+                series_matrix = np.concatenate([series_matrix, predictions[-1]], axis=1)
 
-            # concatenate retrieved lags
-            X = np.concatenate(np_X, axis=1)
-            # Need to split up `X` into three equally-sized sub-blocks
-            # corresponding to each timeseries in `series`, so that
-            # static covariates can be added to each block; valid since
-            # each block contains same number of observations:
-            X_blocks = np.split(X, len(series), axis=0)
-            X_blocks, _ = add_static_covariates_to_lagged_data(
-                X_blocks,
-                series,
+            # extract and concatenate lags from target and covariates series
+            X = _create_lagged_data_autoregression(
+                target_series=series,
+                t_pred=t_pred,
+                shift=shift,
+                last_step_shift=last_step_shift,
+                series_matrix=series_matrix,
+                covariate_matrices=covariate_matrices,
+                lags=self.lags,
+                component_lags=self.component_lags,
+                relative_cov_lags=relative_cov_lags,
+                num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
-                last_shape=self._static_covariates_shape,
+                last_static_covariates_shape=self._static_covariates_shape,
             )
-            X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(
@@ -1247,9 +1187,9 @@ class RegressionModel(GlobalForecastingModel):
 
     def _optimized_historical_forecasts(
         self,
-        series: Optional[Sequence[TimeSeries]],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -1261,9 +1201,7 @@ class RegressionModel(GlobalForecastingModel):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         **kwargs,
-    ) -> Union[
-        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-    ]:
+    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For RegressionModels we create the lagged prediction data once per series using a moving window.
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
@@ -1272,18 +1210,20 @@ class RegressionModel(GlobalForecastingModel):
 
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
-        series, past_covariates, future_covariates = _process_historical_forecast_input(
-            model=self,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            forecast_horizon=forecast_horizon,
-            allow_autoregression=False,
+        series, past_covariates, future_covariates, series_seq_type = (
+            _process_historical_forecast_input(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                forecast_horizon=forecast_horizon,
+                allow_autoregression=False,
+            )
         )
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
-            return _optimized_historical_forecasts_last_points_only(
+            hfc = _optimized_historical_forecasts_last_points_only(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,
@@ -1295,11 +1235,12 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
         else:
-            return _optimized_historical_forecasts_all_points(
+            hfc = _optimized_historical_forecasts_all_points(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,
@@ -1311,9 +1252,11 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
+        return series2seq(hfc, seq_type_out=series_seq_type)
 
 
 class _LikelihoodMixin:
@@ -1680,7 +1623,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
-            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
@@ -1689,7 +1632,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             input chunk end). This will create a gap between the input (history of target and past covariates) and
             output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
             step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
-            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
             (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.

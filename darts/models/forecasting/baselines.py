@@ -2,7 +2,7 @@
 Baseline Models
 ---------------
 
-A collection of simple benchmark models for univariate series.
+A collection of simple benchmark models for single uni- and multivariate series.
 """
 
 from typing import List, Optional, Sequence, Union
@@ -193,7 +193,7 @@ class NaiveMovingAverage(LocalForecastingModel):
     def __init__(self, input_chunk_length: int = 1):
         """Naive Moving Average Model
 
-        This model forecasts using an auto-regressive moving average (ARMA).
+        This model forecasts using an autoregressive moving average (ARMA).
 
         Parameters
         ----------

@@ -10,6 +10,7 @@ from darts.dataprocessing.encoders.encoder_base import (
 )
 from darts.logging import get_logger
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -34,7 +35,7 @@ class TestCovariatesIndexGenerator:
     # pd.DatetimeIndex
     # expected covariates for inference dataset for n <= output_chunk_length
     cov_time_inf_short = TimeSeries.from_times_and_values(
-        tg.generate_index(
+        generate_index(
             start=target_time.start_time(),
             length=n_target + n_short,
             freq=target_time.freq,
@@ -43,7 +44,7 @@ class TestCovariatesIndexGenerator:
     )
     # expected covariates for inference dataset for n > output_chunk_length
     cov_time_inf_long = TimeSeries.from_times_and_values(
-        tg.generate_index(
+        generate_index(
             start=target_time.start_time(),
             length=n_target + n_long,
             freq=target_time.freq,
@@ -54,7 +55,7 @@ class TestCovariatesIndexGenerator:
     # integer index
     # expected covariates for inference dataset for n <= output_chunk_length
     cov_int_inf_short = TimeSeries.from_times_and_values(
-        tg.generate_index(
+        generate_index(
             start=target_int.start_time(),
             length=n_target + n_short,
             freq=target_int.freq,
@@ -63,7 +64,7 @@ class TestCovariatesIndexGenerator:
     )
     # expected covariates for inference dataset for n > output_chunk_length
     cov_int_inf_long = TimeSeries.from_times_and_values(
-        tg.generate_index(
+        generate_index(
             start=target_int.start_time(),
             length=n_target + n_long,
             freq=target_int.freq,

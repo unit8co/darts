@@ -13,7 +13,7 @@ from typing import List, Optional, Sequence, Union
 import numpy as np
 import xgboost as xgb
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -21,7 +21,6 @@ from darts.models.forecasting.regression_model import (
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
-from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
 
@@ -105,7 +104,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
-            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
@@ -114,7 +113,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             input chunk end). This will create a gap between the input (history of target and past covariates) and
             output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
             step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
-            target `series`. If `output_chunk_shift` is set, the model cannot generate auto-regressive predictions
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
             (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
@@ -328,7 +327,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
 
     @property

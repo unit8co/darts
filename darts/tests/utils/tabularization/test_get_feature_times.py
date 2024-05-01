@@ -703,7 +703,7 @@ class TestGetFeatureTimes:
         vice versa. The only circumstance under which a warning
         should *not* be issued is when `target_series` is specified,
         but `lags` is not when `is_training = True`; this is because
-        the user may not want to add auto-regressive features to `X`,
+        the user may not want to add autoregressive features to `X`,
         but they still need to specify `target_series` to create labels.
         """
         # Define some arbitrary input values:

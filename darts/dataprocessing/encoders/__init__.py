@@ -3,7 +3,7 @@ Time Axis Encoders
 ------------------
 """
 
-from .encoders import (
+from darts.dataprocessing.encoders.encoders import (
     FutureCallableIndexEncoder,
     FutureCyclicEncoder,
     FutureDatetimeAttributeEncoder,
@@ -14,3 +14,15 @@ from .encoders import (
     PastIntegerIndexEncoder,
     SequentialEncoder,
 )
+
+__all__ = [
+    "FutureCallableIndexEncoder",
+    "FutureCyclicEncoder",
+    "FutureDatetimeAttributeEncoder",
+    "FutureIntegerIndexEncoder",
+    "PastCallableIndexEncoder",
+    "PastCyclicEncoder",
+    "PastDatetimeAttributeEncoder",
+    "PastIntegerIndexEncoder",
+    "SequentialEncoder",
+]

@@ -29,17 +29,14 @@ from darts.dataprocessing.encoders.encoders import (
 )
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_log
+from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import TFTModel
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - will be skipping Torch models tests")
-    TORCH_AVAILABLE = False
 
 
 class TestEncoder:
@@ -79,7 +76,7 @@ class TestEncoder:
     # multi-TS at prediction should be as follows
     inf_ts_short_future = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12 + 6, freq=ts.freq
             ),
             np.arange(12 + 6),
@@ -89,7 +86,7 @@ class TestEncoder:
 
     inf_ts_long_future = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12 + 8, freq=ts.freq
             ),
             np.arange(12 + 8),
@@ -99,7 +96,7 @@ class TestEncoder:
 
     inf_ts_short_past = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12, freq=ts.freq
             ),
             np.arange(12),
@@ -109,7 +106,7 @@ class TestEncoder:
 
     inf_ts_long_past = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq,
                 length=12 + (8 - 6),
                 freq=ts.freq,
@@ -667,7 +664,7 @@ class TestEncoder:
 
         attribute = "month"
         month_series = TimeSeries.from_times_and_values(
-            times=tg.generate_index(
+            times=generate_index(
                 start=pd.to_datetime("2000-01-01"), length=24, freq="MS"
             ),
             values=np.arange(24),
@@ -724,7 +721,7 @@ class TestEncoder:
         attribute = "month"
 
         month_series = TimeSeries.from_times_and_values(
-            times=tg.generate_index(
+            times=generate_index(
                 start=pd.to_datetime("2000-01-01"), length=24, freq="MS"
             ),
             values=np.arange(24),
@@ -930,7 +927,7 @@ class TestEncoder:
 
         # inference set
         pc, fc = encs.encode_inference(n=12, target=ts)
-        year_index = tg.generate_index(
+        year_index = generate_index(
             start=ts.end_time() - ts.freq * (input_chunk_length - 1),
             length=24,
             freq=ts.freq,
