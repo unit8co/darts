@@ -31,7 +31,6 @@ from tbats import TBATS as tbats_TBATS
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.utils import freqs
 
 logger = get_logger(__name__)
 
@@ -50,27 +49,27 @@ def _seasonality_from_freq(series: TimeSeries):
         return [5]
     elif freq == "D":
         return [7]
-    elif freq == "W":
+    elif freq == "W" or freq.startswith("W-"):
         return [52]
     elif freq in [
-        freqs["ME"],
-        freqs["BME"],
-        freqs["CBME"],
-        freqs["SME"],
+        "M",
+        "BM",
+        "CBM",
+        "SM",
         "LWOM",
         "WOM",
-    ] or freq.startswith(("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")):
+    ] or freq.startswith(("M", "BM", "BS", "CBM", "SM", "LWOM", "WOM")):
         return [12]  # month
-    elif freq in [freqs["QE"], freqs["BQE"], "REQ"] or freq.startswith(
-        ("Q", "BQ", "REQ")
-    ):
+    elif freq in ["Q", "BQ", "REQ"] or freq.startswith(("Q", "BQ", "REQ")):
         return [4]  # quarter
-    elif freq in [freqs["h"], freqs["bh"], freqs["cbh"]]:
-        return [24]  # hour
-    elif freq == freqs["min"]:
-        return [60]  # minute
-    elif freq == freqs["s"]:
-        return [60]  # second
+    else:
+        freq_lower = freq.lower()
+        if freq_lower in ["h", "bh", "cbh"]:
+            return [24]  # hour
+        elif freq_lower in ["t", "min"]:
+            return [60]  # minute
+        elif freq_lower == "s":
+            return [60]  # second
     return None
 
 
