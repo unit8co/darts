@@ -15,7 +15,7 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import generate_index
+from darts.utils.utils import freqs, generate_index
 
 
 def helper_create_multivariate_linear_timeseries(
@@ -697,7 +697,7 @@ class TestCreateLaggedTrainingData:
                 end_value=10,
                 start=pd.Timestamp("1/2/2000"),
                 length=self.min_n_ts,
-                freq="2d",
+                freq="2D",
             )
             past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
@@ -705,7 +705,7 @@ class TestCreateLaggedTrainingData:
                 end_value=20,
                 start=pd.Timestamp("1/4/2000"),
                 length=self.min_n_ts + 1,
-                freq="2d",
+                freq="2D",
             )
             future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
@@ -713,7 +713,7 @@ class TestCreateLaggedTrainingData:
                 end_value=30,
                 start=pd.Timestamp("1/6/2000"),
                 length=self.min_n_ts + 1,
-                freq="2d",
+                freq="2D",
             )
         # Conduct test for each input parameter combo:
         for (
@@ -817,7 +817,7 @@ class TestCreateLaggedTrainingData:
                 end_value=10,
                 start=pd.Timestamp("1/1/2000"),
                 length=20,
-                freq="d",
+                freq="D",
             )
             past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
@@ -825,7 +825,7 @@ class TestCreateLaggedTrainingData:
                 end_value=20,
                 start=pd.Timestamp("1/2/2000"),
                 length=10,
-                freq="2d",
+                freq="2D",
             )
             future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
@@ -833,7 +833,7 @@ class TestCreateLaggedTrainingData:
                 end_value=30,
                 start=pd.Timestamp("1/3/2000"),
                 length=7,
-                freq="3d",
+                freq="3D",
             )
         # Conduct test for each input parameter combo:
         for (
@@ -938,7 +938,7 @@ class TestCreateLaggedTrainingData:
                 end_value=10,
                 start=pd.Timestamp("1/2/2000"),
                 end=pd.Timestamp("1/18/2000"),
-                freq="2d",
+                freq="2D",
             )
             past = helper_create_multivariate_linear_timeseries(
                 n_components=3,
@@ -946,7 +946,7 @@ class TestCreateLaggedTrainingData:
                 end_value=20,
                 start=pd.Timestamp("1/4/2000"),
                 end=pd.Timestamp("1/20/2000"),
-                freq="2d",
+                freq="2D",
             )
             future = helper_create_multivariate_linear_timeseries(
                 n_components=4,
@@ -954,7 +954,7 @@ class TestCreateLaggedTrainingData:
                 end_value=30,
                 start=pd.Timestamp("1/6/2000"),
                 end=pd.Timestamp("1/22/2000"),
-                freq="2d",
+                freq="2D",
             )
         # Conduct test for each input parameter combo:
         for (
@@ -1107,7 +1107,7 @@ class TestCreateLaggedTrainingData:
         itertools.product(
             [0, 1, 3],
             [False, True],
-            list(itertools.product(["datetime"], ["d", "2d", "ms", "y"]))
+            list(itertools.product(["datetime"], ["D", "2D", freqs["ms"], freqs["YE"]]))
             + list(itertools.product(["integer"], [1, 2])),
         ),
     )
@@ -1408,7 +1408,7 @@ class TestCreateLaggedTrainingData:
                 start=cov_start, length=cov_length, start_value=2, end_value=3
             )
         else:
-            freq = pd.tseries.frequencies.to_offset("d")
+            freq = pd.tseries.frequencies.to_offset("D")
             cov_start = pd.Timestamp("1/1/2000") + (cov_start_shift + cov_lag) * freq
             target = linear_timeseries(
                 start=pd.Timestamp("1/1/2000"),
@@ -1507,7 +1507,7 @@ class TestCreateLaggedTrainingData:
                 start=cov_start, length=cov_length, start_value=2, end_value=3
             )
         else:
-            freq = pd.tseries.frequencies.to_offset("d")
+            freq = pd.tseries.frequencies.to_offset("D")
             cov_start = pd.Timestamp("1/1/2000") + (cov_start_shift + cov_lag) * freq
             target = linear_timeseries(
                 start=pd.Timestamp("1/1/2000"),

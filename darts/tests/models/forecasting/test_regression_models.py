@@ -161,7 +161,6 @@ xgb_test_params = {
     "n_estimators": 1,
     "max_depth": 1,
     "max_leaves": 1,
-    "verbose": -1,
     "random_state": 42,
 }
 lgbm_test_params = {

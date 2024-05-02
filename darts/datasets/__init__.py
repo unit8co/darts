@@ -14,7 +14,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.datasets.dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 from darts.logging import get_logger, raise_if_not
-from darts.utils.utils import _build_tqdm_iterator
+from darts.utils.utils import _build_tqdm_iterator, freqs
 
 """
     Overall usage of this package:
@@ -602,7 +602,7 @@ class UberTLCDataset(DatasetLoaderCSV):
             )
 
             output_dict = {}
-            freq_setting = "1H" if "hourly" in str(dataset_path) else "1D"
+            freq_setting = "1" + freqs["h"] if "hourly" in str(dataset_path) else "1D"
             time_series_of_locations = list(df.groupby(by="locationID"))
             for locationID, df in time_series_of_locations:
                 df.sort_index()
@@ -774,7 +774,7 @@ class TrafficDataset(DatasetLoaderCSV):
                 hash="a2105f364ef70aec06c757304833f72a",
                 header_time="Date",
                 format_time="%Y-%m-%d %H:%M:%S",
-                freq="1H",
+                freq="1" + freqs["h"],
                 multivariate=multivariate,
             )
         )
