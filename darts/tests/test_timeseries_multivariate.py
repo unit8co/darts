@@ -6,6 +6,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.tests.test_timeseries import TestTimeSeries
+from darts.utils.utils import freqs
 
 
 class TestTimeSeriesMultivariate:
@@ -236,7 +237,9 @@ class TestTimeSeriesMultivariate:
         assert seriesA.width == 3
 
         # testing hourly time series
-        times = pd.date_range(start=pd.Timestamp("20201224"), periods=50, freq="H")
+        times = pd.date_range(
+            start=pd.Timestamp("20201224"), periods=50, freq=freqs["h"]
+        )
         seriesB = TimeSeries.from_times_and_values(times, range(len(times)))
         seriesB = seriesB.add_holidays("US")
         last_column = seriesB.pd_dataframe().iloc[:, seriesB.width - 1]

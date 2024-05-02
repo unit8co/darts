@@ -3257,7 +3257,7 @@ class TimeSeries:
 
         Examples
         --------
-        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15T")
+        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15min")
         >>> pd_series = pd.Series(range(6), index=times)
         >>> ts = TimeSeries.from_series(pd_series)
         >>> print(ts.time_index)
@@ -3272,7 +3272,7 @@ class TimeSeries:
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
-        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30T"))
+        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30min"))
         >>> print(resampled_ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
                       dtype='datetime64[ns]', name='time', freq='H')

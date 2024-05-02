@@ -7,7 +7,7 @@ from darts import TimeSeries
 from darts.logging import raise_if_not
 
 # Those freqs can be used to divide Time deltas (the others can't):
-DIVISIBLE_FREQS = {"D", "H", "T", "min", "S", "L", "ms", "U", "us", "N"}
+DIVISIBLE_FREQS = {"D", "h", "H", "T", "min", "s", "S", "L", "ms", "U", "us", "N", "ns"}
 
 
 class CovariateType(Enum):

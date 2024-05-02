@@ -16,6 +16,7 @@ from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.utils import freqs
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
@@ -595,16 +596,23 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seconds_per_day = 86400
         days = 0
-        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith(
-            ("A", "BA", "Y", "BY", "RE")
+        if freq in [freqs["YE"], freqs["BYE"], "Y", "BY", "RE"] or freq.startswith(
+            (freqs["YE"], freqs["BYE"], "Y", "BY", "RE")
         ):  # year
             days = 365.25
-        elif freq in ["Q", "BQ", "REQ"] or freq.startswith(
+        elif freq in [freqs["QE"], "BQ", "REQ"] or freq.startswith(
             ("Q", "BQ", "REQ")
         ):  # quarter
             days = 3 * 30.4375
-        elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(
-            ("M", "BM", "BS", "CBM", "SM")
+        elif freq in [
+            freqs["ME"],
+            freqs["BME"],
+            freqs["CBME"],
+            freqs["SME"],
+            "LWOM",
+            "WOM",
+        ] or freq.startswith(
+            ("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")
         ):  # month
             days = 30.4375
         elif freq in ["W"]:  # week
@@ -613,21 +621,18 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             days = 1 * 7 / 5
         elif freq in ["D"]:  # day
             days = 1.0
-        else:
-            # all freqs higher than "D" are lower case in pandas >= 2.2.0
-            freq_lower = freq.lower()
-            if freq_lower in ["h", "bh", "cbh"]:  # hour
-                days = 1 / 24
-            elif freq_lower in ["t", "min"]:  # minute
-                days = 1 / (24 * 60)
-            elif freq_lower in ["s"]:  # second
-                days = 1 / seconds_per_day
-            elif freq_lower in ["l", "ms"]:  # millisecond
-                days = 1 / (seconds_per_day * 10**3)
-            elif freq_lower in ["u", "us"]:  # microsecond
-                days = 1 / (seconds_per_day * 10**6)
-            elif freq_lower in ["n"]:  # nanosecond
-                days = 1 / (seconds_per_day * 10**9)
+        elif freq in [freqs["h"], freqs["bh"], freqs["cbh"]]:  # hour
+            days = 1 / 24
+        elif freq == freqs["min"]:  # minute
+            days = 1 / (24 * 60)
+        elif freq == freqs["s"]:  # second
+            days = 1 / seconds_per_day
+        elif freq == freqs["ms"]:  # millisecond
+            days = 1 / (seconds_per_day * 10**3)
+        elif freq == freqs["us"]:  # microsecond
+            days = 1 / (seconds_per_day * 10**6)
+        elif freq == freqs["ns"]:  # nanosecond
+            days = 1 / (seconds_per_day * 10**9)
 
         if not days:
             raise_log(
