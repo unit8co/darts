@@ -17,7 +17,6 @@ else:
     from typing_extensions import Self
 
 import numpy as np
-import pandas as pd
 
 from darts import TimeSeries, metrics
 from darts.ad.utils import (
@@ -102,13 +101,28 @@ class AnomalyScorer(ABC):
             _sanity_check_two_series(actual, pred, actual_name, pred_name)
             index = actual.slice_intersect_times(pred, copy=False)
             self._check_window_size(index)
-            anomaly_scores.append(
-                self._score_core_from_prediction(
-                    actual_vals=actual.slice_intersect_values(pred),
-                    pred_vals=pred.slice_intersect_values(actual),
-                    time_index=index,
-                )
+            scores = self._score_core_from_prediction(
+                actual_vals=actual.slice_intersect_values(pred),
+                pred_vals=pred.slice_intersect_values(actual),
             )
+            scores = TimeSeries.from_times_and_values(
+                values=scores,
+                times=index,
+            )
+
+            if self.window > 1:
+                # apply a moving average with window size `self.window` to the anomaly scores starting at `self.window`;
+                # series of length `n` will be transformed into a series of length `n-self.window+1`.
+                scores = scores.window_transform(
+                    transforms={
+                        "window": self.window,
+                        "function": "mean",
+                        "mode": "rolling",
+                        "min_periods": self.window,
+                    },
+                    treat_na="dropna",
+                )
+            anomaly_scores.append(scores)
         return anomaly_scores[0] if called_with_single_series else anomaly_scores
 
     def eval_metric_from_prediction(
@@ -239,8 +253,7 @@ class AnomalyScorer(ABC):
         self,
         actual_vals: np.ndarray,
         pred_vals: np.ndarray,
-        time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
-    ) -> TimeSeries:
+    ) -> np.ndarray:
         pass
 
     def _check_univariate_scorer(
@@ -635,14 +648,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         self,
         actual_vals: np.ndarray,
         pred_vals: np.ndarray,
-        time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
-    ) -> TimeSeries:
-        raise_log(
-            NotImplementedError(
-                "`_score_core_from_prediction` is not implemented for `FittableAnomalyScorer`"
-            ),
-            logger=logger,
-        )
+    ) -> np.ndarray:
+        pass
 
     def _diff_series(
         self,
@@ -693,12 +700,13 @@ class FittableAnomalyScorer(AnomalyScorer):
         # TODO: can we use window_transform here?
         scores_point_wise = []
         for score in scores:
-            mean_score = np.empty(score.all_values().shape)
+            score_vals = score.all_values(copy=False)
+            mean_score = np.empty(score_vals.shape)
             for idx_point in range(len(score)):
                 # "look ahead window" to account for the "look behind window" of the scorer
-                mean_score[idx_point] = score.all_values(copy=False)[
-                    idx_point : idx_point + window
-                ].mean(axis=0)
+                mean_score[idx_point] = score_vals[idx_point : idx_point + window].mean(
+                    axis=0
+                )
             score_point_wise = score.with_times_and_values(score.time_index, mean_score)
             scores_point_wise.append(score_point_wise)
         return scores_point_wise
@@ -908,8 +916,7 @@ class NLLScorer(AnomalyScorer):
         self,
         actual_vals: np.ndarray,
         pred_vals: np.ndarray,
-        time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
-    ) -> TimeSeries:
+    ) -> np.ndarray:
         """For each timestamp of the inputs:
 
         - the parameters of the considered distribution are fitted on the samples of the probabilistic time series
@@ -941,27 +948,7 @@ class NLLScorer(AnomalyScorer):
                     pred_vals[:, component_idx],
                 )
             )
-
-        anomaly_scores = TimeSeries.from_times_and_values(
-            values=np.array(np_anomaly_scores).T,
-            times=time_index,
-        )
-
-        if self.window == 1:
-            # the process results in replacing every value by itself -> return directly the series
-            return anomaly_scores
-
-        # apply a moving average with window size `self.window` to the anomaly scores starting at `self.window`;
-        # series of length `n` will be transformed into a series of length `n-self.window+1`.
-        return anomaly_scores.window_transform(
-            transforms={
-                "window": self.window,
-                "function": "mean",
-                "mode": "rolling",
-                "min_periods": self.window,
-            },
-            treat_na="dropna",
-        )
+        return np.array(np_anomaly_scores).T
 
     @abstractmethod
     def _score_core_nllikelihood(
