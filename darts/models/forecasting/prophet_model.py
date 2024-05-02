@@ -603,11 +603,18 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             ("Q", "BQ", "REQ")
         ):  # quarter
             days = 3 * 30.4375
-        elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(
-            ("M", "BM", "BS", "CBM", "SM")
+        elif freq in [
+            "M",
+            "BM",
+            "CBM",
+            "SM",
+            "LWOM",
+            "WOM",
+        ] or freq.startswith(
+            ("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")
         ):  # month
             days = 30.4375
-        elif freq in ["W"]:  # week
+        elif freq == "W" or freq.startswith("W-"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
             days = 1 * 7 / 5
@@ -626,7 +633,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 days = 1 / (seconds_per_day * 10**3)
             elif freq_lower in ["u", "us"]:  # microsecond
                 days = 1 / (seconds_per_day * 10**6)
-            elif freq_lower in ["n"]:  # nanosecond
+            elif freq_lower in ["n", "ns"]:  # nanosecond
                 days = 1 / (seconds_per_day * 10**9)
 
         if not days:

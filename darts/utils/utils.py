@@ -11,6 +11,7 @@ from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+from pandas._libs.tslibs.offsets import BusinessMixin
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
@@ -40,6 +41,30 @@ class ModelMode(Enum):
     MULTIPLICATIVE = "multiplicative"
     ADDITIVE = "additive"
     NONE = None
+
+
+# TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)
+pd_above_v22 = pd.__version__ >= "2.2"
+freqs = {
+    "YE": "YE" if pd_above_v22 else "A",
+    "YS": "YS" if pd_above_v22 else "AS",
+    "BYS": "BYS" if pd_above_v22 else "BAS",
+    "BYE": "BYE" if pd_above_v22 else "BA",
+    "QE": "QE" if pd_above_v22 else "Q",
+    "BQE": "BQE" if pd_above_v22 else "BQ",
+    "ME": "ME" if pd_above_v22 else "M",
+    "SME": "SME" if pd_above_v22 else "SM",
+    "BME": "BME" if pd_above_v22 else "BM",
+    "CBME": "CBME" if pd_above_v22 else "CBM",
+    "h": "h" if pd_above_v22 else "H",
+    "bh": "bh" if pd_above_v22 else "BH",
+    "cbh": "cbh" if pd_above_v22 else "CBH",
+    "min": "min" if pd_above_v22 else "T",
+    "s": "s" if pd_above_v22 else "S",
+    "ms": "ms" if pd_above_v22 else "L",
+    "us": "us" if pd_above_v22 else "U",
+    "ns": "ns" if pd_above_v22 else "N",
+}
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
@@ -315,7 +340,7 @@ def n_steps_between(
     Works for both integers and time stamps.
 
     * if `end`, `start`, `freq` are all integers, we can simple divide the difference by the frequency.
-    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "M", "Y", ...),
+    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "ME", "YE", ...),
         we can simply divide by the frequency
     * otherwise, we take the period difference between the two time stamps.
 
@@ -335,7 +360,7 @@ def n_steps_between(
 
     Examples
     --------
-    >>> n_steps_between(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-03-01"), freq="M")
+    >>> n_steps_between(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-03-01"), freq="ME")
     2
     >>> n_steps_between(start=0, end=2, freq=1)
     2
@@ -376,16 +401,10 @@ def n_steps_between(
         n_steps = diff // freq
     else:
         period_alias = pd.tseries.frequencies.get_period_alias(freq.name)
-        if period_alias is not None:
-            # get the number of base periods ("2MS" has base freq "MS") between the two time steps
-            diff = (end.to_period(period_alias) - start.to_period(period_alias)).n
-            if abs(diff) != diff:
-                # similar case as with (A)
-                diff += diff % freq.n
-            # floor division by the frequency multiplier ("2MS" has multiplier 2)
-            n_steps = diff // freq.n
-        else:
-            # in the worst case for special frequencies (e.g "C*"), we must generate the index
+        if isinstance(freq, BusinessMixin) or period_alias is None:
+            # for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.
+            # taking the period difference as computed in `else` gives wrong results.
+            # in this (worst) case for special frequencies (e.g "C*"), we must generate the index
             is_reversed = end < start
             if is_reversed:
                 # always generate an increasing index, since pandas (v2.2.1) gives inconsistent result for
@@ -398,6 +417,14 @@ def n_steps_between(
                 n_steps -= 1
             if is_reversed:
                 n_steps *= -1
+        else:
+            # get the number of base periods ("2MS" has base freq "MS") between the two time steps
+            diff = (end.to_period(period_alias) - start.to_period(period_alias)).n
+            if abs(diff) != diff:
+                # similar case as with (A)
+                diff += diff % freq.n
+            # floor division by the frequency multiplier ("2MS" has multiplier 2)
+            n_steps = diff // freq.n
     return n_steps
 
 
