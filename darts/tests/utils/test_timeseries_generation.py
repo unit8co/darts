@@ -378,7 +378,7 @@ class TestTimeSeriesGeneration:
         with pytest.raises(ValueError) as err:
             self.helper_routine(idx, freqs["h"], vals_exp=np.arange(len(idx)))
         assert str(err.value).startswith(
-            "attribute `h` needs to be an attribute of pd.DatetimeIndex."
+            f"attribute `{freqs['h']}` needs to be an attribute of pd.DatetimeIndex."
         )
 
         # no time zone aware index
