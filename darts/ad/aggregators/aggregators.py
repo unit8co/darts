@@ -93,8 +93,8 @@ class Aggregator(ABC):
 
     def eval_metric(
         self,
-        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+        actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        pred_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         window: int = 1,
         metric: str = "recall",
     ) -> Union[float, Sequence[float]]:
@@ -103,28 +103,28 @@ class Aggregator(ABC):
 
         Parameters
         ----------
-        actual_series
+        actual_anomalies
             The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).
-        pred_series
-            The (sequence of) multivariate binary series (predicted labels) to aggregate.
+        pred_anomalies
+            The (sequence of) predicted multivariate binary series to aggregate.
         window
             (Sequence of) integer value indicating the number of past samples each point
             represents in the (sequence of) series. The parameter will be used by the
             function ``_window_adjustment_anomalies()`` in darts.ad.utils to transform
-            actual_series.
+            actual_anomalies.
         metric
-            Metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
-            Default: "recall".
+            The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
+             Default: "recall"
 
         Returns
         -------
         Union[float, Sequence[float]]
             (Sequence of) score for the (sequence of) series.
         """
-        preds = self.predict(pred_series)
+        pred_anomalies = self.predict(pred_anomalies)
         return eval_metric_from_binary_prediction(
-            actual_anomalies=series2seq(actual_series),
-            pred_anomalies=preds,
+            actual_anomalies=actual_anomalies,
+            pred_anomalies=pred_anomalies,
             window=window,
             metric=metric,
         )

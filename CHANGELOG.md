@@ -30,7 +30,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - AnomalyDetector:
     - `eval_metric`: renamed `series` to `actual_series`
   - AnomalyAggregator:
-    - `eval_metric`: renamed `series` to `actual_series`
+    - `eval_metric`: renamed `actual_series` to `actual_anomalies`, `pred_series` to `pred_anomalies`.
   - `ForecastingAnomalyModel`:
     - made method `predict_series()` public
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
@@ -40,10 +40,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Open questions:
   - Inconsistencies:
-    - `Aggregator.eval_metric()` have input `actual_series`, `pred_series` for binary anomalies.
-      Should we follow the same convention as in metrics or is it not necessary?
-        - rename to actual_anomalies, pred_anomalies
-        - leave other methods unchanged
     - AnomalyModel
       - enforce pretrained `GlobalForecastingModel` ?
   - We lack an `AnomalyModel` as we did it for Cpower
