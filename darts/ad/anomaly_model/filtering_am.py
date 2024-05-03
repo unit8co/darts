@@ -263,11 +263,11 @@ class FilteringAnomalyModel(AnomalyModel):
             pass
 
         if self.scorers_are_trainable:
-            pred = self._predict_series(series)
+            pred = self.predict_series(series)
             # fit the scorers
             self._fit_scorers(series, pred)
 
-    def _predict_series(
+    def predict_series(
         self, series: Sequence[TimeSeries], **kwargs
     ) -> Sequence[TimeSeries]:
         """Compute the filtered `series`."""

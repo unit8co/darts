@@ -32,12 +32,10 @@ class AnomalyModel(ABC):
         if not all([isinstance(s, AnomalyScorer) for s in self.scorers]):
             raise_log(
                 ValueError(
-                    "all scorers must be of instance darts.ad.scorers.AnomalyScorer."
+                    "all scorers must be of instance `darts.ad.scorers.AnomalyScorer`."
                 ),
                 logger=logger,
             )
-        self.scorers_are_trainable = any(s.is_trainable for s in self.scorers)
-        self.univariate_scoring = any(s.is_univariate for s in self.scorers)
         self.model = model
 
     def fit(
@@ -77,7 +75,7 @@ class AnomalyModel(ABC):
         return_model_prediction
             Whether to return the forecasting/filtering model prediction along with the anomaly scores.
         **kwargs
-            Additional parameters passed to `AnomalyModel._predict_series()`
+            Additional parameters passed to `AnomalyModel.predict_series()`
 
         Returns
         -------
@@ -96,7 +94,7 @@ class AnomalyModel(ABC):
         # check input series and covert to sequences
         series, kwargs = self._process_input_series(series, **kwargs)
         # predict / filter `series`
-        pred = self._predict_series(series=series, **kwargs)
+        pred = self.predict_series(series=series, **kwargs)
 
         scores = list(
             zip(*[sc.score_from_prediction(series, pred) for sc in self.scorers])
@@ -163,7 +161,7 @@ class AnomalyModel(ABC):
             """Checks if `actual_anomalies` contains only univariate series, which
             is required if any of the scorers returns a univariate score.
             """
-            if self.univariate_scoring and not s.width == 1:
+            if self.scorers_are_univariate and not s.width == 1:
                 raise_log(
                     ValueError(
                         f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.is_univariate]} "
@@ -262,7 +260,7 @@ class AnomalyModel(ABC):
         series
             The series to visualize anomalies from.
         predict_kwargs
-            Additional parameters passed to `AnomalyModel._predict_series()`.
+            Additional parameters passed to `AnomalyModel.predict_series()`.
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
         names_of_scorers
@@ -300,6 +298,16 @@ class AnomalyModel(ABC):
             metric=metric,
         )
 
+    @property
+    def scorers_are_univariate(self):
+        """Whether any of the Scorers is trainable."""
+        return any(s.is_univariate for s in self.scorers)
+
+    @property
+    def scorers_are_trainable(self):
+        """Whether any of the Scorers is trainable."""
+        return any(s.is_trainable for s in self.scorers)
+
     @abstractmethod
     def _fit_core(
         self,
@@ -319,7 +327,7 @@ class AnomalyModel(ABC):
                 scorer.fit_from_prediction(list_series, list_pred)
 
     @abstractmethod
-    def _predict_series(
+    def predict_series(
         self, series: Sequence[TimeSeries], **kwargs
     ) -> Sequence[TimeSeries]:
         """Abstract method to implement the generation of predictions for the input `series`."""

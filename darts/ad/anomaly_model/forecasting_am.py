@@ -15,6 +15,10 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import pandas as pd
 
@@ -26,7 +30,6 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.timeseries import TimeSeries
-from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
@@ -61,9 +64,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         """
         if not isinstance(model, ForecastingModel):
             raise_log(
-                ValueError(
-                    f"Model must be a darts ForecastingModel not a {type(model)}."
-                ),
+                ValueError("`model` must be a Darts `ForecastingModel`."),
                 logger=logger,
             )
         self.model = model
@@ -76,8 +77,12 @@ class ForecastingAnomalyModel(AnomalyModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Union[pd.Timestamp, float, int] = None,
+        start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        enable_optimization: bool = True,
         **model_fit_kwargs,
     ) -> Self:
         """Fit the underlying forecasting model (if applicable) and the fittable scorers, if any.
@@ -112,9 +117,23 @@ class ForecastingAnomalyModel(AnomalyModel):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+        start_format
+            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
+        verbose
+            Whether to print progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
         model_fit_kwargs
             Parameters to be passed on to the forecast model ``fit()`` method.
 
@@ -368,7 +387,11 @@ class ForecastingAnomalyModel(AnomalyModel):
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
         start: Union[pd.Timestamp, float, int] = 0.5,
+        start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        enable_optimization: bool = True,
         **model_fit_kwargs,
     ):
         """Fit the forecasting model (if applicable) and scorers."""
@@ -416,25 +439,30 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         # generate the historical_forecast() prediction of the model on the train set
         if self.scorers_are_trainable:
-            historical_forecasts = self._predict_series(
+            historical_forecasts = self.predict_series(
                 series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 forecast_horizon=forecast_horizon,
-                start=start,
                 num_samples=num_samples,
+                start=start,
+                start_format=start_format,
             )
             # fit the scorers
             self._fit_scorers(series, historical_forecasts)
 
-    def _predict_series(
+    def predict_series(
         self,
         series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         forecast_horizon: int = 1,
         start: Union[pd.Timestamp, float, int] = None,
+        start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        enable_optimization: bool = True,
     ) -> Sequence[TimeSeries]:
         """Compute the historical forecasts that would have been obtained by this model on the `series`.
 
@@ -449,9 +477,6 @@ class ForecastingAnomalyModel(AnomalyModel):
                 logger=logger,
             )
 
-        # check if the window size of the scorers are lower than the max size allowed
-        self._check_window_size(series, start)
-
         # TODO: raise an exception. We only support models that do not need retrain
         # checks if model accepts to not be retrained in the historical_forecasts()
         if self.model._supports_non_retrainable_historical_forecasts:
@@ -464,44 +489,14 @@ class ForecastingAnomalyModel(AnomalyModel):
             "past_covariates": past_covariates,
             "future_covariates": future_covariates,
             "forecast_horizon": forecast_horizon,
-            "start": start,
-            "retrain": retrain,
-            "num_samples": num_samples,
             "stride": 1,
+            "retrain": retrain,
             "last_points_only": True,
-            "verbose": False,
+            "start": start,
+            "start_format": start_format,
+            "num_samples": num_samples,
+            "verbose": verbose,
+            "show_warnings": show_warnings,
+            "enable_optimization": enable_optimization,
         }
         return self.model.historical_forecasts(series, **historical_forecasts_param)
-
-    def _check_window_size(
-        self, series: Sequence[TimeSeries], start: Union[pd.Timestamp, float, int]
-    ):
-        """Checks if the parameters `window` of the scorers are smaller than the maximum window size allowed.
-        The maximum size allowed is equal to the output length of the .historical_forecast() applied on `series`.
-        It is defined by the parameter `start` and the series’ length.
-
-        Parameters
-        ----------
-        series
-            The series given to the .historical_forecast()
-        start
-            Parameter of the .historical_forecast(): first point of time at which a prediction is computed
-            for a future time.
-        """
-        # biggest window of the anomaly_model scorers
-        max_window = max(scorer.window for scorer in self.scorers)
-        for s in series:
-            max_possible_window = (
-                n_steps_between(
-                    end=s.end_time(), start=s.get_timestamp_at_point(start), freq=s.freq
-                )
-                + 1
-            )
-            if max_window > max_possible_window:
-                raise_log(
-                    ValueError(
-                        f"Window size {max_window} is greater than the targeted series length {max_possible_window}, "
-                        f"must be lower or equal. Reduce window size, or reduce start value (start: {start})."
-                    ),
-                    logger=logger,
-                )

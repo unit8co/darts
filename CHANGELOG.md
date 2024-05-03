@@ -20,8 +20,28 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Open questions:
   - for `eval_metric_from_scores`:
-    - rename `actual_anomalies` -> `actual_series`
-    - rename `anomaly_score` -> `pred_series`
+    - binary ground truth anom. `actual_anomalies`
+    - rename `anomaly_score` -> `pred_scores`
+  - for `eval_metric_from_binary_prediction`:
+    - binary ground truth anom: rename `actual_series` -> `actual_anomalies`
+    - rename `pred_series` -> `pred_anomalies`
+  - for `eval_metric_from_binary_prediction`:
+    - (?) rename `series` to `actual_series`
+    - rename `model_output` to `pred_series`:
+    - rename `anomaly_scores` to `pred_scores`
+    - binary ground truth anom: `actual_anomalies`
+    - (?) reorder the arguments to:
+      - actual_series
+      - actual_anomalies
+      - pred_series
+      - pred_scores
+  - `Aggregator.eval_metric()` have input `actual_series`, `pred_series` for binary anomalies.
+    Should we follow the same convention as in metrics or is it not necessary?
+  - `Detector.eval_metric()` have input `actual_anomalies`, `anomaly_score`.
+    Should we follow the same convention as in metrics or is it not necessary?
+  - `AnomalyModel.eval_metric()` have input `actual_anomalies`, `series`.
+    Should we follow the same convention as in metrics or is it not necessary?
+  - `ForecastingAnomalyModel` should we only allow pretrained `GlobalForecastingModel` ?
 
 
 **Fixed**

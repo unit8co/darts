@@ -370,7 +370,7 @@ class TestAnomalyDetectionModel:
 
         # if the anomaly_model have scorers that have the parameter is_univariate set to True,
         # 'actual_anomalies' must have widths of 1
-        if anomaly_model.univariate_scoring:
+        if anomaly_model.scorers_are_univariate:
             with pytest.raises(ValueError):
                 anomaly_model.eval_metric(
                     actual_anomalies=self.mts_anomalies, series=self.test
