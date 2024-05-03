@@ -12,7 +12,7 @@ Common functions used throughout the Anomaly Detection module.
 #     - add an option to visualize: "by window", "unique", "together"
 #     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -246,12 +246,20 @@ def _eval_metric(
 
         _sanity_check_two_series(s_pred, s_anomalies, pred_name, actual_name)
 
-        s_pred, s_anomalies = _intersect(s_pred, s_anomalies, pred_name, actual_name)
+        s_pred_vals = s_pred.slice_intersect_values(s_anomalies, copy=False)
+        s_anomalies_vals = s_anomalies.slice_intersect_values(s_pred, copy=False)
+
+        if not len(s_pred_vals) == len(s_anomalies_vals):
+            raise_log(
+                ValueError(
+                    f"The two time series `{pred_name}` and `{actual_name}` "
+                    f"must have at least a partially overlapping time index."
+                ),
+                logger=logger,
+            )
 
         if not pred_is_binary:  # `pred_series` is an anomaly score
-            nr_anomalies_per_component = (
-                s_anomalies.values(copy=False).sum(axis=0).flatten()
-            )
+            nr_anomalies_per_component = s_anomalies_vals.sum(axis=0).flatten()
 
             if nr_anomalies_per_component.min() == 0:
                 raise_log(
@@ -260,7 +268,7 @@ def _eval_metric(
                     ),
                     logger=logger,
                 )
-            if nr_anomalies_per_component.max() == len(s_anomalies):
+            if nr_anomalies_per_component.max() == len(s_anomalies_vals):
                 add_txt = (
                     ""
                     if s_window <= 1
@@ -275,8 +283,6 @@ def _eval_metric(
                 )
 
         # TODO: could we vectorize this?
-        s_anomalies_vals = s_anomalies.all_values(copy=False)
-        s_pred_vals = s_pred.all_values(copy=False)
         metrics = []
         for component_idx in range(s_pred.width):
             metrics.append(
@@ -513,38 +519,6 @@ def show_anomalies_from_scores(
         axs[index_ax][0].set_xlabel("timestamp")
 
     fig.suptitle(title)
-
-
-def _intersect(
-    series_1: TimeSeries,
-    series_2: TimeSeries,
-    name_series_1: str,
-    name_series_2: str,
-) -> Tuple[TimeSeries, TimeSeries]:
-    """Returns the sub-series of series_1 and of series_2 that share the same time index.
-    (Intersection in time of the two time series)
-
-    Parameters
-    ----------
-    series_1
-        1st time series
-    series_2:
-        2nd time series
-
-    Returns
-    -------
-    Tuple[TimeSeries, TimeSeries]
-    """
-    new_series_1 = series_1.slice_intersect(series_2)
-    if len(new_series_1) == 0:
-        raise_log(
-            ValueError(
-                f"Time intersection between the series in `{name_series_1}` "
-                f"and `{name_series_2}` must be non empty."
-            ),
-            logger=logger,
-        )
-    return new_series_1, series_2.slice_intersect(series_1)
 
 
 def _assert_binary(series: TimeSeries, name: str):
