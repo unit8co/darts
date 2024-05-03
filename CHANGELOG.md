@@ -22,6 +22,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - `model_output` to `pred_series`
       - `anomaly_scores` to `pred_scores`
   - AnomalyModel:
+    - `model` is now enforced to be a `GlobalForecastingModel`
     - `eval_metric`: renamed `series` to `actual_series`
     - `show_anomalies`: renamed `series` to `actual_series`
   - AnomalyScorer:

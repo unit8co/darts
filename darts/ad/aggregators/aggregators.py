@@ -110,7 +110,7 @@ class Aggregator(ABC):
         window
             (Sequence of) integer value indicating the number of past samples each point
             represents in the (sequence of) series. The parameter will be used by the
-            function ``_window_adjustment_anomalies()`` in darts.ad.utils to transform
+            function `_window_adjustment_anomalies()` in darts.ad.utils to transform
             actual_anomalies.
         metric
             The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".

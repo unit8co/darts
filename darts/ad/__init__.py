@@ -6,8 +6,8 @@ A suite of tools for performing anomaly detection and classification
 on time series.
 
 - `Anomaly Scorers <https://unit8co.github.io/darts/generated_api/darts.ad.scorers.html>`_ are at the core of the
-  anomaly detection module. They produce anomaly scores time series, either for single series (``score()``),
-  or for series accompanied by some predictions (``score_from_prediction()``). Scorers can be trainable
+  anomaly detection module. They produce anomaly scores time series, either for single series (`score()`),
+  or for series accompanied by some predictions (`score_from_prediction()`). Scorers can be trainable
   (e.g., :class:`~darts.ad.scorers.kmeans_scorer.KMeansScorer`) or not
   (e.g., :class:`~darts.ad.scorers.norm_scorer.NormScorer`).
 
@@ -16,7 +16,7 @@ on time series.
   (:class:`~darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel`) or filtering models
   (:class:`~darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel`), by comparing models' predictions with actual
   observations. These classes take as parameters one Darts model, and one or multiple scorers, and can be readily used
-  to produce anomaly scores with the ``score()`` method.
+  to produce anomaly scores with the `score()` method.
 
 - `Anomaly Detectors <https://unit8co.github.io/darts/generated_api/darts.ad.detectors.html>`_: transform raw time
   series (such as anomaly scores) into binary anomaly time series.

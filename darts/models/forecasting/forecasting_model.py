@@ -364,9 +364,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _fit_wrapper(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         **kwargs,
     ):
         add_kwargs = {}

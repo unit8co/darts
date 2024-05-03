@@ -264,8 +264,8 @@ class AnomalyScorer(ABC):
         parameter 'is_univariate' set to True.
 
         'is_univariate' is:
-            True -> when the function of the scorer ``score(series)`` (or, if applicable,
-                ``score_from_prediction(actual_series, pred_series)``) returns a univariate
+            True -> when the function of the scorer `score(series)` (or, if applicable,
+                `score_from_prediction(actual_series, pred_series)`) returns a univariate
                 anomaly score regardless of the input `series` (or, if applicable, `actual_series`
                 and `pred_series`).
             False -> when the scorer will return a series that has the
@@ -369,8 +369,8 @@ class FittableAnomalyScorer(AnomalyScorer):
             difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).
             By default, uses the absolute difference (:func:`~darts.metrics.metrics.ae`).
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
-            passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+            passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
         """
         super().__init__(is_univariate=is_univariate, window=window)
@@ -430,9 +430,9 @@ class FittableAnomalyScorer(AnomalyScorer):
     ):
         """Fits the scorer on the two (sequences of) series.
 
-        The function ``diff_fn`` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
-        into one series. By default, ``diff_fn`` will compute the absolute difference (Default:
-        :func:`~darts.metrics.metrics.ae`). If `pred_series` and `actual_series` are sequences, ``diff_fn`` will be
+        The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
+        into one series. By default, `diff_fn` will compute the absolute difference (Default:
+        :func:`~darts.metrics.metrics.ae`). If `pred_series` and `actual_series` are sequences, `diff_fn` will be
         applied to all pairwise elements of the sequences.
 
         The scorer will then be fitted on this (sequence of) series. If a sequence of series is given,
@@ -440,7 +440,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         The scorer assumes that the (sequence of) actual_series is anomaly-free.
 
-        If any of the series is stochastic (with `n_samples>1`), ``diff_fn`` is computed on quantile `0.5`.
+        If any of the series is stochastic (with `n_samples>1`), `diff_fn` is computed on quantile `0.5`.
 
         Parameters
         ----------
@@ -497,10 +497,10 @@ class FittableAnomalyScorer(AnomalyScorer):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Computes the anomaly score on the two (sequence of) series.
 
-        The function ``diff_fn`` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
-        into one "difference" series. By default, ``diff_fn`` will compute the absolute difference
+        The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
+        into one "difference" series. By default, `diff_fn` will compute the absolute difference
         (Default: :func:`~darts.metrics.metrics.ae`).
-        If actual_series and pred_series are sequences, ``diff_fn`` will be applied to all pairwise elements
+        If actual_series and pred_series are sequences, `diff_fn` will be applied to all pairwise elements
         of the sequences.
 
         The scorer will then transform this series into an anomaly score. If a sequence of series is given,
@@ -663,7 +663,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         actual_series: Sequence[TimeSeries],
         pred_series: Sequence[TimeSeries],
     ) -> Sequence[TimeSeries]:
-        """Applies the ``diff_fn`` to two sequences of time series. Converts two time series into 1.
+        """Applies the `diff_fn` to two sequences of time series. Converts two time series into 1.
 
         Each series-pair in actual_series and pred_series must:
             - have a non-empty time intersection
@@ -674,7 +674,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         actual_series
             A sequence of time series
         pred_series
-            A sequence of predicted time series to compute ``diff_fn`` on.
+            A sequence of predicted time series to compute `diff_fn` on.
 
         Returns
         -------
@@ -723,7 +723,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         if not self._fit_called:
             raise_log(
                 ValueError(
-                    f"The Scorer {self.__str__()} has not been fitted yet. Call ``fit()`` first."
+                    f"The Scorer {self.__str__()} has not been fitted yet. Call `fit()` first."
                 ),
                 logger=logger,
             )
@@ -834,7 +834,7 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
     def _tabularize_series(
         self, series: Sequence[TimeSeries], component_wise: bool
     ) -> np.ndarray:
-        """Internal function called by WindowedAnomalyScorer ``fit()`` and ``score()`` functions.
+        """Internal function called by WindowedAnomalyScorer `fit()` and `score()` functions.
 
         Transforms a sequence of series into tabular data of size window `W`. The parameter `component_wise`
         indicates how the rolling window must treat the different components if the series is multivariate.

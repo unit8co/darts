@@ -36,22 +36,22 @@ class WassersteinScorer(WindowedAnomalyScorer):
         diff_fn: METRIC_TYPE = metrics.ae,
     ) -> None:
         """
-        When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size `W`,
+        When calling `fit(series)`, a moving window is applied, which results in a set of vectors of size `W`,
         where `W` is the window size. These vectors are kept in memory, representing the training
-        distribution. The ``score(series)`` function will apply the same moving window.
+        distribution. The `score(series)` function will apply the same moving window.
         The Wasserstein distance is computed between the training distribution and each vector,
         resulting in an anomaly score.
 
-        Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
+        Alternatively, the scorer has the functions `fit_from_prediction()` and `score_from_prediction()`.
         Both require two series (actual and prediction), and compute a "difference" series by applying the
-        function ``diff_fn`` (default: absolute difference). The resulting series is then passed to the
-        functions ``fit()`` and ``score()``, respectively.
+        function `diff_fn` (default: absolute difference). The resulting series is then passed to the
+        functions `fit()` and `score()`, respectively.
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
         series. If set to `True`, the model will treat each series dimension independently. If set to `False`, the model
         concatenates the dimensions in each windows of length `W` and computes a single score for all dimensions.
 
-        **Training with** ``fit()``:
+        **Training with** `fit()`:
 
         The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
         into equal size subsequences. The subsequence will be of size `W` * `D`, with:
@@ -70,7 +70,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
         If `component_wise` is set to `True`, the algorithm will be applied to each dimension independently. For each
         dimension, a PyOD model will be trained.
 
-        **Computing score with** ``score()``:
+        **Computing score with** `score()`:
 
         The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
         same dimension `D` as the data used to train the PyOD model.
@@ -121,7 +121,7 @@ class WassersteinScorer(WindowedAnomalyScorer):
                 logger.warning(
                     f"The `window` parameter WassersteinScorer is smaller than 10 (w={window})."
                     + " The value represents the window length rolled on the series given as"
-                    + " input in the ``score`` function. At each position, the w values will"
+                    + " input in the `score` function. At each position, the w values will"
                     + " constitute a subset, and the Wasserstein distance between the subset"
                     + " and the train distribution will be computed. To better represent the"
                     + " constituted test distribution, the window parameter should be larger"

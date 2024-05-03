@@ -33,7 +33,7 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
 
         If sequences of values are given for the parameters `low_threshold` and/or `high_threshold`,
         they must be of the same length, matching the dimensionality of the series passed
-        to ``detect()``, or have a length of 1. In the latter case, this single value will be used
+        to `detect()`, or have a length of 1. In the latter case, this single value will be used
         across all components of the series.
 
         If either `low_threshold` or `high_threshold` is None, the corresponding bound will not be used.

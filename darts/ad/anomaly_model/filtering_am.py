@@ -2,7 +2,7 @@
 Filtering Anomaly Model
 -----------------------
 
-A ``FilteringAnomalyModel`` wraps around a Darts filtering model and one or
+A `FilteringAnomalyModel` wraps around a Darts filtering model and one or
 several anomaly scorer(s) to compute anomaly scores
 by comparing how actuals deviate from the model's predictions (filtered series).
 """
@@ -39,7 +39,7 @@ class FilteringAnomalyModel(AnomalyModel):
         function of the model will be sufficient to train it to satisfactory performance on series without anomalies.
 
         Calling :func:`fit()` on the anomaly model will fit the underlying filtering model only
-        if ``allow_model_training`` is set to ``True`` upon calling ``fit()``.
+        if `allow_model_training` is set to `True` upon calling `fit()`.
         In addition, calling :func:`fit()` will also fit the fittable scorers, if any.
 
         Parameters
@@ -48,7 +48,7 @@ class FilteringAnomalyModel(AnomalyModel):
             A Darts `FilteringModel` used to filter the actual time series.
         scorer
             One or multiple scorer(s) used to compare the actual and predicted time series in order to obtain an
-            anomaly score ``TimeSeries``. If a list of scorers,
+            anomaly score `TimeSeries`. If a list of scorers,
             :meth:`~darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score` will output anomaly scores for
             each scorer.
         """
@@ -81,7 +81,7 @@ class FilteringAnomalyModel(AnomalyModel):
             Whether the filtering model should be fitted on the given series. If `False`, the model must already be
             fitted.
         **filter_fit_kwargs
-            Additional parameters passed to the filtering model's ``fit()`` method.
+            Additional parameters passed to the filtering model's `fit()` method.
 
         Returns
         -------
@@ -112,7 +112,7 @@ class FilteringAnomalyModel(AnomalyModel):
         return_model_prediction
             Whether to return the filtering model prediction along with the anomaly scores.
         **filter_kwargs
-            Additional parameters passed to the filtering model's ``filter()`` method.
+            Additional parameters passed to the filtering model's `filter()` method.
 
         Returns
         -------
@@ -143,7 +143,7 @@ class FilteringAnomalyModel(AnomalyModel):
         series
             The sequence of series to filter.
         **kwargs
-            Additional parameters passed to the filtering model's ``filter()`` method.
+            Additional parameters passed to the filtering model's `filter()` method.
         """
         return [self.model.filter(s, **kwargs) for s in series]
 
@@ -176,7 +176,7 @@ class FilteringAnomalyModel(AnomalyModel):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         **filter_kwargs
-            Additional parameters passed to the filtering model's ``filter()`` method.
+            Additional parameters passed to the filtering model's `filter()` method.
 
         Returns
         -------
@@ -238,7 +238,7 @@ class FilteringAnomalyModel(AnomalyModel):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         score_kwargs
-            parameters for the ``score()`` method.
+            parameters for the `score()` method.
         """
         return super().show_anomalies(
             actual_series=actual_series,

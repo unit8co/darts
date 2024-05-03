@@ -148,7 +148,7 @@ class AnomalyModel(ABC):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         **kwargs
-            Additional parameters passed to the ``score()`` method.
+            Additional parameters passed to the `score()` method.
 
         Returns
         -------
@@ -279,7 +279,7 @@ class AnomalyModel(ABC):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         score_kwargs
-            parameters for the ``score()`` method.
+            parameters for the `score()` method.
         """
         actual_series = _check_input(
             actual_series, name="actual_series", num_series_expected=1

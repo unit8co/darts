@@ -33,22 +33,22 @@ class KMeansScorer(WindowedAnomalyScorer):
         **kwargs,
     ) -> None:
         """
-        When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size `W`,
-        where `W` is the window size. The `k`-means model is trained on these vectors. The ``score(series)`` function
+        When calling `fit(series)`, a moving window is applied, which results in a set of vectors of size `W`,
+        where `W` is the window size. The `k`-means model is trained on these vectors. The `score(series)` function
         applies the same moving window and returns the distance to the closest of the `k` centroids for each
         vector of size `W`.
 
-        Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
+        Alternatively, the scorer has the functions `fit_from_prediction()` and `score_from_prediction()`.
         Both require two series (actual and prediction), and compute a "difference" series by applying the
-        function ``diff_fn`` (default: absolute difference). The resulting series is then passed to the
-        functions ``fit()`` and ``score()``, respectively.
+        function `diff_fn` (default: absolute difference). The resulting series is then passed to the
+        functions `fit()` and `score()`, respectively.
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
         series. If set to `True`, the model will treat each component independently by fitting a different
         `k`-means model for each dimension. If set to `False`, the model concatenates the dimensions in
         each windows of length `W` and computes the score using only one underlying `k`-means model.
 
-        **Training with** ``fit()``:
+        **Training with** `fit()`:
 
         The input can be a series (univariate or multivariate) or multiple series. The series will be sliced
         into equal size subsequences. The subsequence will be of size `W` * `D`, with:
@@ -66,7 +66,7 @@ class KMeansScorer(WindowedAnomalyScorer):
         If `component_wise` is set to `True`, the algorithm will be applied to each dimension independently. For each
         dimension, a `k`-means model will be trained.
 
-        **Computing score with** ``score()``:
+        **Computing score with** `score()`:
 
         The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
         same dimension `D` as the data used to train the `k`-means model.

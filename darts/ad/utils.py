@@ -658,7 +658,7 @@ def _assert_same_length(
 
 
 def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
-    """Internal function called by ``show_anomalies_from_scores()``
+    """Internal function called by `show_anomalies_from_scores()`
 
     Plot the series on the given axes ax_id.
 

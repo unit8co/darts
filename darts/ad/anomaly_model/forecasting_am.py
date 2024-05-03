@@ -2,7 +2,7 @@
 Forecasting Anomaly Model
 -------------------------
 
-A ``ForecastingAnomalyModel`` wraps around a Darts forecasting model and one or several anomaly
+A `ForecastingAnomalyModel` wraps around a Darts forecasting model and one or several anomaly
 scorer(s) to compute anomaly scores by comparing how actuals deviate from the model's forecasts.
 """
 
@@ -25,10 +25,7 @@ import pandas as pd
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.forecasting_model import (
-    ForecastingModel,
-    GlobalForecastingModel,
-)
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
@@ -37,19 +34,20 @@ logger = get_logger(__name__)
 class ForecastingAnomalyModel(AnomalyModel):
     def __init__(
         self,
-        model: ForecastingModel,
+        model: GlobalForecastingModel,
         scorer: Union[AnomalyScorer, Sequence[AnomalyScorer]],
     ):
         """Forecasting-based Anomaly Detection Model
 
-        The forecasting model may or may not be already fitted. The underlying assumption is that `model`
-        should be able to accurately forecast the series in the absence of anomalies. For this reason,
-        it is recommended to either provide a model that has already been fitted and evaluated to work
-        appropriately on a series without anomalies, or to ensure that a simple call to the :func:`fit()`
-        method of the model will be sufficient to train it to satisfactory performance on a series without anomalies.
+        The forecasting model must be a `GlobalForecastingModel` that may or may not be already fitted. The
+        underlying assumption is that `model` should be able to accurately forecast the series in the absence of
+        anomalies. For this reason, it is recommended to either provide a model that has already been fitted and
+        evaluated to work appropriately on a series without anomalies, or to ensure that a simple call to the
+        :func:`fit()` method of the model will be sufficient to train it to satisfactory performance on a series
+        without anomalies. The pre-trained model will be used to generate forecasts when calling :func:`score()`.
 
-        Calling :func:`fit()` on the anomaly model will fit the underlying forecasting model only
-        if ``allow_model_training`` is set to ``True`` upon calling ``fit()``.
+        Calling :func:`fit()` on the anomaly model will fit the underlying forecasting model only if
+        `allow_model_training` is set to `True` upon calling `fit()`.
         In addition, calling :func:`fit()` will also fit the fittable scorers, if any.
 
         Parameters
@@ -58,13 +56,13 @@ class ForecastingAnomalyModel(AnomalyModel):
             An instance of a Darts forecasting model.
         scorer
             One or multiple scorer(s) that will be used to compare the actual and predicted time series in order
-            to obtain an anomaly score ``TimeSeries``.
+            to obtain an anomaly score `TimeSeries`.
             If a list of `N` scorers is given, the anomaly model will call each
-            one of the scorers and output a list of `N` anomaly scores ``TimeSeries``.
+            one of the scorers and output a list of `N` anomaly scores `TimeSeries`.
         """
-        if not isinstance(model, ForecastingModel):
+        if not isinstance(model, GlobalForecastingModel):
             raise_log(
-                ValueError("`model` must be a Darts `ForecastingModel`."),
+                ValueError("`model` must be a Darts `GlobalForecastingModel`."),
                 logger=logger,
             )
         self.model = model
@@ -110,12 +108,12 @@ class ForecastingAnomalyModel(AnomalyModel):
             The forecast horizon for the predictions.
         start
             The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
             `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
@@ -123,7 +121,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'position', `start` corresponds to the index position of the first predicted point and can range
             from `(-len(series), len(series) - 1)`.
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
-            an error if the value is not in `series`' index. Default: ``'value'``
+            an error if the value is not in `series`' index. Default: `'value'`
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -135,7 +133,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
         model_fit_kwargs
-            Parameters to be passed on to the forecast model ``fit()`` method.
+            Parameters to be passed on to the forecast model `fit()` method.
 
         Returns
         -------
@@ -190,12 +188,12 @@ class ForecastingAnomalyModel(AnomalyModel):
             The forecast horizon for the predictions.
         start
             The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
             `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
@@ -203,7 +201,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'position', `start` corresponds to the index position of the first predicted point and can range
             from `(-len(series), len(series) - 1)`.
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
-            an error if the value is not in `series`' index. Default: ``'value'``
+            an error if the value is not in `series`' index. Default: `'value'`
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -277,12 +275,12 @@ class ForecastingAnomalyModel(AnomalyModel):
             The forecast horizon for the predictions.
         start
             The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
             `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
@@ -290,7 +288,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'position', `start` corresponds to the index position of the first predicted point and can range
             from `(-len(series), len(series) - 1)`.
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
-            an error if the value is not in `series`' index. Default: ``'value'``
+            an error if the value is not in `series`' index. Default: `'value'`
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -310,34 +308,25 @@ class ForecastingAnomalyModel(AnomalyModel):
         if not self.model._fit_called:
             raise_log(
                 ValueError(
-                    f"Forecasting `model` {self.model} has not been trained yet. Call ``fit()`` before."
+                    f"Forecasting `model` {self.model} has not been trained yet. Call `fit()` before."
                 ),
                 logger=logger,
             )
-
-        # TODO: raise an exception. We only support models that do not need retrain
-        # checks if model accepts to not be retrained in the historical_forecasts()
-        if self.model._supports_non_retrainable_historical_forecasts:
-            # default: set to False. Allows a faster computation.
-            retrain = False
-        else:
-            retrain = True
-
-        historical_forecasts_param = {
-            "past_covariates": past_covariates,
-            "future_covariates": future_covariates,
-            "forecast_horizon": forecast_horizon,
-            "stride": 1,
-            "retrain": retrain,
-            "last_points_only": True,
-            "start": start,
-            "start_format": start_format,
-            "num_samples": num_samples,
-            "verbose": verbose,
-            "show_warnings": show_warnings,
-            "enable_optimization": enable_optimization,
-        }
-        return self.model.historical_forecasts(series, **historical_forecasts_param)
+        return self.model.historical_forecasts(
+            series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            stride=1,
+            retrain=False,
+            last_points_only=True,
+            start=start,
+            start_format=start_format,
+            num_samples=num_samples,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            enable_optimization=enable_optimization,
+        )
 
     def eval_metric(
         self,
@@ -381,12 +370,12 @@ class ForecastingAnomalyModel(AnomalyModel):
             The forecast horizon for the predictions.
         start
             The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
             `actual_series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `actual_series` is indexed with a
@@ -394,7 +383,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'position', `start` corresponds to the index position of the first predicted point and can range
             from `(-len(actual_series), len(actual_series) - 1)`.
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
-            an error if the value is not in `actual_series`' index. Default: ``'value'``
+            an error if the value is not in `actual_series`' index. Default: `'value'`
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -486,12 +475,12 @@ class ForecastingAnomalyModel(AnomalyModel):
             The forecast horizon for the predictions.
         start
             The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
             `actual_series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `actual_series` is indexed with a
@@ -499,7 +488,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'position', `start` corresponds to the index position of the first predicted point and can range
             from `(-len(actual_series), len(actual_series) - 1)`.
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
-            an error if the value is not in `actual_series`' index. Default: ``'value'``
+            an error if the value is not in `actual_series`' index. Default: `'value'`
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -521,7 +510,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         score_kwargs
-            parameters for the ``score()`` method.
+            parameters for the `score()` method.
         """
         predict_kwargs = {
             "past_covariates": past_covariates,
@@ -562,34 +551,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         """Fit the forecasting model (if applicable) and scorers."""
         # fit forecasting model
         if allow_model_training:
-            series_ = series
-            past_covariates_ = past_covariates
-            future_covariates_ = future_covariates
-            # for local models extract single series
-            if not isinstance(self.model, GlobalForecastingModel):
-                if len(series) > 1:
-                    raise_log(
-                        ValueError(
-                            f"Forecasting model {self.model.__class__.__name__} only accepts a single "
-                            f"time series for the training phase and not a sequence of multiple of time series."
-                        ),
-                        logger=logger,
-                    )
-                series_ = series[0]
-                past_covariates_ = (
-                    past_covariates[0]
-                    if past_covariates is not None
-                    else past_covariates
-                )
-                future_covariates_ = (
-                    future_covariates[0]
-                    if future_covariates is not None
-                    else future_covariates
-                )
             self.model._fit_wrapper(
-                series=series_,
-                past_covariates=past_covariates_,
-                future_covariates=future_covariates_,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
                 **model_fit_kwargs,
             )
         elif not self.model._fit_called:

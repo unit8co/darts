@@ -147,6 +147,11 @@ class TestAnomalyDetectionModel:
         anomaly_model = am_cls(scorer=scorer, **am_kwargs)
         assert anomaly_model.scorers_are_trainable
 
+    def test_no_local_model(self):
+        with pytest.raises(ValueError) as err:
+            _ = ForecastingAnomalyModel(model=NaiveSeasonal(), scorer=KMeansScorer())
+        assert str(err.value) == "`model` must be a Darts `GlobalForecastingModel`."
+
     @pytest.mark.parametrize(
         "anomaly_model,fit_model",
         [

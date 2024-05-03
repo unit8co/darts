@@ -34,7 +34,7 @@ class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
 
         If sequences of values are given for the parameters `low_quantile` and/or `high_quantile`,
         they must be of the same length, matching the dimensionality of the series passed
-        to ``fit()``, or have a length of 1. In the latter case, this single value will be used
+        to `fit()`, or have a length of 1. In the latter case, this single value will be used
         across all components of the series.
 
         If either `low_quantile` or `high_quantile` is None, the corresponding bound will not be used.

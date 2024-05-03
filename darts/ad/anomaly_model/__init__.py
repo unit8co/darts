@@ -7,7 +7,7 @@ Anomaly models make it possible to use any of Darts' forecasting or filtering mo
 The basic idea is to compare the predictions produced by a fitted model (the forecasts or the filtered series) with the
 actual observations, and to emit an anomaly score describing how "different" the observations are from the predictions.
 
-An anomaly model takes as parameters a model and one or multiple scorer objects. The key method is ``score()``, which
+An anomaly model takes as parameters a model and one or multiple scorer objects. The key method is `score()`, which
 takes as input one (or multiple) time series and produces one or multiple anomaly scores time series, for each provided
 series.
 
