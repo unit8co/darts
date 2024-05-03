@@ -24,6 +24,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - AnomalyModel:
     - `eval_metric`: renamed `series` to `actual_series`
     - `show_anomalies`: renamed `series` to `actual_series`
+  - AnomalyScorer:
+    - `eval_metric`: renamed `series` to `actual_series`
+    - `show_anomalies`: renamed `series` to `actual_series`
   - `ForecastingAnomalyModel`:
     - made method `predict_series()` public
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
@@ -43,11 +46,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - leave other methods unchanged
     - AnomalyModel
       - enforce pretrained `GlobalForecastingModel` ?
-      Scorers
-      - `FittableAnomalyScorer.eval_metric`
-        - `series` -> actual_series
-      - `FittableAnomalyScorer.show_anomalies`
-        - series -> actual_series
   - We lack an `AnomalyModel` as we did it for Cpower
     - quantile forecasting model (predict likelihood params in hist fc)
     - detector if actuals above/below quantiles

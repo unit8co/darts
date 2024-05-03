@@ -297,64 +297,71 @@ class TestAnomalyDetectionScorer:
         # if component_wise set to False, 'actual_anomalies' must have widths of 1
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.mts_anomalies, series=self.test
+                actual_anomalies=self.mts_anomalies, actual_series=self.test
             )
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
                 actual_anomalies=[self.anomalies, self.mts_anomalies],
-                series=[self.test, self.test],
+                actual_series=[self.test, self.test],
             )
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies, series=self.test, metric=1
+                actual_anomalies=self.anomalies, actual_series=self.test, metric=1
             )
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
+                actual_anomalies=self.anomalies,
+                actual_series=self.test,
+                metric="auc_roc",
             )
         with pytest.raises(TypeError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
+                actual_anomalies=self.anomalies,
+                actual_series=self.test,
+                metric=["AUC_ROC"],
             )
 
         # 'actual_anomalies' must be binary
         with pytest.raises(ValueError):
-            fittable_scorer.eval_metric(actual_anomalies=self.test, series=self.test)
+            fittable_scorer.eval_metric(
+                actual_anomalies=self.test, actual_series=self.test
+            )
 
         # 'actual_anomalies' must contain anomalies (at least one)
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.only_0_anomalies, series=self.test
+                actual_anomalies=self.only_0_anomalies, actual_series=self.test
             )
 
         # 'actual_anomalies' cannot contain only anomalies
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.only_1_anomalies, series=self.test
+                actual_anomalies=self.only_1_anomalies, actual_series=self.test
             )
 
-        # 'actual_anomalies' must match the number of series if length higher than 1
+        # 'actual_anomalies' must match the number of actual_series if length higher than 1
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=[self.anomalies, self.anomalies], series=self.test
+                actual_anomalies=[self.anomalies, self.anomalies],
+                actual_series=self.test,
             )
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
                 actual_anomalies=[self.anomalies, self.anomalies],
-                series=[self.test, self.test, self.test],
+                actual_series=[self.test, self.test, self.test],
             )
 
-        # 'actual_anomalies' must have non empty intersection with 'series'
+        # 'actual_anomalies' must have non empty intersection with 'actual_series'
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies[:20], series=self.test[30:]
+                actual_anomalies=self.anomalies[:20], actual_series=self.test[30:]
             )
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
                 actual_anomalies=[self.anomalies, self.anomalies[:20]],
-                series=[self.test, self.test[40:]],
+                actual_series=[self.test, self.test[40:]],
             )
 
     @pytest.mark.parametrize(
@@ -1640,10 +1647,10 @@ class TestAnomalyDetectionScorer:
         scorer_F.fit(ts_train)
 
         auc_roc_T = scorer_T.eval_metric(
-            actual_anomalies=self.anomalies, series=ts_test
+            actual_anomalies=self.anomalies, actual_series=ts_test
         )
         auc_roc_F = scorer_F.eval_metric(
-            actual_anomalies=self.anomalies, series=ts_test
+            actual_anomalies=self.anomalies, actual_series=ts_test
         )
 
         assert auc_roc_T == auc_roc_F
