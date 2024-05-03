@@ -21,7 +21,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - `series` to `actual_series`
       - `model_output` to `pred_series`
       - `anomaly_scores` to `pred_scores`
-    -
+  - AnomalyModel:
+    - `eval_metric`: renamed `series` to `actual_series`
+    - `show_anomalies`: renamed `series` to `actual_series`
   - `ForecastingAnomalyModel`:
     - made method `predict_series()` public
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
@@ -41,8 +43,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - leave other methods unchanged
     - AnomalyModel
       - enforce pretrained `GlobalForecastingModel` ?
-      - `AnomalyModel.eval_metric()` have input `actual_anomalies`, `series`.
-        - series -> actual_series
       Scorers
       - `FittableAnomalyScorer.eval_metric`
         - `series` -> actual_series

@@ -122,7 +122,7 @@ class AnomalyModel(ABC):
     def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
         **kwargs,
     ) -> Union[
@@ -133,7 +133,7 @@ class AnomalyModel(ABC):
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
-        Predicts the `series` with the underlying forecasting/filtering model, and applies the scorer(s) on the
+        Predicts the `actual_series` with the underlying forecasting/filtering model, and applies the scorer(s) on the
         predicted time series and the given target time series. Returns the score(s) of an agnostic threshold metric,
         based on the anomaly score given by the scorer(s).
 
@@ -141,7 +141,7 @@ class AnomalyModel(ABC):
         ----------
         actual_anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-        series
+        actual_series
             The (sequence of) series to predict anomalies on.
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
@@ -153,10 +153,10 @@ class AnomalyModel(ABC):
         Returns
         -------
         Dict[str, float]
-            A dictionary with the resulting metrics for single univariate `series`, with keys representing the
+            A dictionary with the resulting metrics for single univariate `actual_series`, with keys representing the
             anomaly scorer(s), and values representing the metric values.
         Dict[str, Sequence[float]]
-            Same as for `Dict[str, float]` but for multivariate `series`, and anomaly scorers that treat series
+            Same as for `Dict[str, float]` but for multivariate `actual_series`, and anomaly scorers that treat series
             components/columns independently (by nature of the scorer or if `component_wise=True`).
         Sequence[Dict[str, float]]
             Same as for `Dict[str, float]` but for a sequence of univariate series.
@@ -179,11 +179,11 @@ class AnomalyModel(ABC):
                     logger=logger,
                 )
 
-        called_with_single_series = isinstance(series, TimeSeries)
-        # deterministic `series`
-        series = _check_input(
-            series,
-            name="series",
+        called_with_single_series = isinstance(actual_series, TimeSeries)
+        # deterministic `actual_series`
+        actual_series = _check_input(
+            actual_series,
+            name="actual_series",
             check_deterministic=True,
         )
         # deterministic, binary anomalies, (possibly univariate)
@@ -194,9 +194,11 @@ class AnomalyModel(ABC):
             check_binary=True,
             extra_checks=_check_univariate,
         )
-        _assert_same_length(series, actual_anomalies, "series", "actual_anomalies")
+        _assert_same_length(
+            actual_series, actual_anomalies, "actual_series", "actual_anomalies"
+        )
 
-        pred_scores = self.score(series=series, **kwargs)
+        pred_scores = self.score(series=actual_series, **kwargs)
 
         # compute metric for anomaly scores
         windows = [s.window for s in self.scorers]

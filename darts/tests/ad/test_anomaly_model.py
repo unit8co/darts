@@ -373,69 +373,74 @@ class TestAnomalyDetectionModel:
         if anomaly_model.scorers_are_univariate:
             with pytest.raises(ValueError):
                 anomaly_model.eval_metric(
-                    actual_anomalies=self.mts_anomalies, series=self.test
+                    actual_anomalies=self.mts_anomalies, actual_series=self.test
                 )
             with pytest.raises(ValueError):
                 anomaly_model.eval_metric(
-                    actual_anomalies=self.mts_anomalies, series=self.mts_test
+                    actual_anomalies=self.mts_anomalies, actual_series=self.mts_test
                 )
             with pytest.raises(ValueError):
                 anomaly_model.eval_metric(
                     actual_anomalies=[self.anomalies, self.mts_anomalies],
-                    series=[self.test, self.mts_test],
+                    actual_series=[self.test, self.mts_test],
                 )
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
-                actual_anomalies=self.anomalies, series=self.test, metric=1
+                actual_anomalies=self.anomalies, actual_series=self.test, metric=1
             )
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
-                actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
+                actual_anomalies=self.anomalies,
+                actual_series=self.test,
+                metric="auc_roc",
             )
         with pytest.raises(TypeError):
             anomaly_model.eval_metric(
                 actual_anomalies=self.anomalies,
-                series=self.test,
+                actual_series=self.test,
                 metric=["AUC_ROC"],
             )
 
         # 'actual_anomalies' must be binary
         with pytest.raises(ValueError):
-            anomaly_model.eval_metric(actual_anomalies=self.test, series=self.test)
+            anomaly_model.eval_metric(
+                actual_anomalies=self.test, actual_series=self.test
+            )
 
         # 'actual_anomalies' must contain anomalies (at least one)
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
-                actual_anomalies=self.only_0_anomalies, series=self.test
+                actual_anomalies=self.only_0_anomalies, actual_series=self.test
             )
 
         # 'actual_anomalies' cannot contain only anomalies
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
-                actual_anomalies=self.only_1_anomalies, series=self.test
+                actual_anomalies=self.only_1_anomalies, actual_series=self.test
             )
 
         # 'actual_anomalies' must match the number of series
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
-                actual_anomalies=self.anomalies, series=[self.test, self.test]
+                actual_anomalies=self.anomalies, actual_series=[self.test, self.test]
             )
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
-                actual_anomalies=[self.anomalies, self.anomalies], series=self.test
+                actual_anomalies=[self.anomalies, self.anomalies],
+                actual_series=self.test,
             )
 
         # 'actual_anomalies' must have non empty intersection with 'series'
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
-                actual_anomalies=self.anomalies[:20], series=self.test[30:]
+                actual_anomalies=self.anomalies[:20], actual_series=self.test[30:]
             )
         with pytest.raises(ValueError):
             anomaly_model.eval_metric(
                 actual_anomalies=[self.anomalies, self.anomalies[:20]],
-                series=[self.test, self.test[40:]],
+                actual_series=[self.test, self.test[40:]],
             )
 
         # Check input type

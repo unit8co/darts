@@ -342,7 +342,7 @@ class ForecastingAnomalyModel(AnomalyModel):
     def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
@@ -361,15 +361,15 @@ class ForecastingAnomalyModel(AnomalyModel):
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
-        Predicts the `series` with the forecasting model, and applies the scorer(s) on the predicted time series and
-        the given target time series. Returns the score(s) of an agnostic threshold metric, based on the anomaly score
-        given by the scorer(s).
+        Predicts the `actual_series` with the forecasting model, and applies the scorer(s) on the predicted time series
+        and the given target time series. Returns the score(s) of an agnostic threshold metric, based on the anomaly
+        score given by the scorer(s).
 
         Parameters
         ----------
         actual_anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-        series
+        actual_series
             The (sequence of) series to predict anomalies on.
         past_covariates
             Optionally, a (sequence of) past-observed covariate series or sequence of series. This applies only to
@@ -385,16 +385,16 @@ class ForecastingAnomalyModel(AnomalyModel):
             In the case of ``float``, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
             In the case of ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
+            `actual_series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
         start_format
-            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            Defines the `start` format. Only effective when `start` is an integer and `actual_series` is indexed with a
             `pd.RangeIndex`.
             If set to 'position', `start` corresponds to the index position of the first predicted point and can range
-            from `(-len(series), len(series) - 1)`.
+            from `(-len(actual_series), len(actual_series) - 1)`.
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
-            an error if the value is not in `series`' index. Default: ``'value'``
+            an error if the value is not in `actual_series`' index. Default: ``'value'``
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -413,10 +413,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         Returns
         -------
         Dict[str, float]
-            A dictionary with the resulting metrics for single univariate `series`, with keys representing the
+            A dictionary with the resulting metrics for single univariate `actual_series`, with keys representing the
             anomaly scorer(s), and values representing the metric values.
         Dict[str, Sequence[float]]
-            Same as for `Dict[str, float]` but for multivariate `series`, and anomaly scorers that treat series
+            Same as for `Dict[str, float]` but for multivariate `actual_series`, and anomaly scorers that treat series
             components/columns independently (by nature of the scorer or if `component_wise=True`).
         Sequence[Dict[str, float]]
             Same as for `Dict[str, float]` but for a sequence of univariate series.
@@ -425,7 +425,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         """
         return super().eval_metric(
             actual_anomalies=actual_anomalies,
-            series=series,
+            actual_series=actual_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,

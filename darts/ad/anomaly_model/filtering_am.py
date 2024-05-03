@@ -150,7 +150,7 @@ class FilteringAnomalyModel(AnomalyModel):
     def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
         **filter_kwargs,
     ) -> Union[
@@ -161,15 +161,15 @@ class FilteringAnomalyModel(AnomalyModel):
     ]:
         """Compute a metric for the anomaly scores computed by the model.
 
-        Predicts the `series` with the filtering model, and applies the scorer(s) on the filtered time series and the
-        given target time series. Returns the score(s) of an agnostic threshold metric, based on the anomaly score
-        given by the scorer(s).
+        Predicts the `actual_series` with the filtering model, and applies the scorer(s) on the filtered time series
+        and the given target time series. Returns the score(s) of an agnostic threshold metric, based on the anomaly
+        score given by the scorer(s).
 
         Parameters
         ----------
         actual_anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-        series
+        actual_series
             The (sequence of) series to predict anomalies on.
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
@@ -181,10 +181,10 @@ class FilteringAnomalyModel(AnomalyModel):
         Returns
         -------
         Dict[str, float]
-            A dictionary with the resulting metrics for single univariate `series`, with keys representing the
+            A dictionary with the resulting metrics for single univariate `actual_series`, with keys representing the
             anomaly scorer(s), and values representing the metric values.
         Dict[str, Sequence[float]]
-            Same as for `Dict[str, float]` but for multivariate `series`, and anomaly scorers that treat series
+            Same as for `Dict[str, float]` but for multivariate `actual_series`, and anomaly scorers that treat series
             components/columns independently (by nature of the scorer or if `component_wise=True`).
         Sequence[Dict[str, float]]
             Same as for `Dict[str, float]` but for a sequence of univariate series.
@@ -193,7 +193,7 @@ class FilteringAnomalyModel(AnomalyModel):
         """
         return super().eval_metric(
             actual_anomalies=actual_anomalies,
-            series=series,
+            actual_series=actual_series,
             metric=metric,
             **filter_kwargs,
         )
