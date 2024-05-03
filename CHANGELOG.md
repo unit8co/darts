@@ -39,16 +39,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.
   - Method `with_values()` now also acts on array-like `values` rather than only on numpy arrays.
 
-- Open questions:
-  - Inconsistencies:
-    - AnomalyModel
-      - enforce pretrained `GlobalForecastingModel` ?
-  - We lack an `AnomalyModel` as we did it for Cpower
-    - quantile forecasting model (predict likelihood params in hist fc)
-    - detector if actuals above/below quantiles
-    - aggregator for min time frame with all actuals above / below quantiles
-    - ...
-
 
 **Fixed**
 - Fixed a bug where `n_steps_between` did not work properly with custom business frequencies. This affected metrics computation. [#2357](https://github.com/unit8co/darts/pull/2357) by [Dennis Bader](https://github.com/dennisbader).
