@@ -34,30 +34,30 @@ logger = get_logger(__name__)
 
 def eval_metric_from_scores(
     actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-    anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_scores: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]] = 1,
     metric: str = "AUC_ROC",
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
     """Computes a score/metric between anomaly scores against true anomalies.
 
-    `actual_anomalies` and `anomaly_score` must have the same shape.
+    `actual_anomalies` and `pred_scores` must have the same shape.
     `actual_anomalies` must be binary and have values belonging to the two classes (0 and 1).
 
-    If one series is given for `actual_anomalies` and `anomaly_score` contains more than
+    If one series is given for `actual_anomalies` and `pred_scores` contains more than
     one series, the function will consider `actual_anomalies` as the ground truth anomalies for
-    all scores in `anomaly_score`.
+    all scores in `pred_scores`.
 
     Parameters
     ----------
     actual_anomalies
         The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-    anomaly_score
+    pred_scores
         The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.
     window
-        Integer value indicating the number of past samples each point represents in the `anomaly_score`.
+        Integer value indicating the number of past samples each point represents in the `pred_scores`.
         The parameter will be used to transform `actual_anomalies`.
-        If a list of integers, the length must match the number of series in `anomaly_score`.
-        If an integer, the value will be used for every series in `anomaly_score` and `actual_anomalies`.
+        If a list of integers, the length must match the number of series in `pred_scores`.
+        If an integer, the value will be used for every series in `pred_scores` and `actual_anomalies`.
     metric
         The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
         Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
@@ -66,19 +66,19 @@ def eval_metric_from_scores(
     Returns
     -------
     float
-        A single score/metric for univariate `anomaly_score` series (with only one component/column).
+        A single score/metric for univariate `pred_scores` series (with only one component/column).
     Sequence[float]
         A sequence (list) of scores for:
 
-        - multivariate `anomaly_score` series (multiple components). Gives a score for each component.
-        - a sequence (list) of univariate `anomaly_score` series. Gives a score for each series.
+        - multivariate `pred_scores` series (multiple components). Gives a score for each component.
+        - a sequence (list) of univariate `pred_scores` series. Gives a score for each series.
     Sequence[Sequence[float]]
-        A sequence of sequences of scores for a sequence of multivariate `anomaly_score` series.
+        A sequence of sequences of scores for a sequence of multivariate `pred_scores` series.
         Gives a score for each series (outer sequence) and component (inner sequence).
     """
     return _eval_metric(
-        actual_series=actual_anomalies,
-        pred_series=anomaly_score,
+        actual_anomalies=actual_anomalies,
+        pred_series=pred_scores,
         window=window,
         metric=metric,
         pred_is_binary=False,
@@ -86,33 +86,33 @@ def eval_metric_from_scores(
 
 
 def eval_metric_from_binary_prediction(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]] = 1,
     metric: str = "recall",
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
     """Computes a score/metric between predicted anomalies against true anomalies.
 
-    `pred_anomalies` and `actual_series` must have:
+    `pred_anomalies` and `actual_anomalies` must have:
 
         - identical dimensions (number of time steps and number of components/columns),
         - binary values belonging to the two classes (`1` if it is an anomaly and `0` if not)
 
-    If one series is given for `actual_series` and `pred_series` contains more than
-    one series, the function will consider `actual_series` as the true anomalies for
-    all scores in `anomaly_score`.
+    If one series is given for `actual_anomalies` and `pred_anomalies` contains more than
+    one series, the function will consider `actual_anomalies` as the true anomalies for
+    all scores in `pred_scores`.
 
     Parameters
     ----------
-    actual_series
+    actual_anomalies
         The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-    pred_series
+    pred_anomalies
         The (sequence of) predicted binary anomaly series.
     window
-        Integer value indicating the number of past samples each point represents in the `anomaly_score`.
-        The parameter will be used to transform `actual_series`.
-        If a list of integers, the length must match the number of series in `anomaly_score`.
-        If an integer, the value will be used for every series in `anomaly_score` and `actual_series`.
+        Integer value indicating the number of past samples each point represents in the `pred_scores`.
+        The parameter will be used to transform `actual_anomalies`.
+        If a list of integers, the length must match the number of series in `pred_scores`.
+        If an integer, the value will be used for every series in `pred_scores` and `actual_anomalies`.
     metric
         The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
          Default: "recall"
@@ -120,19 +120,19 @@ def eval_metric_from_binary_prediction(
     Returns
     -------
     float
-        A single score for univariate `pred_series` series (with only one component/column).
+        A single score for univariate `pred_anomalies` series (with only one component/column).
     Sequence[float]
         A sequence (list) of scores for:
 
-        - multivariate `pred_series` series (multiple components). Gives a score for each component.
-        - a sequence (list) of univariate `pred_series` series. Gives a score for each series.
+        - multivariate `pred_anomalies` series (multiple components). Gives a score for each component.
+        - a sequence (list) of univariate `pred_anomalies` series. Gives a score for each series.
     Sequence[Sequence[float]]
-        A sequence of sequences of scores for a sequence of multivariate `pred_series` series.
+        A sequence of sequences of scores for a sequence of multivariate `pred_anomalies` series.
         Gives a score for each series (outer sequence) and component (inner sequence).
     """
     return _eval_metric(
-        actual_series=actual_series,
-        pred_series=pred_series,
+        actual_anomalies=actual_anomalies,
+        pred_series=pred_anomalies,
         window=window,
         metric=metric,
         pred_is_binary=True,
@@ -140,7 +140,7 @@ def eval_metric_from_binary_prediction(
 
 
 def _eval_metric(
-    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]],
     metric: str,
@@ -151,15 +151,15 @@ def _eval_metric(
 
     Parameters
     ----------
-    actual_series
+    actual_anomalies
         The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
     pred_series
         The (sequence of) anomaly scores or predicted binary anomaly series.
     window
-        Integer value indicating the number of past samples each point represents in the `anomaly_score`.
-        The parameter will be used to transform `actual_series`.
-        If a list of integers, the length must match the number of series in `anomaly_score`.
-        If an integer, the value will be used for every series in `anomaly_score` and `actual_series`.
+        Integer value indicating the number of past samples each point represents in the `pred_scores`.
+        The parameter will be used to transform `actual_anomalies`.
+        If a list of integers, the length must match the number of series in `pred_scores`.
+        If an integer, the value will be used for every series in `pred_scores` and `actual_anomalies`.
     metric
         Optionally, the name of the scoring function to use. Must be one of "recall", "precision",
         "f1", and "accuracy". Default: "recall"
@@ -204,37 +204,37 @@ def _eval_metric(
         metric_fn = accuracy_score
 
     called_with_single_series = isinstance(pred_series, TimeSeries)
-    actual_series = series2seq(actual_series)
+    actual_anomalies = series2seq(actual_anomalies)
     pred_series = series2seq(pred_series)
     window = [window] if not isinstance(window, Sequence) else window
 
-    if len(actual_series) == 1 and len(pred_series) > 1:
-        actual_series = actual_series * len(pred_series)
+    if len(actual_anomalies) == 1 and len(pred_series) > 1:
+        actual_anomalies = actual_anomalies * len(pred_series)
 
+    actual_name = "actual_anomalies"
+    pred_name = "pred_anomalies" if pred_is_binary else "pred_scores"
     _assert_same_length(
-        actual_series,
+        actual_anomalies,
         pred_series,
-        "actual_series",
-        "pred_series",
+        actual_name,
+        pred_name,
     )
 
-    actual_name = "actual_series" if pred_is_binary else "actual_anomalies"
-    pred_name = "pred_series" if pred_is_binary else "anomaly_score"
     if len(window) == 1:
-        window = window * len(actual_series)
+        window = window * len(actual_anomalies)
     else:
-        if len(window) != len(actual_series):
+        if len(window) != len(actual_anomalies):
             raise_log(
                 ValueError(
                     f"The list of windows must be the same length as the list of `{pred_name}` and "
                     f"`{actual_name}`. There must be one window value for each series. "
-                    f"Found length {len(window)}, expected {len(actual_series)}."
+                    f"Found length {len(window)}, expected {len(actual_anomalies)}."
                 ),
                 logger=logger,
             )
 
     sol = []
-    for s_anomalies, s_pred, s_window in zip(actual_series, pred_series, window):
+    for s_anomalies, s_pred, s_window in zip(actual_anomalies, pred_series, window):
         _assert_timeseries(s_pred, name=pred_name)
         _assert_timeseries(s_anomalies, name=actual_name)
         _assert_binary(s_anomalies, actual_name)
@@ -469,8 +469,8 @@ def show_anomalies_from_scores(
             if metric is not None:
                 value = round(
                     eval_metric_from_scores(
-                        anomaly_score=anomaly_scores[idx],
                         actual_anomalies=actual_anomalies,
+                        pred_scores=anomaly_scores[idx],
                         window=w,
                         metric=metric,
                     ),

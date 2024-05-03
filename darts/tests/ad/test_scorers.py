@@ -744,12 +744,7 @@ class TestAnomalyDetectionScorer:
 
     @staticmethod
     def helper_check_type_window(scorer, **kwargs):
-        # window must be int
-        with pytest.raises(ValueError):
-            scorer(window=True, **kwargs)
-        with pytest.raises(ValueError):
-            scorer(window="string", **kwargs)
-        # window must be non negative
+        # window must be non-negative
         with pytest.raises(ValueError):
             scorer(window=-1, **kwargs)
         # window must be different from 0
@@ -1259,12 +1254,7 @@ class TestAnomalyDetectionScorer:
         assert scorer.score(self.mts_test).width == self.mts_test.width
 
         # window parameter
-        # window must be int
-        with pytest.raises(ValueError):
-            PyODScorer(model=KNN(), window=True)
-        with pytest.raises(ValueError):
-            PyODScorer(model=KNN(), window="string")
-        # window must be non negative
+        # window must be non-negative
         with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=-1)
         # window must be different from 0

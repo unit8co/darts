@@ -223,7 +223,7 @@ class AnomalyModel(ABC):
             acc.append(
                 eval_metric_from_scores(
                     actual_anomalies=anomalies,
-                    anomaly_score=scores,
+                    pred_scores=scores,
                     window=windows,
                     metric=metric,
                 )

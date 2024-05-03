@@ -123,7 +123,10 @@ class Aggregator(ABC):
         """
         preds = self.predict(pred_series)
         return eval_metric_from_binary_prediction(
-            series2seq(actual_series), preds, window, metric
+            actual_anomalies=series2seq(actual_series),
+            pred_anomalies=preds,
+            window=window,
+            metric=metric,
         )
 
 

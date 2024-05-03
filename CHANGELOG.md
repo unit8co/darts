@@ -27,8 +27,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - for `eval_metric_from_binary_prediction`:
     - binary ground truth anom: rename `actual_series` -> `actual_anomalies`
     - rename `pred_series` -> `pred_anomalies`
-  - for `eval_metric_from_binary_prediction`:
-    - (?) rename `series` to `actual_series`
+  - for `show_anomalies_from_scores`:
+    - rename `series` to `actual_series`
     - rename `model_output` to `pred_series`:
     - rename `anomaly_scores` to `pred_scores`
     - binary ground truth anom: `actual_anomalies`
@@ -37,13 +37,29 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - actual_anomalies
       - pred_series
       - pred_scores
-  - `Aggregator.eval_metric()` have input `actual_series`, `pred_series` for binary anomalies.
-    Should we follow the same convention as in metrics or is it not necessary?
-  - `Detector.eval_metric()` have input `actual_anomalies`, `anomaly_score`.
-    Should we follow the same convention as in metrics or is it not necessary?
-  - `AnomalyModel.eval_metric()` have input `actual_anomalies`, `series`.
-    Should we follow the same convention as in metrics or is it not necessary?
-  - `ForecastingAnomalyModel` should we only allow pretrained `GlobalForecastingModel` ?
+  - Inconsistencies:
+    - `Aggregator.eval_metric()` have input `actual_series`, `pred_series` for binary anomalies.
+      Should we follow the same convention as in metrics or is it not necessary?
+        - rename to actual_anomalies, pred_anomalies
+        - leave other methods unchanged
+    - `Detector.eval_metric()` have input `actual_anomalies`, `anomaly_score`.
+      Should we follow the same convention as in metrics or is it not necessary?
+      - anomaly_score -> pred_scores
+      - leave other methods unchanged
+    - AnomalyModel
+      - enforce pretrained `GlobalForecastingModel` ?
+      - `AnomalyModel.eval_metric()` have input `actual_anomalies`, `series`.
+        - series -> actual_series
+      Scorers
+      - `FittableAnomalyScorer.eval_metric`
+        - `series` -> actual_series
+      - `FittableAnomalyScorer.show_anomalies`
+        - series -> actual_series
+  - We lack an `AnomalyModel` as we did it for Cpower
+    - quantile forecasting model (predict likelihood params in hist fc)
+    - detector if actuals above/below quantiles
+    - aggregator for min time frame with all actuals above / below quantiles
+    - ...
 
 
 **Fixed**

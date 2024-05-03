@@ -68,10 +68,6 @@ class Detector(ABC):
             detected_series.append(self._detect_core(s, name=name))
         return detected_series[0] if called_with_single_series else detected_series
 
-    @abstractmethod
-    def _detect_core(self, series: TimeSeries, name: str = "series") -> TimeSeries:
-        pass
-
     def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
@@ -99,11 +95,15 @@ class Detector(ABC):
             Metric results for each anomaly score
         """
         return eval_metric_from_binary_prediction(
-            actual_series=actual_anomalies,
-            pred_series=self.detect(anomaly_score),
+            actual_anomalies=actual_anomalies,
+            pred_anomalies=self.detect(anomaly_score),
             window=window,
             metric=metric,
         )
+
+    @abstractmethod
+    def _detect_core(self, series: TimeSeries, name: str = "series") -> TimeSeries:
+        pass
 
 
 class FittableDetector(Detector):
@@ -120,10 +120,6 @@ class FittableDetector(Detector):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         _assert_fit_called(self._fit_called, name="Detector")
         return super().detect(series, name=name)
-
-    @abstractmethod
-    def _fit_core(self, series: Sequence[TimeSeries]) -> None:
-        pass
 
     def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Self:
         """Trains the detector on the given time series.
@@ -169,6 +165,10 @@ class FittableDetector(Detector):
         """
         self.fit(series)
         return self.detect(series, name="series")
+
+    @abstractmethod
+    def _fit_core(self, series: Sequence[TimeSeries]) -> None:
+        pass
 
 
 class _BoundedDetectorMixin(ABC):

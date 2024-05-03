@@ -64,7 +64,9 @@ class TestAnomalyDetectionModel:
         med_series = [med_series] if series_as_list else med_series
 
         def check_metric(actual_series, pred_series, metric, sc_exp):
-            score = eval_metric_from_scores(actual_series, pred_series, metric=metric)
+            score = eval_metric_from_scores(
+                actual_anomalies=actual_series, pred_scores=pred_series, metric=metric
+            )
             score = score if series_as_list else [score]
             assert isinstance(score, list) and len(score) == 1
             score = score[0]
@@ -130,7 +132,9 @@ class TestAnomalyDetectionModel:
 
         def check_metric(actual_series, pred_series, metric, sc_exp):
             score = eval_metric_from_binary_prediction(
-                actual_series, pred_series, metric=metric
+                actual_anomalies=actual_series,
+                pred_anomalies=pred_series,
+                metric=metric,
             )
             score = score if series_as_list else [score]
             assert isinstance(score, list) and len(score) == 1
@@ -151,14 +155,14 @@ class TestAnomalyDetectionModel:
         with pytest.raises(ValueError) as err:
             check_metric(med_series, actual_series, metric, scores_exp[2])
         assert str(err.value).startswith(
-            "Input series `actual_series` must have binary values only."
+            "Input series `actual_anomalies` must have binary values only."
         )
 
         # pred must be binary
         with pytest.raises(ValueError) as err:
             check_metric(actual_series, med_series, metric, scores_exp[2])
         assert str(err.value).startswith(
-            "Input series `pred_series` must have binary values only."
+            "Input series `pred_anomalies` must have binary values only."
         )
 
         # wrong metric

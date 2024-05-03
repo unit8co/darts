@@ -51,14 +51,7 @@ class AnomalyScorer(ABC):
             score into a point-wise anomaly score (see definition of `window_transform`). The window size should be
             commensurate to the expected durations of the anomalies one is looking for.
         """
-        if type(window) is not int:  # noqa: E721
-            raise_log(
-                ValueError(
-                    f"Parameter `window` must be an integer, found type {type(window)}."
-                ),
-                logger=logger,
-            )
-        if not window > 0:
+        if window <= 0:
             raise_log(
                 ValueError(
                     f"Parameter `window` must be strictly greater than 0, found `{window}`."
@@ -66,7 +59,7 @@ class AnomalyScorer(ABC):
                 logger=logger,
             )
         self.window = window
-        self.is_univariate = is_univariate
+        self._is_univariate = is_univariate
 
     def score_from_prediction(
         self,
@@ -164,7 +157,10 @@ class AnomalyScorer(ABC):
         self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
         return eval_metric_from_scores(
-            actual_anomalies, anomaly_score, self.window, metric
+            actual_anomalies=actual_anomalies,
+            pred_scores=anomaly_score,
+            window=self.window,
+            metric=metric,
         )
 
     def show_anomalies_from_prediction(
@@ -237,6 +233,11 @@ class AnomalyScorer(ABC):
     def is_probabilistic(self) -> bool:
         """Whether the scorer expects a probabilistic prediction as the first input."""
         return False
+
+    @property
+    def is_univariate(self) -> bool:
+        """Whether the Scorer is a univariate scorer."""
+        return self._is_univariate
 
     @property
     def is_trainable(self) -> bool:
@@ -565,7 +566,12 @@ class FittableAnomalyScorer(AnomalyScorer):
         self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score(series)
         window = 1 if self.window_agg else self.window
-        return eval_metric_from_scores(actual_anomalies, anomaly_score, window, metric)
+        return eval_metric_from_scores(
+            actual_anomalies=actual_anomalies,
+            pred_scores=anomaly_score,
+            window=window,
+            metric=metric,
+        )
 
     def show_anomalies(
         self,
@@ -631,7 +637,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     @property
     def is_trainable(self) -> bool:
-        """Whether the scorer is trainable."""
+        """Whether the Scorer is trainable."""
         return True
 
     @abstractmethod

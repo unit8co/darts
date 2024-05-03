@@ -609,14 +609,14 @@ class TestAnomalyDetectionModel:
 
         auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=score,
+            pred_scores=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
         auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=score,
+            pred_scores=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_PR",
         )
@@ -731,14 +731,14 @@ class TestAnomalyDetectionModel:
 
         auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=score,
+            pred_scores=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
         auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=score,
+            pred_scores=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_PR",
         )
@@ -865,14 +865,14 @@ class TestAnomalyDetectionModel:
 
         auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=score,
+            pred_scores=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
         auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=score,
+            pred_scores=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_PR",
         )
@@ -997,14 +997,14 @@ class TestAnomalyDetectionModel:
 
         auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 10, 12, 1, 5, 1, 5],
             metric="AUC_ROC",
         )
 
         auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 10, 12, 1, 5, 1, 5],
             metric="AUC_PR",
         )
@@ -1084,14 +1084,14 @@ class TestAnomalyDetectionModel:
 
         auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 1, 10, 12, 1, 5, 1, 5],
             metric="AUC_ROC",
         )
 
         auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 1, 10, 12, 1, 5, 1, 5],
             metric="AUC_PR",
         )
@@ -1226,14 +1226,14 @@ class TestAnomalyDetectionModel:
 
         auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 10, 20, 1, 20, 1, 10],
             metric="AUC_ROC",
         )
 
         auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[mts_anomalies] * 7,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 10, 20, 1, 20, 1, 10],
             metric="AUC_PR",
         )
@@ -1313,14 +1313,14 @@ class TestAnomalyDetectionModel:
 
         auc_roc_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 1, 10, 20, 1, 20, 1, 10],
             metric="AUC_ROC",
         )
 
         auc_pr_from_scores = eval_metric_from_scores(
             actual_anomalies=[ts_anomalies] * 8,
-            anomaly_score=scores,
+            pred_scores=scores,
             window=[1, 1, 10, 20, 1, 20, 1, 10],
             metric="AUC_PR",
         )
