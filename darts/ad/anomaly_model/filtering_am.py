@@ -200,7 +200,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def show_anomalies(
         self,
-        series: TimeSeries,
+        actual_series: TimeSeries,
         actual_anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
@@ -225,7 +225,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         Parameters
         ----------
-        series
+        actual_series
             The series to visualize anomalies from.
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
@@ -241,7 +241,7 @@ class FilteringAnomalyModel(AnomalyModel):
             parameters for the ``score()`` method.
         """
         return super().show_anomalies(
-            series=series,
+            actual_series=actual_series,
             predict_kwargs={},
             actual_anomalies=actual_anomalies,
             names_of_scorers=names_of_scorers,

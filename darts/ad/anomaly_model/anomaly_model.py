@@ -196,7 +196,7 @@ class AnomalyModel(ABC):
         )
         _assert_same_length(series, actual_anomalies, "series", "actual_anomalies")
 
-        anomaly_scores = self.score(series=series, **kwargs)
+        pred_scores = self.score(series=series, **kwargs)
 
         # compute metric for anomaly scores
         windows = [s.window for s in self.scorers]
@@ -219,7 +219,7 @@ class AnomalyModel(ABC):
             name_scorers.append(name)
 
         acc = []
-        for anomalies, scores in zip(actual_anomalies, anomaly_scores):
+        for anomalies, scores in zip(actual_anomalies, pred_scores):
             acc.append(
                 eval_metric_from_scores(
                     actual_anomalies=anomalies,
@@ -228,17 +228,15 @@ class AnomalyModel(ABC):
                     metric=metric,
                 )
             )
-        acc_anomaly_scores = [
+        acc_pred_scores = [
             dict(zip(name_scorers, scorer_values)) for scorer_values in acc
         ]
 
-        return (
-            acc_anomaly_scores[0] if called_with_single_series else acc_anomaly_scores
-        )
+        return acc_pred_scores[0] if called_with_single_series else acc_pred_scores
 
     def show_anomalies(
         self,
-        series: TimeSeries,
+        actual_series: TimeSeries,
         predict_kwargs: Dict,
         actual_anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
@@ -264,7 +262,7 @@ class AnomalyModel(ABC):
 
         Parameters
         ----------
-        series
+        actual_series
             The series to visualize anomalies from.
         predict_kwargs
             Additional parameters passed to `AnomalyModel.predict_series()`.
@@ -281,9 +279,14 @@ class AnomalyModel(ABC):
         score_kwargs
             parameters for the ``score()`` method.
         """
-        series = _check_input(series, name="series", num_series_expected=1)[0]
-        anomaly_scores, model_output = self.score(
-            series, return_model_prediction=True, **predict_kwargs, **score_kwargs
+        actual_series = _check_input(
+            actual_series, name="actual_series", num_series_expected=1
+        )[0]
+        pred_scores, pred_series = self.score(
+            actual_series,
+            return_model_prediction=True,
+            **predict_kwargs,
+            **score_kwargs,
         )
 
         if title is None:
@@ -295,9 +298,9 @@ class AnomalyModel(ABC):
         list_window = [s.window for s in self.scorers]
 
         return show_anomalies_from_scores(
-            series,
-            model_output=model_output,
-            anomaly_scores=anomaly_scores,
+            actual_series=actual_series,
+            pred_series=pred_series,
+            pred_scores=pred_scores,
             window=list_window,
             names_of_scorers=names_of_scorers,
             actual_anomalies=actual_anomalies,

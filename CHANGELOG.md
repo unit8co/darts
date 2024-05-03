@@ -11,8 +11,17 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 - Improvements to the Anomaly Detection Module through major refactor. The refactor includes optimization of multiple process and improvements to the API, consistency, reliability, and the documentation. Some of these necessary changes come at the cost of breaking changes : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader), [Samuele Giuliano Piazzetta](https://github.com/piaz97), [Antoine Madrona](https://github.com/madtoinou), [Julien Herzen](https://github.com/hrzn), [Julien Adda](https://github.com/julien12234).
   - Evaluation:
-    - renamed `darts.ad.utils.eval_accuracy_from_scores` to `darts.ad.utils.eval_metric_from_scores`.
-    - renamed `darts.ad.utils.eval_accuracy_from_binary_prediction` to `darts.ad.utils.eval_metric_from_binary_prediction`.
+    - changes to `darts.ad.utils.eval_accuracy_from_scores` :
+      - renamed function to `eval_metric_from_scores`
+      - renamed param `anomaly_score` to `pred_scores`
+    - changes to `darts.ad.utils.eval_accuracy_from_binary_prediction` :
+      - renamed function to `eval_metric_from_binary_prediction`
+      - renamed param `binary_pred_anomalies` to `pred_anomalies`
+    - changes to `darts.ad.utils.show_anomalies_from_scores` : renamed params:
+      - `series` to `actual_series`
+      - `model_output` to `pred_series`
+      - `anomaly_scores` to `pred_scores`
+    -
   - `ForecastingAnomalyModel`:
     - made method `predict_series()` public
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
@@ -21,22 +30,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Method `with_values()` now also acts on array-like `values` rather than only on numpy arrays.
 
 - Open questions:
-  - for `eval_metric_from_scores`:
-    - binary ground truth anom. `actual_anomalies`
-    - rename `anomaly_score` -> `pred_scores`
-  - for `eval_metric_from_binary_prediction`:
-    - binary ground truth anom: rename `actual_series` -> `actual_anomalies`
-    - rename `pred_series` -> `pred_anomalies`
-  - for `show_anomalies_from_scores`:
-    - rename `series` to `actual_series`
-    - rename `model_output` to `pred_series`:
-    - rename `anomaly_scores` to `pred_scores`
-    - binary ground truth anom: `actual_anomalies`
-    - (?) reorder the arguments to:
-      - actual_series
-      - actual_anomalies
-      - pred_series
-      - pred_scores
   - Inconsistencies:
     - `Aggregator.eval_metric()` have input `actual_series`, `pred_series` for binary anomalies.
       Should we follow the same convention as in metrics or is it not necessary?

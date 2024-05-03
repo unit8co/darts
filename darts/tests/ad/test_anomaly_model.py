@@ -584,20 +584,20 @@ class TestAnomalyDetectionModel:
         )
 
         anomaly_model.fit(train_series_slope, allow_model_training=True, start=0.1)
-        score, model_output = anomaly_model.score(
+        score, pred_series = anomaly_model.score(
             test_series_slope, return_model_prediction=True, start=0.1
         )
 
-        # check that NormScorer is the abs difference of model_output and test_series_slope
+        # check that NormScorer is the abs difference of pred_series and test_series_slope
         assert (
-            model_output - test_series_slope.slice_intersect(model_output)
-        ).__abs__() == Norm().score_from_prediction(test_series_slope, model_output)
+            pred_series - test_series_slope.slice_intersect(pred_series)
+        ).__abs__() == Norm().score_from_prediction(test_series_slope, pred_series)
 
-        # check that Difference is the difference of model_output and test_series_slope
+        # check that Difference is the difference of pred_series and test_series_slope
         assert test_series_slope.slice_intersect(
-            model_output
-        ) - model_output == Difference().score_from_prediction(
-            test_series_slope, model_output
+            pred_series
+        ) - pred_series == Difference().score_from_prediction(
+            test_series_slope, pred_series
         )
 
         dict_auc_roc = anomaly_model.eval_metric(
@@ -706,21 +706,21 @@ class TestAnomalyDetectionModel:
             ],
         )
         anomaly_model.fit(train_series_noise)
-        score, model_output = anomaly_model.score(
+        score, pred_series = anomaly_model.score(
             test_series_noise, return_model_prediction=True
         )
 
-        # check that Difference is the difference of model_output and test_series_noise
+        # check that Difference is the difference of pred_series and test_series_noise
         assert test_series_noise.slice_intersect(
-            model_output
-        ) - model_output == Difference().score_from_prediction(
-            test_series_noise, model_output
+            pred_series
+        ) - pred_series == Difference().score_from_prediction(
+            test_series_noise, pred_series
         )
 
-        # check that NormScorer is the abs difference of model_output and test_series_noise
+        # check that NormScorer is the abs difference of pred_series and test_series_noise
         assert (
-            test_series_noise.slice_intersect(model_output) - model_output
-        ).__abs__() == Norm().score_from_prediction(test_series_noise, model_output)
+            test_series_noise.slice_intersect(pred_series) - pred_series
+        ).__abs__() == Norm().score_from_prediction(test_series_noise, pred_series)
 
         dict_auc_roc = anomaly_model.eval_metric(
             ts_anomalies, test_series_noise, metric="AUC_ROC"
@@ -837,24 +837,22 @@ class TestAnomalyDetectionModel:
             start=0.2,
         )
 
-        score, model_output = anomaly_model.score(
+        score, pred_series = anomaly_model.score(
             series_test,
             return_model_prediction=True,
             future_covariates=covariates,
             start=0.2,
         )
 
-        # check that NormScorer is the abs difference of model_output and series_test
+        # check that NormScorer is the abs difference of pred_series and series_test
         assert (
-            series_test.slice_intersect(model_output) - model_output
-        ).__abs__() == Norm().score_from_prediction(series_test, model_output)
+            series_test.slice_intersect(pred_series) - pred_series
+        ).__abs__() == Norm().score_from_prediction(series_test, pred_series)
 
-        # check that Difference is the difference of model_output and series_test
+        # check that Difference is the difference of pred_series and series_test
         assert series_test.slice_intersect(
-            model_output
-        ) - model_output == Difference().score_from_prediction(
-            series_test, model_output
-        )
+            pred_series
+        ) - pred_series == Difference().score_from_prediction(series_test, pred_series)
 
         dict_auc_roc = anomaly_model.eval_metric(
             ts_anomalies, series_test, metric="AUC_ROC", start=0.2
@@ -978,12 +976,12 @@ class TestAnomalyDetectionModel:
         )
         anomaly_model.fit(mts_series_train)
 
-        scores, model_output = anomaly_model.score(
+        scores, pred_series = anomaly_model.score(
             mts_series_test, return_model_prediction=True
         )
 
-        # model_output must be multivariate (same width as input)
-        assert model_output.width == mts_series_test.width
+        # pred_series must be multivariate (same width as input)
+        assert pred_series.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
@@ -1065,12 +1063,12 @@ class TestAnomalyDetectionModel:
         )
         anomaly_model.fit(mts_series_train)
 
-        scores, model_output = anomaly_model.score(
+        scores, pred_series = anomaly_model.score(
             mts_series_test, return_model_prediction=True
         )
 
-        # model_output must be multivariate (same width as input)
-        assert model_output.width == mts_series_test.width
+        # pred_series must be multivariate (same width as input)
+        assert pred_series.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
@@ -1207,12 +1205,12 @@ class TestAnomalyDetectionModel:
         )
         anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
 
-        scores, model_output = anomaly_model.score(
+        scores, pred_series = anomaly_model.score(
             mts_series_test, return_model_prediction=True, start=0.1
         )
 
-        # model_output must be multivariate (same width as input)
-        assert model_output.width == mts_series_test.width
+        # pred_series must be multivariate (same width as input)
+        assert pred_series.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
@@ -1294,12 +1292,12 @@ class TestAnomalyDetectionModel:
         )
         anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
 
-        scores, model_output = anomaly_model.score(
+        scores, pred_series = anomaly_model.score(
             mts_series_test, return_model_prediction=True, start=0.1
         )
 
-        # model_output must be multivariate (same width as input)
-        assert model_output.width == mts_series_test.width
+        # pred_series must be multivariate (same width as input)
+        assert pred_series.width == mts_series_test.width
 
         # scores must be of the same length as the number of scorers
         assert len(scores) == len(anomaly_model.scorers)
@@ -1387,44 +1385,50 @@ class TestAnomalyDetectionModel:
     def show_anomalies_function(self, visualization_function):
         # must input only one series
         with pytest.raises(ValueError) as err:
-            visualization_function(series=[self.train, self.train])
+            visualization_function(actual_series=[self.train, self.train])
         assert (
             str(err.value)
-            == "`series` must be single `TimeSeries` or a sequence of `TimeSeries` of length `1`."
+            == "`actual_series` must be single `TimeSeries` or a sequence of `TimeSeries` of length `1`."
         )
         # input must be a series
         with pytest.raises(ValueError):
-            visualization_function(series=[1, 2, 4])
+            visualization_function(actual_series=[1, 2, 4])
 
         if visualization_function != show_anomalies_from_scores:
             # metric must be "AUC_ROC" or "AUC_PR"
             with pytest.raises(ValueError):
                 visualization_function(
-                    series=self.train, actual_anomalies=self.anomalies, metric="str"
+                    actual_series=self.train,
+                    actual_anomalies=self.anomalies,
+                    metric="str",
                 )
             with pytest.raises(ValueError):
                 visualization_function(
-                    series=self.train, actual_anomalies=self.anomalies, metric="auc_roc"
+                    actual_series=self.train,
+                    actual_anomalies=self.anomalies,
+                    metric="auc_roc",
                 )
             with pytest.raises(ValueError):
                 visualization_function(
-                    series=self.train, actual_anomalies=self.anomalies, metric=1
+                    actual_series=self.train, actual_anomalies=self.anomalies, metric=1
                 )
 
             # actual_anomalies must be not none if metric is given
             with pytest.raises(ValueError):
-                visualization_function(series=self.train, metric="AUC_ROC")
+                visualization_function(actual_series=self.train, metric="AUC_ROC")
 
             # actual_anomalies must be binary
             with pytest.raises(ValueError):
                 visualization_function(
-                    series=self.train, actual_anomalies=self.test, metric="AUC_ROC"
+                    actual_series=self.train,
+                    actual_anomalies=self.test,
+                    metric="AUC_ROC",
                 )
 
             # actual_anomalies must contain at least 1 anomaly if metric is given
             with pytest.raises(ValueError):
                 visualization_function(
-                    series=self.train,
+                    actual_series=self.train,
                     actual_anomalies=self.only_0_anomalies,
                     metric="AUC_ROC",
                 )
@@ -1433,7 +1437,7 @@ class TestAnomalyDetectionModel:
             # if metric is given
             with pytest.raises(ValueError):
                 visualization_function(
-                    series=self.train,
+                    actual_series=self.train,
                     actual_anomalies=self.only_1_anomalies,
                     metric="AUC_ROC",
                 )
@@ -1441,34 +1445,34 @@ class TestAnomalyDetectionModel:
             # window must be a positive int
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
-                    series=self.train, anomaly_scores=self.test, window=-1
+                    actual_series=self.train, pred_scores=self.test, window=-1
                 )
             # window must smaller than the score series
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
-                    series=self.train, anomaly_scores=self.test, window=200
+                    actual_series=self.train, pred_scores=self.test, window=200
                 )
             # must have the same nbr of windows than scores
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
-                    series=self.train, anomaly_scores=self.test, window=[1, 2]
+                    actual_series=self.train, pred_scores=self.test, window=[1, 2]
                 )
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
-                    series=self.train,
-                    anomaly_scores=[self.test, self.test],
+                    actual_series=self.train,
+                    pred_scores=[self.test, self.test],
                     window=[1, 2, 1],
                 )
             # nbr of names_of_scorers must match the nbr of scores
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
-                    series=self.train,
-                    anomaly_scores=self.test,
+                    actual_series=self.train,
+                    pred_scores=self.test,
                     names_of_scorers=["scorer1", "scorer2"],
                 )
             with pytest.raises(ValueError):
                 show_anomalies_from_scores(
-                    series=self.train,
-                    anomaly_scores=[self.test, self.test],
+                    actual_series=self.train,
+                    pred_scores=[self.test, self.test],
                     names_of_scorers=["scorer1", "scorer2", "scorer3"],
                 )

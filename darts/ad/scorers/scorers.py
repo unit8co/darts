@@ -89,7 +89,7 @@ class AnomalyScorer(ABC):
         actual_name, pred_name = "actual_series", "pred_series"
         _assert_same_length(actual_series, pred_series, actual_name, pred_name)
 
-        anomaly_scores = []
+        pred_scores = []
         for actual, pred in zip(actual_series, pred_series):
             _sanity_check_two_series(actual, pred, actual_name, pred_name)
             index = actual.slice_intersect_times(pred, copy=False)
@@ -115,8 +115,8 @@ class AnomalyScorer(ABC):
                     },
                     treat_na="dropna",
                 )
-            anomaly_scores.append(scores)
-        return anomaly_scores[0] if called_with_single_series else anomaly_scores
+            pred_scores.append(scores)
+        return pred_scores[0] if called_with_single_series else pred_scores
 
     def eval_metric_from_prediction(
         self,
@@ -155,10 +155,10 @@ class AnomalyScorer(ABC):
             The outer sequence is over the series, and inner sequence is over the series' components/columns.
         """
         self._check_univariate_scorer(actual_anomalies)
-        anomaly_score = self.score_from_prediction(actual_series, pred_series)
+        pred_scores = self.score_from_prediction(actual_series, pred_series)
         return eval_metric_from_scores(
             actual_anomalies=actual_anomalies,
-            pred_scores=anomaly_score,
+            pred_scores=pred_scores,
             window=self.window,
             metric=metric,
         )
@@ -210,7 +210,7 @@ class AnomalyScorer(ABC):
         pred_series = _check_input(
             pred_series, name="pred_series", num_series_expected=1
         )[0]
-        anomaly_score = self.score_from_prediction(actual_series, pred_series)
+        pred_scores = self.score_from_prediction(actual_series, pred_series)
 
         if title is None:
             title = f"Anomaly results by scorer {self.__str__()}"
@@ -219,9 +219,9 @@ class AnomalyScorer(ABC):
             scorer_name = [f"anomaly score by {self.__str__()}"]
 
         return show_anomalies_from_scores(
-            actual_series,
-            model_output=pred_series,
-            anomaly_scores=anomaly_score,
+            actual_series=actual_series,
+            pred_series=pred_series,
+            pred_scores=pred_scores,
             window=self.window,
             names_of_scorers=scorer_name,
             actual_anomalies=actual_anomalies,
@@ -487,8 +487,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         )
         series = [self._extract_deterministic_series(s, "series") for s in series]
 
-        anomaly_scores = self._score_core(series)
-        return anomaly_scores[0] if called_with_single_series else anomaly_scores
+        pred_scores = self._score_core(series)
+        return pred_scores[0] if called_with_single_series else pred_scores
 
     def score_from_prediction(
         self,
@@ -525,8 +525,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         pred_series = _check_input(pred_series, "pred_series")
 
         diff = self._diff_series(actual_series, pred_series)
-        anomaly_scores = self.score(diff)
-        return anomaly_scores[0] if called_with_single_series else anomaly_scores
+        pred_scores = self.score(diff)
+        return pred_scores[0] if called_with_single_series else pred_scores
 
     def eval_metric(
         self,
@@ -564,11 +564,11 @@ class FittableAnomalyScorer(AnomalyScorer):
         """
         actual_anomalies = series2seq(actual_anomalies)
         self._check_univariate_scorer(actual_anomalies)
-        anomaly_score = self.score(series)
+        pred_scores = self.score(series)
         window = 1 if self.window_agg else self.window
         return eval_metric_from_scores(
             actual_anomalies=actual_anomalies,
-            pred_scores=anomaly_score,
+            pred_scores=pred_scores,
             window=window,
             metric=metric,
         )
@@ -612,7 +612,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             Default: "AUC_ROC"
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
-        anomaly_score = self.score(series)
+        pred_scores = self.score(series)
 
         if title is None:
             title = f"Anomaly results by scorer {self.__str__()}"
@@ -626,8 +626,8 @@ class FittableAnomalyScorer(AnomalyScorer):
             window = self.window
 
         return show_anomalies_from_scores(
-            series,
-            anomaly_scores=anomaly_score,
+            actual_series=series,
+            pred_scores=pred_scores,
             window=window,
             names_of_scorers=scorer_name,
             actual_anomalies=actual_anomalies,

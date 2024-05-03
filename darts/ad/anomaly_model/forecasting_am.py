@@ -440,7 +440,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def show_anomalies(
         self,
-        series: TimeSeries,
+        actual_series: TimeSeries,
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = 1,
@@ -474,7 +474,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         Parameters
         ----------
-        series
+        actual_series
             The series to visualize anomalies from.
         past_covariates
             Optionally, a past-observed covariate series or sequence of series. This applies only to
@@ -490,16 +490,16 @@ class ForecastingAnomalyModel(AnomalyModel):
             In the case of ``float``, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
             In the case of ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
+            `actual_series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
         start_format
-            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            Defines the `start` format. Only effective when `start` is an integer and `actual_series` is indexed with a
             `pd.RangeIndex`.
             If set to 'position', `start` corresponds to the index position of the first predicted point and can range
-            from `(-len(series), len(series) - 1)`.
+            from `(-len(actual_series), len(actual_series) - 1)`.
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
-            an error if the value is not in `series`' index. Default: ``'value'``
+            an error if the value is not in `actual_series`' index. Default: ``'value'``
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -535,7 +535,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             "enable_optimization": enable_optimization,
         }
         return super().show_anomalies(
-            series=series,
+            actual_series=actual_series,
             predict_kwargs=predict_kwargs,
             actual_anomalies=actual_anomalies,
             names_of_scorers=names_of_scorers,
