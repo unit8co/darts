@@ -149,7 +149,11 @@ class ForecastingAnomalyModel(AnomalyModel):
             allow_model_training=allow_model_training,
             forecast_horizon=forecast_horizon,
             start=start,
+            start_format=start_format,
             num_samples=num_samples,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            enable_optimization=enable_optimization,
             **model_fit_kwargs,
         )
 
@@ -159,8 +163,12 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Union[pd.Timestamp, float, int] = None,
+        start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        enable_optimization: bool = True,
         return_model_prediction: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """Compute anomaly score(s) for the given series.
@@ -189,9 +197,23 @@ class ForecastingAnomalyModel(AnomalyModel):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+        start_format
+            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
+        verbose
+            Whether to print progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
         return_model_prediction
             Whether to return the forecasting model prediction along with the anomaly scores.
 
@@ -214,9 +236,108 @@ class ForecastingAnomalyModel(AnomalyModel):
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
             start=start,
+            start_format=start_format,
             num_samples=num_samples,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            enable_optimization=enable_optimization,
             return_model_prediction=return_model_prediction,
         )
+
+    def predict_series(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        forecast_horizon: int = 1,
+        start: Union[pd.Timestamp, float, int] = None,
+        start_format: Literal["position", "value"] = "value",
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        enable_optimization: bool = True,
+    ) -> Sequence[TimeSeries]:
+        """Computes the historical forecasts that would have been obtained by the underlying forecasting model
+        on `series`.
+
+        `retrain` is set to `False` if possible (this is not supported by all models). If set to `True`, it will always
+        re-train the model on the entire available history,
+
+        Parameters
+        ----------
+        series
+            The sequence of series to score on.
+        past_covariates
+            Optionally, a sequence of past-observed covariate series or sequence of series. This applies only to
+            models that support past covariates.
+        future_covariates
+            Optionally, a sequence of future-known covariate series or sequence of series. This applies only to
+            models that support future covariates.
+        forecast_horizon
+            The forecast horizon for the predictions.
+        start
+            The first point of time at which a prediction is computed for a future time.
+            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
+            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            that should lie before the first prediction point.
+            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            `series` that will be used as first prediction time.
+            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            directly.
+        start_format
+            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
+            deterministic models.
+        verbose
+            Whether to print progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
+
+        Returns
+        -------
+        Sequence[TimeSeries]
+            A sequence of `TimeSeries` with the historical forecasts for each series (with `last_points_only=True`).
+        """
+        if not self.model._fit_called:
+            raise_log(
+                ValueError(
+                    f"Forecasting `model` {self.model} has not been trained yet. Call ``fit()`` before."
+                ),
+                logger=logger,
+            )
+
+        # TODO: raise an exception. We only support models that do not need retrain
+        # checks if model accepts to not be retrained in the historical_forecasts()
+        if self.model._supports_non_retrainable_historical_forecasts:
+            # default: set to False. Allows a faster computation.
+            retrain = False
+        else:
+            retrain = True
+
+        historical_forecasts_param = {
+            "past_covariates": past_covariates,
+            "future_covariates": future_covariates,
+            "forecast_horizon": forecast_horizon,
+            "stride": 1,
+            "retrain": retrain,
+            "last_points_only": True,
+            "start": start,
+            "start_format": start_format,
+            "num_samples": num_samples,
+            "verbose": verbose,
+            "show_warnings": show_warnings,
+            "enable_optimization": enable_optimization,
+        }
+        return self.model.historical_forecasts(series, **historical_forecasts_param)
 
     def eval_metric(
         self,
@@ -225,8 +346,12 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Union[pd.Timestamp, float, int] = None,
+        start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        enable_optimization: bool = True,
         metric: str = "AUC_ROC",
     ) -> Union[
         Dict[str, float],
@@ -263,9 +388,23 @@ class ForecastingAnomalyModel(AnomalyModel):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+        start_format
+            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
+        verbose
+            Whether to print progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
@@ -291,7 +430,11 @@ class ForecastingAnomalyModel(AnomalyModel):
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
             start=start,
+            start_format=start_format,
             num_samples=num_samples,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            enable_optimization=enable_optimization,
             metric=metric,
         )
 
@@ -301,8 +444,12 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Union[pd.Timestamp, float, int] = None,
+        start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        enable_optimization: bool = True,
         actual_anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
@@ -338,17 +485,31 @@ class ForecastingAnomalyModel(AnomalyModel):
         forecast_horizon
             The forecast horizon for the predictions.
         start
-            The first point of time at which a prediction is computed for a future time. This parameter supports 3
-            different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series that should
-            lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of `series`
-            that will be used as first prediction time.
+            The first point of time at which a prediction is computed for a future time.
+            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
+            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            that should lie before the first prediction point.
+            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+        start_format
+            Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
+            `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
+        verbose
+            Whether to print progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
         names_of_scorers
@@ -367,7 +528,11 @@ class ForecastingAnomalyModel(AnomalyModel):
             "future_covariates": future_covariates,
             "forecast_horizon": forecast_horizon,
             "start": start,
+            "start_format": start_format,
             "num_samples": num_samples,
+            "verbose": verbose,
+            "show_warnings": show_warnings,
+            "enable_optimization": enable_optimization,
         }
         return super().show_anomalies(
             series=series,
@@ -450,53 +615,3 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
             # fit the scorers
             self._fit_scorers(series, historical_forecasts)
-
-    def predict_series(
-        self,
-        series: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]] = None,
-        future_covariates: Optional[Sequence[TimeSeries]] = None,
-        forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
-        start_format: Literal["position", "value"] = "value",
-        num_samples: int = 1,
-        verbose: bool = False,
-        show_warnings: bool = True,
-        enable_optimization: bool = True,
-    ) -> Sequence[TimeSeries]:
-        """Compute the historical forecasts that would have been obtained by this model on the `series`.
-
-        `retrain` is set to `False` if possible (this is not supported by all models). If set to `True`, it will always
-        re-train the model on the entire available history,
-        """
-        if not self.model._fit_called:
-            raise_log(
-                ValueError(
-                    f"Forecasting `model` {self.model} has not been trained yet. Call ``fit()`` before."
-                ),
-                logger=logger,
-            )
-
-        # TODO: raise an exception. We only support models that do not need retrain
-        # checks if model accepts to not be retrained in the historical_forecasts()
-        if self.model._supports_non_retrainable_historical_forecasts:
-            # default: set to False. Allows a faster computation.
-            retrain = False
-        else:
-            retrain = True
-
-        historical_forecasts_param = {
-            "past_covariates": past_covariates,
-            "future_covariates": future_covariates,
-            "forecast_horizon": forecast_horizon,
-            "stride": 1,
-            "retrain": retrain,
-            "last_points_only": True,
-            "start": start,
-            "start_format": start_format,
-            "num_samples": num_samples,
-            "verbose": verbose,
-            "show_warnings": show_warnings,
-            "enable_optimization": enable_optimization,
-        }
-        return self.model.historical_forecasts(series, **historical_forecasts_param)

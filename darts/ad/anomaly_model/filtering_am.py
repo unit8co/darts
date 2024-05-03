@@ -45,7 +45,7 @@ class FilteringAnomalyModel(AnomalyModel):
         Parameters
         ----------
         model
-            One of Darts' filtering models used to filter the actual time series.
+            A Darts `FilteringModel` used to filter the actual time series.
         scorer
             One or multiple scorer(s) used to compare the actual and predicted time series in order to obtain an
             anomaly score ``TimeSeries``. If a list of scorers,
@@ -54,9 +54,7 @@ class FilteringAnomalyModel(AnomalyModel):
         """
         if not isinstance(model, FilteringModel):
             raise_log(
-                ValueError(
-                    f"`model` must be a darts.models.filtering not a {type(model)}."
-                ),
+                ValueError("`model` must be a Darts `FilteringModel`."),
                 logger=logger,
             )
         super().__init__(model=model, scorer=scorer)
@@ -134,6 +132,20 @@ class FilteringAnomalyModel(AnomalyModel):
             return_model_prediction=return_model_prediction,
             **filter_kwargs,
         )
+
+    def predict_series(
+        self, series: Sequence[TimeSeries], **kwargs
+    ) -> Sequence[TimeSeries]:
+        """Filters the given sequence of target time series with the filtering model.
+
+        Parameters
+        ----------
+        series
+            The sequence of series to filter.
+        **kwargs
+            Additional parameters passed to the filtering model's ``filter()`` method.
+        """
+        return [self.model.filter(s, **kwargs) for s in series]
 
     def eval_metric(
         self,
@@ -266,9 +278,3 @@ class FilteringAnomalyModel(AnomalyModel):
             pred = self.predict_series(series)
             # fit the scorers
             self._fit_scorers(series, pred)
-
-    def predict_series(
-        self, series: Sequence[TimeSeries], **kwargs
-    ) -> Sequence[TimeSeries]:
-        """Compute the filtered `series`."""
-        return [self.model.filter(s, **kwargs) for s in series]

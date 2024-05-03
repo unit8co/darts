@@ -112,6 +112,13 @@ class AnomalyModel(ABC):
 
         return scores
 
+    @abstractmethod
+    def predict_series(
+        self, series: Sequence[TimeSeries], **kwargs
+    ) -> Sequence[TimeSeries]:
+        """Abstract method to implement the generation of predictions for the input `series`."""
+        pass
+
     def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
@@ -325,13 +332,6 @@ class AnomalyModel(ABC):
         for scorer in self.scorers:
             if scorer.is_trainable:
                 scorer.fit_from_prediction(list_series, list_pred)
-
-    @abstractmethod
-    def predict_series(
-        self, series: Sequence[TimeSeries], **kwargs
-    ) -> Sequence[TimeSeries]:
-        """Abstract method to implement the generation of predictions for the input `series`."""
-        pass
 
     @staticmethod
     def _process_input_series(

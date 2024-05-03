@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Evaluation:
     - renamed `darts.ad.utils.eval_accuracy_from_scores` to `darts.ad.utils.eval_metric_from_scores`.
     - renamed `darts.ad.utils.eval_accuracy_from_binary_prediction` to `darts.ad.utils.eval_metric_from_binary_prediction`.
+  - `ForecastingAnomalyModel`:
+    - made method `predict_series()` public
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
   - New method `with_times_and_values()`, which returns a new series with a new time index and new values but with identical columns and metadata as the series called from (static covariates, hierarchy).
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.
