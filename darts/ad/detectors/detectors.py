@@ -71,7 +71,7 @@ class Detector(ABC):
     def eval_metric(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
+        pred_scores: Union[TimeSeries, Sequence[TimeSeries]],
         window: int = 1,
         metric: str = "recall",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
@@ -81,10 +81,10 @@ class Detector(ABC):
         ----------
         actual_anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-        anomaly_score
-            The (sequence of) series indicating how anomalous each window of size w is.
+        pred_scores
+            The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.
         window
-            Integer value indicating the number of past samples each point represents in the `anomaly_score`.
+            Integer value indicating the number of past samples each point represents in the `pred_scores`.
         metric
             The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
              Default: "recall"
@@ -96,7 +96,7 @@ class Detector(ABC):
         """
         return eval_metric_from_binary_prediction(
             actual_anomalies=actual_anomalies,
-            pred_anomalies=self.detect(anomaly_score),
+            pred_anomalies=self.detect(pred_scores),
             window=window,
             metric=metric,
         )
