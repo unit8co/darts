@@ -24,9 +24,7 @@ class GammaNLLScorer(NLLScorer):
         return "GammaNLLScorer"
 
     def _score_core_nllikelihood(
-        self, actual_vals: np.ndarray, pred_vals: np.ndarray
+        self, vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
         params = np.apply_along_axis(gamma.fit, axis=1, arr=pred_vals)
-        return -gamma.logpdf(
-            actual_vals, a=params[:, 0], loc=params[:, 1], scale=params[:, 2]
-        )
+        return -gamma.logpdf(vals, a=params[:, 0], loc=params[:, 1], scale=params[:, 2])

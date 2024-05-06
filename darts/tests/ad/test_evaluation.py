@@ -44,28 +44,28 @@ class TestAnomalyDetectionModel:
         ),
     )
     def test_eval_pred_scores(self, config):
-        (metric, scores_exp), actual_series, series_as_list = config
-        is_multivariate = actual_series.width > 1
+        (metric, scores_exp), series, series_as_list = config
+        is_multivariate = series.width > 1
 
         # the inverse of the binary anomalies will have 0. accuracy
         inv_series = TimeSeries.from_times_and_values(
-            values=~actual_series.values().astype(bool), times=actual_series.time_index
+            values=~series.values().astype(bool), times=series.time_index
         )
 
         # average (0.5) scores
         med_vals = inv_series.values(copy=True)
         med_vals[:] = 0.5
         med_series = TimeSeries.from_times_and_values(
-            values=med_vals, times=actual_series.time_index
+            values=med_vals, times=series.time_index
         )
 
-        actual_series = [actual_series] if series_as_list else actual_series
+        series = [series] if series_as_list else series
         inv_series = [inv_series] if series_as_list else inv_series
         med_series = [med_series] if series_as_list else med_series
 
-        def check_metric(actual_series, pred_series, metric, sc_exp):
+        def check_metric(series, pred_series, metric, sc_exp):
             score = eval_metric_from_scores(
-                actual_anomalies=actual_series, pred_scores=pred_series, metric=metric
+                anomalies=series, pred_scores=pred_series, metric=metric
             )
             score = score if series_as_list else [score]
             assert isinstance(score, list) and len(score) == 1
@@ -77,24 +77,24 @@ class TestAnomalyDetectionModel:
                 assert isinstance(score, list) and score == [sc_exp] * 2
 
         # perfect predictions
-        check_metric(actual_series, actual_series, metric, scores_exp[0])
+        check_metric(series, series, metric, scores_exp[0])
 
         # worst predictions
-        check_metric(actual_series, inv_series, metric, scores_exp[1])
+        check_metric(series, inv_series, metric, scores_exp[1])
 
         # 0.5 predictions
-        check_metric(actual_series, med_series, metric, scores_exp[2])
+        check_metric(series, med_series, metric, scores_exp[2])
 
         # actual series must be binary
         with pytest.raises(ValueError) as err:
-            check_metric(med_series, actual_series, metric, scores_exp[2])
+            check_metric(med_series, series, metric, scores_exp[2])
         assert str(err.value).startswith(
-            "Input series `actual_anomalies` must have binary values only."
+            "Input series `anomalies` must have binary values only."
         )
 
         # wrong metric
         with pytest.raises(ValueError) as err:
-            check_metric(actual_series, med_series, "recall", scores_exp[2])
+            check_metric(series, med_series, "recall", scores_exp[2])
         assert str(err.value).startswith("Argument `metric` must be one of ")
 
     @pytest.mark.parametrize(
@@ -111,28 +111,28 @@ class TestAnomalyDetectionModel:
         ),
     )
     def test_eval_pred_binary(self, config):
-        (metric, scores_exp), actual_series, series_as_list = config
-        is_multivariate = actual_series.width > 1
+        (metric, scores_exp), series, series_as_list = config
+        is_multivariate = series.width > 1
 
         # the inverse of the binary anomalies will have 0. accuracy
         inv_series = TimeSeries.from_times_and_values(
-            values=~actual_series.values().astype(bool), times=actual_series.time_index
+            values=~series.values().astype(bool), times=series.time_index
         )
 
         # average (0.5) scores
         med_vals = inv_series.values(copy=True)
         med_vals[:] = 0.5
         med_series = TimeSeries.from_times_and_values(
-            values=med_vals, times=actual_series.time_index
+            values=med_vals, times=series.time_index
         )
 
-        actual_series = [actual_series] if series_as_list else actual_series
+        series = [series] if series_as_list else series
         inv_series = [inv_series] if series_as_list else inv_series
         med_series = [med_series] if series_as_list else med_series
 
-        def check_metric(actual_series, pred_series, metric, sc_exp):
+        def check_metric(series, pred_series, metric, sc_exp):
             score = eval_metric_from_binary_prediction(
-                actual_anomalies=actual_series,
+                anomalies=series,
                 pred_anomalies=pred_series,
                 metric=metric,
             )
@@ -146,26 +146,26 @@ class TestAnomalyDetectionModel:
                 assert isinstance(score, list) and score == [sc_exp] * 2
 
         # perfect predictions
-        check_metric(actual_series, actual_series, metric, scores_exp[0])
+        check_metric(series, series, metric, scores_exp[0])
 
         # worst predictions
-        check_metric(actual_series, inv_series, metric, scores_exp[1])
+        check_metric(series, inv_series, metric, scores_exp[1])
 
         # actual series must be binary
         with pytest.raises(ValueError) as err:
-            check_metric(med_series, actual_series, metric, scores_exp[2])
+            check_metric(med_series, series, metric, scores_exp[2])
         assert str(err.value).startswith(
-            "Input series `actual_anomalies` must have binary values only."
+            "Input series `anomalies` must have binary values only."
         )
 
         # pred must be binary
         with pytest.raises(ValueError) as err:
-            check_metric(actual_series, med_series, metric, scores_exp[2])
+            check_metric(series, med_series, metric, scores_exp[2])
         assert str(err.value).startswith(
             "Input series `pred_anomalies` must have binary values only."
         )
 
         # wrong metric
         with pytest.raises(ValueError) as err:
-            check_metric(actual_series, med_series, "AUC_ROC", scores_exp[2])
+            check_metric(series, med_series, "AUC_ROC", scores_exp[2])
         assert str(err.value).startswith("Argument `metric` must be one of ")

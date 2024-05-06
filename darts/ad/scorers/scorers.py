@@ -63,7 +63,7 @@ class AnomalyScorer(ABC):
 
     def score_from_prediction(
         self,
-        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Computes the anomaly score on the two (sequence of) series.
@@ -74,7 +74,7 @@ class AnomalyScorer(ABC):
 
         Parameters
         ----------
-        actual_series:
+        series:
             The (sequence of) actual series.
         pred_series
             The (sequence of) predicted series.
@@ -84,18 +84,18 @@ class AnomalyScorer(ABC):
         Union[TimeSeries, Sequence[TimeSeries]]
             (Sequence of) anomaly score time series
         """
-        called_with_single_series = isinstance(actual_series, TimeSeries)
-        actual_series, pred_series = series2seq(actual_series), series2seq(pred_series)
-        actual_name, pred_name = "actual_series", "pred_series"
-        _assert_same_length(actual_series, pred_series, actual_name, pred_name)
+        called_with_single_series = isinstance(series, TimeSeries)
+        series, pred_series = series2seq(series), series2seq(pred_series)
+        name, pred_name = "series", "pred_series"
+        _assert_same_length(series, pred_series, name, pred_name)
 
         pred_scores = []
-        for actual, pred in zip(actual_series, pred_series):
-            _sanity_check_two_series(actual, pred, actual_name, pred_name)
+        for actual, pred in zip(series, pred_series):
+            _sanity_check_two_series(actual, pred, name, pred_name)
             index = actual.slice_intersect_times(pred, copy=False)
             self._check_window_size(index)
             scores = self._score_core_from_prediction(
-                actual_vals=actual.slice_intersect_values(pred),
+                vals=actual.slice_intersect_values(pred),
                 pred_vals=pred.slice_intersect_values(actual),
             )
             scores = TimeSeries.from_times_and_values(
@@ -120,19 +120,19 @@ class AnomalyScorer(ABC):
 
     def eval_metric_from_prediction(
         self,
-        actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
-        """Computes the anomaly score between `actual_series` and `pred_series`, and returns the score
+        """Computes the anomaly score between `series` and `pred_series`, and returns the score
         of an agnostic threshold metric.
 
         Parameters
         ----------
-        actual_anomalies
+        anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-        actual_series
+        series
             The (sequence of) actual series.
         pred_series
             The (sequence of) predicted series.
@@ -144,20 +144,20 @@ class AnomalyScorer(ABC):
         Returns
         -------
         float
-            A single metric value for a single univariate `actual_series`.
+            A single metric value for a single univariate `series`.
         Sequence[float]
             A sequence of metric values for:
 
-            - a single multivariate `actual_series`.
-            - a sequence of univariate `actual_series`.
+            - a single multivariate `series`.
+            - a sequence of univariate `series`.
         Sequence[Sequence[float]]
-            A sequence of sequences of metric values for a sequence of multivariate `actual_series`.
+            A sequence of sequences of metric values for a sequence of multivariate `series`.
             The outer sequence is over the series, and inner sequence is over the series' components/columns.
         """
-        self._check_univariate_scorer(actual_anomalies)
-        pred_scores = self.score_from_prediction(actual_series, pred_series)
+        self._check_univariate_scorer(anomalies)
+        pred_scores = self.score_from_prediction(series, pred_series)
         return eval_metric_from_scores(
-            actual_anomalies=actual_anomalies,
+            anomalies=anomalies,
             pred_scores=pred_scores,
             window=self.window,
             metric=metric,
@@ -165,10 +165,10 @@ class AnomalyScorer(ABC):
 
     def show_anomalies_from_prediction(
         self,
-        actual_series: TimeSeries,
+        series: TimeSeries,
         pred_series: TimeSeries,
         scorer_name: str = None,
-        actual_anomalies: TimeSeries = None,
+        anomalies: TimeSeries = None,
         title: str = None,
         metric: str = None,
     ):
@@ -177,7 +177,7 @@ class AnomalyScorer(ABC):
         Computes the anomaly score on the two series. And plots the results.
 
         The plot will be composed of the following:
-            - the actual_series and the pred_series.
+            - the series and the pred_series.
             - the anomaly score of the scorer.
             - the actual anomalies, if given.
 
@@ -189,11 +189,11 @@ class AnomalyScorer(ABC):
 
         Parameters
         ----------
-        actual_series
+        series
             The actual series to visualize anomalies from.
         pred_series
-            The predicted series of `actual_series`.
-        actual_anomalies
+            The predicted series of `series`.
+        anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         scorer_name
             Name of the scorer.
@@ -204,13 +204,11 @@ class AnomalyScorer(ABC):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         """
-        actual_series = _check_input(
-            actual_series, name="actual_series", num_series_expected=1
-        )[0]
+        series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_series = _check_input(
             pred_series, name="pred_series", num_series_expected=1
         )[0]
-        pred_scores = self.score_from_prediction(actual_series, pred_series)
+        pred_scores = self.score_from_prediction(series, pred_series)
 
         if title is None:
             title = f"Anomaly results by scorer {self.__str__()}"
@@ -219,12 +217,12 @@ class AnomalyScorer(ABC):
             scorer_name = [f"anomaly score by {self.__str__()}"]
 
         return show_anomalies_from_scores(
-            actual_series=actual_series,
+            series=series,
             pred_series=pred_series,
             pred_scores=pred_scores,
             window=self.window,
             names_of_scorers=scorer_name,
-            actual_anomalies=actual_anomalies,
+            anomalies=anomalies,
             title=title,
             metric=metric,
         )
@@ -252,43 +250,41 @@ class AnomalyScorer(ABC):
     @abstractmethod
     def _score_core_from_prediction(
         self,
-        actual_vals: np.ndarray,
+        vals: np.ndarray,
         pred_vals: np.ndarray,
     ) -> np.ndarray:
         pass
 
     def _check_univariate_scorer(
-        self, actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]]
+        self, anomalies: Union[TimeSeries, Sequence[TimeSeries]]
     ):
-        """Checks if `actual_anomalies` contains only univariate series when the scorer has the
+        """Checks if `anomalies` contains only univariate series when the scorer has the
         parameter 'is_univariate' set to True.
 
         'is_univariate' is:
             True -> when the function of the scorer `score(series)` (or, if applicable,
-                `score_from_prediction(actual_series, pred_series)`) returns a univariate
-                anomaly score regardless of the input `series` (or, if applicable, `actual_series`
+                `score_from_prediction(series, pred_series)`) returns a univariate
+                anomaly score regardless of the input `series` (or, if applicable, `series`
                 and `pred_series`).
             False -> when the scorer will return a series that has the
                 same number of components as the input (can be univariate or multivariate).
         """
 
         def _check_univariate(s: TimeSeries):
-            """Checks if `actual_anomalies` contains only univariate series, which
+            """Checks if `anomalies` contains only univariate series, which
             is required if any of the scorers returns a univariate score.
             """
             if self.is_univariate and not s.width == 1:
                 raise_log(
                     ValueError(
                         f"Scorer {self.__str__()} will return a univariate anomaly score series (width=1). "
-                        f"Found a multivariate `actual_anomalies`. "
+                        f"Found a multivariate `anomalies`. "
                         f"The evaluation of the accuracy cannot be computed between the two series."
                     ),
                     logger=logger,
                 )
 
-        _ = _check_input(
-            actual_anomalies, name="actual_anomalies", extra_checks=_check_univariate
-        )
+        _ = _check_input(anomalies, name="anomalies", extra_checks=_check_univariate)
 
     def _check_window_size(self, series: Sequence):
         """Checks if the parameter window is less or equal than the length of the given series"""
@@ -425,26 +421,26 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def fit_from_prediction(
         self,
-        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     ):
         """Fits the scorer on the two (sequences of) series.
 
-        The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
+        The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `series`
         into one series. By default, `diff_fn` will compute the absolute difference (Default:
-        :func:`~darts.metrics.metrics.ae`). If `pred_series` and `actual_series` are sequences, `diff_fn` will be
+        :func:`~darts.metrics.metrics.ae`). If `pred_series` and `series` are sequences, `diff_fn` will be
         applied to all pairwise elements of the sequences.
 
         The scorer will then be fitted on this (sequence of) series. If a sequence of series is given,
         the scorer will be fitted on the concatenation of the sequence.
 
-        The scorer assumes that the (sequence of) actual_series is anomaly-free.
+        The scorer assumes that the (sequence of) series is anomaly-free.
 
         If any of the series is stochastic (with `n_samples>1`), `diff_fn` is computed on quantile `0.5`.
 
         Parameters
         ----------
-        actual_series
+        series
             The (sequence of) actual series.
         pred_series
             The (sequence of) predicted series.
@@ -454,10 +450,10 @@ class FittableAnomalyScorer(AnomalyScorer):
         self
             Fitted Scorer.
         """
-        actual_series = _check_input(actual_series, "actual_series")
+        series = _check_input(series, "series")
         pred_series = _check_input(pred_series, "pred_series")
-        series = self._diff_series(actual_series, pred_series)
-        self.fit(series)
+        diff_series = self._diff_series(series, pred_series)
+        self.fit(diff_series)
         self._fit_called = True
 
     def score(
@@ -492,15 +488,15 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def score_from_prediction(
         self,
-        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Computes the anomaly score on the two (sequence of) series.
 
-        The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
+        The function `diff_fn` passed as a parameter to the scorer, will transform `pred_series` and `series`
         into one "difference" series. By default, `diff_fn` will compute the absolute difference
         (Default: :func:`~darts.metrics.metrics.ae`).
-        If actual_series and pred_series are sequences, `diff_fn` will be applied to all pairwise elements
+        If series and pred_series are sequences, `diff_fn` will be applied to all pairwise elements
         of the sequences.
 
         The scorer will then transform this series into an anomaly score. If a sequence of series is given,
@@ -508,7 +504,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         Parameters
         ----------
-        actual_series
+        series
             The (sequence of) actual series.
         pred_series
             The (sequence of) predicted series.
@@ -520,18 +516,18 @@ class FittableAnomalyScorer(AnomalyScorer):
         """
         self._check_fit_called()
 
-        called_with_single_series = isinstance(actual_series, TimeSeries)
-        actual_series = _check_input(actual_series, "actual_series")
+        called_with_single_series = isinstance(series, TimeSeries)
+        series = _check_input(series, "series")
         pred_series = _check_input(pred_series, "pred_series")
 
-        diff = self._diff_series(actual_series, pred_series)
+        diff = self._diff_series(series, pred_series)
         pred_scores = self.score(diff)
         return pred_scores[0] if called_with_single_series else pred_scores
 
     def eval_metric(
         self,
-        actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
         """Computes the anomaly score of the given time series, and returns the score
@@ -539,9 +535,9 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         Parameters
         ----------
-        actual_anomalies
+        anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-        actual_series
+        series
             The (sequence of) series to detect anomalies from.
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
@@ -551,22 +547,22 @@ class FittableAnomalyScorer(AnomalyScorer):
         Returns
         -------
         float
-            A single score/metric for univariate `actual_series` series (with only one component/column).
+            A single score/metric for univariate `series` series (with only one component/column).
         Sequence[float]
             A sequence (list) of scores for:
 
-            - multivariate `actual_series` series (multiple components). Gives a score for each component.
-            - a sequence (list) of univariate `actual_series` series. Gives a score for each series.
+            - multivariate `series` series (multiple components). Gives a score for each component.
+            - a sequence (list) of univariate `series` series. Gives a score for each series.
         Sequence[Sequence[float]]
-            A sequence of sequences of scores for a sequence of multivariate `actual_series` series.
+            A sequence of sequences of scores for a sequence of multivariate `series` series.
             Gives a score for each series (outer sequence) and component (inner sequence).
         """
-        actual_anomalies = series2seq(actual_anomalies)
-        self._check_univariate_scorer(actual_anomalies)
-        pred_scores = self.score(actual_series)
+        anomalies = series2seq(anomalies)
+        self._check_univariate_scorer(anomalies)
+        pred_scores = self.score(series)
         window = 1 if self.window_agg else self.window
         return eval_metric_from_scores(
-            actual_anomalies=actual_anomalies,
+            anomalies=anomalies,
             pred_scores=pred_scores,
             window=window,
             metric=metric,
@@ -574,8 +570,8 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def show_anomalies(
         self,
-        actual_series: TimeSeries,
-        actual_anomalies: TimeSeries = None,
+        series: TimeSeries,
+        anomalies: TimeSeries = None,
         scorer_name: str = None,
         title: str = None,
         metric: str = None,
@@ -597,9 +593,9 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         Parameters
         ----------
-        actual_series
+        series
             The series to visualize anomalies from.
-        actual_anomalies
+        anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
         scorer_name
             Name of the scorer.
@@ -610,10 +606,8 @@ class FittableAnomalyScorer(AnomalyScorer):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC"
         """
-        actual_series = _check_input(
-            actual_series, name="actual_series", num_series_expected=1
-        )[0]
-        pred_scores = self.score(actual_series)
+        series = _check_input(series, name="series", num_series_expected=1)[0]
+        pred_scores = self.score(series)
 
         if title is None:
             title = f"Anomaly results by scorer {self.__str__()}"
@@ -627,11 +621,11 @@ class FittableAnomalyScorer(AnomalyScorer):
             window = self.window
 
         return show_anomalies_from_scores(
-            actual_series=actual_series,
+            series=series,
             pred_scores=pred_scores,
             window=window,
             names_of_scorers=scorer_name,
-            actual_anomalies=actual_anomalies,
+            anomalies=anomalies,
             title=title,
             metric=metric,
         )
@@ -653,25 +647,25 @@ class FittableAnomalyScorer(AnomalyScorer):
 
     def _score_core_from_prediction(
         self,
-        actual_vals: np.ndarray,
+        vals: np.ndarray,
         pred_vals: np.ndarray,
     ) -> np.ndarray:
         pass
 
     def _diff_series(
         self,
-        actual_series: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         pred_series: Sequence[TimeSeries],
     ) -> Sequence[TimeSeries]:
         """Applies the `diff_fn` to two sequences of time series. Converts two time series into 1.
 
-        Each series-pair in actual_series and pred_series must:
+        Each series-pair in series and pred_series must:
             - have a non-empty time intersection
             - be of the same width W
 
         Parameters
         ----------
-        actual_series
+        series
             A sequence of time series
         pred_series
             A sequence of predicted time series to compute `diff_fn` on.
@@ -679,11 +673,11 @@ class FittableAnomalyScorer(AnomalyScorer):
         Returns
         -------
         Sequence[TimeSeries]
-            A sequence of series of width W from the difference between `actual_series` and `pred_series`.
+            A sequence of series of width W from the difference between `series` and `pred_series`.
         """
-        residuals = self.diff_fn(actual_series, pred_series, component_reduction=None)
+        residuals = self.diff_fn(series, pred_series, component_reduction=None)
         out = []
-        for s1, s2, res in zip(actual_series, pred_series, residuals):
+        for s1, s2, res in zip(series, pred_series, residuals):
             time_index = s2.slice_intersect_times(s1, copy=False)
             out.append(s2.with_times_and_values(times=time_index, values=res))
         return out
@@ -921,7 +915,7 @@ class NLLScorer(AnomalyScorer):
 
     def _score_core_from_prediction(
         self,
-        actual_vals: np.ndarray,
+        vals: np.ndarray,
         pred_vals: np.ndarray,
     ) -> np.ndarray:
         """For each timestamp of the inputs:
@@ -933,25 +927,25 @@ class NLLScorer(AnomalyScorer):
 
         Parameters
         ----------
-        actual_vals
+        vals
             The values of a deterministic time series (number of samples per timestamp must be equal to 1)
         pred_vals
             The values of a probabilistic time series (number of samples per timestamp must be higher than 1)
         time_index
-            The time index intersection between `actual_series` and `pred_series`.
+            The time index intersection between `series` and `pred_series`.
 
         Returns
         -------
         TimeSeries
         """
-        actual_vals = self._extract_deterministic_values(actual_vals, "actual_series")
+        vals = self._extract_deterministic_values(vals, "series")
         self._assert_stochastic(pred_vals, "pred_series")
 
         np_anomaly_scores = []
         for component_idx in range(pred_vals.shape[1]):
             np_anomaly_scores.append(
                 self._score_core_nllikelihood(
-                    actual_vals[:, component_idx].squeeze(-1),
+                    vals[:, component_idx].squeeze(-1),
                     pred_vals[:, component_idx],
                 )
             )
@@ -959,7 +953,7 @@ class NLLScorer(AnomalyScorer):
 
     @abstractmethod
     def _score_core_nllikelihood(
-        self, actual_vals: np.ndarray, pred_vals: np.ndarray
+        self, vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
         """For each timestamp, the corresponding distribution is fitted on the probabilistic time-series
         input_2, and returns the negative log-likelihood of the deterministic time-series input_1

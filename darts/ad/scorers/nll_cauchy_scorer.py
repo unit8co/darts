@@ -24,7 +24,7 @@ class CauchyNLLScorer(NLLScorer):
         return "CauchyNLLScorer"
 
     def _score_core_nllikelihood(
-        self, actual_vals: np.ndarray, pred_vals: np.ndarray
+        self, vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
         params = np.apply_along_axis(cauchy.fit, axis=1, arr=pred_vals)
-        return -cauchy.logpdf(actual_vals, loc=params[:, 0], scale=params[:, 1])
+        return -cauchy.logpdf(vals, loc=params[:, 0], scale=params[:, 1])

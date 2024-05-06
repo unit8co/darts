@@ -24,7 +24,7 @@ class PoissonNLLScorer(NLLScorer):
         return "PoissonNLLScorer"
 
     def _score_core_nllikelihood(
-        self, actual_vals: np.ndarray, pred_vals: np.ndarray
+        self, vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
         mu = np.mean(pred_vals, axis=1)
-        return -poisson.logpmf(actual_vals, mu=mu)
+        return -poisson.logpmf(vals, mu=mu)

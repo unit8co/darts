@@ -24,8 +24,8 @@ class GaussianNLLScorer(NLLScorer):
         return "GaussianNLLScorer"
 
     def _score_core_nllikelihood(
-        self, actual_vals: np.ndarray, pred_vals: np.ndarray
+        self, vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
         mu = np.mean(pred_vals, axis=1)
         std = np.std(pred_vals, axis=1)
-        return -norm.logpdf(actual_vals, loc=mu, scale=std)
+        return -norm.logpdf(vals, loc=mu, scale=std)

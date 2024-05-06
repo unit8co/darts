@@ -154,21 +154,19 @@ class TestAnomalyDetectionScorer:
 
     @pytest.mark.parametrize("scorer", list_NonFittableAnomalyScorer)
     def test_score_from_pred_non_fittable_scorer(self, scorer):
-        # NLLScorer require deterministic `actual_series`
+        # NLLScorer require deterministic `series`
         if isinstance(scorer, NLLScorer):
-            # actual_series and pred_series are both deterministic
+            # series and pred_series are both deterministic
+            with pytest.raises(ValueError):
+                scorer.score_from_prediction(series=self.test, pred_series=self.test)
+            # series is probabilistic, pred_series is deterministic
             with pytest.raises(ValueError):
                 scorer.score_from_prediction(
-                    actual_series=self.test, pred_series=self.test
-                )
-            # actual_series is probabilistic, pred_series is deterministic
-            with pytest.raises(ValueError):
-                scorer.score_from_prediction(
-                    actual_series=self.probabilistic, pred_series=self.train
+                    series=self.probabilistic, pred_series=self.train
                 )
 
             score = scorer.score_from_prediction(
-                actual_series=self.train, pred_series=self.probabilistic
+                series=self.train, pred_series=self.probabilistic
             )
             assert isinstance(score, TimeSeries)
             assert score.all_values().shape == (len(self.train), 1, 1)
@@ -294,74 +292,70 @@ class TestAnomalyDetectionScorer:
         fittable_scorer = scorer_cls(**scorer_kwargs)
         fittable_scorer.fit(self.train)
 
-        # if component_wise set to False, 'actual_anomalies' must have widths of 1
+        # if component_wise set to False, 'anomalies' must have widths of 1
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(anomalies=self.mts_anomalies, series=self.test)
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.mts_anomalies, actual_series=self.test
-            )
-        with pytest.raises(ValueError):
-            fittable_scorer.eval_metric(
-                actual_anomalies=[self.anomalies, self.mts_anomalies],
-                actual_series=[self.test, self.test],
+                anomalies=[self.anomalies, self.mts_anomalies],
+                series=[self.test, self.test],
             )
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies, actual_series=self.test, metric=1
+                anomalies=self.anomalies, series=self.test, metric=1
             )
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies,
-                actual_series=self.test,
+                anomalies=self.anomalies,
+                series=self.test,
                 metric="auc_roc",
             )
         with pytest.raises(TypeError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies,
-                actual_series=self.test,
+                anomalies=self.anomalies,
+                series=self.test,
                 metric=["AUC_ROC"],
             )
 
-        # 'actual_anomalies' must be binary
+        # 'anomalies' must be binary
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(anomalies=self.test, series=self.test)
+
+        # 'anomalies' must contain anomalies (at least one)
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.test, actual_series=self.test
+                anomalies=self.only_0_anomalies, series=self.test
             )
 
-        # 'actual_anomalies' must contain anomalies (at least one)
+        # 'anomalies' cannot contain only anomalies
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.only_0_anomalies, actual_series=self.test
+                anomalies=self.only_1_anomalies, series=self.test
             )
 
-        # 'actual_anomalies' cannot contain only anomalies
+        # 'anomalies' must match the number of series if length higher than 1
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=self.only_1_anomalies, actual_series=self.test
+                anomalies=[self.anomalies, self.anomalies],
+                series=self.test,
+            )
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=[self.anomalies, self.anomalies],
+                series=[self.test, self.test, self.test],
             )
 
-        # 'actual_anomalies' must match the number of actual_series if length higher than 1
+        # 'anomalies' must have non empty intersection with 'series'
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=[self.anomalies, self.anomalies],
-                actual_series=self.test,
+                anomalies=self.anomalies[:20], series=self.test[30:]
             )
         with pytest.raises(ValueError):
             fittable_scorer.eval_metric(
-                actual_anomalies=[self.anomalies, self.anomalies],
-                actual_series=[self.test, self.test, self.test],
-            )
-
-        # 'actual_anomalies' must have non empty intersection with 'actual_series'
-        with pytest.raises(ValueError):
-            fittable_scorer.eval_metric(
-                actual_anomalies=self.anomalies[:20], actual_series=self.test[30:]
-            )
-        with pytest.raises(ValueError):
-            fittable_scorer.eval_metric(
-                actual_anomalies=[self.anomalies, self.anomalies[:20]],
-                actual_series=[self.test, self.test[40:]],
+                anomalies=[self.anomalies, self.anomalies[:20]],
+                series=[self.test, self.test[40:]],
             )
 
     @pytest.mark.parametrize(
@@ -377,55 +371,55 @@ class TestAnomalyDetectionScorer:
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=self.anomalies,
-                actual_series=self.test,
+                anomalies=self.anomalies,
+                series=self.test,
                 pred_series=self.modified_test,
                 metric=1,
             )
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=self.anomalies,
-                actual_series=self.test,
+                anomalies=self.anomalies,
+                series=self.test,
                 pred_series=self.modified_test,
                 metric="auc_roc",
             )
         with pytest.raises(TypeError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=self.anomalies,
-                actual_series=self.test,
+                anomalies=self.anomalies,
+                series=self.test,
                 pred_series=self.modified_test,
                 metric=["AUC_ROC"],
             )
 
-        # 'actual_anomalies' must be binary
+        # 'anomalies' must be binary
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=self.test,
-                actual_series=self.test,
+                anomalies=self.test,
+                series=self.test,
                 pred_series=self.modified_test,
             )
 
-        # 'actual_anomalies' must contain anomalies (at least one)
+        # 'anomalies' must contain anomalies (at least one)
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=self.only_0_anomalies,
-                actual_series=self.test,
+                anomalies=self.only_0_anomalies,
+                series=self.test,
                 pred_series=self.modified_test,
             )
 
-        # 'actual_anomalies' cannot contain only anomalies
+        # 'anomalies' cannot contain only anomalies
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=self.only_1_anomalies,
-                actual_series=self.test,
+                anomalies=self.only_1_anomalies,
+                series=self.test,
                 pred_series=self.modified_test,
             )
 
-        # 'actual_anomalies' must match the number of series if length higher than 1
+        # 'anomalies' must match the number of series if length higher than 1
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=[self.anomalies, self.anomalies],
-                actual_series=[self.test, self.test, self.test],
+                anomalies=[self.anomalies, self.anomalies],
+                series=[self.test, self.test, self.test],
                 pred_series=[
                     self.modified_test,
                     self.modified_test,
@@ -434,22 +428,22 @@ class TestAnomalyDetectionScorer:
             )
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=[self.anomalies, self.anomalies],
-                actual_series=self.test,
+                anomalies=[self.anomalies, self.anomalies],
+                series=self.test,
                 pred_series=self.modified_test,
             )
 
-        # 'actual_anomalies' must have non empty intersection with 'actual_series' and 'pred_series'
+        # 'anomalies' must have non empty intersection with 'series' and 'pred_series'
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=self.anomalies[:20],
-                actual_series=self.test[30:],
+                anomalies=self.anomalies[:20],
+                series=self.test[30:],
                 pred_series=self.modified_test[30:],
             )
         with pytest.raises(ValueError):
             scorer.eval_metric_from_prediction(
-                actual_anomalies=[self.anomalies, self.anomalies[:20]],
-                actual_series=[self.test, self.test[40:]],
+                anomalies=[self.anomalies, self.anomalies[:20]],
+                series=[self.test, self.test[40:]],
                 pred_series=[self.modified_test, self.modified_test[40:]],
             )
 
@@ -779,7 +773,7 @@ class TestAnomalyDetectionScorer:
             # window must be smaller than the input of score_from_prediction()
             with pytest.raises(ValueError):
                 scorer.score_from_prediction(
-                    actual_series=self.test, pred_series=self.probabilistic
+                    series=self.test, pred_series=self.probabilistic
                 )  # len(self.test)=100
 
     def diff_fn_parameter(self, scorer, **kwargs):
@@ -846,23 +840,23 @@ class TestAnomalyDetectionScorer:
             # should fail for a sequence of series
             scorer.show_anomalies([self.test, self.test], self.anomalies)
         scorer.show_anomalies_from_prediction(
-            actual_series=self.test,
+            series=self.test,
             pred_series=self.test + 1,
-            actual_anomalies=self.anomalies,
+            anomalies=self.anomalies,
         )
         with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies_from_prediction(
-                actual_series=[self.test, self.test],
+                series=[self.test, self.test],
                 pred_series=self.test + 1,
-                actual_anomalies=self.anomalies,
+                anomalies=self.anomalies,
             )
         with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies_from_prediction(
-                actual_series=self.test,
+                series=self.test,
                 pred_series=[self.test + 1, self.test + 2],
-                actual_anomalies=self.anomalies,
+                anomalies=self.anomalies,
             )
 
         assert not scorer.is_probabilistic
@@ -1533,23 +1527,23 @@ class TestAnomalyDetectionScorer:
         distribution_series = TimeSeries.from_values(
             distribution_arrays.reshape(2, 2, -1)
         )
-        actual_series = TimeSeries.from_values(
+        series = TimeSeries.from_values(
             np.array(deterministic_values).reshape(2, 2, -1)
         )
 
         # compute the NLL values witn score_from_prediction for scorer with window=1 and 2
         # t -> timestamp, c -> component and w -> window used in scorer
         value_t1_c1_w1 = NLLscorer_w1.score_from_prediction(
-            actual_series[0]["0"], distribution_series[0]["0"]
+            series[0]["0"], distribution_series[0]["0"]
         )
         value_t2_c1_w1 = NLLscorer_w1.score_from_prediction(
-            actual_series[1]["0"], distribution_series[1]["0"]
+            series[1]["0"], distribution_series[1]["0"]
         )
         value_t1_2_c1_w1 = NLLscorer_w1.score_from_prediction(
-            actual_series["0"], distribution_series["0"]
+            series["0"], distribution_series["0"]
         )
         value_t1_2_c1_w2 = NLLscorer_w2.score_from_prediction(
-            actual_series["0"], distribution_series["0"]
+            series["0"], distribution_series["0"]
         )
 
         # check length
@@ -1578,10 +1572,10 @@ class TestAnomalyDetectionScorer:
         # multivariate case
         # compute the NLL values witn score_from_prediction for scorer with window=1 and window=2
         value_t1_2_c1_2_w1 = NLLscorer_w1.score_from_prediction(
-            actual_series, distribution_series
+            series, distribution_series
         )
         value_t1_2_c1_2_w2 = NLLscorer_w2.score_from_prediction(
-            actual_series, distribution_series
+            series, distribution_series
         )
 
         # check length
@@ -1646,12 +1640,8 @@ class TestAnomalyDetectionScorer:
         scorer_T.fit(ts_train)
         scorer_F.fit(ts_train)
 
-        auc_roc_T = scorer_T.eval_metric(
-            actual_anomalies=self.anomalies, actual_series=ts_test
-        )
-        auc_roc_F = scorer_F.eval_metric(
-            actual_anomalies=self.anomalies, actual_series=ts_test
-        )
+        auc_roc_T = scorer_T.eval_metric(anomalies=self.anomalies, series=ts_test)
+        auc_roc_F = scorer_F.eval_metric(anomalies=self.anomalies, series=ts_test)
 
         assert auc_roc_T == auc_roc_F
 

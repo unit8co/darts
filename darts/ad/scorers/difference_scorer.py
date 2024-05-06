@@ -23,9 +23,9 @@ class DifferenceScorer(AnomalyScorer):
 
     def _score_core_from_prediction(
         self,
-        actual_vals: np.ndarray,
+        vals: np.ndarray,
         pred_vals: np.ndarray,
     ) -> np.ndarray:
-        actual_vals = self._extract_deterministic_values(actual_vals, "actual_series")
+        vals = self._extract_deterministic_values(vals, "series")
         pred_vals = self._extract_deterministic_values(pred_vals, "pred_series")
-        return actual_vals - pred_vals
+        return vals - pred_vals

@@ -121,8 +121,8 @@ class AnomalyModel(ABC):
 
     def eval_metric(
         self,
-        actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
         **kwargs,
     ) -> Union[
@@ -133,15 +133,15 @@ class AnomalyModel(ABC):
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
-        Predicts the `actual_series` with the underlying forecasting/filtering model, and applies the scorer(s) on the
+        Predicts the `series` with the underlying forecasting/filtering model, and applies the scorer(s) on the
         predicted time series and the given target time series. Returns the score(s) of an agnostic threshold metric,
         based on the anomaly score given by the scorer(s).
 
         Parameters
         ----------
-        actual_anomalies
+        anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
-        actual_series
+        series
             The (sequence of) series to predict anomalies on.
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
@@ -153,10 +153,10 @@ class AnomalyModel(ABC):
         Returns
         -------
         Dict[str, float]
-            A dictionary with the resulting metrics for single univariate `actual_series`, with keys representing the
+            A dictionary with the resulting metrics for single univariate `series`, with keys representing the
             anomaly scorer(s), and values representing the metric values.
         Dict[str, Sequence[float]]
-            Same as for `Dict[str, float]` but for multivariate `actual_series`, and anomaly scorers that treat series
+            Same as for `Dict[str, float]` but for multivariate `series`, and anomaly scorers that treat series
             components/columns independently (by nature of the scorer or if `component_wise=True`).
         Sequence[Dict[str, float]]
             Same as for `Dict[str, float]` but for a sequence of univariate series.
@@ -165,7 +165,7 @@ class AnomalyModel(ABC):
         """
 
         def _check_univariate(s: TimeSeries):
-            """Checks if `actual_anomalies` contains only univariate series, which
+            """Checks if `anomalies` contains only univariate series, which
             is required if any of the scorers returns a univariate score.
             """
             if self.scorers_are_univariate and not s.width == 1:
@@ -173,32 +173,30 @@ class AnomalyModel(ABC):
                     ValueError(
                         f"Anomaly model contains scorer {[s.__str__() for s in self.scorers if s.is_univariate]} "
                         f"that will return a univariate anomaly score series (width=1). Found a multivariate "
-                        f"`actual_anomalies`. The evaluation of the accuracy cannot be computed. If applicable, "
+                        f"`anomalies`. The evaluation of the accuracy cannot be computed. If applicable, "
                         f"think about setting the scorer parameter `componenet_wise` to True."
                     ),
                     logger=logger,
                 )
 
-        called_with_single_series = isinstance(actual_series, TimeSeries)
-        # deterministic `actual_series`
-        actual_series = _check_input(
-            actual_series,
-            name="actual_series",
+        called_with_single_series = isinstance(series, TimeSeries)
+        # deterministic `series`
+        series = _check_input(
+            series,
+            name="series",
             check_deterministic=True,
         )
         # deterministic, binary anomalies, (possibly univariate)
-        actual_anomalies = _check_input(
-            actual_anomalies,
-            name="actual_anomalies",
+        anomalies = _check_input(
+            anomalies,
+            name="anomalies",
             check_deterministic=True,
             check_binary=True,
             extra_checks=_check_univariate,
         )
-        _assert_same_length(
-            actual_series, actual_anomalies, "actual_series", "actual_anomalies"
-        )
+        _assert_same_length(series, anomalies, "series", "anomalies")
 
-        pred_scores = self.score(series=actual_series, **kwargs)
+        pred_scores = self.score(series=series, **kwargs)
 
         # compute metric for anomaly scores
         windows = [s.window for s in self.scorers]
@@ -221,10 +219,10 @@ class AnomalyModel(ABC):
             name_scorers.append(name)
 
         acc = []
-        for anomalies, scores in zip(actual_anomalies, pred_scores):
+        for anomalies, scores in zip(anomalies, pred_scores):
             acc.append(
                 eval_metric_from_scores(
-                    actual_anomalies=anomalies,
+                    anomalies=anomalies,
                     pred_scores=scores,
                     window=windows,
                     metric=metric,
@@ -238,9 +236,9 @@ class AnomalyModel(ABC):
 
     def show_anomalies(
         self,
-        actual_series: TimeSeries,
+        series: TimeSeries,
         predict_kwargs: Dict,
-        actual_anomalies: TimeSeries = None,
+        anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: str = None,
@@ -264,11 +262,11 @@ class AnomalyModel(ABC):
 
         Parameters
         ----------
-        actual_series
+        series
             The series to visualize anomalies from.
         predict_kwargs
             Additional parameters passed to `AnomalyModel.predict_series()`.
-        actual_anomalies
+        anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
         names_of_scorers
             Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
@@ -281,11 +279,9 @@ class AnomalyModel(ABC):
         score_kwargs
             parameters for the `score()` method.
         """
-        actual_series = _check_input(
-            actual_series, name="actual_series", num_series_expected=1
-        )[0]
+        series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_scores, pred_series = self.score(
-            actual_series,
+            series,
             return_model_prediction=True,
             **predict_kwargs,
             **score_kwargs,
@@ -300,12 +296,12 @@ class AnomalyModel(ABC):
         list_window = [s.window for s in self.scorers]
 
         return show_anomalies_from_scores(
-            actual_series=actual_series,
+            series=series,
             pred_series=pred_series,
             pred_scores=pred_scores,
             window=list_window,
             names_of_scorers=names_of_scorers,
-            actual_anomalies=actual_anomalies,
+            anomalies=anomalies,
             title=title,
             metric=metric,
         )

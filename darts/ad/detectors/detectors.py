@@ -70,7 +70,7 @@ class Detector(ABC):
 
     def eval_metric(
         self,
-        actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         pred_scores: Union[TimeSeries, Sequence[TimeSeries]],
         window: int = 1,
         metric: str = "recall",
@@ -79,7 +79,7 @@ class Detector(ABC):
 
         Parameters
         ----------
-        actual_anomalies
+        anomalies
             The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).
         pred_scores
             The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.
@@ -95,7 +95,7 @@ class Detector(ABC):
             Metric results for each anomaly score
         """
         return eval_metric_from_binary_prediction(
-            actual_anomalies=actual_anomalies,
+            anomalies=anomalies,
             pred_anomalies=self.detect(pred_scores),
             window=window,
             metric=metric,

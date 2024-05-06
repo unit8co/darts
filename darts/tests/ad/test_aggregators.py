@@ -131,7 +131,7 @@ class TestAnomalyDetectionAggregator:
     @staticmethod
     def helper_eval_metric_single_series(
         aggregator,
-        actual_series: TimeSeries,
+        series: TimeSeries,
         pred_series: TimeSeries,
         expected_vals: Dict[str, float],
     ):
@@ -141,7 +141,7 @@ class TestAnomalyDetectionAggregator:
                 np.abs(
                     expected_vals[m_func]
                     - aggregator.eval_metric(
-                        actual_series,
+                        series,
                         pred_series,
                         metric=m_func,
                     )
@@ -152,7 +152,7 @@ class TestAnomalyDetectionAggregator:
     @staticmethod
     def helper_eval_metric_multiple_series(
         aggregator,
-        actual_series: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         pred_series: Sequence[TimeSeries],
         expected_vals: Dict[str, List[float]],
     ):
@@ -161,7 +161,7 @@ class TestAnomalyDetectionAggregator:
             np.testing.assert_array_almost_equal(
                 np.array(
                     aggregator.eval_metric(
-                        actual_series,
+                        series,
                         pred_series,
                         metric=m_func,
                     )
@@ -238,7 +238,7 @@ class TestAnomalyDetectionAggregator:
             == 2
         )
 
-        # intersection between 'actual_anomalies' and the series in the sequence 'list_series'
+        # intersection between 'anomalies' and the series in the sequence 'list_series'
         # must be non empty
         with pytest.raises(ValueError):
             aggregator.eval_metric(self.real_anomalies[:30], self.mts_anomalies1[40:])
@@ -480,7 +480,7 @@ class TestAnomalyDetectionAggregator:
         # both actual and pred contain only 1
         self.helper_eval_metric_single_series(
             aggregator=aggregator,
-            actual_series=self.onlyones,
+            series=self.onlyones,
             pred_series=self.mts_onlyones,
             expected_vals=metrics["only_ones"],
         )
@@ -488,7 +488,7 @@ class TestAnomalyDetectionAggregator:
         # input with 2 components (only 1 and only 0) and ground truth is only 0
         self.helper_eval_metric_single_series(
             aggregator=aggregator,
-            actual_series=self.onlyzero,
+            series=self.onlyzero,
             pred_series=self.series_1_and_0,
             expected_vals=metrics["multivariate"],
         )
@@ -496,7 +496,7 @@ class TestAnomalyDetectionAggregator:
         # synthetic example
         self.helper_eval_metric_single_series(
             aggregator=aggregator,
-            actual_series=self.real_anomalies,
+            series=self.real_anomalies,
             pred_series=self.mts_anomalies1,
             expected_vals=metrics["synthetic"],
         )
@@ -517,7 +517,7 @@ class TestAnomalyDetectionAggregator:
 
         self.helper_eval_metric_multiple_series(
             aggregator=aggregator,
-            actual_series=[self.real_anomalies, self.real_anomalies],
+            series=[self.real_anomalies, self.real_anomalies],
             pred_series=[self.mts_anomalies1, self.mts_anomalies2],
             expected_vals=metrics["multiple_series"],
         )
@@ -564,7 +564,7 @@ class TestAnomalyDetectionAggregator:
     )
     def test_ensemble_aggregator_single_series(self, config):
         """Check performance of ensemble aggregator on single series cases"""
-        actual_series, pred_series, expected_metrics = config
+        series, pred_series, expected_metrics = config
 
         aggregator = EnsembleSklearnAggregator(
             model=GradientBoostingClassifier(
@@ -572,11 +572,11 @@ class TestAnomalyDetectionAggregator:
             )
         )
 
-        aggregator.fit(actual_series, pred_series)
+        aggregator.fit(series, pred_series)
 
         self.helper_eval_metric_single_series(
             aggregator=aggregator,
-            actual_series=actual_series,
+            series=series,
             pred_series=pred_series,
             expected_vals=expected_metrics,
         )
@@ -597,7 +597,7 @@ class TestAnomalyDetectionAggregator:
 
         self.helper_eval_metric_multiple_series(
             aggregator=aggregator,
-            actual_series=[self.real_anomalies, self.real_anomalies],
+            series=[self.real_anomalies, self.real_anomalies],
             pred_series=[self.mts_anomalies1, self.mts_anomalies2],
             expected_vals={
                 "accuracy": [0.51, 0.51],

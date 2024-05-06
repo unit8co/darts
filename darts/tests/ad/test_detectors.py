@@ -81,16 +81,12 @@ class TestAnomalyDetectionDetector:
             detector.fit(self.train)
         # Check if return type is float when input is a series
         assert isinstance(
-            detector.eval_metric(
-                actual_anomalies=self.anomalies, pred_scores=self.test
-            ),
+            detector.eval_metric(anomalies=self.anomalies, pred_scores=self.test),
             float,
         )
         # Check if return type is Sequence when input is a Sequence of series
         assert isinstance(
-            detector.eval_metric(
-                actual_anomalies=self.anomalies, pred_scores=[self.test]
-            ),
+            detector.eval_metric(anomalies=self.anomalies, pred_scores=[self.test]),
             Sequence,
         )
 
@@ -100,14 +96,14 @@ class TestAnomalyDetectionDetector:
         # Check if return type is Sequence when input is a multivariate series
         assert isinstance(
             detector.eval_metric(
-                actual_anomalies=self.mts_anomalies, pred_scores=self.mts_test
+                anomalies=self.mts_anomalies, pred_scores=self.mts_test
             ),
             Sequence,
         )
         # Check if return type is Sequence when input is a multivariate series
         assert isinstance(
             detector.eval_metric(
-                actual_anomalies=self.mts_anomalies, pred_scores=[self.mts_test]
+                anomalies=self.mts_anomalies, pred_scores=[self.mts_test]
             ),
             Sequence,
         )
@@ -115,7 +111,7 @@ class TestAnomalyDetectionDetector:
         # Input cannot be probabilistic
         with pytest.raises(ValueError):
             detector.eval_metric(
-                actual_anomalies=self.anomalies, pred_scores=self.probabilistic
+                anomalies=self.anomalies, pred_scores=self.probabilistic
             )
 
     @pytest.mark.parametrize(

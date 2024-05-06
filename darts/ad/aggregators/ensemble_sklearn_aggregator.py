@@ -34,14 +34,14 @@ class EnsembleSklearnAggregator(FittableAggregator):
         )
 
     def _fit_core(
-        self, actual_series: Sequence[TimeSeries], pred_series: Sequence[TimeSeries]
+        self, series: Sequence[TimeSeries], pred_series: Sequence[TimeSeries]
     ):
         X = np.concatenate(
             [s.values(copy=False) for s in pred_series],
             axis=0,
         )
         y = np.concatenate(
-            [s.values(copy=False).flatten() for s in actual_series],
+            [s.values(copy=False).flatten() for s in series],
             axis=0,
         )
         self.model.fit(y=y, X=X)

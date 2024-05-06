@@ -24,7 +24,7 @@ class LaplaceNLLScorer(NLLScorer):
         return "LaplaceNLLScorer"
 
     def _score_core_nllikelihood(
-        self, actual_vals: np.ndarray, pred_vals: np.ndarray
+        self, vals: np.ndarray, pred_vals: np.ndarray
     ) -> np.ndarray:
         # ML estimate for the Laplace loc
         loc = np.median(pred_vals, axis=1)
@@ -32,4 +32,4 @@ class LaplaceNLLScorer(NLLScorer):
         # see: https://github.com/scipy/scipy/blob/de80faf9d3480b9dbb9b888568b64499e0e70c19/scipy
         # /stats/_continuous_distns.py#L4846
         scale = np.sum(np.abs(pred_vals.T - loc), axis=0).T / pred_vals.shape[1]
-        return -laplace.logpdf(actual_vals, loc=loc, scale=scale)
+        return -laplace.logpdf(vals, loc=loc, scale=scale)
