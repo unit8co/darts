@@ -9,11 +9,11 @@ Some detectors are trainable. For instance, :class:`~darts.ad.detectors.quantile
 binary anomaly for every time step where the observed value(s) are beyond the quantile(s) observed on the training
 series.
 
-The main functions are `fit()` (for the trainable detectors), `detect()` and `eval_accuracy()`.
+The main functions are `fit()` (for the trainable detectors), `detect()` and `eval_metric()`.
 
 `fit()` trains the detector over the history of one or multiple time series. It can for instance be called on series
 containing anomaly scores (or even raw values) during normal times. The function `detect()` takes an anomaly score
-time series as input, and applies the detector to obtain binary predictions. The function `eval_accuracy()` returns
+time series as input, and applies the detector to obtain binary predictions. The function `eval_metric()` returns
 the accuracy metric ("accuracy", "precision", "recall" or "f1") between a binary prediction time series and some known
 binary ground truth time series indicating the presence of anomalies.
 """

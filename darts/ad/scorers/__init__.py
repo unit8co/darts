@@ -52,7 +52,7 @@ Most of the scorers have the following main parameters:
 
 Other useful functions are:
 
-- `eval_accuracy_from_prediction()`
+- `eval_metric_from_prediction()`
   Takes as input two (sequence of) series, computes all the anomaly scores, and returns the value of an agnostic
   threshold metric (AUC-ROC or AUC-PR) based on some known ground truth of anomalies. The returned value is between 0
   and 1, with 1 indicating that the scorer could perfectly separate the anomalous point from the normal ones.

@@ -16,7 +16,7 @@ series.
 models can also be fitted by calling :func:`fit()`, which trains the scorer(s) (in case some are trainable), and
 potentially the model as well.
 
-The function :func:`eval_accuracy()` is the same as :func:`score()`, but outputs the score of an agnostic threshold
+The function :func:`eval_metric()` is the same as :func:`score()`, but outputs the score of an agnostic threshold
 metric ("AUC-ROC" or "AUC-PR"), between the predicted anomaly score time series, and some known binary ground-truth
 time series indicating the presence of actual anomalies. Finally, the function :func:`show_anomalies()` can also be
 used to visualize the predictions (in-sample predictions and anomaly scores) of the anomaly model.
