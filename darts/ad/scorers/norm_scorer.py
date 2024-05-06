@@ -15,10 +15,9 @@ from darts.ad.scorers.scorers import AnomalyScorer
 
 
 class NormScorer(AnomalyScorer):
-    """Norm Scorer"""
-
     def __init__(self, ord=None, component_wise: bool = False) -> None:
-        """
+        """Norm Scorer
+
         Returns the element-wise norm of a given order between two series' values.
 
         If `component_wise` is `False`, the norm is computed between vectors

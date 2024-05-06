@@ -1,9 +1,6 @@
 """
 Ensemble scikit-learn aggregator
 --------------------------------
-
-Aggregator wrapped around the Ensemble model of sklearn.
-`sklearn https://scikit-learn.org/stable/modules/ensemble.html`_.
 """
 
 from typing import Sequence
@@ -17,8 +14,17 @@ from darts.logging import raise_if_not
 
 
 class EnsembleSklearnAggregator(FittableAggregator):
-    def __init__(self, model) -> None:
+    def __init__(self, model: BaseEnsemble) -> None:
+        """Ensemble scikit-learn aggregator
 
+        Aggregator wrapped around the sklearn ensemble model `sklearn ensemble model
+        <https://scikit-learn.org/stable/modules/ensemble.html>`_.
+
+        Parameters
+        ----------
+        model
+            The sklearn ensemble model.
+        """
         raise_if_not(
             isinstance(model, BaseEnsemble),
             f"Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), \

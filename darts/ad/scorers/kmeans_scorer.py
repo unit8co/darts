@@ -21,8 +21,6 @@ logger = get_logger(__name__)
 
 
 class KMeansScorer(WindowedAnomalyScorer):
-    """k-means Scorer"""
-
     def __init__(
         self,
         window: int = 1,
@@ -32,7 +30,8 @@ class KMeansScorer(WindowedAnomalyScorer):
         diff_fn: METRIC_TYPE = metrics.ae,
         **kwargs,
     ) -> None:
-        """
+        """k-means Scorer
+
         When calling `fit(series)`, a moving window is applied, which results in a set of vectors of size `W`,
         where `W` is the window size. The `k`-means model is trained on these vectors. The `score(series)` function
         applies the same moving window and returns the distance to the closest of the `k` centroids for each

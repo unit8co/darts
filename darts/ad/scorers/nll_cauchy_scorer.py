@@ -15,9 +15,9 @@ from darts.ad.scorers.scorers import NLLScorer
 
 
 class CauchyNLLScorer(NLLScorer):
-    """NLL Cauchy Scorer"""
 
     def __init__(self, window: int = 1) -> None:
+        """NLL Cauchy Scorer"""
         super().__init__(window=window)
 
     def __str__(self):

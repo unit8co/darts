@@ -18,8 +18,6 @@ logger = get_logger(__name__)
 
 
 class PyODScorer(WindowedAnomalyScorer):
-    """PyOD Scorer"""
-
     def __init__(
         self,
         model: BaseDetector,
@@ -28,7 +26,8 @@ class PyODScorer(WindowedAnomalyScorer):
         window_agg: bool = True,
         diff_fn: METRIC_TYPE = metrics.ae,
     ) -> None:
-        """
+        """PyOD Scorer
+
         When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size `W`,
         where `W` is the window size. The PyODScorer model is trained on these vectors. The ``score(series)``
         function will apply the same moving window and return the predicted raw anomaly score of each vector.

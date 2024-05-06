@@ -24,7 +24,8 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
         low_threshold: Union[int, float, Sequence[float], None] = None,
         high_threshold: Union[int, float, Sequence[float], None] = None,
     ) -> None:
-        """
+        """Threshold Detector
+
         Flags values that are either below or above the `low_threshold` and `high_threshold`,
         respectively.
 

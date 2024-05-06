@@ -13,9 +13,8 @@ from darts.ad.scorers.scorers import AnomalyScorer
 
 
 class DifferenceScorer(AnomalyScorer):
-    """Difference Scorer"""
-
     def __init__(self) -> None:
+        """Difference Scorer"""
         super().__init__(is_univariate=False, window=1)
 
     def __str__(self):

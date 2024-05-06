@@ -25,7 +25,8 @@ class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
         low_quantile: Union[Sequence[float], float, None] = None,
         high_quantile: Union[Sequence[float], float, None] = None,
     ) -> None:
-        """
+        """Quantile Detector
+
         Flags values that are either below or above the `low_quantile` and `high_quantile` quantiles
         of historical data, respectively.
 
